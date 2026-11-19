@@ -420,6 +420,7 @@ flowchart LR
 | backup | `internal/backup` | `quader backup` create, restore, list, verify and delete; the table registry (`tables`), the on-target format (`format`), the port of the target (`target`), the restore fix-ups (`fixup`) | [backup-and-restore.md](backup-and-restore.md) |
 | sysstate | `internal/sysstate` | The banner and the read-only maintenance mode in `system_state` (R-OPS-024, R-OPS-025) | R-OPS-024 in [operations-and-observability.md](operations-and-observability.md) |
 | journal | `internal/journal` | The revocation journal: object, ports, replay handlers and the update rule | R-HA-054 in [ha-and-helm.md](ha-and-helm.md) |
+| limits | `internal/limits` (domain), `internal/limits/store`, `internal/limits/usage`, `internal/limits/httplimit` (edge) | The download limits: figures, rules, resolution, counters, decisions, pacing, the charge buffer; the store of the settings; the usage store; the stage's caller, writer and log fields | [usage-and-limits.md](usage-and-limits.md), [Q-ARCH-513](#q-arch-513--the-download-limits-are-an-area-of-every-role-and-a-domain-package-with-an-edge-part) |
 | observability | `internal/observability` | Logs, metrics, traces, health checks | [operations-and-observability.md](operations-and-observability.md) |
 | outbound | `internal/outbound` | Every outbound HTTP client | R-ARCH-022; settings in [repositories-and-proxy.md](repositories-and-proxy.md) |
 | secrets | `internal/secrets` | Stored-secret encryption, sealed-column registry, key-ring status | R-ARCH-021 |
@@ -10633,6 +10634,29 @@ every picture. The development agent revisits the retention if a red run is look
 
 **Applied:** [release.yml](../../.github/workflows/release.yml).
 
+### Q-ARCH-513 · The download limits are an area of every role, and a domain package with an edge part
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The area `download_limits` on every role builds the engine, the index and the buffers; `internal/limits` is domain, `internal/limits/httplimit` edge (chosen) | The remote engine (domain) charges through `limits`; the stage reads the principal through `httplimit` | The worker records the system's upstream work of mirror passes (Q-LIM-19); no layer is crossed upward | One area more in the role table |
+| (b) The engine in the listener's area `limits` | Fewer areas | — | The worker has no listener and would record no system work |
+
+**Choice:** (a). **Applied in the spec:** R-ARCH-001 (the role table), R-ARCH-003, [usage-and-limits.md](usage-and-limits.md).
+
+### Q-ARCH-514 · The counters of the download limits are a key family of their own; the limiter of R-ARCH-034 keeps its 12-hour window
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The family `lim` (48 hours) with batches of window adds and reads, markers and leases in one `MULTI` (`cluster.LimitBatch`); `maxLimiterWindow` of the `rl` family stays 12 hours (chosen) | Per-call figures without a limiter per budget key | Stage 7 counts the budget key's windows, reads its marker and runs the class of R-API-016 in one round trip (`Limiter.BatchTake`) | Two shapes of counter in `internal/cluster` |
+| (b) Limiters with per-call policies and windows to 24 hours | As R-LIM-017 words the change | One mechanism | A limiter per figure and budget key, and a round trip per limiter |
+
+**Choice:** (a). The arithmetic is R-ARCH-034's (`cluster.Estimate`, `cluster.RoomAfter`). **Applied in the spec:** R-LIM-017,
+R-ARCH-034.
+
 ### Q-ARCH-520 · The client images of the acceptance suites come from the GitHub Actions cache, as the tar of `docker save`, keyed by their inputs
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -10821,7 +10845,6 @@ the ClamAV signatures and the vulnerability databases, which change. **Rationale
 most. The development agent revisits an entry of this list when a run fails on its host.
 
 **Applied:** [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached).
-
 ## What this does not cover
 
 

@@ -48,7 +48,7 @@ var recentAuthOperations = []string{
 	"deleteExposureRule", "deletePermissionPolicy", "deleteProject", "deleteRepository", "moveRepository", "patchExposureRule", "patchPermissionPolicy", "patchProjectPermissionPolicy",
 	"removePackageOwner", "removeProjectMember", "replaceCiIssuer", "replaceCiMapping", "replaceProjectCiMapping", "replaceExposureRule",
 	"replacePermissionPolicy", "replaceProjectPermissionPolicy", "replaceProject", "rotateToken", "setProjectMember", "unbindRole", "updateAuthSettings",
-	"setProjectVisibility", "updateVisibilitySettings",
+	"setProjectVisibility", "updateVisibilitySettings", "updateLimitSettings",
 }
 
 func TestR_API_007_DocumentDeclaresRecentAuth(t *testing.T) {

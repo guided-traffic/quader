@@ -61,6 +61,8 @@ var ownerRightsExempt = map[string]string{
 // token's scope, or holds nothing of the owner's account. A new authenticated read either declares the attribute or is
 // added here with its reason, read in its handler; listOwnSessions declares it.
 var ownerRightsReads = map[string]string{
+	"getMyUsage":      "the own subject's consumption and limits, which the download limits charge to the principal whatever the credential (R-LIM-029, Q-LIM-18)",
+	"getMyLimits":     "the rule that applies to the own subject on a repository the caller can read (R-LIM-035)",
 	"getCurrentUser":  "the own user record, which the credential may know about its principal and the UI of a restricted token needs (Q-API-214)",
 	"getPreferences":  "the own UI preferences, read only; the UI of a restricted token needs them (Q-API-214)",
 	"getWhoami":       "the principal and the presenting credential itself (R-AUTH-028)",

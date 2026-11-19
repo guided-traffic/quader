@@ -57,6 +57,9 @@ func (a *App) registerRegistry(rt *endpointRuntime, router *httpserver.Router) e
 		Authenticate: a.registryTokenAuth(rt, stage), Signer: au.registry, Decider: decider, Repos: repos,
 		Format: string(f.Descriptor().ID), ValidName: ociformat.ValidName, Documents: registry.NewDocuments(f), Metrics: metrics, Audit: a.auditRecorder(),
 		WriteError: f.WriteError, Bound: disp.BoundRepository, Log: a.log.With("component", "registry-token"),
+		IsAdministrator: func(r *http.Request, p httpserver.Principal) bool {
+			return a.isAdministrator(part[authzArea](a.parts))(r.WithContext(httpserver.WithPrincipal(r.Context(), p)))
+		},
 	})
 	if err != nil {
 		return err

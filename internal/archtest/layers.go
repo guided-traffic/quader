@@ -184,6 +184,9 @@ func layerTable() []layerRule {
 		{"internal/bastion/downloads", layerDomain},
 		// The replica's standing connection to the main installation (handshake, feed, reachability).
 		{"internal/bastion/link", layerDomain},
+		// The download limits (usage-and-limits.md): the figures, rules, resolution, counters, decisions and buffers, the usage
+		// store and the store of the settings. The remote engine (internal/proxy) charges through them.
+		{"internal/limits", layerDomain},
 
 		// The vocabulary the dispatcher and the registry root share about a request below /v2/ (Q-OCI-56): the standard
 		// library and internal/qname only, so the dispatcher needs neither the registry root nor the authentication stage.
@@ -194,6 +197,8 @@ func layerTable() []layerRule {
 		{"internal/webui", layerEdge},
 		{"internal/formats", layerEdge},
 		{"internal/formathost", layerEdge},
+		// The HTTP side of the download limits: the caller of a request, the counting and pacing writer, the request log.
+		{"internal/limits/httplimit", layerEdge},
 		// The Bastion's request flow and its role: they answer HTTP.
 		{"internal/bastion/engine", layerEdge},
 		{"internal/bastion/server", layerEdge},

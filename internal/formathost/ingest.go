@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/packages"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -406,11 +407,20 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 		bastionmain.NoteUnknown(ctx) // a block is never a negative entry (R-BAS-013)
 		return err
 	}
+	// The download limits learn the repository that served (a virtual repository's member, R-LIM-006) and admit a download
+	// before its status line (R-LIM-021): the route's kind is the declaration of what a download is (R-LIM-007, R-LIM-036).
+	charge := limits.FromContext(ctx)
+	charge.Served(row.RepoID)
+	var admit func() error
+	if rq.Route != nil && rq.Route.Kind == formats.Download {
+		admit = func() error { return charge.Admit(ctx) }
+	}
 	// An object that cannot be opened is returned unwritten: the format's dispatcher answers it, and the remote engine
 	// first fills the item of a remote repository again when its object is missing (R-STOR-027).
 	return edge.ServeItem(w, rq.Request, row,
 		func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) },
 		edge.ServeOptions{
+			Admit:  admit,
 			Buffer: s.h.o.DownloadBuffer,
 			Served: func() {
 				s.h.o.Items.Served(ctx, items.ServedEvent{

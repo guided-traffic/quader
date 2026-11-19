@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/proxy/upstream"
 	"github.com/guided-traffic/quader/internal/repository"
 )
@@ -214,6 +215,12 @@ func (e *Engine) mayContact(ctx context.Context, p Populate) bool {
 	return false
 }
 
+// isBudget reports a refusal of step 9a (R-LIM-022).
+func isBudget(err error) bool {
+	var be *limits.BudgetError
+	return errors.As(err, &be)
+}
+
 // queryOnce runs fn once for the identical queries in flight on this replica. A request that
 // waited is told so; one whose leader ended before the contact did asks again.
 func (e *Engine) queryOnce(ctx context.Context, repoKey string, key queryKey, fn func(context.Context) (*QueryResponse, error)) (*QueryResponse, error) {
@@ -230,7 +237,8 @@ func (e *Engine) queryOnce(ctx context.Context, repoKey string, key queryKey, fn
 			e.qmu.Lock()
 			delete(e.qcalls, key)
 			e.qmu.Unlock()
-			c.res, c.err, c.abandoned = res, err, err != nil && ctx.Err() != nil
+			// A refusal of the leader's upstream budget is the leader's own: a request that waited asks under its own (R-LIM-022).
+			c.res, c.err, c.abandoned = res, err, err != nil && (ctx.Err() != nil || isBudget(err))
 			close(c.done)
 			return res, err
 		}
@@ -259,6 +267,11 @@ func (e *Engine) queryFetch(ctx context.Context, rq QueryRequest, cl *upstream.C
 	f := &fetcher{
 		e: e, rq: Request{Remote: rem, Path: rq.Path, Kind: Metadata, MaxBytes: rq.MaxBytes, Caller: rq.Caller},
 		st: &reqState{role: "query"}, fl: &flight{done: make(chan struct{})}, cl: cl, auth: rq.Auth, noPath: true,
+		charge: limits.FromContext(ctx),
+	}
+	// Step 9a: a forwarded search is an upstream request of its caller (R-LIM-006, R-LIM-022).
+	if err := f.charge.MayFetch(ctx, rem.id, false); err != nil {
+		return nil, err
 	}
 	hold, wait, err := e.slots.acquire(ctx, rem.id, rem.Settings.Limits.MaxConcurrentFetches, e.o.Config.QueueTimeout())
 	e.m.queueWait.WithLabelValues(rem.Repo.Name.String()).Observe(wait.Seconds())
@@ -311,7 +324,9 @@ func (f *fetcher) queryBody(ctx context.Context, rq QueryRequest, resp *http.Res
 	if lim > 0 && resp.ContentLength > lim {
 		return nil, tooLarge(rem)
 	}
-	body, err := io.ReadAll(&limitReader{r: resp.Body, max: lim})
+	counted := f.charge.Reader(ctx, &limitReader{r: resp.Body, max: lim})
+	body, err := io.ReadAll(counted)
+	counted.Done()
 	switch {
 	case errors.Is(err, errTooLargeBody):
 		return nil, tooLarge(rem)

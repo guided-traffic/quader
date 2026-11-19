@@ -102,6 +102,11 @@ type reqState struct {
 	// a flight and led a later round has collapsed and fetched; Fill repeats a client's failed flight only if it fetched nothing
 	// itself (Q-REPO-180).
 	fetched atomic.Bool
+	// get says the client's request is a GET: an artifact fetch for it takes the parallel lease at step 9a (R-LIM-021).
+	get bool
+	// budget is the refusal of step 9a of this request's own fetch (R-LIM-022), written by the fetch before the flight's
+	// result: the flight ends with an outcome of its own, so a request that waited fetches for itself under its own budget.
+	budget error
 }
 
 type waitEnd uint8

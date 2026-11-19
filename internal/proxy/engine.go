@@ -20,6 +20,7 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 	"github.com/guided-traffic/quader/internal/proxy/upstream"
@@ -108,8 +109,12 @@ type Options struct {
 	// SafetyTTL bounds the age of the per-repository state cache
 	// (cache.snapshot_safety_ttl); zero is five minutes.
 	SafetyTTL time.Duration
-	Metrics   prometheus.Registerer
-	Log       *slog.Logger
+	// Limits is the engine of the download limits: background requests record their upstream requests and uncached bytes
+	// under the subject system (R-LIM-001, Q-LIM-19). A client's request carries its own charge in its context. Nil records
+	// nothing.
+	Limits  *limits.Engine
+	Metrics prometheus.Registerer
+	Log     *slog.Logger
 	// Now replaces the clock of the replica, for tests.
 	Now func() time.Time
 }

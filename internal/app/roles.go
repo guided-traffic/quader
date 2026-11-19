@@ -54,6 +54,8 @@ const (
 	AreaAuthz Area = "authz"
 	// AreaFiles is the item store and the generic layer over it (R-STOR-007).
 	AreaFiles Area = "files"
+	// AreaDownloadLimits is the engine, the index and the buffers of the download limits (usage-and-limits.md).
+	AreaDownloadLimits Area = "download_limits"
 	// AreaLimits is the cluster limiter set of the client listener (R-ARCH-034).
 	AreaLimits Area = "limits"
 	// AreaSessions is the session store (R-AUTH-001).

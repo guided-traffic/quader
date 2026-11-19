@@ -60,6 +60,7 @@ func Capabilities() []Capability {
 		RepositoriesRead, RepositoriesWrite, ProjectsRead, ProjectsWrite,
 		WebhooksRead, WebhooksWrite, SettingsRead, SettingsWrite, SecuritySettingsWrite,
 		AuditRead, EndpointsRead, EndpointsWrite, ContentMetadataRead, VulnerabilitiesTriage,
+		LimitsRead, LimitsWrite, UsageRead,
 	}
 }
 
@@ -113,13 +114,15 @@ func roleCaps(r Role) capSet {
 			CIRead, CIWrite, TokensRead, TokensRevoke, RepositoriesRead, ProjectsRead,
 			SettingsRead, SecuritySettingsWrite, AuditRead, EndpointsRead, EndpointsWrite,
 			// Effective only with read on a finding's repository (R-VULN-013, Q-VULN-27).
-			VulnerabilitiesTriage)
+			VulnerabilitiesTriage,
+			// The download limits and the usage overview, read only (R-AUTHZ-040).
+			LimitsRead, UsageRead)
 	case RoleAuditor:
 		// The metadata of every repository, never an artifact (Q-AUTHZ-172), and the triage of the findings, which
 		// is the security metadata of R-VULN-013 (instance-wide through content:metadata-read).
 		return capsOf(IdentitiesRead, PoliciesRead, RolesRead, CIRead, TokensRead,
 			RepositoriesRead, ProjectsRead, WebhooksRead, SettingsRead, AuditRead, EndpointsRead,
-			ContentMetadataRead, VulnerabilitiesTriage)
+			ContentMetadataRead, VulnerabilitiesTriage, LimitsRead, UsageRead)
 	case RoleRepositoryAdmin:
 		return capsOf(RepositoriesRead, RepositoriesWrite, ProjectsRead, EndpointsRead)
 	case RoleWebhookAdmin:

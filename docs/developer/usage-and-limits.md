@@ -1,9 +1,9 @@
 # Usage and limits
 
-Status: skeleton of the subsystem's developer page. The specification is [spec/usage-and-limits.md](../spec/usage-and-limits.md)
-(walk item W-26); nothing of it is built yet. This page names where it runs, the request path with the hook points as they exist on
-2026-11-19, and the three work packages that build it in parallel. Each builder fills its sections here as it lands; the section
-"Work packages" is removed when the third has landed.
+The download limits of [spec/usage-and-limits.md](../spec/usage-and-limits.md) (walk item W-26): who a request is charged to,
+which rule applies, the counters in Valkey, the decisions at stage 7, before a download and before an upstream exchange, the pacing of
+a body, the usage store behind the overview, and the API. Work package 2 (accounting and enforcement) is built; the technical tokens
+(package 1) and the screens (package 3) land beside it. The section "Work packages" is removed when the third has landed.
 
 ## What has to be in your head first
 
@@ -11,51 +11,99 @@ Status: skeleton of the subsystem's developer page. The specification is [spec/u
   the remote's ceiling of the caller's class. Both hold.
 - **The subject is not the credential.** A user's sessions and personal tokens share one subject; a technical token is a subject
   across its rotations; a CI token is charged to its GitLab project; an anonymous caller to its address prefix
-  ([R-LIM-001](../spec/usage-and-limits.md#r-lim-001--the-subject-a-request-is-charged-to)).
-- **Valkey enforces, PostgreSQL remembers.** Counters are windows in Valkey; the usage store is a per-replica buffer flushed to
-  PostgreSQL every ten seconds, read by the overview and never by a request.
+  ([R-LIM-001](../spec/usage-and-limits.md#r-lim-001--the-subject-a-request-is-charged-to)). `limits.SubjectOf` is the one
+  derivation; `httplimit.CallerOf` converts the principal of a request.
+- **Valkey enforces, PostgreSQL remembers.** Counters are windows in Valkey (key family `lim`); the usage store is a per-replica buffer
+  flushed to PostgreSQL every ten seconds, read by the overview and never by a request.
+- **A request writes no row and costs at most three round trips:** one at stage 7, one before a download from the cache, one at step
+  9a for a miss. Bytes, refusals, the end of a download and lease renewals ride on the replica's flush, once a second.
 - **Audit counts everything and applies nothing new.** In `audit` the package classes of R-API-016 are the safety net; in `enforce`
   the profiles take over ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce)).
-- **The format contract is version 6.** A route's kind decides what is counted; `Host.Serve` admits downloads
+- **The format contract is version 6.** A route's kind decides what is counted; `Host.Serve` admits downloads, and check 16 of the
+  format kit fails a format that writes a download's body itself
   ([R-LIM-036](../spec/usage-and-limits.md#r-lim-036--the-format-contract-version-6)).
 
 ## What runs where
 
 | Role | What it does for the limits |
 |---|---|
-| `packages` (and `web`, `all`) | stage 7 (subject, place, request figures, block), the download admission in `edge.ServeItem`, step 9a in the remote engine, the counting and pacing writer, the per-replica charge buffer (1 s to Valkey) and usage buffer (10 s to PostgreSQL) |
-| `api` (and `web`, `all`) | the limits and usage API, the explanation; protocol requests do not reach it except `/files/` on an endpoint that serves it |
-| `worker` | the daily task `limits-cleanup` (fold, retention, erasure); background requests are charged to `system` |
+| every role | the area `download_limits` ([wire_limits.go](../../internal/app/wire_limits.go)): the store, the compiled index (`limitsIndex`, rebuilt on the change areas `limits` and `repo_config` and once a minute), the engine (`limits.Engine`) with its charge buffer (flush every `limits.flush_interval`), the usage buffer (flush every `limits.usage.flush_interval`) |
+| `packages`, `web`, `all` | stage 7 on the protocol paths (`protocolStage` in [ratelimit.go](../../internal/api/v1/ratelimit.go)), the admission in `edge.ServeItem` (through `Host.Serve` and `/files/`), step 9a and the counted body in the remote engine, the registry token's `Retarget` |
+| `api`, `web`, `all` | the limits and usage operations ([limits_api.go](../../internal/api/v1/limits_api.go), [usage_api.go](../../internal/api/v1/usage_api.go)); `/files/` on an endpoint that serves it |
+| `worker`, `all` | the daily task `limits-cleanup` (`25 3 * * *`, [usage/cleanup.go](../../internal/limits/usage/cleanup.go)); the upstream requests and uncached bytes of mirror passes, recorded under `system` |
 
-## The request path and its hook points
+## The request path
 
-The functions named exist on 2026-11-19; the change each gets is the specification's.
-
-| Step | File and function today | What the limits add |
+| Step | File and function | What the limits do |
 |---|---|---|
-| Stage 6, authentication | [internal/auth/stage.go](../../internal/auth/stage.go); the token cache entry in [internal/auth/token](../../internal/auth/token) | `httpserver.Credential.TechnicalTokenID` from the cache entry (work package 1); a failed credential marks the request refused (R-LIM-008) |
-| Stage 7 | [internal/api/v1/ratelimit.go](../../internal/api/v1/ratelimit.go) `NewRateLimit`, `classify`, `limitedPath`, `isPackagePath`, `ChallengedByLevels`; wired in [internal/app/wire_api.go](../../internal/app/wire_api.go) | `limitedPath` covers `/v2/`; the package classes keyed by the subject and in force in `audit` only; a new `limits.Stage` that derives the subject (`limits.Charge`), resolves the place on `limits.Index`, checks the request windows and the block in the same `MULTI` |
-| Repository of the address | [internal/qname](../../internal/qname) `ParseAddress` | the family `registry` for `/v2/<projectKey>/<repoKey>/…`; the host binding of R-EP-007 |
-| The format dispatcher | [internal/api/dispatch/dispatcher.go](../../internal/api/dispatch/dispatcher.go) `(*Dispatcher).serveRoute`, `resolve` | wraps the response in the counting and pacing writer for the matched route's `Kind`; marks `repository_not_found` refused |
-| The raw-file handler | [internal/api/rawfiles/handler.go](../../internal/api/rawfiles/handler.go) (its call of `edge.ServeItem`) | the same writer; `ServeOptions.Admit` |
-| The registry root and token service | [internal/api/registry](../../internal/api/registry) `token.go`, `register.go` | the writer for `/v2/`; `limits.Charge.Retarget` after the token service authenticated (R-LIM-003) |
-| Serving a stored item | [internal/api/edge/content.go](../../internal/api/edge/content.go) `ServeItem`, `ServeOptions`; called by `Host.Serve` in [internal/formathost/ingest.go](../../internal/formathost/ingest.go) | `ServeOptions.Admit` before `open` and the status line (R-LIM-021) |
-| The remote request | [internal/formathost/remote.go](../../internal/formathost/remote.go) `(*remote).request` | `proxy.Request.Charge` from the request context |
-| Step 9 and 9a | [internal/proxy/engine.go](../../internal/proxy/engine.go) `mayFill`, `denyFill`; called from `(*Engine).Artifact` in [artifact.go](../../internal/proxy/artifact.go) and `beforeFetch` in [metadata.go](../../internal/proxy/metadata.go) | `(*Engine).mayFetch` after `mayFill`: upstream figures and ceiling, stale within `maxStaleSeconds` or 429 (R-LIM-022) |
-| The upstream exchange | [internal/proxy/fetch.go](../../internal/proxy/fetch.go) `(*Engine).fetch`; the bodies in `(*fetcher).artifact` and `(*fetcher).metadata` | counts one upstream request per exchange; counts and paces the uncached bytes on the leader's charge |
-| Collapsing | [internal/proxy/flight.go](../../internal/proxy/flight.go) `collapse`, `runFlight`, `detached` | the leader's charge rides on the flight's request; followers carry none (R-LIM-006) |
-| Statistics, for comparison | [internal/items/stats.go](../../internal/items/stats.go) `Stats` | the model of the usage buffer: write-only, flushed in key order, at shutdown |
-| Counters | [internal/cluster/limiter.go](../../internal/cluster/limiter.go), [valkey_ratelimit.go](../../internal/cluster/valkey_ratelimit.go), [valkey_keys.go](../../internal/cluster/valkey_keys.go) | per-call policies, windows to 24 hours, `INCRBY`, leases in a sorted set, the key family `lim` |
-| Invalidation | [internal/cluster/areas.go](../../internal/cluster/areas.go) | the change area `limits` |
+| Stage 6, authentication | [chain.go](../../internal/httpserver/chain.go) `Chain.AuthFailed`, wired to `App.limitsFailedCredential` | A refused credential on a protocol path is one request and one refused request of the client's address (`Engine.FailedCredential`, R-LIM-003); nothing of the subject the token names |
+| Stage 7 | [ratelimit.go](../../internal/api/v1/ratelimit.go) `protocolStage.serve` | Skips a preflight and a request the decision point challenges (Q-API-290). Derives the caller (`httplimit.CallerOf`, the administrator through `authz.Index.HoldsAdmin`), resolves the place (`Engine.Begin` → `Index.Resolve`), and runs one batch (`Engine.Check`): the burst and hour windows of the budget key, its block marker, and the package class of R-API-016 in force (`cluster.Limiter.BatchTake`). Wraps the response in `httplimit.Writer` and puts the charge in the context; at the end writes the log fields and finishes the charge |
+| Repository of the address | [qname/address.go](../../internal/qname/address.go) `ParseProtocolAddress` | `/api/<format>/…`, `/files/…` and `/v2/<project>/<key>/…` (`ParseRegistryAddress`, Q-LIM-41); a path that names none is decided at the instance |
+| The format dispatcher | [dispatcher.go](../../internal/api/dispatch/dispatcher.go) `serveRoute` | Marks a refusal of the decision point (`DenyHidden`, `DenyVisible`) and a credentialed `repository_not_found` as refused (R-LIM-008); records the repository that served |
+| The raw-file handler | [rawfiles/handler.go](../../internal/api/rawfiles/handler.go) `get`, `refusedAccess` | The same refusal mark; `ServeOptions.Admit` for a file |
+| The registry's token service | [registry/token.go](../../internal/api/registry/token.go) `Token.ServeHTTP` | Stage 7 deferred the request windows (`DeferRequestFigures`); the handler charges them once, to the token's subject or to the address (`Charge.Retarget`, Q-LIM-48) |
+| Serving a stored item | [edge/content.go](../../internal/api/edge/content.go) `ServeItem` `ServeOptions.Admit`; [formathost/ingest.go](../../internal/formathost/ingest.go) `itemStore.Serve` | For a `GET` of a `Download` route, after the conditionals and the range and before `open`: the hour and day byte windows and a parallel lease, one batch (`Engine.Admit`); a refusal is returned unwritten |
+| Step 9 and 9a | [proxy/fetch.go](../../internal/proxy/fetch.go) `fetcher.run` | The fetch's first act: `Charge.MayFetch` counts the upstream request for the budget key and the ceiling, reads the uncached hour windows, takes the lease of an artifact `GET`. A refusal is the leader's own outcome (`reqState.budget`, Q-LIM-43); `metadataAnswer` serves an expired document stale within `maxStaleSeconds` (`detail=stale-budget`). A `HEAD` the engine forwards (`artifact.go` `head`) and a forwarded search (`query.go` `queryFetch`) pass the same check |
+| The upstream exchange | [proxy/fetch.go](../../internal/proxy/fetch.go) `fetcher.send`, `fetcher.bodyReader` | Every exchange after the first is one more upstream request; the body is counted as uncached bytes and paced at `uncachedBytesPerSecond` (`limits.CountingReader`) |
+| The leader's stream | [proxy/integrity.go](../../internal/proxy/integrity.go) `stream.flushLocked` | Marks the charge streaming while it writes: the writer passes those bytes uncounted (they were counted where read) |
+| Collapsing, detached fetch | [proxy/flight.go](../../internal/proxy/flight.go) | The flight runs on the leader's context, so on its charge; `Charge.Hold` keeps it in the buffer until the fetch ended, also after the client left (Q-LIM-5) |
+| Background requests | `fetcher.run` | `Engine.System(repo)`: upstream requests and uncached bytes recorded under `system`, checked against nothing |
+| The flush | [limits/flush.go](../../internal/limits/flush.go) `Engine.Flush` | Once a second, one batch: `INCRBY` of the bytes and refusals of every budget key and ceiling, `ZREM` of ended leases, `ZADD XX` renewals of leases older than 20 s, `ZCARD` of paced keys, the block markers found due; then the deltas to the usage buffer |
+| The usage buffer | [limits/usage/buffer.go](../../internal/limits/usage/buffer.go) `Buffer.Flush` | Every ten seconds one transaction: one upsert of the five-minute and hourly rows, one of the limit events, in key order |
 
-## Package layout (to be created)
+## Package layout
 
-| Package | Responsibility |
+| Package | Layer | Responsibility |
+|---|---|---|
+| [`internal/limits`](../../internal/limits) | domain | `figures.go` (figures, overrides), `subject.go` (subjects, address prefixes, `SubjectOf`), `model.go` (places, rules, profiles, ceilings, maxima, settings, the built-ins), `index.go` (`Index`, `Resolve`, the clamp), `charge.go` (`Charge` and its context), `engine.go` (`Check`, `Admit`, `MayFetch`, `FailedCredential`, `Retarget`, `System`), `flush.go` (the charge buffer, blocks, `LiftBlock`, `Live`), `pacer.go` (pacing, `CountingReader`), `errors.go` (the refusals of R-LIM-020), `metrics.go` |
+| [`internal/limits/store`](../../internal/limits/store) | domain | The PostgreSQL store: `Snapshot` for the index, the writes of the API (audited, announcing the area `limits`), the record of blocks |
+| [`internal/limits/usage`](../../internal/limits/usage) | domain | The usage buffer, the reads of the overview and the detail, `limits-cleanup` |
+| [`internal/limits/httplimit`](../../internal/limits/httplimit) | edge | `ProtocolPath`, `Repo`, `CallerOf`, the counting and pacing `Writer`, the log fields, the `RateLimit` fields |
+| [`internal/cluster/valkey_limits.go`](../../internal/cluster/valkey_limits.go) | infrastructure | `LimitBatch`, `LimitCounters` (Valkey), `MemoryLimits` (the replica's fallback and the unit tests), `Estimate`, `RoomAfter` |
+
+Migrations: [00081_limits.sql](../../internal/meta/postgres/migrations/00081_limits.sql) (profiles with the five built-ins, rules with
+the built-in rule set, ceilings, project maxima, settings, blocks, the change area `limits`) and
+[00082_usage.sql](../../internal/meta/postgres/migrations/00082_usage.sql); queries in
+[limits.sql](../../internal/meta/postgres/queries/limits.sql) and [limits_usage.sql](../../internal/meta/postgres/queries/limits_usage.sql).
+
+## Configuration
+
+```yaml
+limits:
+  flush_interval: 1s              # default
+  parallel:
+    lease: 60s                    # default
+    wait: 10s                     # default
+  pacing:
+    min_bytes_per_second: 65536   # default
+  usage:
+    flush_interval: 10s           # default
+    max_buffered_keys: 100000     # default
+    summary_retention: 9600h      # default: 400 days
+maintenance:
+  tasks:
+    limits-cleanup: {enabled: true, schedule: "25 3 * * *"}   # default
+```
+
+The profiles, the rules, the ceilings, the mode and the block time are stored and changed through the API, not configured.
+
+## What a request costs, measured
+
+`BenchmarkR_LIM_017_CachedDownload` ([engine_test.go](../../internal/limits/engine_test.go)) runs stage 7, the admission and the end
+of a cached download against counting in-memory counters: **2 round trips per download** on the request's path (the flush of every
+second runs off it), about 6 µs and 71 allocations of the engine per download on the development machine. A miss adds the round trip
+of step 9a. No PostgreSQL statement runs on a request: the index is in memory, the usage store is written by the buffer.
+
+## Tests
+
+| Test | What it holds |
 |---|---|
-| `internal/limits` | figures, profiles, rules, `Index` and `Resolve`, the clamp, `Charge` (the subject and budget key of a request), the decisions, the stage, the writer and the pacer, the charge buffer |
-| `internal/limits/usage` | the usage buffer, its flush, the reads of the overview, the detail, the export, `limits-cleanup` |
-| `internal/limits/store` | the PostgreSQL store of profiles, rules, ceilings, maxima, settings, blocks |
-| `internal/api/v1/limits_api.go`, `usage_api.go` | the operations of R-API-082 for limits and usage |
+| `TestR_LIM_013_WorkedExamples`, `TestR_LIM_016_TheClamp` | The worked examples of R-LIM-013 and R-LIM-016 on `Index.Resolve` and `Index.CapFor` |
+| `TestR_LIM_001_TheSubjectOfEveryCaller`, `TestR_LIM_002_AddressPrefix`, `TestR_LIM_004_Figures` | Subjects, prefixes, figures |
+| `TestR_LIM_017_RequestWindowsAndCost`, `TestR_LIM_021_…`, `TestR_LIM_022_StepNineA`, `TestR_LIM_023_Pacing`, `TestR_LIM_024_ParallelDownloads`, `TestR_LIM_025_TheBlock` | The engine on in-memory counters: windows, cost, Audit, the admission, 9a and the ceiling, pacing shares and the floor, leases and their fallback share, blocks and their lift |
+| `TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind` ([formats/all](../../internal/formats/all)) | The kind of every route of the six formats |
+| Check 16 of the format kit ([checks_admission.go](../../internal/formats/formattest/checks_admission.go)) | Every format answers 429 before any byte when the admission refuses; the defect `WritesOwnDownload` fails it |
+| [ratelimit_test.go](../../internal/api/v1/ratelimit_test.go) | The package classes on `/files/` and `/v2/`, keyed by the subject |
 
 ## Work packages
 

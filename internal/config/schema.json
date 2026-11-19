@@ -2347,6 +2347,84 @@
       },
       "type": "object"
     },
+    "limits": {
+      "additionalProperties": false,
+      "properties": {
+        "flush_interval": {
+          "default": "1s",
+          "description": "How often a replica carries the bytes and refused requests it counted to the counters in Valkey (R-LIM-017).",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_LIMITS_FLUSH_INTERVAL",
+          "x-quader-type": "duration"
+        },
+        "pacing": {
+          "additionalProperties": false,
+          "properties": {
+            "min_bytes_per_second": {
+              "default": 65536,
+              "description": "Every download proceeds at least at this rate, whatever its share, so no client's idle timeout fires.",
+              "minimum": 1024,
+              "type": "integer",
+              "x-quader-env": "QUADER_LIMITS_PACING_MIN_BYTES_PER_SECOND"
+            }
+          },
+          "type": "object"
+        },
+        "parallel": {
+          "additionalProperties": false,
+          "properties": {
+            "lease": {
+              "default": "1m",
+              "description": "How long a download's lease holds its place without a renewal; a crashed replica's leases end after it.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_LIMITS_PARALLEL_LEASE",
+              "x-quader-type": "duration"
+            },
+            "wait": {
+              "default": "10s",
+              "description": "How long a further download waits for a free place before it answers 429; 0 answers at once.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_LIMITS_PARALLEL_WAIT",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
+        "usage": {
+          "additionalProperties": false,
+          "properties": {
+            "flush_interval": {
+              "default": "10s",
+              "description": "How often a replica writes its usage buffer to PostgreSQL.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_LIMITS_USAGE_FLUSH_INTERVAL",
+              "x-quader-type": "duration"
+            },
+            "max_buffered_keys": {
+              "default": 100000,
+              "description": "Rows a replica's usage buffer holds; beyond, a new key is merged into an overflow row.",
+              "minimum": 1000,
+              "type": "integer",
+              "x-quader-env": "QUADER_LIMITS_USAGE_MAX_BUFFERED_KEYS"
+            },
+            "summary_retention": {
+              "default": "9600h",
+              "description": "How long the daily sums without a person are kept (400 days).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_LIMITS_USAGE_SUMMARY_RETENTION",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "log": {
       "additionalProperties": false,
       "properties": {
@@ -2470,6 +2548,10 @@
             "gc-full": {
               "Enabled": true,
               "Schedule": "0 2 * * 0"
+            },
+            "limits-cleanup": {
+              "Enabled": true,
+              "Schedule": "25 3 * * *"
             },
             "oci-sweep": {
               "Enabled": true,

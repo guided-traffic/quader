@@ -292,7 +292,7 @@ func bucketSetup(t *testing.T, dir string) (prefix, yml string, raw *s3.Client) 
 const (
 	bastionUser = "bastion"
 	bastionPass = "bastion-valkey-it"
-	aclRules    = "on >" + bastionPass + " resetkeys ~quader-bastion:* resetchannels &quader-bastion:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo"
+	aclRules    = "on >" + bastionPass + " resetkeys ~quader-bastion:* resetchannels &quader-bastion:* -@all +get +set +delifeq +incr +incrby +expire +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo"
 )
 
 var aclOnce sync.Once

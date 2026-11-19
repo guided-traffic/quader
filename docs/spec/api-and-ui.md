@@ -354,7 +354,7 @@ operations that require it when called with a session; the OpenAPI document mark
 | Visibility | Setting a project's level, a repository write that raises a level, changing the installation's visibility settings ([authorization.md](authorization.md) R-AUTHZ-033, R-AUTHZ-037, R-API-056, R-API-057, R-API-075); changing a user's `external` flag ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-044) |
 | Package ownership | Adding and removing package owners, releasing a name ([authorization.md](authorization.md) R-AUTHZ-019, Q-AUTHZ-157) |
 | CI identity | Creating, replacing and deleting CI issuers, identity mappings and delegations (R-API-035) |
-| Settings | Changing authentication settings (R-API-037) |
+| Settings | Changing authentication settings (R-API-037); changing the mode or the block time of the download limits (`updateLimitSettings`, [usage-and-limits.md](usage-and-limits.md) R-LIM-026: the whole operation is marked, the block time with the mode, [Q-API-350](#q-api-350--the-settings-of-the-download-limits-need-recent-authentication-as-one-operation)) |
 | Repositories | Deleting a repository (R-API-022) |
 | Endpoints | Creating, replacing, changing and deleting exposure rules ([endpoints.md](endpoints.md) R-EP-016) |
 | Configuration | Applying configuration as code (R-API-044) |
@@ -2347,12 +2347,13 @@ says so, and a project the caller is no member of answers 404.
 | GET, PUT | `/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings` | GET `limits:read`, `repositories:read-config` or an Owner; PUT `limits:write`, `repositories:write-config` or an Owner | R-LIM-032 |
 | GET, PATCH | `/api/v1/limits/settings` | GET `limits:read`; PATCH `limits:write`, recent authentication for `mode` (R-API-007) | R-LIM-033 |
 | GET | `/api/v1/limits/mode-preview` | `limits:read` | R-LIM-033 |
+| GET | `/api/v1/limits/projects` | `limits:read` | R-LIM-033, [Q-API-351](#q-api-351--one-operation-lists-every-projects-maximum-and-rule-counts) |
 | GET, PUT, DELETE | `/api/v1/projects/{projectKey}/limits/maximum` | GET `limits:read` or an Owner; PUT, DELETE `limits:write` | R-LIM-033 |
 | GET | `/api/v1/limits/blocks` | `limits:read`; an Owner with `place` naming its project or one of its repositories | R-LIM-033 |
 | DELETE | `/api/v1/limits/blocks/{id}` | `limits:write`, or an Owner of the block's project | R-LIM-033 |
 | GET | `/api/v1/limits/explain` | `limits:read`, or an Owner for a repository of its project | R-LIM-035 |
 | GET | `/api/v1/limits/subjects` | `limits:read`, or an Owner with `project` | R-LIM-034 |
-| GET | `/api/v1/usage`, `/api/v1/usage/export` | `usage:read` | R-LIM-034 |
+| GET | `/api/v1/usage`, `/api/v1/usage/export` (`project=` narrows to one project, [Q-API-353](#q-api-353--the-instances-usage-list-narrows-to-a-project-by-a-parameter)) | `usage:read` | R-LIM-034 |
 | GET | `/api/v1/usage/subjects/{kind}/{id}` | `usage:read` | R-LIM-034 |
 | GET | `/api/v1/projects/{projectKey}/usage`, `…/usage/export`, `…/usage/subjects/{kind}/{id}` | `usage:read` or an Owner | R-LIM-034 |
 | GET | `/api/v1/users/me/usage` | every signed-in user (`authenticated`) | R-LIM-034 |
@@ -15721,6 +15722,43 @@ against the owner's rule that a PAT counts against its user.
 this with Q-LIM-4.
 
 **Applied in the spec:** R-API-016 (the border, the class table, the configuration comments, the acceptance criteria), R-API-082.
+
+### Q-API-350 · The settings of the download limits need recent authentication as one operation
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `updateLimitSettings` declares `x-quader-recent-auth: true` (chosen) | The shared step asks for it | One declaration, enforced before the handler | A change of the block time alone asks for it too |
+| (b) Only a change of `mode` | The handler decides | As R-LIM-026 words it | The extension marks operations, not members; the handler would repeat the shared step |
+
+**Choice:** (a). **Applied in the spec:** R-API-007, [usage-and-limits.md](usage-and-limits.md) R-LIM-026.
+
+### Q-API-351 · One operation lists every project's maximum and rule counts
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the projects tab of the administrator's download limits (R-UI-177) read every project's maximum and rules one request at a
+time. `GET /api/v1/limits/projects` (`limits:read`) answers per project its maximum (`null` without one) and the number of rules at
+the project and at its repositories, from one read of the store. **Choice:** the operation; **Applied in the spec:** R-API-082,
+[usage-and-limits.md](usage-and-limits.md) R-LIM-033.
+
+### Q-API-352 · An entry of limit_above_maximum carries the cap
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+A field error gains the optional member `cap` (an integer in the figure's unit), set on every entry of `422 limit_above_maximum` and on
+no other, so the rule dialog names the most the figure may be. **Applied in the spec:** [usage-and-limits.md](usage-and-limits.md)
+R-LIM-016; the schema `FieldError` of `api/openapi.yaml`.
+
+### Q-API-353 · The instance's usage list narrows to a project by a parameter
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+`GET /api/v1/usage` and its export take `project=<key>`, which narrows the rows to the project's repositories, as the project's
+operation does; it costs the same statement with a list of repositories. The project's own operation stays for an Owner, who holds no
+`usage:read`. **Applied in the spec:** R-API-082, [usage-and-limits.md](usage-and-limits.md) R-LIM-034.
+
 
 ### Q-API-345 · The usage list is one operation per scope, with the period, the kind, the state and the sort as parameters
 

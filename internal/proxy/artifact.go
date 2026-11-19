@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -112,10 +113,12 @@ func (e *Engine) Artifact(ctx context.Context, rq Request, w http.ResponseWriter
 	if r.Method == http.MethodHead {
 		return e.head(ctx, rq, w)
 	}
-	// Step 10.
-	st := &reqState{role: roleLeader}
-	if r.Method == http.MethodGet && r.Header.Get("Range") == "" {
+	// Step 10. Step 9a, the budget of the download limits, is the fetch's own first act (fetcher.run): only the request that
+	// fetches passes it, a follower of the flight pays cached bytes only (R-LIM-006, R-LIM-022).
+	st := &reqState{role: roleLeader, get: r.Method == http.MethodGet}
+	if st.get && r.Header.Get("Range") == "" {
 		st.stream = newStream(w)
+		st.stream.charge = limits.FromContext(ctx)
 	}
 	res, end := e.collapse(ctx, rq, st)
 	if st.stream != nil {
@@ -151,6 +154,9 @@ func (e *Engine) artifactAnswer(ctx context.Context, rq Request, st *reqState, w
 	}
 	cs := CacheStatus{Hit: true, Collapsed: st.collapsed, TTL: -1}
 	switch {
+	case st.budget != nil:
+		// Step 9a refused this request's own fetch: nothing is fetched, no negative entry, the circuit untouched (R-LIM-022).
+		return withStatus(st.budget, CacheStatus{})
 	case res.err != nil:
 		return withStatus(res.err, CacheStatus{Forwarded: "uri-miss", FwdStatus: res.status})
 	case res.negative:
@@ -338,6 +344,10 @@ func (e *Engine) head(ctx context.Context, rq Request, w http.ResponseWriter) er
 		return err
 	}
 	f.cl = cl
+	// Step 9a: the HEAD the engine forwards is an upstream request of the caller (R-LIM-006, R-LIM-022).
+	if err := limits.FromContext(ctx).MayFetch(ctx, rem.id, false); err != nil {
+		return withStatus(err, CacheStatus{})
+	}
 	hold, wait, err := e.slots.acquire(ctx, rem.id, rem.Settings.Limits.MaxConcurrentFetches, e.o.Config.QueueTimeout())
 	e.m.queueWait.WithLabelValues(rem.Repo.Name.String()).Observe(wait.Seconds())
 	if err != nil {
@@ -413,7 +423,9 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 	// it reads the status of the response the client is going to get.
 	f.box.set(CacheStatus{Forwarded: "uri-miss", FwdStatus: resp.StatusCode, Stored: true}.Header())
 	sink := teeWriter(tee)
-	sp, err := e.o.Items.Spool(ctx, f.bodyReader(resp, sink), items.IngestOptions{ContentLength: resp.ContentLength})
+	body, bodyDone := f.bodyReader(ctx, resp, sink)
+	sp, err := e.o.Items.Spool(ctx, body, items.IngestOptions{ContentLength: resp.ContentLength})
+	bodyDone()
 	if err != nil {
 		return f.bodyFailure(ctx, err, idle)
 	}

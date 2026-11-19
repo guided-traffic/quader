@@ -16,7 +16,37 @@ const (
 	// FamilyContent is the content route of the management API,
 	// /api/v1/projects/<project>/repositories/<key>/content/<rest>, which serves the raw files of a repository to the UI.
 	FamilyContent Family = "content"
+	// FamilyRegistry is the registry root, /v2/<project>/<key>/<rest> (R-OCI-003), read by [ParseRegistryAddress].
+	FamilyRegistry Family = "registry"
 )
+
+// ParseRegistryAddress reads the repository of a path below the registry root, /v2/<project>/<key>/<rest>, with the rules of
+// [ParseAddress]: a "%" in the project or the key is no name. The core routes /v2/, /v2/_catalog and /v2/_token name no
+// repository. It is a parser of its own and not a family of ParseAddress, because the parser's other readers (the Bastion's
+// classification, the authentication stage's open routes) do not serve the registry root (Q-LIM-41).
+func ParseRegistryAddress(escapedPath string) (Address, bool) {
+	tail, ok := strings.CutPrefix(escapedPath, "/v2/")
+	if !ok {
+		return Address{}, false
+	}
+	project, tail, ok := strings.Cut(tail, "/")
+	if !ok || !ValidProjectKey(project) {
+		return Address{}, false
+	}
+	key, rest, ok := strings.Cut(tail, "/")
+	if !ok || !ValidKey(key) {
+		return Address{}, false
+	}
+	return Address{Family: FamilyRegistry, Repo: Repo{Project: project, Key: key}, Rest: rest}, true
+}
+
+// ParseProtocolAddress reads the repository of any protocol path (R-LIM-005): /api/<format>/…, /files/… and below /v2/.
+func ParseProtocolAddress(escapedPath string) (Address, bool) {
+	if a, ok := ParseAddress(escapedPath); ok {
+		return a, true
+	}
+	return ParseRegistryAddress(escapedPath)
+}
 
 // Address is a repository address read from a request path.
 type Address struct {

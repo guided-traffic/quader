@@ -73,6 +73,8 @@ tags:
     description: Service accounts for automation (R-AUTH-020).
   - name: tokens
     description: Personal and service-account tokens. A token value is returned by the call that creates it and never again (R-AUTH-027 to R-AUTH-030).
+  - name: limits
+    description: The download limits and the usage overview (usage-and-limits.md, R-API-082).
   - name: auth-settings
     description: The runtime authentication settings (R-AUTH-040).
   - name: visibility
@@ -14122,6 +14124,1869 @@ paths:
         "503":
           $ref: "#/components/responses/Unavailable"
   # <<< T-22 search
+  # >>> W-26 limits
+  /api/v1/limits/profiles:
+    get:
+      operationId: listLimitProfiles
+      tags: [limits]
+      summary: List the profiles of the download limits
+      description: |
+        Every profile, built-in and own, with every figure (`null` is unlimited) and how many rules and project maxima name it (R-LIM-031).
+      x-quader-permission:
+        permission: limits:read
+        projectRole: owner
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProfileList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createLimitProfile
+      tags: [limits]
+      summary: Create a profile
+      description: |
+        An own profile: key, name, description and figures (R-LIM-031). A burst without a rate, or below it, answers `422 invalid_figure`.
+      x-quader-permission:
+        permission: limits:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitProfileWrite"
+      responses:
+        "201":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/profiles/{key}:
+    parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9-]{1,31}$"
+    get:
+      operationId: getLimitProfile
+      tags: [limits]
+      summary: Read a profile
+      description: |
+        One profile (R-LIM-031).
+      x-quader-permission:
+        permission: limits:read
+        projectRole: owner
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: replaceLimitProfile
+      tags: [limits]
+      summary: Replace a profile
+      description: |
+        Name, description and figures; the figures of `unlimited` stay empty (`409 profile_immutable`) (R-LIM-031).
+      x-quader-permission:
+        permission: limits:write
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitProfileWrite"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteLimitProfile
+      tags: [limits]
+      summary: Delete a profile
+      description: |
+        An own profile that no rule and no project maximum names (`409 profile_in_use`); a built-in one answers `409 profile_builtin` (R-LIM-031).
+      x-quader-permission:
+        permission: limits:write
+      parameters:
+        - $ref: "#/components/parameters/IfMatchOptional"
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/assignments:
+    get:
+      operationId: listInstanceLimitAssignments
+      tags: [limits]
+      summary: List the rules of the instance
+      description: |
+        The rules of the place with their effective figures and what the clamp lowered (R-LIM-032).
+      x-quader-permission:
+        permission: limits:read
+      parameters:
+        - name: whoKind
+          in: query
+          description: "Only rules of this kind of caller."
+          schema:
+            type: string
+            enum: [user, technicalToken, ciProject, address, group, every]
+        - name: profile
+          in: query
+          description: "Only rules of this profile key."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignmentList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createInstanceLimitAssignment
+      tags: [limits]
+      summary: Create a rule at the instance
+      description: |
+        A profile with overrides for one caller at the place (R-LIM-032, R-LIM-016). A rule written without `limits:write` is capped: a figure above the cap answers `422 limit_above_maximum`.
+      x-quader-permission:
+        permission: limits:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "201":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/assignments/{id}:
+    parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    get:
+      operationId: getInstanceLimitAssignment
+      tags: [limits]
+      summary: Read a rule of the instance
+      description: |
+        One rule (R-LIM-032).
+      x-quader-permission:
+        permission: limits:read
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: replaceInstanceLimitAssignment
+      tags: [limits]
+      summary: Replace a rule of the instance
+      description: |
+        Profile, overrides and note; `who` is immutable (R-LIM-032).
+      x-quader-permission:
+        permission: limits:write
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteInstanceLimitAssignment
+      tags: [limits]
+      summary: Delete a rule of the instance
+      description: |
+        A built-in rule answers `409 assignment_builtin` (R-LIM-032).
+      x-quader-permission:
+        permission: limits:write
+      parameters:
+        - $ref: "#/components/parameters/IfMatchOptional"
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/limits/assignments:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+    get:
+      operationId: listProjectLimitAssignments
+      tags: [limits]
+      summary: List the rules of a project
+      description: |
+        The rules of the place with their effective figures and what the clamp lowered (R-LIM-032).
+      x-quader-permission:
+        permission: limits:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: whoKind
+          in: query
+          description: "Only rules of this kind of caller."
+          schema:
+            type: string
+            enum: [user, technicalToken, ciProject, address, group, every]
+        - name: profile
+          in: query
+          description: "Only rules of this profile key."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignmentList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createProjectLimitAssignment
+      tags: [limits]
+      summary: Create a rule at a project
+      description: |
+        A profile with overrides for one caller at the place (R-LIM-032, R-LIM-016). A rule written without `limits:write` is capped: a figure above the cap answers `422 limit_above_maximum`.
+      x-quader-permission:
+        permission: limits:write
+        project: path.projectKey
+        projectRole: owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "201":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/limits/assignments/{id}:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    get:
+      operationId: getProjectLimitAssignment
+      tags: [limits]
+      summary: Read a rule of a project
+      description: |
+        One rule (R-LIM-032).
+      x-quader-permission:
+        permission: limits:read
+        project: path.projectKey
+        projectRole: owner
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: replaceProjectLimitAssignment
+      tags: [limits]
+      summary: Replace a rule of a project
+      description: |
+        Profile, overrides and note; `who` is immutable (R-LIM-032).
+      x-quader-permission:
+        permission: limits:write
+        project: path.projectKey
+        projectRole: owner
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteProjectLimitAssignment
+      tags: [limits]
+      summary: Delete a rule of a project
+      description: |
+        A built-in rule answers `409 assignment_builtin` (R-LIM-032).
+      x-quader-permission:
+        permission: limits:write
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - $ref: "#/components/parameters/IfMatchOptional"
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+        - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: listRepositoryLimitAssignments
+      tags: [limits]
+      summary: List the rules of a repository
+      description: |
+        The rules of the place with their effective figures and what the clamp lowered (R-LIM-032).
+      x-quader-permission:
+        permission: limits:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: whoKind
+          in: query
+          description: "Only rules of this kind of caller."
+          schema:
+            type: string
+            enum: [user, technicalToken, ciProject, address, group, every]
+        - name: profile
+          in: query
+          description: "Only rules of this profile key."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignmentList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createRepositoryLimitAssignment
+      tags: [limits]
+      summary: Create a rule at a repository
+      description: |
+        A profile with overrides for one caller at the place (R-LIM-032, R-LIM-016). A rule written without `limits:write` is capped: a figure above the cap answers `422 limit_above_maximum`.
+      x-quader-permission:
+        permission: limits:write
+        project: path.projectKey
+        projectRole: owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "201":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+        - $ref: "#/components/parameters/RepoKey"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    get:
+      operationId: getRepositoryLimitAssignment
+      tags: [limits]
+      summary: Read a rule of a repository
+      description: |
+        One rule (R-LIM-032).
+      x-quader-permission:
+        permission: limits:read
+        project: path.projectKey
+        projectRole: owner
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: replaceRepositoryLimitAssignment
+      tags: [limits]
+      summary: Replace a rule of a repository
+      description: |
+        Profile, overrides and note; `who` is immutable (R-LIM-032).
+      x-quader-permission:
+        permission: limits:write
+        project: path.projectKey
+        projectRole: owner
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteRepositoryLimitAssignment
+      tags: [limits]
+      summary: Delete a rule of a repository
+      description: |
+        A built-in rule answers `409 assignment_builtin` (R-LIM-032).
+      x-quader-permission:
+        permission: limits:write
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - $ref: "#/components/parameters/IfMatchOptional"
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+        - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: getLimitCeilings
+      tags: [limits]
+      summary: Read the ceilings of a remote repository
+      description: |
+        The ceilings for all anonymous and all signed-in callers together (R-LIM-015, R-LIM-032). A repository that is not remote answers `422 not_applicable`.
+      x-quader-permission:
+        permission: repositories:read-config
+        project: path.projectKey
+        projectRole: owner
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitCeilings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: replaceLimitCeilings
+      tags: [limits]
+      summary: Replace the ceilings of a remote repository
+      description: |
+        Both classes; an empty figure is unlimited (R-LIM-015, R-LIM-032).
+      x-quader-permission:
+        permission: repositories:write-config
+        project: path.projectKey
+        projectRole: owner
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitCeilingsWrite"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitCeilings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/settings:
+    get:
+      operationId: getLimitSettings
+      tags: [limits]
+      summary: Read the mode and the block time
+      description: |
+        The switch Audit / Enforce and the block time (R-LIM-026, R-LIM-033).
+      x-quader-permission:
+        permission: limits:read
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    patch:
+      operationId: updateLimitSettings
+      tags: [limits]
+      summary: Change the mode or the block time
+      description: |
+        A change of `mode` needs recent authentication (R-API-007) and is audited as `limits.mode.changed` (R-LIM-026).
+      x-quader-permission:
+        permission: limits:write
+      x-quader-if-match: required
+      x-quader-recent-auth: true
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/LimitSettingsPatch"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/mode-preview:
+    get:
+      operationId: getLimitModePreview
+      tags: [limits]
+      summary: What enforce would have done
+      description: |
+        The would-limit events of the last 24 hours (R-LIM-033).
+      x-quader-permission:
+        permission: limits:read
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitModePreview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/limits/maximum:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+    get:
+      operationId: getLimitProjectMaximum
+      tags: [limits]
+      summary: Read a project's maximum
+      description: |
+        The maximum an Owner's rules are capped at (R-LIM-016, R-LIM-033); `404` when none is set.
+      x-quader-permission:
+        permission: limits:read
+        project: path.projectKey
+        projectRole: owner
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProjectMaximum"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: setLimitProjectMaximum
+      tags: [limits]
+      summary: Set a project's maximum
+      description: |
+        Set or replace it (R-LIM-033); `If-Match: *` creates one.
+      x-quader-permission:
+        permission: limits:write
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitProjectMaximumWrite"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProjectMaximum"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteLimitProjectMaximum
+      tags: [limits]
+      summary: Remove a project's maximum
+      description: |
+        R-LIM-033.
+      x-quader-permission:
+        permission: limits:write
+      parameters:
+        - $ref: "#/components/parameters/IfMatchOptional"
+      responses:
+        "204":
+          description: Removed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/blocks:
+    get:
+      operationId: listLimitBlocks
+      tags: [limits]
+      summary: List blocks
+      description: |
+        Blocks after refused requests, newest first, the active ones by default (R-LIM-025, R-LIM-033). An Owner names `place` of its project or one of its repositories.
+      x-quader-permission:
+        permission: limits:read
+        projectRole: owner
+      parameters:
+        - name: active
+          in: query
+          description: "Only active blocks (default true)."
+          schema:
+            type: boolean
+        - name: place
+          in: query
+          description: "`project:<key>` or `repository:<project>/<key>`."
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitBlockList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/blocks/{id}:
+    parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    delete:
+      operationId: liftLimitBlock
+      tags: [limits]
+      summary: Lift a block
+      description: |
+        Removes the marker and resets the refused counters (R-LIM-025); an ended block answers `409 block_ended`.
+      x-quader-permission:
+        permission: limits:write
+        projectRole: owner
+      responses:
+        "204":
+          description: Lifted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/explain:
+    get:
+      operationId: explainLimits
+      tags: [limits]
+      summary: Which limit applies
+      description: |
+        The resolution of R-LIM-013 for a subject on a repository, step by step (R-LIM-035).
+      x-quader-permission:
+        permission: limits:read
+        projectRole: owner
+      parameters:
+        - name: subject
+          in: query
+          description: "`<kind>/<id>`: `user/<username>`, `technicalToken/<ID>`, `ci/<issuer>:<project ID>`, `anonymous/<address>`."
+          schema:
+            type: string
+        - name: repository
+          in: query
+          description: "`<projectKey>/<repoKey>`; empty decides at the instance."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitExplanation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/subjects:
+    get:
+      operationId: suggestLimitSubjects
+      tags: [limits]
+      summary: Suggest technical tokens and CI projects
+      description: |
+        For the rule dialog, by name, 20 at most (R-LIM-034).
+      x-quader-permission:
+        permission: limits:read
+        projectRole: owner
+      parameters:
+        - name: q
+          in: query
+          description: "The text to match."
+          schema:
+            type: string
+        - name: kinds
+          in: query
+          description: "Kinds to suggest."
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [technicalToken, ci]
+        - name: project
+          in: query
+          description: "Narrow to a project's own."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitSubjectSuggestions"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/limits/projects:
+    get:
+      operationId: listLimitProjects
+      tags: [limits]
+      summary: Every project's maximum and rule counts
+      description: |
+        One row per project: its maximum (`null` when none is set) and how many rules its place and its repositories hold, for the
+        projects tab of the download limits (R-LIM-033, Q-API-351).
+      x-quader-permission:
+        permission: limits:read
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProjectList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/usage:
+    get:
+      operationId: listUsage
+      tags: [limits]
+      summary: Every subject's usage
+      description: |
+        The overview of the instance (R-LIM-034).
+      x-quader-permission:
+        permission: usage:read
+      parameters:
+        - name: project
+          in: query
+          description: "Narrow the instance's overview to the repositories of one project (Q-API-353)."
+          schema:
+            type: string
+        - name: period
+          in: query
+          description: "hour, day (default) or 30d."
+          schema:
+            type: string
+            enum: [hour, day, 30d]
+        - name: kind
+          in: query
+          description: "Subject kinds."
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [user, technicalToken, ci, anonymous, system]
+        - name: state
+          in: query
+          description: "Only subjects in this state."
+          schema:
+            type: string
+            enum: [close, limitReached, wouldBeLimited, blocked]
+        - name: q
+          in: query
+          description: "A search on the subject's name or address."
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: "Sort field."
+          schema:
+            type: string
+            enum: [requests, cachedBytes, uncachedBytes, upstreamRequests, refused, utilisation, name]
+        - name: order
+          in: query
+          description: "desc (default) or asc."
+          schema:
+            type: string
+            enum: [asc, desc]
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/usage/export:
+    get:
+      operationId: exportUsage
+      tags: [limits]
+      summary: Every subject's usage as CSV
+      description: |
+        The list as CSV, up to 100,000 rows (R-LIM-034).
+      x-quader-permission:
+        permission: usage:read
+      parameters:
+        - name: project
+          in: query
+          description: "Narrow the instance's overview to the repositories of one project (Q-API-353)."
+          schema:
+            type: string
+        - name: period
+          in: query
+          description: "hour, day (default) or 30d."
+          schema:
+            type: string
+            enum: [hour, day, 30d]
+        - name: kind
+          in: query
+          description: "Subject kinds."
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [user, technicalToken, ci, anonymous, system]
+        - name: state
+          in: query
+          description: "Only subjects in this state."
+          schema:
+            type: string
+            enum: [close, limitReached, wouldBeLimited, blocked]
+        - name: q
+          in: query
+          description: "A search on the subject's name or address."
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: "Sort field."
+          schema:
+            type: string
+            enum: [requests, cachedBytes, uncachedBytes, upstreamRequests, refused, utilisation, name]
+      responses:
+        "200":
+          description: The answer.
+          content:
+            text/csv:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/usage/subjects/{kind}/{id}:
+    parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [user, technicalToken, ci, anonymous, system]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    get:
+      operationId: getUsageSubject
+      tags: [limits]
+      summary: One subject's usage
+      description: |
+        The detail of a subject (R-LIM-034).
+      x-quader-permission:
+        permission: usage:read
+      parameters:
+        - name: period
+          in: query
+          description: "hour, day (default) or 30d."
+          schema:
+            type: string
+            enum: [hour, day, 30d]
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/usage:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+    get:
+      operationId: listProjectUsage
+      tags: [limits]
+      summary: Usage in a project
+      description: |
+        The rows of the project's repositories (R-LIM-034, R-LIM-029).
+      x-quader-permission:
+        permission: usage:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: repository
+          in: query
+          description: "Narrow to one repository of the project."
+          schema:
+            type: string
+        - name: period
+          in: query
+          description: "hour, day (default) or 30d."
+          schema:
+            type: string
+            enum: [hour, day, 30d]
+        - name: kind
+          in: query
+          description: "Subject kinds."
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [user, technicalToken, ci, anonymous, system]
+        - name: state
+          in: query
+          description: "Only subjects in this state."
+          schema:
+            type: string
+            enum: [close, limitReached, wouldBeLimited, blocked]
+        - name: q
+          in: query
+          description: "A search on the subject's name or address."
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: "Sort field."
+          schema:
+            type: string
+            enum: [requests, cachedBytes, uncachedBytes, upstreamRequests, refused, utilisation, name]
+        - name: order
+          in: query
+          description: "desc (default) or asc."
+          schema:
+            type: string
+            enum: [asc, desc]
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/usage/export:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+    get:
+      operationId: exportProjectUsage
+      tags: [limits]
+      summary: Usage in a project as CSV
+      description: |
+        R-LIM-034.
+      x-quader-permission:
+        permission: usage:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: repository
+          in: query
+          description: "Narrow to one repository of the project."
+          schema:
+            type: string
+        - name: period
+          in: query
+          description: "hour, day (default) or 30d."
+          schema:
+            type: string
+            enum: [hour, day, 30d]
+        - name: kind
+          in: query
+          description: "Subject kinds."
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [user, technicalToken, ci, anonymous, system]
+        - name: state
+          in: query
+          description: "Only subjects in this state."
+          schema:
+            type: string
+            enum: [close, limitReached, wouldBeLimited, blocked]
+        - name: q
+          in: query
+          description: "A search on the subject's name or address."
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: "Sort field."
+          schema:
+            type: string
+            enum: [requests, cachedBytes, uncachedBytes, upstreamRequests, refused, utilisation, name]
+      responses:
+        "200":
+          description: The answer.
+          content:
+            text/csv:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/usage/subjects/{kind}/{id}:
+    parameters:
+        - $ref: "#/components/parameters/ProjectKey"
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [user, technicalToken, ci, anonymous, system]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    get:
+      operationId: getProjectUsageSubject
+      tags: [limits]
+      summary: One subject's usage in a project
+      description: |
+        R-LIM-034.
+      x-quader-permission:
+        permission: usage:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: period
+          in: query
+          description: "hour, day (default) or 30d."
+          schema:
+            type: string
+            enum: [hour, day, 30d]
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/users/me/usage:
+    get:
+      operationId: getMyUsage
+      tags: [limits]
+      summary: The caller's own usage
+      description: |
+        Consumption, limits and blocks of the caller's own subject (R-LIM-034, R-LIM-029).
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: period
+          in: query
+          description: "hour, day (default) or 30d."
+          schema:
+            type: string
+            enum: [hour, day, 30d]
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/users/me/limits:
+    get:
+      operationId: getMyLimits
+      tags: [limits]
+      summary: Which limit applies to the caller
+      description: |
+        R-LIM-035, for a repository the caller can read.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: repository
+          in: query
+          description: "`<projectKey>/<repoKey>`."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitExplanation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  # <<< W-26 limits
 components:
   securitySchemes:
     bearerAuth:
@@ -14516,6 +16381,10 @@ components:
           type: string
         detail:
           type: string
+        cap:
+          type: integer
+          format: int64
+          description: "On an entry of `limit_above_maximum`: the most the figure may be, in its own unit (R-LIM-016, Q-API-352)."
     ProblemType:
       type: object
       required: [code, title, status, description]
@@ -22422,3 +24291,365 @@ components:
           type: [string, "null"]
           description: The project of the account, `null` for an instance-wide one.
     # <<< T-22 search
+    # >>> W-26 limits
+    LimitFigures:
+      type: object
+      description: Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+      additionalProperties: false
+      properties:
+        requestsPerSecond:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        requestsBurst:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        requestsPerHour:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        cachedBytesPerSecond:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        cachedBytesPerHour:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        uncachedBytesPerSecond:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        uncachedBytesPerHour:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        upstreamRequestsPerHour:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        parallelDownloads:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        bytesPerDay:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+        refusedPerHour:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+    LimitProfile:
+      type: object
+      required: [key, name, description, builtin, figures, usedBy, version]
+      properties:
+        key: {type: string}
+        name: {type: string}
+        description: {type: string}
+        builtin: {type: boolean}
+        figures: {$ref: "#/components/schemas/LimitFigures"}
+        usedBy:
+          type: object
+          properties:
+            assignments: {type: integer}
+            projectMaximums: {type: integer}
+        version: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}
+        createdBy: {type: [string, "null"]}
+        updatedAt: {type: string, format: date-time}
+        updatedBy: {type: [string, "null"]}
+    LimitProfileWrite:
+      type: object
+      required: [name, figures]
+      properties:
+        key: {type: string, pattern: "^[a-z][a-z0-9-]{1,31}$"}
+        name: {type: string, minLength: 1, maxLength: 64}
+        description: {type: string, maxLength: 1024}
+        figures: {$ref: "#/components/schemas/LimitFigures"}
+        builtin: {type: boolean, readOnly: true}
+        usedBy: {type: object, readOnly: true}
+        version: {type: integer, readOnly: true}
+        createdAt: {type: string, readOnly: true}
+        createdBy: {type: [string, "null"], readOnly: true}
+        updatedAt: {type: string, readOnly: true}
+        updatedBy: {type: [string, "null"], readOnly: true}
+    LimitProfileList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/LimitProfile"}
+        nextCursor: {type: [string, "null"]}
+    LimitPlace:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [instance, project, repository]}
+        project: {type: string}
+        repository: {type: string}
+    LimitWho:
+      type: object
+      required: [kind]
+      description: "The caller a rule names (R-LIM-011, R-LIM-032)."
+      properties:
+        kind: {type: string, enum: [user, technicalToken, ciProject, address, group, every]}
+        user: {type: string}
+        group: {type: string}
+        technicalToken: {type: string}
+        issuer: {type: string}
+        projectId: {type: string}
+        prefix: {type: string}
+        callerKind: {type: string, enum: [user, technicalToken, ci, anonymous, administrator]}
+        displayName: {type: string, readOnly: true}
+        name: {type: string, readOnly: true}
+        account: {type: string, readOnly: true}
+        projectPath: {type: string, readOnly: true}
+        deleted: {type: boolean, readOnly: true}
+    LimitAssignment:
+      type: object
+      required: [id, place, who, profile, overrides, effective, clamped, capped, builtin, note, version]
+      properties:
+        id: {type: string}
+        place: {$ref: "#/components/schemas/LimitPlace"}
+        who: {$ref: "#/components/schemas/LimitWho"}
+        profile: {type: string}
+        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        effective: {$ref: "#/components/schemas/LimitFigures"}
+        clamped: {type: object, additionalProperties: {type: [integer, "null"]}}
+        capped: {type: boolean}
+        builtin: {type: boolean}
+        note: {type: string}
+        version: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}
+        createdBy: {type: [string, "null"]}
+        updatedAt: {type: string, format: date-time}
+        updatedBy: {type: [string, "null"]}
+    LimitAssignmentWrite:
+      type: object
+      required: [who, profile]
+      properties:
+        who: {$ref: "#/components/schemas/LimitWho"}
+        profile: {type: string}
+        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        note: {type: string, maxLength: 512}
+        id: {type: string, readOnly: true}
+        place: {type: object, readOnly: true}
+        effective: {type: object, readOnly: true}
+        clamped: {type: object, readOnly: true}
+        capped: {type: boolean, readOnly: true}
+        builtin: {type: boolean, readOnly: true}
+        version: {type: integer, readOnly: true}
+        createdAt: {type: string, readOnly: true}
+        createdBy: {type: [string, "null"], readOnly: true}
+        updatedAt: {type: string, readOnly: true}
+        updatedBy: {type: [string, "null"], readOnly: true}
+    LimitAssignmentList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/LimitAssignment"}
+        nextCursor: {type: [string, "null"]}
+    LimitCeiling:
+      type: object
+      properties:
+        uncachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        upstreamRequestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+    LimitCeilings:
+      type: object
+      required: [repository, anonymous, signedIn, version]
+      properties:
+        repository: {type: string}
+        anonymous: {$ref: "#/components/schemas/LimitCeiling"}
+        signedIn: {$ref: "#/components/schemas/LimitCeiling"}
+        version: {type: integer, format: int64}
+        updatedAt: {type: [string, "null"], format: date-time}
+        updatedBy: {type: [string, "null"]}
+    LimitCeilingsWrite:
+      type: object
+      required: [anonymous, signedIn]
+      properties:
+        anonymous: {$ref: "#/components/schemas/LimitCeiling"}
+        signedIn: {$ref: "#/components/schemas/LimitCeiling"}
+        repository: {type: string, readOnly: true}
+        version: {type: integer, readOnly: true}
+        updatedAt: {type: [string, "null"], readOnly: true}
+        updatedBy: {type: [string, "null"], readOnly: true}
+    LimitSettings:
+      type: object
+      required: [mode, blockSeconds, version]
+      properties:
+        mode: {type: string, enum: [audit, enforce]}
+        blockSeconds: {type: integer, minimum: 60, maximum: 86400}
+        version: {type: integer, format: int64}
+        updatedAt: {type: string, format: date-time}
+        updatedBy: {type: [string, "null"]}
+    LimitSettingsPatch:
+      type: object
+      properties:
+        mode: {type: string, enum: [audit, enforce]}
+        blockSeconds: {type: integer, minimum: 60, maximum: 86400}
+    LimitModePreview:
+      type: object
+      required: [period, subjects, refusedRequests, slowedDownloads, blockedSubjects, byFigure, byKind]
+      properties:
+        period:
+          type: object
+          properties:
+            from: {type: string, format: date-time}
+            to: {type: string, format: date-time}
+        subjects: {type: integer}
+        refusedRequests: {type: integer}
+        slowedDownloads: {type: integer}
+        blockedSubjects: {type: integer}
+        byFigure:
+          type: array
+          items:
+            type: object
+            properties:
+              figure: {type: string}
+              subjects: {type: integer}
+              events: {type: integer}
+        byKind:
+          type: array
+          items:
+            type: object
+            properties:
+              kind: {type: string}
+              subjects: {type: integer}
+    LimitProjectMaximum:
+      type: object
+      required: [project, profile, overrides, effective, version]
+      properties:
+        project: {type: string}
+        profile: {type: string}
+        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        effective: {$ref: "#/components/schemas/LimitFigures"}
+        version: {type: integer, format: int64}
+        updatedAt: {type: string, format: date-time}
+        updatedBy: {type: [string, "null"]}
+    LimitProjectMaximumWrite:
+      type: object
+      required: [profile]
+      properties:
+        profile: {type: string}
+        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        project: {type: string, readOnly: true}
+        effective: {type: object, readOnly: true}
+        version: {type: integer, readOnly: true}
+        updatedAt: {type: string, readOnly: true}
+        updatedBy: {type: [string, "null"], readOnly: true}
+    LimitBlock:
+      type: object
+      required: [id, subject, place, startedAt, until, refused, limit]
+      properties:
+        id: {type: string}
+        subject: {type: object}
+        place: {$ref: "#/components/schemas/LimitPlace"}
+        startedAt: {type: string, format: date-time}
+        until: {type: string, format: date-time}
+        refused: {type: integer}
+        limit: {type: integer}
+        liftedAt: {type: [string, "null"], format: date-time}
+        liftedBy: {type: [string, "null"]}
+    LimitBlockList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/LimitBlock"}
+        nextCursor: {type: [string, "null"]}
+    LimitExplanation:
+      type: object
+      required: [subject, mode, administrator, steps, place, rule, effective, clamped, figureSources]
+      properties:
+        subject: {type: object}
+        repository: {type: [string, "null"]}
+        mode: {type: string, enum: [audit, enforce]}
+        administrator: {type: boolean}
+        steps:
+          type: array
+          items: {type: object}
+        place: {$ref: "#/components/schemas/LimitPlace"}
+        rule: {type: [object, "null"]}
+        effective: {$ref: "#/components/schemas/LimitFigures"}
+        clamped: {type: object}
+        figureSources: {type: object, additionalProperties: {type: string}}
+        ceiling: {type: [object, "null"]}
+    LimitSubjectSuggestions:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {type: object}
+    UsageRow:
+      type: object
+      required: [subject, requests, refused, cachedBytes, uncachedBytes, upstreamRequests, limitedEvents, wouldLimitEvents, state]
+      properties:
+        subject: {type: object}
+        requests: {type: integer, format: int64}
+        refused: {type: integer, format: int64}
+        cachedBytes: {type: integer, format: int64}
+        uncachedBytes: {type: integer, format: int64}
+        upstreamRequests: {type: integer, format: int64}
+        limitedEvents: {type: integer, format: int64}
+        wouldLimitEvents: {type: integer, format: int64}
+        utilisation: {type: [object, "null"]}
+        state: {type: string, enum: [normal, close, limitReached, wouldBeLimited, blocked, unlimited]}
+        blockedUntil: {type: [string, "null"], format: date-time}
+    UsageList:
+      type: object
+      required: [period, mode, items]
+      properties:
+        period:
+          type: object
+          properties:
+            from: {type: string, format: date-time}
+            to: {type: string, format: date-time}
+        mode: {type: string, enum: [audit, enforce]}
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/UsageRow"}
+        nextCursor: {type: [string, "null"]}
+    UsageDetail:
+      type: object
+      required: [subject, period, mode, totals, budgets, history, repositories, credentials]
+      properties:
+        subject: {type: object}
+        period: {type: object}
+        mode: {type: string, enum: [audit, enforce]}
+        totals: {type: object}
+        budgets:
+          type: array
+          items: {type: object}
+        history:
+          type: array
+          items: {type: object}
+        repositories:
+          type: array
+          items: {type: object}
+        credentials:
+          type: array
+          items: {type: object}
+    LimitProjectList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [project, maximum, projectRules, repositoryRules]
+            properties:
+              project: {type: string}
+              maximum: {type: [object, "null"]}
+              projectRules: {type: integer}
+              repositoryRules: {type: integer}
+        nextCursor: {type: [string, "null"]}
+    # <<< W-26 limits

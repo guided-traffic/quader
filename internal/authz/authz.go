@@ -66,6 +66,13 @@ const (
 	// content:metadata-read (R-VULN-019), no repository action grants it, and it is a system scope item, so a token's scope
 	// can carry it (R-AUTHZ-013). admin, auditor and security-admin hold it (Q-VULN-27).
 	VulnerabilitiesTriage Capability = "vulnerabilities:triage"
+	// LimitsRead reads the download limits: profiles, rules, ceilings, the mode, project maxima, blocks and the explanation
+	// of any subject; LimitsWrite changes them and raises above the instance (owner, decision 14); UsageRead reads every
+	// subject's usage (R-AUTHZ-040). An Owner of a project holds none of them: its rights over its project's limits come from
+	// its role through the declarations of R-API-082.
+	LimitsRead  Capability = "limits:read"
+	LimitsWrite Capability = "limits:write"
+	UsageRead   Capability = "usage:read"
 )
 
 // RequestKind is the request kind of the request descriptor (R-REPO-003); the

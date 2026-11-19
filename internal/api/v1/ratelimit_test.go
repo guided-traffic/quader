@@ -289,18 +289,34 @@ func TestRateLimitStage(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-016 only /api/v1/, /files/ and the package protocols are limited here", func(t *testing.T) {
+	t.Run("R-API-016 R-LIM-005 only /api/v1/ and the protocol paths are limited here; /files/ and /v2/ are protocol paths", func(t *testing.T) {
 		h, _ := limitedChain(t, tightLimits())
 		for range 10 {
 			if rec := do(h, "GET", "/ui/index.html", token("a")); rec.Code != 200 || rec.Header().Get("RateLimit") != "" {
 				t.Fatalf("%d %v", rec.Code, rec.Header())
 			}
 		}
-		for range 3 {
-			do(h, "GET", "/files/repo/a", token("f"))
+		for _, path := range []string{"/files/repo/a", "/v2/", "/v2/web/docker/library/nginx/manifests/latest"} {
+			p := token("f-" + path)
+			for range 4 {
+				do(h, "GET", path, p)
+			}
+			if rec := do(h, "GET", path, p); rec.Code != 429 || !strings.HasPrefix(rec.Header().Get("RateLimit-Policy"), `"package_read";q=4;`) {
+				t.Fatalf("%s is not limited by package_read: %d %v", path, rec.Code, rec.Header())
+			}
 		}
-		if do(h, "GET", "/files/repo/a", token("f")).Code != 429 {
-			t.Fatal("/files/ is not limited")
+	})
+
+	t.Run("R-API-016 R-LIM-001 the package classes are keyed by the subject: a user's tokens share one bucket", func(t *testing.T) {
+		h, _ := limitedChain(t, tightLimits())
+		alice := func(tok string) httpserver.Principal {
+			return httpserver.Principal{ID: "u-alice", Name: "alice", Kind: httpserver.KindUser, Credential: httpserver.Credential{Method: httpserver.MethodBearer, TokenID: tok}}
+		}
+		for i := range 4 {
+			do(h, "GET", "/api/npm/main/left-pad", alice("t"+strconv.Itoa(i)))
+		}
+		if do(h, "GET", "/api/npm/main/left-pad", alice("t9")).Code != 429 {
+			t.Fatal("a fifth token of the same user has a bucket of its own")
 		}
 	})
 

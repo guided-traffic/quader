@@ -27,9 +27,11 @@ import (
 // upstream presets' (ADR-198): catalog.Facts.UpstreamPresets replaces DefaultUpstreamURL, DefaultExtraHosts and
 // DefaultCredentialHosts. Version 5 is the fetch of a version's (ADR-205): Descriptor.VersionFetch is required of a format with a
 // package view, ViewSizer reports a ViewSize that may be partial or not known, and ItemStore records the download of a document a
-// format answers itself. A format declares the literal it was written against in [Descriptor.ContractVersion], and Register panics
-// on a mismatch.
-const ContractVersion = 5
+// format answers itself. Version 6 is the download limits' (usage-and-limits.md R-LIM-036, Q-LIM-24): Host.Serve may refuse a
+// download with the 429 of the limits before its status line, and a route's kind declares what the limits count (Download: admitted,
+// paced, a parallel lease; Metadata, Computed, Volatile: documents; Upload, Delete, Admin: writes). A format declares the literal it
+// was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 6
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and

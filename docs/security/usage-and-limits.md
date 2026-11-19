@@ -5,10 +5,9 @@ what the usage overview records about people and addresses, and where the bounds
 [spec/usage-and-limits.md](../spec/usage-and-limits.md) (walk item W-26, the owner's decisions of 2026-11-19) and
 [identity-and-authentication.md](../spec/identity-and-authentication.md) R-AUTH-045 and R-AUTH-046 (technical tokens, a
 repository's service accounts). The technical tokens and a repository's service accounts are built (work package 1; the code is
-described on [tokens-and-credentials.md](tokens-and-credentials.md) and [permissions.md](permissions.md#account-grants)); **the
-limits and the usage overview are not built yet**. This page states what the specification promises, so that the work
-packages of [developer/usage-and-limits.md](../developer/usage-and-limits.md) are built against it; it changes to "what the code
-does" as they land. What is built today on the same paths is on [api-edge.md](api-edge.md) (the request classes of R-API-016) and
+described on [tokens-and-credentials.md](tokens-and-credentials.md) and [permissions.md](permissions.md#account-grants)), and so are
+the accounting and the enforcement (work package 2 of [developer/usage-and-limits.md](../developer/usage-and-limits.md)). Where the
+code differs from what the specification promises, the gap is named below. What was built before on the same paths is on [api-edge.md](api-edge.md) (the request classes of R-API-016) and
 [endpoints-and-exposure.md](endpoints-and-exposure.md) (the endpoint's class).
 
 ## What the limits protect, and what they do not
@@ -158,3 +157,11 @@ the client address of R-ARCH-006. Subject: every anonymous budget and block. Dor
 `server.trusted_proxies` that trusts a network the client controls lets it choose an address per request and never meet a budget or
 a block; an empty one behind an edge proxy makes every anonymous caller the proxy's address, so one caller's consumption or block
 is everyone's.
+
+### H-1014 · In Audit mode a block set before the switch stays in Valkey until it expires, unenforced
+
+Component: the block of [R-LIM-025](../spec/usage-and-limits.md#r-lim-025--the-block-after-refused-requests). Subject: every budget
+key blocked in `enforce` shortly before an administrator switched to `audit`. Dormant: stage 7 in `audit` records the marker as
+`would_limit` and refuses nothing (R-LIM-026), and the overview shows the block as active until its end. What makes it real: a switch
+back to `enforce` within the block time refuses the key again for the rest of it, without a new refused request.
+

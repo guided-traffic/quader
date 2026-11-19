@@ -71,7 +71,7 @@ func throwaway(t *testing.T, image string, delifeq bool) string {
 	if !delifeq {
 		delifeqRule = "" // the command does not exist before 9.0, and ACL SETUSER refuses an unknown one
 	}
-	rule := fmt.Sprintf("user %s on >%s resetkeys ~quader:* resetchannels &quader:* -@all +get +set %s+incr +expire +multi +exec +publish +subscribe +unsubscribe +ping +hello +role +client|setname +client|setinfo", v.Username, v.Password, delifeqRule)
+	rule := fmt.Sprintf("user %s on >%s resetkeys ~quader:* resetchannels &quader:* -@all +get +set %s+incr +incrby +expire +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +ping +hello +role +client|setname +client|setinfo", v.Username, v.Password, delifeqRule)
 	args := append([]string{"exec", name, "valkey-cli", "--tls", "--cacert", "/certs/ca.crt", "ACL", "SETUSER"}, strings.Fields(strings.TrimPrefix(rule, "user "))...)
 	if out := docker(t, args...); out != "OK" {
 		t.Fatalf("ACL SETUSER: %s", out)

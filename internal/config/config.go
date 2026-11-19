@@ -64,6 +64,9 @@ type Config struct {
 	// The backup lane (backup.go): quader backup, the restore and the revocation journal (R-BAK-011, R-HA-054).
 	Backup Backup `yaml:"backup"`
 
+	// The counting of the download limits (limits.go, usage-and-limits.md).
+	Limits Limits `yaml:"limits"`
+
 	// ConfigAsCode holds secrets_dir, which the secret references of M2 use.
 	ConfigAsCode AsCode `yaml:"config_as_code"`
 }

@@ -1,4 +1,4 @@
 user default off
 user ops on >ops-valkey-it ~* &* +@all
-user quader on >quader-valkey-it resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
-user bastion on >bastion-valkey-it resetkeys ~quader-bastion:* resetchannels &quader-bastion:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
+user quader on >quader-valkey-it resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +incrby +expire +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
+user bastion on >bastion-valkey-it resetkeys ~quader-bastion:* resetchannels &quader-bastion:* -@all +get +set +delifeq +incr +incrby +expire +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo

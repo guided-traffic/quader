@@ -20,6 +20,8 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
+	"github.com/guided-traffic/quader/internal/limits/httplimit"
 	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
 )
@@ -71,6 +73,9 @@ type TokenOptions struct {
 	// Now is the clock; nil is time.Now.
 	Now func() time.Time
 	Log *slog.Logger
+	// IsAdministrator reports whether the authenticated caller holds the role admin, for the subject of the download limits
+	// (R-LIM-012); nil means nobody is.
+	IsAdministrator func(r *http.Request, p httpserver.Principal) bool
 }
 
 // Token is the token service at GET and POST /v2/_token (R-OCI-004).
@@ -127,6 +132,16 @@ type tokenAnswer struct {
 // per scope entry, sign. The chain's stage did not evaluate the credential of this route; this handler presents it.
 func (h *Token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(APIVersionHeader, APIVersion)
+	// Stage 7 saw the request as anonymous: its request figures are charged here, after the handler authenticated, to the
+	// subject of the presented Quader token when it was valid, to the address otherwise (R-LIM-003).
+	charge := limits.FromContext(r.Context())
+	anonymous := httplimit.CallerOf(r, httpserver.AnonymousPrincipal(), false)
+	charged := false
+	defer func() {
+		if !charged {
+			charge.Retarget(r.Context(), anonymous)
+		}
+	}()
 	tr, err := h.read(w, r)
 	if err != nil {
 		h.refuse(w, r, err)
@@ -151,9 +166,15 @@ func (h *Token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := h.o.Authenticate(r, tr.credential)
 	if err != nil {
+		if errs.KindOf(err) == errs.Unauthenticated && !tr.credential.None() {
+			charge.MarkRefused() // a presented credential that failed: a refused request of the address (R-LIM-003, R-LIM-008)
+		}
 		h.denied(w, r, tr, err)
 		return
 	}
+	charged = true
+	admin := h.o.IsAdministrator != nil && h.o.IsAdministrator(r, p)
+	charge.Retarget(r.Context(), httplimit.CallerOf(r, p, admin))
 	r = r.WithContext(httpserver.WithPrincipal(r.Context(), p))
 	grant, err := h.grant(r, scopes)
 	if err != nil {

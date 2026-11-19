@@ -32,6 +32,7 @@ import (
 	"github.com/guided-traffic/quader/internal/files"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -132,6 +133,9 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request, key qname.Repo, 
 				caller = decided(obs, r, caller, match)
 			}
 		}
+		if charge := limits.FromContext(r.Context()); charge != nil {
+			caller.Access = &refusedAccess{Access: caller.Access, charge: charge}
+		}
 		switch r.Method {
 		case http.MethodGet, http.MethodHead:
 			h.get(w, r, caller, key, p)
@@ -197,6 +201,23 @@ func (a *observedAccess) Decide(ctx context.Context, c authz.Coordinate) authz.D
 	return d
 }
 
+// refusedAccess marks the request refused at the decision point's refusal (a 403, or a 404 that hides existence), which the
+// download limits count as a refused request of the subject (R-LIM-008); the challenge of a caller without a credential is
+// none.
+type refusedAccess struct {
+	files.Access
+	charge *limits.Charge
+}
+
+// Decide implements files.Access.
+func (a *refusedAccess) Decide(ctx context.Context, c authz.Coordinate) authz.Decision {
+	d := a.Access.Decide(ctx, c)
+	if d.Outcome == authz.DenyHidden || d.Outcome == authz.DenyVisible {
+		a.charge.MarkRefused()
+	}
+	return d
+}
+
 // splitPath cuts "/files/<project>/<key>/<rest>" with qname.ParseAddress, the one parser of these paths. rest
 // stays escaped.
 func splitPath(escaped string) (key qname.Repo, rest string, ok bool) {
@@ -256,9 +277,13 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request, caller files.Calle
 		h.index(w, r, caller, key, p)
 		return
 	}
+	// A file of /files/ is a download of the generic format's protocol (R-LIM-007): admitted before its status line.
+	charge := limits.FromContext(r.Context())
+	charge.Served(res.Item.RepoID)
 	if err := edge.ServeItem(w, r, res.Item,
 		func(rng *items.Range) (io.ReadCloser, error) { return h.svc.Open(r.Context(), res.Item, rng) },
 		edge.ServeOptions{
+			Admit:  func() error { return charge.Admit(r.Context()) },
 			Buffer: h.buf,
 			Served: func() { h.svc.Served(r.Context(), caller, res, r.URL.Query().Get("stats") != "false") },
 		}); err != nil {

@@ -118,6 +118,19 @@ type LimiterSet struct {
 
 	mu       sync.Mutex
 	limiters map[string]*Limiter
+	// fallbacks are further mechanisms that report quader_ratelimit_fallback under a name of their own (the download limits,
+	// R-LIM-019): 1 while fn reports the replica's share.
+	fallbacks map[string]func() bool
+}
+
+// AddFallback reports a further mechanism in quader_ratelimit_fallback{limiter=name}: 1 while fn returns true.
+func (ls *LimiterSet) AddFallback(name string, fn func() bool) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	if ls.fallbacks == nil {
+		ls.fallbacks = map[string]func() bool{}
+	}
+	ls.fallbacks[name] = fn
 }
 
 // NewLimiterSet creates the factory of the limiters of one replica.
@@ -329,6 +342,34 @@ func (l *Limiter) TakeNAt(ctx context.Context, bucket string, n int, at time.Tim
 	return l.record(l.takeLocal(bucket, now, l.share(), n, ModeFallback))
 }
 
+// BatchTake is TakeAt for a check that shares its round trip with others: it adds the request's counter to b (the class of
+// R-API-016 travels with the request windows of the download limits, R-LIM-017) and returns the function that decides once
+// the batch ran, from its results or, when the batch failed or Valkey cannot be used, from the replica's share. A limiter of
+// replica scope decides at once and adds nothing.
+func (l *Limiter) BatchTake(b *LimitBatch, bucket string, at time.Time) func(res []LimitResult, err error) Verdict {
+	now := l.set.now()
+	if at.IsZero() || at.After(now) {
+		at = now
+	}
+	if l.scope == ScopeReplica {
+		v := l.record(l.takeLocal(bucket, now, 1, 1, ModeReplica))
+		return func([]LimitResult, error) Verdict { return v }
+	}
+	idx, el := l.windowIndex(at)
+	op := b.Add(LimitOp{Kind: OpClassAdd, Figure: l.keyName, Bucket: l.bucketKey(bucket), Window: l.window, Index: idx, N: 1})
+	return func(res []LimitResult, err error) Verdict {
+		if err == nil && op < len(res) {
+			l.inFallback.Store(false)
+			return l.record(l.windowVerdict(res[op].Cur, res[op].Prev, el, 1))
+		}
+		if l.set.store != nil {
+			l.set.store.degraded()
+		}
+		l.inFallback.Store(true)
+		return l.record(l.takeLocal(bucket, now, l.share(), 1, ModeFallback))
+	}
+}
+
 // windowVerdict applies the sliding-window rule to the counters of a check
 // that counted the request: admitted when previous x (1 - elapsed / W) +
 // current <= burst.
@@ -535,7 +576,18 @@ func (c fallbackCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, l := range c.ls.limiters {
 		ls = append(ls, l)
 	}
+	extra := make(map[string]func() bool, len(c.ls.fallbacks))
+	for name, fn := range c.ls.fallbacks {
+		extra[name] = fn
+	}
 	c.ls.mu.Unlock()
+	for name, fn := range extra {
+		v := 0.0
+		if fn() {
+			v = 1
+		}
+		ch <- prometheus.MustNewConstMetric(fallbackDesc, prometheus.GaugeValue, v, name)
+	}
 	down := c.ls.store != nil && !c.ls.store.available()
 	for _, l := range ls {
 		if l.scope != ScopeCluster {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -105,6 +106,9 @@ type stream struct {
 	dead    bool
 	// done is set by finish: every byte went out.
 	done bool
+	// charge is the leader's charge of the download limits: what the stream writes was counted as uncached bytes where it was
+	// read, so the counting writer around the response passes it uncounted and unpaced (R-LIM-006). Nil counts nothing.
+	charge *limits.Charge
 }
 
 func newStream(w http.ResponseWriter) *stream {
@@ -160,7 +164,9 @@ func (s *stream) flushLocked(b []byte) bool {
 		s.started = true
 	}
 	_ = s.ctl.SetWriteDeadline(time.Now().Add(writeTimeout))
+	s.charge.BeginStream()
 	_, err := s.w.Write(b)
+	s.charge.EndStream()
 	return err == nil
 }
 

@@ -22,6 +22,10 @@ type ServeOptions struct {
 	// completely: 200 with the whole file, or 206 from byte 0 (R-STOR-015). HEAD,
 	// 304 and a range that starts later are not served in that sense.
 	Served func()
+	// Admit is the check of the download limits before a download starts (usage-and-limits.md R-LIM-021): it runs for a GET
+	// that writes a body (200 or 206), after the conditionals and the range were evaluated and before open and the status
+	// line. A refusal is returned like the error of open: nothing was written and the caller renders it. Nil admits.
+	Admit func() error
 }
 
 // CacheControl is `private, no-cache` for an authenticated request and `no-cache`
@@ -95,6 +99,11 @@ func ServeItem(w http.ResponseWriter, r *http.Request, it items.Item, open func(
 	var rng *items.Range
 	if rr == partialContent {
 		rng = &items.Range{Offset: start, Length: length}
+	}
+	if o.Admit != nil {
+		if err := o.Admit(); err != nil { // before the status line, like a failure of open
+			return err
+		}
 	}
 	body, err := open(rng)
 	if err != nil { // before the status line: the caller's to answer

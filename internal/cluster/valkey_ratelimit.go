@@ -14,7 +14,8 @@ import (
 // as a hash (R-ARCH-030) and the window as the integer index of the current
 // window, so a window's counter expires on its own two windows after it opened.
 
-// maxLimiterWindow is the longest window of a limiter.
+// maxLimiterWindow is the longest window of a limiter. The figures of the download limits have windows up to a day
+// (MaxLimitWindow) in a family of their own (lim, valkey_limits.go), whose keys live 48 hours.
 const maxLimiterWindow = 12 * time.Hour
 
 // windowKeys forms the keys of the current and the previous window.

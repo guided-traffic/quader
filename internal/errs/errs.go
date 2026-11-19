@@ -99,6 +99,9 @@ type FieldError struct {
 	Pointer string `json:"pointer"`
 	Code    string `json:"code"`
 	Detail  string `json:"detail"`
+	// Cap is the most a figure may be, in the figure's own unit, on an entry of limit_above_maximum (usage-and-limits.md
+	// R-LIM-016, Q-API-352); absent on every other entry.
+	Cap *int64 `json:"cap,omitempty"`
 }
 
 // Error is the one error type that is rendered to clients.

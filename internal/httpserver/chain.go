@@ -100,6 +100,9 @@ type Chain struct {
 	// that is present but invalid gives 401, R-ARCH-005). Nil means every caller is
 	// anonymous.
 	Authenticate func(*http.Request) (Principal, error)
+	// AuthFailed learns every refusal of stage 6 before it is answered: the download limits record a failed credential as
+	// a request and a refused request of the client's address (usage-and-limits.md R-LIM-003). Nil learns nothing.
+	AuthFailed func(*http.Request, error)
 
 	// Bastion is the stage of the Bastion interface (R-BAS-008, Q-BAS-52): it runs after stage 5 and before
 	// the authentication of stage 6, because it recognizes a Bastion request (and takes the Bastion token out
@@ -340,6 +343,9 @@ func (c Chain) authStage(next http.Handler) http.Handler {
 		if c.Authenticate != nil {
 			var err error
 			if p, err = c.Authenticate(r); err != nil {
+				if c.AuthFailed != nil {
+					c.AuthFailed(r, err)
+				}
 				Problem(w, r, err)
 				return
 			}

@@ -160,6 +160,7 @@ func (a *App) startEndpoint(rt *endpointRuntime, router *httpserver.Router) erro
 		Authenticate: a.authenticate(rt), Bastion: bastion, Preflight: part[apiArea](a.parts).preflight, RateLimit: a.endpointStage(rt), Replica: a.id.Instance, ReplicaHeader: rt.ep.ReplicaHeader(),
 		Draining:   a.health.Draining,
 		ExpectMark: blob.WithAwaitedBody,
+		AuthFailed: a.limitsFailedCredential(),
 	}.Handler()
 
 	name := "client"

@@ -16,6 +16,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/internal/proxy/upstream"
@@ -83,6 +84,10 @@ type fetcher struct {
 	plain *http.Request
 	// unconditional: the next GET carries no validators of the stored copy (a revalidation said the document moved).
 	unconditional bool
+	// charge is what the fetch charges to the download limits: the leader's charge, or the system's for a background request
+	// (R-LIM-006). Nil counts nothing. exchanges counts the upstream requests the fetch sent; step 9a counted the first.
+	charge    *limits.Charge
+	exchanges int
 }
 
 // exchanged returns the repository's share of the fetch's slot: its upstream exchange has ended.
@@ -116,6 +121,20 @@ func (f *fetcher) run(ctx context.Context) flightResult {
 	if err := f.discover(ctx); err != nil {
 		return resultOf(err)
 	}
+	// Step 9a (R-LIM-022): the fetch is an upstream request of the request that leads it, checked against its budget key and
+	// the remote's ceiling before anything is sent. A refusal is the leader's own: a request that waited for the flight
+	// fetches for itself under its own budget. A background request passes no 9a; its exchanges are the system's (Q-LIM-19).
+	f.charge = limits.FromContext(ctx)
+	if rq.background() {
+		f.charge = e.o.Limits.System(rem.id)
+		defer f.charge.Done()
+	} else if err := f.charge.MayFetch(ctx, rem.id, rq.Kind == Artifact && f.st.get); err != nil {
+		f.st.budget = err
+		return flightResult{own: err}
+	}
+	// The fetch charges its leader's budget key also after the leader's client left (a detached fetch, Q-LIM-5).
+	f.charge.Hold()
+	defer f.charge.Release()
 	cl, err := e.o.Clients.For(ctx, rem.Repo, rem.Settings)
 	if err != nil {
 		return flightResult{err: err}
@@ -336,6 +355,13 @@ func (f *fetcher) request(ctx context.Context) (*http.Request, error) {
 // token the last challenge of the repository names, and, when the upstream answers 401, with the token that challenge names. The
 // returned cancel ends the request and its body.
 func (f *fetcher) send(ctx context.Context, req *http.Request) (resp *http.Response, cancel context.CancelFunc, idle *atomic.Bool, err error) {
+	// One exchange is one upstream request of the download limits, its handshake, redirects and retry included (R-LIM-006):
+	// step 9a counted the fetch's first; a later one (the GET after a revalidation) and every exchange of a background
+	// request reach the counters at the flush.
+	f.exchanges++
+	if f.exchanges > 1 || f.rq.background() {
+		f.charge.AddUpstream(1)
+	}
 	// A repository whose credential is exchanged at a single-sign-on realm sends the exchanged token and never the credential (Q-ANS-51).
 	if resp, cancel, idle, handled, err := f.sendExchanged(ctx, req); handled {
 		return resp, cancel, idle, err
@@ -618,10 +644,15 @@ func asUpstreamError(err error) error {
 
 // bodyReader returns the reader the item is spooled from: the response body bounded
 // by the size limit.
-func (f *fetcher) bodyReader(resp *http.Response, tee io.Writer) io.Reader {
-	var r io.Reader = &limitReader{r: resp.Body, max: f.limit()}
+//
+// The bytes read are the uncached bytes of the request that leads the fetch (R-LIM-006), counted here once, also those the
+// leader's own client receives through the stream; with an uncachedBytesPerSecond the read is paced, and with it the stream
+// and every request that waits (R-LIM-023). The caller ends the pace with done.
+func (f *fetcher) bodyReader(ctx context.Context, resp *http.Response, tee io.Writer) (r io.Reader, done func()) {
+	counted := f.charge.Reader(ctx, &limitReader{r: resp.Body, max: f.limit()})
+	r = counted
 	if tee != nil {
 		r = io.TeeReader(r, tee)
 	}
-	return r
+	return r, counted.Done
 }

@@ -160,6 +160,12 @@ type Options struct {
 	Repositories RepositoryServices
 	// <<< M1 repository
 
+	// >>> W-26 limits
+	// Limits holds the services of the download limits and the usage overview (limits_api.go, usage_api.go); without a
+	// store their operations answer 503.
+	Limits LimitsServices
+	// <<< W-26 limits
+
 	// >>> M6b mirror
 	// Mirror holds the services of the mirror's status and run operations (mirror_api.go); the zero value reads
 	// and writes through API.Store.

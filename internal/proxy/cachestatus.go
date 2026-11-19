@@ -29,7 +29,7 @@ type CacheStatus struct {
 	// TTL is the remaining freshness of a fresh hit; a negative value says the item has
 	// none (an artifact never expires) and leaves the parameter out.
 	TTL time.Duration
-	// Detail is "served-stale", "negative", or "".
+	// Detail is "served-stale", "negative", "stale-budget", or "".
 	Detail string
 }
 
@@ -37,6 +37,8 @@ type CacheStatus struct {
 const (
 	detailServedStale = "served-stale"
 	detailNegative    = "negative"
+	// detailStaleBudget is an expired document served because the caller's upstream budget is used up (R-LIM-022).
+	detailStaleBudget = "stale-budget"
 )
 
 // Header renders the status:

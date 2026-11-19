@@ -134,6 +134,9 @@ const (
 	// FiltersDifferently renders the package document otherwise on the path that filters it for the caller, also when
 	// the filter hides nothing: the control run of check 13's fifth rule (Q-AUTHZ-255).
 	FiltersDifferently Defect = "filters-differently"
+	// WritesOwnDownload answers the tarball by writing the item's bytes itself instead of through Host.Serve: the download
+	// escapes the admission and the pacing of the download limits, check 16 (usage-and-limits.md R-LIM-036).
+	WritesOwnDownload Defect = "writes-own-download"
 )
 
 // Option adjusts the format; it is not a defect.
@@ -860,6 +863,16 @@ func (f Format) tarballGet(ctx context.Context, rq *formats.Request, w http.Resp
 	}
 	if !ok {
 		return errs.E(errs.NotFound, errs.CodeNotFound, "The file does not exist.")
+	}
+	if f.has(string(WritesOwnDownload)) {
+		body, err := rq.Host.Items().Open(ctx, it)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = body.Close() }()
+		w.WriteHeader(http.StatusOK)
+		_, err = io.Copy(w, body)
+		return err
 	}
 	f.strip(w)
 	err = rq.Host.Items().Serve(ctx, rq, w, it, formats.ServeStored)

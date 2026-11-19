@@ -641,6 +641,12 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 	if err := s.h.f.ServeCheck(ctx, s.h, it.Ref.Repo, it.Ref, mode); err != nil {
 		return err
 	}
+	// The admission of a download, before the status line and before any byte, as the production Host's (R-LIM-021).
+	if a := s.h.opts.Admit; a != nil && rq != nil && rq.Route != nil && rq.Route.Kind == formats.Download && rq.Method == http.MethodGet {
+		if err := a(ctx, rq); err != nil {
+			return err
+		}
+	}
 	s.h.mu.Lock()
 	s.h.served = true
 	s.h.servedPaths = append(s.h.servedPaths, it.Ref.Path)

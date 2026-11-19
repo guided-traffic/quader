@@ -12,28 +12,28 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
+	"github.com/guided-traffic/quader/internal/limits/httplimit"
 	"github.com/guided-traffic/quader/internal/qname"
 )
 
-// The general rate-limit classes of /api/v1/, /files/ and the package protocols
-// under /api/<format>/ (R-API-016). Each class is a cluster-scoped limiter of
-// R-ARCH-034, so a bucket admits the same budget whichever replica a request
-// reaches.
+// Stage 7 of the chain (R-ARCH-005): the general rate-limit classes of the management API (R-API-016) and, on the protocol
+// paths, the download limits of usage-and-limits.md. Each class is a cluster-scoped limiter of R-ARCH-034, so a bucket admits
+// the same budget whichever replica a request reaches.
 //
-//	read       safe methods                       bucket: the principal (token ID, or session user)
-//	write      unsafe methods                     bucket: the principal
-//	anonymous  requests without credentials       bucket: the client address
+//	read       safe methods on /api/v1/            bucket: the principal (token ID, or session user)
+//	write      unsafe methods on /api/v1/          bucket: the principal
+//	anonymous  requests without credentials        bucket: the client address
 //
-// The package protocols have the same three classes with budgets and buckets of
-// their own (package_read, package_write, package_anonymous), so an install that
-// fetches a thousand tarballs does not use up the budget of the same token's
-// management API, and a flood of package requests cannot starve it. package_anonymous leaves out a request on a known
-// repository whose artifacts are not public, which the decision point answers with the challenge (RateLimitOptions.Challenged,
-// Q-API-290).
+// The protocol paths (/api/<format>/…, /files/… and everything below /v2/, R-LIM-005) are counted by the figures of the
+// download limits, per subject and place (limits.Engine.Check, one round trip). Beside them the package classes of R-API-016
+// keep a bucket of their own per subject (R-LIM-001): package_read and package_anonymous while the mode is audit, the safety
+// net of Audit mode (Q-LIM-4), package_write in both modes until the upload figures exist (Q-LIM-27). The class counter
+// travels in the same round trip as the request windows. package_anonymous and the figures leave out a request on a known
+// repository whose artifacts are not public, which the decision point answers with the challenge
+// (RateLimitOptions.Challenged, Q-API-290, R-LIM-005).
 //
-// The stage is the chain's stage 7 (R-ARCH-005): it runs after authentication,
-// so the principal is known. The class an endpoint applies on top of these is
-// R-EP-015.
+// The stage runs after authentication, so the principal is known. The class an endpoint applies on top of these is R-EP-015.
 
 // Names of the limiters and values of the class label.
 const (
@@ -62,6 +62,12 @@ type RateLimitOptions struct {
 	// its route, at no more cost than a decision in memory: [ChallengedByLevels]. The class package_anonymous does not charge
 	// such a request (Q-API-290). Nil charges every package request without a credential.
 	Challenged func(r *http.Request) bool
+	// Limits is the engine of the download limits; nil is a replica without them: the package classes then hold in every
+	// mode, keyed by the subject.
+	Limits *limits.Engine
+	// IsAdministrator reports whether the caller's principal holds the role admin now, whatever the token's scope: the
+	// administrator of R-LIM-012 (Q-LIM-18). Nil means nobody is.
+	IsAdministrator func(r *http.Request) bool
 }
 
 // LevelReader is the part of the grant index [ChallengedByLevels] reads; *authz.Index implements it.
@@ -98,11 +104,23 @@ type classLimiter struct {
 	limited prometheus.Counter
 }
 
-// NewRateLimit builds stage 7. With api.rate_limits.enabled false, or without
-// limiters, it passes every request through.
+// NewRateLimit builds stage 7. With api.rate_limits.enabled false, or without limiters, the classes of R-API-016 are off; the
+// download limits of the protocol paths are not R-API-016's and stay while there is an engine (o.Limits).
 func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 	if !o.Config.Enabled || o.Limiters == nil {
-		return func(next http.Handler) http.Handler { return next }, nil
+		if o.Limits == nil {
+			return func(next http.Handler) http.Handler { return next }, nil
+		}
+		st := protocolStage{o: o, classesOff: true}
+		return func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if httplimit.ProtocolPath(r.URL.Path) && familyServed(r) {
+					st.serve(w, r, next)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		}, nil
 	}
 	rejected := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "quader_api_rate_limited_total",
@@ -130,19 +148,22 @@ func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 		LimiterPackageWrite:     mk(LimiterPackageWrite, o.Config.PackageWrite.RequestsPerSecond, o.Config.PackageWrite.Burst),
 		LimiterPackageAnonymous: mk(LimiterPackageAnonymous, o.Config.PackageAnonymous.RequestsPerSecond, o.Config.PackageAnonymous.Burst),
 	}
+	st := protocolStage{o: o, classes: classes}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !limitedPath(r.URL.Path) || !familyServed(r) || (o.Config.ExemptAdmins && o.IsAdmin != nil && o.IsAdmin(r)) {
+			if !limitedPath(r.URL.Path) || !familyServed(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+			if httplimit.ProtocolPath(r.URL.Path) {
+				st.serve(w, r, next)
+				return
+			}
+			if o.Config.ExemptAdmins && o.IsAdmin != nil && o.IsAdmin(r) {
 				next.ServeHTTP(w, r)
 				return
 			}
 			name, bucket := classify(r)
-			if name == LimiterPackageAnonymous && o.Challenged != nil && o.Challenged(r) {
-				// The decision point answers it with the challenge; a client with credentials repeats it with them, and the
-				// repetition is charged to its principal (Q-API-290).
-				next.ServeHTTP(w, r)
-				return
-			}
 			c := classes[name]
 			v := c.l.TakeAt(r.Context(), bucket, httpserver.InfoFrom(r.Context()).Received)
 			setRateLimitFields(w, c, name, v)
@@ -151,19 +172,124 @@ func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 				return
 			}
 			c.limited.Inc()
-			httpserver.Problem(w, r, errs.E(errs.RateLimited, errs.CodeRateLimited,
-				"Too many requests; retry after the period in the Retry-After header.", errs.WithRetryAfter(v.RetryAfter)))
+			httpserver.Problem(w, r, classRefusal(v))
 		})
 	}, nil
 }
 
-// limitedPath reports whether a path lies in a family the general classes limit. The stage asks [familyServed] as well:
-// a path of a family the endpoint does not serve is limited no more than an unknown path is.
+func classRefusal(v cluster.Verdict) error {
+	return errs.E(errs.RateLimited, errs.CodeRateLimited,
+		"Too many requests; retry after the period in the Retry-After header.", errs.WithRetryAfter(v.RetryAfter))
+}
+
+// protocolStage is stage 7 on a protocol path (R-LIM-005): the subject, the place, the request windows and the block of the
+// download limits, and the package class of R-API-016 that is in force, in one round trip.
+type protocolStage struct {
+	o       RateLimitOptions
+	classes map[string]classLimiter
+	// classesOff: api.rate_limits.enabled is false, so no class of R-API-016 applies.
+	classesOff bool
+}
+
+func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	ctx := r.Context()
+	p := httpserver.PrincipalFrom(ctx)
+	// A preflight is not a request of the protocol, and a request without a credential that the decision point is certain to
+	// answer with the challenge is no request of a subject (Q-API-290, R-LIM-005).
+	if r.Method == http.MethodOptions || (p.Anonymous && s.o.Challenged != nil && s.o.Challenged(r)) {
+		next.ServeHTTP(w, r)
+		return
+	}
+	admin := s.o.IsAdministrator != nil && s.o.IsAdministrator(r)
+	caller := httplimit.CallerOf(r, p, admin)
+	subject, _ := limits.SubjectOf(caller)
+	mode := limits.ModeAudit
+	if s.o.Limits != nil {
+		mode = s.o.Limits.Mode()
+	}
+	name := packageClass(r, p, mode)
+	if s.classesOff {
+		name = ""
+	}
+	if name != "" && s.o.Config.ExemptAdmins && s.o.IsAdmin != nil && s.o.IsAdmin(r) {
+		name = ""
+	}
+	received := httpserver.InfoFrom(ctx).Received
+	if s.o.Limits == nil {
+		if name == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		c := s.classes[name]
+		v := c.l.TakeAt(ctx, subject.String(), received)
+		setRateLimitFields(w, c, name, v)
+		if !v.Allowed {
+			c.limited.Inc()
+			httpserver.Problem(w, r, classRefusal(v))
+			return
+		}
+		next.ServeHTTP(w, r)
+		return
+	}
+	charge := s.o.Limits.Begin(caller, httplimit.Repo(r))
+	if r.URL.Path == httplimit.TokenPath {
+		charge.DeferRequestFigures() // the token service charges its subject after it authenticated (R-LIM-003)
+	}
+	var check limits.ClassCheck
+	if name != "" {
+		c := s.classes[name]
+		check = func(b *cluster.LimitBatch) func([]cluster.LimitResult, error) error {
+			decide := c.l.BatchTake(b, subject.String(), received)
+			return func(res []cluster.LimitResult, err error) error {
+				v := decide(res, err)
+				setRateLimitFields(w, c, name, v)
+				if v.Allowed {
+					return nil
+				}
+				c.limited.Inc()
+				return classRefusal(v)
+			}
+		}
+	}
+	st := s.o.Limits.Check(ctx, charge, received, check)
+	httplimit.SetPolicies(w.Header(), st.Policies)
+	if st.Err != nil {
+		httplimit.Log(ctx, charge)
+		s.o.Limits.Finish(charge)
+		httpserver.Problem(w, r, st.Err)
+		return
+	}
+	cw := httplimit.Wrap(ctx, w, s.o.Limits, charge)
+	defer func() {
+		cw.Close()
+		httplimit.Log(ctx, charge)
+		s.o.Limits.Finish(charge)
+	}()
+	next.ServeHTTP(cw, r.WithContext(limits.WithCharge(ctx, charge)))
+}
+
+// packageClass is the class of R-API-016 in force for a protocol request (Q-LIM-4, Q-LIM-27): package_write for an unsafe
+// method in both modes, package_read and package_anonymous in audit only; "" for none.
+func packageClass(r *http.Request, p httpserver.Principal, mode limits.Mode) string {
+	safe := r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions
+	switch {
+	case p.Anonymous && mode != limits.ModeEnforce:
+		return LimiterPackageAnonymous
+	case !safe:
+		return LimiterPackageWrite
+	case mode == limits.ModeEnforce:
+		return ""
+	}
+	return LimiterPackageRead
+}
+
+// limitedPath reports whether a path lies in a family stage 7 limits: the management API and the protocol paths. The stage
+// asks [familyServed] as well: a path of a family the endpoint does not serve is limited no more than an unknown path is.
 func limitedPath(p string) bool {
 	if p == ExchangePath {
 		return false
 	}
-	return isAPIPath(p) || strings.HasPrefix(p, "/files/") || isPackagePath(p)
+	return isAPIPath(p) || httplimit.ProtocolPath(p)
 }
 
 // ExchangePath is the CI token exchange (R-CI-007). The general API rate limit skips it: its own limiters,
@@ -172,17 +298,10 @@ func limitedPath(p string) bool {
 // anonymous class of every other caller of that address.
 const ExchangePath = "/api/v1/auth/oidc/token"
 
-// isPackagePath is a request on a package protocol: /api/<format>/<repository>/….
-func isPackagePath(p string) bool { return strings.HasPrefix(p, "/api/") && !isAPIPath(p) }
-
-// classify picks the limiter and the bucket of a request.
+// classify picks the limiter and the bucket of a request of the management API.
 func classify(r *http.Request) (limiter, bucket string) {
 	p := httpserver.PrincipalFrom(r.Context())
-	packages := isPackagePath(r.URL.Path)
 	if p.Anonymous {
-		if packages {
-			return LimiterPackageAnonymous, httpserver.InfoFrom(r.Context()).Client.String()
-		}
 		return LimiterAnonymous, httpserver.InfoFrom(r.Context()).Client.String()
 	}
 	limiter = LimiterWrite
@@ -190,9 +309,6 @@ func classify(r *http.Request) (limiter, bucket string) {
 	// are POSTs that change no package content, and the write class is sized for a person's changes (R-BAS-008).
 	if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions || p.Kind == httpserver.KindBastion {
 		limiter = LimiterRead
-	}
-	if packages {
-		limiter = "api_package_" + classOf(limiter)
 	}
 	switch {
 	case p.Credential.TokenID != "":

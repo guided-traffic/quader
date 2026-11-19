@@ -33,14 +33,21 @@ import (
 // authentication stage takes, and auth.flow_starts in the take form (burst =
 // auth.rate_limit.starts_per_address per minute), which the login's start route
 // and local login take. Only a replica with a client listener has it.
-func (a *App) wireLimits(ctx context.Context, in infra) (limitsArea, error) {
+func (a *App) wireLimits(ctx context.Context, in infra, dla downloadLimitsArea) (limitsArea, error) {
 	count := &replicaCount{a: a}
 	if err := a.startComponent(ctx, count); err != nil {
 		return limitsArea{}, err
 	}
+	if dla.share != nil { // the download limits divide by the same n while Valkey is unavailable (R-LIM-019)
+		get := count.Get
+		dla.share.Store(&get)
+	}
 	ls, err := cluster.NewLimiterSet(cluster.LimiterOptions{Valkey: in.vk, Registry: a.tele.metrics.Registry(), LiveReplicas: count.Get})
 	if err != nil {
 		return limitsArea{}, err
+	}
+	if dla.engine != nil { // quader_ratelimit_fallback{limiter="limits"} (R-LIM-030)
+		ls.AddFallback("limits", dla.engine.Fallback)
 	}
 	n := a.cfg.Auth.RateLimit.FailuresPerAddress
 	s := a.cfg.Auth.RateLimit.StartsPerAddress
@@ -56,7 +63,7 @@ func (a *App) wireLimits(ctx context.Context, in infra) (limitsArea, error) {
 
 // wireAPI is the api area: the CORS and header stage and the request limits that
 // form the chain's stage 7 (R-API-016, R-API-017, R-API-018).
-func (a *App) wireAPI(_ context.Context, lim limitsArea, az authzArea) (apiArea, error) {
+func (a *App) wireAPI(_ context.Context, lim limitsArea, az authzArea, dl downloadLimitsArea) (apiArea, error) {
 	if err := requireInputs(AreaAPI, given("limiter set", lim.set), given("authorizer", az.engine)); err != nil {
 		return apiArea{}, err
 	}
@@ -80,7 +87,7 @@ func (a *App) wireAPI(_ context.Context, lim limitsArea, az authzArea) (apiArea,
 	}
 	limit, err := v1.NewRateLimit(v1.RateLimitOptions{
 		Config: cfg.RateLimits, Limiters: lim.set, IsAdmin: isAdmin, Registry: a.tele.metrics.Registry(),
-		Challenged: v1.ChallengedByLevels(levels),
+		Challenged: v1.ChallengedByLevels(levels), Limits: dl.engine, IsAdministrator: a.isAdministrator(az),
 	})
 	if err != nil {
 		return apiArea{}, err

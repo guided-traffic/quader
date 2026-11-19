@@ -561,6 +561,8 @@ func (a *App) startClient() error {
 			DebKeys: a.debKeyStore(), Ansible: a.ansibleStore(), Reindexers: a.reindexers(),
 			// The banner and the read-only maintenance mode (R-OPS-024, R-OPS-025).
 			SystemState: part[infra](a.parts).sys,
+			// The download limits and the usage overview (wire_limits.go).
+			Limits: a.limitsAPI(),
 		})
 		// The router drops the routes of a family the endpoint's surface does not hold.
 		api.Register(router)

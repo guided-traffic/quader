@@ -683,6 +683,90 @@ type Job struct {
 	RanBy         pgtype.UUID
 }
 
+type LimitAssignment struct {
+	ID           pgtype.UUID
+	PlaceKind    string
+	ProjectID    pgtype.UUID
+	RepositoryID pgtype.Int8
+	WhoKind      string
+	WhoRef       string
+	ProfileID    pgtype.UUID
+	Overrides    json.RawMessage
+	Capped       bool
+	Builtin      bool
+	Note         string
+	Version      int64
+	CreatedAt    pgtype.Timestamptz
+	CreatedBy    pgtype.UUID
+	UpdatedAt    pgtype.Timestamptz
+	UpdatedBy    pgtype.UUID
+}
+
+type LimitBlock struct {
+	ID           pgtype.UUID
+	SubjectKind  string
+	SubjectRef   string
+	Place        string
+	StartedAt    pgtype.Timestamptz
+	Until        pgtype.Timestamptz
+	RefusedCount int64
+	RefusedLimit int64
+	LiftedAt     pgtype.Timestamptz
+	LiftedBy     pgtype.UUID
+}
+
+type LimitCeiling struct {
+	RepositoryID            int64
+	Class                   string
+	UncachedBytesPerHour    pgtype.Int8
+	UpstreamRequestsPerHour pgtype.Int8
+	Version                 int64
+	UpdatedAt               pgtype.Timestamptz
+	UpdatedBy               pgtype.UUID
+}
+
+type LimitProfile struct {
+	ID                      pgtype.UUID
+	Key                     string
+	Name                    string
+	Description             string
+	Builtin                 bool
+	RequestsPerSecond       pgtype.Int8
+	RequestsBurst           pgtype.Int8
+	RequestsPerHour         pgtype.Int8
+	CachedBytesPerSecond    pgtype.Int8
+	CachedBytesPerHour      pgtype.Int8
+	UncachedBytesPerSecond  pgtype.Int8
+	UncachedBytesPerHour    pgtype.Int8
+	UpstreamRequestsPerHour pgtype.Int8
+	ParallelDownloads       pgtype.Int8
+	BytesPerDay             pgtype.Int8
+	RefusedPerHour          pgtype.Int8
+	Version                 int64
+	CreatedAt               pgtype.Timestamptz
+	CreatedBy               pgtype.UUID
+	UpdatedAt               pgtype.Timestamptz
+	UpdatedBy               pgtype.UUID
+}
+
+type LimitProjectMaximum struct {
+	ProjectID pgtype.UUID
+	ProfileID pgtype.UUID
+	Overrides json.RawMessage
+	Version   int64
+	UpdatedAt pgtype.Timestamptz
+	UpdatedBy pgtype.UUID
+}
+
+type LimitSetting struct {
+	ID           bool
+	Mode         string
+	BlockSeconds int32
+	Version      int64
+	UpdatedAt    pgtype.Timestamptz
+	UpdatedBy    pgtype.UUID
+}
+
 type MirrorPending struct {
 	RepoID    int64
 	Name      string
@@ -1220,6 +1304,54 @@ type UploadSessionTail struct {
 	Writer    pgtype.UUID
 	Size      int64
 	Sha256    []byte
+}
+
+type UsageBucket struct {
+	Granularity       string
+	BucketStart       pgtype.Timestamptz
+	SubjectKind       string
+	SubjectRef        string
+	CredentialRef     string
+	Place             string
+	RepositoryID      pgtype.Int8
+	Requests          int64
+	Refused           int64
+	CachedBytes       int64
+	UncachedBytes     int64
+	UpstreamRequests  int64
+	BackgroundFetches int64
+	LimitRequestsHour pgtype.Int8
+	LimitCachedHour   pgtype.Int8
+	LimitUncachedHour pgtype.Int8
+	LimitUpstreamHour pgtype.Int8
+	LimitBytesDay     pgtype.Int8
+}
+
+type UsageDailySummary struct {
+	Day               pgtype.Date
+	RepositoryID      pgtype.Int8
+	SubjectKind       string
+	Subjects          int64
+	Requests          int64
+	Refused           int64
+	CachedBytes       int64
+	UncachedBytes     int64
+	UpstreamRequests  int64
+	BackgroundFetches int64
+	LimitedEvents     int64
+	WouldLimitEvents  int64
+}
+
+type UsageLimitEvent struct {
+	Granularity  string
+	BucketStart  pgtype.Timestamptz
+	SubjectKind  string
+	SubjectRef   string
+	Place        string
+	RepositoryID pgtype.Int8
+	Figure       string
+	Mode         string
+	Count        int64
 }
 
 type UserAvatar struct {

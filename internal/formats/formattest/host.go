@@ -53,6 +53,9 @@ type HostOptions struct {
 	Data any
 	// Allow decides Authorize; nil allows every target.
 	Allow func(formats.Target) error
+	// Admit is the admission of the download limits that Host.Serve runs for a GET of a Download route before the status line
+	// (usage-and-limits.md R-LIM-021, R-LIM-036); nil admits. Check 16 refuses with it.
+	Admit func(ctx context.Context, rq *formats.Request) error
 	// Claim decides PackageWriter.Claim; nil allows.
 	Claim func(formats.Target, formats.OwnershipWrite) error
 	// Precheck decides Host.CheckOwnership, the read-only early form of Claim; nil allows.

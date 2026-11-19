@@ -14,6 +14,7 @@ Nothing outside `internal/cluster` reads or writes a Valkey key (Q-ARCH-16: noth
 | [`valkey.go`](../../internal/cluster/valkey.go) | `NewValkey`, lifecycle, `Available`/`Status`/`StartupError`, connect loop, monitor (primary changes, health probe), version check, start-up trust warnings |
 | [`valkey_ops.go`](../../internal/cluster/valkey_ops.go) | The commands Quader needs (`get`, `set`, `setNX`, `setIfEq`, `delIfEq`, `incr`, `publish`, `ping`), unexported, behind breaker and command timeout |
 | [`valkey_keys.go`](../../internal/cluster/valkey_keys.go) | Key and channel family registry (`registerKeyFamily`, `registerChannelFamily`), `Key`/`Channel` types, `formKey`/`formKeyTTL`/`channel`, keyspace |
+| [`valkey_limits.go`](../../internal/cluster/valkey_limits.go) | The counters of the download limits ([usage-and-limits.md](usage-and-limits.md)): `LimitBatch` (window adds and reads, block markers, leases in a sorted set), `LimitCounters.Run` (one `MULTI`/`EXEC` per batch, `INCRBY`, `EXPIRE NX`, `GET`, `SET NX EX`, `SET XX KEEPTTL`, `DELIFEQ`, `ZADD`, `ZREM`, `ZREMRANGEBYSCORE`, `ZCARD`), `MemoryLimits` (the same semantics in the replica's memory: the fallback and the unit tests), the key family `lim` (48 h) |
 | [`valkey_ratelimit.go`](../../internal/cluster/valkey_ratelimit.go), [`limiter.go`](../../internal/cluster/limiter.go) | The rate-limit counters (key family `rl`) and the limiter with its per-replica fallback, see [Rate-limit counters](#rate-limit-counters) |
 | [`valkey_flight.go`](../../internal/cluster/valkey_flight.go) | `FlightKey`, `FlightLock` (`Acquire`, `Wait`), `FlightHold` (extension, `Release`, `Lost`), the shared flight subscriptions, see [FlightLock](#flightlock) |
 | [`valkey_negative.go`](../../internal/cluster/valkey_negative.go) | `NegativeStore` (`Lookup`, `Record`): the entries of the negative cache in Valkey, see [Negative store](#negative-store) |
@@ -116,7 +117,7 @@ l.Count(ctx, bucket)             // one failure
   two windows; the limiter name has `.` written as `-`; the bucket is a SHA-256, never a raw name). A `Take` is one round
   trip, `MULTI`, `INCR`, `EXPIRE … NX`, `GET` of the previous window, `EXEC`, and no script. The request is counted before
   it is decided, so refused requests use up budget. `TakeNAt(ctx, bucket, n, at)` charges n units in the same round trip as n
-  `INCR` of the one transaction (the ACL has no `INCRBY`), n at most `MaxTakeUnits` (100); the download intake of the Bastion
+  `INCR` of the one transaction, n at most `MaxTakeUnits` (100; the byte charges of the download limits use `INCRBY` in their own family `lim`); the download intake of the Bastion
   interface charges a batch with it (Q-BAS-117). `Exceeded` is a pipelined `GET` of both windows, `Count` the `INCR` part.
   The window index comes from the replica's wall clock; clock skew between replicas of some milliseconds moves a window
   boundary by that much. `TakeAt(ctx, bucket, at)` counts and decides in the window of `at`, the time the request was

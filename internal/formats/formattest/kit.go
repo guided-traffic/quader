@@ -35,10 +35,15 @@ const (
 // CheckWiki is check 15 (R-AUTHZ-034): a caller who reads the artifacts and not the wiki finds no wiki byte in any answer.
 const CheckWiki Check = 15
 
+// CheckAdmission is check 16 (usage-and-limits.md R-LIM-036): a GET of every Download route the fixture serves, against a host whose
+// admission of the download limits refuses, answers 429 in the format's shape before any byte of the item: the format answers its
+// downloads through Host.Serve or the remote engine, the two paths that admit and pace.
+const CheckAdmission Check = 16
+
 // kitChecks are the checks the kit runs, in order.
 var kitChecks = [...]Check{
 	CheckAmbiguity, CheckTraversal, CheckClassify, CheckRewrite, CheckMerge, CheckInspect, CheckHeaders, CheckSetup,
-	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki,
+	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission,
 }
 
 // name is the short name of the check.
@@ -72,6 +77,8 @@ func (c Check) name() string {
 		return "authorization paths"
 	case CheckWiki:
 		return "wiki content"
+	case CheckAdmission:
+		return "download admission"
 	}
 	return "unknown"
 }
@@ -400,6 +407,8 @@ func runCheck(c Check, f formats.Format, fx Fixture) (res Result) {
 		r.authzPaths()
 	case CheckWiki:
 		r.wiki()
+	case CheckAdmission:
+		r.admission()
 	}
 	return res
 }
@@ -458,6 +467,8 @@ func (r *run) skipProblem(c Check, reason string) string {
 		return fmt.Sprintf("%s is skipped (%s) and the format has a view adapter", c, reason)
 	case c == CheckWiki && r.hasWiki():
 		return fmt.Sprintf("%s is skipped (%s) and the format has wiki content", c, reason)
+	case c == CheckAdmission && r.hasRoute(formats.Download):
+		return fmt.Sprintf("%s is skipped (%s) and the format has a Download route", c, reason)
 	}
 	return ""
 }

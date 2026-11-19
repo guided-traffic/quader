@@ -1516,6 +1516,138 @@ func (e JobState) Valid() bool {
 	}
 }
 
+// Defines values for LimitExplanationMode.
+const (
+	LimitExplanationModeAudit   LimitExplanationMode = "audit"
+	LimitExplanationModeEnforce LimitExplanationMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the LimitExplanationMode enum.
+func (e LimitExplanationMode) Valid() bool {
+	switch e {
+	case LimitExplanationModeAudit:
+		return true
+	case LimitExplanationModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitPlaceKind.
+const (
+	LimitPlaceKindInstance   LimitPlaceKind = "instance"
+	LimitPlaceKindProject    LimitPlaceKind = "project"
+	LimitPlaceKindRepository LimitPlaceKind = "repository"
+)
+
+// Valid indicates whether the value is a known member of the LimitPlaceKind enum.
+func (e LimitPlaceKind) Valid() bool {
+	switch e {
+	case LimitPlaceKindInstance:
+		return true
+	case LimitPlaceKindProject:
+		return true
+	case LimitPlaceKindRepository:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitSettingsMode.
+const (
+	LimitSettingsModeAudit   LimitSettingsMode = "audit"
+	LimitSettingsModeEnforce LimitSettingsMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the LimitSettingsMode enum.
+func (e LimitSettingsMode) Valid() bool {
+	switch e {
+	case LimitSettingsModeAudit:
+		return true
+	case LimitSettingsModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitSettingsPatchMode.
+const (
+	LimitSettingsPatchModeAudit   LimitSettingsPatchMode = "audit"
+	LimitSettingsPatchModeEnforce LimitSettingsPatchMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the LimitSettingsPatchMode enum.
+func (e LimitSettingsPatchMode) Valid() bool {
+	switch e {
+	case LimitSettingsPatchModeAudit:
+		return true
+	case LimitSettingsPatchModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoCallerKind.
+const (
+	LimitWhoCallerKindAdministrator  LimitWhoCallerKind = "administrator"
+	LimitWhoCallerKindAnonymous      LimitWhoCallerKind = "anonymous"
+	LimitWhoCallerKindCi             LimitWhoCallerKind = "ci"
+	LimitWhoCallerKindTechnicalToken LimitWhoCallerKind = "technicalToken"
+	LimitWhoCallerKindUser           LimitWhoCallerKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoCallerKind enum.
+func (e LimitWhoCallerKind) Valid() bool {
+	switch e {
+	case LimitWhoCallerKindAdministrator:
+		return true
+	case LimitWhoCallerKindAnonymous:
+		return true
+	case LimitWhoCallerKindCi:
+		return true
+	case LimitWhoCallerKindTechnicalToken:
+		return true
+	case LimitWhoCallerKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoKind.
+const (
+	LimitWhoKindAddress        LimitWhoKind = "address"
+	LimitWhoKindCiProject      LimitWhoKind = "ciProject"
+	LimitWhoKindEvery          LimitWhoKind = "every"
+	LimitWhoKindGroup          LimitWhoKind = "group"
+	LimitWhoKindTechnicalToken LimitWhoKind = "technicalToken"
+	LimitWhoKindUser           LimitWhoKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoKind enum.
+func (e LimitWhoKind) Valid() bool {
+	switch e {
+	case LimitWhoKindAddress:
+		return true
+	case LimitWhoKindCiProject:
+		return true
+	case LimitWhoKindEvery:
+		return true
+	case LimitWhoKindGroup:
+		return true
+	case LimitWhoKindTechnicalToken:
+		return true
+	case LimitWhoKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LocalFormatName.
 const (
 	LocalFormatNameAnsible LocalFormatName = "ansible"
@@ -3289,6 +3421,72 @@ func (e UpstreamTestResultErrorCode) Valid() bool {
 	}
 }
 
+// Defines values for UsageDetailMode.
+const (
+	UsageDetailModeAudit   UsageDetailMode = "audit"
+	UsageDetailModeEnforce UsageDetailMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the UsageDetailMode enum.
+func (e UsageDetailMode) Valid() bool {
+	switch e {
+	case UsageDetailModeAudit:
+		return true
+	case UsageDetailModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageListMode.
+const (
+	UsageListModeAudit   UsageListMode = "audit"
+	UsageListModeEnforce UsageListMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the UsageListMode enum.
+func (e UsageListMode) Valid() bool {
+	switch e {
+	case UsageListModeAudit:
+		return true
+	case UsageListModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageRowState.
+const (
+	UsageRowStateBlocked        UsageRowState = "blocked"
+	UsageRowStateClose          UsageRowState = "close"
+	UsageRowStateLimitReached   UsageRowState = "limitReached"
+	UsageRowStateNormal         UsageRowState = "normal"
+	UsageRowStateUnlimited      UsageRowState = "unlimited"
+	UsageRowStateWouldBeLimited UsageRowState = "wouldBeLimited"
+)
+
+// Valid indicates whether the value is a known member of the UsageRowState enum.
+func (e UsageRowState) Valid() bool {
+	switch e {
+	case UsageRowStateBlocked:
+		return true
+	case UsageRowStateClose:
+		return true
+	case UsageRowStateLimitReached:
+		return true
+	case UsageRowStateNormal:
+		return true
+	case UsageRowStateUnlimited:
+		return true
+	case UsageRowStateWouldBeLimited:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UserOrigin.
 const (
 	UserOriginAdmin  UserOrigin = "admin"
@@ -3480,16 +3678,16 @@ func (e VulnerabilityCvssVersion) Valid() bool {
 
 // Defines values for VulnerabilityDataFactsEnforcement.
 const (
-	Enforce VulnerabilityDataFactsEnforcement = "enforce"
-	Report  VulnerabilityDataFactsEnforcement = "report"
+	VulnerabilityDataFactsEnforcementEnforce VulnerabilityDataFactsEnforcement = "enforce"
+	VulnerabilityDataFactsEnforcementReport  VulnerabilityDataFactsEnforcement = "report"
 )
 
 // Valid indicates whether the value is a known member of the VulnerabilityDataFactsEnforcement enum.
 func (e VulnerabilityDataFactsEnforcement) Valid() bool {
 	switch e {
-	case Enforce:
+	case VulnerabilityDataFactsEnforcementEnforce:
 		return true
-	case Report:
+	case VulnerabilityDataFactsEnforcementReport:
 		return true
 	default:
 		return false
@@ -4126,6 +4324,54 @@ func (e ListGroupsParamsSort) Valid() bool {
 	}
 }
 
+// Defines values for ListInstanceLimitAssignmentsParamsWhoKind.
+const (
+	ListInstanceLimitAssignmentsParamsWhoKindAddress        ListInstanceLimitAssignmentsParamsWhoKind = "address"
+	ListInstanceLimitAssignmentsParamsWhoKindCiProject      ListInstanceLimitAssignmentsParamsWhoKind = "ciProject"
+	ListInstanceLimitAssignmentsParamsWhoKindEvery          ListInstanceLimitAssignmentsParamsWhoKind = "every"
+	ListInstanceLimitAssignmentsParamsWhoKindGroup          ListInstanceLimitAssignmentsParamsWhoKind = "group"
+	ListInstanceLimitAssignmentsParamsWhoKindTechnicalToken ListInstanceLimitAssignmentsParamsWhoKind = "technicalToken"
+	ListInstanceLimitAssignmentsParamsWhoKindUser           ListInstanceLimitAssignmentsParamsWhoKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ListInstanceLimitAssignmentsParamsWhoKind enum.
+func (e ListInstanceLimitAssignmentsParamsWhoKind) Valid() bool {
+	switch e {
+	case ListInstanceLimitAssignmentsParamsWhoKindAddress:
+		return true
+	case ListInstanceLimitAssignmentsParamsWhoKindCiProject:
+		return true
+	case ListInstanceLimitAssignmentsParamsWhoKindEvery:
+		return true
+	case ListInstanceLimitAssignmentsParamsWhoKindGroup:
+		return true
+	case ListInstanceLimitAssignmentsParamsWhoKindTechnicalToken:
+		return true
+	case ListInstanceLimitAssignmentsParamsWhoKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SuggestLimitSubjectsParamsKinds.
+const (
+	SuggestLimitSubjectsParamsKindsCi             SuggestLimitSubjectsParamsKinds = "ci"
+	SuggestLimitSubjectsParamsKindsTechnicalToken SuggestLimitSubjectsParamsKinds = "technicalToken"
+)
+
+// Valid indicates whether the value is a known member of the SuggestLimitSubjectsParamsKinds enum.
+func (e SuggestLimitSubjectsParamsKinds) Valid() bool {
+	switch e {
+	case SuggestLimitSubjectsParamsKindsCi:
+		return true
+	case SuggestLimitSubjectsParamsKindsTechnicalToken:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListPackagesParamsInclude.
 const (
 	Vulnerabilities ListPackagesParamsInclude = "vulnerabilities"
@@ -4258,6 +4504,36 @@ func (e GetProjectCiSnippetParamsFormat) Valid() bool {
 	case GetProjectCiSnippetParamsFormatNpm:
 		return true
 	case GetProjectCiSnippetParamsFormatNuget:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectLimitAssignmentsParamsWhoKind.
+const (
+	ListProjectLimitAssignmentsParamsWhoKindAddress        ListProjectLimitAssignmentsParamsWhoKind = "address"
+	ListProjectLimitAssignmentsParamsWhoKindCiProject      ListProjectLimitAssignmentsParamsWhoKind = "ciProject"
+	ListProjectLimitAssignmentsParamsWhoKindEvery          ListProjectLimitAssignmentsParamsWhoKind = "every"
+	ListProjectLimitAssignmentsParamsWhoKindGroup          ListProjectLimitAssignmentsParamsWhoKind = "group"
+	ListProjectLimitAssignmentsParamsWhoKindTechnicalToken ListProjectLimitAssignmentsParamsWhoKind = "technicalToken"
+	ListProjectLimitAssignmentsParamsWhoKindUser           ListProjectLimitAssignmentsParamsWhoKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectLimitAssignmentsParamsWhoKind enum.
+func (e ListProjectLimitAssignmentsParamsWhoKind) Valid() bool {
+	switch e {
+	case ListProjectLimitAssignmentsParamsWhoKindAddress:
+		return true
+	case ListProjectLimitAssignmentsParamsWhoKindCiProject:
+		return true
+	case ListProjectLimitAssignmentsParamsWhoKindEvery:
+		return true
+	case ListProjectLimitAssignmentsParamsWhoKindGroup:
+		return true
+	case ListProjectLimitAssignmentsParamsWhoKindTechnicalToken:
+		return true
+	case ListProjectLimitAssignmentsParamsWhoKindUser:
 		return true
 	default:
 		return false
@@ -4414,6 +4690,36 @@ func (e GetClientSetupParamsCredentials) Valid() bool {
 	}
 }
 
+// Defines values for ListRepositoryLimitAssignmentsParamsWhoKind.
+const (
+	ListRepositoryLimitAssignmentsParamsWhoKindAddress        ListRepositoryLimitAssignmentsParamsWhoKind = "address"
+	ListRepositoryLimitAssignmentsParamsWhoKindCiProject      ListRepositoryLimitAssignmentsParamsWhoKind = "ciProject"
+	ListRepositoryLimitAssignmentsParamsWhoKindEvery          ListRepositoryLimitAssignmentsParamsWhoKind = "every"
+	ListRepositoryLimitAssignmentsParamsWhoKindGroup          ListRepositoryLimitAssignmentsParamsWhoKind = "group"
+	ListRepositoryLimitAssignmentsParamsWhoKindTechnicalToken ListRepositoryLimitAssignmentsParamsWhoKind = "technicalToken"
+	ListRepositoryLimitAssignmentsParamsWhoKindUser           ListRepositoryLimitAssignmentsParamsWhoKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ListRepositoryLimitAssignmentsParamsWhoKind enum.
+func (e ListRepositoryLimitAssignmentsParamsWhoKind) Valid() bool {
+	switch e {
+	case ListRepositoryLimitAssignmentsParamsWhoKindAddress:
+		return true
+	case ListRepositoryLimitAssignmentsParamsWhoKindCiProject:
+		return true
+	case ListRepositoryLimitAssignmentsParamsWhoKindEvery:
+		return true
+	case ListRepositoryLimitAssignmentsParamsWhoKindGroup:
+		return true
+	case ListRepositoryLimitAssignmentsParamsWhoKindTechnicalToken:
+		return true
+	case ListRepositoryLimitAssignmentsParamsWhoKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListRepositoryServiceAccountsParamsSort.
 const (
 	ListRepositoryServiceAccountsParamsSortName ListRepositoryServiceAccountsParamsSort = "name"
@@ -4459,6 +4765,255 @@ const (
 func (e ListProjectServiceAccountsParamsSort) Valid() bool {
 	switch e {
 	case ListProjectServiceAccountsParamsSortName:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectUsageParamsPeriod.
+const (
+	ListProjectUsageParamsPeriodDay  ListProjectUsageParamsPeriod = "day"
+	ListProjectUsageParamsPeriodHour ListProjectUsageParamsPeriod = "hour"
+	ListProjectUsageParamsPeriodN30d ListProjectUsageParamsPeriod = "30d"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectUsageParamsPeriod enum.
+func (e ListProjectUsageParamsPeriod) Valid() bool {
+	switch e {
+	case ListProjectUsageParamsPeriodDay:
+		return true
+	case ListProjectUsageParamsPeriodHour:
+		return true
+	case ListProjectUsageParamsPeriodN30d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectUsageParamsKind.
+const (
+	ListProjectUsageParamsKindAnonymous      ListProjectUsageParamsKind = "anonymous"
+	ListProjectUsageParamsKindCi             ListProjectUsageParamsKind = "ci"
+	ListProjectUsageParamsKindSystem         ListProjectUsageParamsKind = "system"
+	ListProjectUsageParamsKindTechnicalToken ListProjectUsageParamsKind = "technicalToken"
+	ListProjectUsageParamsKindUser           ListProjectUsageParamsKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectUsageParamsKind enum.
+func (e ListProjectUsageParamsKind) Valid() bool {
+	switch e {
+	case ListProjectUsageParamsKindAnonymous:
+		return true
+	case ListProjectUsageParamsKindCi:
+		return true
+	case ListProjectUsageParamsKindSystem:
+		return true
+	case ListProjectUsageParamsKindTechnicalToken:
+		return true
+	case ListProjectUsageParamsKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectUsageParamsState.
+const (
+	ListProjectUsageParamsStateBlocked        ListProjectUsageParamsState = "blocked"
+	ListProjectUsageParamsStateClose          ListProjectUsageParamsState = "close"
+	ListProjectUsageParamsStateLimitReached   ListProjectUsageParamsState = "limitReached"
+	ListProjectUsageParamsStateWouldBeLimited ListProjectUsageParamsState = "wouldBeLimited"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectUsageParamsState enum.
+func (e ListProjectUsageParamsState) Valid() bool {
+	switch e {
+	case ListProjectUsageParamsStateBlocked:
+		return true
+	case ListProjectUsageParamsStateClose:
+		return true
+	case ListProjectUsageParamsStateLimitReached:
+		return true
+	case ListProjectUsageParamsStateWouldBeLimited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectUsageParamsSort.
+const (
+	ListProjectUsageParamsSortCachedBytes      ListProjectUsageParamsSort = "cachedBytes"
+	ListProjectUsageParamsSortName             ListProjectUsageParamsSort = "name"
+	ListProjectUsageParamsSortRefused          ListProjectUsageParamsSort = "refused"
+	ListProjectUsageParamsSortRequests         ListProjectUsageParamsSort = "requests"
+	ListProjectUsageParamsSortUncachedBytes    ListProjectUsageParamsSort = "uncachedBytes"
+	ListProjectUsageParamsSortUpstreamRequests ListProjectUsageParamsSort = "upstreamRequests"
+	ListProjectUsageParamsSortUtilisation      ListProjectUsageParamsSort = "utilisation"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectUsageParamsSort enum.
+func (e ListProjectUsageParamsSort) Valid() bool {
+	switch e {
+	case ListProjectUsageParamsSortCachedBytes:
+		return true
+	case ListProjectUsageParamsSortName:
+		return true
+	case ListProjectUsageParamsSortRefused:
+		return true
+	case ListProjectUsageParamsSortRequests:
+		return true
+	case ListProjectUsageParamsSortUncachedBytes:
+		return true
+	case ListProjectUsageParamsSortUpstreamRequests:
+		return true
+	case ListProjectUsageParamsSortUtilisation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProjectUsageParamsOrder.
+const (
+	ListProjectUsageParamsOrderAsc  ListProjectUsageParamsOrder = "asc"
+	ListProjectUsageParamsOrderDesc ListProjectUsageParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectUsageParamsOrder enum.
+func (e ListProjectUsageParamsOrder) Valid() bool {
+	switch e {
+	case ListProjectUsageParamsOrderAsc:
+		return true
+	case ListProjectUsageParamsOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportProjectUsageParamsPeriod.
+const (
+	ExportProjectUsageParamsPeriodDay  ExportProjectUsageParamsPeriod = "day"
+	ExportProjectUsageParamsPeriodHour ExportProjectUsageParamsPeriod = "hour"
+	ExportProjectUsageParamsPeriodN30d ExportProjectUsageParamsPeriod = "30d"
+)
+
+// Valid indicates whether the value is a known member of the ExportProjectUsageParamsPeriod enum.
+func (e ExportProjectUsageParamsPeriod) Valid() bool {
+	switch e {
+	case ExportProjectUsageParamsPeriodDay:
+		return true
+	case ExportProjectUsageParamsPeriodHour:
+		return true
+	case ExportProjectUsageParamsPeriodN30d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportProjectUsageParamsKind.
+const (
+	ExportProjectUsageParamsKindAnonymous      ExportProjectUsageParamsKind = "anonymous"
+	ExportProjectUsageParamsKindCi             ExportProjectUsageParamsKind = "ci"
+	ExportProjectUsageParamsKindSystem         ExportProjectUsageParamsKind = "system"
+	ExportProjectUsageParamsKindTechnicalToken ExportProjectUsageParamsKind = "technicalToken"
+	ExportProjectUsageParamsKindUser           ExportProjectUsageParamsKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ExportProjectUsageParamsKind enum.
+func (e ExportProjectUsageParamsKind) Valid() bool {
+	switch e {
+	case ExportProjectUsageParamsKindAnonymous:
+		return true
+	case ExportProjectUsageParamsKindCi:
+		return true
+	case ExportProjectUsageParamsKindSystem:
+		return true
+	case ExportProjectUsageParamsKindTechnicalToken:
+		return true
+	case ExportProjectUsageParamsKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportProjectUsageParamsState.
+const (
+	ExportProjectUsageParamsStateBlocked        ExportProjectUsageParamsState = "blocked"
+	ExportProjectUsageParamsStateClose          ExportProjectUsageParamsState = "close"
+	ExportProjectUsageParamsStateLimitReached   ExportProjectUsageParamsState = "limitReached"
+	ExportProjectUsageParamsStateWouldBeLimited ExportProjectUsageParamsState = "wouldBeLimited"
+)
+
+// Valid indicates whether the value is a known member of the ExportProjectUsageParamsState enum.
+func (e ExportProjectUsageParamsState) Valid() bool {
+	switch e {
+	case ExportProjectUsageParamsStateBlocked:
+		return true
+	case ExportProjectUsageParamsStateClose:
+		return true
+	case ExportProjectUsageParamsStateLimitReached:
+		return true
+	case ExportProjectUsageParamsStateWouldBeLimited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportProjectUsageParamsSort.
+const (
+	ExportProjectUsageParamsSortCachedBytes      ExportProjectUsageParamsSort = "cachedBytes"
+	ExportProjectUsageParamsSortName             ExportProjectUsageParamsSort = "name"
+	ExportProjectUsageParamsSortRefused          ExportProjectUsageParamsSort = "refused"
+	ExportProjectUsageParamsSortRequests         ExportProjectUsageParamsSort = "requests"
+	ExportProjectUsageParamsSortUncachedBytes    ExportProjectUsageParamsSort = "uncachedBytes"
+	ExportProjectUsageParamsSortUpstreamRequests ExportProjectUsageParamsSort = "upstreamRequests"
+	ExportProjectUsageParamsSortUtilisation      ExportProjectUsageParamsSort = "utilisation"
+)
+
+// Valid indicates whether the value is a known member of the ExportProjectUsageParamsSort enum.
+func (e ExportProjectUsageParamsSort) Valid() bool {
+	switch e {
+	case ExportProjectUsageParamsSortCachedBytes:
+		return true
+	case ExportProjectUsageParamsSortName:
+		return true
+	case ExportProjectUsageParamsSortRefused:
+		return true
+	case ExportProjectUsageParamsSortRequests:
+		return true
+	case ExportProjectUsageParamsSortUncachedBytes:
+		return true
+	case ExportProjectUsageParamsSortUpstreamRequests:
+		return true
+	case ExportProjectUsageParamsSortUtilisation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetProjectUsageSubjectParamsPeriod.
+const (
+	GetProjectUsageSubjectParamsPeriodDay  GetProjectUsageSubjectParamsPeriod = "day"
+	GetProjectUsageSubjectParamsPeriodHour GetProjectUsageSubjectParamsPeriod = "hour"
+	GetProjectUsageSubjectParamsPeriodN30d GetProjectUsageSubjectParamsPeriod = "30d"
+)
+
+// Valid indicates whether the value is a known member of the GetProjectUsageSubjectParamsPeriod enum.
+func (e GetProjectUsageSubjectParamsPeriod) Valid() bool {
+	switch e {
+	case GetProjectUsageSubjectParamsPeriodDay:
+		return true
+	case GetProjectUsageSubjectParamsPeriodHour:
+		return true
+	case GetProjectUsageSubjectParamsPeriodN30d:
 		return true
 	default:
 		return false
@@ -4627,6 +5182,255 @@ func (e ListTokensParamsState) Valid() bool {
 	}
 }
 
+// Defines values for ListUsageParamsPeriod.
+const (
+	ListUsageParamsPeriodDay  ListUsageParamsPeriod = "day"
+	ListUsageParamsPeriodHour ListUsageParamsPeriod = "hour"
+	ListUsageParamsPeriodN30d ListUsageParamsPeriod = "30d"
+)
+
+// Valid indicates whether the value is a known member of the ListUsageParamsPeriod enum.
+func (e ListUsageParamsPeriod) Valid() bool {
+	switch e {
+	case ListUsageParamsPeriodDay:
+		return true
+	case ListUsageParamsPeriodHour:
+		return true
+	case ListUsageParamsPeriodN30d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListUsageParamsKind.
+const (
+	ListUsageParamsKindAnonymous      ListUsageParamsKind = "anonymous"
+	ListUsageParamsKindCi             ListUsageParamsKind = "ci"
+	ListUsageParamsKindSystem         ListUsageParamsKind = "system"
+	ListUsageParamsKindTechnicalToken ListUsageParamsKind = "technicalToken"
+	ListUsageParamsKindUser           ListUsageParamsKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ListUsageParamsKind enum.
+func (e ListUsageParamsKind) Valid() bool {
+	switch e {
+	case ListUsageParamsKindAnonymous:
+		return true
+	case ListUsageParamsKindCi:
+		return true
+	case ListUsageParamsKindSystem:
+		return true
+	case ListUsageParamsKindTechnicalToken:
+		return true
+	case ListUsageParamsKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListUsageParamsState.
+const (
+	ListUsageParamsStateBlocked        ListUsageParamsState = "blocked"
+	ListUsageParamsStateClose          ListUsageParamsState = "close"
+	ListUsageParamsStateLimitReached   ListUsageParamsState = "limitReached"
+	ListUsageParamsStateWouldBeLimited ListUsageParamsState = "wouldBeLimited"
+)
+
+// Valid indicates whether the value is a known member of the ListUsageParamsState enum.
+func (e ListUsageParamsState) Valid() bool {
+	switch e {
+	case ListUsageParamsStateBlocked:
+		return true
+	case ListUsageParamsStateClose:
+		return true
+	case ListUsageParamsStateLimitReached:
+		return true
+	case ListUsageParamsStateWouldBeLimited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListUsageParamsSort.
+const (
+	ListUsageParamsSortCachedBytes      ListUsageParamsSort = "cachedBytes"
+	ListUsageParamsSortName             ListUsageParamsSort = "name"
+	ListUsageParamsSortRefused          ListUsageParamsSort = "refused"
+	ListUsageParamsSortRequests         ListUsageParamsSort = "requests"
+	ListUsageParamsSortUncachedBytes    ListUsageParamsSort = "uncachedBytes"
+	ListUsageParamsSortUpstreamRequests ListUsageParamsSort = "upstreamRequests"
+	ListUsageParamsSortUtilisation      ListUsageParamsSort = "utilisation"
+)
+
+// Valid indicates whether the value is a known member of the ListUsageParamsSort enum.
+func (e ListUsageParamsSort) Valid() bool {
+	switch e {
+	case ListUsageParamsSortCachedBytes:
+		return true
+	case ListUsageParamsSortName:
+		return true
+	case ListUsageParamsSortRefused:
+		return true
+	case ListUsageParamsSortRequests:
+		return true
+	case ListUsageParamsSortUncachedBytes:
+		return true
+	case ListUsageParamsSortUpstreamRequests:
+		return true
+	case ListUsageParamsSortUtilisation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListUsageParamsOrder.
+const (
+	ListUsageParamsOrderAsc  ListUsageParamsOrder = "asc"
+	ListUsageParamsOrderDesc ListUsageParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListUsageParamsOrder enum.
+func (e ListUsageParamsOrder) Valid() bool {
+	switch e {
+	case ListUsageParamsOrderAsc:
+		return true
+	case ListUsageParamsOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportUsageParamsPeriod.
+const (
+	ExportUsageParamsPeriodDay  ExportUsageParamsPeriod = "day"
+	ExportUsageParamsPeriodHour ExportUsageParamsPeriod = "hour"
+	ExportUsageParamsPeriodN30d ExportUsageParamsPeriod = "30d"
+)
+
+// Valid indicates whether the value is a known member of the ExportUsageParamsPeriod enum.
+func (e ExportUsageParamsPeriod) Valid() bool {
+	switch e {
+	case ExportUsageParamsPeriodDay:
+		return true
+	case ExportUsageParamsPeriodHour:
+		return true
+	case ExportUsageParamsPeriodN30d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportUsageParamsKind.
+const (
+	ExportUsageParamsKindAnonymous      ExportUsageParamsKind = "anonymous"
+	ExportUsageParamsKindCi             ExportUsageParamsKind = "ci"
+	ExportUsageParamsKindSystem         ExportUsageParamsKind = "system"
+	ExportUsageParamsKindTechnicalToken ExportUsageParamsKind = "technicalToken"
+	ExportUsageParamsKindUser           ExportUsageParamsKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ExportUsageParamsKind enum.
+func (e ExportUsageParamsKind) Valid() bool {
+	switch e {
+	case ExportUsageParamsKindAnonymous:
+		return true
+	case ExportUsageParamsKindCi:
+		return true
+	case ExportUsageParamsKindSystem:
+		return true
+	case ExportUsageParamsKindTechnicalToken:
+		return true
+	case ExportUsageParamsKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportUsageParamsState.
+const (
+	ExportUsageParamsStateBlocked        ExportUsageParamsState = "blocked"
+	ExportUsageParamsStateClose          ExportUsageParamsState = "close"
+	ExportUsageParamsStateLimitReached   ExportUsageParamsState = "limitReached"
+	ExportUsageParamsStateWouldBeLimited ExportUsageParamsState = "wouldBeLimited"
+)
+
+// Valid indicates whether the value is a known member of the ExportUsageParamsState enum.
+func (e ExportUsageParamsState) Valid() bool {
+	switch e {
+	case ExportUsageParamsStateBlocked:
+		return true
+	case ExportUsageParamsStateClose:
+		return true
+	case ExportUsageParamsStateLimitReached:
+		return true
+	case ExportUsageParamsStateWouldBeLimited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportUsageParamsSort.
+const (
+	ExportUsageParamsSortCachedBytes      ExportUsageParamsSort = "cachedBytes"
+	ExportUsageParamsSortName             ExportUsageParamsSort = "name"
+	ExportUsageParamsSortRefused          ExportUsageParamsSort = "refused"
+	ExportUsageParamsSortRequests         ExportUsageParamsSort = "requests"
+	ExportUsageParamsSortUncachedBytes    ExportUsageParamsSort = "uncachedBytes"
+	ExportUsageParamsSortUpstreamRequests ExportUsageParamsSort = "upstreamRequests"
+	ExportUsageParamsSortUtilisation      ExportUsageParamsSort = "utilisation"
+)
+
+// Valid indicates whether the value is a known member of the ExportUsageParamsSort enum.
+func (e ExportUsageParamsSort) Valid() bool {
+	switch e {
+	case ExportUsageParamsSortCachedBytes:
+		return true
+	case ExportUsageParamsSortName:
+		return true
+	case ExportUsageParamsSortRefused:
+		return true
+	case ExportUsageParamsSortRequests:
+		return true
+	case ExportUsageParamsSortUncachedBytes:
+		return true
+	case ExportUsageParamsSortUpstreamRequests:
+		return true
+	case ExportUsageParamsSortUtilisation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetUsageSubjectParamsPeriod.
+const (
+	GetUsageSubjectParamsPeriodDay  GetUsageSubjectParamsPeriod = "day"
+	GetUsageSubjectParamsPeriodHour GetUsageSubjectParamsPeriod = "hour"
+	GetUsageSubjectParamsPeriodN30d GetUsageSubjectParamsPeriod = "30d"
+)
+
+// Valid indicates whether the value is a known member of the GetUsageSubjectParamsPeriod enum.
+func (e GetUsageSubjectParamsPeriod) Valid() bool {
+	switch e {
+	case GetUsageSubjectParamsPeriodDay:
+		return true
+	case GetUsageSubjectParamsPeriodHour:
+		return true
+	case GetUsageSubjectParamsPeriodN30d:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListUsersParamsStatus.
 const (
 	ListUsersParamsStatusActive   ListUsersParamsStatus = "active"
@@ -4681,6 +5485,27 @@ const (
 func (e ListUsersParamsSort) Valid() bool {
 	switch e {
 	case Username:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetMyUsageParamsPeriod.
+const (
+	GetMyUsageParamsPeriodDay  GetMyUsageParamsPeriod = "day"
+	GetMyUsageParamsPeriodHour GetMyUsageParamsPeriod = "hour"
+	GetMyUsageParamsPeriodN30d GetMyUsageParamsPeriod = "30d"
+)
+
+// Valid indicates whether the value is a known member of the GetMyUsageParamsPeriod enum.
+func (e GetMyUsageParamsPeriod) Valid() bool {
+	switch e {
+	case GetMyUsageParamsPeriodDay:
+		return true
+	case GetMyUsageParamsPeriodHour:
+		return true
+	case GetMyUsageParamsPeriodN30d:
 		return true
 	default:
 		return false
@@ -6599,6 +7424,8 @@ type ExposureVersions struct {
 
 // FieldError defines model for FieldError.
 type FieldError struct {
+	// Cap On an entry of `limit_above_maximum`: the most the figure may be, in its own unit (R-LIM-016, Q-API-352).
+	Cap    *int64 `json:"cap,omitempty"`
 	Code   string `json:"code"`
 	Detail string `json:"detail"`
 
@@ -6990,6 +7817,293 @@ type LastReencryption struct {
 	JobId      openapi_types.UUID `json:"jobId"`
 	State      JobState           `json:"state"`
 }
+
+// LimitAssignment defines model for LimitAssignment.
+type LimitAssignment struct {
+	Builtin   bool            `json:"builtin"`
+	Capped    bool            `json:"capped"`
+	Clamped   map[string]*int `json:"clamped"`
+	CreatedAt *time.Time      `json:"createdAt,omitempty"`
+	CreatedBy *string         `json:"createdBy,omitempty"`
+
+	// Effective Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+	Effective LimitFigures    `json:"effective"`
+	Id        string          `json:"id"`
+	Note      string          `json:"note"`
+	Overrides map[string]*int `json:"overrides"`
+	Place     LimitPlace      `json:"place"`
+	Profile   string          `json:"profile"`
+	UpdatedAt *time.Time      `json:"updatedAt,omitempty"`
+	UpdatedBy *string         `json:"updatedBy,omitempty"`
+	Version   int64           `json:"version"`
+
+	// Who The caller a rule names (R-LIM-011, R-LIM-032).
+	Who LimitWho `json:"who"`
+}
+
+// LimitAssignmentList defines model for LimitAssignmentList.
+type LimitAssignmentList struct {
+	Items      []LimitAssignment `json:"items"`
+	NextCursor *string           `json:"nextCursor,omitempty"`
+}
+
+// LimitAssignmentWrite defines model for LimitAssignmentWrite.
+type LimitAssignmentWrite struct {
+	Builtin   *bool                   `json:"builtin,omitempty"`
+	Capped    *bool                   `json:"capped,omitempty"`
+	Clamped   *map[string]interface{} `json:"clamped,omitempty"`
+	CreatedAt *string                 `json:"createdAt,omitempty"`
+	CreatedBy *string                 `json:"createdBy,omitempty"`
+	Effective *map[string]interface{} `json:"effective,omitempty"`
+	Id        *string                 `json:"id,omitempty"`
+	Note      *string                 `json:"note,omitempty"`
+	Overrides *map[string]*int        `json:"overrides,omitempty"`
+	Place     *map[string]interface{} `json:"place,omitempty"`
+	Profile   string                  `json:"profile"`
+	UpdatedAt *string                 `json:"updatedAt,omitempty"`
+	UpdatedBy *string                 `json:"updatedBy,omitempty"`
+	Version   *int                    `json:"version,omitempty"`
+
+	// Who The caller a rule names (R-LIM-011, R-LIM-032).
+	Who LimitWho `json:"who"`
+}
+
+// LimitBlock defines model for LimitBlock.
+type LimitBlock struct {
+	Id        string                 `json:"id"`
+	LiftedAt  *time.Time             `json:"liftedAt,omitempty"`
+	LiftedBy  *string                `json:"liftedBy,omitempty"`
+	Limit     int                    `json:"limit"`
+	Place     LimitPlace             `json:"place"`
+	Refused   int                    `json:"refused"`
+	StartedAt time.Time              `json:"startedAt"`
+	Subject   map[string]interface{} `json:"subject"`
+	Until     time.Time              `json:"until"`
+}
+
+// LimitBlockList defines model for LimitBlockList.
+type LimitBlockList struct {
+	Items      []LimitBlock `json:"items"`
+	NextCursor *string      `json:"nextCursor,omitempty"`
+}
+
+// LimitCeiling defines model for LimitCeiling.
+type LimitCeiling struct {
+	UncachedBytesPerHour    *int64 `json:"uncachedBytesPerHour,omitempty"`
+	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour,omitempty"`
+}
+
+// LimitCeilings defines model for LimitCeilings.
+type LimitCeilings struct {
+	Anonymous  LimitCeiling `json:"anonymous"`
+	Repository string       `json:"repository"`
+	SignedIn   LimitCeiling `json:"signedIn"`
+	UpdatedAt  *time.Time   `json:"updatedAt,omitempty"`
+	UpdatedBy  *string      `json:"updatedBy,omitempty"`
+	Version    int64        `json:"version"`
+}
+
+// LimitCeilingsWrite defines model for LimitCeilingsWrite.
+type LimitCeilingsWrite struct {
+	Anonymous  LimitCeiling `json:"anonymous"`
+	Repository *string      `json:"repository,omitempty"`
+	SignedIn   LimitCeiling `json:"signedIn"`
+	UpdatedAt  *string      `json:"updatedAt,omitempty"`
+	UpdatedBy  *string      `json:"updatedBy,omitempty"`
+	Version    *int         `json:"version,omitempty"`
+}
+
+// LimitExplanation defines model for LimitExplanation.
+type LimitExplanation struct {
+	Administrator bool                    `json:"administrator"`
+	Ceiling       *map[string]interface{} `json:"ceiling,omitempty"`
+	Clamped       map[string]interface{}  `json:"clamped"`
+
+	// Effective Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+	Effective     LimitFigures             `json:"effective"`
+	FigureSources map[string]string        `json:"figureSources"`
+	Mode          LimitExplanationMode     `json:"mode"`
+	Place         LimitPlace               `json:"place"`
+	Repository    *string                  `json:"repository,omitempty"`
+	Rule          *map[string]interface{}  `json:"rule"`
+	Steps         []map[string]interface{} `json:"steps"`
+	Subject       map[string]interface{}   `json:"subject"`
+}
+
+// LimitExplanationMode defines model for LimitExplanation.Mode.
+type LimitExplanationMode string
+
+// LimitFigures Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+type LimitFigures struct {
+	BytesPerDay             *int64 `json:"bytesPerDay,omitempty"`
+	CachedBytesPerHour      *int64 `json:"cachedBytesPerHour,omitempty"`
+	CachedBytesPerSecond    *int64 `json:"cachedBytesPerSecond,omitempty"`
+	ParallelDownloads       *int64 `json:"parallelDownloads,omitempty"`
+	RefusedPerHour          *int64 `json:"refusedPerHour,omitempty"`
+	RequestsBurst           *int64 `json:"requestsBurst,omitempty"`
+	RequestsPerHour         *int64 `json:"requestsPerHour,omitempty"`
+	RequestsPerSecond       *int64 `json:"requestsPerSecond,omitempty"`
+	UncachedBytesPerHour    *int64 `json:"uncachedBytesPerHour,omitempty"`
+	UncachedBytesPerSecond  *int64 `json:"uncachedBytesPerSecond,omitempty"`
+	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour,omitempty"`
+}
+
+// LimitModePreview defines model for LimitModePreview.
+type LimitModePreview struct {
+	BlockedSubjects int `json:"blockedSubjects"`
+	ByFigure        []struct {
+		Events   *int    `json:"events,omitempty"`
+		Figure   *string `json:"figure,omitempty"`
+		Subjects *int    `json:"subjects,omitempty"`
+	} `json:"byFigure"`
+	ByKind []struct {
+		Kind     *string `json:"kind,omitempty"`
+		Subjects *int    `json:"subjects,omitempty"`
+	} `json:"byKind"`
+	Period struct {
+		From *time.Time `json:"from,omitempty"`
+		To   *time.Time `json:"to,omitempty"`
+	} `json:"period"`
+	RefusedRequests int `json:"refusedRequests"`
+	SlowedDownloads int `json:"slowedDownloads"`
+	Subjects        int `json:"subjects"`
+}
+
+// LimitPlace defines model for LimitPlace.
+type LimitPlace struct {
+	Kind       LimitPlaceKind `json:"kind"`
+	Project    *string        `json:"project,omitempty"`
+	Repository *string        `json:"repository,omitempty"`
+}
+
+// LimitPlaceKind defines model for LimitPlace.Kind.
+type LimitPlaceKind string
+
+// LimitProfile defines model for LimitProfile.
+type LimitProfile struct {
+	Builtin     bool       `json:"builtin"`
+	CreatedAt   *time.Time `json:"createdAt,omitempty"`
+	CreatedBy   *string    `json:"createdBy,omitempty"`
+	Description string     `json:"description"`
+
+	// Figures Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+	Figures   LimitFigures `json:"figures"`
+	Key       string       `json:"key"`
+	Name      string       `json:"name"`
+	UpdatedAt *time.Time   `json:"updatedAt,omitempty"`
+	UpdatedBy *string      `json:"updatedBy,omitempty"`
+	UsedBy    struct {
+		Assignments     *int `json:"assignments,omitempty"`
+		ProjectMaximums *int `json:"projectMaximums,omitempty"`
+	} `json:"usedBy"`
+	Version int64 `json:"version"`
+}
+
+// LimitProfileList defines model for LimitProfileList.
+type LimitProfileList struct {
+	Items      []LimitProfile `json:"items"`
+	NextCursor *string        `json:"nextCursor,omitempty"`
+}
+
+// LimitProfileWrite defines model for LimitProfileWrite.
+type LimitProfileWrite struct {
+	Builtin     *bool   `json:"builtin,omitempty"`
+	CreatedAt   *string `json:"createdAt,omitempty"`
+	CreatedBy   *string `json:"createdBy,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Figures Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+	Figures   LimitFigures            `json:"figures"`
+	Key       *string                 `json:"key,omitempty"`
+	Name      string                  `json:"name"`
+	UpdatedAt *string                 `json:"updatedAt,omitempty"`
+	UpdatedBy *string                 `json:"updatedBy,omitempty"`
+	UsedBy    *map[string]interface{} `json:"usedBy,omitempty"`
+	Version   *int                    `json:"version,omitempty"`
+}
+
+// LimitProjectList defines model for LimitProjectList.
+type LimitProjectList struct {
+	Items []struct {
+		Maximum         *map[string]interface{} `json:"maximum"`
+		Project         string                  `json:"project"`
+		ProjectRules    int                     `json:"projectRules"`
+		RepositoryRules int                     `json:"repositoryRules"`
+	} `json:"items"`
+	NextCursor *string `json:"nextCursor,omitempty"`
+}
+
+// LimitProjectMaximum defines model for LimitProjectMaximum.
+type LimitProjectMaximum struct {
+	// Effective Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+	Effective LimitFigures    `json:"effective"`
+	Overrides map[string]*int `json:"overrides"`
+	Profile   string          `json:"profile"`
+	Project   string          `json:"project"`
+	UpdatedAt *time.Time      `json:"updatedAt,omitempty"`
+	UpdatedBy *string         `json:"updatedBy,omitempty"`
+	Version   int64           `json:"version"`
+}
+
+// LimitProjectMaximumWrite defines model for LimitProjectMaximumWrite.
+type LimitProjectMaximumWrite struct {
+	Effective *map[string]interface{} `json:"effective,omitempty"`
+	Overrides *map[string]*int        `json:"overrides,omitempty"`
+	Profile   string                  `json:"profile"`
+	Project   *string                 `json:"project,omitempty"`
+	UpdatedAt *string                 `json:"updatedAt,omitempty"`
+	UpdatedBy *string                 `json:"updatedBy,omitempty"`
+	Version   *int                    `json:"version,omitempty"`
+}
+
+// LimitSettings defines model for LimitSettings.
+type LimitSettings struct {
+	BlockSeconds int               `json:"blockSeconds"`
+	Mode         LimitSettingsMode `json:"mode"`
+	UpdatedAt    *time.Time        `json:"updatedAt,omitempty"`
+	UpdatedBy    *string           `json:"updatedBy,omitempty"`
+	Version      int64             `json:"version"`
+}
+
+// LimitSettingsMode defines model for LimitSettings.Mode.
+type LimitSettingsMode string
+
+// LimitSettingsPatch defines model for LimitSettingsPatch.
+type LimitSettingsPatch struct {
+	BlockSeconds *int                    `json:"blockSeconds,omitempty"`
+	Mode         *LimitSettingsPatchMode `json:"mode,omitempty"`
+}
+
+// LimitSettingsPatchMode defines model for LimitSettingsPatch.Mode.
+type LimitSettingsPatchMode string
+
+// LimitSubjectSuggestions defines model for LimitSubjectSuggestions.
+type LimitSubjectSuggestions struct {
+	Items []map[string]interface{} `json:"items"`
+}
+
+// LimitWho The caller a rule names (R-LIM-011, R-LIM-032).
+type LimitWho struct {
+	Account        *string             `json:"account,omitempty"`
+	CallerKind     *LimitWhoCallerKind `json:"callerKind,omitempty"`
+	Deleted        *bool               `json:"deleted,omitempty"`
+	DisplayName    *string             `json:"displayName,omitempty"`
+	Group          *string             `json:"group,omitempty"`
+	Issuer         *string             `json:"issuer,omitempty"`
+	Kind           LimitWhoKind        `json:"kind"`
+	Name           *string             `json:"name,omitempty"`
+	Prefix         *string             `json:"prefix,omitempty"`
+	ProjectId      *string             `json:"projectId,omitempty"`
+	ProjectPath    *string             `json:"projectPath,omitempty"`
+	TechnicalToken *string             `json:"technicalToken,omitempty"`
+	User           *string             `json:"user,omitempty"`
+}
+
+// LimitWhoCallerKind defines model for LimitWho.CallerKind.
+type LimitWhoCallerKind string
+
+// LimitWhoKind defines model for LimitWho.Kind.
+type LimitWhoKind string
 
 // LocalFormatName The formats whose classes contain `local`. The create form offers these for a local repository.
 type LocalFormatName string
@@ -9741,6 +10855,53 @@ type UpstreamTestResult struct {
 // UpstreamTestResultErrorCode defines model for UpstreamTestResult.Error.Code.
 type UpstreamTestResultErrorCode string
 
+// UsageDetail defines model for UsageDetail.
+type UsageDetail struct {
+	Budgets      []map[string]interface{} `json:"budgets"`
+	Credentials  []map[string]interface{} `json:"credentials"`
+	History      []map[string]interface{} `json:"history"`
+	Mode         UsageDetailMode          `json:"mode"`
+	Period       map[string]interface{}   `json:"period"`
+	Repositories []map[string]interface{} `json:"repositories"`
+	Subject      map[string]interface{}   `json:"subject"`
+	Totals       map[string]interface{}   `json:"totals"`
+}
+
+// UsageDetailMode defines model for UsageDetail.Mode.
+type UsageDetailMode string
+
+// UsageList defines model for UsageList.
+type UsageList struct {
+	Items      []UsageRow    `json:"items"`
+	Mode       UsageListMode `json:"mode"`
+	NextCursor *string       `json:"nextCursor,omitempty"`
+	Period     struct {
+		From *time.Time `json:"from,omitempty"`
+		To   *time.Time `json:"to,omitempty"`
+	} `json:"period"`
+}
+
+// UsageListMode defines model for UsageList.Mode.
+type UsageListMode string
+
+// UsageRow defines model for UsageRow.
+type UsageRow struct {
+	BlockedUntil     *time.Time              `json:"blockedUntil,omitempty"`
+	CachedBytes      int64                   `json:"cachedBytes"`
+	LimitedEvents    int64                   `json:"limitedEvents"`
+	Refused          int64                   `json:"refused"`
+	Requests         int64                   `json:"requests"`
+	State            UsageRowState           `json:"state"`
+	Subject          map[string]interface{}  `json:"subject"`
+	UncachedBytes    int64                   `json:"uncachedBytes"`
+	UpstreamRequests int64                   `json:"upstreamRequests"`
+	Utilisation      *map[string]interface{} `json:"utilisation,omitempty"`
+	WouldLimitEvents int64                   `json:"wouldLimitEvents"`
+}
+
+// UsageRowState defines model for UsageRow.State.
+type UsageRowState string
+
 // User A user (R-AUTH-016). `isAdmin`, `adminVia` and `lockedUntil` are derived and read only.
 type User struct {
 	// AdminVia Why the user is an administrator: `direct`, `group:<name>` or `break-glass`.
@@ -10957,6 +12118,84 @@ type ListGroupMembersParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// ListInstanceLimitAssignmentsParams defines parameters for ListInstanceLimitAssignments.
+type ListInstanceLimitAssignmentsParams struct {
+	// WhoKind Only rules of this kind of caller.
+	WhoKind *ListInstanceLimitAssignmentsParamsWhoKind `form:"whoKind,omitempty" json:"whoKind,omitempty"`
+
+	// Profile Only rules of this profile key.
+	Profile *string `form:"profile,omitempty" json:"profile,omitempty"`
+}
+
+// ListInstanceLimitAssignmentsParamsWhoKind defines parameters for ListInstanceLimitAssignments.
+type ListInstanceLimitAssignmentsParamsWhoKind string
+
+// DeleteInstanceLimitAssignmentParams defines parameters for DeleteInstanceLimitAssignment.
+type DeleteInstanceLimitAssignmentParams struct {
+	// IfMatch The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012).
+	IfMatch *IfMatchOptional `json:"If-Match,omitempty"`
+}
+
+// ReplaceInstanceLimitAssignmentParams defines parameters for ReplaceInstanceLimitAssignment.
+type ReplaceInstanceLimitAssignmentParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListLimitBlocksParams defines parameters for ListLimitBlocks.
+type ListLimitBlocksParams struct {
+	// Active Only active blocks (default true).
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// Place `project:<key>` or `repository:<project>/<key>`.
+	Place *string `form:"place,omitempty" json:"place,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ExplainLimitsParams defines parameters for ExplainLimits.
+type ExplainLimitsParams struct {
+	// Subject `<kind>/<id>`: `user/<username>`, `technicalToken/<ID>`, `ci/<issuer>:<project ID>`, `anonymous/<address>`.
+	Subject *string `form:"subject,omitempty" json:"subject,omitempty"`
+
+	// Repository `<projectKey>/<repoKey>`; empty decides at the instance.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+}
+
+// DeleteLimitProfileParams defines parameters for DeleteLimitProfile.
+type DeleteLimitProfileParams struct {
+	// IfMatch The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012).
+	IfMatch *IfMatchOptional `json:"If-Match,omitempty"`
+}
+
+// ReplaceLimitProfileParams defines parameters for ReplaceLimitProfile.
+type ReplaceLimitProfileParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// UpdateLimitSettingsParams defines parameters for UpdateLimitSettings.
+type UpdateLimitSettingsParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// SuggestLimitSubjectsParams defines parameters for SuggestLimitSubjects.
+type SuggestLimitSubjectsParams struct {
+	// Q The text to match.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Kinds Kinds to suggest.
+	Kinds *[]SuggestLimitSubjectsParamsKinds `form:"kinds,omitempty" json:"kinds,omitempty"`
+
+	// Project Narrow to a project's own.
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
+}
+
+// SuggestLimitSubjectsParamsKinds defines parameters for SuggestLimitSubjects.
+type SuggestLimitSubjectsParamsKinds string
+
 // ListOwnedPackagesParams defines parameters for ListOwnedPackages.
 type ListOwnedPackagesParams struct {
 	// Owner The owner identity (`user:alice`, `group:team-web`, `sa:ci-bot`, `ci:<issuer>/<mapping>`).
@@ -11239,6 +12478,42 @@ type ReplaceProjectCiMappingParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// ListProjectLimitAssignmentsParams defines parameters for ListProjectLimitAssignments.
+type ListProjectLimitAssignmentsParams struct {
+	// WhoKind Only rules of this kind of caller.
+	WhoKind *ListProjectLimitAssignmentsParamsWhoKind `form:"whoKind,omitempty" json:"whoKind,omitempty"`
+
+	// Profile Only rules of this profile key.
+	Profile *string `form:"profile,omitempty" json:"profile,omitempty"`
+}
+
+// ListProjectLimitAssignmentsParamsWhoKind defines parameters for ListProjectLimitAssignments.
+type ListProjectLimitAssignmentsParamsWhoKind string
+
+// DeleteProjectLimitAssignmentParams defines parameters for DeleteProjectLimitAssignment.
+type DeleteProjectLimitAssignmentParams struct {
+	// IfMatch The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012).
+	IfMatch *IfMatchOptional `json:"If-Match,omitempty"`
+}
+
+// ReplaceProjectLimitAssignmentParams defines parameters for ReplaceProjectLimitAssignment.
+type ReplaceProjectLimitAssignmentParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// DeleteLimitProjectMaximumParams defines parameters for DeleteLimitProjectMaximum.
+type DeleteLimitProjectMaximumParams struct {
+	// IfMatch The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012).
+	IfMatch *IfMatchOptional `json:"If-Match,omitempty"`
+}
+
+// SetLimitProjectMaximumParams defines parameters for SetLimitProjectMaximum.
+type SetLimitProjectMaximumParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // ListProjectPermissionPoliciesParams defines parameters for ListProjectPermissionPolicies.
 type ListProjectPermissionPoliciesParams struct {
 	// Principal A principal reference.
@@ -11501,6 +12776,36 @@ type GetItemParams struct {
 	Path *string `form:"path,omitempty" json:"path,omitempty"`
 }
 
+// ListRepositoryLimitAssignmentsParams defines parameters for ListRepositoryLimitAssignments.
+type ListRepositoryLimitAssignmentsParams struct {
+	// WhoKind Only rules of this kind of caller.
+	WhoKind *ListRepositoryLimitAssignmentsParamsWhoKind `form:"whoKind,omitempty" json:"whoKind,omitempty"`
+
+	// Profile Only rules of this profile key.
+	Profile *string `form:"profile,omitempty" json:"profile,omitempty"`
+}
+
+// ListRepositoryLimitAssignmentsParamsWhoKind defines parameters for ListRepositoryLimitAssignments.
+type ListRepositoryLimitAssignmentsParamsWhoKind string
+
+// DeleteRepositoryLimitAssignmentParams defines parameters for DeleteRepositoryLimitAssignment.
+type DeleteRepositoryLimitAssignmentParams struct {
+	// IfMatch The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012).
+	IfMatch *IfMatchOptional `json:"If-Match,omitempty"`
+}
+
+// ReplaceRepositoryLimitAssignmentParams defines parameters for ReplaceRepositoryLimitAssignment.
+type ReplaceRepositoryLimitAssignmentParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ReplaceLimitCeilingsParams defines parameters for ReplaceLimitCeilings.
+type ReplaceLimitCeilingsParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // RunRepositoryMirrorParams defines parameters for RunRepositoryMirror.
 type RunRepositoryMirrorParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
@@ -11671,6 +12976,93 @@ type CreateProjectServiceAccountTechnicalTokenSecretParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
+
+// ListProjectUsageParams defines parameters for ListProjectUsage.
+type ListProjectUsageParams struct {
+	// Repository Narrow to one repository of the project.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+
+	// Period hour, day (default) or 30d.
+	Period *ListProjectUsageParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+
+	// Kind Subject kinds.
+	Kind *[]ListProjectUsageParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// State Only subjects in this state.
+	State *ListProjectUsageParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Q A search on the subject's name or address.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Sort Sort field.
+	Sort *ListProjectUsageParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+
+	// Order desc (default) or asc.
+	Order *ListProjectUsageParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListProjectUsageParamsPeriod defines parameters for ListProjectUsage.
+type ListProjectUsageParamsPeriod string
+
+// ListProjectUsageParamsKind defines parameters for ListProjectUsage.
+type ListProjectUsageParamsKind string
+
+// ListProjectUsageParamsState defines parameters for ListProjectUsage.
+type ListProjectUsageParamsState string
+
+// ListProjectUsageParamsSort defines parameters for ListProjectUsage.
+type ListProjectUsageParamsSort string
+
+// ListProjectUsageParamsOrder defines parameters for ListProjectUsage.
+type ListProjectUsageParamsOrder string
+
+// ExportProjectUsageParams defines parameters for ExportProjectUsage.
+type ExportProjectUsageParams struct {
+	// Repository Narrow to one repository of the project.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+
+	// Period hour, day (default) or 30d.
+	Period *ExportProjectUsageParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+
+	// Kind Subject kinds.
+	Kind *[]ExportProjectUsageParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// State Only subjects in this state.
+	State *ExportProjectUsageParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Q A search on the subject's name or address.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Sort Sort field.
+	Sort *ExportProjectUsageParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+}
+
+// ExportProjectUsageParamsPeriod defines parameters for ExportProjectUsage.
+type ExportProjectUsageParamsPeriod string
+
+// ExportProjectUsageParamsKind defines parameters for ExportProjectUsage.
+type ExportProjectUsageParamsKind string
+
+// ExportProjectUsageParamsState defines parameters for ExportProjectUsage.
+type ExportProjectUsageParamsState string
+
+// ExportProjectUsageParamsSort defines parameters for ExportProjectUsage.
+type ExportProjectUsageParamsSort string
+
+// GetProjectUsageSubjectParams defines parameters for GetProjectUsageSubject.
+type GetProjectUsageSubjectParams struct {
+	// Period hour, day (default) or 30d.
+	Period *GetProjectUsageSubjectParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+}
+
+// GetProjectUsageSubjectParamsPeriod defines parameters for GetProjectUsageSubject.
+type GetProjectUsageSubjectParamsPeriod string
 
 // SetProjectVisibilityParams defines parameters for SetProjectVisibility.
 type SetProjectVisibilityParams struct {
@@ -11934,6 +13326,93 @@ type RotateTokenParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// ListUsageParams defines parameters for ListUsage.
+type ListUsageParams struct {
+	// Project Narrow the instance's overview to the repositories of one project (Q-API-353).
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
+
+	// Period hour, day (default) or 30d.
+	Period *ListUsageParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+
+	// Kind Subject kinds.
+	Kind *[]ListUsageParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// State Only subjects in this state.
+	State *ListUsageParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Q A search on the subject's name or address.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Sort Sort field.
+	Sort *ListUsageParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+
+	// Order desc (default) or asc.
+	Order *ListUsageParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListUsageParamsPeriod defines parameters for ListUsage.
+type ListUsageParamsPeriod string
+
+// ListUsageParamsKind defines parameters for ListUsage.
+type ListUsageParamsKind string
+
+// ListUsageParamsState defines parameters for ListUsage.
+type ListUsageParamsState string
+
+// ListUsageParamsSort defines parameters for ListUsage.
+type ListUsageParamsSort string
+
+// ListUsageParamsOrder defines parameters for ListUsage.
+type ListUsageParamsOrder string
+
+// ExportUsageParams defines parameters for ExportUsage.
+type ExportUsageParams struct {
+	// Project Narrow the instance's overview to the repositories of one project (Q-API-353).
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
+
+	// Period hour, day (default) or 30d.
+	Period *ExportUsageParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+
+	// Kind Subject kinds.
+	Kind *[]ExportUsageParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// State Only subjects in this state.
+	State *ExportUsageParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Q A search on the subject's name or address.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Sort Sort field.
+	Sort *ExportUsageParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+}
+
+// ExportUsageParamsPeriod defines parameters for ExportUsage.
+type ExportUsageParamsPeriod string
+
+// ExportUsageParamsKind defines parameters for ExportUsage.
+type ExportUsageParamsKind string
+
+// ExportUsageParamsState defines parameters for ExportUsage.
+type ExportUsageParamsState string
+
+// ExportUsageParamsSort defines parameters for ExportUsage.
+type ExportUsageParamsSort string
+
+// GetUsageSubjectParams defines parameters for GetUsageSubject.
+type GetUsageSubjectParams struct {
+	// Period hour, day (default) or 30d.
+	Period *GetUsageSubjectParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+}
+
+// GetUsageSubjectParamsPeriod defines parameters for GetUsageSubject.
+type GetUsageSubjectParamsPeriod string
+
 // ListUsersParams defines parameters for ListUsers.
 type ListUsersParams struct {
 	// Q Case-insensitive substring of the name or the email.
@@ -11973,6 +13452,12 @@ type CreateUserParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// GetMyLimitsParams defines parameters for GetMyLimits.
+type GetMyLimitsParams struct {
+	// Repository `<projectKey>/<repoKey>`.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+}
+
 // GetPreferencesParams defines parameters for GetPreferences.
 type GetPreferencesParams struct {
 	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
@@ -11989,6 +13474,15 @@ type UpdatePreferencesParams struct {
 type EndOwnSessionsParams struct {
 	KeepCurrent *bool `form:"keepCurrent,omitempty" json:"keepCurrent,omitempty"`
 }
+
+// GetMyUsageParams defines parameters for GetMyUsage.
+type GetMyUsageParams struct {
+	// Period hour, day (default) or 30d.
+	Period *GetMyUsageParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+}
+
+// GetMyUsageParamsPeriod defines parameters for GetMyUsage.
+type GetMyUsageParamsPeriod string
 
 // GetUserParams defines parameters for GetUser.
 type GetUserParams struct {
@@ -12254,6 +13748,21 @@ type UpdateGroupApplicationMergePatchPlusJSONRequestBody = GroupPatch
 // PatchGroupMembersJSONRequestBody defines body for PatchGroupMembers for application/json ContentType.
 type PatchGroupMembersJSONRequestBody = GroupMembersChange
 
+// CreateInstanceLimitAssignmentJSONRequestBody defines body for CreateInstanceLimitAssignment for application/json ContentType.
+type CreateInstanceLimitAssignmentJSONRequestBody = LimitAssignmentWrite
+
+// ReplaceInstanceLimitAssignmentJSONRequestBody defines body for ReplaceInstanceLimitAssignment for application/json ContentType.
+type ReplaceInstanceLimitAssignmentJSONRequestBody = LimitAssignmentWrite
+
+// CreateLimitProfileJSONRequestBody defines body for CreateLimitProfile for application/json ContentType.
+type CreateLimitProfileJSONRequestBody = LimitProfileWrite
+
+// ReplaceLimitProfileJSONRequestBody defines body for ReplaceLimitProfile for application/json ContentType.
+type ReplaceLimitProfileJSONRequestBody = LimitProfileWrite
+
+// UpdateLimitSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateLimitSettings for application/merge-patch+json ContentType.
+type UpdateLimitSettingsApplicationMergePatchPlusJSONRequestBody = LimitSettingsPatch
+
 // CreatePermissionPolicyJSONRequestBody defines body for CreatePermissionPolicy for application/json ContentType.
 type CreatePermissionPolicyJSONRequestBody = PermissionPolicyInput
 
@@ -12277,6 +13786,15 @@ type CreateProjectCiMappingJSONRequestBody = CiMappingInput
 
 // ReplaceProjectCiMappingJSONRequestBody defines body for ReplaceProjectCiMapping for application/json ContentType.
 type ReplaceProjectCiMappingJSONRequestBody = CiMappingInput
+
+// CreateProjectLimitAssignmentJSONRequestBody defines body for CreateProjectLimitAssignment for application/json ContentType.
+type CreateProjectLimitAssignmentJSONRequestBody = LimitAssignmentWrite
+
+// ReplaceProjectLimitAssignmentJSONRequestBody defines body for ReplaceProjectLimitAssignment for application/json ContentType.
+type ReplaceProjectLimitAssignmentJSONRequestBody = LimitAssignmentWrite
+
+// SetLimitProjectMaximumJSONRequestBody defines body for SetLimitProjectMaximum for application/json ContentType.
+type SetLimitProjectMaximumJSONRequestBody = LimitProjectMaximumWrite
 
 // SetProjectMemberJSONRequestBody defines body for SetProjectMember for application/json ContentType.
 type SetProjectMemberJSONRequestBody = MemberInput
@@ -12310,6 +13828,15 @@ type PutDebCoordinatesJSONRequestBody = DebCoordinatesRequest
 
 // CreateDebSigningKeyJSONRequestBody defines body for CreateDebSigningKey for application/json ContentType.
 type CreateDebSigningKeyJSONRequestBody = DebSigningKeyCreate
+
+// CreateRepositoryLimitAssignmentJSONRequestBody defines body for CreateRepositoryLimitAssignment for application/json ContentType.
+type CreateRepositoryLimitAssignmentJSONRequestBody = LimitAssignmentWrite
+
+// ReplaceRepositoryLimitAssignmentJSONRequestBody defines body for ReplaceRepositoryLimitAssignment for application/json ContentType.
+type ReplaceRepositoryLimitAssignmentJSONRequestBody = LimitAssignmentWrite
+
+// ReplaceLimitCeilingsJSONRequestBody defines body for ReplaceLimitCeilings for application/json ContentType.
+type ReplaceLimitCeilingsJSONRequestBody = LimitCeilingsWrite
 
 // RunRepositoryMirrorJSONRequestBody defines body for RunRepositoryMirror for application/json ContentType.
 type RunRepositoryMirrorJSONRequestBody = MirrorRunRequest
@@ -12790,6 +14317,60 @@ type ServerInterface interface {
 	// PatchGroupMembers Add and remove members of a group
 	// (PATCH /api/v1/groups/{name}/members)
 	PatchGroupMembers(w http.ResponseWriter, r *http.Request, name string)
+	// ListInstanceLimitAssignments List the rules of the instance
+	// (GET /api/v1/limits/assignments)
+	ListInstanceLimitAssignments(w http.ResponseWriter, r *http.Request, params ListInstanceLimitAssignmentsParams)
+	// CreateInstanceLimitAssignment Create a rule at the instance
+	// (POST /api/v1/limits/assignments)
+	CreateInstanceLimitAssignment(w http.ResponseWriter, r *http.Request)
+	// DeleteInstanceLimitAssignment Delete a rule of the instance
+	// (DELETE /api/v1/limits/assignments/{id})
+	DeleteInstanceLimitAssignment(w http.ResponseWriter, r *http.Request, id string, params DeleteInstanceLimitAssignmentParams)
+	// GetInstanceLimitAssignment Read a rule of the instance
+	// (GET /api/v1/limits/assignments/{id})
+	GetInstanceLimitAssignment(w http.ResponseWriter, r *http.Request, id string)
+	// ReplaceInstanceLimitAssignment Replace a rule of the instance
+	// (PUT /api/v1/limits/assignments/{id})
+	ReplaceInstanceLimitAssignment(w http.ResponseWriter, r *http.Request, id string, params ReplaceInstanceLimitAssignmentParams)
+	// ListLimitBlocks List blocks
+	// (GET /api/v1/limits/blocks)
+	ListLimitBlocks(w http.ResponseWriter, r *http.Request, params ListLimitBlocksParams)
+	// LiftLimitBlock Lift a block
+	// (DELETE /api/v1/limits/blocks/{id})
+	LiftLimitBlock(w http.ResponseWriter, r *http.Request, id string)
+	// ExplainLimits Which limit applies
+	// (GET /api/v1/limits/explain)
+	ExplainLimits(w http.ResponseWriter, r *http.Request, params ExplainLimitsParams)
+	// GetLimitModePreview What enforce would have done
+	// (GET /api/v1/limits/mode-preview)
+	GetLimitModePreview(w http.ResponseWriter, r *http.Request)
+	// ListLimitProfiles List the profiles of the download limits
+	// (GET /api/v1/limits/profiles)
+	ListLimitProfiles(w http.ResponseWriter, r *http.Request)
+	// CreateLimitProfile Create a profile
+	// (POST /api/v1/limits/profiles)
+	CreateLimitProfile(w http.ResponseWriter, r *http.Request)
+	// DeleteLimitProfile Delete a profile
+	// (DELETE /api/v1/limits/profiles/{key})
+	DeleteLimitProfile(w http.ResponseWriter, r *http.Request, key string, params DeleteLimitProfileParams)
+	// GetLimitProfile Read a profile
+	// (GET /api/v1/limits/profiles/{key})
+	GetLimitProfile(w http.ResponseWriter, r *http.Request, key string)
+	// ReplaceLimitProfile Replace a profile
+	// (PUT /api/v1/limits/profiles/{key})
+	ReplaceLimitProfile(w http.ResponseWriter, r *http.Request, key string, params ReplaceLimitProfileParams)
+	// ListLimitProjects Every project's maximum and rule counts
+	// (GET /api/v1/limits/projects)
+	ListLimitProjects(w http.ResponseWriter, r *http.Request)
+	// GetLimitSettings Read the mode and the block time
+	// (GET /api/v1/limits/settings)
+	GetLimitSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateLimitSettings Change the mode or the block time
+	// (PATCH /api/v1/limits/settings)
+	UpdateLimitSettings(w http.ResponseWriter, r *http.Request, params UpdateLimitSettingsParams)
+	// SuggestLimitSubjects Suggest technical tokens and CI projects
+	// (GET /api/v1/limits/subjects)
+	SuggestLimitSubjects(w http.ResponseWriter, r *http.Request, params SuggestLimitSubjectsParams)
 	// GetManualContents The contents of the manual
 	// (GET /api/v1/manual)
 	GetManualContents(w http.ResponseWriter, r *http.Request)
@@ -12901,6 +14482,30 @@ type ServerInterface interface {
 	// ReplaceProjectCiMapping Replace a CI mapping of a project
 	// (PUT /api/v1/projects/{projectKey}/ci/mappings/{issuer}/{name})
 	ReplaceProjectCiMapping(w http.ResponseWriter, r *http.Request, projectKey string, issuer string, name string, params ReplaceProjectCiMappingParams)
+	// ListProjectLimitAssignments List the rules of a project
+	// (GET /api/v1/projects/{projectKey}/limits/assignments)
+	ListProjectLimitAssignments(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, params ListProjectLimitAssignmentsParams)
+	// CreateProjectLimitAssignment Create a rule at a project
+	// (POST /api/v1/projects/{projectKey}/limits/assignments)
+	CreateProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
+	// DeleteProjectLimitAssignment Delete a rule of a project
+	// (DELETE /api/v1/projects/{projectKey}/limits/assignments/{id})
+	DeleteProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, id string, params DeleteProjectLimitAssignmentParams)
+	// GetProjectLimitAssignment Read a rule of a project
+	// (GET /api/v1/projects/{projectKey}/limits/assignments/{id})
+	GetProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, id string)
+	// ReplaceProjectLimitAssignment Replace a rule of a project
+	// (PUT /api/v1/projects/{projectKey}/limits/assignments/{id})
+	ReplaceProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, id string, params ReplaceProjectLimitAssignmentParams)
+	// DeleteLimitProjectMaximum Remove a project's maximum
+	// (DELETE /api/v1/projects/{projectKey}/limits/maximum)
+	DeleteLimitProjectMaximum(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, params DeleteLimitProjectMaximumParams)
+	// GetLimitProjectMaximum Read a project's maximum
+	// (GET /api/v1/projects/{projectKey}/limits/maximum)
+	GetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
+	// SetLimitProjectMaximum Set a project's maximum
+	// (PUT /api/v1/projects/{projectKey}/limits/maximum)
+	SetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, params SetLimitProjectMaximumParams)
 	// ListProjectMembers List the members of a project
 	// (GET /api/v1/projects/{projectKey}/members)
 	ListProjectMembers(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
@@ -13006,6 +14611,27 @@ type ServerInterface interface {
 	// GetItem Describe a file or folder
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/items)
 	GetItem(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetItemParams)
+	// ListRepositoryLimitAssignments List the rules of a repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments)
+	ListRepositoryLimitAssignments(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ListRepositoryLimitAssignmentsParams)
+	// CreateRepositoryLimitAssignment Create a rule at a repository
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments)
+	CreateRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
+	// DeleteRepositoryLimitAssignment Delete a rule of a repository
+	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id})
+	DeleteRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, id string, params DeleteRepositoryLimitAssignmentParams)
+	// GetRepositoryLimitAssignment Read a rule of a repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id})
+	GetRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, id string)
+	// ReplaceRepositoryLimitAssignment Replace a rule of a repository
+	// (PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id})
+	ReplaceRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, id string, params ReplaceRepositoryLimitAssignmentParams)
+	// GetLimitCeilings Read the ceilings of a remote repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings)
+	GetLimitCeilings(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
+	// ReplaceLimitCeilings Replace the ceilings of a remote repository
+	// (PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings)
+	ReplaceLimitCeilings(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ReplaceLimitCeilingsParams)
 	// GetRepositoryMirror Read the status of a remote repository's mirror
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror)
 	GetRepositoryMirror(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
@@ -13126,6 +14752,15 @@ type ServerInterface interface {
 	// TestUpstream Test an upstream configuration that is not saved
 	// (POST /api/v1/projects/{projectKey}/upstream-tests)
 	TestUpstream(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
+	// ListProjectUsage Usage in a project
+	// (GET /api/v1/projects/{projectKey}/usage)
+	ListProjectUsage(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, params ListProjectUsageParams)
+	// ExportProjectUsage Usage in a project as CSV
+	// (GET /api/v1/projects/{projectKey}/usage/export)
+	ExportProjectUsage(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, params ExportProjectUsageParams)
+	// GetProjectUsageSubject One subject's usage in a project
+	// (GET /api/v1/projects/{projectKey}/usage/subjects/{kind}/{id})
+	GetProjectUsageSubject(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, kind string, id string, params GetProjectUsageSubjectParams)
 	// SetProjectVisibility Set the visibility level of a project
 	// (PUT /api/v1/projects/{projectKey}/visibility)
 	SetProjectVisibility(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, params SetProjectVisibilityParams)
@@ -13285,6 +14920,15 @@ type ServerInterface interface {
 	// RotateToken Rotate a token
 	// (POST /api/v1/tokens/{id}/rotate)
 	RotateToken(w http.ResponseWriter, r *http.Request, id string, params RotateTokenParams)
+	// ListUsage Every subject's usage
+	// (GET /api/v1/usage)
+	ListUsage(w http.ResponseWriter, r *http.Request, params ListUsageParams)
+	// ExportUsage Every subject's usage as CSV
+	// (GET /api/v1/usage/export)
+	ExportUsage(w http.ResponseWriter, r *http.Request, params ExportUsageParams)
+	// GetUsageSubject One subject's usage
+	// (GET /api/v1/usage/subjects/{kind}/{id})
+	GetUsageSubject(w http.ResponseWriter, r *http.Request, kind string, id string, params GetUsageSubjectParams)
 	// ListUsers List users
 	// (GET /api/v1/users)
 	ListUsers(w http.ResponseWriter, r *http.Request, params ListUsersParams)
@@ -13300,6 +14944,9 @@ type ServerInterface interface {
 	// SetAvatar Set the caller's avatar
 	// (PUT /api/v1/users/me/avatar)
 	SetAvatar(w http.ResponseWriter, r *http.Request)
+	// GetMyLimits Which limit applies to the caller
+	// (GET /api/v1/users/me/limits)
+	GetMyLimits(w http.ResponseWriter, r *http.Request, params GetMyLimitsParams)
 	// GetPreferences Read the caller's UI preferences
 	// (GET /api/v1/users/me/preferences)
 	GetPreferences(w http.ResponseWriter, r *http.Request, params GetPreferencesParams)
@@ -13318,6 +14965,9 @@ type ServerInterface interface {
 	// RevokeOwnTokens Revoke all own tokens
 	// (DELETE /api/v1/users/me/tokens)
 	RevokeOwnTokens(w http.ResponseWriter, r *http.Request)
+	// GetMyUsage The caller's own usage
+	// (GET /api/v1/users/me/usage)
+	GetMyUsage(w http.ResponseWriter, r *http.Request, params GetMyUsageParams)
 	// DeleteUser Delete a user
 	// (DELETE /api/v1/users/{username})
 	DeleteUser(w http.ResponseWriter, r *http.Request, username string)
@@ -15970,6 +17620,631 @@ func (siw *ServerInterfaceWrapper) PatchGroupMembers(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ListInstanceLimitAssignments operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceLimitAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInstanceLimitAssignmentsParams
+
+	// ------------- Optional query parameter "whoKind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "whoKind", r.URL.Query(), &params.WhoKind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "whoKind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "whoKind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "profile" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "profile", r.URL.Query(), &params.Profile, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "profile"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "profile", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceLimitAssignments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateInstanceLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) CreateInstanceLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateInstanceLimitAssignment(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteInstanceLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteInstanceLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteInstanceLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteInstanceLimitAssignment(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInstanceLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) GetInstanceLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInstanceLimitAssignment(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceInstanceLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceInstanceLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReplaceInstanceLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceInstanceLimitAssignment(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLimitBlocks operation middleware
+func (siw *ServerInterfaceWrapper) ListLimitBlocks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLimitBlocksParams
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "place" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "place", r.URL.Query(), &params.Place, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "place"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "place", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLimitBlocks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LiftLimitBlock operation middleware
+func (siw *ServerInterfaceWrapper) LiftLimitBlock(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LiftLimitBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExplainLimits operation middleware
+func (siw *ServerInterfaceWrapper) ExplainLimits(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExplainLimitsParams
+
+	// ------------- Optional query parameter "subject" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "subject", r.URL.Query(), &params.Subject, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "subject"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "subject", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExplainLimits(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLimitModePreview operation middleware
+func (siw *ServerInterfaceWrapper) GetLimitModePreview(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLimitModePreview(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLimitProfiles operation middleware
+func (siw *ServerInterfaceWrapper) ListLimitProfiles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLimitProfiles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateLimitProfile operation middleware
+func (siw *ServerInterfaceWrapper) CreateLimitProfile(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateLimitProfile(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteLimitProfile operation middleware
+func (siw *ServerInterfaceWrapper) DeleteLimitProfile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteLimitProfileParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteLimitProfile(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLimitProfile operation middleware
+func (siw *ServerInterfaceWrapper) GetLimitProfile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLimitProfile(w, r, key)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceLimitProfile operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceLimitProfile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReplaceLimitProfileParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceLimitProfile(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLimitProjects operation middleware
+func (siw *ServerInterfaceWrapper) ListLimitProjects(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLimitProjects(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLimitSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetLimitSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLimitSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateLimitSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateLimitSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateLimitSettingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateLimitSettings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SuggestLimitSubjects operation middleware
+func (siw *ServerInterfaceWrapper) SuggestLimitSubjects(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SuggestLimitSubjectsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kinds" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kinds", r.URL.Query(), &params.Kinds, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kinds"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kinds", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SuggestLimitSubjects(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetManualContents operation middleware
 func (siw *ServerInterfaceWrapper) GetManualContents(w http.ResponseWriter, r *http.Request) {
 
@@ -18043,6 +20318,374 @@ func (siw *ServerInterfaceWrapper) ReplaceProjectCiMapping(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReplaceProjectCiMapping(w, r, projectKey, issuer, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectLimitAssignments operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectLimitAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectLimitAssignmentsParams
+
+	// ------------- Optional query parameter "whoKind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "whoKind", r.URL.Query(), &params.WhoKind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "whoKind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "whoKind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "profile" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "profile", r.URL.Query(), &params.Profile, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "profile"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "profile", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectLimitAssignments(w, r, projectKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProjectLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProjectLimitAssignment(w, r, projectKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProjectLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProjectLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteProjectLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProjectLimitAssignment(w, r, projectKey, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectLimitAssignment(w, r, projectKey, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceProjectLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceProjectLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReplaceProjectLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceProjectLimitAssignment(w, r, projectKey, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteLimitProjectMaximum operation middleware
+func (siw *ServerInterfaceWrapper) DeleteLimitProjectMaximum(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteLimitProjectMaximumParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteLimitProjectMaximum(w, r, projectKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLimitProjectMaximum operation middleware
+func (siw *ServerInterfaceWrapper) GetLimitProjectMaximum(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLimitProjectMaximum(w, r, projectKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetLimitProjectMaximum operation middleware
+func (siw *ServerInterfaceWrapper) SetLimitProjectMaximum(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetLimitProjectMaximumParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetLimitProjectMaximum(w, r, projectKey, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -20174,6 +22817,387 @@ func (siw *ServerInterfaceWrapper) GetItem(w http.ResponseWriter, r *http.Reques
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetItem(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRepositoryLimitAssignments operation middleware
+func (siw *ServerInterfaceWrapper) ListRepositoryLimitAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRepositoryLimitAssignmentsParams
+
+	// ------------- Optional query parameter "whoKind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "whoKind", r.URL.Query(), &params.WhoKind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "whoKind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "whoKind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "profile" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "profile", r.URL.Query(), &params.Profile, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "profile"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "profile", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRepositoryLimitAssignments(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRepositoryLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) CreateRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRepositoryLimitAssignment(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRepositoryLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteRepositoryLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRepositoryLimitAssignment(w, r, projectKey, repoKey, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRepositoryLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) GetRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRepositoryLimitAssignment(w, r, projectKey, repoKey, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceRepositoryLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReplaceRepositoryLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceRepositoryLimitAssignment(w, r, projectKey, repoKey, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLimitCeilings operation middleware
+func (siw *ServerInterfaceWrapper) GetLimitCeilings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLimitCeilings(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceLimitCeilings operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceLimitCeilings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReplaceLimitCeilingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceLimitCeilings(w, r, projectKey, repoKey, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -22389,6 +25413,319 @@ func (siw *ServerInterfaceWrapper) TestUpstream(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListProjectUsage operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectUsageParams
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "order", r.URL.Query(), &params.Order, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "order"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectUsage(w, r, projectKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportProjectUsage operation middleware
+func (siw *ServerInterfaceWrapper) ExportProjectUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportProjectUsageParams
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportProjectUsage(w, r, projectKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectUsageSubject operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectUsageSubject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "kind" -------------
+	var kind string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", r.PathValue("kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProjectUsageSubjectParams
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectUsageSubject(w, r, projectKey, kind, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetProjectVisibility operation middleware
 func (siw *ServerInterfaceWrapper) SetProjectVisibility(w http.ResponseWriter, r *http.Request) {
 
@@ -24480,6 +27817,292 @@ func (siw *ServerInterfaceWrapper) RotateToken(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// ListUsage operation middleware
+func (siw *ServerInterfaceWrapper) ListUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUsageParams
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "order", r.URL.Query(), &params.Order, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "order"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUsage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportUsage operation middleware
+func (siw *ServerInterfaceWrapper) ExportUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportUsageParams
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportUsage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUsageSubject operation middleware
+func (siw *ServerInterfaceWrapper) GetUsageSubject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kind" -------------
+	var kind string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", r.PathValue("kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetUsageSubjectParams
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUsageSubject(w, r, kind, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListUsers operation middleware
 func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
 
@@ -24700,6 +28323,39 @@ func (siw *ServerInterfaceWrapper) SetAvatar(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// GetMyLimits operation middleware
+func (siw *ServerInterfaceWrapper) GetMyLimits(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMyLimitsParams
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMyLimits(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPreferences operation middleware
 func (siw *ServerInterfaceWrapper) GetPreferences(w http.ResponseWriter, r *http.Request) {
 
@@ -24864,6 +28520,39 @@ func (siw *ServerInterfaceWrapper) RevokeOwnTokens(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RevokeOwnTokens(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMyUsage operation middleware
+func (siw *ServerInterfaceWrapper) GetMyUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMyUsageParams
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMyUsage(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -26530,6 +30219,47 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones", wrapper.ListAnsibleTombstones)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version}", wrapper.ClearAnsibleTombstone)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/search/suggestions", wrapper.GetSearchSuggestions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/profiles", wrapper.ListLimitProfiles)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/limits/profiles", wrapper.CreateLimitProfile)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/limits/profiles/{key}", wrapper.DeleteLimitProfile)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/profiles/{key}", wrapper.GetLimitProfile)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/limits/profiles/{key}", wrapper.ReplaceLimitProfile)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/assignments", wrapper.ListInstanceLimitAssignments)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/limits/assignments", wrapper.CreateInstanceLimitAssignment)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/limits/assignments/{id}", wrapper.DeleteInstanceLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/assignments/{id}", wrapper.GetInstanceLimitAssignment)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/limits/assignments/{id}", wrapper.ReplaceInstanceLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments", wrapper.ListProjectLimitAssignments)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments", wrapper.CreateProjectLimitAssignment)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments/{id}", wrapper.DeleteProjectLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments/{id}", wrapper.GetProjectLimitAssignment)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments/{id}", wrapper.ReplaceProjectLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments", wrapper.ListRepositoryLimitAssignments)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments", wrapper.CreateRepositoryLimitAssignment)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}", wrapper.DeleteRepositoryLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}", wrapper.GetRepositoryLimitAssignment)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}", wrapper.ReplaceRepositoryLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings", wrapper.GetLimitCeilings)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings", wrapper.ReplaceLimitCeilings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/settings", wrapper.GetLimitSettings)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/limits/settings", wrapper.UpdateLimitSettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/mode-preview", wrapper.GetLimitModePreview)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/maximum", wrapper.DeleteLimitProjectMaximum)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/maximum", wrapper.GetLimitProjectMaximum)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/maximum", wrapper.SetLimitProjectMaximum)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/blocks", wrapper.ListLimitBlocks)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/limits/blocks/{id}", wrapper.LiftLimitBlock)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/explain", wrapper.ExplainLimits)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/subjects", wrapper.SuggestLimitSubjects)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/projects", wrapper.ListLimitProjects)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/usage", wrapper.ListUsage)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/usage/export", wrapper.ExportUsage)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/usage/subjects/{kind}/{id}", wrapper.GetUsageSubject)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/usage", wrapper.ListProjectUsage)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/usage/export", wrapper.ExportProjectUsage)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/usage/subjects/{kind}/{id}", wrapper.GetProjectUsageSubject)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/users/me/usage", wrapper.GetMyUsage)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/users/me/limits", wrapper.GetMyLimits)
 
 	return m
 }

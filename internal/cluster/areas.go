@@ -139,6 +139,12 @@ func init() {
 	// >>> M6b mirror
 	RegisterArea(Area{Name: AreaMirrorYield, Owner: "R-REPO-055", Class: SignalArea})
 	// <<< M6b mirror
+	//
+	// The area of the download limits (usage-and-limits.md, R-LIM-010, R-LIM-013). Its cluster_epoch row is seeded by
+	// 00081_limits.
+	// >>> W-26 limits
+	RegisterArea(Area{Name: AreaLimits, Owner: "R-LIM-013", Class: ChangeArea, PayloadVersion: 1})
+	// <<< W-26 limits
 }
 
 // Names of the areas of this package.
@@ -241,3 +247,13 @@ const AreaVulnData = "vuln_data"
 const AreaMirrorYield = "mirror_yield"
 
 // <<< M6b mirror
+
+// >>> W-26 limits
+
+// AreaLimits carries a change of the download limits (R-LIM-010 to R-LIM-016, R-LIM-026): a profile, a rule, a ceiling, a
+// project's maximum or the settings (mode, block time). Every replica rebuilds its compiled index of the limits
+// (limits.Index), which a request reads instead of the database. The payload is {"what": "<profile|assignment|ceiling|
+// maximum|settings>"}.
+const AreaLimits = "limits"
+
+// <<< W-26 limits

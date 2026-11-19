@@ -46,6 +46,7 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 	a.registerMirrorJobs(r)
 	a.registerJournalJobs(r)
 	a.registerBackupCheckJob(r)
+	a.registerLimitsJobs(r)
 	if err := jobs.ValidateSchedules(a.cfg.Maintenance); err != nil {
 		return nil, err
 	}

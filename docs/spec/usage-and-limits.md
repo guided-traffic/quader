@@ -728,7 +728,8 @@ Priority: **MVP** · Covers: BEYOND-030
     `anonymous`;
   - `every` kind: the instance's `every` rule of that kind.
 - **At write time** a capped rule whose figures exceed the cap answers 422 `limit_above_maximum` with the figures, their requested
-  values and their caps in `errors[]`, and is not stored.
+  values and their caps in `errors[]` (each entry carries the cap as the member `cap`, in the figure's unit, [api-and-ui.md](api-and-ui.md)
+  Q-API-352), and is not stored.
 - **At evaluation time** the clamp is applied again with the current instance rules and maximum
   ([Q-LIM-17](#q-lim-17--an-owners-rule-is-clamped-per-figure-when-it-is-evaluated-not-rewritten)). When an instance administrator
   lowers a project's maximum or an instance rule, every capped rule that exceeds the new cap is clamped from the next request on;
@@ -1376,7 +1377,8 @@ Priority: **MVP** · Covers: BEYOND-030
 | `GET /api/v1/projects/{projectKey}/limits/maximum` | The project's maximum | 200; 404 (none, or no project) | `limits:read` or an Owner of the project |
 | `PUT /api/v1/projects/{projectKey}/limits/maximum` | Set or replace it | 200, 201; 412; 422; 428 | `limits:write` |
 | `DELETE /api/v1/projects/{projectKey}/limits/maximum` | Remove it | 204; 404; 412 | `limits:write` |
-| `GET /api/v1/limits/blocks?active=&place=` | Blocks (active by default), newest first | 200 | `limits:read`; an Owner with `place` of its project |
+| `GET /api/v1/limits/blocks?active=&place=` | Blocks (active by default), newest first; `place` is `project:<projectKey>` (the project and its repositories) or `repository:<projectKey>/<repoKey>` | 200 | `limits:read`; an Owner with `place` of its project |
+| `GET /api/v1/limits/projects` | Per project its maximum (`null` without one) and the number of rules at the project and at its repositories ([api-and-ui.md](api-and-ui.md) Q-API-351) | 200 | `limits:read` |
 | `DELETE /api/v1/limits/blocks/{id}` | Lift an active block | 204; 404; 409 `block_ended` | `limits:write`, or an Owner of the block's project |
 
 ```json
@@ -1465,7 +1467,9 @@ A list row:
 }
 ```
 
-The list answer: `{"period": {"from", "to"}, "mode": "audit", "items": [...], "next": "<cursor>"}`. The subject's forms:
+The list answer: `{"period": {"from", "to"}, "mode": "audit", "items": [...], "nextCursor": "<cursor>"}` (the cursor member of
+R-API-010, [Q-LIM-46](#q-lim-46--the-usage-list-names-its-cursor-nextcursor-as-every-list)). `project=<key>` narrows `GET /api/v1/usage` and its export to
+the repositories of one project ([api-and-ui.md](api-and-ui.md) Q-API-353). The subject's forms:
 `{"kind": "technicalToken", "id": "<ID>", "name": "deploy-prod", "account": "sa:web/partner", "level": "project"}`,
 `{"kind": "ci", "id": "gitlab-internal:4711", "issuer": "gitlab-internal", "projectId": "4711", "projectPath": "acme/web"}`,
 `{"kind": "anonymous", "id": "2001:db8:1:2::/64", "address": "2001:db8:1:2::/64"}`, `{"kind": "system", "id": "system"}`.
@@ -2097,6 +2101,118 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Writes under the request figures only in `enforce` | — | One system | A publish loop gets 200 per second under Standard |
 
 **Choice:** (a). **Applied in the spec:** R-LIM-005; [api-and-ui.md](api-and-ui.md) R-API-016.
+
+### Q-LIM-40 · The counting writer sits at stage 7; the dispatcher, the raw-file handler and the registry mark only refusals and the serving repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-LIM-006 and R-LIM-017 name the format dispatcher, the raw-file handler and the registry root as the places that put the
+counting writer around a response. Stage 7 already holds the charge of every protocol request.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Stage 7 wraps the response of every protocol request once; the three entry points mark a refusal and the repository that served (chosen) | One place | No protocol path can be missed (`/v2/` core routes, a 404 of the dispatcher's lookup); the writer and the charge are made together | The writer also sees the bytes of a refusal's problem body |
+| (b) Each of the three entry points wraps | As written | The writer knows the route | Three places to keep in step; a path that reaches none is uncounted |
+
+**Choice:** (a). A problem body counts its bytes like every body (R-LIM-006: "the bytes of response bodies"). What decides a download
+is the admission (`Host.Serve` for a `Download` route, step 9a for an artifact `GET`), not the writer.
+
+**Rationale:** one wrapping place is the property the owner's "for every format" needs. The development agent would revisit this if a
+protocol path appears whose bytes must not count.
+
+**Applied in the spec:** R-LIM-006, R-LIM-017; [developer/usage-and-limits.md](../developer/usage-and-limits.md).
+
+### Q-LIM-41 · The registry's addresses are read by a parser of their own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `qname.ParseRegistryAddress` beside `ParseAddress`, and `ParseProtocolAddress` over both (chosen) | Two parsers, one rule for names | The other readers of `ParseAddress` (the Bastion's classification, the authentication stage's open routes) keep their answers: none of them serves `/v2/` | Two entry points |
+| (b) `ParseAddress` learns the family `registry` | One parser | As R-LIM-005 words it | The Bastion would start to classify `/v2/` paths it does not serve; every reader has to be checked |
+
+**Choice:** (a). **Rationale:** the family is new to the limits only. Revisit when a second reader needs the registry's repository.
+**Applied in the spec:** R-LIM-005.
+
+### Q-LIM-42 · A request's charge travels in its context, not in a field of the remote engine's request
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `limits.FromContext(ctx)` in the remote engine (chosen) | The context of the leader's request carries it into the detached flight (`context.WithoutCancel` keeps values) | No format and no host code passes it; a follower that fetches for itself carries its own | Implicit |
+| (b) `proxy.Request.Charge` | A field the host fills | Explicit | Every place that builds a `proxy.Request` (the host, the discovery, the virtual engine) must fill it, and a forgotten one is uncounted |
+
+**Choice:** (a). Background requests carry no charge; the engine records them under `system` (Q-LIM-19). **Rationale:** the context is
+already how the request's principal reaches the engine. Revisit if a fetch runs under a context that is not its request's.
+**Applied in the spec:** R-LIM-022.
+
+### Q-LIM-43 · Step 9a is the fetch's first act, and its refusal is the leader's own outcome
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-LIM-022 places 9a after the populate check, and says that a follower of a flight does not pass it while a request that
+leads its own fetch after waiting does.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 9a runs where the fetch starts (`fetcher.run`); a refusal ends the flight with an outcome only its leader reads (chosen) | The request that sends the upstream request is the one that pays | A follower never pays an upstream request; a waiter that becomes a leader passes 9a then; another request that waited fetches under its own budget, never answered by another subject's 429 | 9a runs after the cross-replica flight is acquired |
+| (b) 9a before the collapse | As the hook's text | Earlier | Every request that misses at the same moment pays an upstream request, also those that are then served by the leader's fetch |
+
+**Choice:** (a). An expired document is served stale within `maxStaleSeconds` with `Cache-Status: quader; hit; detail=stale-budget`
+when the leader's own fetch was refused (Q-LIM-9). **Rationale:** the owner's "the second caller pays cached only". Revisit if the flight
+lock held during a refused 9a delays waiters measurably. **Applied in the spec:** R-LIM-022.
+
+### Q-LIM-44 · A block marker holds the block's ID and its end
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The value is `<block ID>\|<end in Unix milliseconds>` (chosen) | One `GET` at stage 7 says whether and how long | The `Retry-After` of `caller_blocked` without a further command; `TTL` is not in the command list of R-ARCH-031 | A longer value |
+| (b) The block ID alone and `TTL` | As R-LIM-025 words it | Shorter | A command more in the ACL and in the round trip |
+
+**Choice:** (a). The lift removes the marker with `DELIFEQ` of the same value, which the block's row reconstructs. **Applied in the
+spec:** R-LIM-025.
+
+### Q-LIM-45 · The overview's utilisation, state and order are computed by the API from one aggregation per scope
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) SQL aggregates per subject and place (hour and day sums with the limits the rows recorded); the ratio, the state, the filter and the order in the API; an offset cursor (chosen) | Two to three statements per list | One reading of the formula, in Go, the same for the list, the export and the detail | The whole scope is aggregated for every page; with 2,000 subjects in a day that is 2,000 rows |
+| (b) Everything in one SQL statement | As R-LIM-034 words it | Paging in the database | The state needs the mode and the active blocks, which the statement would join as well |
+
+**Choice:** (a). **Rationale:** the overview is an administrator's page, read rarely; its cost is bounded by the subjects of one period.
+Revisit when an installation has more than 50,000 subjects in a day. **Applied in the spec:** R-LIM-034.
+
+### Q-LIM-46 · The usage list names its cursor nextCursor, as every list
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+R-LIM-034 named the cursor `next`; R-API-010 names the cursor of every list `nextCursor`. **Choice:** `nextCursor` (the general rule);
+R-LIM-034 is corrected. The screens of work package 3 read either.
+
+### Q-LIM-47 · A delete of the limits honours If-Match when sent
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `DELETE` of a profile, a rule or a maximum takes `If-Match` when sent (`412` for a stale one), as every delete of the API does (`IfMatchOptional`) (chosen) | One convention | The test of R-API-012 holds it | A delete without the header deletes what is there |
+| (b) `428` without `If-Match` | As the API section of this page says for a delete | Stricter | The only deletes of the API that require it |
+
+**Choice:** (a). `PUT` and `PATCH` require it (`428`). **Applied in the spec:** R-LIM-031 to R-LIM-033.
+
+### Q-LIM-48 · The token request's request figures are counted once, after its handler
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Stage 7 checks the block and the class of `GET /v2/_token` and defers its request windows (`limits.Charge.DeferRequestFigures`); the
+handler's `Retarget` counts them once: under the subject of a valid Quader token, else under the address. A presented credential
+that failed is a refused request of the address. **Applied in the spec:** R-LIM-003.
+
 
 ## What this does not cover
 

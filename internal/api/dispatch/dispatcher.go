@@ -21,6 +21,7 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/qname"
@@ -32,6 +33,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -299,6 +301,10 @@ func (d *Dispatcher) serveRoute(w http.ResponseWriter, r *http.Request, f format
 	// subject's endpoint applies first (R-EP-013).
 	dec := acc.Decide(ctx, authz.Coordinate{Repository: key, Kind: route.Kind.RequestKind(), Actions: []authz.Action{route.Action}, Part: partOf(route)})
 	if !dec.Allowed() {
+		// A refusal of the decision point is a refused request of the subject; the challenge is none (R-LIM-008).
+		if dec.Outcome == authz.DenyHidden || dec.Outcome == authz.DenyVisible {
+			limits.FromContext(ctx).MarkRefused()
+		}
 		fail(dec.Err())
 		return
 	}
@@ -310,8 +316,15 @@ func (d *Dispatcher) serveRoute(w http.ResponseWriter, r *http.Request, f format
 	}
 	repo, err := d.resolve(ctx, f, key)
 	if err != nil {
+		// A repository that does not exist, asked for with a credential, is a refused request (R-LIM-008).
+		if e, ok := errs.As(err); ok && e.Code == errs.CodeRepositoryNotFound && !httpserver.PrincipalFrom(ctx).Anonymous {
+			limits.FromContext(ctx).MarkRefused()
+		}
 		fail(err)
 		return
+	}
+	if id, perr := strconv.ParseInt(repo.ID, 10, 64); perr == nil {
+		limits.FromContext(ctx).Served(id)
 	}
 	if cacheView && repo.Class != repository.Remote {
 		fail(errs.E(errs.NotFound, errs.CodeRepositoryNotFound, "No repository has the requested key."))

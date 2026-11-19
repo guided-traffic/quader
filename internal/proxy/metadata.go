@@ -212,6 +212,14 @@ func (e *Engine) metadataAnswer(ctx context.Context, rq Request, st *reqState, h
 		e.m.collapsed.WithLabelValues(rem.Repo.Name.String()).Inc()
 	}
 	switch {
+	case st.budget != nil:
+		// Step 9a refused the request's own fetch: an expired document is served stale within maxStaleSeconds without
+		// contacting the upstream, otherwise the answer is 429 (R-LIM-022, Q-LIM-9).
+		if held.found && e.withinMaxStale(rem, held.en) {
+			e.m.lookup(rem.Repo.Name.String(), Metadata, resultStale)
+			return held.doc(CacheStatus{Hit: true, Stale: true, Detail: detailStaleBudget}), nil
+		}
+		return nil, withStatus(st.budget, CacheStatus{})
 	case res.own != nil:
 		return nil, res.own // a background request's own outcome: pre-empted, the circuit is open, the spool is busy, rate-limited
 	case res.err != nil:
@@ -393,7 +401,9 @@ func (f *fetcher) metadata(ctx context.Context, resp *http.Response, idle *atomi
 		fwd = "stale"
 	}
 	f.box.set(CacheStatus{Forwarded: fwd, FwdStatus: resp.StatusCode, Stored: true}.Header())
-	sp, err := e.o.Items.Spool(ctx, f.bodyReader(resp, nil), items.IngestOptions{ContentLength: resp.ContentLength})
+	body, bodyDone := f.bodyReader(ctx, resp, nil)
+	sp, err := e.o.Items.Spool(ctx, body, items.IngestOptions{ContentLength: resp.ContentLength})
+	bodyDone()
 	if err != nil {
 		return f.bodyFailure(ctx, err, idle)
 	}

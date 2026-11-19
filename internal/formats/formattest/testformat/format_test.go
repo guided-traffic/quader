@@ -118,6 +118,10 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 			[]formattest.Check{formattest.CheckRevision},
 		},
 		{"R-AUTHZ-005 a document rendered otherwise on the path that filters it fails check 13", testformat.FiltersDifferently, formattest.CheckAuthzPaths, "when only an unrelated path is refused", nil},
+		{
+			"R-LIM-036 a format that writes a download's body itself instead of through Host.Serve fails check 16", testformat.WritesOwnDownload,
+			formattest.CheckAdmission, "without the admission of Host.Serve", nil,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
