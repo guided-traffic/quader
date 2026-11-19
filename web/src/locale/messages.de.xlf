@@ -11290,6 +11290,15 @@
         <target>Die versuchte Aktion erfordert eine aktuelle Anmeldung. Melden Sie sich erneut an und wiederholen Sie sie dann. Ihre Eingaben bleiben erhalten.</target>
       </segment>
     </unit>
+    <unit id="login.session-ended">
+      <notes>
+        <note category="location">src/app/features/login/login.ts:41,45</note>
+      </notes>
+      <segment>
+        <source> Your session has ended. Sign in again to continue where you left off. </source>
+        <target>Ihre Sitzung ist beendet. Melden Sie sich erneut an, um dort weiterzumachen, wo Sie aufgehört haben.</target>
+      </segment>
+    </unit>
     <unit id="vuln.finding.history">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:112,113</note>

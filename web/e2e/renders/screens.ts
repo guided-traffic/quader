@@ -728,6 +728,9 @@ const collectionName = `${ansiblePackage.namespace}.${ansiblePackage.name}`;
 export const screens: readonly Screen[] = [
   // Without a session (Q-UI-125).
   { id: 'login', path: '/ui/login', kinds: ['anonymous'] },
+  // The sign-in screen as the guard opens it for a session that has ended (R-UI-004, Q-UI-710): the notice above the providers,
+  // and Continue without signing in while the seed makes a project public.
+  { id: 'login-session-ended', path: '/ui/login?returnTo=%2Fprojects&ended=1', kinds: ['anonymous'] },
   { id: 'logged-out', path: '/ui/logged-out', kinds: ['anonymous'] },
 
   // The start and the project's content (Q-UI-129): the plain user's main path.

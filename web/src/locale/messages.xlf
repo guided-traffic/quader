@@ -9608,7 +9608,7 @@
     </unit>
     <unit id="login.heading">
       <notes>
-        <note category="location">src/app/features/login/login.ts:31,33</note>
+        <note category="location">src/app/features/login/login.ts:33,35</note>
       </notes>
       <segment>
         <source>Sign in</source>
@@ -9616,15 +9616,23 @@
     </unit>
     <unit id="login.reauth">
       <notes>
-        <note category="location">src/app/features/login/login.ts:35,37</note>
+        <note category="location">src/app/features/login/login.ts:37,39</note>
       </notes>
       <segment>
         <source> The action you tried needs a recent sign-in. Sign in again, then repeat it. Your entries are kept. </source>
       </segment>
     </unit>
+    <unit id="login.session-ended">
+      <notes>
+        <note category="location">src/app/features/login/login.ts:41,45</note>
+      </notes>
+      <segment>
+        <source> Your session has ended. Sign in again to continue where you left off. </source>
+      </segment>
+    </unit>
     <unit id="login.loading">
       <notes>
-        <note category="location">src/app/features/login/login.ts:42,43</note>
+        <note category="location">src/app/features/login/login.ts:48,49</note>
       </notes>
       <segment>
         <source>Loading the sign-in options.</source>
@@ -9632,7 +9640,7 @@
     </unit>
     <unit id="login.redirecting">
       <notes>
-        <note category="location">src/app/features/login/login.ts:45,47</note>
+        <note category="location">src/app/features/login/login.ts:51,53</note>
       </notes>
       <segment>
         <source>Redirecting to the identity provider.</source>
@@ -9640,7 +9648,7 @@
     </unit>
     <unit id="login.no-providers">
       <notes>
-        <note category="location">src/app/features/login/login.ts:48,51</note>
+        <note category="location">src/app/features/login/login.ts:54,57</note>
       </notes>
       <segment>
         <source>No sign-in method is configured.</source>
@@ -9648,7 +9656,7 @@
     </unit>
     <unit id="login.local.heading">
       <notes>
-        <note category="location">src/app/features/login/login.ts:55,56</note>
+        <note category="location">src/app/features/login/login.ts:61,62</note>
       </notes>
       <segment>
         <source>Local administrator</source>
@@ -9656,7 +9664,7 @@
     </unit>
     <unit id="login.local.username">
       <notes>
-        <note category="location">src/app/features/login/login.ts:59,61</note>
+        <note category="location">src/app/features/login/login.ts:65,67</note>
       </notes>
       <segment>
         <source>Username</source>
@@ -9664,7 +9672,7 @@
     </unit>
     <unit id="login.local.password">
       <notes>
-        <note category="location">src/app/features/login/login.ts:70,72</note>
+        <note category="location">src/app/features/login/login.ts:76,78</note>
       </notes>
       <segment>
         <source>Password</source>
@@ -9672,7 +9680,7 @@
     </unit>
     <unit id="login.local.submit">
       <notes>
-        <note category="location">src/app/features/login/login.ts:85,86</note>
+        <note category="location">src/app/features/login/login.ts:91,92</note>
       </notes>
       <segment>
         <source> Sign in </source>
@@ -9680,7 +9688,7 @@
     </unit>
     <unit id="login.or">
       <notes>
-        <note category="location">src/app/features/login/login.ts:92,93</note>
+        <note category="location">src/app/features/login/login.ts:98,99</note>
       </notes>
       <segment>
         <source>or sign in with</source>
@@ -9688,7 +9696,7 @@
     </unit>
     <unit id="login.with">
       <notes>
-        <note category="location">src/app/features/login/login.ts:107,108</note>
+        <note category="location">src/app/features/login/login.ts:113,114</note>
       </notes>
       <segment>
         <source>Sign in with</source>
@@ -9696,7 +9704,7 @@
     </unit>
     <unit id="login.unavailable">
       <notes>
-        <note category="location">src/app/features/login/login.ts:112,114</note>
+        <note category="location">src/app/features/login/login.ts:118,120</note>
       </notes>
       <segment>
         <source>Currently unavailable</source>
@@ -9704,7 +9712,7 @@
     </unit>
     <unit id="login.anonymous">
       <notes>
-        <note category="location">src/app/features/login/login.ts:121,123</note>
+        <note category="location">src/app/features/login/login.ts:127,129</note>
       </notes>
       <segment>
         <source>Continue without signing in</source>

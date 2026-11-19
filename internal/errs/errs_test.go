@@ -118,6 +118,14 @@ func TestWriteProblem(t *testing.T) {
 			}
 		}
 	})
+	t.Run("Q-AUTH-410 each cookie of an error is a Set-Cookie line of its own, in order", func(t *testing.T) {
+		rec, _, _ := render(E(Unauthenticated, CodeSessionExpired, "x", WithCookies(
+			&http.Cookie{Name: "a", Path: "/", MaxAge: -1}, &http.Cookie{Name: "b", Path: "/", MaxAge: -1})))
+		got := rec.Header().Values("Set-Cookie")
+		if len(got) != 2 || !strings.HasPrefix(got[0], "a=;") || !strings.HasPrefix(got[1], "b=;") || !strings.Contains(got[0], "Max-Age=0") {
+			t.Fatalf("Set-Cookie %q", got)
+		}
+	})
 	t.Run("R-ARCH-023 a plain error becomes internal and hides its cause", func(t *testing.T) {
 		rec, p, logs := render(errors.New("pq: password authentication failed for user quader"))
 		if rec.Code != 500 || p.Code != "internal" {

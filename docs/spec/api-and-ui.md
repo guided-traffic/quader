@@ -3410,20 +3410,35 @@ The flow and its security properties are owned by
 [identity-and-authentication.md](identity-and-authentication.md); the UI side:
 
 - The UI never shows a username and password form for regular users (INV-7).
-- On load the UI calls `GET /api/v1/auth/whoami`. Success starts the application. 401 while
-  `publicContent` is false navigates to `/login?returnTo=<current route>`; while it is true
-  (from `login-options`), the application runs anonymously with a "Sign in" button (R-UI-057).
+- On load the UI calls `GET /api/v1/auth/whoami`. Success starts the application. A 401 is told apart by its `code`, not by
+  its status:
+  - `session_expired`: the browser sent the cookie of a session that has ended, and this answer has cleared it
+    ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-001, Q-AUTH-410). The UI navigates to
+    `/login?returnTo=<current route>&ended=1` whatever `publicContent` says: the person believes they are signed in and is told,
+    instead of running on silently as a visitor without their private projects (owner, 2026-11-19, W-21).
+  - any other code (no session cookie): while `publicContent` is false the UI navigates to `/login?returnTo=<current route>`;
+    while it is true (from `login-options`), the application runs anonymously with a "Sign in" button (R-UI-057).
+- `ended=1` makes the sign-in screen show the fixed notice "Your session has ended. Sign in again to continue where you left
+  off." above the sign-in methods; no other value shows anything, and the parameter carries no text. The screen takes the
+  parameter out of the address as it opens (`replaceUrl`), so a reload does not claim the end again; `returnTo` stays. While
+  `publicContent` is true the screen offers "Continue without signing in" as for every visitor, and it leads into a working
+  visitor session, because the browser no longer holds the cookie (Q-UI-710, Q-UI-711).
 - `/login` renders only from `GET /api/v1/auth/login-options`: one button per provider, each
   navigating (full page) to the provider's `startUrl` with `return_to` set to the UI route under the path of the page's
   resolved base (`document.baseURI`, so a relative `<base href>` counts as the browser resolves it): `/ui/en/…` and `/ui/de/…` in
   the builds per locale, `/ui/…` on the development server (UI-A-49). With
-  `autoRedirect` set, the page navigates at once unless the URL carries `?auto_sign_in=false`. The
+  `autoRedirect` set, the page navigates at once unless the URL carries `?auto_sign_in=false`, or carries `ended=1` while
+  `publicContent` is true, where the person chooses between signing in and continuing without (Q-UI-712). The
   break-glass form appears when `localLogin` is true or the URL carries `?auto_sign_in=false`, and
   posts to the local login endpoint of the owning page. The screen stands alone, without the shell,
   in one column: the form first, then the providers below "or sign in with" (Q-UI-125).
   A login notice is P2 ([operations-and-observability.md](operations-and-observability.md)).
 - A 401 during use (expired or revoked session) opens a dialog "Your session has ended" with "Sign
-  in again"; editors with unsaved changes first offer "Copy draft as JSON".
+  in again"; editors with unsaved changes first offer "Copy draft as JSON". "Sign in again" opens `/login?returnTo=<route>`
+  without `ended=1`, since the dialog has said it. The dialog has told the person, so the next `whoami` of the tab that answers
+  `session_expired` (and clears the cookie) makes a visitor, not the sign-in screen again: "Continue without signing in" from
+  that screen leads into the visitor session at once (Q-UI-713). "Not now" leaves the page as it is; the next load of a page
+  in the browser meets the cookie at `whoami` and takes the path above, with the notice. No second mechanism clears the cookie.
 - Sign-out: `POST /auth/logout` with the CSRF header, then navigation to the returned
   `redirectTo`, or to `/logged-out`.
 - `/logged-out` is where the post-logout redirect URI `<baseURL>/ui/logged-out` lands. R-AUTH-003
@@ -3457,6 +3472,12 @@ Acceptance criteria:
 
 - With one provider and auto-redirect, opening `/ui/en/packages` unauthenticated lands at the
   identity provider and, after login, back on `/ui/en/packages`.
+- With a public project and the cookie of an ended session in the browser, opening `/ui/en/guides` lands on the sign-in screen
+  with the notice "Your session has ended. Sign in again to continue where you left off." and the address
+  `/ui/en/login?returnTo=%2Fguides`; "Continue without signing in" opens **Guides** as a visitor without an error, and no
+  request sent after the answer of the first `whoami` carries the session cookie. The same browser without the cookie opens **Guides** directly.
+  Tests: [auth-guard.spec.ts](../../web/src/app/core/auth-guard.spec.ts), [login.spec.ts](../../web/src/app/features/login/login.spec.ts),
+  [session-store.spec.ts](../../web/src/app/core/session-store.spec.ts).
 - Signing out in tab A shows `/logged-out` in tab B within two seconds.
 - With one provider, auto-redirect on, nothing public and `rp_initiated_logout` false,
   signing out lands on `/ui/{locale}/logged-out` and stays there. The browser sends no request to
@@ -5092,7 +5113,9 @@ Priority: **MVP** · Covers: quader-only
   a caller who may not read the wiki and never says that one exists.
 - While `publicContent` is true (`login-options`, R-AUTH-009) a visitor without a session uses the application as the anonymous
   subject: the start page lists the public projects, every screen shows what the public levels admit, and the top bar offers
-  **Sign in**. While it is false a visitor without a session is sent to the sign-in screen (R-UI-004).
+  **Sign in**. While it is false a visitor without a session is sent to the sign-in screen (R-UI-004). A browser whose session
+  has ended is no such visitor until it chose to be: it lands on the sign-in screen with the notice that the session has ended,
+  and "Continue without signing in" there makes it one (R-UI-004, Q-UI-710).
 
 Acceptance criteria:
 
@@ -17257,6 +17280,97 @@ reason. The development agent revisits (c) if the renders are to show the 429 of
 
 **Applied in the spec:** R-UI-173 (a run that ends green). Code: [up.sh](../../deploy/ui-dev/up.sh); documented in
 [web-ui.md](../developer/web-ui.md#local-ui-development).
+
+### Q-UI-710 · An ended session at load goes to the sign-in screen with a notice, also while there is public content
+
+Status: **Decided by the owner on 2026-11-19** ("Option A", W-21: the sign-in screen with the notice that the session has ended,
+from three: that screen, on as a visitor without a word, the server counting a dead cookie as no credential). How the UI tells the
+case apart is **decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `authGuard` loaded the session and took every 401 of `whoami` for "not signed in"; with `publicContent` true it started a
+visitor that still sent the dead cookie, and every request answered `session_expired` ([identity-and-authentication.md](identity-and-authentication.md)
+Q-AUTH-410). The answer of `whoami` now clears the cookie, so the browser is a visitor from its next request on; the UI has to say
+what happened before it lets the person on.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The session store reads the problem's `code`: `session_expired` is the state `ended`, which the guard sends to `/login?returnTo=<route>&ended=1`; every other 401 is `anonymous` as before (chosen) | One new state, one new branch of the guard | The status stays what R-AUTH-002 fixes; the code is the contract that already tells an ended session from none; `ended` is loaded again on the next navigation, which is then a visitor's | None found |
+| (b) The guard runs on as a visitor and shows a notice in the shell | A banner "Your session has ended" above the public screens | No detour | Against the owner's choice; a person looking for a private project sees an empty list under a banner |
+| (c) Any 401 with a cookie goes to the sign-in screen | The UI cannot see the cookie (`HttpOnly`) | None | Not buildable |
+
+**Choice:** (a). The shell shows nothing for the state `ended`; the guard has left for the sign-in screen, which stands without the
+shell (Q-UI-125). **Rationale:** the code was there and is the stable contract; the state keeps the decision in one place. The
+development agent records no revisit condition.
+
+**Applied in the spec:** R-UI-004, R-UI-057. Code: [session-store.ts](../../web/src/app/core/session-store.ts) (`SessionState`
+`ended`), [auth-guard.ts](../../web/src/app/core/auth-guard.ts). Tests: [auth-guard.spec.ts](../../web/src/app/core/auth-guard.spec.ts),
+[session-store.spec.ts](../../web/src/app/core/session-store.spec.ts).
+
+### Q-UI-711 · The sign-in screen learns the reason from `ended=1` and takes it out of the address
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the guard and the sign-in screen are separate routes, and the screen is also opened from links (the top bar's **Sign in**,
+**Signed out**, a bookmark). Whatever tells the screen the reason can be put into a link from outside; the screen must not show a
+text the link chooses, and a reload of the screen should not keep claiming an ended session.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A query parameter `ended=1` that selects a fixed notice; the screen keeps the notice for the visit and replaces the address without it (chosen) | As `reauth=1` of the re-authentication | Visible and testable; a link can show nothing but the one fixed sentence; a reload shows the screen without the notice | One more navigation (`replaceUrl`) as the screen opens |
+| (b) The router's navigation state (`history.state`) | Not in the address | A link from outside cannot set it | Survives a reload in the browser's history entry, so the notice comes back on every reload; harder to test |
+| (c) The session store's state | The screen reads `SessionStore.state()` | No parameter | Lost on a reload of the sign-in screen, which is fine, but the screen then depends on how it was reached in the same tab only, and a guard in another tab cannot pass it |
+
+**Choice:** (a). Only the value `1` shows the notice; any other value shows nothing. The notice is the plain status line of the
+re-authentication notice (`<p role="status">`), with the words of the dialog of R-UI-004: "Your session has ended. Sign in again to
+continue where you left off." **Rationale:** the pattern exists (`reauth=1`), and the worst a forged link can do is say a session
+ended. The development agent would revisit this if the notice is used to mislead in practice, then with (b).
+
+**Applied in the spec:** R-UI-004. Code: [login.ts](../../web/src/app/features/login/login.ts) (`ended`, `sessionEnded`). Tests:
+[login.spec.ts](../../web/src/app/features/login/login.spec.ts).
+
+### Q-UI-712 · An ended session waives the automatic sign-in only where there is a choice
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: with `autoRedirect` set, the sign-in screen leaves for the provider at once (R-AUTH-009); an identity provider with a live
+session of its own signs the person in silently. The owner's choice offers, while there is public content, to continue without
+signing in, which an immediate redirect would never show.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `ended=1` waives `autoRedirect` while `publicContent` is true, and only then (chosen) | With public content: the notice, the providers and "Continue without signing in"; without it: the redirect as before | The choice is shown where there is one; where there is none, the operator's "send everyone straight there" stays and the person is signed in again without a click | Without public content the notice is not seen (the screen shows "Redirecting to the identity provider." for a moment) |
+| (b) `ended=1` always waives it | The notice everywhere | The person always reads why | One click more on every installation with one provider and nothing public, for nothing to choose |
+| (c) It never waives it | As before | No special case | The choice of the owner's option is never offered on an installation with `autoRedirect` |
+
+**Choice:** (a). The break-glass form does not appear for `ended=1`; that stays `?auto_sign_in=false` (Q-UI-125).
+**Rationale:** the notice exists to support a choice; where the operator removed the choice, the shortest way back in is the right
+one. The development agent would revisit this if people on such installations report not knowing why they passed the provider.
+
+**Applied in the spec:** R-UI-004. Code: [login.ts](../../web/src/app/features/login/login.ts). Tests:
+[login.spec.ts](../../web/src/app/features/login/login.spec.ts).
+
+### Q-UI-713 · After the dialog of an end during use, the ended cookie makes a visitor
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a session that ends while the application is open shows the dialog "Your session has ended" (R-UI-004); its **Sign in
+again** opens the sign-in screen. Only `whoami` clears the cookie (Q-AUTH-410), and the dialog does not call it, so the cookie is
+still there when the person chooses "Continue without signing in" on that screen: the guard's `whoami` then answers
+`session_expired`, and without a rule the person would land on the sign-in screen a second time, now with the notice.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The dialog's flag (`SessionStore.ended`) marks the end as told; the next load that meets `session_expired` is `anonymous`, and the flag is consumed (chosen) | One condition in the store | One landing on the sign-in screen, as on the load path; nothing new on the server | A rule that depends on what the tab has shown |
+| (b) The dialog calls `whoami` to clear the cookie | The cookie goes at once | No second landing | A second way of clearing in the UI, a request from a dialog, and the window of H-1004 once more |
+| (c) Accept the second landing | No change | Simplest | The person has read the notice twice and pressed "Continue without signing in" twice |
+
+**Choice:** (a). "Not now" keeps the page as it is (R-UI-004): the guard does not run on a navigation inside the application,
+and the next load of a page in the browser meets the cookie at `whoami`, which is the load path of Q-UI-710 with its notice; no
+second mechanism clears the cookie. **Rationale:** the condition is the fact the dialog created; the load path covers the rest.
+The development agent records no revisit condition.
+
+**Applied in the spec:** R-UI-004. Code: [session-store.ts](../../web/src/app/core/session-store.ts) (`doLoad`, `markEnded`).
+Tests: [auth-guard.spec.ts](../../web/src/app/core/auth-guard.spec.ts), [session-store.spec.ts](../../web/src/app/core/session-store.spec.ts).
 
 ## What this does not cover
 

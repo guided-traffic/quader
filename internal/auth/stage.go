@@ -304,8 +304,25 @@ func fromBrowser(r *http.Request) bool {
 }
 
 // unauthenticated is the 401 of the request whose path rules read path ([rulePaths]).
-func (s *Stage) unauthenticated(r *http.Request, path, code, detail string, tokenRejected bool) error {
-	return errs.E(errs.Unauthenticated, code, detail, errs.WithChallenge(s.challenge(r, path, tokenRejected)))
+func (s *Stage) unauthenticated(r *http.Request, path, code, detail string, tokenRejected bool, opts ...errs.Option) error {
+	return errs.E(errs.Unauthenticated, code, detail, append([]errs.Option{errs.WithChallenge(s.challenge(r, path, tokenRejected))}, opts...)...)
+}
+
+// whoamiPath is the route the UI asks at load who is signed in (R-UI-004).
+const whoamiPath = "/api/v1/auth/whoami"
+
+// endedSessionAnswer is what the 401 session_expired adds on the one route that takes an ended session's cookie away
+// (Q-AUTH-410): GET or HEAD of whoami clears __Host-qdr_session and __Host-qdr_csrf with the attributes of the sign-out
+// (R-AUTH-013) and is not stored (no-store). Every other route answers session_expired and leaves the cookies alone, so
+// a request still in flight with an old cookie cannot clear the one a sign-in in another tab has just set (Q-AUTH-177),
+// except on this one request of a page's load (H-1004). The answer is the same for every cookie the validator refuses -
+// malformed, unknown, ended, revoked, of a disabled user (Q-AUTH-412). p is the unescaped path of [rulePaths]: the route
+// the router serves the request on, "" on a process that does not serve /api/v1.
+func endedSessionAnswer(method, p string) []errs.Option {
+	if p != whoamiPath || (method != http.MethodGet && method != http.MethodHead) {
+		return nil
+	}
+	return []errs.Option{errs.WithCookies(session.ClearingCookies()...), errs.WithHeader("Cache-Control", "no-store")}
 }
 
 // credentialHeader extracts the token of an Authorization header. present is
@@ -507,7 +524,8 @@ func (s *Stage) bySession(r *http.Request, path, cookie string) (Result, error) 
 	info, err := s.o.Sessions.Validate(ctx, cookie)
 	if err != nil {
 		if errors.Is(err, session.ErrInvalid) {
-			return s.fail(MethodSession, "invalid", s.unauthenticated(r, path, "session_expired", "The session has ended. Sign in again.", false))
+			return s.fail(MethodSession, "invalid", s.unauthenticated(r, path, errs.CodeSessionExpired, "The session has ended. Sign in again.", false,
+				endedSessionAnswer(r.Method, path)...))
 		}
 		if _, ok := errs.As(err); ok {
 			return s.fail(MethodSession, "unavailable", err)

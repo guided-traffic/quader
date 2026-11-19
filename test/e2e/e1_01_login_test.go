@@ -216,8 +216,12 @@ func TestE1_01Login(t *testing.T) {
 		if len(seen) != 3 {
 			t.Errorf("the nine attempts reached %v, want all three replicas", sortedKeys(seen))
 		}
+		// Each request carries the old cookie itself: whoami's answer to an ended session clears it in the browser's jar
+		// (Q-AUTH-410), and every one of the three must still present it.
+		ended := bg.cookie("__Host-qdr_session")
+		stale := newAPI(t)
 		for i := 0; i < 3; i++ {
-			s, _ := bg.whoami()
+			s := stale.get("/api/v1/auth/whoami", "Cookie", "__Host-qdr_session="+ended)
 			if s.Status != 401 || s.Code() != "session_expired" {
 				t.Errorf("the session of before the change, request %d = %s, want 401 session_expired", i, s)
 			}

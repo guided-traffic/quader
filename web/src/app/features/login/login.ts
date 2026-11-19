@@ -19,7 +19,9 @@ import { ErrorNotice } from '../../shared/error-notice';
  * the application for the provider's `startUrl` with `return_to` set to the UI route (R-AUTH-009: a
  * path under `/ui/`). `autoRedirect` navigates at once unless the URL carries `?auto_sign_in=false`,
  * which also shows the break-glass form; without it the form shows when `localLogin` is true. There is
- * no username and password form for regular users (INV-7).
+ * no username and password form for regular users (INV-7). `?ended=1`, which `authGuard` sets for a session that has ended,
+ * shows the fixed notice that it has; while there is public content it also waives `autoRedirect`, so the caller can choose to
+ * continue without signing in (Q-UI-710 to Q-UI-712).
  */
 @Component({
   selector: 'quader-login',
@@ -33,6 +35,10 @@ import { ErrorNotice } from '../../shared/error-notice';
       @if (reauth() === '1') {
         <p role="status" class="reauth" i18n="@@login.reauth">
           The action you tried needs a recent sign-in. Sign in again, then repeat it. Your entries are kept.
+        </p>
+      } @else if (sessionEnded()) {
+        <p role="status" class="ended" i18n="@@login.session-ended">
+          Your session has ended. Sign in again to continue where you left off.
         </p>
       }
 
@@ -190,6 +196,12 @@ export class Login {
 
   readonly reauth = input<string | undefined>();
 
+  /** `1`: the guard found the session ended (Q-UI-710). Read once, then taken out of the address (Q-UI-711). */
+  readonly ended = input<string | undefined>();
+
+  /** The notice that the session has ended; it stays for this visit after the parameter has left the address. */
+  protected readonly sessionEnded = signal(false);
+
   protected readonly options = resource({ loader: () => this.api.options() });
   protected readonly redirecting = signal(false);
   protected readonly username = signal('');
@@ -213,8 +225,18 @@ export class Login {
 
   constructor() {
     effect(() => {
+      if (this.ended() !== '1') return;
+      untracked(() => {
+        this.sessionEnded.set(true);
+        // A reload of the sign-in screen does not claim the end again; returnTo and the other parameters stay.
+        void this.router.navigate([], { queryParams: { ended: null }, queryParamsHandling: 'merge', replaceUrl: true });
+      });
+    });
+    effect(() => {
       const o = this.options.value();
       if (!o?.autoRedirect || this.autoSignInOff()) return;
+      // With public content the caller of an ended session chooses: sign in, or continue as a visitor (Q-UI-712).
+      if (o.publicContent && this.sessionEnded()) return;
       const provider = o.providers.find((p) => p.id === o.autoRedirect && p.available);
       if (provider) untracked(() => this.start(provider.startUrl));
     });

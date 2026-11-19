@@ -9,6 +9,7 @@ package errs
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -116,6 +117,9 @@ type Error struct {
 	// Headers are further response headers of the answer, set after the headers
 	// of the kind: the Cache-Status of a remote repository's refusal (R-REPO-047).
 	Headers map[string]string
+	// Cookies are Set-Cookie lines of the answer, one header each: the clearing of
+	// an ended session's cookies by the 401 of whoami (Q-AUTH-410).
+	Cookies []*http.Cookie
 	// Absent marks a NotFound that says the item is missing for every subject: the upstream of a remote
 	// repository answered 404 or 410, or its negative entry stands for that. It is not set for a hidden item, a
 	// refusal, a serve-time check or a cache that merely does not hold the item. Only the core's lookups read
@@ -184,6 +188,12 @@ func WithHeader(name, value string) Option {
 		}
 		e.Headers[name] = value
 	}
+}
+
+// WithCookies adds Set-Cookie lines to the answer of the error, one header per
+// cookie, in order.
+func WithCookies(c ...*http.Cookie) Option {
+	return func(e *Error) { e.Cookies = append(e.Cookies, c...) }
 }
 
 // WithAbsent marks a NotFound as "missing for every subject" (see [Error.Absent]).

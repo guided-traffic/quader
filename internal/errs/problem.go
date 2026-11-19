@@ -141,6 +141,9 @@ func Write(w http.ResponseWriter, r *http.Request, err error, requestID string, 
 			h.Set(k, v)
 		}
 	}
+	for _, c := range e.Cookies {
+		http.SetCookie(w, c)
+	}
 	body, mErr := json.Marshal(p)
 	if mErr != nil { // cannot happen: Problem holds only strings and ints
 		body = []byte(`{"type":"` + ProblemTypePrefix + CodeInternal + `","title":"Internal error","status":500,"code":"internal"}`)

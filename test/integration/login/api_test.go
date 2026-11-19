@@ -332,6 +332,42 @@ func TestR_AUTH_001_EndedSessionOverTheAPI(t *testing.T) {
 			t.Fatalf("after the new login: %d %v", code, m)
 		}
 	})
+
+	t.Run("R-AUTH-001 R-AUTH-013 Q-AUTH-410 only whoami takes the ended session's cookie away, through the production chain; the next requests carry none", func(t *testing.T) {
+		b := e.browser()
+		b.mustLogin("corp")
+		time.Sleep(2500 * time.Millisecond)
+		// Other routes, spread over the replicas, answer session_expired and leave the cookies alone.
+		for i := range 3 {
+			resp, body := b.get(e.baseURL + "/api/v1/formats")
+			if resp.StatusCode != http.StatusUnauthorized || !strings.Contains(body, `"session_expired"`) || len(resp.Header.Values("Set-Cookie")) != 0 {
+				t.Fatalf("request %d: %d %v %s", i, resp.StatusCode, resp.Header.Values("Set-Cookie"), body)
+			}
+		}
+		if b.cookie(session.CookieSession) == "" || b.cookie(session.CookieCSRF) == "" {
+			t.Fatal("a route other than whoami cleared a cookie")
+		}
+		resp, body := b.get(e.baseURL + "/api/v1/auth/whoami")
+		if resp.StatusCode != http.StatusUnauthorized || !strings.Contains(body, `"session_expired"`) || resp.Header.Get("Cache-Control") != "no-store" {
+			t.Fatalf("whoami: %d %v %s", resp.StatusCode, resp.Header, body)
+		}
+		if got := resp.Header.Values("Set-Cookie"); len(got) != 2 {
+			t.Fatalf("Set-Cookie %q, want the two clearing lines", got)
+		}
+		if b.cookie(session.CookieSession) != "" || b.cookie(session.CookieCSRF) != "" {
+			t.Fatal("the browser still holds a cookie after whoami's answer")
+		}
+		// Without the cookie the browser is a caller without a credential on every replica: never session_expired again.
+		for i := range 3 {
+			resp, body := b.get(e.baseURL + "/api/v1/formats")
+			if strings.Contains(body, `"session_expired"`) || len(resp.Header.Values("Set-Cookie")) != 0 {
+				t.Fatalf("request %d after the clearing: %d %s", i, resp.StatusCode, body)
+			}
+		}
+		if code, body := whoamiRaw(t, b); code != http.StatusUnauthorized || strings.Contains(body, `"session_expired"`) {
+			t.Fatalf("whoami without the cookie: %d %s", code, body)
+		}
+	})
 }
 
 // TestR_AUTH_014_UnlockOverTheAPI: five wrong passwords lock the break-glass

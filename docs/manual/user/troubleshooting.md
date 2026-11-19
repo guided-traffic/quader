@@ -156,6 +156,7 @@ APT prints the status line of a failed request and no body; a signature that can
 A browser session ends after a period without activity and after a maximum length (one and twelve hours unless an administrator set other values), or when it is ended under **Profile › Sessions**.
 
 - **Your session has ended.** The UI shows this dialog when a request finds the session gone. **Sign in again** returns you to the same screen after the sign-in; **Not now** keeps the page open. An editor with unsaved changes also offers **Copy draft as JSON**.
+- **Your session has ended** on the sign-in screen. When you open Quader and the browser still holds a session that has ended, Quader shows the sign-in screen with this notice, also where some content is public, and the browser forgets the old session. Sign in again, or select **Continue without signing in** to use the public content without errors.
 - **Confirm it is you.** Some actions need a sign-in within the last hour (unless configured otherwise): creating or rotating a token, saving a permission policy, binding a role, changing an exposure rule, deleting a repository and others. The UI then shows this dialog; after **Sign in again** the sign-in page says that your entries are kept, and you repeat the action.
 
 Tokens are not affected: a client with a valid token keeps working whatever happens to your browser session.

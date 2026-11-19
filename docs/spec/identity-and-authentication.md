@@ -122,6 +122,15 @@ Normative rules:
 - If the selected credential is invalid (malformed, unknown, expired, revoked, or belonging to a
   disabled principal), the request MUST be rejected with 401 (R-AUTH-002). It MUST NOT fall
   through to a lower-ranked source or to anonymous.
+- **The one route that takes a refused session cookie away.** When the session cookie is the selected credential and names no
+  live session, the 401 `session_expired` of `GET` and `HEAD` `/api/v1/auth/whoami`, which the UI asks at load (R-UI-004), also
+  clears `__Host-qdr_session` and `__Host-qdr_csrf` with the two `Set-Cookie` lines of the sign-out (R-AUTH-013) and carries
+  `Cache-Control: no-store`. Every other route, and every other method on that route, answers `session_expired` and sets no
+  cookie. The request stays a rejection on every route, that one included; the next request of the browser carries no cookie
+  and is decided as one without a credential (item 4). On an endpoint that does not accept the session cookie, on a replica
+  without sessions and where a token is the selected credential, the cookie is not read and nothing is cleared
+  ([Q-AUTH-410](#q-auth-410--whoami-takes-the-cookie-of-an-ended-session-away-every-other-route-leaves-it) to
+  [Q-AUTH-414](#q-auth-414--every-replica-answers-the-same-the-endpoint-rule-decides-first)).
 - `Bearer` and Basic credentials MUST be Quader tokens (R-AUTH-022), or, as `Bearer` below `/v2/`, registry
   tokens (item 2). Any other value MUST be rejected without a database lookup; so MUST a registry token
   whose MAC, expiry or endpoint does not verify. This covers identity-provider access tokens and ID tokens,
@@ -186,6 +195,13 @@ Acceptance criteria:
   gets 401 `invalid_token` without a token-table query.
 - Grep the request log after the whole acceptance suite has run. It contains no `qdr_pat_`,
   `qdr_sat_` or `qdr_cit_` substring followed by more than 4 characters.
+- With the cookie of an ended session, `curl -si -H "Cookie: __Host-qdr_session=$ENDED" https://quader.test/api/v1/auth/whoami`
+  answers 401 `session_expired` with `Cache-Control: no-store` and the two lines
+  `Set-Cookie: __Host-qdr_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` and
+  `Set-Cookie: __Host-qdr_csrf=; Path=/; Max-Age=0; Secure; SameSite=Strict`; a malformed cookie gets the same answer. The same
+  cookie on `GET /api/v1/formats` answers 401 `session_expired` without a `Set-Cookie` line, and without the cookie the same
+  request answers 200 where something is `public`. Unit tests: `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie` in
+  [stage_whoami_test.go](../../internal/auth/stage_whoami_test.go).
 
 ### R-AUTH-002 · Authentication failures and challenges
 Priority: **MVP** · Covers: TOK-033, TOK-034, PKG-NPM-007, PKG-NUGET-016
@@ -208,7 +224,7 @@ Priority: **MVP** · Covers: TOK-033, TOK-034, PKG-NPM-007, PKG-NUGET-016
 |---|---|
 | `credentials_required` | No credential, and anonymous access is off or insufficient |
 | `invalid_token` | Malformed, unknown, expired or revoked token; the response does not say which |
-| `session_expired` | The session cookie names an ended session |
+| `session_expired` | The session cookie names no live session: malformed, unknown, ended, or of a disabled user; the response does not say which. On `whoami` the answer also clears the cookie (R-AUTH-001, Q-AUTH-410) |
 | `principal_disabled` | The token is valid but its owner is disabled |
 | `reauthentication_required` | See R-AUTH-011 |
 
@@ -1101,6 +1117,8 @@ The IdP client registration must list the post-logout URI.
 
 - Logout is idempotent. With an already ended session it still answers 200 and
   `/ui/logged-out`.
+- The 401 `session_expired` of `GET` and `HEAD` `/api/v1/auth/whoami` writes the same two clearing lines, so a browser whose
+  session ended without a sign-out drops the cookie at its next load (R-AUTH-001, Q-AUTH-410). No other answer clears a cookie.
 - `GET /auth/logout` answers 405, so that image tags and links cannot log users out.
 - Logout ends only the browser session. PATs are independent credentials and stay valid. Ending
   every session is `DELETE /api/v1/users/me/sessions`; revoking every token is R-AUTH-029.
@@ -5204,6 +5222,11 @@ on a route it cannot recover from.
 
 **Applied in the spec:** R-AUTH-001 item 3. Code: `sessionAllowed` in `internal/auth/stage.go`.
 
+**Revisited on 2026-11-19 by [Q-AUTH-410](#q-auth-410--whoami-takes-the-cookie-of-an-ended-session-away-every-other-route-leaves-it).**
+The revisit condition was met: the UI met a dead cookie on routes it could not recover from (W-21: the visitor mode of public
+content, where every request answered `session_expired` and every page showed the error). Option (a) stays; option (b) is taken for
+one route only, `whoami`, where the window this block named is one request wide.
+
 ### Q-AUTH-178 · The last use of a token is recorded through a write-only buffer
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -6078,6 +6101,124 @@ so two sign-ins of one user already wait for each other there.
 new home. The development agent records no revisit condition.
 
 **Applied in the spec:** R-AUTH-007, R-AUTH-008.
+
+### Q-AUTH-410 · `whoami` takes the cookie of an ended session away; every other route leaves it
+
+Status: **Decided by the owner on 2026-11-19** for the outcome ("Option A", W-21): a browser whose session has ended lands on the
+sign-in screen, which says so and offers to sign in or, while there is public content, to continue without signing in; it does not
+run on silently as a visitor, and the server does not count a dead cookie as no credential. **Decided by the development agent**
+for how the cookie goes — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a browser keeps `__Host-qdr_session` after its session ended (`idle_timeout`, `absolute_timeout`, an end by an
+administrator); the cookie is `HttpOnly`, so the UI cannot delete it. The stage answers it with `401 session_expired` on every
+route that accepts the cookie (R-AUTH-001, wanted). The UI took any 401 of `whoami` at load for "not signed in" and, with
+`publicContent` true, ran as a visitor that still sent the dead cookie: `GET /api/v1/formats`, the projects and the banner all
+answered 401, where the same requests without the cookie answer 200, and every page showed "The session has ended. Sign in
+again." (found by the owner on 2026-11-19 on **Guides**). For the owner's outcome the browser has to stop sending the cookie, or
+"Continue without signing in" leads into the same errors.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The `401 session_expired` of `GET`/`HEAD` `whoami` clears both cookies as the sign-out does; every other route leaves them (chosen) | Two `Set-Cookie` lines with `Max-Age=0` on the one answer the UI asks at load | The browser drops the cookie at its next load; the sign-in screen and "Continue without signing in" work without a cookie; the rule of R-AUTH-001 that a refused credential never falls through stays whole | A `whoami` in flight with the old cookie clears a cookie that a sign-in in another tab has just set (H-1004) |
+| (b) Every `401 session_expired` clears the cookies | Option (b) of Q-AUTH-177 | Covers clients other than the UI | The window of (a) on every request of every open tab, not on one request at a load: the reason Q-AUTH-177 rejected it |
+| (c) An invalid session cookie counts as no credential | The stage falls through to anonymous | No UI change | Rejected by the owner on 2026-11-19: the person believes they are signed in and would miss their private projects without a word; it breaks the no-fall-through rule |
+| (d) A route of its own that forgets the cookie, `POST /auth/session/forget` | The UI calls it after `whoami` answered `session_expired` | The clearing is an explicit act | One more route and one more request with the same window; it needs an origin check of its own, since a dead session has no CSRF token to check |
+
+**Choice:** (a). The 401 stays a rejection, with the code, the detail and the challenge it had; only the answer of that one route
+adds the two clearing lines of R-AUTH-013 and `Cache-Control: no-store` (Q-AUTH-413).
+
+**Rationale:** the UI asks `whoami` once per load (`authGuard`, R-UI-004), so the window Q-AUTH-177 named for (b) is one request
+wide: a sign-in in another tab that sets its cookie while that request is in flight, and whose cookie the answer then clears. Its
+worst outcome is one more sign-in, never a wrong principal, and it is named as H-1004 in
+[login-and-sessions.md](../security/login-and-sessions.md#h-1004--a-whoami-in-flight-with-an-ended-sessions-cookie-clears-the-sign-in-of-another-tab).
+The answer cannot be used to sign anyone out: a live session's cookie is never cleared, and a cross-site subresource request does
+not carry the `SameSite=Lax` cookie at all. The development agent would revisit this if a sign-in that does not hold is reported
+from a browser with several tabs, then with (d) asked only after a second `session_expired`.
+
+**Applied in the spec:** R-AUTH-001 (the normative rule and an acceptance criterion), R-AUTH-002 (the code's meaning), R-AUTH-013;
+Q-AUTH-177 (revisited); [api-and-ui.md](api-and-ui.md) R-UI-004, R-UI-057, Q-UI-710 to Q-UI-713; `api/openapi.yaml`
+(`getWhoami`). Code: `endedSessionAnswer` in [stage.go](../../internal/auth/stage.go), `ClearingCookies` in
+[cookie.go](../../internal/auth/session/cookie.go), `errs.WithCookies`. Tests: `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie`
+in [stage_whoami_test.go](../../internal/auth/stage_whoami_test.go).
+
+### Q-AUTH-411 · The cookies are cleared in the answer, after what the stage records; a session that cannot be checked keeps its cookie
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: before the stage answers `session_expired` it has done what it does for every refused session cookie: the validator has
+read the session (cache or row, R-AUTH-023), ended a row whose idle or absolute deadline has passed (R-AUTH-010; neither end is
+audited, R-AUTH-041), and the stage has counted the failure in `quader_auth_attempts_total` (method `session`, reason `invalid`).
+A database that does not answer is a 503, never a 401 (R-AUTH-001).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The clearing lines are part of the 401 the chain writes after the stage returned; only `session.ErrInvalid` produces them (chosen) | The metric and the end of the row come first; the answer carries the lines | Nothing that is recorded depends on the clearing; a failed write of the row's end does not keep the cookie, because the deadline has passed by the row either way | None found |
+| (b) Clear on any answer of `whoami` that is not 200 with a session | A 503 clears too | The browser forgets the cookie in more cases | A database outage would sign every user out at their next load |
+| (c) Clear before the cookie is validated | `whoami` with a cookie always clears it | Simplest | Signs every live session out |
+
+**Choice:** (a). **Rationale:** the clearing is a consequence of the verdict "this cookie names no live session" and of nothing
+else; a 503 is no verdict. The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTH-001. Code: `bySession` and `endedSessionAnswer` in [stage.go](../../internal/auth/stage.go).
+
+### Q-AUTH-412 · Every refused cookie gets the same clearing answer
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the validator refuses a cookie of the wrong form without a lookup, and a well-formed one that names no session, an ended
+one, a revoked one or one of a disabled user after its lookup (`Store.Validate`); all of them are `session.ErrInvalid`, and the stage
+answers all of them with the same `401 session_expired` (R-AUTH-002, H-328).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Clear for every refused cookie, with the same status, body and headers (chosen) | No case is told apart | The answer says nothing about which sessions exist; a malformed cookie, which a browser can hold after a change of the format, is cleared too | None found |
+| (b) Clear only a cookie that names a row with `ended_at` | A narrower clearing | Touches only what certainly was a session | The difference between the answers would tell a holder of a guessed or stolen cookie whether it ever named a session; a malformed cookie would stay forever |
+
+**Choice:** (a). **Rationale:** the stage already does not distinguish; the clearing follows the same verdict, so it adds no
+oracle. The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTH-001, R-AUTH-002. Tests: the subtest "a malformed cookie and an ended session's cookie get the same
+answer" of `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie`.
+
+### Q-AUTH-413 · Only `GET` and `HEAD` clear, with `no-store` and the challenge of the route
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `whoami` is a `GET` route. The stage evaluates the session cookie on `/api/v1` for every method, before the CSRF check
+of R-AUTH-012, so a refused cookie on an unsafe method answers `session_expired` before any CSRF check runs. The sign-in and the
+sign-out answers send `Cache-Control: no-store`; a problem answer of the stage sends no `Cache-Control`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET` and `HEAD` of the route clear, with `Cache-Control: no-store`; the challenge and the body stay those of every `session_expired` (chosen) | The methods the route serves | No cross-site form can make a clearing answer (it posts, and a `POST` to `whoami` clears nothing); no cache between browser and Quader keeps an answer that sets cookies, as for the sign-in and sign-out answers | None found |
+| (b) Every method of the path | A `POST` clears too | One rule less | A method the route does not serve would carry a side effect |
+| (c) No `Cache-Control` | As every other problem answer | No special case | A 401 is not stored by default, but an answer that sets cookies says so explicitly, as the other answers of the login do |
+
+**Choice:** (a). The answer sets no CSRF cookie and needs no CSRF check: it removes the CSRF cookie with the session cookie and
+grants nothing. **Rationale:** the clearing belongs to the request the UI makes at load and to nothing else. The development
+agent records no revisit condition.
+
+**Applied in the spec:** R-AUTH-001; `api/openapi.yaml` (`getWhoami`, the 401's headers).
+
+### Q-AUTH-414 · Every replica answers the same; the endpoint rule decides first
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a session ended on one replica (a sign-out, an end by an administrator) reaches the others through the change area
+`auth` within `auth.revocation_bound`, or through their read of the row while the change log is stale (R-AUTH-023); a deadline
+is decided from the row by every replica (Q-AUTH-13). The session cookie is evaluated only on an endpoint whose surface holds
+`ui` (R-EP-010) and only on a replica that has the login area.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The clearing is decided by the stage's own verdict, after the endpoint rule and the path rule (chosen) | Where the verdict is `session_expired`, the answer of `whoami` clears; where the cookie is not read, nothing changes | One source of truth: a replica that learned of the end through the revocation path answers exactly as the one that ended the session; an endpoint without sessions and a replica without the login area keep answering `whoami` without the cookie, unchanged | During the revocation bound a replica that has not learned of the end still accepts the session, as for every other route (R-AUTH-023) |
+| (b) A replica clears only what it ended itself | Local knowledge | None | Answers would differ by replica, and a session ended elsewhere would keep its cookie |
+
+**Choice:** (a). **Rationale:** the clearing adds no state and no decision of its own, so it inherits the replica behaviour and
+the endpoint rules of the verdict it follows. The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTH-001. Tests: the subtests for an endpoint that does not accept the session cookie, a replica
+without sessions and a token beside the cookie in `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie`.
 
 ## What this does not cover
 

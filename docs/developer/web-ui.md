@@ -739,7 +739,7 @@ requirement ID (`R-ARCH-004`, `R-UI-001`, ...) for the coverage generator.
 
 | Interceptor | Does |
 |---|---|
-| `problemInterceptor` | Maps a failed answer to `ApiError` (`status`, `problem`, `requestId`, `retryAfterSeconds`, `afterRetry`). 401 `unauthenticated` during use ends the session (`SessionStore.ended`, dialog "Your session has ended"); the probes `whoami` and `login-options` are exempt. 401 `reauthentication_required` sets `reauthRequired`. 403 drops the cached permission decisions |
+| `problemInterceptor` | Maps a failed answer to `ApiError` (`status`, `problem`, `requestId`, `retryAfterSeconds`, `afterRetry`). A 401 during use ends the session (`SessionStore.ended`, dialog "Your session has ended"); the probes `whoami` and `login-options` are exempt, and the session store reads the `code` of `whoami`'s 401 itself. 401 `reauthentication_required` sets `reauthRequired`. 403 drops the cached permission decisions |
 | `resilienceInterceptor` | The one automatic retry of R-UI-042 (rules in Q-UI-12) |
 | `conventionsInterceptor` | `Accept`, `Quader-Authz-Min-Epoch` from `AuthzEpoch`, `Idempotency-Key` from the request context; stores `Quader-Authz-Epoch` of an answer |
 
@@ -760,7 +760,12 @@ feeds the two live regions of `<quader-notices>`: `status` is polite, `alert` is
 **Session.** `SessionStore` holds `whoami`, `authz/me`, the 60-second check cache (`check()` batches 100 per call), the `ended` and
 `reauthRequired` flags. `signOut()` posts `/auth/logout`, goes to the returned `redirectTo` or `/logged-out`, and tells other tabs over a
 `BroadcastChannel`. `authGuard` loads the session and sends an unauthenticated caller to `/login?returnTo=<route>` unless
-`login-options` reports `publicContent`. `safeReturnTo` keeps only server-relative paths. The sign-in screen builds
+`login-options` reports `publicContent`. A `whoami` that answers `session_expired` is the state `ended`: the browser sent the
+cookie of a session that has ended, and that answer cleared it (Q-AUTH-410); the guard sends it to
+`/login?returnTo=<route>&ended=1` with or without public content, and `ended` loads again on the next navigation, which is then a
+visitor's (Q-UI-710). After the dialog of an end during use the same answer makes `anonymous` at once (Q-UI-713). The sign-in screen
+shows the fixed notice for `ended=1`, takes the parameter out of the address, and, with public content, waives `autoRedirect`
+(Q-UI-711, Q-UI-712). `safeReturnTo` keeps only server-relative paths. The sign-in screen builds
 `return_to=<base path><route>` from the path of the resolved `document.baseURI` (R-AUTH-009): `/ui/en/…` and `/ui/de/…` in the
 builds per locale, `/ui/…` on the dev server (UI-A-49); it appends `purpose=reauth` for a re-authentication.
 `has(capability)` asks for a capability; `hasRole(role)` asks for a system role of `authz/me` and is for the operations the server checks as a role, not as a capability (creating and rotating the token of a service account needs the administrator role). A control follows what the handler checks (R-UI-005): never a capability that merely sounds related.

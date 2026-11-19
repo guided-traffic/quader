@@ -159,6 +159,49 @@ describe('Sign-in screen', () => {
     expect(link?.getAttribute('href')).toBe('/browse');
   });
 
+  it('R-UI-004 Q-UI-710 Q-UI-711 ?ended=1 says that the session has ended, then leaves the address so a reload does not say it again', async () => {
+    const { root } = await open('/login?returnTo=%2Fprojects%2Fweb&ended=1', (api) => {
+      api.optionsResult = { ...api.optionsResult, publicContent: true };
+    });
+    const notice = root.querySelector('main p[role="status"].ended');
+    expect(notice?.textContent?.trim()).toBe('Your session has ended. Sign in again to continue where you left off.');
+    expect(TestBed.inject(Router).url).toBe('/login?returnTo=%2Fprojects%2Fweb');
+    const link = [...root.querySelectorAll('a')].find((a) => a.textContent?.includes('Continue without signing in'));
+    expect(link?.getAttribute('href')).toBe('/projects/web');
+    expect(root.querySelector('main button')?.textContent?.trim()).toBe('Sign in with Corporate SSO');
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-004 Q-UI-710 the notice is the fixed sentence for the value 1 only, and absent without the parameter', async () => {
+    for (const url of ['/login?returnTo=%2Fprojects', '/login?ended=yes', '/login?ended=Your%20account%20was%20deleted']) {
+      TestBed.resetTestingModule();
+      const { root } = await open(url);
+      expect(root.querySelector('main p[role="status"]'), url).toBeNull();
+      expect(root.textContent, url).not.toContain('Your session has ended');
+      expect(root.textContent, url).not.toContain('account was deleted');
+    }
+  });
+
+  it('R-UI-004 Q-UI-710 without public content the screen with the notice offers no way around signing in', async () => {
+    const { root } = await open('/login?returnTo=%2Fprojects&ended=1');
+    expect(root.querySelector('main p.ended')).toBeTruthy();
+    expect(root.textContent).not.toContain('Continue without signing in');
+  });
+
+  it('Q-UI-712 an ended session waives autoRedirect while there is public content, and only then', async () => {
+    const choice = await open('/login?returnTo=%2Fprojects&ended=1', (api) => {
+      api.optionsResult = { ...api.optionsResult, autoRedirect: 'corp', publicContent: true };
+    });
+    expect(choice.assign).not.toHaveBeenCalled();
+    expect(choice.root.textContent).toContain('Continue without signing in');
+    TestBed.resetTestingModule();
+
+    const noChoice = await open('/login?returnTo=%2Fprojects&ended=1', (api) => {
+      api.optionsResult = { ...api.optionsResult, autoRedirect: 'corp', publicContent: false };
+    });
+    expect(noChoice.assign).toHaveBeenCalledTimes(1);
+  });
+
   it('R-UI-004 a refused break-glass sign-in shows the translated reason and no password stays in the field', async () => {
     const { root, fixture } = await open('/login?auto_sign_in=false', (api) => {
       api.localLogin = async () => {

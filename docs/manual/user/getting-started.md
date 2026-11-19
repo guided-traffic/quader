@@ -24,6 +24,7 @@ The sign-in screen shows only what your administrators configured.
 | **Sign in with** and the name of a provider | Takes you to your organization's identity provider. After you sign in there, Quader returns you to the page you wanted. There is one button per configured provider |
 | **Currently unavailable** next to a provider | Quader cannot reach that provider right now. Try again later or use another provider |
 | **Redirecting to the identity provider.** | Quader is sending you to the provider, either after your choice or because the installation sends everyone straight there |
+| **Your session has ended. Sign in again to continue where you left off.** | Your browser was signed in, but that session has ended since. Sign in again, or continue without signing in where some content is public |
 | **Continue without signing in** | Opens Quader anonymously. Shown only where some content is public |
 | **Local administrator** with **Username** and **Password** | The form of the emergency administrator account. It is not for regular users, who never have a password in Quader |
 | **No sign-in method is configured.** | Ask your administrator |
@@ -39,6 +40,10 @@ A browser session ends after a period without activity and after a maximum lifet
 1. Select **Sign in again** to sign in and return to the page you were on.
 2. If you were editing something, **Copy draft as JSON** copies your unsaved entries first.
 3. **Not now** closes the dialog without signing you in.
+
+If the session ended while Quader was not open, for example overnight, the next time you open Quader it shows the sign-in screen
+with **Your session has ended**, also where some content is public, so you know why you no longer see your own projects. Sign in
+again to return to the page you opened, or select **Continue without signing in** to use the public content.
 
 Some actions need a recent sign-in. Quader then shows **Confirm it is you**. Select **Sign in again**, sign in, and repeat the action; the sign-in screen tells you why it appeared, and editors keep your entries.
 

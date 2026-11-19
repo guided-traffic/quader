@@ -50,10 +50,12 @@ export function capabilityGuard(capability: string): CanActivateFn {
 }
 
 /**
- * Shapes navigation only; the API decides (R-UI-005). A signed-in session passes. Without a
- * session the guard asks `login-options`: with public content the application runs anonymously
- * (R-UI-004), otherwise it goes to `/login?returnTo=<route>`. If the session could not be
- * determined at all (the server is down) the route is entered and the shell shows the failure.
+ * Shapes navigation only; the API decides (R-UI-005). A signed-in session passes. A session that has ended (`whoami` answered
+ * `session_expired`, which cleared its cookie) goes to `/login?returnTo=<route>&ended=1`, with or without public content: the
+ * caller believes they are signed in and is told, instead of running on silently as a visitor (R-UI-004, Q-UI-710). Without a
+ * session the guard asks `login-options`: with public content the application runs anonymously (R-UI-057), otherwise it goes
+ * to `/login?returnTo=<route>`. If the session could not be determined at all (the server is down) the route is entered and
+ * the shell shows the failure.
  */
 export const authGuard: CanActivateFn = async (_route, state: RouterStateSnapshot) => {
   const session = inject(SessionStore);
@@ -65,6 +67,8 @@ export const authGuard: CanActivateFn = async (_route, state: RouterStateSnapsho
     case 'authenticated':
     case 'failed':
       return true;
+    case 'ended':
+      return router.createUrlTree(['/login'], { queryParams: { returnTo: state.url, ended: 1 } });
     default: {
       try {
         if ((await login.options()).publicContent) return true;

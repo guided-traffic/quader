@@ -42,6 +42,35 @@ describe('SessionStore', () => {
     expect(b.store.loadError()?.requestId).toBe('rid');
   });
 
+  it('R-UI-004 Q-UI-710 whoami answering session_expired is an ended session, told by the code and not by the status', async () => {
+    const { store, api } = setup();
+    api.whoamiResult = new ApiError(401, { code: 'session_expired' }, null);
+    await store.load();
+    expect(store.state()).toBe('ended');
+    expect(store.whoami()).toBeNull();
+    // The answer cleared the cookie (Q-AUTH-410): the next load asks again and is a visitor's.
+    const whoami = vi.spyOn(api, 'whoami');
+    api.whoamiResult = new ApiError(401, { code: 'unauthenticated' }, null);
+    await store.load();
+    expect(whoami).toHaveBeenCalledTimes(1);
+    expect(store.state()).toBe('anonymous');
+  });
+
+  it('Q-UI-713 after the dialog of an end during use, the next load that meets the ended cookie is a visitor and asks nothing twice', async () => {
+    const { store, api } = setup();
+    await store.load();
+    store.markEnded();
+    expect(store.ended()).toBe(true);
+    api.whoamiResult = new ApiError(401, { code: 'session_expired' }, null);
+    await store.load();
+    expect(store.state()).toBe('anonymous');
+    expect(store.ended()).toBe(false);
+    // Told once: a later load that meets an ended session again is one of its own.
+    store.reset();
+    await store.load();
+    expect(store.state()).toBe('ended');
+  });
+
   it('R-UI-005 batches checks in chunks of 100 and caches the answers for 60 seconds', async () => {
     const { store, api } = setup();
     const checks = Array.from({ length: 250 }, (_, i) => ({ repository: `r${i}`, action: 'read' }));

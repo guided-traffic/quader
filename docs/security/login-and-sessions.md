@@ -90,6 +90,14 @@ lock or a rotation reaches every replica.
   only if the row says so (Q-AUTH-13).
 - **Ends** (`Logout`, `EndForPrincipal`, `EndBreakGlass`, `EndAll`): the end and its change message of the area `auth` commit
   together, so every replica drops the session within the revocation bound whatever Valkey does.
+- **The cookie of an ended session** ([stage.go](../../internal/auth/stage.go), `endedSessionAnswer`, Q-AUTH-410 to Q-AUTH-414):
+  the browser keeps the `HttpOnly` cookie after a session ends without a sign-out, and every route that accepts it answers
+  `401 session_expired`, never as a request without a credential. Only `GET`/`HEAD /api/v1/auth/whoami`, which the UI asks at
+  load, also clears both cookies with the sign-out's lines and `Cache-Control: no-store`, for every cookie the validator refuses
+  alike (malformed, unknown, ended, of a disabled user), so the answer tells nothing about which sessions exist. A live session's
+  cookie is never cleared, a 503 clears nothing, and an endpoint or a replica that does not read the cookie does not clear it.
+  The UI then shows the sign-in screen with the notice that the session has ended (R-UI-004). What clearing on one route still
+  leaves open is H-1004.
 - **Withdrawals and successors** ([end.go](../../internal/auth/session/end.go), [standing.go](../../internal/auth/session/standing.go),
   Q-AUTHZ-262): a sign-out, the end of one or of the other own sessions, an administrator's end, a disable, the end of every session
   and a change or rotation of the break-glass password mark every session they reach `withdrawn_at`, ended ones included, in a
@@ -226,3 +234,17 @@ address or network creates at most 300 pending flows in their 10-minute life, so
 cap, and every replica answers `503 too_many_pending_logins` until the flows expire. Sessions that exist keep working, and the
 break-glass login does not count. What makes it real: an attacker with a few hundred addresses, such as a botnet or a cloud
 account that hands out many `/64` networks. A per-address share of the cap (Q-AUTH-90, option c) would bound it further.
+
+### H-1004 · A `whoami` in flight with an ended session's cookie clears the sign-in of another tab
+
+Stage: the `401 session_expired` of `GET /api/v1/auth/whoami` (`endedSessionAnswer` in [stage.go](../../internal/auth/stage.go),
+Q-AUTH-410). Subject: the session cookie of a browser with several tabs of Quader. Live in this build.
+
+The answer clears `__Host-qdr_session` and `__Host-qdr_csrf` with `Max-Age=0`, and a `Set-Cookie` cannot say "only if the cookie
+still holds the value I was sent". If tab A loads a page while its browser still holds an ended session's cookie, and tab B
+completes a sign-in whose answer sets the new cookie before A's `whoami` answer arrives, that answer clears B's new cookie: B's
+next request answers `session_expired`, and its user signs in once more. The window is the round trip of one request, sent only
+when a page of the UI loads (`authGuard`); every other route leaves the cookies alone, which is why Q-AUTH-177 rejected clearing on
+every `session_expired`. The outcome is one more sign-in, never a session of another user and never access. What makes it real: a
+browser that kept an ended session's cookie in which the user opens Quader in two tabs at once and signs in in one of them while
+the other is still loading.

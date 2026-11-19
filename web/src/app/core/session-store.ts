@@ -11,7 +11,11 @@ import {
 import { AuthzEpoch } from './authz-epoch';
 import { BrowserNavigation } from './browser-navigation';
 
-export type SessionState = 'unknown' | 'loading' | 'authenticated' | 'anonymous' | 'failed';
+/**
+ * `ended`: `whoami` answered `session_expired` at load. The browser still sent the cookie of a session that has ended, and that
+ * answer cleared it (Q-AUTH-410); the guard sends the caller to the sign-in screen, which says so (R-UI-004, Q-UI-710).
+ */
+export type SessionState = 'unknown' | 'loading' | 'authenticated' | 'anonymous' | 'ended' | 'failed';
 
 /** Check answers are cached for 60 seconds (R-UI-005). */
 export const CHECK_TTL_MS = 60_000;
@@ -105,7 +109,10 @@ export class SessionStore {
     return (this._me()?.roles ?? []).includes(role);
   }
 
-  /** Loads `whoami` and `authz/me` once; concurrent calls share the request. */
+  /**
+   * Loads `whoami` and `authz/me` once; concurrent calls share the request. A state other than `authenticated` and `anonymous`
+   * loads again: after `ended` the browser holds no session cookie any more, so the next load is a visitor's.
+   */
   load(): Promise<void> {
     if (this._state() === 'authenticated' || this._state() === 'anonymous') {
       return Promise.resolve();
@@ -155,7 +162,10 @@ export class SessionStore {
     this.checkCache.clear();
   }
 
-  /** The server ended the session during use (401): show the dialog, forget the principal. */
+  /**
+   * The server ended the session during use (401): show the dialog, forget the principal. The dialog has told the caller, so
+   * the next load that meets the ended session's cookie counts as a visitor's (Q-UI-713).
+   */
   markEnded(): void {
     if (this._state() !== 'authenticated') return;
     this.reset();
@@ -204,11 +214,15 @@ export class SessionStore {
       this._whoami.set(await this.api.whoami());
       this._me.set(await this.api.authzMe());
       this._state.set('authenticated');
+      this._ended.set(false);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         this._whoami.set(null);
         this._me.set(null);
-        this._state.set('anonymous');
+        // The code, not the status, tells an ended session from none (R-AUTH-002). After the dialog of an end during use the
+        // caller knows, and the answer has cleared the cookie: a visitor (Q-UI-713).
+        this._state.set(e.code === 'session_expired' && !this._ended() ? 'ended' : 'anonymous');
+        this._ended.set(false);
       } else {
         this._loadError.set(e instanceof ApiError ? e : null);
         this._state.set('failed');

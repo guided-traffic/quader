@@ -469,9 +469,20 @@ func (b *browser) mustLogin(provider string) {
 }
 
 // whoami is GET /api/v1/auth/whoami through the edge.
+//
+// The probe keeps the cookies the browser held: whoami's answer to an ended session clears them (Q-AUTH-410), and the
+// checks that ask every replica in turn whether a session has ended must present the same cookie to each of them. That a
+// browser does drop the cookie there is TestR_AUTH_001_EndedSessionOverTheAPI's, through b.get.
 func (b *browser) whoami() (int, map[string]any) {
 	b.t.Helper()
+	sess, csrf := b.cookie(session.CookieSession), b.cookie(session.CookieCSRF)
 	resp, body := b.get(b.e.baseURL + "/api/v1/auth/whoami")
+	if sess != "" && b.cookie(session.CookieSession) == "" {
+		b.setCookie(session.CookieSession, sess)
+		if csrf != "" {
+			b.setCookie(session.CookieCSRF, csrf)
+		}
+	}
 	var m map[string]any
 	_ = json.Unmarshal([]byte(body), &m)
 	return resp.StatusCode, m

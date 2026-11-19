@@ -63,8 +63,19 @@ func SetCookies(w http.ResponseWriter, secret, csrf string) {
 // __Host- Set-Cookie without Secure and Path=/, so a bare Max-Age=0 would leave
 // the cookie in place.
 func ClearCookies(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{Name: CookieSession, Value: "", Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: -1})
-	http.SetCookie(w, &http.Cookie{Name: CookieCSRF, Value: "", Path: "/", Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: -1}) //nolint:gosec // G124: the CSRF cookie is not HttpOnly (R-AUTH-012)
+	for _, c := range ClearingCookies() {
+		http.SetCookie(w, c)
+	}
+}
+
+// ClearingCookies are the two Set-Cookie values that remove the session and the
+// CSRF cookie: the sign-out writes them (R-AUTH-013), and so does the 401 of
+// whoami to an ended session's cookie (Q-AUTH-410). Each call returns new values.
+func ClearingCookies() []*http.Cookie {
+	return []*http.Cookie{
+		{Name: CookieSession, Value: "", Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: -1},
+		{Name: CookieCSRF, Value: "", Path: "/", Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: -1}, //nolint:gosec // G124: the CSRF cookie is not HttpOnly (R-AUTH-012)
+	}
 }
 
 // SetBindingCookie writes the browser binding of a login flow (R-AUTH-005):

@@ -107,6 +107,11 @@ request ─► chain stage 6 ─► app.authenticate ─► auth.Stage.Authentic
 - The session cookie is accepted on `/api/v1/` for every method, on `/files/` for GET, HEAD, PUT and DELETE, on
   `/api/<format>/` for GET and HEAD, and ignored elsewhere and on `/api/v1/auth/login-options`, so an ended session's cookie
   cannot keep the sign-in screen from loading (Q-AUTH-177).
+- A refused session cookie is `401 session_expired` on every route that reads it. On `GET`/`HEAD /api/v1/auth/whoami` only, the
+  answer also clears both cookies with `session.ClearingCookies` (the lines of the sign-out) and `Cache-Control: no-store`:
+  `endedSessionAnswer` adds them to the error through `errs.WithCookies`, and `errs.Write` writes one `Set-Cookie` per cookie.
+  A 503 of the validator clears nothing (Q-AUTH-410 to Q-AUTH-414; the remaining window is H-1004 in
+  [login-and-sessions.md](../security/login-and-sessions.md)).
 - Every path rule above reads the path of `rulePath`: the request path where the process serves the request's family
   (`EndpointRules.Served`), and `""` where it does not, so a request of an unserved family gets the challenge, the cookie
   rule and the anonymous verdict of `/does-not-exist` (Q-ARCH-302, Q-ARCH-306). On `api`, an ended session's cookie on
