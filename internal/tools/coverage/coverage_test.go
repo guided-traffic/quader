@@ -60,9 +60,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 	// its P2 entries and the Later entry PKG-DEB-003, and after formats/ansible.md (R-ANS-001 to R-ANS-032, unit F0) listed the 13 P1 entries of PKG-ANSIBLE-*,
 	// and after the visibility levels of R-AUTHZ-033 (T-18) covered the P2 entry IAM-062.
 	want := map[string][2]int{
-		prioMVP:   {394, 394},
+		prioMVP:   {395, 395},
 		prioP1:    {514, 343},
-		prioP2:    {885, 49},
+		prioP2:    {884, 48},
 		prioLater: {374, 2},
 		prioOut:   {72, 0},
 	}
@@ -96,8 +96,8 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		for _, r := range m.Reqs {
 			count[r.Priority]++
 		}
-		if len(m.Reqs) != 929 || count[prioMVP] != 631 || count[prioP1] != 257 || count[prioP2] != 41 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 929 (631, 257, 41)",
+		if len(m.Reqs) != 983 || count[prioMVP] != 685 || count[prioP1] != 257 || count[prioP2] != 41 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 983 (685, 257, 41)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})
