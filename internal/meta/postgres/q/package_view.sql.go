@@ -106,28 +106,40 @@ const packageViewList = `-- name: PackageViewList :many
 
 WITH vis AS (
   SELECT pv.id AS vid, pv.version, pv.created_at, (p.name COLLATE "C")::text AS name, p.display_name, r.format,
-         COALESCE((SELECT s.downloads FROM item_download_stats s WHERE s.item_id = pv.lead_item_id), 0)::bigint AS downloads
+         COALESCE((SELECT sum(s.downloads)
+                     FROM item_download_stats s
+                    WHERE s.item_id IN (
+                          SELECT pv.lead_item_id
+                           WHERE NOT (r.format = ANY($8::text[]) OR r.format = ANY($9::text[]))
+                          UNION
+                          SELECT i.id FROM items i
+                           WHERE r.format = ANY($8::text[]) AND i.version_id = pv.id AND i.kind = 'file'
+                          UNION
+                          SELECT i.id FROM items i
+                           WHERE r.format = ANY($9::text[]) AND i.repo_id = p.repo_id AND i.kind = 'file'
+                             AND i.blob_sha256 = COALESCE(pv.document_sha256, (SELECT l.blob_sha256 FROM items l WHERE l.id = pv.lead_item_id))
+                             AND starts_with(i.path, p.name || '/') AND (i.version_id IS NULL OR i.version_id = pv.id))), 0)::bigint AS downloads
     FROM package_version_listing pv
     JOIN packages p ON p.id = pv.package_id
     JOIN repositories r ON r.id = p.repo_id
    WHERE pv.trashed_at IS NULL
-     AND NOT (pv.id = ANY($8::bigint[]))
-     AND (cardinality($9::text[]) = 0 OR r.format = ANY($9::text[]))
-     AND (NOT $10::boolean OR p.repo_id = ANY($11::bigint[]))
-     AND ($12::text = '' OR starts_with(lower(p.name), lower($12::text)))
-     AND ($13::text = '' OR (r.format = $14::text AND p.name = $13::text))
-     AND (p.repo_id = ANY($15::bigint[])
-          OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($16::text[]))
+     AND NOT (pv.id = ANY($10::bigint[]))
+     AND (cardinality($11::text[]) = 0 OR r.format = ANY($11::text[]))
+     AND (NOT $12::boolean OR p.repo_id = ANY($13::bigint[]))
+     AND ($14::text = '' OR starts_with(lower(p.name), lower($14::text)))
+     AND ($15::text = '' OR (r.format = $16::text AND p.name = $15::text))
+     AND (p.repo_id = ANY($17::bigint[])
+          OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($18::text[]))
 ), grouped AS (
   SELECT v.format, v.name, min(v.display_name)::text AS display_name,
          min(v.created_at)::timestamptz AS created_at, max(v.created_at)::timestamptz AS updated_at,
          count(DISTINCT v.version)::bigint AS version_count, sum(v.downloads)::bigint AS downloads
     FROM vis v
    GROUP BY v.format, v.name
-  HAVING ($17::text = '' OR position(lower($17::text) in lower(v.name)) > 0 OR bool_or(v.vid = ANY($18::bigint[])))
-     AND ($19::text = '' OR bool_or(v.vid = ANY($20::bigint[])))
-     AND (NOT $21::boolean OR min(v.created_at) >= NULLIF($22::text, '')::timestamptz)
-     AND (NOT $23::boolean OR min(v.created_at) < NULLIF($24::text, '')::timestamptz)
+  HAVING ($19::text = '' OR position(lower($19::text) in lower(v.name)) > 0 OR bool_or(v.vid = ANY($20::bigint[])))
+     AND ($21::text = '' OR bool_or(v.vid = ANY($22::bigint[])))
+     AND (NOT $23::boolean OR min(v.created_at) >= NULLIF($24::text, '')::timestamptz)
+     AND (NOT $25::boolean OR min(v.created_at) < NULLIF($26::text, '')::timestamptz)
 )
 SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, g.downloads
   FROM grouped g
@@ -163,6 +175,8 @@ type PackageViewListParams struct {
 	AfterName   string
 	AfterFormat string
 	MaxRows     int32
+	AnyFile     []string
+	Document    []string
 	Withheld    []int64
 	Formats     []string
 	HasRepos    bool
@@ -206,6 +220,12 @@ type PackageViewListRow struct {
 //
 // The versions are those of package_version_listing: the rows of package_versions and the tags of a remote OCI repository, which
 // are read from the repository's cache entries (R-OCI-036); the second kind has a negative id and no lead item.
+//
+// A version's downloads and its last download are those of the items whose downloads are fetches of it (R-API-079), by the rule its
+// format declares (formats.VersionFetch), passed in as the formats of each rule: any_file names the formats whose every file of a
+// version is a fetch of it (Debian), document those whose version is fetched as its document by its name or by its digest (OCI: the
+// items of the package that hold the same bytes and belong to no other version, the tag item and the manifest under its digest);
+// every other format counts the version's lead file.
 // A repository in neither list contributes no row. The scope parameters (formats,
 // repos) narrow the rows a request asks about and never widen them.
 // One row per package (format and normalized name) with at least one visible
@@ -225,6 +245,8 @@ func (q *Queries) PackageViewList(ctx context.Context, arg PackageViewListParams
 		arg.AfterName,
 		arg.AfterFormat,
 		arg.MaxRows,
+		arg.AnyFile,
+		arg.Document,
 		arg.Withheld,
 		arg.Formats,
 		arg.HasRepos,
@@ -275,23 +297,39 @@ SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.cre
        CASE WHEN $1::boolean
             THEN COALESCE((SELECT sum(i.size) FROM items i WHERE i.version_id = pv.id AND i.kind = 'file' AND i.trashed_at IS NULL), 0)
             ELSE 0 END::bigint AS size_bytes,
-       COALESCE(s.downloads, 0)::bigint AS downloads,
-       s.last_download_at
+       COALESCE(st.downloads, 0)::bigint AS downloads,
+       st.last_download_at
   FROM package_version_listing pv
   JOIN packages p ON p.id = pv.package_id
   JOIN repositories r ON r.id = p.repo_id
-  LEFT JOIN item_download_stats s ON s.item_id = pv.lead_item_id
+  LEFT JOIN LATERAL (
+       SELECT sum(s.downloads) AS downloads, max(s.last_download_at)::timestamptz AS last_download_at
+         FROM item_download_stats s
+        WHERE s.item_id IN (
+              SELECT pv.lead_item_id
+               WHERE NOT (r.format = ANY($2::text[]) OR r.format = ANY($3::text[]))
+              UNION
+              SELECT i.id FROM items i
+               WHERE r.format = ANY($2::text[]) AND i.version_id = pv.id AND i.kind = 'file'
+              UNION
+              SELECT i.id FROM items i
+               WHERE r.format = ANY($3::text[]) AND i.repo_id = p.repo_id AND i.kind = 'file'
+                 AND i.blob_sha256 = COALESCE(pv.document_sha256, (SELECT l.blob_sha256 FROM items l WHERE l.id = pv.lead_item_id))
+                 AND starts_with(i.path, p.name || '/') AND (i.version_id IS NULL OR i.version_id = pv.id))
+  ) st ON true
  WHERE pv.trashed_at IS NULL
-   AND NOT (pv.id = ANY($2::bigint[]))
-   AND concat_ws(chr(31), r.format, p.name) = ANY($3::text[])
-   AND (NOT $4::boolean OR p.repo_id = ANY($5::bigint[]))
-   AND (p.repo_id = ANY($6::bigint[])
-        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($7::text[]))
+   AND NOT (pv.id = ANY($4::bigint[]))
+   AND concat_ws(chr(31), r.format, p.name) = ANY($5::text[])
+   AND (NOT $6::boolean OR p.repo_id = ANY($7::bigint[]))
+   AND (p.repo_id = ANY($8::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($9::text[]))
  ORDER BY pv.created_at, pv.id
 `
 
 type PackageViewVersionsParams struct {
 	WithSize bool
+	AnyFile  []string
+	Document []string
 	Withheld []int64
 	Packages []string
 	HasRepos bool
@@ -315,11 +353,13 @@ type PackageViewVersionsRow struct {
 }
 
 // The visible rows of the given packages (format and normalized name), one per version per repository, with the repository, the size of the
-// version's files (when asked), the downloads of its lead item and when that item was last downloaded (R-API-029). packages holds
-// "<format>\x1f<name>" entries. The caller groups the rows per version.
+// version's files (when asked), the downloads that are fetches of the version by its format's rule and when the latest of them was
+// (R-API-029, R-API-079). packages holds "<format>\x1f<name>" entries. The caller groups the rows per version.
 func (q *Queries) PackageViewVersions(ctx context.Context, arg PackageViewVersionsParams) ([]PackageViewVersionsRow, error) {
 	rows, err := q.db.Query(ctx, packageViewVersions,
 		arg.WithSize,
+		arg.AnyFile,
+		arg.Document,
 		arg.Withheld,
 		arg.Packages,
 		arg.HasRepos,

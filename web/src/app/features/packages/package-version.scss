@@ -80,6 +80,13 @@
   overflow-wrap: anywhere;
 }
 
+// A platform's media type is one identifier of 45 characters: it stays on one line in the table, and breaks inside itself only in the
+// stacked rows of a narrow screen, where it pushed the row 5 px out of the panel (W-24, the platforms of a remote index).
+.quader-data-table.stacked td.media-type {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 // A fact with a copy button (an image's digest) keeps its value on the line of its label, and the button beside the value: a
 // value that wraps breaks inside itself. Wrapping as flex items, the button went to a line of its own under a digest at 1,024 px
 // (R-UI-170). The button stands on the middle of the value's first line (`on-line`, R-UI-175): on the baseline its glyph's

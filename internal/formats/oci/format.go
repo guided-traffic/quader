@@ -96,7 +96,9 @@ func (f *Format) Descriptor() formats.Descriptor {
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
 		},
-		ContractVersion:  formats.ContractVersion,
+		ContractVersion: formats.ContractVersion,
+		// A pull fetches a tag's manifest by the tag or, after a HEAD, by its digest (R-API-079, Q-OCI-222).
+		VersionFetch:     formats.FetchDocument,
 		Names:            names{},
 		PropertyPrefix:   "oci.",
 		Clients:          clients(),

@@ -10,7 +10,6 @@ import { asApiError, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
-import { formatSize } from './format-size';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { versionCommands } from './package-links';
 import { PackageMemory } from './package-memory';
@@ -27,18 +26,32 @@ import {
   versionSortParam,
 } from './package-versions-model';
 import { GradeLabel } from '../../shared/vulnerability/grade';
+import { VersionSize } from './version-size';
 
 /**
  * A package's page is its versions (R-UI-007, R-UI-110, the owner's walk of 2026-11-18): the name, the format and the
- * description in the header, then every version the reader may read as one table, newest first, with its size, its vulnerabilities
- * (the grade, the total of the open findings and how many have a fix), when it was published and when it was last fetched. A
+ * description in the header, then every version the reader may read as one table, newest first, with its size (or that it is not
+ * known, R-API-080), its vulnerabilities (the grade, the total of the open findings and how many have a fix), when it was published
+ * and when a client last downloaded it (R-API-079). A
  * field above the table narrows it to the versions that hold the typed text; the columns sort; 50 rows show at first. A version's
  * row links to the version's own page (R-UI-111). The README of the latest version follows the table, the facts of the package
  * are its Details. Search and sort are the `q` and `sort` parameters of the address.
  */
 @Component({
   selector: 'quader-package-detail',
-  imports: [DecimalPipe, RouterLink, TimeAgo, PageHeader, Disclosure, DataTable, ErrorNotice, FormatIconView, PackageReadmeView, GradeLabel],
+  imports: [
+    DecimalPipe,
+    RouterLink,
+    TimeAgo,
+    PageHeader,
+    Disclosure,
+    DataTable,
+    ErrorNotice,
+    FormatIconView,
+    PackageReadmeView,
+    GradeLabel,
+    VersionSize,
+  ],
   templateUrl: './package-detail.html',
   styleUrl: './package-detail.scss',
 })
@@ -136,7 +149,12 @@ export class PackageDetail {
       ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.ver.vulnerabilities:Vulnerabilities`, sortable: true }]
       : []),
     { id: 'published', label: $localize`:@@pkg.ver.published:Published`, sortable: true },
-    { id: 'fetched', label: $localize`:@@pkg.ver.fetched:Last fetched`, sortable: true },
+    {
+      id: 'fetched',
+      label: $localize`:@@pkg.ver.last-download:Last download`,
+      help: $localize`:@@pkg.help.last-download:When a client last downloaded this version through Quader. Never for a version nobody downloaded yet, such as one a mirror pass fetched.`,
+      sortable: true,
+    },
     ...(this.showRepositories() ? [{ id: 'repositories', label: $localize`:@@pkg.ver.repositories:Repositories` }] : []),
   ]);
   protected readonly caption = $localize`:@@pkg.ver.caption:Versions`;
@@ -147,7 +165,7 @@ export class PackageDetail {
     $localize`:@@pkg.ver.none-matching:No version matches “${this.draft().trim()}:text:”.`,
   );
 
-  protected readonly size = formatSize;
+  protected readonly neverTitle = $localize`:@@pkg.ver.never-title:No client has downloaded this version through Quader yet.`;
   protected versionLink(version: string): string[] {
     return versionCommands(this.project(), this.format(), this.name(), version);
   }

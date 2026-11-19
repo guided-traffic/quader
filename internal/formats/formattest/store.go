@@ -660,6 +660,12 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 	return err
 }
 
+func (s itemStore) RecordDownload(_ context.Context, _ *formats.Request, it formats.Item) {
+	s.h.mu.Lock()
+	defer s.h.mu.Unlock()
+	s.h.recorded = append(s.h.recorded, it.Ref.Path)
+}
+
 func (s itemStore) Open(_ context.Context, it formats.Item) (io.ReadCloser, error) {
 	rec, ok := it.Handle.(*itemRec)
 	if !ok {

@@ -13,8 +13,11 @@ export interface VersionRow {
   readonly version: string;
   readonly prerelease: boolean;
   readonly publishedAt: string;
-  readonly sizeBytes: number;
-  /** When it was last fetched (R-API-065); null when it never was. */
+  /** Its size; null when it is not known (R-API-080). */
+  readonly sizeBytes: number | null;
+  /** The size counts only the parts the repositories hold: the platforms of an image index fetched so far (Q-OCI-221). */
+  readonly sizePartial: boolean;
+  /** When a client last fetched it (R-API-065, R-API-079); null when none did. */
   readonly lastDownloadedAt: string | null;
   /** The qualified names of the repositories that hold it and that the reader may read. */
   readonly repositories: readonly string[];
@@ -49,7 +52,8 @@ export function versionRows(
     version: v.version,
     prerelease: v.prerelease,
     publishedAt: v.publishedAt,
-    sizeBytes: v.sizeBytes,
+    sizeBytes: v.sizeBytes ?? null,
+    sizePartial: v.sizePartial ?? false,
     lastDownloadedAt: v.lastDownloadedAt ?? null,
     repositories: v.repositories,
     tags: distTags.filter(([, target]) => target === v.version).map(([tag]) => tag),
@@ -85,13 +89,14 @@ export function filterVersions(rows: readonly VersionRow[], text: string): reado
 function key(r: VersionRow, column: string): number {
   switch (column) {
     case 'size':
-      return r.sizeBytes;
+      // A size that is not known sorts below every known one.
+      return r.sizeBytes ?? -1;
     case 'vulnerabilities':
       return gradeRank(r.grade);
     case 'published':
       return Date.parse(r.publishedAt);
     case 'fetched':
-      // Never fetched sorts as the oldest time: last when the newest come first.
+      // Never downloaded sorts as the oldest time: last when the newest come first.
       return r.lastDownloadedAt === null ? Number.NEGATIVE_INFINITY : Date.parse(r.lastDownloadedAt);
     default:
       // The version order: a lower place is a higher version.

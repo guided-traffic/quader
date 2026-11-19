@@ -242,7 +242,7 @@ describe('Repository content page', () => {
     expect(text(virtual.root)).toContain('Resolves from');
     expect(virtual.root.querySelector<HTMLAnchorElement>('.resolves a[href$="/repositories/npm-remote"]')).not.toBeNull();
     const remote = await open({ key: 'npm-cache', project: 'web', class: 'remote', format: 'npm' });
-    expect(text(remote.root)).toContain('Only what clients have fetched is listed here.');
+    expect(text(remote.root)).toContain('Only what clients have fetched through this repository is listed here and, in mirror mode, what a pass has fetched.');
   });
 
   it('R-OCI-036 an OCI remote repository lists the images it has cached like a local one, with the fetched time of a tag, and no longer says that they are not listed', async () => {
@@ -253,7 +253,7 @@ describe('Repository content page', () => {
     });
     const body = text(r.root);
     expect(body).not.toContain('not listed here yet');
-    expect(body).toContain('Only the tags this repository has cached are listed here');
+    expect(body).toContain('Only the tags clients have pulled through this repository are listed here');
     const packages = r.get(PackagesApi) as FakePackagesApi;
     expect(packages.listFilters.at(-1)).toMatchObject({ repository: ['web/oci-cache'], format: ['oci'] });
     const opener = r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!;

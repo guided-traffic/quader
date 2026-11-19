@@ -102,6 +102,8 @@ for `Lookup` and `List`. It panics on:
 
 - an invalid or reserved ID, a duplicate ID;
 - a `ContractVersion` that is not the contract's;
+- a package view (`View()` not nil) without `Descriptor.VersionFetch`: which downloads are fetches of a version (`FetchLeadFile`, `FetchAnyFile`,
+  `FetchDocument`; R-API-079, ADR-205), the rule the package view counts a version's downloads and its last download by;
 - a class without its adapter (`Remote` listed and `Remote()` nil) or an adapter without its class;
 - a `DataPort` that is no interface type;
 - a route set that is not servable: a route without name, method, template, handler, kind, action or example; a name used twice; a route
@@ -511,7 +513,8 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
 
 1. Write the spec page `docs/spec/formats/<id>.md` (routes, grammar, error shape, hooks, tables) and its decisions, in the numbers the owning plan assigns.
 2. Create `internal/formats/<id>/` with a type that embeds `formats.Base` and implements `Descriptor` (facts, `ContractVersion: formats.ContractVersion`,
-   `Names` if it has package names, `PropertyPrefix`, `DataPort` if it has side tables), `Routes`, `Match` (one call of `formats.MatchRoutes`), `Classify` and
+   `Names` if it has package names, `PropertyPrefix`, `DataPort` if it has side tables, `VersionFetch` if it has package screens: what a client
+   fetches to install a version, and add the format with its rule to the test of [all_test.go](../../internal/formats/all/all_test.go)), `Routes`, `Match` (one call of `formats.MatchRoutes`), `Classify` and
    `PackageDocumentPath`, then what it needs of the hooks, the adapters (`Remote()` exactly when `Classes` lists `Remote`, `Virtual()` likewise), `Exposure()` and `WriteError`.
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.
    If it has settings: embed the schema, set `Facts.SettingsSchema`, add the member to `repository.Settings` and to `formatMembers`, the schema to `api/openapi.yaml`

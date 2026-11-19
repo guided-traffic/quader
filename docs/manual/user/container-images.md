@@ -93,6 +93,12 @@ A tag can move; a digest cannot. Quader serves the manifest of a digest for as l
 
 A remote repository serves the images of an upstream registry such as Docker Hub or GitHub Container Registry. The image name is the name at the upstream; for a remote of Docker Hub, `nginx` and `library/nginx` are the same image. Quader fetches what you pull the first time and serves it from its store afterwards; a tag is checked with the upstream again after five minutes, unless an administrator set another period, without counting as a pull when it has not moved. Nothing can be pushed to a remote repository (`405 UNSUPPORTED`).
 
+The repository's page lists a tag once a client pulled it through the repository, or, in mirror mode, once a pass fetched it. A
+pull is the download of the tag's manifest, by the tag or by its digest; a `HEAD` request, which clients send to check a tag, is
+none, and neither is the download of a platform's manifest below an image index. The size of a tag whose image has several
+platforms counts the platforms clients have fetched so far, marked with **≥**; while none is fetched, the size is not known and
+shows a dash. The tag's page lists every platform with its size or **Not fetched**.
+
 ### Through a virtual repository
 
 A virtual repository gives one address for several repositories, for example your local repository and a remote of Docker Hub: `quader.example.com/web/docker/myapp:1.0` for your image and `quader.example.com/web/docker/alpine:3.20` for Docker Hub's, with one login.

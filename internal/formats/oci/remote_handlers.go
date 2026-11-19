@@ -185,7 +185,26 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 	if err != nil {
 		return err
 	}
-	return writeStoredDocument(rq, w, doc, body)
+	if err := writeStoredDocument(rq, w, doc, body); err != nil {
+		return err
+	}
+	recordTagFetch(ctx, rq, name, doc.Digest)
+	return nil
+}
+
+// recordTagFetch counts the GET of a tag that writeStoredDocument answered with the manifest as a download of the tag (R-API-079,
+// Q-OCI-222): the tag's document is a metadata entry and no item, so the download is counted on the item that holds the same manifest
+// under its digest, which the fill entered beside the tag (R-OCI-022) and which a pull by digest is counted on as well. A HEAD and a
+// 304 are not downloads (R-STOR-015); a manifest whose item is not stored any more is not counted.
+func recordTagFetch(ctx context.Context, rq *formats.Request, name string, digest [32]byte) {
+	if rq.Method != http.MethodGet || matchesETag(rq.Header.Get("If-None-Match"), "sha256:"+hex.EncodeToString(digest[:])) {
+		return
+	}
+	it, found, err := rq.Host.Items().Stat(ctx, rq.RepoRef(), formats.Path{Path: ManifestPath(name, "sha256:"+hex.EncodeToString(digest[:]))})
+	if err != nil || !found {
+		return
+	}
+	rq.Host.Items().RecordDownload(ctx, rq, it)
 }
 
 // writeStoredDocument answers with a stored manifest as it is stored: its bytes and the media type the upstream gave (Q-OCI-8), the

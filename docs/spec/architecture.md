@@ -1243,8 +1243,10 @@ package formats
 // change. Version 2 is the project model's (ADR-156): the repository is named by its qualified name, the read scope, the
 // link builder and the refusals changed. Version 3 is the upload sessions' (ADR-178): UploadSessions.Finalize takes the offset of its last
 // bytes and returns the received count with a refusal of it. Version 4 is the upstream presets' (ADR-198): catalog.Facts.UpstreamPresets
-// replaces DefaultUpstreamURL, DefaultExtraHosts and DefaultCredentialHosts. A format declares the literal it was written against.
-const ContractVersion = 4
+// replaces DefaultUpstreamURL, DefaultExtraHosts and DefaultCredentialHosts. Version 5 is the fetch of a version's (ADR-205):
+// Descriptor.VersionFetch is required of a format with a package view, ViewSizer reports a ViewSize that may be partial or not known,
+// and ItemStore.RecordDownload counts a document a format answers itself. A format declares the literal it was written against.
+const ContractVersion = 5
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -1330,7 +1332,24 @@ type Descriptor struct {
 	// compares them whatever integrity.checksumPolicy says (R-REPO-041: npm always verifies, R-NPM-025). Held equal to
 	// Facts.ChecksumAlwaysVerified, which makes the repository validation refuse `ignore` and `pass-through` (Q-NPM-79).
 	VerifyAnnouncedDigests bool
+	// VersionFetch says what a fetch of one of the format's versions is: the downloads the package screens count as its downloads
+	// and its last download (api-and-ui.md R-API-079). Required of a format with a package view; Register refuses one without it.
+	VersionFetch VersionFetch
 }
+
+// VersionFetch is what a format declares a fetch of one of its versions to be (R-API-079, ADR-205). A download is what storage.md
+// R-STOR-015 counts; the rule says which of them belong to a version.
+type VersionFetch uint8
+
+const (
+	FetchUndeclared VersionFetch = iota // no declaration: Register refuses it for a format with a package view
+	FetchLeadFile                       // the version's lead file: npm's tarball, NuGet's .nupkg, an Ansible collection archive
+	FetchAnyFile                        // any file linked to the version: a Debian package file of any architecture
+	FetchDocument                       // the version's document by its name or its digest: an OCI tag's manifest (Q-OCI-222)
+)
+
+// String is the name of the rule as the package view passes it to its statements: lead-file, any-file, document.
+func (v VersionFetch) String() string
 
 type Route struct {
 	Name     string   // stable metric, log and audit label, e.g. "npm.tarball.get"
@@ -1667,11 +1686,18 @@ type SourceSpeller interface {
 
 // ViewSizer is the optional interface of a Format whose version has a size that is not the sum of the version's files (an OCI tag:
 // the image, not the manifest document, R-OCI-031, Q-OCI-130). ViewSizes returns the size the screens show as the version's
-// sizeBytes, in bytes and not negative, for the versions asked for: only those ids, in one call however many versions a page
-// holds, never one the caller may not read; a version absent from the answer keeps the sum of its files. A format without it is
-// never asked (ADR-177).
+// sizeBytes (api-and-ui.md R-API-080), not negative, partial or not known, for the versions asked for: only those ids, in one call
+// however many versions a page holds, never one the caller may not read; a version absent from the answer keeps the sum of its
+// files. A format without it is never asked (ADR-177, ADR-205).
 type ViewSizer interface {
-	ViewSizes(ctx context.Context, ports DataPorts, vs []ViewVersion) (map[VersionID]int64, error)
+	ViewSizes(ctx context.Context, ports DataPorts, vs []ViewVersion) (map[VersionID]ViewSize, error)
+}
+
+// ViewSize is the size of a version as a ViewSizer reports it (R-API-080, ADR-205).
+type ViewSize struct {
+	Bytes   int64 // not below zero; 0 when Unknown
+	Partial bool  // Bytes counts only the parts the repository holds: the platforms of an image index a client fetched (Q-OCI-221)
+	Unknown bool  // no part of the size is known: an image index none of whose platforms is held; the screens show no number
 }
 
 // VersionPather gives the canonical path of the file that holds a version's content (npm's tarball, NuGet's .nupkg) for
@@ -2062,7 +2088,7 @@ type Host interface {
 	Write(ctx context.Context, rq *Request, fn func(tx Tx, w PackageWriter) error) error
 
 	Ingest() Ingestor            // upload pipeline of storage.md: admission, spool, digests, commit; Commit takes the request's other files as Companions, in one transaction (Q-ARCH-228)
-	Items() ItemStore            // repository paths <-> blobs, Range and conditional reads (storage.md)
+	Items() ItemStore            // repository paths <-> blobs, Range and conditional reads (storage.md); RecordDownload counts a document the format answered itself (R-STOR-015, ADR-205)
 	Packages() PackageStore      // package and version rows behind the package view (FMT-007)
 	Remote() RemoteFetcher       // remote engine (repositories-and-proxy.md); Exchange sends one request through a remote's upstream client outside the cache (Q-NPM-62); Query passes a Volatile request through with a registered per-replica cache (Q-ARCH-270); Gate runs the artifact gate without fetching (Q-ARCH-272)
 	Resolver() Resolver          // virtual resolution (repositories-and-proxy.md); Plan, KeepsAway and ReadScope serve a format that fans a request out over the members (Q-ARCH-271)

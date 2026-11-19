@@ -29,12 +29,12 @@
         <span
           ><ng-container i18n="@@pkg.fact.published">Published</ng-container>&ngsp;<quader-time-ago [at]="d.publishedAt" /></span
         >
-        <span class="nowrap" [attr.title]="d.sizeBytes + ' B'">{{ size(d.sizeBytes) }}</span>
+        <quader-version-size [bytes]="d.sizeBytes ?? null" [partial]="d.sizePartial" [spelled]="true" />
         <span
-          ><ng-container i18n="@@pkg.fact.last-fetched">Last fetched</ng-container>&ngsp;@if (d.lastDownloadedAt; as at) {
+          ><ng-container i18n="@@pkg.fact.last-download">Last download</ng-container>&ngsp;@if (d.lastDownloadedAt; as at) {
             <quader-time-ago [at]="at" />
           } @else {
-            <ng-container i18n="@@pkg.fact.never">never</ng-container>
+            <span [attr.title]="neverTitle" i18n="@@pkg.fact.never">never</span>
           }</span
         >
         <span i18n="@@pkg.fact.download-count">{d.downloadCount, plural, =1 {1 download} other {{{ d.downloadCount | number }} downloads}}</span>
@@ -154,10 +154,8 @@
                     <dt i18n="@@pkg.image.artifact-type">Artifact type</dt>
                     <dd translate="no">{{ img.artifactType }}</dd>
                   }
-                  @if (img.size !== null) {
-                    <dt i18n="@@pkg.image.total-size">Size</dt>
-                    <dd [attr.title]="img.size + ' B'">{{ size(img.size) }}</dd>
-                  }
+                  <dt i18n="@@pkg.image.total-size">Size</dt>
+                  <dd><quader-version-size [bytes]="img.size" [partial]="img.sizePartial" /></dd>
                 </dl>
                 @if (img.platforms.length > 0) {
                   <h2 i18n="@@pkg.image.platforms">Platforms</h2>
@@ -174,11 +172,20 @@
                           <code class="ellipsis" translate="no" [attr.title]="p.digest">{{ p.digest }}</code>
                           <quader-copy-button [value]="p.digest" [label]="p.copyLabel" />
                         </td>
-                        <td translate="no">{{ p.mediaType }}</td>
-                        @if (p.size !== null) {
-                          <td class="num" [attr.title]="p.size + ' B'">{{ size(p.size) }}</td>
+                        @if (p.stored) {
+                          <td class="media-type" translate="no">{{ p.mediaType }}</td>
+                          @if (p.size !== null) {
+                            <td class="num" [attr.title]="p.size + ' B'">{{ size(p.size) }}</td>
+                          } @else {
+                            <td class="num"><quader-no-value /></td>
+                          }
                         } @else {
-                          <td class="num">–</td>
+                          <!-- A platform no client fetched through Quader: its manifest, and with it its media type and size, is not held
+                               (Q-OCI-221). -->
+                          <td><quader-no-value /></td>
+                          <td class="num nowrap" [attr.title]="notFetchedTitle">
+                            <span class="muted" i18n="@@pkg.image.not-fetched">Not fetched</span>
+                          </td>
                         }
                       </tr>
                     }

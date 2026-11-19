@@ -117,8 +117,11 @@ func TestR_OCI_036_ARemoteListsTheImagesAndTagsItHasCachedAndOnlyToWhoMayReadThe
 	if at, _ := vs[0]["publishedAt"].(string); at == "" {
 		t.Error("the tag lists no fetch time")
 	}
-	if n, _ := vs[0]["downloadCount"].(float64); n != 0 {
-		t.Errorf("downloadCount = %v, want 0 for a tag of a remote", n)
+	if n, _ := vs[0]["downloadCount"].(float64); n != 1 {
+		t.Errorf("downloadCount = %v, want the one pull (R-API-079)", n)
+	}
+	if at, _ := vs[0]["lastDownloadedAt"].(string); at == "" {
+		t.Error("the pulled tag lists no last download (R-API-065)")
 	}
 
 	// A caller whose grant names the image names acme/* lists those and no others; the image it may not read answers like one that does not exist.
@@ -170,13 +173,15 @@ func TestR_OCI_036_AMovedTagShowsTheNewDigestAndNoSecondVersion(t *testing.T) {
 	if now := e.tags(rep, e.reader, id, rFast); now[0]["digest"] != first {
 		t.Fatalf("the list shows %v before any request revalidated the tag, want the cached digest %s", now[0]["digest"], first)
 	}
-	eventually(t, 20*time.Second, "the moved tag to be fetched and listed", func() bool {
-		if a := e.get(rep, rFast, "acme/a/manifests/latest"); a.Status != 200 {
-			return false
-		}
-		vs := e.tags(rep, e.reader, id, rFast)
-		return len(vs) == 1 && vs[0]["digest"] == moved
+	eventually(t, 20*time.Second, "the moved tag to be fetched", func() bool {
+		a := e.get(rep, rFast, "acme/a/manifests/latest")
+		return a.Status == 200 && a.Header.Get("Docker-Content-Digest") == moved
 	})
+	// The tag is listed again once the GET that fetched its new manifest is counted (R-API-081, Q-OCI-222).
+	e.fetched(rFast, moved)
+	if vs := e.tags(rep, e.reader, id, rFast); len(vs) != 1 || vs[0]["digest"] != moved {
+		t.Fatalf("the moved tag lists %v, want the new digest %s", vs, moved)
+	}
 	after := e.tags(rep, e.reader, id, rFast)
 	if len(after) != 1 {
 		t.Fatalf("a moved tag lists %d versions, want the one tag", len(after))

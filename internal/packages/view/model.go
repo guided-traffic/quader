@@ -22,13 +22,34 @@ type Adapter interface {
 	Find(ctx context.Context, f Find, limit int) ([]int64, error)
 	// Withheld returns the ids of stored versions the format does not serve.
 	Withheld(ctx context.Context, repos []string) ([]int64, error)
+	// Fetch is the format's rule of which downloads are fetches of a version (R-API-079, formats.VersionFetch).
+	Fetch() FetchRule
 }
+
+// FetchRule says which downloads are fetches of a version: of its lead file, of any of its files, or of its document by its name
+// or its digest (formats.VersionFetch).
+type FetchRule string
+
+// The rules, as the statements of the view read them.
+const (
+	FetchLeadFile FetchRule = "lead-file"
+	FetchAnyFile  FetchRule = "any-file"
+	FetchDocument FetchRule = "document"
+)
 
 // Sizer is the optional part of an Adapter whose format has versions of a size that is not the sum of their files (an OCI tag):
 // Sizes returns the size the screens show for the versions, by id; a version absent keeps the sum of its files. The core asks an
 // adapter only when it has this method.
 type Sizer interface {
-	Sizes(ctx context.Context, vs []Version) (map[int64]int64, error)
+	Sizes(ctx context.Context, vs []Version) (map[int64]Size, error)
+}
+
+// Size is a version's size as a Sizer reports it (R-API-080): Bytes, which counts only part of the version when Partial, or no
+// number when Unknown.
+type Size struct {
+	Bytes   int64
+	Partial bool
+	Unknown bool
 }
 
 // Adapters finds the adapter of a format; ok is false for a format without
@@ -103,14 +124,17 @@ type VersionSummary struct {
 	Version     string
 	Prerelease  bool
 	PublishedAt time.Time
-	SizeBytes   int64
+	// SizeBytes is the version's size; nil when it is not known (R-API-080). SizePartial says that it counts only the parts the
+	// repository holds.
+	SizeBytes   *int64
+	SizePartial bool
 	// Digest is the version's content digest (an OCI tag: `sha256:…` of its manifest), read from the format's metadata when the caller
 	// asks (VersionFilter.WithDigest); "" for none.
 	Digest        string
 	Repositories  []qname.Repo
 	DownloadCount int64
-	// LastDownloadedAt is the latest download of the version's lead file in any repository that holds it (R-API-065); nil when it
-	// was never fetched.
+	// LastDownloadedAt is the latest fetch of the version by a client, by its format's rule, in any repository that holds it (R-API-065,
+	// R-API-079); nil when no client fetched it.
 	LastDownloadedAt *time.Time
 }
 
@@ -132,14 +156,16 @@ type File struct {
 
 // VersionDetail is a version with everything the details page shows.
 type VersionDetail struct {
-	PackageID     string
-	Format        string
-	Name          string
-	Version       string
-	Prerelease    bool
-	PublishedAt   time.Time
-	Licenses      []string
-	SizeBytes     int64
+	PackageID   string
+	Format      string
+	Name        string
+	Version     string
+	Prerelease  bool
+	PublishedAt time.Time
+	Licenses    []string
+	// SizeBytes and SizePartial are as in VersionSummary (R-API-080).
+	SizeBytes     *int64
+	SizePartial   bool
 	DownloadCount int64
 	// LastDownloadedAt is as in VersionSummary (R-API-065).
 	LastDownloadedAt *time.Time

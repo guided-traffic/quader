@@ -226,12 +226,19 @@ Fuzz targets: `FuzzR_OCI_020_Parse`, `FuzzR_ARCH_028_Inspect`, `FuzzR_OCI_031_Co
 
 **The view** ([view.go](../../internal/formats/oci/view.go)): `Stored` lists the tags of a local repository newest push first, `Withheld` the tags of
 withheld manifests, `Describe` the digest, media type, size and (for an index) the platform table, `Compare` is `tagorder.Compare`.
-The format also implements the optional `formats.ViewSizer` (`Format.ViewSizes`, ADR-177): the package view asks it, once for a page of the version
-list and once for the details, for the `sizeBytes` of a tag, the stored size of the manifest, read by `Store.TagSizes` (the config and layers of an image, the sum over the required children of an
-index, the same number as `metadata.size`). The core would otherwise show the sum of the version's linked files, which for a tag is the manifest
-document (Q-OCI-130). The blobs are not linked to a version, on purpose. The size is stored: `PutManifest` sets an index's `content_size` to the sum
-of its children's (`OCISetIndexContentSize`, after the edges are written), so an index of indexes is right at any depth; `ViewSizes` reads it with
-`Store.TagSizes`, one statement for a page, and the platform table of the details is the only reader of the children.
+The format also implements the optional `formats.ViewSizer` (`Format.ViewSizes`, ADR-177, ADR-205): the package view asks it, once for a page of the
+version list and once for the details, for the `sizeBytes` of a tag, a `formats.ViewSize`. `Store.TagSizes` reads, in one statement for a page, the
+content size of the tag's manifest (an image manifest's config and layers) and, for an index, how many children it names, how many the repository
+holds and their summed content size, once over all children and once over those that are no attestation (`unknown/unknown`). `imageSize` turns that
+into the size: an image's is known; an index's is the sum over the platforms held, `Partial` while some are missing and `Unknown` while none is
+(Q-OCI-221). The sum is read at read time and not from the index's own `content_size`, which `OCISetIndexContentSize` writes once, when the index is
+stored: in a remote the platforms arrive later, one per client pull. `Describe` counts the children of `TagViews` the same way (`rows.SizeOf`) for
+`metadata.size` and `sizePartial`, and marks each platform `stored`. The blobs are not linked to a version, on purpose.
+
+**What a pull counts** (`VersionFetch: FetchDocument`, R-API-079, Q-OCI-222): the package view counts a tag's downloads on the tag item and the item
+of its manifest under `<name>/_manifests/<digest>` (a pull by digest). A remote tag has no item: `remoteManifestGet` answers it from the metadata
+entry and `recordTagFetch` counts the `GET` (not a `HEAD`, not a `304`) on the manifest item the fill entered beside it, through
+`ItemStore.RecordDownload`. `oci_remote_tags` (migration 00079) lists a remote tag once that item has a download, or the repository is a mirror.
 
 ## Upload sessions (R-STOR-011)
 

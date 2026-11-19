@@ -202,6 +202,7 @@ checked every earlier decision against them:
 | [ADR-202](#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository) | The client setup and the guide are one page of a repository | Accepted (owner decision of 2026-11-18); the address, the layout and the API decided by the development agent — owner review at the walkthrough |
 | [ADR-203](#adr-203--browse-goes-a-repositorys-files-live-on-its-page) | Browse goes; a repository's files live on its page | Accepted (owner decision of 2026-11-18); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-204](#adr-204--an-administrator-restricts-visibility-levels-to-administrators) | An administrator restricts visibility levels to administrators | Accepted (owner requirement of 2026-11-18); the rules decided by the development agent — owner review at the walkthrough |
+| [ADR-205](#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5) | The format contract declares what a fetch of a version is, and a size may be partial or not known; the contract is at version 5 | Accepted (owner decision of 2026-11-19); the contract change decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1056,6 +1057,42 @@ whose project level is restricted (the plain path would fail). Each is a decisio
 **Spec:** [R-AUTHZ-037, R-AUTHZ-038](spec/authorization.md#r-authz-037--restricted-visibility-levels), Q-AUTHZ-283 to Q-AUTHZ-289;
 [R-API-075, R-API-076](spec/api-and-ui.md#r-api-075--the-restricted-levels-in-the-visibility-settings), Q-API-330 to Q-API-332;
 [R-UI-140, R-UI-141](spec/api-and-ui.md#r-ui-140--the-restricted-visibility-levels-in-the-general-settings), Q-UI-540 to Q-UI-543.
+
+### ADR-205 · The format contract declares what a fetch of a version is, and a size may be partial or not known; the contract is at version 5
+
+**Status:** Accepted (owner decision of 2026-11-19, walk objection W-24: a remote lists what was fetched, every cell is true, for every
+format); the contract change decided by the development agent — owner review at the walkthrough
+
+**Context.** The owner saw a remote OCI tag listed with **0 B**, **Last fetched** "Never" and no downloads. The package view counted a
+version's downloads on its lead item, which a remote OCI tag has none of, a Debian version has one of several, and a pull by digest never
+touches; the size of an index was the sum of its children held when the index was written; and the streamed first answer of every remote
+miss was not counted. The owner decided that what is settled at OCI holds for every format, built and future.
+
+**Decision.**
+- `formats.Descriptor` gains `VersionFetch` (`FetchLeadFile`, `FetchAnyFile`, `FetchDocument`; the zero value `FetchUndeclared`):
+  which downloads are fetches of a version ([R-API-079](spec/api-and-ui.md#r-api-079--what-a-fetch-of-a-version-is-in-every-format-and-class)).
+  `Validate` refuses a format with a package view that declares none; `formats/all` pins each format's rule in a test.
+- `formats.ViewSizer.ViewSizes` returns a `ViewSize` (`Bytes`, `Partial`, `Unknown`) instead of a number
+  ([R-API-080](spec/api-and-ui.md#r-api-080--a-size-that-is-not-known-is-not-a-number)); the kit's check 11 refuses a number for a size
+  that is not known.
+- `formats.ItemStore` gains `RecordDownload`: a format that answers the bytes of an item from a store of its own (a remote OCI tag from its
+  metadata entry) counts the download on that item (R-STOR-015, Q-OCI-222).
+- A changed method and a required field move every format: `ContractVersion` is 5 (R-ARCH-025).
+
+**Consequences.** The package view counts a version's downloads by its format's rule in the statements that read the rows; a future format
+declares its rule before it registers. The API's `sizeBytes` is nullable and gains `sizePartial` (Q-API-341). No table is added: the item
+statistics hold every download, and the view `package_version_listing` gains the content digest of a version without a lead file
+(migration 00079).
+
+**Alternatives considered.** An optional view method that returns the fetch items (forgotten by a new format, a second pass for the list's
+counts); the core's own rule over the linked files (counts the provenance bundle and the `.nuspec`, misses a pull by digest); a statistics
+row per version written on the serve path (Q-API-295, Q-API-340).
+
+**Revisit condition:** a format whose fetch is none of the three rules.
+
+**Spec:** [architecture.md](spec/architecture.md) R-ARCH-008, R-ARCH-025; [api-and-ui.md](spec/api-and-ui.md) R-API-065, R-API-079 to R-API-081,
+Q-API-295, Q-API-340 to Q-API-343; [formats/oci.md](spec/formats/oci.md) Q-OCI-221, Q-OCI-222; [repositories-and-proxy.md](spec/repositories-and-proxy.md)
+Q-REPO-330, Q-REPO-331.
 
 ## Design invariants
 

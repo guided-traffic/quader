@@ -457,6 +457,7 @@ func TestR_API_029_ViewAdapterNeedsPackageNames(t *testing.T) {
 	}
 	d.PackageNames = true
 	d.Names = identity{}
+	d.VersionFetch = FetchLeadFile
 	if err := Validate(fake{d: d, view: noView{}}); err != nil {
 		t.Fatal(err)
 	}
@@ -465,6 +466,29 @@ func TestR_API_029_ViewAdapterNeedsPackageNames(t *testing.T) {
 	}
 	if (Base{}).View() != nil {
 		t.Fatal("Base has a view")
+	}
+}
+
+// TestR_API_079_AFormatWithAPackageViewDeclaresWhatAFetchOfAVersionIs: the screens count a version's downloads by the rule its
+// format declares, so a format with a package view and no rule, or a rule the contract does not know, does not register (ADR-205).
+func TestR_API_079_AFormatWithAPackageViewDeclaresWhatAFetchOfAVersionIs(t *testing.T) {
+	d := valid("fetcher")
+	d.PackageNames, d.Names = true, identity{}
+	for _, bad := range []VersionFetch{FetchUndeclared, FetchDocument + 1} {
+		d.VersionFetch = bad
+		if err := Validate(fake{d: d, view: noView{}}); err == nil || !strings.Contains(err.Error(), "declares no VersionFetch") {
+			t.Errorf("VersionFetch %d: %v", bad, err)
+		}
+	}
+	for _, ok := range []VersionFetch{FetchLeadFile, FetchAnyFile, FetchDocument} {
+		d.VersionFetch = ok
+		if err := Validate(fake{d: d, view: noView{}}); err != nil {
+			t.Errorf("VersionFetch %s: %v", ok, err)
+		}
+	}
+	// A format without package screens has no versions to count and declares nothing (generic).
+	if err := Validate(fake{d: valid("noscreens")}); err != nil {
+		t.Fatalf("a format without a view: %v", err)
 	}
 }
 

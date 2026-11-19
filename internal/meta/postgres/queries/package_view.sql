@@ -10,6 +10,12 @@
 --   withheld     ids of stored versions the format does not serve.
 -- The versions are those of package_version_listing: the rows of package_versions and the tags of a remote OCI repository, which
 -- are read from the repository's cache entries (R-OCI-036); the second kind has a negative id and no lead item.
+--
+-- A version's downloads and its last download are those of the items whose downloads are fetches of it (R-API-079), by the rule its
+-- format declares (formats.VersionFetch), passed in as the formats of each rule: any_file names the formats whose every file of a
+-- version is a fetch of it (Debian), document those whose version is fetched as its document by its name or by its digest (OCI: the
+-- items of the package that hold the same bytes and belong to no other version, the tag item and the manifest under its digest);
+-- every other format counts the version's lead file.
 -- A repository in neither list contributes no row. The scope parameters (formats,
 -- repos) narrow the rows a request asks about and never widen them.
 
@@ -24,7 +30,19 @@
 -- comparison of a cursor means the same on every replica.
 WITH vis AS (
   SELECT pv.id AS vid, pv.version, pv.created_at, (p.name COLLATE "C")::text AS name, p.display_name, r.format,
-         COALESCE((SELECT s.downloads FROM item_download_stats s WHERE s.item_id = pv.lead_item_id), 0)::bigint AS downloads
+         COALESCE((SELECT sum(s.downloads)
+                     FROM item_download_stats s
+                    WHERE s.item_id IN (
+                          SELECT pv.lead_item_id
+                           WHERE NOT (r.format = ANY(sqlc.arg(any_file)::text[]) OR r.format = ANY(sqlc.arg(document)::text[]))
+                          UNION
+                          SELECT i.id FROM items i
+                           WHERE r.format = ANY(sqlc.arg(any_file)::text[]) AND i.version_id = pv.id AND i.kind = 'file'
+                          UNION
+                          SELECT i.id FROM items i
+                           WHERE r.format = ANY(sqlc.arg(document)::text[]) AND i.repo_id = p.repo_id AND i.kind = 'file'
+                             AND i.blob_sha256 = COALESCE(pv.document_sha256, (SELECT l.blob_sha256 FROM items l WHERE l.id = pv.lead_item_id))
+                             AND starts_with(i.path, p.name || '/') AND (i.version_id IS NULL OR i.version_id = pv.id))), 0)::bigint AS downloads
     FROM package_version_listing pv
     JOIN packages p ON p.id = pv.package_id
     JOIN repositories r ON r.id = p.repo_id
@@ -74,19 +92,33 @@ SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_c
 
 -- name: PackageViewVersions :many
 -- The visible rows of the given packages (format and normalized name), one per version per repository, with the repository, the size of the
--- version's files (when asked), the downloads of its lead item and when that item was last downloaded (R-API-029). packages holds
--- "<format>\x1f<name>" entries. The caller groups the rows per version.
+-- version's files (when asked), the downloads that are fetches of the version by its format's rule and when the latest of them was
+-- (R-API-029, R-API-079). packages holds "<format>\x1f<name>" entries. The caller groups the rows per version.
 SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.created_at,
        r.id AS repo_id, r.class AS repo_class,
        CASE WHEN sqlc.arg(with_size)::boolean
             THEN COALESCE((SELECT sum(i.size) FROM items i WHERE i.version_id = pv.id AND i.kind = 'file' AND i.trashed_at IS NULL), 0)
             ELSE 0 END::bigint AS size_bytes,
-       COALESCE(s.downloads, 0)::bigint AS downloads,
-       s.last_download_at
+       COALESCE(st.downloads, 0)::bigint AS downloads,
+       st.last_download_at
   FROM package_version_listing pv
   JOIN packages p ON p.id = pv.package_id
   JOIN repositories r ON r.id = p.repo_id
-  LEFT JOIN item_download_stats s ON s.item_id = pv.lead_item_id
+  LEFT JOIN LATERAL (
+       SELECT sum(s.downloads) AS downloads, max(s.last_download_at)::timestamptz AS last_download_at
+         FROM item_download_stats s
+        WHERE s.item_id IN (
+              SELECT pv.lead_item_id
+               WHERE NOT (r.format = ANY(sqlc.arg(any_file)::text[]) OR r.format = ANY(sqlc.arg(document)::text[]))
+              UNION
+              SELECT i.id FROM items i
+               WHERE r.format = ANY(sqlc.arg(any_file)::text[]) AND i.version_id = pv.id AND i.kind = 'file'
+              UNION
+              SELECT i.id FROM items i
+               WHERE r.format = ANY(sqlc.arg(document)::text[]) AND i.repo_id = p.repo_id AND i.kind = 'file'
+                 AND i.blob_sha256 = COALESCE(pv.document_sha256, (SELECT l.blob_sha256 FROM items l WHERE l.id = pv.lead_item_id))
+                 AND starts_with(i.path, p.name || '/') AND (i.version_id IS NULL OR i.version_id = pv.id))
+  ) st ON true
  WHERE pv.trashed_at IS NULL
    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND concat_ws(chr(31), r.format, p.name) = ANY(sqlc.arg(packages)::text[])

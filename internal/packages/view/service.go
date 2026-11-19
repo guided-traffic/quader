@@ -450,6 +450,7 @@ func (s *Service) withheld(ctx context.Context, sc Scope, formats []string, repo
 // packages runs the list statement and decorates its rows.
 func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListParams, withheld []int64, hasRepos bool, repos []int64) ([]Package, error) {
 	var rows []q.PackageViewListRow
+	p.AnyFile, p.Document = s.fetchRules()
 	if err := s.read(ctx, func(qs *q.Queries) (err error) {
 		rows, err = qs.PackageViewList(ctx, p)
 		return err
@@ -550,13 +551,33 @@ func latestOf(a Adapter, rows []q.PackageViewVersionsRow) (q.PackageViewVersions
 	return best, found
 }
 
+// fetchRules names the formats whose versions are fetched as any of their files and those fetched as their document; every other
+// format counts the lead file (R-API-079). The statements count a version's downloads by them.
+func (s *Service) fetchRules() (anyFile, document []string) {
+	anyFile, document = []string{}, []string{}
+	for _, f := range s.adapters.Formats() {
+		a, ok := s.adapters.For(f)
+		if !ok {
+			continue
+		}
+		switch a.Fetch() {
+		case FetchAnyFile:
+			anyFile = append(anyFile, f)
+		case FetchDocument:
+			document = append(document, f)
+		}
+	}
+	return anyFile, document
+}
+
 // versionRows reads the rows of the given packages ("<format>\x1f<name>").
 func (s *Service) versionRows(ctx context.Context, sc Scope, pkgs []string, withSize bool, withheld []int64, hasRepos bool, repos []int64) ([]q.PackageViewVersionsRow, error) {
 	var rows []q.PackageViewVersionsRow
+	anyFile, document := s.fetchRules()
 	err := s.read(ctx, func(qs *q.Queries) (err error) {
 		rows, err = qs.PackageViewVersions(ctx, q.PackageViewVersionsParams{
 			WithSize: withSize, Withheld: ids(withheld), Packages: pkgs, HasRepos: hasRepos, Repos: ids(repos),
-			Whole: ids(sc.whole), Rows: keys(sc.rows),
+			Whole: ids(sc.whole), Rows: keys(sc.rows), AnyFile: anyFile, Document: document,
 		})
 		return err
 	})
@@ -674,9 +695,10 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 		if f.HasRepositories && !slices.ContainsFunc(g.rows, func(r q.PackageViewVersionsRow) bool { return slices.Contains(only, r.RepoID) }) {
 			continue
 		}
+		files := g.primary().SizeBytes
 		out = append(out, VersionSummary{
 			Version: g.version, Prerelease: pre, PublishedAt: g.published,
-			SizeBytes: g.primary().SizeBytes, Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(),
+			SizeBytes: &files, Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(),
 			LastDownloadedAt: g.lastDownload(),
 		})
 	}
@@ -748,10 +770,19 @@ func (s *Service) adapterSizes(ctx context.Context, sc Scope, a Adapter, format 
 	}
 	for i, v := range vs {
 		if n, ok := got[v.ID]; ok {
-			page[i].SizeBytes = n
+			page[i].SizeBytes, page[i].SizePartial = sizeOf(n)
 		}
 	}
 	return nil
+}
+
+// sizeOf is a size a format reported as the API carries it (R-API-080): no number when it is not known.
+func sizeOf(n Size) (*int64, bool) {
+	if n.Unknown {
+		return nil, false
+	}
+	b := max(n.Bytes, 0)
+	return &b, n.Partial
 }
 
 // fillDigests sets the digest of the listed versions from the format's metadata (the member `digest` of Describe's details, R-UI-052):
@@ -786,10 +817,11 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		return VersionDetail{}, false, err
 	}
 	pri := g.primary()
+	files := pri.SizeBytes
 	d := VersionDetail{
 		PackageID: ID(format, name), Format: format, Name: pri.DisplayName, Version: version,
 		Prerelease: a.Prerelease(version), PublishedAt: g.published,
-		SizeBytes: pri.SizeBytes, DownloadCount: g.downloads(), LastDownloadedAt: g.lastDownload(), Repo: sc.topo.Name(pri.RepoID),
+		SizeBytes: &files, DownloadCount: g.downloads(), LastDownloadedAt: g.lastDownload(), Repo: sc.topo.Name(pri.RepoID),
 		Licenses: []string{}, Metadata: map[string]any{},
 	}
 	earliest := map[int64]time.Time{}
@@ -850,7 +882,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 			return VersionDetail{}, false, err
 		}
 		if n, ok := sizes[pri.VersionID]; ok {
-			d.SizeBytes = n
+			d.SizeBytes, d.SizePartial = sizeOf(n)
 		}
 	}
 	err = s.read(ctx, func(qs *q.Queries) error {

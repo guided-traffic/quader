@@ -177,7 +177,8 @@ func (r *run) viewStored(a formats.ViewAdapter, v *ViewFixture) {
 }
 
 // viewSizes checks the optional ViewSizer of a format that has one (ADR-177): over the seeded package it answers in one call, only
-// for the ids it was asked for, with sizes that are not negative; it answers nothing, without an error, when asked for nothing.
+// for the ids it was asked for, with sizes that are not negative and, when not known, no number (ADR-205); it answers nothing, without
+// an error, when asked for nothing.
 func (r *run) viewSizes(h *Host, v *ViewFixture) {
 	z := formats.CapabilitiesOf(r.f).ViewSizer
 	if z == nil {
@@ -204,8 +205,12 @@ func (r *run) viewSizes(h *Host, v *ViewFixture) {
 		if !slices.ContainsFunc(subset, func(x formats.ViewVersion) bool { return x.ID == id }) {
 			r.failf("ViewSizes answered for the version id %d, which it was not asked for", id)
 		}
-		if n < 0 {
-			r.failf("ViewSizes answered %d for the version id %d: a size is not negative", n, id)
+		if n.Bytes < 0 {
+			r.failf("ViewSizes answered %d for the version id %d: a size is not negative", n.Bytes, id)
+		}
+		if n.Unknown && (n.Bytes != 0 || n.Partial) {
+			// A size that is not known is no number and no part of one (R-API-080).
+			r.failf("ViewSizes answered %+v for the version id %d: a size that is not known has no bytes and is not partial", n, id)
 		}
 	}
 	if none, err := z.ViewSizes(ctx, h, nil); err != nil || len(none) != 0 {

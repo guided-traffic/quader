@@ -91,12 +91,12 @@ func TestR_OCI_031_AVersionOfATagIsTheSizeOfTheImage(t *testing.T) {
 		t.Fatalf("versions = %+v", got)
 	}
 	// The manifests declare 2 bytes for the config and 5 for each layer.
-	if got["1"].SizeBytes != 7 || got["2"].SizeBytes != 12 {
-		t.Fatalf("sizes: tag 1 = %d (want 7), tag 2 = %d (want 12); the manifests are %d and %d bytes", got["1"].SizeBytes, got["2"].SizeBytes, len(one), len(two))
+	if deref(got["1"].SizeBytes) != 7 || deref(got["2"].SizeBytes) != 12 {
+		t.Fatalf("sizes: tag 1 = %d (want 7), tag 2 = %d (want 12); the manifests are %d and %d bytes", deref(got["1"].SizeBytes), deref(got["2"].SizeBytes), len(one), len(two))
 	}
 
-	if d := f.versionOf(t, "web/app", "1"); d.SizeBytes != 7 || len(d.Files) != 1 {
-		t.Fatalf("the details of tag 1: size %d (want 7), files %+v", d.SizeBytes, d.Files)
+	if d := f.versionOf(t, "web/app", "1"); deref(d.SizeBytes) != 7 || len(d.Files) != 1 {
+		t.Fatalf("the details of tag 1: size %d (want 7), files %+v", deref(d.SizeBytes), d.Files)
 	}
 
 	// An index: the sum over its children.
@@ -112,11 +112,11 @@ func TestR_OCI_031_AVersionOfATagIsTheSizeOfTheImage(t *testing.T) {
 		`{"mediaType":%q,"digest":%q,"size":3,"platform":{"os":"linux","architecture":"arm","variant":"v7"}}]}`,
 		ociIndexCT, ociCT, kids[0], ociCT, kids[1], ociCT, kids[0]))
 	wantOCI(t, f.push("writer", "web/app", "multi", idx, ociIndexCT), 201, "")
-	if got := f.versionsOf(t, "web/app")["multi"].SizeBytes; got != 14 {
+	if got := deref(f.versionsOf(t, "web/app")["multi"].SizeBytes); got != 14 {
 		t.Fatalf("the index is %d bytes, want 14 (two children of 7)", got)
 	}
-	if d := f.versionOf(t, "web/app", "multi"); d.SizeBytes != 14 {
-		t.Fatalf("the details of the index: size %d, want 14", d.SizeBytes)
+	if d := f.versionOf(t, "web/app", "multi"); deref(d.SizeBytes) != 14 {
+		t.Fatalf("the details of the index: size %d, want 14", deref(d.SizeBytes))
 	}
 
 	// An index of indexes: the sum at any depth, however deep the nesting, and an index that names an image besides.
@@ -143,10 +143,18 @@ func TestR_OCI_031_AVersionOfATagIsTheSizeOfTheImage(t *testing.T) {
 	wantOCI(t, f.push("writer", "web/app", "outer", outer, ociIndexCT), 201, "")
 	wantOCI(t, f.push("writer", "web/app", "outermost", outermost, ociIndexCT), 201, "")
 	got = f.versionsOf(t, "web/app")
-	if got["outer"].SizeBytes != 14 || got["outermost"].SizeBytes != 21 {
-		t.Fatalf("index of indexes: outer %d (want 14), outermost %d (want 14 + 7 = 21)", got["outer"].SizeBytes, got["outermost"].SizeBytes)
+	if deref(got["outer"].SizeBytes) != 14 || deref(got["outermost"].SizeBytes) != 21 {
+		t.Fatalf("index of indexes: outer %d (want 14), outermost %d (want 14 + 7 = 21)", deref(got["outer"].SizeBytes), deref(got["outermost"].SizeBytes))
 	}
-	if d := f.versionOf(t, "web/app", "outermost"); d.SizeBytes != 21 || d.Metadata["size"] != int64(21) {
-		t.Fatalf("the details of the outermost index: size %d, metadata size %v", d.SizeBytes, d.Metadata["size"])
+	if d := f.versionOf(t, "web/app", "outermost"); deref(d.SizeBytes) != 21 || d.Metadata["size"] != int64(21) {
+		t.Fatalf("the details of the outermost index: size %d, metadata size %v", deref(d.SizeBytes), d.Metadata["size"])
 	}
+}
+
+// deref is a size the view reported, -1 for one that is not known (R-API-080).
+func deref(n *int64) int64 {
+	if n == nil {
+		return -1
+	}
+	return *n
 }

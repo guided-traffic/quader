@@ -58,6 +58,16 @@ export const projects = [
   },
 ] as const;
 
+/** The local repository a remote of the renders caches from, and the remote (W-24). */
+export const remoteSource = { key: 'image-source', prefix: 'vendor' } as const;
+export const remoteCache = { key: 'image-cache' } as const;
+/**
+ * The image of two platforms in image-source and what the seed pulls of it through image-cache: `1.9` is one platform's image
+ * (its size is known from its manifest), `2.0` the index with one platform pulled (a partial size), `2.1` the index alone (a
+ * size that is not known).
+ */
+export const remoteImage = { name: 'tools/agent', single: '1.9', partial: '2.0', unknown: '2.1' } as const;
+
 /** The project the power user owns, and in which the screens of a project are rendered. */
 export const mainProject = 'web-frontend';
 export const otherProject = 'platform';
@@ -106,6 +116,20 @@ export const repositories: readonly RepoSeed[] = [
     description: 'The guidedtraffic images of Docker Hub, cached. Open to everyone, also without signing in.',
     visibility: { artifacts: 'public', wiki: 'internal' },
     includePatterns: ['guidedtraffic/*'],
+  },
+  // A remote whose upstream is this installation (W-24): what a remote lists, without the internet. image-source holds an image of
+  // two platforms; the seed pulls through image-cache one tag whole, one platform of another and only the index of a third, so that
+  // its rows show a known size, a size of the platforms fetched so far and a size that is not known (R-API-080, Q-OCI-221).
+  { project: otherProject, key: remoteSource.key, format: 'oci', class: 'local', description: 'The upstream of image-cache.', visibility: { artifacts: 'public', wiki: 'internal' } },
+  {
+    project: otherProject,
+    key: remoteCache.key,
+    format: 'oci',
+    class: 'remote',
+    description: 'The images of image-source, cached through its registry address.',
+    // The upstream's namespace prefix: image-cache's tools/agent is image-source's vendor/tools/agent, so that the package page of
+    // tools/agent shows the remote's versions alone.
+    url: `https://localhost:4200/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
   },
   { project: otherProject, key: longDebKey, format: 'deb', class: 'local', description: 'Packages of the platform team for Debian 12 and 13.' },
   { project: otherProject, key: 'debian', format: 'deb', class: 'remote', description: 'deb.debian.org, cached.' },
@@ -428,6 +452,7 @@ export async function seedContent(ctx: APIRequestContext, edge: string, token: s
     await expectStatus(res, [200, 201], `folder ${f.repo}/${f.path}`);
   }
   for (const image of images) await pushImage(ctx, edge, token, image);
+  await seedRemoteImages(ctx, edge, token);
 }
 
 /**
@@ -472,7 +497,7 @@ async function idOf(admin: Api, name: string): Promise<string> {
 }
 
 /**
- * Fetches the tarballs of {@link fetchedVersions} once, so that the column **Last fetched** of the versions table has times (R-API-065)
+ * Fetches the tarballs of {@link fetchedVersions} once, so that the column **Last download** of the versions table has times (R-API-065)
  * and the other versions read "Never". A version that was fetched before is not fetched again: a second run adds nothing.
  */
 async function fetchOnce(ctx: APIRequestContext, auth: Record<string, string>): Promise<void> {
@@ -692,15 +717,96 @@ async function pushImage(ctx: APIRequestContext, edge: string, pat: string, imag
   }
 }
 
+/**
+ * The image of two platforms in image-source, and the pulls through the remote image-cache that give its rows the three kinds of
+ * size (W-24, R-API-080, Q-OCI-221): the single-platform tag whole, one platform of the index `2.0`, and only the index `2.1`. Every
+ * GET of a tag is a client's download of it (R-API-079), so the remote lists the three tags. A run again pushes nothing and pulls
+ * again, which only counts more downloads.
+ */
+export async function seedRemoteImages(ctx: APIRequestContext, edge: string, pat: string): Promise<void> {
+  const source = `${otherProject}/${remoteSource.key}/${remoteSource.prefix}/${remoteImage.name}`;
+  const push = { Authorization: `Bearer ${await registryToken(ctx, edge, pat, source)}` };
+  const digestOf = (b: Buffer): string => `sha256:${createHash('sha256').update(b).digest('hex')}`;
+  const putBlob = async (blob: Buffer): Promise<string> => {
+    const digest = digestOf(blob);
+    if ((await ctx.head(`/v2/${source}/blobs/${digest}`, { headers: push })).status() === 200) return digest;
+    const start = await ctx.post(`/v2/${source}/blobs/uploads/`, { headers: push });
+    await expectStatus(start, [202], `start upload ${source}`);
+    const location = new URL(start.headers()['location'] ?? '', edge);
+    location.searchParams.set('digest', digest);
+    const put = await ctx.put(location.pathname + location.search, { data: blob, headers: { ...push, 'Content-Type': 'application/octet-stream' } });
+    await expectStatus(put, [201], `upload blob ${source}`);
+    return digest;
+  };
+  const putManifest = async (ref: string, body: Buffer, type: string): Promise<void> => {
+    const res = await patient(() => ctx.put(`/v2/${source}/manifests/${ref}`, { data: body, headers: { ...push, 'Content-Type': type } }));
+    await expectStatus(res, [201], `push ${source}:${ref}`);
+  };
+  const image = async (arch: string, release: string): Promise<{ digest: string; size: number; body: Buffer }> => {
+    // A layer of some MiB, so that the sizes read as an image's do. Its bytes are pseudo-random from a seed of the platform and the
+    // release, so that they hardly compress and a second run of the seed pushes the same image again.
+    const content = Buffer.alloc((arch === 'amd64' ? 3 : 2) * 1024 * 1024);
+    let x = 2463534242 ^ (arch.charCodeAt(1) * 65_537 + release.charCodeAt(release.length - 1));
+    for (let i = 0; i < content.length; i++) {
+      x ^= x << 13;
+      x ^= x >>> 17;
+      x ^= x << 5;
+      content[i] = x & 0xff;
+    }
+    const layer = gzipSync(tarEntry(`opt/agent/agent-${arch}`, content), { level: 1 });
+    const config = Buffer.from(JSON.stringify({ architecture: arch, os: 'linux', config: { Labels: { release } }, rootfs: { type: 'layers', diff_ids: [] } }));
+    const manifest = Buffer.from(
+      JSON.stringify({
+        schemaVersion: 2,
+        mediaType: 'application/vnd.oci.image.manifest.v1+json',
+        config: { mediaType: 'application/vnd.oci.image.config.v1+json', digest: await putBlob(config), size: config.length },
+        layers: [{ mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip', digest: await putBlob(layer), size: layer.length }],
+      }),
+    );
+    const digest = digestOf(manifest);
+    await putManifest(digest, manifest, 'application/vnd.oci.image.manifest.v1+json');
+    return { digest, size: manifest.length, body: manifest };
+  };
+  const index = async (tag: string): Promise<string[]> => {
+    const children = [await image('amd64', tag), await image('arm64', tag)];
+    const body = Buffer.from(
+      JSON.stringify({
+        schemaVersion: 2,
+        mediaType: 'application/vnd.oci.image.index.v1+json',
+        manifests: children.map((c, i) => ({
+          mediaType: 'application/vnd.oci.image.manifest.v1+json',
+          digest: c.digest,
+          size: c.size,
+          platform: { os: 'linux', architecture: i === 0 ? 'amd64' : 'arm64' },
+        })),
+      }),
+    );
+    await putManifest(tag, body, 'application/vnd.oci.image.index.v1+json');
+    return children.map((c) => c.digest);
+  };
+  const single = await image('amd64', remoteImage.single);
+  await putManifest(remoteImage.single, single.body, 'application/vnd.oci.image.manifest.v1+json');
+  const partial = await index(remoteImage.partial);
+  await index(remoteImage.unknown);
+
+  // The pulls of a client through the remote, as the power user (a developer of the project reads it).
+  const cached = `${otherProject}/${remoteCache.key}/${remoteImage.name}`;
+  const pull = { Authorization: `Bearer ${await registryToken(ctx, edge, pat, cached, 'pull')}`, Accept: 'application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json' };
+  for (const ref of [remoteImage.single, remoteImage.partial, partial[0]!, remoteImage.unknown]) {
+    const res = await patient(() => ctx.get(`/v2/${cached}/manifests/${ref}`, { headers: pull }));
+    await expectStatus(res, [200], `pull ${cached}:${ref} through the remote`);
+  }
+}
+
 /** The handshake of a registry client: the challenge of `/v2/`, then the token service with the PAT as the password. */
-async function registryToken(ctx: APIRequestContext, edge: string, pat: string, repo: string): Promise<string> {
+async function registryToken(ctx: APIRequestContext, edge: string, pat: string, repo: string, actions = 'pull,push'): Promise<string> {
   const challenge = (await ctx.get('/v2/')).headers()['www-authenticate'] ?? '';
   const realm = /realm="([^"]+)"/.exec(challenge)?.[1];
   const service = /service="([^"]+)"/.exec(challenge)?.[1];
   if (!realm || !service) throw new Error(`/v2/ sent no Bearer challenge: ${challenge}`);
   const url = new URL(realm, edge);
   url.searchParams.set('service', service);
-  url.searchParams.set('scope', `repository:${repo}:pull,push`);
+  url.searchParams.set('scope', `repository:${repo}:${actions}`);
   const res = await ctx.get(url.pathname + url.search, {
     headers: { Authorization: `Basic ${Buffer.from(`${kinds.power}:${pat}`).toString('base64')}` },
   });

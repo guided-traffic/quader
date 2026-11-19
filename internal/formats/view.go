@@ -60,11 +60,59 @@ type ViewAdapter interface {
 
 // ViewSizer is the optional interface of a [Format] whose version has a size that is not the sum of the version's files: an OCI
 // tag's file is the manifest document, its size the image's. ViewSizes returns, for the given versions, the size the screens show
-// as the version's `sizeBytes`, in bytes and not negative; a version the format has no size for is absent from the answer and keeps
-// the sum of its files. It answers only for the ids it was asked for, in one call however many versions the page holds, and it is
-// not asked for a version the caller may not read. [CapabilitiesOf] finds it; a format without it is never asked.
+// as the version's `sizeBytes` (R-API-080): a [ViewSize] whose bytes are not below zero, which may count only part of the version
+// or say that its size is not known; a version the format has no size for is absent from the answer and keeps the sum of its files.
+// It answers only for the ids it was asked for, in one call however many versions the page holds, and it is not asked for a version
+// the caller may not read. [CapabilitiesOf] finds it; a format without it is never asked.
 type ViewSizer interface {
-	ViewSizes(ctx context.Context, ports DataPorts, vs []ViewVersion) (map[VersionID]int64, error)
+	ViewSizes(ctx context.Context, ports DataPorts, vs []ViewVersion) (map[VersionID]ViewSize, error)
+}
+
+// ViewSize is the size of a version as a [ViewSizer] reports it (R-API-080, ADR-205).
+type ViewSize struct {
+	// Bytes is the size in bytes, not below zero; 0 when Unknown.
+	Bytes int64
+	// Partial says that Bytes counts only the parts of the version the repository holds: an OCI image index whose platforms are
+	// not all fetched counts the ones that are (Q-OCI-221).
+	Partial bool
+	// Unknown says that no part of the version's size is known: an image index none of whose platforms is fetched. The screens
+	// show no number for it.
+	Unknown bool
+}
+
+// VersionFetch is what a format declares a fetch of one of its versions to be (R-API-079, ADR-205): the downloads whose count is
+// a version's downloads and whose latest time is its last download, in every class. A download is what R-STOR-015 counts (a whole
+// body or a range from byte 0, never a HEAD, a 304 or a metadata document); the rule says which of them belong to a version.
+// [Register] refuses a format with a package view ([Format.View]) that declares none.
+type VersionFetch uint8
+
+const (
+	// FetchUndeclared is the zero value: no declaration.
+	FetchUndeclared VersionFetch = iota
+	// FetchLeadFile: a download of the version's lead file, the one file that is the version (npm's tarball, NuGet's .nupkg, an
+	// Ansible collection archive). A file linked beside it (a provenance bundle, a .nuspec, a symbol package) is no fetch.
+	FetchLeadFile
+	// FetchAnyFile: a download of any file linked to the version, each of which is the whole version for its platform (a Debian
+	// package file per architecture).
+	FetchAnyFile
+	// FetchDocument: a download of the version's document by the version's name or by its digest. The document is the lead
+	// file's content (a local OCI tag item) or, for a version without a lead file, the content its listing names (a remote OCI
+	// tag's manifest); its fetch by digest is the download of a file of the package that holds the same bytes and is linked to no
+	// other version. The documents below it (an index's platform manifests) and the blobs they name are no fetch of the version.
+	FetchDocument
+)
+
+// String is the name of the rule as the package view passes it to its statements.
+func (v VersionFetch) String() string {
+	switch v {
+	case FetchLeadFile:
+		return "lead-file"
+	case FetchAnyFile:
+		return "any-file"
+	case FetchDocument:
+		return "document"
+	}
+	return "undeclared"
 }
 
 // StoredQuery asks what one repository stores under one package name.

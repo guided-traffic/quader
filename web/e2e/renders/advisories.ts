@@ -89,7 +89,7 @@ function manyVersions(): VendorVersion[] {
 
 export const manyVersionPackages: readonly VendorVersion[] = manyVersions();
 
-/** The versions of the many-version package that the seed fetches once, so that the column Last fetched has times (R-API-065). */
+/** The versions of the many-version package that the seed fetches once, so that the column Last download has times (R-API-065). */
 export const fetchedVersions: readonly string[] = ['3.9.0', '3.7.0', '2.9.0'];
 
 const LEVEL: Record<keyof Counts, string | null> = { critical: 'CRITICAL', high: 'HIGH', medium: 'MODERATE', low: 'LOW', unknown: null };

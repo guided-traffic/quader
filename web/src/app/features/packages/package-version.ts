@@ -35,6 +35,8 @@ import {
   stringRecord,
   strings,
 } from './version-metadata';
+import { VersionSize } from './version-size';
+import { NoValue } from '../../shared/ui/no-value';
 
 export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'details' | 'import-log';
 
@@ -47,8 +49,9 @@ interface TabEntry {
 
 /**
  * The page of one version (R-UI-111, the owner's walk of 2026-11-18): `/packages/{format}/{name…}@{version}`, an address of its
- * own that can be linked and sent. The header names the package and the version with its tags and its facts (published, size, last
- * fetched, downloads, licences) and its vulnerabilities in one statement (R-UI-112); the install command follows at the page's width,
+ * own that can be linked and sent. The header names the package and the version with its tags and its facts (published, size or that
+ * it is not known, the last download by a client, the downloads, licences; R-API-079, R-API-080) and its vulnerabilities in one
+ * statement (R-UI-112); the install command follows at the page's width,
  * so it is read in full (R-UI-009). The tabs: **Vulnerabilities** (a grade card per repository and the open findings at the page's
  * width, R-VULN-023), the documentation of an Ansible collection (R-UI-060), **README**, **Files**, **Details** (the format's
  * metadata and the repositories that hold the version) and an Ansible collection's **Import log**. The open tab is the `tab`
@@ -74,6 +77,8 @@ interface TabEntry {
     AnsibleImportLog,
     PackageVulnerabilities,
     GradeLabel,
+    VersionSize,
+    NoValue,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',
@@ -328,6 +333,8 @@ export class PackageVersionPage {
     { id: 'size', label: $localize`:@@pkg.image.size:Size`, numeric: true },
   ];
   protected readonly tableCaptionPlatforms = $localize`:@@pkg.image.platforms-caption:Platforms of this image index`;
+  protected readonly notFetchedTitle = $localize`:@@pkg.image.not-fetched-title:No client has fetched this platform through Quader yet, so its manifest and its size are not held.`;
+  protected readonly neverTitle = $localize`:@@pkg.ver.never-title:No client has downloaded this version through Quader yet.`;
   protected readonly copyImageDigest = $localize`:@@pkg.image.copy-digest:Copy digest`;
   protected readonly tableCaptionFiles = $localize`:@@pkg.file.caption:Files of this version`;
   protected readonly tableCaptionRepositories = $localize`:@@pkg.repo.caption:Repositories that hold this version`;

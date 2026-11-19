@@ -154,9 +154,9 @@ type sizerFormat struct {
 	asked *[]formats.ViewVersion
 }
 
-func (s sizerFormat) ViewSizes(_ context.Context, _ formats.DataPorts, vs []formats.ViewVersion) (map[formats.VersionID]int64, error) {
+func (s sizerFormat) ViewSizes(_ context.Context, _ formats.DataPorts, vs []formats.ViewVersion) (map[formats.VersionID]formats.ViewSize, error) {
 	*s.asked = append(*s.asked, vs...)
-	return map[formats.VersionID]int64{vs[0].ID: 42}, nil
+	return map[formats.VersionID]formats.ViewSize{vs[0].ID: {Bytes: 42, Partial: true}}, nil
 }
 
 // TestR_API_029_OnlyAFormatWithAViewSizerIsAskedForSizes: the core finds the size of a version through the capability, so the adapter
@@ -181,7 +181,7 @@ func TestR_API_029_OnlyAFormatWithAViewSizerIsAskedForSizes(t *testing.T) {
 		t.Fatal("the adapter of a format with ViewSizer cannot be asked for sizes")
 	}
 	got, err := z.Sizes(context.Background(), []view.Version{{ID: 7, Format: "alpha", Repo: "p/r", Package: "app", Version: "1"}})
-	if err != nil || len(got) != 1 || got[7] != 42 {
+	if err != nil || len(got) != 1 || got[7] != (view.Size{Bytes: 42, Partial: true}) {
 		t.Fatalf("sizes = %v, %v", got, err)
 	}
 	if len(asked) != 1 || asked[0].ID != 7 || asked[0].Package != "app" || asked[0].Version != "1" {

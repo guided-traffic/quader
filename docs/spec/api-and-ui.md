@@ -1570,7 +1570,7 @@ remain as their owners define them.)
 - A virtual repository in the `repository` filter expands to its members. Remote repositories
   contribute only cached versions; this endpoint never queries an upstream.
 - Version details contain `packageId`, `format`, `name`, `version`, `prerelease`, `publishedAt`, `licenses`
-  (declared SPDX identifiers or expression, `[]` when none), `sizeBytes`, `downloadCount`, `lastDownloadedAt` (R-API-065), `hasReadme` (whether
+  (declared SPDX identifiers or expression, `[]` when none), `sizeBytes` and `sizePartial` (R-API-080), `downloadCount` and `lastDownloadedAt` (R-API-065, R-API-079), `hasReadme` (whether
   the `readme` answer is 200 for this caller, so the UI chooses its default tab without a probing request; `false` for a caller
   who may read the version but not the wiki of the repository that holds it, [authorization.md](authorization.md) R-AUTHZ-034),
   `metadata` (a
@@ -1586,8 +1586,9 @@ remain as their owners define them.)
 - `sizeBytes` of a version, in the list and in the details, is the sum of the sizes of the version's files unless the format
   has the optional `ViewSizer` ([ADR-177](../decisions.md#adr-177--the-format-contract-gains-the-optional-viewsizer-for-the-size-of-a-version-that-is-not-the-sum-of-its-files)),
   which reports the size of its versions: an OCI tag's file is the manifest document, so its `sizeBytes` is the image's (R-OCI-031,
-  Q-OCI-130). The UI shows the value as received.
-- The `versions` list entries hold `version`, `prerelease`, `publishedAt`, `sizeBytes`, `repositories`
+  Q-OCI-130). `sizeBytes` is `null` when the size is not known and `sizePartial` says that it counts only the parts the repository
+  holds (R-API-080). `downloadCount` and `lastDownloadedAt` count the fetches of the version by its format's rule (R-API-079).
+- The `versions` list entries hold `version`, `prerelease`, `publishedAt`, `sizeBytes`, `sizePartial` (R-API-080), `repositories`
   (the qualified names `<projectKey>/<repoKey>` of the repositories the caller may read), `downloadCount` and `lastDownloadedAt`
   (R-API-065); with `include=digest` also
   `digest`, the content digest the format's version metadata names (an OCI tag: `sha256:…` of its manifest, R-UI-052), absent for a format without one.
@@ -1756,26 +1757,136 @@ Acceptance criteria:
 - The npm install snippet for version `1.0.0` of a legacy remote package named `a(b)` reads
   `npm install 'a(b)@1.0.0'`.
 
-### R-API-065 · When a version was last fetched
+### R-API-065 · When a client last downloaded a version
 Priority: **P1** · Covers: quader-only
 
-The owner's walk of 2026-11-18 (W-7): a version's row says when it was published and when it was last fetched
-([Q-API-295](#q-api-295--last-fetched-is-the-latest-download-of-the-versions-lead-file-read-with-the-version-rows)).
+The owner's walk of 2026-11-18 (W-7): a version's row says when it was published and when it was last fetched; the owner's
+objection of 2026-11-19 (W-24): every cell of the row is true, in every format and class
+([Q-API-295](#q-api-295--a-versions-last-download-and-its-downloads-are-the-fetches-of-it-by-the-formats-rule-read-with-the-version-rows)).
 
-- `lastDownloadedAt` of an entry of `GET /api/v1/packages/{packageId}/versions` and of the version details is the latest
-  `last_download_at` of the download statistics (`item_download_stats`, [storage.md](storage.md) R-STOR-015) of the version's lead
-  file (the tarball, the package, the manifest of a tag) in the repositories the entry names, the ones the caller may read. `null`
-  when none of them was fetched, and for the tag of a remote OCI repository, which has no lead file.
-- It is read by the statement that reads the version rows (`PackageViewVersions`), one join, so the list costs no statement per
-  version. It follows the download count: what R-STOR-015 counts, and with the delay of the replicas' statistics buffer.
-- No schema change: the column exists since the storage core.
+- `lastDownloadedAt` of an entry of `GET /api/v1/packages/{packageId}/versions` and of the version details is the latest time a
+  client fetched the version (R-API-079) through one of the repositories the entry names, the ones the caller may read; `downloadCount`
+  counts those fetches. `null` and 0 when no client fetched it: a version nobody downloaded, a version a mirror pass stored and no
+  client fetched yet. There is no exception for a format or a class.
+- Both are read by the statement that reads the version rows (`PackageViewVersions`), with the statistics of the version's fetch items
+  in a lateral subquery, so the list costs no statement per version. They follow the download statistics of R-STOR-015, with the delay
+  of the replicas' statistics buffer.
+- The screens call the column **Last download** and the value of a version no client fetched **Never**, the words of a file's
+  download statistics (Q-API-342).
 
 Acceptance criteria:
 
 - Integration (`packages`): `@team-a/ui` 1.4.0 fetched in `npm-local` on 2026-11-01 and in `npm-team` on 2026-11-17 lists
   `lastDownloadedAt` 2026-11-17 for a reader of both, 2026-11-01 for a reader of `npm-local` alone, and the details say the same;
   1.3.0, never fetched, lists `null`.
+- Integration (`ociremote`, `TestR_API_081_…`): the tag of a remote OCI repository that a client pulled lists a time and its
+  pulls (R-API-079).
 - Unit (`view`): the latest time of a version's rows wins; a version none of whose rows was fetched has none.
+
+### R-API-079 · What a fetch of a version is, in every format and class
+Priority: **P1** · Covers: quader-only
+
+The owner's decision of 2026-11-19 (W-24): **Last download** of a version is the time a client last fetched that version through the
+repository, and **Downloads** counts those fetches, for every format and class. A decision taken at one format holds for every
+format ([Q-API-340](#q-api-340--the-format-contract-declares-what-a-fetch-of-a-version-is)).
+
+- A download is what [storage.md](storage.md) R-STOR-015 counts: Quader answers the whole body with `200`, or `206` for a range from
+  byte 0; a `HEAD`, a `304`, a later range and a request with `?stats=false` are none. It is counted on the item that answered, in
+  the repository that holds it; through a virtual repository on the item of the serving member.
+- A fetch of a version is a download of one of the version's **fetch items**, which the format declares in its descriptor
+  (`Descriptor.VersionFetch`, [architecture.md](architecture.md) R-ARCH-008, ADR-205); a format with package screens that declares
+  none does not register:
+
+  | Rule | Format | The version's fetch items | Not a fetch of the version |
+  |---|---|---|---|
+  | `FetchLeadFile` | npm | the tarball | the packument, the provenance bundle, an abbreviated document |
+  | `FetchLeadFile` | NuGet | the `.nupkg` | the registration and flat-container index documents, the `.nuspec`, the symbol package |
+  | `FetchLeadFile` | Ansible Galaxy | the collection archive | the collection and version documents, the documentation |
+  | `FetchAnyFile` | Debian | the package file of every architecture linked to the version | `Release`, `InRelease`, the `Packages` and `Sources` indexes |
+  | `FetchDocument` | OCI | the tag's manifest, by the tag or by its digest: the tag item and the item that holds the same bytes under `<name>/_manifests/<digest>` and belongs to no other tag; for a remote tag, which has no item, the manifest item the fill entered beside it | a `HEAD` of the tag (a client's check of it), the platform manifests below an index, the blobs |
+  | none | generic | (no package screens: each file has its own statistics, R-STOR-015) | |
+
+- One pull is one download: a client that resolves a tag with a `HEAD` and pulls the index by its digest (containerd, Docker with the
+  containerd image store) downloads the tag's manifest once; a client that `GET`s the tag downloads it once by the tag. The platform
+  manifest it pulls next is a manifest of its own and no second fetch of the tag. A pull by digest is a fetch of every tag that points
+  at that digest now.
+- A remote OCI tag is answered from its metadata entry, not through the item store: the format counts the answer with
+  `ItemStore.RecordDownload` on the manifest item of its digest ([formats/oci.md](formats/oci.md) Q-OCI-222).
+- The first answer of a remote miss, which the remote engine streams to the client while it fetches, is a download like the stored
+  answers after it ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-331).
+- What a format's fetch is where its protocol has no single version file is decided per format and named in the table; a format whose
+  protocol cannot tell a fetch of a version from other traffic says so in its row and comes back to the owner (none today).
+
+Acceptance criteria:
+
+- Unit (`formats`, `TestR_API_079_AFormatWithAPackageViewDeclaresWhatAFetchOfAVersionIs`): a format with a package view and no rule does not
+  register; (`formats/all`, `TestR_API_079_EveryFormatWithPackageScreensCountsTheFetchesOfItsVersionsByItsProtocol`) every registered
+  format with package screens declares the rule of the table.
+- Unit (`oci`, `TestQ_OCI_222_…`): the `GET` of a remote tag records a download of its manifest item; a `HEAD`, a `304` and a tag without a
+  manifest item record none.
+- Integration (`ociremote`, `TestR_API_081_…`): after a `GET` of a tag the tag has one download; the `GET` of its index by digest makes it
+  two; the `GET` of a platform manifest leaves it at two.
+- Integration (`proxy`, `TestQ_REPO_331_…`): the streamed first answer of a miss calls the engine's `Streamed` once with the stored item; a
+  hit and a ranged miss are answered through `Serve` and do not.
+- Integration (`debremote`, `TestR_API_081_…`): a package file a client fetched through a Debian remote has one download.
+
+### R-API-080 · A size that is not known is not a number
+Priority: **P1** · Covers: quader-only
+
+The owner's objection of 2026-11-19 (W-24): an image listed with **0 B** whose platforms were never fetched
+([Q-API-341](#q-api-341--sizebytes-is-null-when-the-size-is-not-known-and-sizepartial-marks-a-size-of-the-parts-held)).
+
+- `sizeBytes` of a version, in the version list and in the details, is `null` when the size is not known, never 0 in its place;
+  `sizePartial` is `true` when `sizeBytes` counts only the parts of the version the repository holds, `false` otherwise.
+- The size is the sum of the version's files unless the format reports it (`ViewSizer`, which returns a `ViewSize` of bytes, `Partial`
+  and `Unknown`, ADR-205). Only OCI reports one: an image manifest states the sizes of its config and layers, so its size is known as
+  soon as the manifest is, whether the layers are held or not; an index's size is the sum over the images of its platforms the
+  repository holds, partial while some are missing, not known while none is ([formats/oci.md](formats/oci.md) Q-OCI-221).
+- A format that knows a size from its upstream's metadata before the content is fetched shows no row for it: a remote lists only what
+  was fetched (R-API-081), whose files are held. The Ansible version document and the NuGet catalog state a size, but no row exists
+  before the archive or the package is cached, so no row shows a size taken from them.
+- The screens show a size that is not known as the shared "no value" with a title that says why, and a partial size with **≥** before
+  it and a title that says what it leaves out ([R-UI-110](#r-ui-110--a-packages-versions-as-one-table)).
+
+Acceptance criteria:
+
+- Unit (`oci`, `TestQ_OCI_221_…`): an index with every platform held has the whole sum, one of two a partial sum, none no number; an
+  attestation manifest is not counted.
+- Unit (`formattest`, check 11): a `ViewSizer` that answers a number for a size it does not know fails the kit.
+- Integration (`ociremote`, `TestR_API_081_…`): a remote index none of whose platforms was fetched lists `sizeBytes: null`; after one
+  platform a partial size; after both the whole size.
+- Unit (UI, `version-size.spec.ts`): a size that is not known renders the no-value with its title, never "0 B".
+
+### R-API-081 · A remote repository lists what was fetched through it
+Priority: **P1** · Covers: quader-only
+
+The owner's decision of 2026-11-19 (W-24, "Option A"): a remote repository lists what was fetched through it, and every cell of such
+a row is true ([Q-API-343](#q-api-343--a-remote-lists-a-version-once-a-client-fetched-it-or-a-mirror-pass-stored-it)).
+
+- A remote repository lists a version once a client fetched it through the repository or, in mirror mode, a pass stored it; nothing
+  the upstream merely knows, and nothing a client only checked. Per format:
+
+  | Format | A version is listed once | The upstream's metadata alone lists nothing |
+  |---|---|---|
+  | npm | its tarball is stored (a client's download or a pass) | the packument |
+  | NuGet | its `.nupkg` is stored | the registration and flat-container documents |
+  | Ansible Galaxy | its collection archive is stored | the collection and version documents |
+  | Debian | a package file of it is stored; the version is named by the parsed index row of the file's path (Q-REPO-330) | `Release` and the indexes |
+  | OCI | its tag's manifest was downloaded by a client (R-API-079) or the repository is in mirror mode and holds the tag | a `HEAD` of the tag, which stores its document but downloads nothing |
+  | generic | (the files view: every cached file) | |
+
+- The content fill of npm, NuGet, Ansible Galaxy and Debian is a client's download in mode pull-through, so a listed row has one; the
+  download is in the statistics within a flush interval (R-STOR-015). A row in mirror mode that no client fetched says **Never** and 0
+  downloads, which is true: the pass fetched it, no client did.
+- The note above a remote repository's table says it: "Only what clients have fetched through this repository is listed here and, in
+  mirror mode, what a pass has fetched."; for OCI "Only the tags clients have pulled through this repository are listed here and, in
+  mirror mode, those a pass has fetched." (Q-UI-217).
+
+Acceptance criteria:
+
+- Integration (`ociremote`, `TestR_API_081_…`): a `HEAD` of a tag lists nothing; the `GET` of the tag lists it.
+- Integration (`debremote`, `TestR_API_081_…`): a Debian remote that holds only indexes lists nothing; the package file a client fetched
+  lists its package and version with the file's size; its removal takes the version with it.
 
 ### R-API-053 · Guides of the formats
 Priority: **MVP** · Covers: quader-only
@@ -6485,8 +6596,9 @@ owner's reference screen's; its look is Quader's own.
   the package report (`GET …/vulnerabilities`, R-VULN-039) and the distribution tags of the latest version's details.
 - **Columns, in the owner's order** ([Q-UI-450](#q-ui-450--a-row-of-the-versions-table-is-the-version-its-size-its-vulnerabilities-and-two-times)):
   **Version** (a link to the version's page, R-UI-111; after it its distribution tags as badges, `latest`, `next`, and the mark
-  **pre-release**), **Size**, **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
-  **Last fetched** (R-API-065; "Never" for a version never fetched), and **Repositories** only when the versions differ in the
+  **pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
+  **Last download** (R-API-065, R-API-079; "Never" for a version no client downloaded, with a help text and a title, Q-API-342), and
+  **Repositories** only when the versions differ in the
   repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories)).
   No digest: an image's row is its tag (Q-UI-453).
 - **Sort**: the highest version first by the format's precedence (the server's order); every column but Repositories sorts both
@@ -6508,7 +6620,8 @@ Acceptance criteria:
   the shield's and is not written again).
 - Rendered (rule 11): the package pages of npm (`@acme/ui-kit`, the many-version `chart-render-kit` filtered and sorted by grade,
   `image-convert-tools`, the longest name), the image `portal/web`, the NuGet, Debian and Ansible packages of the seed, as plain
-  user, power user and administrator.
+  user, power user and administrator; the image `tools/agent` of the remote `platform/image-cache`, whose tags show a known size, a
+  partial one and one that is not known (W-24).
 
 ### R-UI-111 · A version has a page of its own
 Priority: **MVP** · Covers: UI-009, ART-049
@@ -6525,13 +6638,13 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
 - **Header**: the package name and the version as the `h1` ("image-convert-tools 4.0.1"), the format, the distribution tags that
   point at the version and the mark **pre-release**, the package's description.
 - **Facts**, one line with the style guide's separator: the grade with the total and the fixable findings (R-UI-112), a link to
-  the tab Vulnerabilities; when it was published; its size; when it was last fetched (R-API-065, "never"); its downloads; its
+  the tab Vulnerabilities; when it was published; its size (R-API-080); when a client last downloaded it (R-API-065, "never"); its downloads; its
   licences. Below them the banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
 - **Install** (R-UI-009) at the page's width, before the tabs.
 - **Tabs** (`tab`): **Vulnerabilities** (R-VULN-023), the first tab of a version whose grade is not N/A; for the format `ansible`
   **Documentation** and **Contents** (R-UI-060, R-UI-062); **README** (R-UI-008, when `hasReadme`); **Files** (path, size,
   SHA-256 with its copy button, download); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
-  type, size and platforms, the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's control
+  type, size and platforms, each platform with its size or "Not fetched" while the repository does not hold it (Q-OCI-221), the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's control
   fields, an Ansible collection's Ansible versions and tags, the required runtimes; then the repositories that hold the version,
   each a link to its page, with its class and when it was published there); **Vulnerabilities** after Details for a version that
   is N/A; **Import log** of an Ansible collection in a local repository (R-UI-063)
@@ -12261,7 +12374,7 @@ push an image, and an OCI remote carried a note that nothing is listed.
 | (b) The words stay those of a local repository | Nothing changes | No code | "Pushed" for a time nobody pushed; an empty text that tells a reader to push to a cache |
 | (c) The generic remote note ("Only what clients have fetched is listed here.") | The note of the other formats | One text | It leaves out the mirror pass, which fills the cache without a client |
 
-**Choice:** (a). The note reads "Only the tags this repository has cached are listed here: those clients have pulled and, in mirror mode, those a pass has fetched."
+**Choice:** (a). The note reads "Only the tags clients have pulled through this repository are listed here and, in mirror mode, those a pass has fetched." (revised on 2026-11-19 with R-API-081: it read "Only the tags this repository has cached are listed here: …", which a tag a client only checked with a `HEAD` made untrue). The note of the other formats reads "Only what clients have fetched through this repository is listed here and, in mirror mode, what a pass has fetched."
 The empty text reads "This repository has cached no images yet. It fills as clients pull images through it; Set up client shows
 how." without a button of its own (revised by Q-UI-555 on 2026-11-18; until then it said "Pull an image through it with your
 client." with **Set up client** under it, fix wave 2 of T-21). The version table keeps its
@@ -15128,20 +15241,78 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Rationale:** a page per thing. The description and the README of the latest version are on the package page
 (R-UI-007). The development agent records no revisit condition. **Applied in the spec:** R-UI-007, R-UI-111.
 
-### Q-API-295 · Last fetched is the latest download of the version's lead file, read with the version rows
+### Q-API-295 · A version's last download and its downloads are the fetches of it by the format's rule, read with the version rows
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a
-row says when the version was last fetched is the owner's (2026-11-18).
+row says when the version was last fetched is the owner's (2026-11-18); that it is the last fetch of the version by a client and
+the downloads count those, for every format and class, is the owner's (2026-11-19, W-24). Revised on 2026-11-19: until then (a) read
+the lead item alone, which left a remote OCI tag (no lead item) at "Never", a Debian version at the downloads of its first
+architecture, and a local OCI tag pulled by digest at none.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `last_download_at` of the lead item's `item_download_stats`, joined in `PackageViewVersions`, the latest over the readable repositories (chosen) | Read from what is stored | No schema change; one statement for the whole list; the same file the download count counts | A file of a version other than the lead (an extra artifact) does not count |
-| (b) The latest of every file of the version | All files | Every fetch | A subquery per version over its items; differs from the download count |
-| (c) A new column on the version row, written at each download | A field of its own | Cheap to read | A schema step and a write on the download path, which the statistics buffer exists to avoid |
+| (a) The statistics of the version's lead item alone | One join | Cheap | Wrong where the lead is not what clients fetch: a remote OCI tag has none, a Debian version has a file per architecture, a pull by digest is no download of the tag item |
+| (b) The statistics of the version's fetch items, by the rule its format declares (`VersionFetch`: lead file, any file, document by name or digest), summed and the latest taken in a lateral subquery of `PackageViewVersions` and `PackageViewList` (chosen) | Read from what is stored | No new table; one statement for the whole list; each format names what its clients fetch | The rule of the document is a match by bytes under the package's path, which a format declares and the core states once |
+| (c) A statistics row per version, written at each download | A table of its own | Cheap to read | The serve path must know the version of each item (an OCI manifest's tags), a write on the download path, a second copy of what the item statistics hold |
 
-**Choice:** (a). **Rationale:** the statistics of R-STOR-015 already hold the time; the version list reads them as it reads the
-count. The development agent revisits (b) if a format's lead file is not what its clients fetch. **Applied in the spec:**
-R-API-065, R-API-029.
+**Choice:** (b). **Rationale:** the item statistics of R-STOR-015 hold every download; what differs per format is which of them belong
+to a version, and that is the format's knowledge, declared once in the contract (Q-API-340). The development agent revisits (c) if a
+format's fetch cannot be named by items of the repository. **Applied in the spec:** R-API-065, R-API-079, R-API-029.
+
+### Q-API-340 · The format contract declares what a fetch of a version is
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the rule
+holds for every format, built and future, is the owner's (2026-11-19: "Alles was wir hier für OCI besprechen gilt auch für alle anderen
+Registries die bereits gebaut sind und für zukünftige Registries").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A required declaration in the descriptor, `Descriptor.VersionFetch` (`FetchLeadFile`, `FetchAnyFile`, `FetchDocument`); `Validate` refuses a format with a package view without one; a test of `formats/all` pins each format's rule (chosen) | One fact per format | A future format cannot register without deciding it; the statements read the rule as data | The contract version rises (5, ADR-205) |
+| (b) An optional method of the view adapter that returns the fetch items | Code per format | Any rule | An optional method is forgotten; the list's per-package count would need a second pass |
+| (c) The core's own rule (the lead item, else every linked file) | Nothing per format | No contract change | Counts the provenance bundle and the `.nuspec` as downloads, and still misses a pull by digest |
+
+**Choice:** (a). **Rationale:** the three rules cover the six formats, and a declaration that `Register` checks is the one thing a new
+format cannot skip. The development agent revisits (b) when a format's fetch is not one of the three. **Applied in the spec:** R-API-079,
+[architecture.md](architecture.md) R-ARCH-008, [decisions.md](../decisions.md) ADR-205.
+
+### Q-API-341 · `sizeBytes` is null when the size is not known, and `sizePartial` marks a size of the parts held
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a size that
+is not known is shown as not known, not as 0 B, is the owner's (2026-11-19).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `sizeBytes` nullable, `sizePartial` boolean, both required (chosen) | Two members | The natural JSON of "not known"; a client that reads a number cannot mistake a partial sum for the whole | A client must handle `null` |
+| (b) `sizeBytes` absent when not known | One member less | Smaller | Optional members are easy to miss; the generated types make it `undefined` |
+| (c) A size object `{bytes, partial, known}` | One member | Self-describing | Breaks every reader of `sizeBytes` for one format's case |
+
+**Choice:** (a). **Applied in the spec:** R-API-080, R-API-029; `api/openapi.yaml` (`PackageVersionSummary`, `PackageVersion`).
+
+### Q-API-342 · The column is Last download, and Never says that no client downloaded the version
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Last download**, **Never**, with a help text and a title on Never (chosen) | The words of a file's statistics | A mirror row reads "fetched by the pass, never downloaded" without a contradiction; one word with **Downloads** | A word the owner did not use |
+| (b) **Last fetched** as before | No change | The owner's word | A row a mirror pass fetched says it was never fetched, the contradiction of W-24 |
+
+**Choice:** (a). **Rationale:** "fetched" is what a remote does from its upstream and what lists a row; "download" is what a client does
+from Quader, and the column counts that. **Applied in the spec:** R-API-065, R-UI-110, R-UI-111.
+
+### Q-API-343 · A remote lists a version once a client fetched it or a mirror pass stored it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Option A of the
+owner's two (2026-11-19): only what was fetched is listed, and every cell is true.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The cache's content as the listing (a stored tarball, package, archive, package file; an OCI tag once its manifest was downloaded by a client, or in mirror mode), a `HEAD` of an OCI tag lists nothing (chosen) | One rule over the formats | Every listed row has a download in pull-through mode; the cache of a mirror pass is listed with **Never** | An OCI tag appears a flush interval after the pull; a tag that moved disappears until its new manifest is downloaded |
+| (b) Every cached document, as before | No change | Immediate | A tag a client only checked is listed and "never fetched": the owner's objection |
+| (c) Every version the upstream knows (the owner's option B) | The upstream's lists | Complete | Docker Hub's registry API cannot list the images of a namespace; the owner chose A |
+
+**Choice:** (a). **Applied in the spec:** R-API-081, [formats/oci.md](formats/oci.md) Q-OCI-222,
+[repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-330.
 
 ### Q-API-270 · One operation answers the suggestions, and the results page reads the three lists
 

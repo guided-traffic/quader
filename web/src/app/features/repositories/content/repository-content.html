@@ -46,9 +46,9 @@
     <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). -->
     @if (r.class === 'remote') {
       @if (r.format === 'oci') {
-        <p class="content-note" i18n="@@repo.content.oci-remote-note">Only the tags this repository has cached are listed here: those clients have pulled and, in mirror mode, those a pass has fetched.</p>
+        <p class="content-note" i18n="@@repo.content.oci-remote-note2">Only the tags clients have pulled through this repository are listed here and, in mirror mode, those a pass has fetched.</p>
       } @else {
-        <p class="content-note" i18n="@@repo.content.remote-note">Only what clients have fetched is listed here.</p>
+        <p class="content-note" i18n="@@repo.content.remote-note2">Only what clients have fetched through this repository is listed here and, in mirror mode, what a pass has fetched.</p>
       }
     }
     @if (!scanned()) {

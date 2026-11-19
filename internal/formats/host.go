@@ -246,6 +246,11 @@ type ItemStore interface {
 	Serve(ctx context.Context, rq *Request, w http.ResponseWriter, it Item, mode ServeMode) error
 	// Open reads the content of an item through the verifying reader, whole.
 	Open(ctx context.Context, it Item) (io.ReadCloser, error)
+	// RecordDownload counts a download of an item that the format answered with the same bytes from a stored document of its
+	// own, not through Serve: a remote OCI tag's manifest, answered from its metadata entry, is a download of the item that holds
+	// the manifest under its digest (R-STOR-015, R-API-079). The caller has written the whole body with 200; a HEAD, a 304 and a
+	// range are not counted. It never blocks and never fails the request.
+	RecordDownload(ctx context.Context, rq *Request, it Item)
 }
 
 // PackageStore reads the package and version rows (FMT-007). Writes go through

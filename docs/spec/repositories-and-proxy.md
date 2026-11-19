@@ -8493,6 +8493,43 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Applied in the spec:** R-REPO-062, R-REPO-003.
 
+### Q-REPO-330 · A Debian remote lists the package files it cached as versions, named by the parsed index row of their path
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a remote of every
+format lists what was fetched through it is the owner's (2026-11-19, W-24, "Alles was wir hier für OCI besprechen gilt auch für alle anderen
+Registries").
+
+Context: a Debian remote's fill wrote no package row ([formats/debian.md](formats/debian.md) R-DEB-023: a cache holds its upstream's files and
+owns no row of the local class), so its page listed nothing whatever apt fetched, under the note "Only what clients have fetched is listed here."
+npm, NuGet and Ansible Galaxy write the generic package and version rows in the fill of their content file.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fill of a pool file writes the generic package and version rows, the package and the version read from the parsed index row of its path (`deb_remote_entries`, R-DEB-022); the first file of a version its lead, another architecture's linked beside it; its removal takes the version with the lead (chosen) | The rows npm writes | The page lists what apt fetched; the downloads count every architecture (`FetchAnyFile`, R-API-079); no row of the local class | A file of a version whose lead was evicted is listed again only when it is fetched again |
+| (b) Inspect the fetched `.deb` (a fill hook) | The control paragraph | Independent of the index | The fill waits for the whole file before a byte reaches apt; the index row says the same and was checked against the file's digest |
+| (c) Leave the Debian remote unlisted and say so | No change | — | A remote that lists nothing whatever was fetched: the rule the owner set for every format |
+
+**Choice:** (a). A file no parsed index lists, a source package's file and every file under `dists/` get no row. **Applied in the spec:**
+[api-and-ui.md](api-and-ui.md) R-API-081. Code: `commitFill` and `removeCached` in [hooks.go](../../internal/formats/deb/hooks.go). Tests:
+`TestR_API_081_ARemoteListsThePackageFilesClientsFetchedThroughIt` in [test/integration/debremote](../../test/integration/debremote).
+
+### Q-REPO-331 · The first answer of a remote miss, streamed while it is fetched, counts as a download
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the engine streams an artifact larger than the withheld tail (64 KiB) to the client that leads the fetch, while it arrives (R-REPO-025
+step 10); the stored answers after it go through the item store's `Serve`, which counts the download (R-STOR-015). The streamed answer did not, so
+the first client of every remote artifact larger than 64 KiB was not counted: a tarball fetched once through a remote showed 0 downloads.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The engine hands the stored item to `Request.Streamed` once the client has the whole body and the commit stored it; the host counts it as `Serve` does (chosen) | One callback | The leader's download counts, with its actor and endpoint, in the statistics and the audit of downloads | A body passed through unstored (the object store unavailable) is not counted: there is no item |
+| (b) Serve the leader from the stored item as the waiters are | One road | Counted by `Serve` | The client waits for the whole upstream transfer before its first byte |
+
+**Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-015, [api-and-ui.md](api-and-ui.md) R-API-079. Code: `artifact` and
+`artifactAnswer` in [artifact.go](../../internal/proxy/artifact.go), `Artifact` in [remote.go](../../internal/formathost/remote.go). Tests:
+`TestQ_REPO_331_TheStreamedFirstAnswerOfAMissIsADownload` in [test/integration/proxy](../../test/integration/proxy).
+
 ## What this does not cover
 
 ### H-4 · Malicious content from a legitimate upstream

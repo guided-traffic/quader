@@ -99,10 +99,10 @@ func (s *Store) PutManifest(ctx context.Context, tx meta.Tx, in rows.ManifestInp
 	return nil
 }
 
-// TagSizes reads the size of the image of each tag with the given version id, in one statement; a version that is not a stored tag of
-// a recorded manifest is absent.
-func (s *Store) TagSizes(ctx context.Context, versionIDs []int64) (map[int64]int64, error) {
-	out := make(map[int64]int64, len(versionIDs))
+// TagSizes reads what the size of the image of each tag with the given version id is made of, in one statement; a version that is
+// not a stored tag of a recorded manifest is absent.
+func (s *Store) TagSizes(ctx context.Context, versionIDs []int64) (map[int64]rows.TagSize, error) {
+	out := make(map[int64]rows.TagSize, len(versionIDs))
 	if len(versionIDs) == 0 {
 		return out, nil
 	}
@@ -110,7 +110,11 @@ func (s *Store) TagSizes(ctx context.Context, versionIDs []int64) (map[int64]int
 		clear(out)
 		rs, err := qs.OCITagSizes(ctx, versionIDs)
 		for _, r := range rs {
-			out[r.VersionID] = r.ContentSize
+			out[r.VersionID] = rows.TagSize{
+				ContentSize: r.ContentSize,
+				Children:    r.Children, ChildrenStored: r.ChildrenStored, ChildrenSize: r.ChildrenSize,
+				Platforms: r.Platforms, PlatformsStored: r.PlatformsStored, PlatformsSize: r.PlatformsSize,
+			}
 		}
 		return err
 	})
@@ -266,7 +270,7 @@ func (s *Store) TagViews(ctx context.Context, versionIDs []int64) ([]rows.TagVie
 			if !ok {
 				continue
 			}
-			child := rows.Child{Platform: c.Platform, MediaType: c.MediaType, Size: c.Size, ContentSize: c.ContentSize}
+			child := rows.Child{Platform: c.Platform, Stored: c.Stored, MediaType: c.MediaType, Size: c.Size, ContentSize: c.ContentSize}
 			copy(child.Digest[:], c.Digest)
 			out[i].Children = append(out[i].Children, child)
 		}

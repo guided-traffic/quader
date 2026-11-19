@@ -18,11 +18,13 @@ WITH tags AS (
   UNION ALL
   SELECT t.id, t.package_id, t.manifest_sha256 FROM oci_remote_tags t WHERE t.id = ANY($1::bigint[])
 )
-SELECT t.id AS version_id, COALESCE(r.platform, '')::text AS platform, c.digest, c.media_type, c.size, c.content_size
+SELECT t.id AS version_id, COALESCE(r.platform, '')::text AS platform, r.target AS digest, (c.digest IS NOT NULL)::boolean AS stored,
+       COALESCE(c.media_type, '')::text AS media_type, COALESCE(c.size, 0)::bigint AS size,
+       COALESCE(c.content_size, 0)::bigint AS content_size
 FROM tags t
 JOIN packages p ON p.id = t.package_id
 JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
-JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+LEFT JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
 ORDER BY t.id, r.platform NULLS LAST, r.target
 `
 
@@ -30,12 +32,15 @@ type OCIChildPlatformsRow struct {
 	VersionID   int64
 	Platform    string
 	Digest      []byte
+	Stored      bool
 	MediaType   string
 	Size        int64
 	ContentSize int64
 }
 
-// The children the indexes of the given versions name, with the platform of the edge and the child's own facts (R-OCI-031).
+// The children the indexes of the given versions name, with the platform of the edge and, when this repository holds the child's
+// manifest, its own facts (R-OCI-031): a remote repository holds a platform once a client fetched it, and the page lists the others as
+// not fetched (Q-OCI-221).
 func (q *Queries) OCIChildPlatforms(ctx context.Context, versionIds []int64) ([]OCIChildPlatformsRow, error) {
 	rows, err := q.db.Query(ctx, oCIChildPlatforms, versionIds)
 	if err != nil {
@@ -49,6 +54,7 @@ func (q *Queries) OCIChildPlatforms(ctx context.Context, versionIds []int64) ([]
 			&i.VersionID,
 			&i.Platform,
 			&i.Digest,
+			&i.Stored,
 			&i.MediaType,
 			&i.Size,
 			&i.ContentSize,
@@ -272,20 +278,39 @@ WITH tags AS (
   UNION ALL
   SELECT t.id, t.package_id, t.manifest_sha256 FROM oci_remote_tags t WHERE t.id = ANY($1::bigint[])
 )
-SELECT t.id AS version_id, m.content_size
+SELECT t.id AS version_id, m.content_size,
+       count(r.target)::bigint AS children,
+       count(c.digest)::bigint AS children_stored,
+       LEAST(COALESCE(sum(c.content_size), 0), 9223372036854775807)::bigint AS children_size,
+       (count(r.target) FILTER (WHERE r.platform IS DISTINCT FROM 'unknown/unknown'))::bigint AS platforms,
+       (count(c.digest) FILTER (WHERE r.platform IS DISTINCT FROM 'unknown/unknown'))::bigint AS platforms_stored,
+       LEAST(COALESCE(sum(c.content_size) FILTER (WHERE r.platform IS DISTINCT FROM 'unknown/unknown'), 0), 9223372036854775807)::bigint AS platforms_size
 FROM tags t
 JOIN packages p ON p.id = t.package_id
 JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
+LEFT JOIN oci_references r ON r.repo_id = m.repo_id AND r.name = m.name AND r.manifest = m.digest AND r.kind = 'manifest'
+LEFT JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+GROUP BY t.id, m.content_size
 ORDER BY t.id
 `
 
 type OCITagSizesRow struct {
-	VersionID   int64
-	ContentSize int64
+	VersionID       int64
+	ContentSize     int64
+	Children        int64
+	ChildrenStored  int64
+	ChildrenSize    int64
+	Platforms       int64
+	PlatformsStored int64
+	PlatformsSize   int64
 }
 
-// The size of the image each of the tags with the given version ids points at: the content size of its manifest, which an index
-// holds as the sum of its children (R-OCI-031, Q-OCI-130). One statement for any number of packages.
+// What the size of the image each of the tags with the given version ids points at is made of (R-OCI-031, Q-OCI-221): the content
+// size of its manifest (the config and the layers an image manifest names) and, for an index, how many children it names, how many of
+// them this repository holds and their summed content size, counted once over every child and once over the children that are images
+// of a platform (an attestation manifest is named with the platform unknown/unknown). A remote repository holds a child once a client
+// fetched it, so the sum is read here and not from the index's own row, which was written before. One statement for any number of
+// packages.
 func (q *Queries) OCITagSizes(ctx context.Context, versionIds []int64) ([]OCITagSizesRow, error) {
 	rows, err := q.db.Query(ctx, oCITagSizes, versionIds)
 	if err != nil {
@@ -295,7 +320,16 @@ func (q *Queries) OCITagSizes(ctx context.Context, versionIds []int64) ([]OCITag
 	items := []OCITagSizesRow{}
 	for rows.Next() {
 		var i OCITagSizesRow
-		if err := rows.Scan(&i.VersionID, &i.ContentSize); err != nil {
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.ContentSize,
+			&i.Children,
+			&i.ChildrenStored,
+			&i.ChildrenSize,
+			&i.Platforms,
+			&i.PlatformsStored,
+			&i.PlatformsSize,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

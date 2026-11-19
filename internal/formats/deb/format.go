@@ -132,6 +132,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 			SettingsSchema:   settingsSchema,
 		},
 		ContractVersion:  formats.ContractVersion,
+		VersionFetch:     formats.FetchAnyFile, // the package file of each architecture is the whole version (R-API-079)
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "deb.",

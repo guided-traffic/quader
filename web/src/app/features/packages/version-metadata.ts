@@ -31,6 +31,8 @@ export interface ImagePlatform {
   readonly digest: string;
   readonly mediaType: string;
   readonly size: number | null;
+  /** The repository holds the platform's manifest: a remote one once a client fetched it (Q-OCI-221). */
+  readonly stored: boolean;
   /**
    * The start of the digest, read by assistive technology only, when the platform alone does not tell the row from another: it is
    * empty, or another child has the same one (a provenance attestation per platform is `unknown/unknown` every time).
@@ -45,7 +47,10 @@ export interface ImageFacts {
   readonly digest: string;
   readonly mediaType: string;
   readonly artifactType: string;
+  /** The image's size; null when it is not known (no platform of an index held, R-API-080). */
   readonly size: number | null;
+  /** The size counts only the platforms the repository holds (Q-OCI-221). */
+  readonly sizePartial: boolean;
   readonly platforms: readonly ImagePlatform[];
 }
 
@@ -92,6 +97,7 @@ export function imageFacts(m: Record<string, unknown>): ImageFacts | null {
       digest: raw(c['digest']),
       mediaType: raw(c['mediaType']),
       size: num(c['size']),
+      stored: c['stored'] !== false,
       hint,
       copyLabel:
         given === ''
@@ -101,7 +107,14 @@ export function imageFacts(m: Record<string, unknown>): ImageFacts | null {
             : $localize`:@@pkg.image.copy-platform-digest-short:Copy digest of ${platform}:platform: (${hint}:digest:)`,
     };
   });
-  return { digest, mediaType: raw(m['mediaType']), artifactType: raw(m['artifactType']), size: num(m['size']), platforms };
+  return {
+    digest,
+    mediaType: raw(m['mediaType']),
+    artifactType: raw(m['artifactType']),
+    size: num(m['size']),
+    sizePartial: m['sizePartial'] === true,
+    platforms,
+  };
 }
 
 /**

@@ -11973,15 +11973,6 @@
         <target>um</target>
       </segment>
     </unit>
-    <unit id="pkg.ver.fetched">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:136</note>
-      </notes>
-      <segment>
-        <source>Last fetched</source>
-        <target>Zuletzt abgerufen</target>
-      </segment>
-    </unit>
     <unit id="ep.col.pool">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:53</note>
@@ -13324,15 +13315,6 @@
       <segment>
         <source>Versions</source>
         <target>Versionen</target>
-      </segment>
-    </unit>
-    <unit id="pkg.fact.last-fetched">
-      <notes>
-        <note category="location">src/app/features/packages/package-version.html:38</note>
-      </notes>
-      <segment>
-        <source>Last fetched</source>
-        <target>Zuletzt abgerufen</target>
       </segment>
     </unit>
     <unit id="ep.preview.paths">
@@ -31348,15 +31330,6 @@
         <target>Löschen</target>
       </segment>
     </unit>
-    <unit id="repo.content.remote-note">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:52,55</note>
-      </notes>
-      <segment>
-        <source>Only what clients have fetched is listed here.</source>
-        <target>Hier steht nur, was Clients bereits abgerufen haben.</target>
-      </segment>
-    </unit>
     <unit id="docs.col.name">
       <notes>
         <note category="location">src/app/features/packages/ansible-contents.ts:131</note>
@@ -33131,15 +33104,6 @@
         <target>Ein Benutzer oder ein Servicekonto: Geben Sie den Namen ein.</target>
       </segment>
     </unit>
-    <unit id="repo.content.oci-remote-note">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:50,52</note>
-      </notes>
-      <segment>
-        <source>Only the tags this repository has cached are listed here: those clients have pulled and, in mirror mode, those a pass has fetched.</source>
-        <target>Hier stehen nur die Tags, die dieses Repository zwischengespeichert hat: die, die Clients abgerufen haben, und im Spiegelmodus die, die ein Durchlauf geholt hat.</target>
-      </segment>
-    </unit>
     <unit id="policy.toc.general">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:35,36</note>
@@ -34228,6 +34192,115 @@
       <segment>
         <source>Backups</source>
         <target>Backups</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.last-download">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:154</note>
+      </notes>
+      <segment>
+        <source>Last download</source>
+        <target>Letzter Download</target>
+      </segment>
+    </unit>
+    <unit id="pkg.help.last-download">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:155</note>
+      </notes>
+      <segment>
+        <source>When a client last downloaded this version through Quader. Never for a version nobody downloaded yet, such as one a mirror pass fetched.</source>
+        <target>Wann ein Client diese Version zuletzt über Quader heruntergeladen hat. Nie bei einer Version, die noch niemand heruntergeladen hat, etwa einer, die ein Spiegeldurchlauf geholt hat.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.never-title">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:168</note>
+        <note category="location">src/app/features/packages/package-version.ts:337</note>
+      </notes>
+      <segment>
+        <source>No client has downloaded this version through Quader yet.</source>
+        <target>Noch kein Client hat diese Version über Quader heruntergeladen.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.fact.last-download">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:34</note>
+      </notes>
+      <segment>
+        <source>Last download</source>
+        <target>Letzter Download</target>
+      </segment>
+    </unit>
+    <unit id="pkg.image.not-fetched">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:187,188</note>
+      </notes>
+      <segment>
+        <source>Not fetched</source>
+        <target>Nicht abgerufen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.image.not-fetched-title">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:336</note>
+      </notes>
+      <segment>
+        <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
+        <target>Noch kein Client hat diese Plattform über Quader abgerufen, daher liegen ihr Manifest und ihre Größe nicht vor.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.size.not-known">
+      <notes>
+        <note category="location">src/app/features/packages/version-size.ts:16,17</note>
+      </notes>
+      <segment>
+        <source>Size not known</source>
+        <target>Größe nicht bekannt</target>
+      </segment>
+    </unit>
+    <unit id="pkg.size.at-least">
+      <notes>
+        <note category="location">src/app/features/packages/version-size.ts:20,21</note>
+      </notes>
+      <segment>
+        <source>at least</source>
+        <target>mindestens</target>
+      </segment>
+    </unit>
+    <unit id="pkg.size.partial-title">
+      <notes>
+        <note category="location">src/app/features/packages/version-size.ts:42</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="bytes" disp="this.bytes() ?? 0"/> B: the platforms of this image fetched so far. The others are not counted until a client fetches them.</source>
+        <target><ph id="0" equiv="bytes" disp="this.bytes() ?? 0"/> B: die bisher abgerufenen Plattformen dieses Images. Die übrigen zählen erst, wenn ein Client sie abruft.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.size.unknown-title">
+      <notes>
+        <note category="location">src/app/features/packages/version-size.ts:44</note>
+      </notes>
+      <segment>
+        <source>Not known yet: no platform of this image has been fetched, and the size of a platform is known only once it is.</source>
+        <target>Noch nicht bekannt: Keine Plattform dieses Images wurde bisher abgerufen, und die Größe einer Plattform ist erst danach bekannt.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci-remote-note2">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.html:49,51</note>
+      </notes>
+      <segment>
+        <source>Only the tags clients have pulled through this repository are listed here and, in mirror mode, those a pass has fetched.</source>
+        <target>Hier stehen nur die Tags, die Clients über dieses Repository abgerufen haben, und im Spiegelmodus die, die ein Durchlauf geholt hat.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.remote-note2">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.html:51,54</note>
+      </notes>
+      <segment>
+        <source>Only what clients have fetched through this repository is listed here and, in mirror mode, what a pass has fetched.</source>
+        <target>Hier steht nur, was Clients über dieses Repository abgerufen haben, und im Spiegelmodus, was ein Durchlauf geholt hat.</target>
       </segment>
     </unit>
   </file>

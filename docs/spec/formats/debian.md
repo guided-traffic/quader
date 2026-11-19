@@ -3341,11 +3341,14 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Create package and version rows as npm does | Package screens work at once | Uniform with npm | The Debian identity of a file is a path and an architecture; the version rows belong to the screens (R-DEB-030) and are not needed to serve |
 | (c) Refuse | As the hook did for a raw deploy | Unchanged | Every fill would answer 409 |
 
-**Choice:** (a).
+**Choice:** (a). **Revised on 2026-11-19** ([repositories-and-proxy.md](../repositories-and-proxy.md) Q-REPO-330, W-24): the fill of a pool
+file now writes the generic package and version rows of option (b), named by the parsed index row of its path, so that a Debian remote lists
+what was fetched through it as every format's remote does (R-API-081); it still writes no row of the local class (`deb_binaries`, the
+coordinates, the suites), and a file no parsed index lists gets no row.
 
 **Rationale:** The hook ran for fills before this class existed and answered 409 to a raw deploy; the fill is not a deploy.
 
-**Applied in the spec:** R-DEB-001. Code: [hooks.go](../../../internal/formats/deb/hooks.go) `OnCommit`.
+**Applied in the spec:** R-DEB-001. Code: [hooks.go](../../../internal/formats/deb/hooks.go) `OnCommit`, `commitFill`.
 
 ### Q-DEB-86 · A failed verification is counted and written as the security event where a client meets it
 

@@ -16,6 +16,8 @@ import {
   ociPackage,
   otherProject,
   projectServiceAccount,
+  remoteCache,
+  remoteImage,
   serviceAccount,
 } from './seed';
 import { gradedPackage, manyVersionsPackage } from './advisories';
@@ -778,6 +780,8 @@ export const screens: readonly Screen[] = [
   // was pulled through it, which the seed cannot do (Docker Hub is not reachable for certain): in a fresh database it is the empty
   // state, and the opened rows of `repository-oci` show the same rows with data.
   { id: 'repository-oci-public-remote', path: `${O}/repositories/guidedtraffic`, kinds: ['anonymous', 'plain'], expected: noSession },
+  // A remote that cached tags of an image of two platforms (W-24): a known size, a partial one and one that is not known.
+  { id: 'repository-oci-cache', path: `${O}/repositories/${remoteCache.key}`, kinds: all, walk: rowOpened },
   { id: 'repository-deb', path: `${O}/repositories/${longDebKey}`, kinds: all },
   { id: 'repository-nuget-virtual', path: `${O}/repositories/nuget`, kinds: all },
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
@@ -800,6 +804,10 @@ export const screens: readonly Screen[] = [
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
   { id: 'package-version-npm-graded-critical', path: `${ver(P, gradedPackage, gradedPackage.version)}?severity=critical`, kinds: ['plain'] },
   { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all },
+  // The image a remote cached (W-24): its versions, and the tags whose index it holds one platform of and none of, with their platforms.
+  { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
+  { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },
+  { id: 'package-version-oci-cache-unknown', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.unknown)}?tab=details`, kinds: ['plain'] },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
   { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all },
   { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all },

@@ -87,6 +87,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 			ChecksumAlwaysVerified: true,
 		},
 		ContractVersion:  formats.ContractVersion,
+		VersionFetch:     formats.FetchLeadFile, // the tarball; the provenance bundle beside it is none (R-API-079)
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "npm.",

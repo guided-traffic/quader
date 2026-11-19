@@ -103,6 +103,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 			SettingsSchema:   settingsSchema,
 		},
 		ContractVersion:  formats.ContractVersion,
+		VersionFetch:     formats.FetchLeadFile, // the .nupkg; the .nuspec and the symbol package beside it are none (R-API-079)
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "nuget.",

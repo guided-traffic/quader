@@ -35,7 +35,7 @@ func NewViewAdapters(fs []formats.Format, ports formats.DataPorts) *ViewAdapters
 	for _, f := range fs {
 		if a := f.View(); a != nil {
 			id := string(f.Descriptor().ID)
-			b := viewBridge{a: a, ports: ports, pre: prereleaseOf(f)}
+			b := viewBridge{a: a, ports: ports, pre: prereleaseOf(f), fetch: f.Descriptor().VersionFetch}
 			v.bridges[id] = b
 			v.by[id] = b
 			if z := formats.CapabilitiesOf(f).ViewSizer; z != nil {
@@ -81,6 +81,18 @@ type viewBridge struct {
 	a     formats.ViewAdapter
 	ports formats.DataPorts
 	pre   func(string) bool
+	fetch formats.VersionFetch
+}
+
+// Fetch is the format's rule of what a fetch of one of its versions is (R-API-079), by the name the statements read.
+func (b viewBridge) Fetch() view.FetchRule {
+	switch b.fetch {
+	case formats.FetchAnyFile:
+		return view.FetchAnyFile
+	case formats.FetchDocument:
+		return view.FetchDocument
+	}
+	return view.FetchLeadFile
 }
 
 // prereleaseOf derives "is a pre-release" for the screens from the format's exposure
@@ -106,7 +118,7 @@ type sizedBridge struct {
 
 var _ view.Sizer = sizedBridge{}
 
-func (b sizedBridge) Sizes(ctx context.Context, vs []view.Version) (map[int64]int64, error) {
+func (b sizedBridge) Sizes(ctx context.Context, vs []view.Version) (map[int64]view.Size, error) {
 	in := make([]formats.ViewVersion, len(vs))
 	for i, v := range vs {
 		in[i] = formats.ViewVersion{
@@ -118,9 +130,9 @@ func (b sizedBridge) Sizes(ctx context.Context, vs []view.Version) (map[int64]in
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[int64]int64, len(got))
+	out := make(map[int64]view.Size, len(got))
 	for id, n := range got {
-		out[int64(id)] = n
+		out[int64(id)] = view.Size{Bytes: n.Bytes, Partial: n.Partial, Unknown: n.Unknown}
 	}
 	return out, nil
 }

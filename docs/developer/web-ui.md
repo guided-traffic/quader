@@ -199,9 +199,9 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    images (`portal/web` with six tags), the NuGet package `Acme.Logging.Abstractions` (three versions, built as a `.nupkg` in
    `seed.ts`), the Debian package `acme-agent` (two versions, an `ar` archive of `control.tar.gz` and `data.tar.gz`) and the
    Ansible collection `acme.platform` (two versions, with the `MANIFEST.json` and `FILES.json` ansible-galaxy writes). Three
-   versions of `chart-render-kit` are fetched once, so the column **Last fetched** has times and "Never" (R-API-065). Requests
-   that meet the rate limit are sent again after its `Retry-After` (`patient`). A remote stays empty: nothing is fetched from an
-   upstream. **Grades** ([advisories.ts](../../web/e2e/renders/advisories.ts), R-VULN-038): the profile's OSV
+   versions of `chart-render-kit` are fetched once, so the column **Last download** has times and "Never" (R-API-065). Requests
+   that meet the rate limit are sent again after its `Retry-After` (`patient`). The remotes of public registries stay empty: nothing is fetched from an
+   upstream. The remote `platform/image-cache` has this installation as its upstream (`platform/image-source`, under the namespace `vendor`): the seed pushes an image of two platforms there and pulls through the remote one single-platform tag, one platform of an index and an index alone, so that its rows show a known size, a size of the platforms fetched so far and one that is not known (W-24, R-API-080). **Grades** ([advisories.ts](../../web/e2e/renders/advisories.ts), R-VULN-038): the profile's OSV
    source reads npm advisories from the generic repository `platform/advisory-mirror` instead of the network (`mode: repository`
    in `up.sh`, R-VULN-005); the seed uploads an archive of its own `DEMO-…` records there that affect the packages it vendors into
    `web-frontend/npm-vendor` (`matchPublicAdvisories: always`), runs `vuln-sync-osv` and waits until `image-convert-tools@4.0.1`

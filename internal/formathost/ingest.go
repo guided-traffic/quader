@@ -421,6 +421,19 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 		})
 }
 
+// RecordDownload implements [formats.ItemStore]: the download statistics, the repository's activity and the audit event of a
+// download the format answered itself (R-STOR-015, R-API-079). An item that cannot be read is not counted.
+func (s itemStore) RecordDownload(ctx context.Context, rq *formats.Request, it formats.Item) {
+	row, err := s.row(ctx, it)
+	if err != nil {
+		return
+	}
+	s.h.o.Items.Served(ctx, items.ServedEvent{
+		Item: row, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
+		Endpoint: rq.Subject.Endpoint, CountStats: true,
+	})
+}
+
 // Open implements [formats.ItemStore].
 func (s itemStore) Open(ctx context.Context, it formats.Item) (io.ReadCloser, error) {
 	row, err := s.row(ctx, it)

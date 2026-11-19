@@ -25,9 +25,11 @@ import (
 // qualified name, the read scope, the link builder and the refusals changed. Version 3 is the upload sessions' (ADR-178):
 // UploadSessions.Finalize takes the offset of its last bytes and returns the received count with a refusal of it. Version 4 is the
 // upstream presets' (ADR-198): catalog.Facts.UpstreamPresets replaces DefaultUpstreamURL, DefaultExtraHosts and
-// DefaultCredentialHosts. A format declares the literal it was written against in [Descriptor.ContractVersion], and Register panics
+// DefaultCredentialHosts. Version 5 is the fetch of a version's (ADR-205): Descriptor.VersionFetch is required of a format with a
+// package view, ViewSizer reports a ViewSize that may be partial or not known, and ItemStore records the download of a document a
+// format answers itself. A format declares the literal it was written against in [Descriptor.ContractVersion], and Register panics
 // on a mismatch.
-const ContractVersion = 4
+const ContractVersion = 5
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -194,6 +196,9 @@ type Descriptor struct {
 	// tables. The composition root binds one value per format and refuses to
 	// start when a binding is missing or does not implement the port.
 	DataPort reflect.Type
+	// VersionFetch says what a fetch of one of the format's versions is: the downloads the package screens count as its
+	// downloads and its last download (R-API-079). Required of a format with a package view; Register refuses one without it.
+	VersionFetch VersionFetch
 }
 
 // ItemsRestorer is the optional hook of a format that keeps state of its own for
@@ -436,8 +441,8 @@ func Validate(f Format) error {
 			return fmt.Errorf("%q narrows exposure by package, version or tag and has no package names", id)
 		}
 	}
-	if f.View() != nil && !d.PackageNames {
-		return fmt.Errorf("%q has a package view and no package names", id)
+	if err := checkView(f, d); err != nil {
+		return err
 	}
 	switch {
 	case repository.IsReservedMember(string(id)):
@@ -446,6 +451,21 @@ func Validate(f Format) error {
 		return fmt.Errorf("%q declares a settings schema and the repository document has no %q member for it", id, id)
 	}
 	return checkRoutes(f, d)
+}
+
+// checkView holds a format with a package view to what the view rests on: package names, the identity of a package, and the rule of
+// what a fetch of a version is, by which the screens count its downloads (R-API-079). A format without a view is not asked.
+func checkView(f Format, d Descriptor) error {
+	if f.View() == nil {
+		return nil
+	}
+	if !d.PackageNames {
+		return fmt.Errorf("%q has a package view and no package names", d.ID)
+	}
+	if d.VersionFetch == FetchUndeclared || d.VersionFetch > FetchDocument {
+		return fmt.Errorf("%q has a package view and declares no VersionFetch", d.ID)
+	}
+	return nil
 }
 
 func checkAdapter(id ID, class string, listed, present bool) error {

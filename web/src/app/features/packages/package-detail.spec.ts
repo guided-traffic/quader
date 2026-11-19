@@ -34,7 +34,11 @@ async function set(r: Opened, inputs: Record<string, unknown>) {
 const rows = (r: Opened) => [...r.root.querySelectorAll('.pkg-versions tbody tr')];
 const versions = (r: Opened) => rows(r).map((tr) => text(tr.querySelector('th a')!));
 const headers = (r: Opened) =>
-  [...r.root.querySelectorAll('.pkg-versions thead th')].map((th) => text(th).replace(/(arrow_downward|arrow_upward|unfold_more)$/, ''));
+  [...r.root.querySelectorAll('.pkg-versions thead th')].map((th) =>
+    text(th)
+      .replace(/help_outline$/, '')
+      .replace(/(arrow_downward|arrow_upward|unfold_more)$/, ''),
+  );
 const filter = (r: Opened) => r.root.querySelector<HTMLInputElement>('.versions-filter input')!;
 
 /** Thirty-five versions of `@team-a/ui`, 1.0.0 to 1.34.0, published a day apart. */
@@ -58,7 +62,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(text(r.root.querySelector('h1')!)).toBe('@team-a/ui');
     expect(text(r.root.querySelector('.page-header-description')!)).toBe('Shared UI components');
     expect(versions(r)).toEqual(['1.5.0-beta.1', '1.4.0', '1.3.0']);
-    expect(headers(r)).toEqual(['Version', 'Size', 'Published', 'Last fetched']);
+    expect(headers(r)).toEqual(['Version', 'Size', 'Published', 'Last download']);
     expect(r.root.querySelector('[role="tab"]')).toBeNull();
     expect(r.root.querySelector('select')).toBeNull();
     await expectAccessible(r.root);
@@ -73,7 +77,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(text(r.root.querySelector('.pkg-versions')!)).not.toMatch(/sha256:/);
   });
 
-  it('R-UI-110 R-API-065 a row says how large the version is, when it was published and when it was last fetched, or that it never was', async () => {
+  it('R-UI-110 R-API-065 a row says how large the version is, when it was published and when a client last downloaded it, or that none did', async () => {
     const r = await open();
     const cells = (v: string) => [...rows(r).find((tr) => text(tr.querySelector('th a')!) === v)!.querySelectorAll('td')];
     const [size, published, fetched] = cells('1.4.0');
@@ -104,7 +108,7 @@ describe('The package page: its versions (R-UI-110)', () => {
         ],
       }),
     );
-    expect(headers(graded)).toEqual(['Version', 'Size', 'Vulnerabilities', 'Published', 'Last fetched']);
+    expect(headers(graded)).toEqual(['Version', 'Size', 'Vulnerabilities', 'Published', 'Last download']);
     const cell = (v: string) => rows(graded).find((tr) => text(tr.querySelector('th a')!) === v)!.querySelectorAll('td')[1]!;
     expect(text(cell('1.4.0').querySelector('.grade-text')!)).toBe('Grade E · 1,145 findings · 112 fixable');
     expect(text(cell('1.3.0').querySelector('.grade-text')!)).toBe('Grade N/A · not scanned');

@@ -1,4 +1,4 @@
-contract version 4
+contract version 5
 formats.Action: alias authz.Action
 formats.Authenticator: method ReadToken(context.Context, RemoteContext, int, []byte) (string, time.Duration, error)
 formats.Authenticator: method TokenRequest(context.Context, RemoteContext, *http.Request, Path, int, http.Header) (*http.Request, string, bool, error)
@@ -82,6 +82,7 @@ formats.Descriptor: field Names catalog.Names
 formats.Descriptor: field NotifyAreas []string
 formats.Descriptor: field PropertyPrefix string
 formats.Descriptor: field VerifyAnnouncedDigests bool
+formats.Descriptor: field VersionFetch VersionFetch
 formats.Digests: field MD5 []byte
 formats.Digests: field SHA1 []byte
 formats.Digests: field SHA256 []byte
@@ -207,6 +208,7 @@ formats.ItemRef: field ID int64
 formats.ItemRef: field Path string
 formats.ItemRef: field Repo RepoRef
 formats.ItemStore: method Open(context.Context, Item) (io.ReadCloser, error)
+formats.ItemStore: method RecordDownload(context.Context, *Request, Item)
 formats.ItemStore: method Serve(context.Context, *Request, http.ResponseWriter, Item, ServeMode) error
 formats.ItemStore: method Stat(context.Context, RepoRef, Path) (Item, bool, error)
 formats.ItemsEvent: field Actor string
@@ -494,6 +496,8 @@ formats.UploadSessions: method Append(context.Context, *Request, SessionRef, int
 formats.UploadSessions: method Finalize(context.Context, *Request, SessionRef, int64, [32]byte, io.Reader, Commit) (Committed, error)
 formats.UploadSessions: method Get(context.Context, *Request, SessionRef) (UploadSession, error)
 formats.UploadSessions: method Start(context.Context, *Request, RepoRef, string) (UploadSession, error)
+formats.VersionFetch: method String() string
+formats.VersionFetch: type uint8
 formats.VersionID: type int64
 formats.VersionPather: method VersionPath(string, string) (Path, bool)
 formats.VersionRow: field Attributes json.RawMessage
@@ -523,7 +527,10 @@ formats.ViewFields: type uint8
 formats.ViewFind: field Keyword string
 formats.ViewFind: field Repos []string
 formats.ViewFind: field Text string
-formats.ViewSizer: method ViewSizes(context.Context, DataPorts, []ViewVersion) (map[VersionID]int64, error)
+formats.ViewSize: field Bytes int64
+formats.ViewSize: field Partial bool
+formats.ViewSize: field Unknown bool
+formats.ViewSizer: method ViewSizes(context.Context, DataPorts, []ViewVersion) (map[VersionID]ViewSize, error)
 formats.ViewVersion: field ID VersionID
 formats.ViewVersion: field Package string
 formats.ViewVersion: field Repo RepoRef
@@ -581,11 +588,15 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 4
+formats.ContractVersion: value = 5
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
 formats.ErrOffline: value = errors.New("formats: the remote repository may not contact its upstream")
+formats.FetchAnyFile: value = (repeated, place 2 of its group)
+formats.FetchDocument: value = (repeated, place 3 of its group)
+formats.FetchLeadFile: value = (repeated, place 1 of its group)
+formats.FetchUndeclared: value VersionFetch = iota (place 0 of its group)
 formats.FillByFetchTime: value FillDecision = iota (place 0 of its group)
 formats.FillKeepStored: value = (repeated, place 1 of its group)
 formats.FillReplaceStored: value = (repeated, place 2 of its group)

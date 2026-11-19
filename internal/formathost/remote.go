@@ -118,6 +118,14 @@ func (r *remote) Artifact(ctx context.Context, rq *formats.Request, p formats.Pa
 		h.Set("Accept-Ranges", "bytes")
 		h.Set("Cache-Control", edge.CacheControl(rq.Request))
 	}
+	// The first answer of a miss, streamed while it is fetched, is a download as much as the stored answers after it
+	// (R-STOR-015, Q-REPO-331).
+	preq.Streamed = func(ctx context.Context, it items.Item) {
+		r.h.o.Items.Served(ctx, items.ServedEvent{
+			Item: it, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
+			Endpoint: rq.Subject.Endpoint, CountStats: true,
+		})
+	}
 	err = r.e.Artifact(ctx, preq, w, rq.Request)
 	noteRemote(rq, err)
 	return err

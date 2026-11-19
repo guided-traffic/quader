@@ -69,7 +69,7 @@
               }
             </span>
           </th>
-          <td class="num size" [attr.title]="v.sizeBytes + ' B'">{{ size(v.sizeBytes) }}</td>
+          <td class="num size"><quader-version-size [bytes]="v.sizeBytes" [partial]="v.sizePartial" /></td>
           @if (graded()) {
             <td>
               @if (v.grade; as g) {
@@ -86,7 +86,7 @@
             @if (v.lastDownloadedAt; as at) {
               <quader-time-ago [at]="at" absolute="title" />
             } @else {
-              <span class="muted" i18n="@@pkg.ver.never">Never</span>
+              <span class="muted" [attr.title]="neverTitle" i18n="@@pkg.ver.never">Never</span>
             }
           </td>
           @if (showRepositories()) {

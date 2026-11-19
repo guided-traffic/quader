@@ -180,7 +180,10 @@ func (e *renv) start(n int) []*testenv.Replica {
 	e.t.Helper()
 	out := make([]*testenv.Replica, n)
 	for i := range out {
-		out[i] = e.st.Start(e.t, testenv.ReplicaOptions{Name: "web-" + strconv.Itoa(len(e.st.Replicas())+1), DialOverride: e.dial})
+		// The download statistics reach the database within a second: a remote lists a tag once a client fetched it (R-API-081).
+		out[i] = e.st.Start(e.t, testenv.ReplicaOptions{
+			Name: "web-" + strconv.Itoa(len(e.st.Replicas())+1), DialOverride: e.dial, Env: []string{"QUADER_STORAGE_STATS_FLUSH_INTERVAL=1s"},
+		})
 	}
 	return out
 }
@@ -275,7 +278,20 @@ func (e *renv) pull(r *testenv.Replica, repo, name, ref string) string {
 	for _, l := range m.Layers {
 		e.blob(r, repo, name, l.Digest)
 	}
+	if !strings.HasPrefix(ref, "sha256:") {
+		e.fetched(repo, digest)
+	}
 	return digest
+}
+
+// fetched waits until the statistics hold a download of the manifest of a digest in a repository: the GET of its tag counts there
+// (Q-OCI-222), and the repository lists the tag from then on (R-API-081).
+func (e *renv) fetched(repo, digest string) {
+	e.t.Helper()
+	eventually(e.t, 10*time.Second, "the download of "+digest+" to be counted", func() bool {
+		return e.st.Number(`SELECT count(*) FROM item_download_stats s JOIN items i ON i.id = s.item_id JOIN repositories r ON r.id = i.repo_id
+			WHERE r.key = $1 AND i.path LIKE $2 AND s.downloads > 0`, repo, "%/_manifests/"+digest) > 0
+	})
 }
 
 func (e *renv) blob(r *testenv.Replica, repo, name, digest string) {

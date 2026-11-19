@@ -19,6 +19,7 @@ const summary = (version: string, over: Partial<PackageVersionSummary> = {}): Pa
   prerelease: version.includes('-'),
   publishedAt: '2026-11-01T00:00:00Z',
   sizeBytes: 100,
+  sizePartial: false,
   repositories: ['web/npm-local'],
   downloadCount: 0,
   lastDownloadedAt: null,
@@ -73,6 +74,20 @@ describe('The versions table of a package (R-UI-110)', () => {
     expect(order(sortVersions(rows, { column: 'vulnerabilities', direction: 'desc' }))).toEqual(['2.0.0', '1.0.0', '2.1.0', '3.0.0-rc.1']);
     // Never fetched is the oldest time.
     expect(order(sortVersions(rows, { column: 'fetched', direction: 'desc' }))).toEqual(['2.1.0', '2.0.0', '3.0.0-rc.1', '1.0.0']);
+  });
+
+  it('R-API-080 a size that is not known stays null and sorts below every known one; a partial size keeps its mark', () => {
+    const sized = versionRows(
+      [summary('1.0.0', { sizeBytes: null }), summary('2.0.0', { sizeBytes: 0 }), summary('3.0.0', { sizeBytes: 9, sizePartial: true })],
+      new Map(),
+      [],
+    );
+    expect(sized.map((r) => [r.version, r.sizeBytes, r.sizePartial])).toEqual([
+      ['1.0.0', null, false],
+      ['2.0.0', 0, false],
+      ['3.0.0', 9, true],
+    ]);
+    expect(order(sortVersions(sized, { column: 'size', direction: 'asc' }))).toEqual(['1.0.0', '2.0.0', '3.0.0']);
   });
 
   it('R-UI-110 R-UI-003 the sort of the address reads back; the default and anything unknown are the version, highest first', () => {

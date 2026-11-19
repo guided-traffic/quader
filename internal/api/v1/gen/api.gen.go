@@ -7732,6 +7732,7 @@ type PackageSummary struct {
 
 // PackageVersion defines model for PackageVersion.
 type PackageVersion struct {
+	// DownloadCount How often clients fetched the version, as in the version list (R-API-079).
 	DownloadCount int64         `json:"downloadCount"`
 	Files         []PackageFile `json:"files"`
 	Format        string        `json:"format"`
@@ -7739,7 +7740,7 @@ type PackageVersion struct {
 	// HasReadme Whether `readme` answers 200; the UI uses it to choose the default tab without a probing request.
 	HasReadme bool `json:"hasReadme"`
 
-	// LastDownloadedAt When the version was last fetched, as in the version list (R-API-065); `null` when it never was.
+	// LastDownloadedAt When a client last fetched the version, as in the version list (R-API-065, R-API-079); `null` when none did.
 	LastDownloadedAt *time.Time `json:"lastDownloadedAt"`
 
 	// Licenses SPDX identifiers or the license expression the package declares; empty when it declares none.
@@ -7758,9 +7759,12 @@ type PackageVersion struct {
 	PublishedAt  time.Time                  `json:"publishedAt"`
 	Repositories []PackageVersionRepository `json:"repositories"`
 
-	// SizeBytes The size of the version's files, summed; for an OCI tag the size of its image (config and layers; of an index, its distinct children), as in the version list.
-	SizeBytes int64  `json:"sizeBytes"`
-	Version   string `json:"version"`
+	// SizeBytes As in the version list (R-API-080) - the size of the version's files, summed; for an OCI tag the size of its image; `null` when it is not known.
+	SizeBytes *int64 `json:"sizeBytes"`
+
+	// SizePartial As in the version list (R-API-080) - `sizeBytes` counts only the parts of the version the repository holds.
+	SizePartial bool   `json:"sizePartial"`
+	Version     string `json:"version"`
 }
 
 // PackageVersion_Metadata Format-specific, owned by the format page. For npm the members the UI reads are
@@ -7812,12 +7816,17 @@ type PackageVersionRepositoryClass string
 // PackageVersionSummary defines model for PackageVersionSummary.
 type PackageVersionSummary struct {
 	// Digest With `include=digest` only, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest of its manifest); absent for a format without one.
-	Digest        *string `json:"digest,omitempty"`
-	DownloadCount int64   `json:"downloadCount"`
+	Digest *string `json:"digest,omitempty"`
 
-	// LastDownloadedAt When the version was last fetched through one of `repositories`: the latest download of its lead file (the tarball, the
-	// package, the manifest), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to
-	// its flush interval; `null` when it was never fetched, and for a remote OCI tag, which has no stored file (R-API-065).
+	// DownloadCount How often clients fetched the version through one of `repositories` (R-API-079): the downloads of R-STOR-015 that the
+	// version's format counts as its fetch - npm's tarball, NuGet's .nupkg, an Ansible collection archive, a Debian package file of
+	// any architecture, an OCI tag's manifest by the tag or by its digest. A metadata document, a HEAD and a 304 are not fetches.
+	DownloadCount int64 `json:"downloadCount"`
+
+	// LastDownloadedAt When a client last fetched the version through one of `repositories`, by the rule of `downloadCount` (R-API-065,
+	// R-API-079), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to its flush
+	// interval; `null` when no client fetched it (a version a mirror pass stored and nobody fetched yet, a local version nobody
+	// downloaded).
 	LastDownloadedAt *time.Time `json:"lastDownloadedAt"`
 
 	// Prerelease By the format's version rules.
@@ -7827,9 +7836,16 @@ type PackageVersionSummary struct {
 	// Repositories The keys of the repositories that hold this version and that the caller may read.
 	Repositories []string `json:"repositories"`
 
-	// SizeBytes The size of the version's files, summed; for a format whose files are not its content, the size the format reports (an OCI tag - the size of its image, config and layers, not of the manifest document).
-	SizeBytes int64  `json:"sizeBytes"`
-	Version   string `json:"version"`
+	// SizeBytes The size of the version's files, summed; for a format whose files are not its content, the size the format reports (an OCI
+	// tag - the size of its image, config and layers, not of the manifest document; of an index the sum over the platforms the
+	// repository holds). `null` when the size is not known (an image index none of whose platforms was fetched), never 0 in its
+	// place (R-API-080).
+	SizeBytes *int64 `json:"sizeBytes"`
+
+	// SizePartial `sizeBytes` counts only the parts of the version the repository holds: an image index of which a remote repository holds some
+	// platforms and not others (R-API-080, Q-OCI-221). `false` when `sizeBytes` is the whole version's or `null`.
+	SizePartial bool   `json:"sizePartial"`
+	Version     string `json:"version"`
 }
 
 // PatternLists The include and exclude globs of one dimension of a resource set (R-AUTHZ-005). An empty include list is unrestricted.

@@ -131,6 +131,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 			SettingsSchema:   settingsSchema,
 		},
 		ContractVersion:        formats.ContractVersion,
+		VersionFetch:           formats.FetchLeadFile, // the collection archive (R-API-079)
 		Names:                  names{},
 		Clients:                clients(),
 		PropertyPrefix:         "ansible.",

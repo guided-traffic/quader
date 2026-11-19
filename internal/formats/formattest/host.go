@@ -116,7 +116,9 @@ type Host struct {
 	served    bool     // an item was served to a response
 	// servedPaths are the paths of the items the last request served, for check 13.
 	servedPaths []string
-	violation   []string
+	// recorded are the paths of the items whose download a format recorded itself (ItemStore.RecordDownload), in order.
+	recorded  []string
+	violation []string
 }
 
 // AuthorizeCall is one call of Host.Authorize.
@@ -202,6 +204,14 @@ func (h *Host) ServedPaths() []string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return append([]string(nil), h.servedPaths...)
+}
+
+// RecordedDownloads returns the paths of the items whose download the format recorded through ItemStore.RecordDownload, in order
+// (R-API-079).
+func (h *Host) RecordedDownloads() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]string(nil), h.recorded...)
 }
 
 // forgetRenditions empties the rendition cache, for check 13's runs of one case under different Allow functions.

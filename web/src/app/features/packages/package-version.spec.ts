@@ -56,9 +56,9 @@ describe('The page of a version (R-UI-111)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-API-065 a version never fetched says so', async () => {
+  it('R-API-065 R-API-079 a version no client downloaded says so', async () => {
     const r = await open({ version: '1.3.0' });
-    expect(text(r.root.querySelector('.facts-line')!)).toContain('Last fetched never');
+    expect(text(r.root.querySelector('.facts-line')!)).toContain('Last download never');
   });
 
   it('R-UI-111 a pre-release carries its mark; a version nobody may read is the not-found error', async () => {
@@ -276,10 +276,41 @@ describe('The page of a version (R-UI-111)', () => {
           }
         }
       });
-      expect(pairs(odd).join('|')).not.toContain('Size');
+      // A size that is no number is one that is not known (R-API-080): the shared no-value, never a number.
+      expect(pairs(odd).find((p) => p.startsWith('Size'))).toBe('Size –None');
       const platforms = [...odd.root.querySelectorAll('.version-tabs table')].find((t) => text(t.querySelector('caption')!) === 'Platforms of this image index')!;
       expect([...platforms.querySelectorAll('tbody tr')].map((tr) => text(tr.children[0]!))).toEqual(['linux/amd64']);
-      expect(text(platforms.querySelector('tbody tr')!.children[3]!)).toBe('–');
+      expect(text(platforms.querySelector('tbody tr')!.children[3]!)).toBe('–None');
+    });
+
+    it('R-API-080 Q-OCI-221 an index of a remote counts the platforms fetched so far, and the others say they are not fetched', async () => {
+      const r = await image({ tab: 'details' }, (fake) => {
+        for (const v of fake.versionList) {
+          if (v.format === 'oci') {
+            v.sizeBytes = 31_457_280;
+            v.sizePartial = true;
+            v.metadata = {
+              digest: 'sha256:' + 'a'.repeat(64),
+              mediaType: 'application/vnd.oci.image.index.v1+json',
+              size: 31_457_280,
+              sizePartial: true,
+              platforms: [
+                { platform: 'linux/amd64', digest: 'sha256:' + 'b'.repeat(64), stored: true, mediaType: 'application/vnd.oci.image.manifest.v1+json', size: 31_457_280 },
+                { platform: 'linux/arm64', digest: 'sha256:' + 'c'.repeat(64), stored: false },
+              ],
+            };
+          }
+        }
+      });
+      expect(text(r.root.querySelector('.facts-line')!)).toContain('≥ at least 30.0 MiB');
+      expect(text(r.root.querySelector('.facts-line')!)).not.toContain('Size not known');
+      expect(pairs(r)).toContain('Size ≥ at least 30.0 MiB');
+      const platforms = [...r.root.querySelectorAll('.version-tabs table')].find((t) => text(t.querySelector('caption')!) === 'Platforms of this image index')!;
+      const cells = [...platforms.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((c) => text(c)));
+      expect(cells[0]?.[3]).toBe('30.0 MiB');
+      expect(cells[1]?.[2]).toBe('–None');
+      expect(cells[1]?.[3]).toBe('Not fetched');
+      await expectAccessible(r.root);
     });
   });
 

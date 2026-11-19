@@ -27,8 +27,12 @@ UPDATE oci_manifests m
  WHERE m.repo_id = sqlc.arg(repo_id)::bigint AND m.name = sqlc.arg(name)::text AND m.digest = sqlc.arg(digest)::bytea;
 
 -- name: OCITagSizes :many
--- The size of the image each of the tags with the given version ids points at: the content size of its manifest, which an index
--- holds as the sum of its children (R-OCI-031, Q-OCI-130). One statement for any number of packages.
+-- What the size of the image each of the tags with the given version ids points at is made of (R-OCI-031, Q-OCI-221): the content
+-- size of its manifest (the config and the layers an image manifest names) and, for an index, how many children it names, how many of
+-- them this repository holds and their summed content size, counted once over every child and once over the children that are images
+-- of a platform (an attestation manifest is named with the platform unknown/unknown). A remote repository holds a child once a client
+-- fetched it, so the sum is read here and not from the index's own row, which was written before. One statement for any number of
+-- packages.
 WITH tags AS (
   SELECT pv.id, pv.package_id, i.blob_sha256 AS manifest_sha256
     FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
@@ -36,10 +40,19 @@ WITH tags AS (
   UNION ALL
   SELECT t.id, t.package_id, t.manifest_sha256 FROM oci_remote_tags t WHERE t.id = ANY(sqlc.arg(version_ids)::bigint[])
 )
-SELECT t.id AS version_id, m.content_size
+SELECT t.id AS version_id, m.content_size,
+       count(r.target)::bigint AS children,
+       count(c.digest)::bigint AS children_stored,
+       LEAST(COALESCE(sum(c.content_size), 0), 9223372036854775807)::bigint AS children_size,
+       (count(r.target) FILTER (WHERE r.platform IS DISTINCT FROM 'unknown/unknown'))::bigint AS platforms,
+       (count(c.digest) FILTER (WHERE r.platform IS DISTINCT FROM 'unknown/unknown'))::bigint AS platforms_stored,
+       LEAST(COALESCE(sum(c.content_size) FILTER (WHERE r.platform IS DISTINCT FROM 'unknown/unknown'), 0), 9223372036854775807)::bigint AS platforms_size
 FROM tags t
 JOIN packages p ON p.id = t.package_id
 JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
+LEFT JOIN oci_references r ON r.repo_id = m.repo_id AND r.name = m.name AND r.manifest = m.digest AND r.kind = 'manifest'
+LEFT JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+GROUP BY t.id, m.content_size
 ORDER BY t.id;
 
 -- name: OCIPutReferences :exec
@@ -90,7 +103,9 @@ JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest =
 ORDER BY t.id;
 
 -- name: OCIChildPlatforms :many
--- The children the indexes of the given versions name, with the platform of the edge and the child's own facts (R-OCI-031).
+-- The children the indexes of the given versions name, with the platform of the edge and, when this repository holds the child's
+-- manifest, its own facts (R-OCI-031): a remote repository holds a platform once a client fetched it, and the page lists the others as
+-- not fetched (Q-OCI-221).
 WITH tags AS (
   SELECT pv.id, pv.package_id, i.blob_sha256 AS manifest_sha256
     FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
@@ -98,11 +113,13 @@ WITH tags AS (
   UNION ALL
   SELECT t.id, t.package_id, t.manifest_sha256 FROM oci_remote_tags t WHERE t.id = ANY(sqlc.arg(version_ids)::bigint[])
 )
-SELECT t.id AS version_id, COALESCE(r.platform, '')::text AS platform, c.digest, c.media_type, c.size, c.content_size
+SELECT t.id AS version_id, COALESCE(r.platform, '')::text AS platform, r.target AS digest, (c.digest IS NOT NULL)::boolean AS stored,
+       COALESCE(c.media_type, '')::text AS media_type, COALESCE(c.size, 0)::bigint AS size,
+       COALESCE(c.content_size, 0)::bigint AS content_size
 FROM tags t
 JOIN packages p ON p.id = t.package_id
 JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
-JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+LEFT JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
 ORDER BY t.id, r.platform NULLS LAST, r.target;
 
 -- name: OCIStoredTags :many

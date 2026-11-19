@@ -112,6 +112,13 @@ type viewFormat struct {
 
 func (v viewFormat) View() formats.ViewAdapter { return v.a }
 
+// Descriptor declares what a fetch of a version is, which a format with a package view must (R-API-079).
+func (v viewFormat) Descriptor() formats.Descriptor {
+	d := v.Format.Descriptor()
+	d.VersionFetch = formats.FetchLeadFile
+	return d
+}
+
 // viewFixture is the fixture of the test format with a view fixture and without the skip.
 func viewFixture(a *memView, versions ...string) formattest.Fixture {
 	fx := testformat.Fixture()
@@ -208,22 +215,25 @@ type sizedFormat struct {
 	flags map[string]bool
 }
 
-func (s sizedFormat) ViewSizes(_ context.Context, _ formats.DataPorts, vs []formats.ViewVersion) (map[formats.VersionID]int64, error) {
+func (s sizedFormat) ViewSizes(_ context.Context, _ formats.DataPorts, vs []formats.ViewVersion) (map[formats.VersionID]formats.ViewSize, error) {
 	if s.flags["sizes-fails"] && len(vs) > 0 {
 		return nil, errors.New("no sizes")
 	}
-	out := map[formats.VersionID]int64{}
+	out := map[formats.VersionID]formats.ViewSize{}
 	if s.flags["sizes-for-none"] && len(vs) == 0 {
-		out[1] = 5
+		out[1] = formats.ViewSize{Bytes: 5}
 	}
-	for _, v := range vs {
-		out[v.ID] = 10
+	for i, v := range vs {
+		out[v.ID] = formats.ViewSize{Bytes: 10, Partial: i == 0}
 	}
 	if s.flags["sizes-unasked"] && len(vs) > 0 {
-		out[vs[0].ID+1000] = 10
+		out[vs[0].ID+1000] = formats.ViewSize{Bytes: 10}
 	}
 	if s.flags["sizes-negative"] && len(vs) > 0 {
-		out[vs[0].ID] = -1
+		out[vs[0].ID] = formats.ViewSize{Bytes: -1}
+	}
+	if s.flags["sizes-unknown-number"] && len(vs) > 0 {
+		out[vs[0].ID] = formats.ViewSize{Bytes: 7, Unknown: true}
 	}
 	return out, nil
 }
@@ -269,6 +279,7 @@ func TestR_ARCH_010_Check11ViewSizer(t *testing.T) {
 		{"a ViewSizer that answers a negative size", "sizes-negative", "not negative"},
 		{"a ViewSizer that fails for the seeded package", "sizes-fails", "ViewSizes of the seeded package"},
 		{"a ViewSizer that answers when asked for nothing", "sizes-for-none", "ViewSizes of no version"},
+		{"a ViewSizer that gives a number for a size it does not know (R-API-080)", "sizes-unknown-number", "not known has no bytes"},
 	} {
 		t.Run("R-ARCH-010 "+c.name+" fails check 11", func(t *testing.T) {
 			if got := messages(run(c.flag), formattest.CheckView); !strings.Contains(got, c.want) {

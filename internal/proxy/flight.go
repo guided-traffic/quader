@@ -8,6 +8,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/items"
 )
 
 // The reasons a fetch goes on without the cross-replica lock
@@ -91,6 +92,9 @@ type reqState struct {
 	// stream is the leader's own client for an artifact; nil when it gets its answer
 	// from the stored entry.
 	stream *stream
+	// streamed is the item of the artifact the stream gave the leader's client whole and that was stored as it: the download
+	// Request.Streamed counts (Q-REPO-331). Written by the fetch before the flight's result, read after it.
+	streamed *items.Item
 	// lost says that the request found its item lost (its object missing or damaged) before it entered the flight, and
 	// sawLost that a re-check under the flight found it lost still (Q-REPO-205).
 	lost, sawLost bool

@@ -200,12 +200,12 @@ func (t *twin) WithheldVersions(ctx context.Context, _ []string) ([]int64, error
 	return out, nil
 }
 
-func (t *twin) TagSizes(ctx context.Context, versionIDs []int64) (map[int64]int64, error) {
+func (t *twin) TagSizes(ctx context.Context, versionIDs []int64) (map[int64]rows.TagSize, error) {
 	t.note("TagSizes")
-	out := map[int64]int64{}
+	out := map[int64]rows.TagSize{}
 	views, err := t.tagViews(ctx, versionIDs)
 	for _, tv := range views {
-		out[tv.VersionID] = tv.ContentSize
+		out[tv.VersionID] = rows.SizeOf(tv)
 	}
 	return out, err
 }
@@ -248,8 +248,8 @@ func (t *twin) tagViews(ctx context.Context, versionIDs []int64) ([]rows.TagView
 				if r.Kind != rows.KindManifest {
 					continue
 				}
-				c := t.manifests[mkey{repo, name, r.Target}]
-				tv.Children = append(tv.Children, rows.Child{Platform: r.Platform, Digest: r.Target, MediaType: c.MediaType, Size: c.Size, ContentSize: c.ContentSize})
+				c, stored := t.manifests[mkey{repo, name, r.Target}]
+				tv.Children = append(tv.Children, rows.Child{Platform: r.Platform, Digest: r.Target, Stored: stored, MediaType: c.MediaType, Size: c.Size, ContentSize: c.ContentSize})
 			}
 			t.mu.Unlock()
 			sort.SliceStable(tv.Children, func(i, j int) bool { return tv.Children[i].Platform < tv.Children[j].Platform })

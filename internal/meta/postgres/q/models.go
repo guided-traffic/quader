@@ -937,12 +937,13 @@ type PackageVersion struct {
 }
 
 type PackageVersionListing struct {
-	ID         int64
-	PackageID  int64
-	Version    string
-	CreatedAt  pgtype.Timestamptz
-	LeadItemID pgtype.Int8
-	TrashedAt  pgtype.Timestamptz
+	ID             int64
+	PackageID      int64
+	Version        string
+	CreatedAt      pgtype.Timestamptz
+	LeadItemID     pgtype.Int8
+	TrashedAt      pgtype.Timestamptz
+	DocumentSha256 []byte
 }
 
 type Principal struct {

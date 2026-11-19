@@ -184,8 +184,8 @@ func TestTheSizesReadOnceAndAnswerForTheTagsAsked(t *testing.T) {
 		t.Fatalf("sizes: %v %v, %d reads of the sizes, %d of the views", got, err, fx.twin.calls["TagSizes"], fx.twin.calls["TagViews"])
 	}
 	for _, v := range both {
-		if got[v.ID] <= 0 {
-			t.Errorf("the size of %s:%s = %d", v.Package, v.Version, got[v.ID])
+		if s := got[v.ID]; s.Bytes <= 0 || s.Partial || s.Unknown {
+			t.Errorf("the size of %s:%s = %+v", v.Package, v.Version, s)
 		}
 	}
 	one, err := f.ViewSizes(ctx, fx.h, both[:1])

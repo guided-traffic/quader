@@ -194,6 +194,10 @@ type Request struct {
 	// in the validators the whole body decides (ETag, Last-Modified, Repr-Digest). The host
 	// supplies it, as it supplies Serve; nil sets none.
 	Headers func(h http.Header)
+	// Streamed runs once the leader's own client received the whole body the engine streamed to it while it fetched, and the
+	// artifact was stored as it: a download of the item it, like a stored answer through Serve (R-STOR-015, Q-REPO-331). It is not
+	// run for an answer that Serve wrote, which counts itself, nor for a body that was passed through unstored. nil counts nothing.
+	Streamed func(ctx context.Context, it items.Item)
 }
 
 // Document is a metadata document as the engine hands it to the format.

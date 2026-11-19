@@ -136,6 +136,9 @@ func (e *Engine) artifactAnswer(ctx context.Context, rq Request, st *reqState, w
 		return ctx.Err()
 	}
 	if done {
+		if st.streamed != nil && rq.Streamed != nil {
+			rq.Streamed(ctx, *st.streamed)
+		}
 		return nil
 	}
 	if started {
@@ -430,7 +433,7 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 	var changed [32]byte
 	declared := items.Expected{SHA256: rq.Expected.SHA256, SHA512: rq.Expected.SHA512, SHA1: rq.Expected.SHA1}
 	final := stripUser(f.finalURL(resp))
-	_, err = e.o.Items.Commit(ctx, items.CommitSpec{
+	committed, err := e.o.Items.Commit(ctx, items.CommitSpec{
 		Repo: rem.Repo, Path: repository.Cleaned{Path: rq.Path}, Spooled: sp, MediaType: resp.Header.Get("Content-Type"),
 		Declared: declared, Origin: items.OriginFill, UpstreamURL: final, MayOverwrite: true, Payload: payload,
 		Actor: auditActor(rq.Caller), Source: rq.Caller.Source, Endpoint: rq.Caller.Endpoint,
@@ -449,7 +452,10 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 		return flightResult{err: err}
 	}
 	if tee != nil {
-		tee.finish()
+		if tee.finish() { // the leader's client has the whole body: a download of the stored item (Q-REPO-331)
+			stored := committed.Item
+			f.st.streamed = &stored
+		}
 	}
 	f.box.set(CacheStatus{Forwarded: "uri-miss", FwdStatus: resp.StatusCode, Stored: true}.Header())
 	return flightResult{stored: true, status: resp.StatusCode}

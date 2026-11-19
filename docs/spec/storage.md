@@ -1406,6 +1406,10 @@ Priority: **P1** · Covers: ART-029
   at byte 0, or issues a presigned redirect; `HEAD`, `304`, sidecars and requests with
   `?stats=false` do not count.
 - Through a virtual repository the count goes to the item of the serving member.
+- The first answer of a remote miss, which the remote engine streams to the client while it fetches, counts on the item it stored
+  ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-331). A document a format answers from a store of its own with the
+  bytes of an item (a remote OCI tag's manifest) counts on that item through `ItemStore.RecordDownload` (Q-OCI-222). Which downloads are
+  the fetches of a version is the format's rule ([api-and-ui.md](api-and-ui.md) R-API-079).
 - Each `web` replica aggregates counts in memory and flushes them every
   `storage.stats.flush_interval` with one upsert per item (`downloads = downloads + n`,
   `last_download_at = greatest(…)`, `last_downloader` of the latest download), in one transaction

@@ -15,7 +15,7 @@ A package appears once, however many repositories hold it. Everything in its row
 | **Latest** | The highest stable version you may see. A pre-release is shown only while no stable version exists |
 | **Updated** | When the latest version you may see was published, as a relative time ("4 minutes ago"); point at it for the exact time |
 
-When a version was published, how large it is, its vulnerabilities and when it was last fetched are in the versions table of the
+When a version was published, how large it is, its vulnerabilities and when a client last downloaded it are in the versions table of the
 package's page.
 
 The **?** next to some column headings explains the column. The list shows one page at a time; **Load more** adds the next page. When nothing is published yet, the list says **No package has been published yet.** and offers **Set up a client to publish the first package**. **Set up a client** at the top of the screen opens the client setup at any time.
@@ -74,10 +74,10 @@ The page is a table of every version you may see, the highest version first:
 | Column | Meaning |
 |---|---|
 | **Version** | The version, which opens its page. A distribution tag that points at it, such as `latest` or `next`, stands beside it, and so does **pre-release** for a pre-release. For a container image the version is the tag |
-| **Size** | The size of the version's files; for an image, the size of the image |
+| **Size** | The size of the version's files; for an image, the size of the image. **≥** before the size of an image of several platforms counts only the platforms clients have fetched so far through a remote repository; a dash means the size is not known yet, because no platform was fetched. Point at the size for what it counts |
 | **Vulnerabilities** | The grade of the version, the number of its open findings and how many of them have a fix, for example the shield **E** and **1,145 findings · 112 fixable** (see [Vulnerabilities](vulnerabilities.md#grades)). Only where the versions are checked for vulnerabilities and you are signed in |
 | **Published** | When the version was published, as a relative time; hover for the exact time |
-| **Last fetched** | When a client last downloaded the version, or **Never** |
+| **Last download** | When a client last downloaded the version through Quader, or **Never**. What counts as a download of a version is the file a client fetches to install it: the npm tarball, the NuGet package, the Debian package file of any architecture, the Ansible collection archive, the image manifest of a tag (pulled by the tag or by its digest). Reading metadata, such as a package document or an index, and checking a tag with a HEAD request are not downloads. A version a mirror pass fetched and no client downloaded yet says **Never** |
 | **Repositories** | Which repositories hold the version. Only when the versions are not all in the same repositories |
 
 - Type into **Filter versions** to keep the versions that contain the text, or whose tag does: `4.0` finds every 4.0.x, `rc` the
@@ -97,7 +97,7 @@ Select a version to open its page. Its address is the package's with `@` and the
 `https://quader.example.com/ui/en/projects/web/packages/npm/@team-a/ui@1.4.0`; send it to point a colleague at exactly this version.
 
 Under the name and the version, one line holds the facts of the version: its grade with the number of findings and how many have a
-fix (select it to open the findings), when it was published, its size, when it was last fetched, its downloads and its licences. A
+fix (select it to open the findings), when it was published, its size, when a client last downloaded it, its downloads and its licences. A
 version that its publisher marked as deprecated shows **Deprecated.** with the publisher's message; a version whose download a
 repository refuses shows **Blocked in** and the repository.
 
@@ -108,7 +108,7 @@ repository refuses shows **Blocked in** and the repository.
 | **Vulnerabilities** | For each repository that holds the version, its grade card and its open findings, the worst first (see [Vulnerabilities](vulnerabilities.md#on-the-page-of-a-version)). The first tab of a version that is checked |
 | **README** | The README of this version. Shown only when the version has one |
 | **Files** | The files of this version with **Size**, **SHA-256** and a **Download** link. **Copy SHA-256** copies the checksum; compare it with the output of `sha256sum` on the downloaded file |
-| **Details** | **Links** (**Homepage**, **Source repository**, **Issue tracker**), **Authors**, **Dependencies**, **Development dependencies**, **Peer dependencies**, **Optional dependencies** and **Required runtimes**, as far as the version declares them; for an image its digest, media type, size and platforms; then **Repositories**: each repository that holds the version, its **Class** and when it was **Published** there |
+| **Details** | **Links** (**Homepage**, **Source repository**, **Issue tracker**), **Authors**, **Dependencies**, **Development dependencies**, **Peer dependencies**, **Optional dependencies** and **Required runtimes**, as far as the version declares them; for an image its digest, media type, size and platforms, each platform with its own size or, in a remote repository, **Not fetched** until a client pulls it; then **Repositories**: each repository that holds the version, its **Class** and when it was **Published** there |
 
 Links in **Details** open in a new tab and only for `http` and `https` addresses; any other link is shown as text.
 

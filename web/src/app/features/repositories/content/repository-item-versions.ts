@@ -9,8 +9,8 @@ import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
-import { formatSize } from '../../packages/format-size';
 import { InstallCommand } from '../../packages/install-command';
+import { VersionSize } from '../../packages/version-size';
 import { versionCommands } from '../../packages/package-links';
 import { ContentShape } from './content-shape';
 
@@ -24,7 +24,7 @@ const VERSIONS_PAGE = 20;
  */
 @Component({
   selector: 'quader-repository-item-versions',
-  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, InstallCommand],
+  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, InstallCommand, VersionSize],
   template: `
     <div class="command-panel">
       <p class="command-title">
@@ -72,7 +72,7 @@ const VERSIONS_PAGE = 20;
               }
             </td>
           }
-          <td class="num">{{ size(v.sizeBytes) }}</td>
+          <td class="num"><quader-version-size [bytes]="v.sizeBytes ?? null" [partial]="v.sizePartial" /></td>
           <td>
             <quader-time-ago [at]="v.publishedAt" absolute="title" />
           </td>
@@ -204,10 +204,6 @@ export class RepositoryItemVersions {
 
   protected select(version: string): void {
     this.chosen.set(version);
-  }
-
-  protected size(bytes: number): string {
-    return formatSize(bytes);
   }
 
   /** `sha256:abc…` keeps the algorithm and a stretch a person can compare; the copy button has the whole digest. */

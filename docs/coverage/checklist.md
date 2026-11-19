@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 619 of 926 spec requirements are implemented: a passing test names them and no
+**Status.** 619 of 929 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
-926 spec requirements: 646 cover catalog features, 280 cover none (`quader-only`, [listed at the
+929 spec requirements: 646 cover catalog features, 283 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>280 requirements</summary>
+<summary>283 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -2983,7 +2983,10 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-API-052 (implemented) | Visibility of a management write on other replicas | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-020 (implemented) | Resource map and routing | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-021 (implemented) | Current caller and UI preferences | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
-| R-API-065 | When a version was last fetched | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-065 | When a client last downloaded a version | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-079 | What a fetch of a version is, in every format and class | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-080 | A size that is not known is not a number | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-081 | A remote repository lists what was fetched through it | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-053 (implemented) | Guides of the formats | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-070 | A guide carries its snippets beside its sections | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-054 (implemented) | The manual | MVP | [api-and-ui.md](../spec/api-and-ui.md) |

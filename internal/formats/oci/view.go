@@ -119,12 +119,13 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 var _ formats.ViewSizer = (*Format)(nil)
 
 // ViewSizes implements [formats.ViewSizer]: the size of a tag, as the package screens show it for the version, is the size of its
-// image, not of the tag's file, which is the manifest document (R-OCI-031, Q-OCI-130). The push stores it in the manifest's row (the
-// config and layers of an image, the sum over the children of an index at any depth), so one read answers for all the tags asked for,
-// and for no other id. A tag with no recorded manifest is absent.
-func (*Format) ViewSizes(ctx context.Context, ports formats.DataPorts, vs []formats.ViewVersion) (map[formats.VersionID]int64, error) {
+// image, not of the tag's file, which is the manifest document (R-OCI-031, Q-OCI-130, Q-OCI-221). An image manifest names the size of
+// its config and layers, so its size is known once the manifest is; an index's is the sum over the platforms the repository holds,
+// partial while some are missing and not known while none is (imageSize). One read answers for all the tags asked for, and for no
+// other id. A tag with no recorded manifest is absent.
+func (*Format) ViewSizes(ctx context.Context, ports formats.DataPorts, vs []formats.ViewVersion) (map[formats.VersionID]formats.ViewSize, error) {
 	if len(vs) == 0 {
-		return map[formats.VersionID]int64{}, nil
+		return map[formats.VersionID]formats.ViewSize{}, nil
 	}
 	st, err := viewPort(ports)
 	if err != nil {
@@ -140,20 +141,50 @@ func (*Format) ViewSizes(ctx context.Context, ports formats.DataPorts, vs []form
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[formats.VersionID]int64, len(sizes))
-	for id, n := range sizes {
+	out := make(map[formats.VersionID]formats.ViewSize, len(sizes))
+	for id, ts := range sizes {
 		if asked[id] {
-			out[formats.VersionID(id)] = n
+			out[formats.VersionID(id)] = imageSize(ts)
 		}
 	}
 	return out, nil
+}
+
+// imageSize is the size of a tag's image as the screens show it (Q-OCI-221). An image manifest's is the config and the layers it
+// names: the manifest states them and its digest fixes them, so the size is known whether the layers are stored or not. An index's is
+// the sum over the images of its platforms that the repository holds: all of them in a local repository, those a client fetched in a
+// remote one. While some are missing the sum is partial; while none is, the size is not known. Attestation manifests (the platform
+// unknown/unknown) are left out of the count, because a pull of a platform never fetches them; an index that names nothing else is
+// counted over all its children.
+func imageSize(ts rows.TagSize) formats.ViewSize {
+	if ts.Children == 0 {
+		return formats.ViewSize{Bytes: max(ts.ContentSize, 0)}
+	}
+	total, stored, size := ts.Platforms, ts.PlatformsStored, ts.PlatformsSize
+	if total == 0 {
+		total, stored, size = ts.Children, ts.ChildrenStored, ts.ChildrenSize
+	}
+	switch {
+	case stored == 0:
+		return formats.ViewSize{Unknown: true}
+	case stored < total:
+		return formats.ViewSize{Bytes: max(size, 0), Partial: true}
+	}
+	return formats.ViewSize{Bytes: max(size, 0)}
 }
 
 func tagMetadata(tv rows.TagView) map[string]any {
 	md := map[string]any{
 		"digest":    "sha256:" + hex.EncodeToString(tv.Digest[:]),
 		"mediaType": tv.MediaType,
-		"size":      tv.ContentSize,
+	}
+	// The size of the image follows the version's (imageSize): absent while it is not known, with sizePartial while it counts only
+	// the platforms the repository holds.
+	if size := imageSize(rows.SizeOf(tv)); !size.Unknown {
+		md["size"] = size.Bytes
+		if size.Partial {
+			md["sizePartial"] = true
+		}
 	}
 	if tv.ArtifactType != "" {
 		md["artifactType"] = tv.ArtifactType
@@ -164,9 +195,12 @@ func tagMetadata(tv rows.TagView) map[string]any {
 	children := tv.Children // in platform order, as the statement read them
 	platforms := make([]map[string]any, 0, len(children))
 	for _, c := range children {
-		platforms = append(platforms, map[string]any{
-			"platform": c.Platform, "digest": "sha256:" + hex.EncodeToString(c.Digest[:]), "mediaType": c.MediaType, "size": c.ContentSize,
-		})
+		p := map[string]any{"platform": c.Platform, "digest": "sha256:" + hex.EncodeToString(c.Digest[:]), "stored": c.Stored}
+		if c.Stored {
+			// A platform the repository does not hold has no media type or size it could state (Q-OCI-221).
+			p["mediaType"], p["size"] = c.MediaType, c.ContentSize
+		}
+		platforms = append(platforms, p)
 	}
 	md["platforms"] = platforms
 	return md

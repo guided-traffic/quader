@@ -163,6 +163,7 @@ func (fakeAdapter) Find(context.Context, Find, int) ([]int64, error) { return ni
 func (fakeAdapter) Withheld(context.Context, []string) ([]int64, error) {
 	return nil, nil
 }
+func (fakeAdapter) Fetch() FetchRule { return FetchLeadFile }
 
 // digestAdapter is a format whose version metadata has a `digest` member (an OCI tag), for all versions but the one named none.
 type digestAdapter struct {

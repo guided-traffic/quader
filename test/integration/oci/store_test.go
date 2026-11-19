@@ -378,14 +378,41 @@ func TestTheViewReadsTheTagsTheirManifestsAndThePlatformsOfAnIndex(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[int64]int64{vIdx: 3000, vSolo: 500}
+	want := map[int64]rows.TagSize{
+		vIdx:  {ContentSize: 3000, Children: 2, ChildrenStored: 2, ChildrenSize: 3000, Platforms: 2, PlatformsStored: 2, PlatformsSize: 3000},
+		vSolo: {ContentSize: 500},
+	}
 	if len(sizes) != len(want) {
 		t.Fatalf("sizes = %v, want %v", sizes, want)
 	}
 	for id, n := range want {
 		if sizes[id] != n {
-			t.Fatalf("sizes = %v, want %v", sizes, want)
+			t.Fatalf("sizes = %+v, want %+v", sizes, want)
 		}
+	}
+	// An index of which the repository holds one platform and not the other, and an attestation (Q-OCI-221): the sizes are read over
+	// the children that are held, and the attestation is counted apart.
+	// The image name is one of its own, so that the tags of multi below stay the three they are.
+	e.put(rows.ManifestInput{Manifest: rows.Manifest{Name: "half", Digest: sum("amd"), MediaType: "application/vnd.oci.image.manifest.v1+json", Size: 100, ContentSize: 1000}})
+	e.put(rows.ManifestInput{
+		Manifest: rows.Manifest{Name: "half", Digest: sum("half"), MediaType: "application/vnd.oci.image.index.v1+json", Size: 300},
+		References: []rows.Reference{
+			{Target: sum("amd"), Kind: rows.KindManifest, Platform: "linux/amd64"},
+			{Target: sum("missing"), Kind: rows.KindManifest, Platform: "linux/arm64"},
+			{Target: sum("att"), Kind: rows.KindManifest, Platform: rows.AttestationPlatform},
+		},
+	})
+	vHalf := e.tag("half", "1", "half")
+	half, err := e.store.TagSizes(ctx, []int64{vHalf})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, wantHalf := half[vHalf], (rows.TagSize{ContentSize: 1000, Children: 3, ChildrenStored: 1, ChildrenSize: 1000, Platforms: 2, PlatformsStored: 1, PlatformsSize: 1000}); got != wantHalf {
+		t.Fatalf("the half-held index = %+v, want %+v", got, wantHalf)
+	}
+	hv, err := e.store.TagViews(ctx, []int64{vHalf})
+	if err != nil || len(hv) != 1 || len(hv[0].Children) != 3 || rows.SizeOf(hv[0]) != half[vHalf] {
+		t.Fatalf("the view of the half-held index = %+v, %v: its children counted the way TagSizes counts them", hv, err)
 	}
 	if none, err := e.store.TagSizes(ctx, nil); err != nil || len(none) != 0 {
 		t.Fatalf("no tags: %v %v", none, err)
@@ -503,8 +530,17 @@ func TestTheSizeOfAnIndexOfIndexesIsTheSumAtAnyDepth(t *testing.T) {
 	}
 	want := map[string]int64{"l1": 3000, "l2": 3000, "l3": 4000, "empty": 0, "hh": huge}
 	for name, n := range want {
-		if sizes[vs[name]] != n {
-			t.Fatalf("size of %s = %d, want %d (all: %v)", name, sizes[vs[name]], n, sizes)
+		if got := wholeSize(sizes[vs[name]]); got != n {
+			t.Fatalf("size of %s = %d, want %d (all: %v)", name, got, n, sizes)
 		}
 	}
+}
+
+// wholeSize is the size of a tag whose every child the repository holds: an image manifest's own content size, an index's sum over
+// its children (Q-OCI-221).
+func wholeSize(s rows.TagSize) int64 {
+	if s.Children == 0 {
+		return s.ContentSize
+	}
+	return s.ChildrenSize
 }

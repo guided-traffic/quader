@@ -1098,10 +1098,10 @@ Priority: **P1** · Covers: PKG-DOCKER-041, PKG-DOCKER-023
 The format's view adapter (R-API-029) shows an image name as a package and its tags as versions, newest first by push time in a
 local repository and by fetch time in a remote one (the list of versions is ordered by push, `Stored`; the precedence of two tags,
 `Compare`, is the tag order, and decides which tag is "latest"): per tag the digest, the media type, the summed size, and for an index its
-platforms with each child's digest and size, from the rows of R-OCI-007. The `sizeBytes` of the version, in the list and in the details, is the same summed size (Q-OCI-130), not the size of the tag item. Layer history and labels are not shown (Deferred).
-The version `metadata` of a tag holds `digest`, `mediaType`, `size` (the summed size of the config and the layers; of an index the
-sum over its children, at any depth) and `artifactType` (the manifest's own, else the media type of its config, so every image shows its config type); an index adds `platforms`, one object per child with
-`platform` (`os/arch[/variant]`, `unknown/unknown` for an attestation, `""` for a child the index names without a platform), `digest`, `mediaType` and `size`. `Compare` is the tag order
+platforms with each child's digest and size, from the rows of R-OCI-007. The `sizeBytes` of the version, in the list and in the details, is the same summed size (Q-OCI-130), not the size of the tag item; of an index the sum over the platforms the repository holds, with `sizePartial` while some are missing and `null` while none is (Q-OCI-221, R-API-080). Layer history and labels are not shown (Deferred).
+The version `metadata` of a tag holds `digest`, `mediaType`, `size` (the summed size of the config and the layers; of an index the sum over the platforms held, absent while none is, with `sizePartial` while some are missing, Q-OCI-221;
+at any depth) and `artifactType` (the manifest's own, else the media type of its config, so every image shows its config type); an index adds `platforms`, one object per child with
+`platform` (`os/arch[/variant]`, `unknown/unknown` for an attestation, `""` for a child the index names without a platform), `digest`, `stored` and, when stored, `mediaType` and `size`. `Compare` is the tag order
 of the format (Q-OCI-17, Q-OCI-64), and a string that is no tag sorts before every tag; a tag whose manifest the journal replay withheld is not listed (R-OCI-033).
 The tags of a remote repository are listed the same way, read from its cache entries (R-OCI-036).
 
@@ -1243,8 +1243,10 @@ A remote repository of the format, in mode `pullThrough` or `mirror`, lists the 
 and the content page of [R-UI-052](../api-and-ui.md#r-ui-052--repository-content-page), as a local repository does (R-OCI-031).
 
 - **What is listed.** A tag is listed as a version of its image name while the cache holds its tag document (the metadata entry
-  `<name>/_tags/<tag>`, R-OCI-007), the upstream has not marked that document gone (R-REPO-029) and the manifest row of its digest exists.
-  These are the conditions under which the remote address serves the tag from its cache, so the screen lists what a pull of the tag
+  `<name>/_tags/<tag>`, R-OCI-007), the upstream has not marked that document gone (R-REPO-029), the manifest row of its digest exists, and a
+  client fetched it through the repository (a download of its manifest by the tag or by its digest, R-API-079) or the repository is in mode
+  `mirror` (R-API-081, Q-OCI-222): a `HEAD` of a tag stores its document and lists nothing.
+  The first three are the conditions under which the remote address serves the tag from its cache, so the screen lists what a pull of the tag
   would answer without asking the upstream. An image name with no listed tag is not listed: a name whose manifests were fetched by digest only
   has no tag to show.
 - **Where it is read.** The listing reads the cache entries; the fill transaction, the mirror pass and the eviction write nothing for it
@@ -1252,8 +1254,8 @@ and the content page of [R-UI-052](../api-and-ui.md#r-ui-052--repository-content
   in the statement that changes the cache.
 - **What a listed tag shows.** The version is the tag; `publishedAt` is the time the stored tag document was fetched, so the tag
   that moved upstream is listed with the time of the fetch that stored the new document; the metadata is that of R-OCI-031 (`digest`,
-  `mediaType`, `size`, `artifactType`, `platforms`), read from the manifest row of the entry's document. `downloadCount` is 0:
-  a remote's pulls are not counted per tag (Q-OCI-216). A tag is never a pre-release.
+  `mediaType`, `size`, `artifactType`, `platforms`), read from the manifest row of the entry's document. `downloadCount` and `lastDownloadedAt`
+  are the pulls of the tag's manifest through the repository (Q-OCI-222). A tag is never a pre-release.
 - **A tag that moved, expired or vanished upstream** (Q-OCI-216). A tag shows the digest of the document the cache holds: a moved tag
   shows its old digest until a request revalidates it and the fill stores the new document (R-OCI-022), then the new one, with a new
   time. An entry past its metadata period is still listed (it is still served stale, R-REPO-029). A tag the upstream answered 404 or 410 for at
@@ -1269,7 +1271,9 @@ Acceptance criteria:
 
 - After `GET /v2/it/oci-anon/library/alpine/manifests/3.19`, `GET /api/v1/packages?repository=it/oci-anon` lists `library/alpine` with the
   version count 1, and `GET /api/v1/packages/{id}/versions?repository=it/oci-anon&include=digest` lists `3.19` with the digest the pull answered.
-- After the upstream moved the tag and a revalidation fetched the new document, the list shows the new digest and no second version.
+- After the upstream moved the tag and a revalidation fetched the new document, the list shows the new digest, once the GET that fetched it
+  is counted, and no second version.
+- A `HEAD` of a tag lists nothing; the GET of the tag lists it with one download (R-API-081).
 - A caller whose grant is narrowed to the package pattern `acme/*` lists `acme/a` and not `library/alpine`; a caller with no grant on the
   repository lists nothing and gets 404 for the package.
 - A tag whose cache entry is marked gone or deleted is not listed.
@@ -2181,13 +2185,65 @@ downloads of an artifact, not of a tag document.
 | (c) List an expired entry only while it is fresh | The period decides | Looks newer | A tag that is still served stale would vanish and reappear |
 | (d) The time is the first fetch of the tag | Stable | The pushed-time semantics of a local tag | The cache keeps one entry per tag, and the first fetch is not kept; a moved tag would show a time older than its document |
 
-**Choice:** (a). `downloadCount` is 0 because the counts belong to items (a lead item's `item_download_stats`) and a tag entry has none; the blobs of the
-image keep their own counts. A tag is not a pre-release.
+**Choice:** (a). A tag is not a pre-release. **Revised on 2026-11-19 (W-24):** `downloadCount` was 0 because the counts belonged to a lead item, which a
+tag entry has none of; since Q-OCI-222 a tag's downloads are the pulls of its manifest, by the tag or by its digest, counted on the manifest item the
+fill entered beside the entry, and a tag is listed once one was counted or the repository is in mirror mode (Q-OCI-222, R-API-081).
 
 **Rationale:** (a) is what a client asking the remote address gets, and it needs no request. The development agent would revisit it if the owner wants
 the tag's pulls counted (a counter on the entry), or a "checked" column from `validated_at`.
 
 **Applied in the spec:** R-OCI-036. Tests: `TestR_OCI_036_AMovedTagShowsTheNewDigestAndNoSecondVersion`, `TestR_OCI_036_AGoneOrEvictedTagIsNotListed`.
+
+### Q-OCI-221 · The size of an image index is the sum of the platforms the repository holds, partial while some are missing, not known while none is
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a size that is not
+known is shown as not known and not as 0 B is the owner's (2026-11-19, W-24, [api-and-ui.md](../api-and-ui.md) R-API-080).
+
+Context: the size of a tag is the image's (Q-OCI-130): an image manifest names its config and layers with their sizes, an index names its platform
+manifests, whose sizes are only the documents'. A remote stores an index when a client pulls the tag and a platform's manifest when a client pulls
+that platform; a pull of `linux/amd64` never fetches `linux/arm64`, nor the attestation manifests BuildKit adds with the platform
+`unknown/unknown`. The index's own row was summed once, when it was written (`OCISetIndexContentSize`), over the children stored then, so it stayed
+0 in a remote whose platforms arrived later: the owner's **0 B**.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The sum over the platforms held, read when the size is read; partial (marked) while some are missing, not known while none is; attestations left out of the count (chosen) | `OCITagSizes` joins the references and the child rows | Every fetched image has a size, as the owner expected under option B; the mark says it counts part of the image; the read follows every later fetch | A partial number needs its mark wherever it is shown |
+| (b) Not known until every platform is held | One rule | Never a partial number | A multi-platform image pulled for one platform, the common case, never shows a size |
+| (c) The sum the index's row holds, as before | No change | No read | 0 or stale in a remote: the objection |
+
+**Choice:** (a). An image manifest's size is known as soon as the manifest is: the manifest states the sizes of its config and layers and its digest
+fixes them, so the size is the image's whether the layers are held or not. An index's size is the sum of the content sizes of the platform manifests
+the repository holds; `sizePartial` is true while it holds fewer than the index names; `sizeBytes` is `null` while it holds none. Children with the
+platform `unknown/unknown` are left out of both counts unless the index names nothing else. The version's details carry the same as the metadata's
+`size` and `sizePartial`, and each platform `stored`, with its media type and size only when it is stored; the page shows "Not fetched" for the others.
+
+**Rationale:** what a user of a cache wants to know is how much of the image it holds and whether that is all of it. The development agent revisits
+(b) if a partial size is read as the image's size despite its mark.
+
+**Applied in the spec:** R-OCI-031, R-API-080. Code: `OCITagSizes` and `OCIChildPlatforms` in `internal/meta/postgres/queries/oci_manifests.sql`,
+`imageSize` in [view.go](../../../internal/formats/oci/view.go). Tests: `TestQ_OCI_221_*`, `TestTheViewReadsTheTagsTheirManifestsAndThePlatformsOfAnIndex`,
+`TestR_API_081_ARemoteListsATagOnceAClientFetchedItAndEveryCellIsTrue`.
+
+### Q-OCI-222 · A pull of a tag is the download of its manifest by the tag or by its digest, and a remote lists a tag once one was counted
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a remote lists what was
+fetched through it and its downloads count the client's fetches is the owner's (2026-11-19, W-24, option A).
+
+Context: Docker (moby's own distribution code) `GET`s a tag; containerd and Docker with the containerd image store `HEAD` the tag and `GET` the
+index by its digest; both then `GET` the platform manifest by its digest. Clients also `HEAD` a tag to check it, without a pull. A local tag's
+`GET` was counted on the tag item, its `GET` by digest on the manifest item, which no version row named; a remote tag's `GET` is answered from its
+metadata entry and was counted nowhere, while a `HEAD` stored the entry and listed the tag.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fetch of a tag is a `GET` of its manifest by the tag or by its digest (`FetchDocument`): the tag item and the manifest item under the digest, which a remote's `GET` by tag counts through `ItemStore.RecordDownload`; a remote lists a tag once its manifest item has a download, or the repository is in mirror mode (chosen) | One rule for both classes and both kinds of client | One pull is one download; a platform manifest is no second; a `HEAD` is none, as R-STOR-015 says | A pull by digest counts for every tag that points at the digest; a remote tag appears a flush interval after the pull, and a tag that moved disappears until its new manifest is pulled |
+| (b) Count a `HEAD` of a tag too | Every check | Lists what was checked | A check is no download; `docker pull` of a current image would count |
+| (c) A counter on the cache entry | A column | Exact per tag | A write on the serve path of every tag; local tags still need the digest rule |
+
+**Choice:** (a). `oci_remote_tags` ([00079](../../../internal/meta/postgres/migrations/00079_version_fetches.sql)) keeps an entry whose manifest item
+`<name>/_manifests/<digest>` has a download, or whose repository has a mirror state. **Applied in the spec:** R-OCI-036, R-API-079, R-API-081.
+Code: `recordTagFetch` in [remote_handlers.go](../../../internal/formats/oci/remote_handlers.go), the migration, `package_view.sql`. Tests:
+`TestQ_OCI_222_AGetOfARemoteTagIsADownloadOfItsManifest`, `TestR_API_081_ARemoteListsATagOnceAClientFetchedItAndEveryCellIsTrue`.
 
 ### Q-OCI-220 · The refusal of a registry token names the scope, and tells a token without administrator rights why an administrator is refused
 

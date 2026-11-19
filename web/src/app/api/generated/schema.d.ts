@@ -3266,8 +3266,9 @@ export interface paths {
          *     expands to its members. `sort=-version` orders by the format's version precedence, newest
          *     first; the default is `-publishedAt`. `include=digest` also reads each version's `digest` from
          *     the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
-         *     has no `digest`. `lastDownloadedAt` is when the version was last fetched from any of the listed repositories, read
-         *     with the rows in the same statement (R-API-065).
+         *     has no `digest`. `downloadCount` and `lastDownloadedAt` count the fetches of the version by clients
+         *     through any of the listed repositories, by the format's rule, read with the rows in the same statement (R-API-065,
+         *     R-API-079); `sizeBytes` is `null` when the size is not known (R-API-080).
          */
         get: operations["listPackageVersions"];
         put?: never;
@@ -7891,20 +7892,34 @@ export interface components {
             publishedAt: string;
             /**
              * Format: int64
-             * @description The size of the version's files, summed; for a format whose files are not its content, the size the format reports (an OCI tag - the size of its image, config and layers, not of the manifest document).
+             * @description The size of the version's files, summed; for a format whose files are not its content, the size the format reports (an OCI
+             *     tag - the size of its image, config and layers, not of the manifest document; of an index the sum over the platforms the
+             *     repository holds). `null` when the size is not known (an image index none of whose platforms was fetched), never 0 in its
+             *     place (R-API-080).
              */
-            sizeBytes: number;
+            sizeBytes: number | null;
+            /**
+             * @description `sizeBytes` counts only the parts of the version the repository holds: an image index of which a remote repository holds some
+             *     platforms and not others (R-API-080, Q-OCI-221). `false` when `sizeBytes` is the whole version's or `null`.
+             */
+            sizePartial: boolean;
             /** @description With `include=digest` only, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest of its manifest); absent for a format without one. */
             digest?: string;
             /** @description The keys of the repositories that hold this version and that the caller may read. */
             repositories: string[];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description How often clients fetched the version through one of `repositories` (R-API-079): the downloads of R-STOR-015 that the
+             *     version's format counts as its fetch - npm's tarball, NuGet's .nupkg, an Ansible collection archive, a Debian package file of
+             *     any architecture, an OCI tag's manifest by the tag or by its digest. A metadata document, a HEAD and a 304 are not fetches.
+             */
             downloadCount: number;
             /**
              * Format: date-time
-             * @description When the version was last fetched through one of `repositories`: the latest download of its lead file (the tarball, the
-             *     package, the manifest), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to
-             *     its flush interval; `null` when it was never fetched, and for a remote OCI tag, which has no stored file (R-API-065).
+             * @description When a client last fetched the version through one of `repositories`, by the rule of `downloadCount` (R-API-065,
+             *     R-API-079), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to its flush
+             *     interval; `null` when no client fetched it (a version a mirror pass stored and nobody fetched yet, a local version nobody
+             *     downloaded).
              */
             lastDownloadedAt: string | null;
         };
@@ -7942,14 +7957,19 @@ export interface components {
             licenses: string[];
             /**
              * Format: int64
-             * @description The size of the version's files, summed; for an OCI tag the size of its image (config and layers; of an index, its distinct children), as in the version list.
+             * @description As in the version list (R-API-080) - the size of the version's files, summed; for an OCI tag the size of its image; `null` when it is not known.
              */
-            sizeBytes: number;
-            /** Format: int64 */
+            sizeBytes: number | null;
+            /** @description As in the version list (R-API-080) - `sizeBytes` counts only the parts of the version the repository holds. */
+            sizePartial: boolean;
+            /**
+             * Format: int64
+             * @description How often clients fetched the version, as in the version list (R-API-079).
+             */
             downloadCount: number;
             /**
              * Format: date-time
-             * @description When the version was last fetched, as in the version list (R-API-065); `null` when it never was.
+             * @description When a client last fetched the version, as in the version list (R-API-065, R-API-079); `null` when none did.
              */
             lastDownloadedAt: string | null;
             /** @description Whether `readme` answers 200; the UI uses it to choose the default tab without a probing request. */
@@ -17671,6 +17691,7 @@ export interface operations {
                      *           "prerelease": false,
                      *           "publishedAt": "2026-10-20T09:12:44.512Z",
                      *           "sizeBytes": 48213,
+                     *           "sizePartial": false,
                      *           "repositories": [
                      *             "npm-local",
                      *             "npm-all"
@@ -17729,6 +17750,7 @@ export interface operations {
                      *         "MIT"
                      *       ],
                      *       "sizeBytes": 48213,
+                     *       "sizePartial": false,
                      *       "downloadCount": 410,
                      *       "lastDownloadedAt": "2026-11-17T16:40:02.118Z",
                      *       "hasReadme": true,
