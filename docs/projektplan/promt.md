@@ -1896,6 +1896,14 @@ agent** is not decided until the owner has said so.
     exceeded." and nothing else, and the job uploaded the pictures only. Cause not known. The report now carries the lines
     after the first (what the click waited for) and the job uploads Playwright's context of each failed screen; the next
     run names the cause.
+    **Cause, from the next run (44519652288, thirteen screens) and reproduced on the development machine:** a race in the
+    walk, not in the product. The page writes `aria-expanded` a moment after the click, not with it. The walk counted the
+    closed toggles right after its click, found the one it had just clicked, and clicked "the first closed toggle" again:
+    on a fast machine that closed the section and opened it again (21 clicks for 7 sections, measured), on a loaded runner
+    the toggle had turned to open in between and the click waited 15 s for a closed toggle that no longer existed. The
+    report of the run said so ("waiting for locator('… .toggle[aria-expanded="false"]').first()") and Playwright's context
+    showed every section open. The walk names the toggle by the region it controls and waits until that toggle says it is
+    open: 7 clicks for 7 sections at full speed and with the CPU slowed 6 and 20 times.
 - **F-158 · The archive again, this time inside an image build: `e2e (nuget)` and `e2e (ci)` red** (2026-11-19, Test and
   Release 44519652288 of 7665f810, from 11:59 UTC): both legs failed in `make nuget-clients-image` after ten minutes, the
   package install inside the image build with "Could not connect to archive.ubuntu.com:80 […] connection timed out"; the
