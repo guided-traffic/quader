@@ -315,7 +315,7 @@ The `quader admin` commands run against the database with the replica's configur
 | `quader admin break-glass status`, `unlock`, `end-sessions` | Inspect, unlock or sign out the break-glass account |
 | `quader admin sessions end --user <username>` or `--all` | End sessions |
 | `quader admin service-account create <name> [--description <text>] [--admin]` | Create a service account, optionally with the `admin` role |
-| `quader admin token create --service-account <name\|project/name> [--ttl 15m] [--scope-file <file>]` | Print a token of a service account; `<project>/<name>` names the account of a project |
+| `quader admin token create --service-account <name\|project/name> [--name admin-cli] [--replace] [--ttl 15m] [--scope-file <file>]` | Print a token of a service account; `<project>/<name>` names the account of a project |
 | `quader admin user disable <username> [--keep-tokens]` | Disable a user |
 
 <details><summary>Reasons on the "Sign-in failed" page</summary>

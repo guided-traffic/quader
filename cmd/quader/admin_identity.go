@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The bootstrap commands of the identity area (R-AUTH-015): service accounts,
@@ -25,7 +26,7 @@ import (
 
 const (
 	serviceAccountUsage = "usage: quader admin service-account create <name> [--description <text>] [--admin] [--config <file>]"
-	tokenUsage          = "usage: quader admin token create --service-account <name|project/name|project/repository/name> [--name admin-cli] [--ttl 15m] [--scope-file <file>] [--config <file>]\n" +
+	tokenUsage          = "usage: quader admin token create --service-account <name|project/name|project/repository/name> [--name admin-cli] [--replace] [--ttl 15m] [--scope-file <file>] [--config <file>]\n" +
 		"       quader admin token revoke --id <uuid> | --value-stdin [--config <file>]"
 	userUsage = "usage: quader admin user disable <username> [--keep-tokens] [--config <file>]"
 )
@@ -110,14 +111,18 @@ func tokenCmd(args []string, s streams) error {
 // nothing else, so that T=$(quader admin token create ...) captures it
 // (R-AUTH-015). The secret is a secret of the account's technical token --name
 // (R-AUTH-045): a new technical token, or a new secret of the one of that name
-// when it has no live secret (409 technical_token_active while it has one,
-// Q-AUTH-418). The secret is never logged.
+// when it has no live secret (Q-AUTH-418). While it has a live one the command
+// refuses and names --replace, which revokes the live secrets of that technical
+// token first (Q-AUTH-421): the operator at the console holds no token to rotate
+// with, and a command that is run again must not end a secret in use without
+// being told to. The secret is never logged.
 func tokenCreate(args []string, s streams) error {
 	c := newFlags("admin token create", s)
 	sa := c.fs.String("service-account", "", "the service account that owns the token: <name>, <project>/<name> for a project's account or <project>/<repository>/<name> for a repository's; a leading sa: is accepted")
 	name := c.fs.String("name", "admin-cli", "the technical token: the name of the system that uses it")
 	ttl := c.fs.Duration("ttl", 15*time.Minute, "lifetime of the token; at most the SAT maximum")
 	scopeFile := c.fs.String("scope-file", "", "file with the scope document of R-AUTH-024; the default scope when absent")
+	replace := c.fs.Bool("replace", false, "revoke the live secret of the technical token --name first; without it the command refuses while one is live")
 	return withIdentity(c, s, args, func(ctx context.Context, id *identityParts) error {
 		if *sa == "" {
 			return usageError{tokenUsage}
@@ -134,17 +139,46 @@ func tokenCreate(args []string, s streams) error {
 		if err != nil {
 			return err
 		}
+		if *replace {
+			if err := revokeLiveSecrets(ctx, id, acct, *name); err != nil {
+				return err
+			}
+		}
 		secs := int64(ttl.Seconds())
 		created, err := id.tokens.IssueTechnical(ctx, acct, token.TechnicalCreate{
 			Name: *name, Description: adminTokenDescription,
 			Request: token.CreateRequest{Caller: id.caller, Scope: scope, TTL: token.TTLRequest{Seconds: &secs}, Via: "admin-cli", Admin: true},
 		})
+		if e, ok := errs.As(err); ok && e.Code == errs.CodeTechnicalTokenActive {
+			return fmt.Errorf("the technical token %q of %s has a live secret: pass --replace to revoke it and issue a new one, or --name for a technical token of another system", *name, *sa)
+		}
 		if err != nil {
 			return err
 		}
 		_, err = fmt.Fprintln(s.stdout, created.Secret)
 		return err
 	})
+}
+
+// revokeLiveSecrets revokes every live secret of the account's technical token name (reason admin); a name the account has
+// no technical token of is nothing to revoke.
+func revokeLiveSecrets(ctx context.Context, id *identityParts, acct principal.ServiceAccount, name string) error {
+	tt, err := id.tokens.GetTechnical(ctx, acct.ID, name)
+	if errs.KindOf(err) == errs.NotFound {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for _, sec := range tt.Secrets {
+		if sec.RevokedAt != nil || (sec.ExpiresAt != nil && !sec.ExpiresAt.After(time.Now())) {
+			continue
+		}
+		if _, err := id.tokens.Revoke(ctx, id.caller, sec.ID, token.ReasonAdmin); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // tokenRevoke revokes a token by ID (reason admin), or by value read from stdin

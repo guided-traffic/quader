@@ -622,7 +622,9 @@ func adminToken(t testing.TB) string {
 			adminErr = err
 			return
 		}
-		adminTok, adminErr = quaderAdmin(t, `{"inherit":true,"admin":true}`, "token", "create", "--service-account", "e2e-admin", "--ttl", "24h", "--scope-file", "/dev/stdin")
+		// --replace: the account is kept between runs and its technical token admin-cli may hold the live secret of the run
+		// before (a second set on the same cluster, a restored database), which nothing uses any more.
+		adminTok, adminErr = quaderAdmin(t, `{"inherit":true,"admin":true}`, "token", "create", "--service-account", "e2e-admin", "--replace", "--ttl", "24h", "--scope-file", "/dev/stdin")
 		if adminErr != nil {
 			return
 		}

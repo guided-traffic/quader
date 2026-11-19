@@ -6530,6 +6530,29 @@ would revisit this if a role held `identities:write` without `tokens:revoke`.
 
 **Applied in the spec:** R-AUTH-045, [api-and-ui.md](api-and-ui.md) R-API-082.
 
+### Q-AUTH-421 · The command replaces a live secret only when it is told to, with `--replace`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `quader admin token create` refused while the technical token of its `--name` had a live secret (Q-AUTH-418), and its
+message named the rotation of the API, for which the caller needs a token. The command is the way in for an operator who holds
+none: the bootstrap of an installation, a lost token, a restored database. Found by the nightly of 2026-11-19 (`e2e (backup)`: the
+second set on one cluster bootstraps its administrator again and failed with `technical_token_active`); before technical tokens
+the command issued a token every time it ran.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `--replace` revokes the live secrets of that technical token (reason `admin`) and issues the new one; without it the command refuses and its message names `--replace` and `--name` (chosen) | The operator says that the secret in use may end | A command run twice by mistake ends nothing; the way on is in the message; one technical token per system stays the rule | Two steps that are not one transaction: a failure between them leaves the token without a live secret, and the command is run again |
+| (b) The command always replaces | — | Rerunnable without a flag | A second run in a script ends a secret a system is using, silently |
+| (c) Keep the refusal and document "revoke it first" | `quader admin token revoke --id` needs the secret's ID, which the operator reads from the database or the API | Nothing new | The operator without a token cannot list IDs through the API |
+
+**Choice:** (a). **Rationale:** a break-glass command must work without a token, and must not end a secret in use unless asked.
+The development agent would revisit this if the command gained a rotation with an overlap; nobody at the console needs the old
+secret to keep working.
+
+**Applied in the spec:** R-AUTH-015. Code: `tokenCreate` in [admin_identity.go](../../cmd/quader/admin_identity.go), tested in
+`TestR_AUTH_015_TheTokenCommandNamesAProjectAccount`; the end-to-end suites' administrator is issued with it.
+
 ## What this does not cover
 
 ### H-836 · `tokens:read` shows which owners are administrators

@@ -45,10 +45,10 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 		"QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "QUADER_LOG_LEVEL=warn",
 	}
 	// run issues a secret of the account's technical token name (R-AUTH-045, Q-AUTH-418).
-	run := func(account, name string) (int, string, string) {
+	run := func(account, name string, more ...string) (int, string, string) {
 		runCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(runCtx, bin, "admin", "token", "create", "--service-account", account, "--name", name)
+		cmd := exec.CommandContext(runCtx, bin, append([]string{"admin", "token", "create", "--service-account", account, "--name", name}, more...)...)
 		cmd.Env = append(os.Environ(), cfgEnv...)
 		var o, er bytes.Buffer
 		cmd.Stdout, cmd.Stderr = &o, &er
@@ -69,9 +69,31 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 			t.Errorf("%s: exit %d, stdout %q, stderr %s", ref, code, out, errOut)
 		}
 	}
-	// A technical token whose secret is live gets no second one from the command (409 technical_token_active).
-	if code, out, errOut := run("web/partner", "cli-0"); code == 0 || out != "" || !strings.Contains(errOut, "technical_token_active") {
+	// A technical token whose secret is live gets no second one from the command, which names the way on: --replace (Q-AUTH-421).
+	if code, out, errOut := run("web/partner", "cli-0"); code == 0 || out != "" || !strings.Contains(errOut, "--replace") {
 		t.Errorf("a second secret of a live token: exit %d, stdout %q, stderr %s", code, out, errOut)
+	}
+	// --replace revokes the live secret and issues a new one of the same technical token; the operator at the console holds
+	// no token to rotate with.
+	acct, err := a.manager.ServiceAccountByRef(ctx, "web/partner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := a.tokens.GetTechnical(ctx, acct.ID, "cli-0")
+	if err != nil || len(before.Secrets) != 1 {
+		t.Fatalf("the technical token before --replace: %+v, %v", before, err)
+	}
+	code, out, errOut := run("web/partner", "cli-0", "--replace")
+	if code != 0 || !strings.HasPrefix(out, "qdr_sat_") {
+		t.Fatalf("--replace: exit %d, stdout %q, stderr %s", code, out, errOut)
+	}
+	after, err := a.tokens.GetTechnical(ctx, acct.ID, "cli-0")
+	if err != nil || len(after.Secrets) != 1 || after.ID != before.ID || after.Secrets[0].ID == before.Secrets[0].ID {
+		t.Errorf("after --replace: the technical token %s with secrets %+v (before: %s, secret %s), %v", after.ID, after.Secrets, before.ID, before.Secrets[0].ID, err)
+	}
+	// --replace on a name without a technical token creates it, as without the flag.
+	if code, out, errOut := run("web/partner", "cli-new", "--replace"); code != 0 || !strings.HasPrefix(out, "qdr_sat_") {
+		t.Errorf("--replace for a new name: exit %d, stdout %q, stderr %s", code, out, errOut)
 	}
 	for _, ref := range []string{"partner", "web/ops", "mobile/partner", "web/ghost", "web/"} {
 		if code, out, _ := run(ref, "cli-x"); code == 0 || out != "" {

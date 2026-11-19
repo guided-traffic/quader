@@ -328,7 +328,7 @@ handlers serves the three ([technical_tokens_api.go](../../internal/api/v1/techn
 | `update…TechnicalToken` (`If-Match` required) | `UpdateTechnical(ctx, caller, account, name, description, expected)`: 412 on a stale revision |
 | `delete…TechnicalToken` (`tokens:revoke`, or an Owner) | `DeleteTechnical(ctx, caller, account, name)`: revokes every live secret, deletes the row |
 
-The command `quader admin token create --name` calls `IssueTechnical`: a new technical token of that name, or a new secret of it.
+The command `quader admin token create --name` calls `IssueTechnical`: a new technical token of that name, or a new secret of it. With `--replace` it first revokes the live secrets of that technical token (`revokeLiveSecrets`, Q-AUTH-421); without it a live secret makes the command refuse with a message that names the flag.
 
 `technicalIssuer` decides who may issue: an administrator, an Owner of the account's project (the request is then `Delegated`, never
 non-expiring, `admin: false`), or a token of the account itself under the derivation rule; anyone else 403. `token.Service.Create`
