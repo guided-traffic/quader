@@ -1523,6 +1523,21 @@ agent** is not decided until the owner has said so.
   one after a full dispatch made from a commit that has the name; the dispatch of that morning (below) is that run.
   The recorder's `pod-memory.csv` gained `mem_anon`, `mem_file`, `mem_kernel`, `mem_shmem`, `mem_slab_reclaimable` and
   `mem_sock`, and the README's line the peak of what cannot be given back; read them in the first leg on `large`.
+- **F-152 · The layout package folded the policy editor's preview away in a window of 1,280 px** (2026-11-19, `e2e
+  (access-long)` of Test and Release 44453761606 of 6cd1cb09: the journeys of R-UI-025/026 and R-UI-041 waited for "No
+  problems found." and found it hidden; the two runs before had been replaced by pushes before that leg ended). W-5 had
+  moved the editor's three columns from the window's width to the content area's and set the threshold to the columns' full
+  widths, 66 rem; a window of 1,280 px with the side bar open has 60.5 rem, one of 1,366 px 65.9 rem, so on the common
+  laptop widths the preview was a closed region above the save bar. The render run did not see it: it renders 1,440,
+  1,024 and 390 px, and at those the layout was right. Fixed: the threshold is 59 rem, which leaves the form 20 rem between
+  the contents and the preview. Measured in the running UI: 192 / 360 / 384 px at 1,280, 192 / 446 / 384 at 1,366, the
+  narrow form at 1,024. What it shows: a threshold moved by a layout change needs a render at the width where the
+  journeys run (1,280), which the render set lacks; added to the list for the render checks.
+- **F-153 · `Set up Go` ran into its new bound of five minutes in a gating job** (same run, job `Cyclomatic Complexity`; a
+  full nightly ran beside it on purpose). The step takes 10 to 20 s; what held it for five minutes is not read. The bound
+  did what F-147 built it for (the job failed after 5 minutes instead of at its limit), and the remedy is the one written
+  there: run the failed jobs again. Open: whether five minutes are too few for a download on a loaded pool, the question
+  F-150 answered for the browser's install; one occurrence is not a measurement.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
