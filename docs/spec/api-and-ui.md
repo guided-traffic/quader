@@ -4442,9 +4442,10 @@ Priority: **MVP** · Covers: UI-039, UI-040
   instance-wide list; a project's screen (R-UI-041) lists the project's policies.
 - Layout (Q-UI-4): one page for create and edit, no step-by-step wizard. The sections run down the
   left with an in-page table of contents; the preview panel is a sticky right column while the
-  content area is at least 66 rem wide (a container query on the content area; the window's 960 px
-  left the form 110 px wide at 1,024 px with the side bar open, R-UI-171) and a collapsible region
-  above the save bar when it is narrower. The explainer (R-UI-028, P1) is its own screen, reached from the editor through "Test
+  content area is at least 59 rem wide (a container query on the content area; the window's 960 px
+  left the form 110 px wide at 1,024 px with the side bar open, R-UI-171; 59 rem keeps the preview beside a form of at
+  least 20 rem in a window of 1,280 px with the side bar open, where a threshold of the form's full width had folded it
+  away) and a collapsible region above the save bar when it is narrower. The explainer (R-UI-028, P1) is its own screen, reached from the editor through "Test
   this policy" (saved policies only, once the explainer ships), which opens it in a new tab with the policy's first principal and
   repository filled in, so the draft in the editor stays untouched.
 - Editor sections, following the policy model of

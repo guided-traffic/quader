@@ -1,5 +1,5 @@
 // One page, sections down the left with a table of contents, a sticky preview on the right while
-// the content area is at least 66 rem wide, a collapsible region above the save bar below
+// the content area is at least 59 rem wide, a collapsible region above the save bar below
 // that (Q-UI-4, R-UI-027).
 
 .editor {
@@ -134,8 +134,11 @@
 }
 
 // The content area, not the window: at 1,024 px with the side bar open the window was 64 rem and the form between the contents
-// and the preview 110 px wide, one word a line (R-UI-171). The three columns need 12 + 28 + 24 rem and their gaps.
-@container content (min-width: 66rem) {
+// and the preview 110 px wide, one word a line (R-UI-171). The threshold leaves the form 20 rem between the contents (12 rem)
+// and the preview (24 rem) with their gaps, so the preview stays beside the form in a window of 1,280 px with the side bar
+// open (a content area of 60.5 rem) and folds away at 1,024 px (44.5 rem). The form's full 28 rem would need 66 rem, which a
+// window of 1,280 px does not have: the preview had been folded there, out of sight while a policy is written.
+@container content (min-width: 59rem) {
   .editor {
     grid-template-columns: 12rem minmax(0, 1fr) 24rem;
   }
@@ -185,7 +188,7 @@
   }
 }
 
-@container content (max-width: 65.99rem) {
+@container content (max-width: 58.99rem) {
   .preview {
     order: 1;
   }
