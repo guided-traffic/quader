@@ -49,9 +49,10 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
    adapter for the description and keywords of that version.
 
 The version list (`Service.Versions`) groups the visible rows per version in memory and sorts, filters and cuts them there; one statement reads the rows of
-the whole package. Each row carries the downloads and the `last_download_at` of its lead item (`item_download_stats`, one `LEFT JOIN` in
-`PackageViewVersions`); a version's `DownloadCount` sums its rows and its `LastDownloadedAt` is the latest of them (`versionGroup.lastDownload`,
-R-API-065, [Q-API-295](../spec/api-and-ui.md#q-api-295--last-fetched-is-the-latest-download-of-the-versions-lead-file-read-with-the-version-rows)).
+the whole package. Each row carries the downloads and the `last_download_at` of the items that are a fetch of the version by its format's rule
+(`Descriptor.VersionFetch`: the lead file, any file of the version, or an image's manifest by tag and by digest), read from `item_download_stats` in a
+lateral subquery of `PackageViewVersions`; a version's `DownloadCount` sums its rows and its `LastDownloadedAt` is the latest of them (`versionGroup.lastDownload`,
+R-API-065, [Q-API-295](../spec/api-and-ui.md#q-api-295--a-versions-last-download-and-its-downloads-are-the-fetches-of-it-by-the-formats-rule-read-with-the-version-rows)).
 The details (`Service.Version`) read the visible rows of the package, take the oldest copy as the primary one, ask the adapter for summary and details with the
 visible set of versions, and read the files of the primary version. `ReadmeOf` asks for details and README. The repositories of a version are the physical
 repositories that hold it plus the virtual repositories that contain one of them and that the caller may read, local first.
