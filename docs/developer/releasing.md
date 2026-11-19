@@ -317,13 +317,15 @@ runs the failed and cancelled jobs again, and Semantic Release after them once t
 started its own run, re-run nothing: that run releases every commit since the last tag. Jobs are never re-run automatically.
 
 The runner image is the lasting fix: an image that carries the packages makes every such step end at the `dpkg-query` check.
-The self-hosted image (another repository) lacks `build-essential` (`make`, `gcc`), `jq`, `file`, `unzip`, `libatomic1`,
-`docker-compose-v2`, and for the malware scan `clamav` and `clamav-daemon` (the scan still downloads the ClamAV database with
-`freshclam`); the large class also installs the browser libraries of Playwright.
-An image with those packages is defined in the repository `guided-traffic/container-images` (directory `actions-runner`, of
-2026-11-19: the upstream runner image plus the packages above and Chromium's libraries and fonts as Playwright 1.64 lists
-them). **Not rolled out on 2026-11-19:** it is not published and the runners still start the upstream image, so every step
-above still installs.
+The upstream runner image lacks `build-essential` (`make`, `gcc`), `file`, `libatomic1`, `docker-compose-v2`, and for the
+malware scan `clamav` and `clamav-daemon` (the scan still downloads the ClamAV database with `freshclam`), and the browser
+libraries of Playwright.
+The self-hosted runners start such an image since 2026-11-19: `guidedtraffic/actions-runner`, defined in the repository
+`guided-traffic/container-images` (directory `actions-runner`: the upstream runner image plus the packages above and
+Chromium's libraries and fonts as Playwright 1.64 lists them), named in the runner's repository by the tag that does not move
+with the weekly rebuild (`<runner version>-<build time>`). In the first job on it (`integration (shard a)`, re-run of Test and
+Release 44491248224) `Install build tools` printed "make, gcc are on the runner; nothing to install" and took one second. A
+package a job needs and the image lacks is still installed by the job through the script; add it to the image then.
 
 The Playwright steps are ready for it. Each calls [playwright-install.sh](../../.github/scripts/playwright-install.sh), which
 asks Playwright first (`npx playwright install-deps --dry-run chromium` simulates the install without the network and exits 0

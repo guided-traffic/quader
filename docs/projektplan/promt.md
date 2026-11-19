@@ -1660,6 +1660,17 @@ agent** is not decided until the owner has said so.
   itself. In this repository the browser steps no longer need the archive on such an image: they call
   `.github/scripts/playwright-install.sh`, which fetches the browser alone when Playwright's own dry run finds every
   library (18 s and no index read in the new image; the old path, unchanged, in the upstream image).
+  **Published and rolled out on 2026-11-19, on the owner's word** ("Ja bitte komplett durchführen. Freigabe zu pushen um
+  unser neues Runner-Image aufzubauen"; the rollout "B · Sofort"): the image is `guidedtraffic/actions-runner`, public on
+  Docker Hub, amd64 and arm64, 804 MB compressed, built in 23 minutes; the first build was replaced after ten minutes by
+  the push of a dependency update that the first push had started (that workflow cancels a run in progress), and the image
+  came with the run of the next such update, which rebuilt every image. The push to `main` there went past its required
+  status checks with the owner's rights. The runners name `2.338.2-20261119084717` since 10:15 (flux-runner `4aaf2d9`);
+  no running job was ended by the change. Verified: the published amd64 image, pulled by that tag and run without a
+  network, ends every package step of the workflows at "already installed"; and in the first job on it, the re-run of
+  `integration (shard a)` of Test and Release 44491248224 (red before at the download of `docker-compose-v2` from the
+  archive), `Install build tools` took one second with "make, gcc are on the runner; nothing to install", the compose
+  step found the plugin, and the job was green. Open: the seven legs of the nightly, again in the night on a quiet `main`.
 - **The second full nightly** (HA and Performance 44453781574, "HA and Performance (all legs)", dispatched at 03:46 UTC on
   6cd1cb09 on purpose beside Test and Release: 44453761606 until 04:25 UTC and 44458581063 from 04:28 to 05:06 UTC; ended
   06:50 UTC): **24 of 31 legs green, 7 red without having run** (F-154, the archive). Green this time `upgrade` and
