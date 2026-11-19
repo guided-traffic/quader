@@ -484,8 +484,44 @@ selected by their keys `latency` and `vuln-perf`. An empty list runs everything,
 list names it or its job `e2e-upgrade` until the first stable release (the input `nightly` of select-leg, [the switches](#switched-off-until-the-first-stable-release)); the perf jobs, which need the job, run all the same,
 because their condition starts with `!cancelled()`. A matrix leg that the list does not name shows as green with its
 steps skipped, and its job summary says so; a job without a matrix that the list does not name is skipped. A list with a space fails every matrix leg with an error.
-The composite action [select-leg](../../.github/actions/select-leg/action.yml) decides for a matrix leg ([Q-ARCH-324](../spec/architecture.md#q-arch-324--how-is-one-leg-of-the-nightly-run-dispatched)).
+The composite action [select-leg](../../.github/actions/select-leg/action.yml) decides for every leg, in its script
+[select-leg.sh](../../.github/actions/select-leg/select-leg.sh) ([Q-ARCH-324](../spec/architecture.md#q-arch-324--how-is-one-leg-of-the-nightly-run-dispatched));
+the jobs without a matrix (`npm-ha-soak`, `latency`, `vuln-perf`) call it too, for the check [below](#a-scheduled-run-after-a-full-run).
 The input exists on `main` once the change is merged, because `gh` runs the workflow file of the ref.
+The run name says what a run is: `HA and Performance (all legs)` for the schedule and a dispatch without `sets`,
+`HA and Performance (sets: upgrade,vuln-long)` for a dispatch of a part. It is what the list of runs shows (`gh run list --workflow "HA and Performance (nightly)"`).
+
+#### A scheduled run after a full run
+
+A scheduled run skips its legs when a dispatch of all legs (run name `HA and Performance (all legs)`) on the same branch ended
+less than **12 hours** before with `success`, `failure` or `timed_out`. Red legs do not matter: a full run that ended red is still
+the night's run, and repeating it at 10:00 fixes nothing. A cancelled dispatch, one that did not start, one still in progress and a
+dispatch of a part do not count, and neither does a scheduled run: one that deferred carries the same run name, and scheduled
+runs are a day apart anyway.
+
+Why: on each of the twelve days up to 2026-11-18 GitHub created the scheduled run (`17 2 * * *`, UTC) between 08:44 and 10:41 UTC,
+6.5 to 8.5 hours late (`gh run list --workflow "HA and Performance (nightly)" --event schedule --limit 12 --json createdAt`). On the
+nights the development agent works it dispatches the full run by hand on a quiet `main` (on 2026-11-18: run 44414813006, 22:46 to
+03:20 UTC), and the late scheduled run then repeated it in the middle of the owner's working day, beside the Test and Release runs of
+the pushes to `main`; the owner cancelled it on 2026-11-18 for that reason. Why GitHub delivers the event that late is not known.
+The cron line stays where it is: a moved one might fire on time and land in the evening. **Revisit** when GitHub delivers the
+schedule on time again, or when the nightly gets a trigger of its own.
+
+How: the step `Select the leg` of every job ([select-leg.sh](../../.github/actions/select-leg/select-leg.sh)) makes one call of the
+Actions API on a scheduled run, for a leg that would run: the completed dispatches of this workflow on the branch
+(`GET /repos/<repo>/actions/workflows/performance.yml/runs?branch=<branch>&event=workflow_dispatch&status=completed&per_page=100`,
+with the job's token, so the workflow grants `actions: read`; the answer is read with `python3`, which the runner images carry).
+A dispatch never calls the API and decides by its `sets` as before. A skipped leg is green with its steps skipped, and its job
+summary and log say `Leg <set> of job <job> is skipped: this scheduled run defers to run #<number> (<url>), which ran every leg of
+this workflow on main and ended at <time>, <hours> hours ago.` The check fails open: a call that fails or an answer that cannot be
+read runs the leg, with a warning that says why, because a night without its run is worse than a run twice. Each leg checks for
+itself. A skipped scheduled run still starts a runner pod per job for the checkout and the decision; it is expected to end
+within minutes, which no run has shown yet.
+[selectleg_test.go](../../internal/tools/ciworkflows/selectleg_test.go) runs the script with `curl` stubbed through these cases:
+a dispatch (no call), a full run that ended 3 hours ago (skip), one that ended red (skip), one that ended 13 hours ago, only a
+partial run, a cancelled full run, one still in progress, one that did not start, a scheduled run of all legs, no run (each: run),
+a failed call, an answer that is no JSON, one without `workflow_runs`, a run without its fields and an unreadable time (each: run,
+with a warning).
 
 #### Order and wall time
 

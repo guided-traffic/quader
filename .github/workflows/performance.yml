@@ -27,6 +27,17 @@
 # name shows as a job with skipped steps, and its job summary says so. What the jobs run and how to reproduce them:
 # docs/developer/releasing.md#ha-and-performance-nightly.
 #
+# The run name says what a run is: "HA and Performance (all legs)" for the schedule and a dispatch without sets, "HA and Performance
+# (sets: upgrade,vuln-long)" for a dispatch of a part. A scheduled run skips its legs when a dispatch of all legs on the same branch
+# ended less than 12 hours before with success, failure or timed_out: a cancelled dispatch, one still in progress and a partial one do
+# not count, red legs do not matter (a red night repeated at 10:00 fixes nothing). The reason: on each of the twelve days up to
+# 2026-11-18 GitHub created the run of the schedule 17 2 * * * between 08:44 and 10:41 UTC, 6.5 to 8.5 hours late, so it repeated the
+# night's dispatch in the middle of the owner's working day, beside the Test and Release runs of the pushes to main. The cron line
+# stays: a moved one might fire on time and land in the evening. The step "Select the leg" of every job makes the check (select-leg,
+# one call of the Actions API, hence actions: read) and runs the leg when the call fails or its answer cannot be read; a skipped leg
+# names the run it defers to in its job summary and its log. Revisit when GitHub delivers the schedule on time again, or when the
+# nightly gets a trigger of its own: docs/developer/releasing.md#a-scheduled-run-after-a-full-run.
+#
 # Runners (owner, 2026-11-05; the assignment and its measured basis, Q-ARCH-326): the jobs run on the organisation's large runners (runs-on:
 # large), the class for kind, e2e and load tests, except e2e-ci, e2e-bastion, both legs of e2e-upgrade and the legs vuln and vuln-long of e2e-vuln, which run on
 # GitHub-hosted runners (runs-on: ubuntu-24.04); the leg vuln-pooler of e2e-vuln runs on large, as it loads no clients image.
@@ -39,6 +50,7 @@
 # GitHub-hosted legs are not in the lanes), then e2e-backup, e2e-oci. Each lane job
 # needs its predecessor with `!cancelled()`, so a leg the dispatch does not select, or a failed one, does not stop the lane.
 name: HA and Performance (nightly)
+run-name: "${{ inputs.sets && format('HA and Performance (sets: {0})', inputs.sets) || 'HA and Performance (all legs)' }}"
 
 on:
   schedule:
@@ -60,6 +72,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: read
   contents: read
 
 env:
@@ -94,13 +107,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.leg }}
           job: k8s-matrix
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
@@ -177,37 +191,53 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: latency
+          job: latency
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
       - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
       - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/build-tools
 
       - name: Install the Docker Compose plugin (the integration stack)
+        if: steps.leg.outputs.run == 'true'
         run: |
           set -euo pipefail
           docker compose version >/dev/null 2>&1 || .github/scripts/apt-install.sh docker-compose-v2
           docker compose version
 
       - name: Log in to Docker Hub (stack image pulls)
+        if: steps.leg.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: make integration-up
+        if: steps.leg.outputs.run == 'true'
         run: make integration-up
 
       - name: make test-performance
+        if: steps.leg.outputs.run == 'true'
         run: make test-performance
 
       - name: Upload the go test -json report
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: test-performance
@@ -216,7 +246,7 @@ jobs:
           retention-days: 30
 
       - name: Container logs (failure only)
-        if: failure()
+        if: failure() && steps.leg.outputs.run == 'true'
         run: |
           docker compose -f test/integration/compose.yaml ps -a || true
           for c in $(docker ps -a --filter "name=quader-it-" --format '{{.Names}}'); do
@@ -226,7 +256,7 @@ jobs:
           done
 
       - name: make integration-down
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         run: make integration-down
 
   # R-VULN-028: the performance run of the vulnerability scanning (V-1 to V-9): 100,000 stored versions seeded in SQL, the
@@ -240,6 +270,7 @@ jobs:
     runs-on: large
     timeout-minutes: 150
     permissions:
+      actions: read
       contents: read
       issues: write
     steps:
@@ -248,35 +279,51 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: vuln-perf
+          job: vuln-perf
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
       - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
       - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Install the Docker Compose plugin (the integration stack)
+        if: steps.leg.outputs.run == 'true'
         run: |
           set -euo pipefail
           docker compose version >/dev/null 2>&1 || .github/scripts/apt-install.sh docker-compose-v2
           docker compose version
 
       - name: Log in to Docker Hub (stack image pulls)
+        if: steps.leg.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: make integration-up
+        if: steps.leg.outputs.run == 'true'
         run: make integration-up
 
       - name: The performance run (perf/vuln)
+        if: steps.leg.outputs.run == 'true'
         id: run
         timeout-minutes: 120
         run: |
@@ -288,7 +335,7 @@ jobs:
           QUADER_PERF_GATE=1 go test -count=1 -p 1 -tags integration -timeout 115m -run 'TestR_VULN_028' -json ./perf/vuln/... | tee .out/test-vuln-perf.json
 
       - name: Upload the report (perf-vuln.json), the go test -json stream and the replicas' logs of a failed run
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: vuln-perf
@@ -322,7 +369,7 @@ jobs:
           gh issue create --title "Performance regression: vulnerability scanning (R-VULN-028), run ${GITHUB_RUN_ID}" --body-file "$body"
 
       - name: Container logs (failure only)
-        if: failure()
+        if: failure() && steps.leg.outputs.run == 'true'
         run: |
           docker compose -f test/integration/compose.yaml ps -a || true
           for c in $(docker ps -a --filter "name=quader-it-" --format '{{.Names}}'); do
@@ -332,7 +379,7 @@ jobs:
           done
 
       - name: make integration-down
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         run: make integration-down
 
   # R-HA-052's pod crash in its 20-minute form (ten force-deletes) under the npm load, then the npm load scripts of
@@ -359,30 +406,45 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: npm-ha-soak
+          job: npm-ha-soak
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
       - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
       - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Install the pinned helm
+        if: steps.leg.outputs.run == 'true'
         uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install the pinned kubectl
+        if: steps.leg.outputs.run == 'true'
         uses: azure/setup-kubectl@v5
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
       - name: Install the pinned kind
+        if: steps.leg.outputs.run == 'true'
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/bin"
@@ -390,31 +452,37 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx
         with:
           version: ${{ env.BUILDX_VERSION }}
 
       - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
         uses: docker/setup-buildx-action@v4
         with:
           cache-binary: false
 
       - name: Log in to Docker Hub (the dev profile's images)
+        if: steps.leg.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: The runner architecture
+        if: steps.leg.outputs.run == 'true'
         run: |
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
 
       - name: make image
+        if: steps.leg.outputs.run == 'true'
         run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 16
         env:
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
@@ -422,15 +490,17 @@ jobs:
         run: make dev-charts
 
       - name: make dev-up
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 25
         run: make dev-up
 
       - name: make e2e SET=npm-ha-soak
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 60
         run: make e2e SET=npm-ha-soak
 
       - name: Upload the go test -json report
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: e2e-npm-report-npm-ha-soak
@@ -439,7 +509,7 @@ jobs:
           retention-days: 30
 
       - name: Upload the load records, the client logs and the k6 logs and summaries
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: e2e-npm-artifacts-npm-ha-soak
@@ -448,7 +518,7 @@ jobs:
           retention-days: 30
 
       - name: Cluster state (failure only)
-        if: failure()
+        if: failure() && steps.leg.outputs.run == 'true'
         run: |
           set -u
           ctx="kind-${QUADER_DEV_CLUSTER}"
@@ -465,7 +535,7 @@ jobs:
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
       - name: Upload the cluster state (failure only)
-        if: failure()
+        if: failure() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: e2e-npm-cluster-state-npm-ha-soak
@@ -474,7 +544,7 @@ jobs:
           retention-days: 30
 
       - name: make dev-down
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         run: make dev-down
 
   # The failover set of the failure suite (E0.13: PostgreSQL switchover, kill and stop, Valkey failover, kill and outage
@@ -512,13 +582,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
@@ -749,13 +820,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e-npm
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
@@ -947,13 +1019,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e-nuget
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
@@ -1135,13 +1208,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e-drain-pooler
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
@@ -1327,13 +1401,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e-oci
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
@@ -1499,13 +1574,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e-ci
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
@@ -1680,13 +1756,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e-bastion
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
@@ -1897,13 +1974,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: ${{ matrix.set }}
           job: e2e-vuln
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
@@ -2099,13 +2177,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: backup
           job: e2e-backup
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
@@ -2282,13 +2361,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: edge
           job: e2e-edge
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
@@ -2463,13 +2543,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
           leg: alerts
           job: e2e-alerts
           sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
 
       - name: Free disk space (GitHub-hosted runner)
         if: steps.leg.outputs.run == 'true'
@@ -2660,7 +2741,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Select the leg (the dispatch input sets)
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
         id: leg
         uses: ./.github/actions/select-leg
         with:
@@ -2668,6 +2749,7 @@ jobs:
           job: e2e-upgrade
           sets: ${{ inputs.sets }}
           nightly: ${{ matrix.nightly }}
+          token: ${{ github.token }}
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.

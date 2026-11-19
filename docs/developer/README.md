@@ -234,7 +234,7 @@ quader/
 │   ├── actions/load-pins/      # loads tools/versions.env into the job
 │   ├── actions/build-tools/    # make, the C compiler and the commands a job names, when the runner lacks them (apt-install.sh)
 │   ├── actions/install-buildx/ # the pinned Docker Buildx, verified and cached under .bin (Q-ARCH-355)
-│   └── actions/select-leg/     # decides whether a leg of the nightly matrix runs in this dispatch
+│   └── actions/select-leg/     # decides whether a leg of the nightly runs: the sets of a dispatch, a recent full run on the schedule
 ├── hack/                     # verify-release-tooling.mjs: the release notes of .releaserc.json rendered
 ├── test/coverage/            # report.sh: merges the unit and integration profiles into the badge
 └── docs/                     # README.md, decisions.md, developer/, spec/, security/, coverage/, features/

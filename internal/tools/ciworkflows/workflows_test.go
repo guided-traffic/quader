@@ -15,16 +15,18 @@ import (
 )
 
 type step struct {
-	Name           string    `yaml:"name"`
-	Uses           string    `yaml:"uses"`
-	Run            string    `yaml:"run"`
-	TimeoutMinutes yaml.Node `yaml:"timeout-minutes"`
+	Name           string            `yaml:"name"`
+	Uses           string            `yaml:"uses"`
+	With           map[string]string `yaml:"with"`
+	Run            string            `yaml:"run"`
+	TimeoutMinutes yaml.Node         `yaml:"timeout-minutes"`
 }
 
 type job struct {
-	Needs          yaml.Node `yaml:"needs"`
-	TimeoutMinutes yaml.Node `yaml:"timeout-minutes"`
-	Steps          []step    `yaml:"steps"`
+	Needs          yaml.Node         `yaml:"needs"`
+	Permissions    map[string]string `yaml:"permissions"`
+	TimeoutMinutes yaml.Node         `yaml:"timeout-minutes"`
+	Steps          []step            `yaml:"steps"`
 }
 
 type workflow struct {

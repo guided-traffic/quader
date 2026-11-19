@@ -3,5 +3,7 @@
 // (Test and Release 44384406557: the gating job chart waited 19 minutes on the Ubuntu archive and the release was skipped),
 // and the steps of the jobs that gate Semantic Release that download something carry a step timeout. The tests run the
 // script with its commands stubbed, without root and without the network. docs/developer/releasing.md#os-packages-in-the-jobs
-// describes the rules.
+// describes the rules. The decision of .github/actions/select-leg (which leg of "HA and Performance (nightly)" runs, and whether a
+// scheduled run defers to a full run of the last hours) runs the same way, with curl stubbed:
+// docs/developer/releasing.md#a-scheduled-run-after-a-full-run.
 package ciworkflows
