@@ -1,0 +1,221 @@
+import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { Figure, LimitPlace, LimitProfile, LimitRule, LimitsApi } from '../../api/limits-api';
+import { ApiError } from '../../api/problem';
+import { Notifier } from '../../core/notifier';
+import { Confirm } from '../../shared/confirm-dialog';
+import { asApiError } from '../../shared/paged-resource';
+import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { QuaderDialog } from '../../shared/ui/dialog';
+import { NoValue } from '../../shared/ui/no-value';
+import { Tooltip } from '../../shared/ui/tooltip';
+import { CallerCell } from './caller-cell';
+import { whoRank, whoSortName, whoView } from './callers';
+import { FIGURES, figureName, limitText, overridesSummary } from './figures';
+import { LimitRuleDialog, RuleDialogData } from './rule-dialog';
+
+/** The rules in the order resolution tries them (R-LIM-013, Q-UI-751): single callers and addresses, groups, kinds; by name within. */
+export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
+  return [...rules].sort((a, b) => whoRank(a.who) - whoRank(b.who) || whoSortName(a.who).localeCompare(whoSortName(b.who)));
+}
+
+/**
+ * The rules of one place (R-UI-179), the same table at the instance, a project and a repository: who it applies to, the profile
+ * with its changed figures, the note. The name opens the rule's dialog where the caller may change it, and **Delete** is the
+ * row's one action; a built-in rule has none (Q-UI-758). A capped rule whose
+ * figures are clamped now carries **Above the maximum** with what applies. **Add rule** is the parent's: it calls `add()`.
+ */
+@Component({
+  selector: 'quader-limit-rules',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CallerCell, DataTable, NoValue, Tooltip],
+  template: `
+    <quader-data-table
+      [caption]="caption()"
+      [columns]="columns()"
+      [loaded]="rules() !== null"
+      [loading]="rules() === null && !failure()"
+      [error]="failure()"
+      (retry)="load()"
+      [empty]="(rules() ?? []).length === 0"
+      emptyText="No rule here. Callers get the instance's limits."
+      i18n-emptyText="@@limits.rules.empty"
+    >
+      @for (r of ordered(); track r.id) {
+        <tr>
+          <th scope="row">
+            <quader-caller-cell [view]="view(r)" [actionable]="canWrite()" (activate)="change(r)">
+              @if (r.builtin) {
+                <span class="badge" i18n="@@limits.rules.builtin">Built-in</span>
+              }
+            </quader-caller-cell>
+          </th>
+          <td>
+            <span class="profile">
+              <span>{{ profileName(r.profile) }}</span>
+              @if (clampedText(r); as clamp) {
+                <span class="badge warn" tabindex="0" [quaderTooltip]="clamp"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@limits.rules.above-maximum">Above the maximum</ng-container></span
+                >
+              }
+            </span>
+            @for (o of overrides(r); track o) {
+              <span class="override">{{ o }}</span>
+            }
+          </td>
+          <td>
+            @if (r.note) {
+              {{ r.note }}
+            } @else {
+              <quader-no-value />
+            }
+          </td>
+          @if (canWrite()) {
+            <td class="actions">
+              @if (!r.builtin) {
+                <button class="btn btn-tertiary" type="button" (click)="remove(r)">
+                  <ng-container i18n="@@limits.rules.delete">Delete</ng-container>
+                  <span class="visually-hidden"> {{ view(r).primary }}</span>
+                </button>
+              }
+            </td>
+          }
+        </tr>
+      }
+    </quader-data-table>
+  `,
+  styles: `
+    :host {
+      display: block;
+    }
+    .profile {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: var(--quader-space-1) var(--quader-space-2);
+    }
+    .override {
+      display: block;
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
+    }
+  `,
+})
+export class LimitRules {
+  private readonly api = inject(LimitsApi);
+  private readonly dialog = inject(QuaderDialog);
+  private readonly confirmer = inject(Confirm);
+  private readonly notifier = inject(Notifier);
+  private readonly locale = inject(LOCALE_ID);
+
+  readonly place = input.required<LimitPlace>();
+  /** The caller may add, change and delete rules here: `limits:write`, or an Owner of the place's project. */
+  readonly canWrite = input(false);
+  /** The caller writes without `limits:write`: its rules are capped (R-LIM-016). */
+  readonly capped = input(false);
+  /** The project's maximum's profile name, for the dialog's line of the cap. */
+  readonly maximum = input<string | null>(null);
+  /** The number of rules, after each load. */
+  readonly counted = output<number>();
+
+  protected readonly rules = signal<readonly LimitRule[] | null>(null);
+  protected readonly profiles = signal<readonly LimitProfile[]>([]);
+  protected readonly failure = signal<ApiError | null>(null);
+  protected readonly ordered = computed(() => orderRules(this.rules() ?? []));
+
+  protected readonly caption = computed(() => {
+    const place = this.place();
+    switch (place.kind) {
+      case 'instance':
+        return $localize`:@@limits.rules.caption-instance:Rules of the instance`;
+      case 'project':
+        return $localize`:@@limits.rules.caption-project:Rules of project ${place.project}:project:`;
+      case 'repository':
+        return $localize`:@@limits.rules.caption-repository:Rules of ${place.repository}:repository:`;
+    }
+  });
+
+  protected readonly columns = computed<readonly TableColumn[]>(() => [
+    { id: 'who', label: $localize`:@@limits.rules.col-who:Applies to`, width: '14rem' },
+    { id: 'profile', label: $localize`:@@limits.rules.col-profile:Profile`, width: '10rem' },
+    { id: 'note', label: $localize`:@@limits.rules.col-note:Note`, width: '8rem' },
+    ...(this.canWrite() ? [{ id: 'actions', label: $localize`:@@limits.rules.col-actions:Actions`, hideLabel: true }] : []),
+  ]);
+
+  constructor() {
+    effect(() => {
+      this.place();
+      untracked(() => void this.load());
+    });
+  }
+
+  async load(): Promise<void> {
+    this.failure.set(null);
+    try {
+      const [rules, profiles] = await Promise.all([this.api.rules(this.place()), this.api.profiles().catch(() => [])]);
+      this.profiles.set(profiles);
+      this.rules.set(rules);
+      this.counted.emit(rules.length);
+    } catch (e) {
+      this.rules.set(null);
+      this.failure.set(asApiError(e));
+    }
+  }
+
+  /** **Add rule** of the place's head. */
+  async add(): Promise<void> {
+    await this.open({ place: this.place(), capped: this.capped(), maximum: this.maximum() });
+  }
+
+  protected view(r: LimitRule) {
+    return whoView(r.who);
+  }
+
+  protected profileName(key: string): string {
+    return this.profiles().find((p) => p.key === key)?.name ?? key;
+  }
+
+  protected overrides(r: LimitRule): string[] {
+    return overridesSummary(r.overrides, this.locale);
+  }
+
+  /** The tooltip of **Above the maximum**: each clamped figure and what applies now. */
+  protected clampedText(r: LimitRule): string | null {
+    const figures = FIGURES.filter((f) => f in r.clamped);
+    if (figures.length === 0) return null;
+    const parts = figures.map((f: Figure) => `${figureName(f)}: ${limitText(f, r.clamped[f] ?? null, this.locale)}`);
+    return $localize`:@@limits.rules.clamped:Lowered to what the instance or the project's maximum allows: ${parts.join('; ')}:figures:.`;
+  }
+
+  protected async change(r: LimitRule): Promise<void> {
+    await this.open({ place: this.place(), rule: r, capped: this.capped(), maximum: this.maximum() });
+  }
+
+  private async open(data: RuleDialogData): Promise<void> {
+    const ref = this.dialog.open<LimitRuleDialog, RuleDialogData, unknown>(LimitRuleDialog, { data, maxWidth: '44rem', width: '44rem' });
+    const result = await firstValueFrom(ref.closed);
+    if (result) {
+      this.notifier.status($localize`:@@limits.rules.saved:Rule saved.`);
+      await this.load();
+    }
+  }
+
+  protected async remove(r: LimitRule): Promise<void> {
+    const name = this.view(r).primary;
+    const answer = await this.confirmer.ask({
+      title: $localize`:@@limits.rules.delete-title:Delete the rule for ${name}:name:?`,
+      lines: [$localize`:@@limits.rules.delete-text:The caller gets the limits of the next place or of its kind from the next request on.`],
+      confirmLabel: $localize`:@@limits.rules.delete-confirm:Delete rule`,
+    });
+    if (answer === null) return;
+    try {
+      const stored = await this.api.rule(this.place(), r.id);
+      await this.api.deleteRule(this.place(), r.id, stored.etag);
+      this.notifier.status($localize`:@@limits.rules.deleted:Rule deleted.`);
+      await this.load();
+    } catch (e) {
+      this.failure.set(asApiError(e));
+    }
+  }
+}

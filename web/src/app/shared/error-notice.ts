@@ -42,6 +42,10 @@ import { describeProblem } from '../core/http/problem-messages';
       background: var(--quader-error-container);
       color: var(--quader-on-error-container);
     }
+    /* The icon stands on the middle of the message's first line (R-UI-175): 24 px on a line of 21 px. */
+    .notice > .material-icons {
+      margin-block: calc((var(--quader-line) - 24px) / 2);
+    }
     .body {
       flex: 1 1 auto;
     }

@@ -1,0 +1,78 @@
+import { PROFILE_FIGURES, sampleInstanceRules } from '../../api/testing/fakes-limits';
+import { everyLabel, subjectTitle, whoView } from './callers';
+import { readTexts, textsOf } from './figure-fields';
+import { compactFigures, formatBytes, fromField, limitText, overridesSummary, toField } from './figures';
+import { orderRules } from './limit-rules';
+import { keyFromName } from './profile-editor';
+import { overridesOf } from './rule-dialog';
+
+describe('Download limits: figures and callers (R-UI-178, R-UI-179, Q-UI-736)', () => {
+  it('Q-UI-736 shows bytes as decimal MB and GB and reads a field back to bytes, rounded down', () => {
+    expect(toField('cachedBytesPerHour', 300_000_000_000)).toBe('300');
+    expect(toField('cachedBytesPerSecond', 200_000_000)).toBe('200');
+    expect(toField('requestsPerHour', 50000)).toBe('50000');
+    expect(toField('bytesPerDay', null)).toBe('');
+    expect(fromField('cachedBytesPerHour', '250')).toEqual({ ok: true, value: 250_000_000_000 });
+    expect(fromField('cachedBytesPerHour', '0,5')).toEqual({ ok: true, value: 500_000_000 });
+    expect(fromField('cachedBytesPerSecond', '0.0000001')).toMatchObject({ ok: false });
+    expect(fromField('requestsPerHour', '')).toEqual({ ok: true, value: null });
+    expect(fromField('requestsPerHour', '1.5')).toMatchObject({ ok: false });
+    expect(fromField('requestsPerHour', '0')).toMatchObject({ ok: false });
+  });
+
+  it('R-UI-178 says a profile in one compact line and leaves an unlimited figure out', () => {
+    expect(compactFigures(PROFILE_FIGURES['standard']!, 'en-US').replaceAll(' ', ' ')).toBe(
+      '200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s, 30 GB/h, 2,000 req/h · 20 parallel · 1,000 GB/day · 500 refused/h',
+    );
+    expect(compactFigures(PROFILE_FIGURES['unlimited']!, 'en-US')).toBe('Unlimited');
+    expect(compactFigures({ ...PROFILE_FIGURES['standard']!, requestsBurst: null, refusedPerHour: null }, 'en-US')).not.toContain('burst');
+  });
+
+  it('R-LIM-004 a burst needs the rate and is at least the rate', () => {
+    const texts = { ...textsOf(PROFILE_FIGURES['restricted']!), requestsBurst: '10' };
+    expect(readTexts(texts).errors.requestsBurst).toBe('The burst is at least the requests per second.');
+    expect(readTexts({ ...texts, requestsPerSecond: '' }).errors.requestsBurst).toBe('A burst needs requests per second.');
+    expect(readTexts(textsOf(PROFILE_FIGURES['restricted']!)).errors).toEqual({});
+  });
+
+  it('R-UI-179 names the overrides after the profile, two at most, then how many more', () => {
+    expect(overridesSummary({ uncachedBytesPerHour: 20_000_000_000 }, 'en-US')).toEqual(['+ uncached 20 GB/h']);
+    expect(overridesSummary({ requestsPerHour: 10, parallelDownloads: 100, bytesPerDay: null, refusedPerHour: 5 }, 'en-US')).toEqual([
+      '+ requests 10/h',
+      '+ parallel 100',
+      '+ 2 more',
+    ]);
+  });
+
+  it('Q-UI-752 writes only the figures the person changed against the profile', () => {
+    const base = PROFILE_FIGURES['restricted']!;
+    const figures = { ...base, uncachedBytesPerHour: 20_000_000_000, parallelDownloads: 6 };
+    expect(overridesOf(figures, new Set(['uncachedBytesPerHour', 'parallelDownloads']), base)).toEqual({ uncachedBytesPerHour: 20_000_000_000 });
+    expect(overridesOf({ ...base, bytesPerDay: null }, new Set(['bytesPerDay']), base)).toEqual({ bytesPerDay: null });
+  });
+
+  it('R-LIM-013 Q-UI-751 orders the rules as resolution tries them: single callers, groups, kinds', () => {
+    const order = orderRules(sampleInstanceRules()).map((r) => r.who.kind);
+    expect(order.slice(0, 2).sort()).toEqual(['address', 'user']);
+    expect(order[2]).toBe('group');
+    expect(order.slice(3).every((k) => k === 'every')).toBe(true);
+  });
+
+  it('R-UI-179 R-UI-184 names every kind of caller', () => {
+    expect(everyLabel('user')).toBe('Every signed-in user');
+    expect(whoView({ kind: 'address', prefix: '2001:db8:1:2::/64' })).toMatchObject({ mono: true, primary: '2001:db8:1:2::/64' });
+    expect(whoView({ kind: 'group', group: 'gone', deleted: true }).secondary).toBe('(deleted)');
+    expect(subjectTitle({ kind: 'technicalToken', id: 't', name: 'deploy-prod', account: 'sa:web/partner', level: 'project' })).toBe(
+      'deploy-prod of sa:web/partner',
+    );
+    expect(subjectTitle({ kind: 'ci', id: 'g:4711', issuer: 'g', projectId: '4711', projectPath: 'acme/web' })).toBe('acme/web (CI)');
+  });
+
+  it('R-UI-178 suggests a key from the name and formats amounts', () => {
+    expect(keyFromName('Partners with a contract')).toBe('partners-with-a-contract');
+    expect(keyFromName('2nd tier')).toBe('nd-tier');
+    expect(formatBytes(1_203_000_000, 'en-US')).toBe('1.2 GB');
+    expect(formatBytes(512, 'en-US')).toBe('512 B');
+    expect(limitText('cachedBytesPerHour', 300_000_000_000, 'en-US')).toBe('300 GB per hour');
+  });
+});

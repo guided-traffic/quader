@@ -59,6 +59,7 @@ import { upstreamDefaultsOf } from './upstream-model';
 import { UpstreamSettings, upstreamPointerLabel, upstreamTarget } from './upstream-settings';
 import { MemberChange, VirtualMembers } from './virtual-members';
 import { RepositoryServiceAccounts } from '../service-accounts/repository-service-accounts';
+import { RepositoryLimitsSection } from '../limits/repository-limits-section';
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
 type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
@@ -92,6 +93,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     PageHeader,
     RepositoryFields,
     RepositoryServiceAccounts,
+    RepositoryLimitsSection,
     RepositoryVisibilityBlock,
     RouterLink,
     SelectField,
@@ -143,6 +145,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly canWrite = computed(() => this.session.canWriteRepositories(this.stored()?.project));
   /** The caller may change it and it is not being deleted: the sections save, else they are read-only (R-UI-087). */
   protected readonly canChange = computed(() => this.canWrite() && this.stored()?.lifecycle !== 'deleting');
+  /** The section **Download limits** after Access details: for an Owner and the holders of `limits:read` (R-UI-180). */
+  protected readonly limitsShown = computed(() => this.session.has('limits:read') || this.session.isOwnerOf(this.project()));
   protected readonly loadFailure = computed(() => {
     const e = this.loaded.error();
     return e ? asApiError(e) : null;

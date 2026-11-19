@@ -7626,7 +7626,8 @@ Acceptance criteria:
 Priority: **MVP** · Covers: BEYOND-030
 
 The owner's decisions of 2026-11-19 (W-26; [usage-and-limits.md](usage-and-limits.md)). The admin area's side bar gains two entries
-after **Tokens** ([Q-UI-730](#q-ui-730--the-admin-area-has-two-entries-usage-and-download-limits)): **Usage** (`/admin/usage`, R-UI-183)
+after **Tokens**, in its group Identity ([Q-UI-730](#q-ui-730--the-admin-area-has-two-entries-usage-and-download-limits),
+[Q-UI-750](#q-ui-750--the-admin-areas-two-entries-stand-in-identity-after-tokens-the-projects-usage-in-access-after-service-accounts)): **Usage** (`/admin/usage`, R-UI-183)
 for holders of `usage:read`, and **Download limits** (`/admin/limits`) for holders of `limits:read`. A caller without either sees
 neither.
 
@@ -7639,13 +7640,15 @@ neither.
   `limits:write` has the button **Switch to Enforce…** or **Switch to Audit…** beside it (R-UI-182). The words Audit and Enforce are
   the owner's and are not translated into other terms.
 - **Rules** (the instance place): the rule table of R-UI-179 over `GET /api/v1/limits/assignments`, with **Add rule** in the head for
-  a holder of `limits:write`. The built-in rules stand first, each with the badge **Built-in**, their action **Change** and no
-  **Delete**. Under the table one line: "Block time after too many refused requests: 15 minutes" with **Change** (a field in minutes,
+  a holder of `limits:write`. The built-in rules stand in the order of R-UI-179 with the other rules of their kind
+  ([Q-UI-751](#q-ui-751--the-rule-table-lists-the-rules-in-the-order-resolution-tries-them-at-every-place)), each with the badge
+  **Built-in**, their action **Change** and no **Delete**. Under the table one line: "Block time after too many refused requests: 15 minutes" with **Change** (a field in minutes,
   1 to 1,440, saved through `PATCH /api/v1/limits/settings`).
-- **Projects**: one row per project that has a maximum or a rule: the project (mark, display name, key), **Maximum** (the profile's
-  name with "+ N changes" for overrides, or "None"), **Rules** (the number at the project and its repositories), and the action
-  **Set maximum** or **Change maximum**, which opens a dialog with the profile select and the override fields of R-UI-179's dialog,
-  and **Remove maximum**. The head's search finds a project by key or name; **Add maximum** opens the dialog with a project field
+- **Projects** ([Q-UI-756](#q-ui-756--the-tab-projects-reads-each-projects-maximum-and-rules-until-one-operation-lists-them)): one row per project that has a maximum or a rule: the project (mark, display name, key), **Maximum** (the profile's
+  name with "+ N changes" for overrides, or "None"), **Rules** (the number at the project and its repositories). For a holder of
+  `limits:write` the maximum is the link that opens its dialog (**Set maximum** where there is none), with the profile select and
+  the override fields of R-UI-179's dialog, and **Remove maximum** is the row's one action
+  ([Q-UI-758](#q-ui-758--a-rule-opens-by-its-name-and-delete-is-the-rows-one-action)). The head's search finds a project by key or name; **Add maximum** opens the dialog with a project field
   first. Empty: "No project has a maximum. A project's Owner can set limits up to the instance's values." 
 - **Blocks**: the active blocks, newest first (`GET /api/v1/limits/blocks`): the subject (as in R-UI-183's first column), the place,
   started, ends (a relative time, R-UI-103), the refused requests against the limit ("61 of 60 per hour"), and **Lift** for a holder
@@ -7701,8 +7704,9 @@ One component (`<quader-limit-rules>`) lists the rules of a place and is used at
   name; a technical token its key icon, its name and under it its account (`sa:web/partner`); a CI project the CI icon, the project
   path and under it the issuer; an address range in the monospace type; "Every signed-in user", "Every technical token", "Every CI
   job", "Every anonymous caller", "Every administrator"; a rule whose "who" was deleted "(deleted)" in the secondary type),
-  **Profile** (the name, and "+ uncached 20 GB/h" for each override, at most two, then "+ N more"), **Note**, and the action menu
-  (**Change**, **Delete**). A capped rule whose figures are clamped now carries the warning badge **Above the maximum** with a tooltip
+  **Profile** (the name, and "+ uncached 20 GB/h" for each override, at most two, then "+ N more"), **Note**, and **Delete** as the
+  row's one action; the name of the "who" opens the rule's dialog (**Change**) for a caller who may change it, and a built-in rule
+  has no action ([Q-UI-758](#q-ui-758--a-rule-opens-by-its-name-and-delete-is-the-rows-one-action)). A capped rule whose figures are clamped now carries the warning badge **Above the maximum** with a tooltip
   that names the figures and what applies.
 - **Order**: single callers and addresses, then groups, then the kinds, as resolution tries them (R-LIM-013); within each, by name.
 - **The dialog** (**Add rule**, **Change**):
@@ -7715,8 +7719,11 @@ One component (`<quader-limit-rules>`) lists the rules of a place and is used at
     is a select. On **Change** the "who" is read-only.
   - **Profile**: a select of the profiles by name, with the figures of the chosen one shown read-only under it in the compact form of
     R-UI-178.
-  - **Change single figures**: a closed disclosure (details on demand) with the eleven fields of R-UI-178, empty unless overridden;
-    each overridden field has a link **Use the profile's value**. An empty field that is overridden reads "Unlimited".
+  - **Change single figures**: a closed disclosure (details on demand) with the eleven fields of R-UI-178, each holding the chosen
+    profile's value ([Q-UI-752](#q-ui-752--the-single-figures-of-a-rule-hold-the-profiles-values-a-changed-field-is-an-override));
+    a field whose value the person changed is an override and has a link **Use the profile's value**. An empty field reads
+    "Unlimited"; emptying a field of a limited figure overrides it to unlimited. A rule writes only the figures that differ from the
+    profile.
   - **Note (optional)**.
   - At a project or a repository, for a caller without `limits:write`: a line under the profile names the cap, "You can set up to
     the instance's values for this caller, or up to the project's maximum (Technical)", and a `422 limit_above_maximum` marks each
@@ -7836,16 +7843,19 @@ display name>", for a repository "Usage of <repository key>".
   scope, **Project**; the period as a segmented control **Last hour**, **Last 24 hours**, **Last 30 days**; **Export CSV** as a quiet
   button (`…/usage/export` with the same filters).
 - **Two views as links over the table**: **Close to the limit** and **Limit reached** (in Audit **Would have been limited**), each the state
-  filter set.
-- **In Audit mode** a line under the head says "Mode: Audit. Limits are counted, not applied." and every state reads "Would be
+  filter set, beside **All callers**. The filters, the period, the search and the sort are the page address's parameters, so a link
+  opens the overview filtered ([Q-UI-755](#q-ui-755--the-usage-overview-keeps-its-filters-in-the-address-the-instances-project-filter-reads-the-projects-usage)).
+- **In Audit mode** a line under the head says "Mode: Audit. Limits are counted, not applied." and every state reads "Would have been
   limited" instead of "Limit reached".
 - **Columns**: **Caller** (as R-UI-179's first column; an anonymous address in the monospace type, a CI project by path, "System" for
   the system; a blocked subject with the badge **Blocked**), **Requests**, **From the cache**, **From the upstream**, **Upstream
   requests**, **Refused**, and **Now** (the meter, [Q-UI-732](#q-ui-732--the-meter-shows-the-tightest-hour-or-day-figure-now-not-the-periods)):
   a bar of the utilisation of the tightest hour or day figure with its percentage, and its state as text under it (**Close to the
   limit** from 70 %, **Limit reached** or **Would have been limited**, **Unlimited**, nothing for normal); the bar's colour follows the
-  design tokens for warning and danger, never green (green only for a positive status). The tooltip names the figure and the place
-  ("Cache per hour at the instance: 246 of 300 GB").
+  design tokens for warning and danger, never green (green only for a positive status). The figure beside the bar is the
+  percentage, and the tooltip names the figure and the place ("From the cache per hour at the instance: 82 % of the limit"): a list
+  row carries the ratio, not the amounts ([Q-UI-757](#q-ui-757--the-overviews-meter-says-the-percentage-the-callers-page-the-amounts));
+  the caller's page shows the amounts ("246 GB of 300 GB").
 - Every numeric column sorts (the head's sort control and the column header); bytes in decimal units with one decimal ("1.2 GB"),
   the exact count in the tooltip.
 - A row opens the subject's detail (R-UI-184).
@@ -7881,9 +7891,12 @@ caller ("alice", "deploy-prod of sa:web/partner", "198.51.100.23", "acme/web (CI
 - **Which limit applies**: a quiet button **Explain for a repository**, which opens a panel with a repository field (the repositories
   of the scope) and shows the steps of R-LIM-035 as an ordered list ("Repository web/npm-remote: no rule for alice. Groups: rule for
   contractors applies."), the effective figures, a clamp ("Above the project's maximum: 30 GB applies") and the ceiling of a remote.
-- **Last 24 hours**: a chart of the five-minute history (requests, from the cache, from the upstream as three series; refused and
-  limited events as marks), with a table of the same points behind **Show as table** for keyboard and screen-reader users; the
-  colours follow the design tokens.
+- **Last 24 hours**: the five-minute history as three small charts over one time line, requests, from the cache and from the
+  upstream, each with its own axis and one series in the data colour; the points with refused requests or limit events are marked
+  over the requests in the warning colour, named in the legend
+  ([Q-UI-754](#q-ui-754--the-history-is-three-small-charts-of-one-axis-each-not-one-chart-of-three-series)). A pointer over a chart, or
+  the arrow keys on it, reads one point out in words; a table of the same points stands behind **Show as table** for keyboard and
+  screen-reader users; the colours follow the design tokens.
 - **By repository** (for the period of the head): repository, requests, from the cache, from the upstream, upstream requests,
   refused; sortable.
 - **By credential** (users only): **Browser session** and each personal token by its description and hint, with requests, from the
@@ -7921,9 +7934,12 @@ Priority: **MVP** · Covers: BEYOND-030
 - The UI's own calls go to the management API, which the figures do not limit (R-API-016); its downloads (a file's **Download**, a
   package version's download) go to `/files/` or a protocol path and can be refused.
 - A download refused with one of the codes of [usage-and-limits.md](usage-and-limits.md) R-LIM-020 shows a notice, not an error
-  page: "Your download limit of 300 GB per hour is used up. Try again in 14 minutes." (the problem's `detail`), with the link **See
+  page: "Your download limit of 300 GB per hour is used up. Try again in 14 minutes.", written in the reader's language from the
+  problem's members `figure`, `limit` and `retryAfterSeconds` (the problem's `detail` where it lacks them), with the link **See
   your usage** to `/profile/usage`; a `caller_blocked` says "Downloads are paused for you until 10:55 after too many refused
-  requests." A caller without a session (a visitor) gets the same text without the link.
+  requests." A caller without a session (a visitor) gets the same text without the link. The UI learns of the refusal by asking for
+  the download's first byte before the browser downloads
+  ([Q-UI-753](#q-ui-753--a-download-of-the-ui-asks-for-its-first-byte-before-the-browser-downloads-it)).
 - A slowed download is not announced: the browser's download shows its rate.
 
 Acceptance criteria:
@@ -18346,6 +18362,144 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Binary units (MiB, GiB) | — | Like storage sizes | The owner's numbers would not reappear as he wrote them |
 
 **Choice:** (a). **Applied in the spec:** R-UI-178, R-UI-183.
+
+### Q-UI-750 · The admin area's two entries stand in Identity after Tokens; the project's Usage in Access after Service accounts
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-177 and R-UI-180 say "after **Tokens**" and "after **Service accounts**"; both entries stand inside a folding group.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Inside the group of the entry they follow: **Usage** and **Download limits** in Identity after Tokens, a project's **Usage** in Access after Service accounts (chosen) | — | The words of the requirements; a caller's budget hangs on a user, a technical token or a CI identity, the entries of that group | Usage is no identity |
+| (b) A group of their own, "Downloads", after Identity | — | A name for the topic | A group of two entries more in a long side bar |
+| (c) Under System | — | The audit log stands there | Limits are settings, not the system's state |
+
+**Choice:** (a). Revisit when the admin area's side bar is regrouped. **Applied in the spec:** R-UI-177, R-UI-180. Code:
+[navigation.ts](../../web/src/app/core/navigation.ts).
+
+### Q-UI-751 · The rule table lists the rules in the order resolution tries them, at every place
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-177 put the built-in rules first; R-UI-179 orders single callers and addresses, then groups, then kinds, as
+resolution tries them (R-LIM-013). At the instance the built-in rules are the kinds, so the two orders disagree.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One order at every place: single callers and addresses, groups, kinds; the built-ins carry their badge where their kind stands (chosen) | — | The table reads like the resolution, top to bottom; one component, the same at three places | The five rules every installation has stand last |
+| (b) Built-ins first at the instance only | — | They are found at once | The instance's table reads against the resolution |
+
+**Choice:** (a). Revisit if the owner finds the built-ins hard to find. **Applied in the spec:** R-UI-177, R-UI-179. Code:
+[limit-rules.ts](../../web/src/app/features/limits/limit-rules.ts) `orderRules`.
+
+### Q-UI-752 · The single figures of a rule hold the profile's values; a changed field is an override
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-179 had the fields of **Change single figures** empty unless overridden. The owner's rule is that a default is a
+value in the field (CLAUDE.md), and an empty field means unlimited (R-UI-178), so an empty field that means "the profile's value"
+says two things.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each field holds the chosen profile's value; a field the person changes is an override with **Use the profile's value**; a new profile refills the fields that were not changed (chosen) | — | The value is in the field; empty means unlimited everywhere | Eleven filled fields in the fold |
+| (b) Empty unless overridden, the profile's value as placeholder | — | Shows what was overridden at a glance | A placeholder is an example, never a value; an override to unlimited needs a typed and removed value |
+
+**Choice:** (a). A rule writes only the figures that differ from the profile. **Applied in the spec:** R-UI-179. Code:
+[figure-fields.ts](../../web/src/app/features/limits/figure-fields.ts), [rule-dialog.ts](../../web/src/app/features/limits/rule-dialog.ts)
+`overridesOf`.
+
+### Q-UI-753 · A download of the UI asks for its first byte before the browser downloads it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the UI's downloads are links the browser follows (`<a download>`); a 429 then ends as a failed download in the browser,
+and the page learns nothing (R-UI-186 asks for a notice).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A click first sends `GET` with `Range: bytes=0-0`; a 429 shows the notice, any other answer lets the browser download (chosen) | — | The probe passes the same admission (R-LIM-021, a `206` is a download), so the refusal is known before anything is saved; the browser keeps its own download with its progress | One request more and one byte per download; a budget used up between the two requests ends as the browser's failed download |
+| (b) Fetch the whole file into the page and hand it to the browser | — | One request | A large file is held in memory, and the browser shows no progress until it is complete |
+| (c) A hidden frame | — | One request | A problem answer forbids framing (`frame-ancestors 'none'`): the page reads nothing |
+
+**Choice:** (a). Revisit when a refusal can reach the page another way. **Applied in the spec:** R-UI-186. Code:
+[download-link.ts](../../web/src/app/shared/download-link.ts).
+
+### Q-UI-754 · The history is three small charts of one axis each, not one chart of three series
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-184 had requests, bytes from the cache and bytes from the upstream as three series of one chart. Requests are counted,
+bytes measured: one axis cannot carry both. The data colours of the tokens (teal, violet) are not told apart well enough in the dark
+scheme for colour-blind readers (the categorical check of 2026-11-19: ΔE 5.8 deutan).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Three small charts over one time line, each one series with its own axis; events as marks over the requests (chosen) | — | Every chart has one unit; no colour has to tell series apart | Three charts take more height |
+| (b) One chart of bytes (two series) and one of requests | — | Two charts | Two series told apart by colour alone in the dark scheme |
+| (c) One chart, two axes | — | Compact | A second axis is read against the wrong series |
+
+**Choice:** (a). **Applied in the spec:** R-UI-184. Code: [usage-history.ts](../../web/src/app/features/usage/usage-history.ts).
+
+### Q-UI-755 · The usage overview keeps its filters in the address; the instance's Project filter reads the project's usage
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the mode switch links to the overview filtered by **Would have been limited** (R-UI-182), and `GET /api/v1/usage` has no
+`project` parameter (R-LIM-034), while R-UI-183 gives the instance scope a filter **Project**.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The period, kinds, state, search, sort and project are the address's parameters; with a project the instance's page reads `GET /api/v1/projects/{key}/usage`, which `usage:read` may (chosen) | — | A link opens the overview as it was; no new operation | A project's list is the project's rows, the same as its Owner sees |
+| (b) A `project` parameter of `GET /api/v1/usage` | — | One operation | A change of package 2's contract |
+
+**Choice:** (a). **Applied in the spec:** R-UI-182, R-UI-183. Code:
+[usage-overview.ts](../../web/src/app/features/usage/usage-overview.ts).
+
+### Q-UI-756 · The tab Projects reads each project's maximum and rules until one operation lists them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-177's tab **Projects** lists every project with a maximum or a rule; R-API-082 has no operation that lists them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The UI reads every project's maximum and the rules of the project and its repositories, six at a time, in one method of its API service (chosen) | — | Built on the operations that exist; replaced in one place | Many requests on an installation with many repositories |
+| (b) An operation `GET /api/v1/limits/projects` | — | One request | Not specified; package 2's contract |
+
+**Choice:** (a). Revisit with the first installation that has more than a few hundred repositories, or when the operation of (b)
+exists. **Applied in the spec:** R-UI-177. Code: [limits-api.ts](../../web/src/app/api/limits-api.ts) `projectRows`.
+
+### Q-UI-757 · The overview's meter says the percentage, the caller's page the amounts
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a row of the usage list carries `utilisation.ratio`, its figure and place, not the used amount and the limit (R-LIM-034);
+R-UI-183's tooltip example named both ("246 of 300 GB").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The overview's meter states the percentage beside the bar and the figure and place in its tooltip; the caller's page states "246 GB of 300 GB" (chosen) | — | Built on the list's fields; the amounts one click away | The overview does not say the amount |
+| (b) The list row carries `used` and `limit` of its tightest figure | — | The amounts in the overview | A change of package 2's row |
+
+**Choice:** (a). **Applied in the spec:** R-UI-183. Code: [usage-meter.ts](../../web/src/app/features/usage/usage-meter.ts).
+
+### Q-UI-758 · A rule opens by its name, and Delete is the row's one action
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-179 gave every rule the menu **Change**, **Delete**, and a built-in rule **Change** alone; the tab Projects had **Set
+maximum** for some rows and a menu for others. R-UI-163 asks for one construction of the action cells in one list (the render
+check `row-actions` found two) and never a menu of one entry.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The name opens the rule's dialog (the maximum the project's maximum), and the one destructive action is the row's word: **Delete**, **Remove maximum** (chosen) | — | One construction in every row; opening the thing is its name (R-UI-163) | **Change** is no word of its own |
+| (b) A menu in every row, a built-in rule's with a disabled **Delete** | — | **Change** stays a word | A menu entry that is never possible |
+
+**Choice:** (a). **Applied in the spec:** R-UI-177, R-UI-179. Code: [limit-rules.ts](../../web/src/app/features/limits/limit-rules.ts),
+[limits-projects-tab.ts](../../web/src/app/features/limits/limits-projects-tab.ts).
 
 ## What this does not cover
 

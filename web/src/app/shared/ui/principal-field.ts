@@ -13,13 +13,20 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { LimitsApi } from '../../api/limits-api';
 import { ProjectsApi } from '../../api/projects-api';
 import { SearchApi, SuggestionKind } from '../../api/search-api';
 import { ActiveOption, heldEnter, optionDomId } from './active-option';
 import { QuaderAvatar } from './avatar';
 
-/** The kinds of principal a field names. */
-export type PrincipalKind = 'user' | 'group' | 'service_account';
+/**
+ * The kinds of principal a field names. A technical token and a CI project are the two kinds of the download limits' rule dialog
+ * (R-UI-179): no policy names them, so their matches come from the limits' own suggestions.
+ */
+export type PrincipalKind = 'user' | 'group' | 'service_account' | 'technical_token' | 'ci_project';
+
+/** The kinds the principal lookup of a project and the admin area's suggestions know. */
+type DirectoryKind = 'user' | 'group' | 'service_account';
 
 /** One principal the field offers or holds: what its row shows and the reference a write takes. */
 export interface PrincipalChoice {
@@ -38,6 +45,8 @@ export interface PrincipalChoice {
   readonly avatarUrl?: string | null;
   /** The project of a service account, null for an instance-wide one. */
   readonly project?: string | null;
+  /** The second line of a technical token (its account) or of a CI project (its issuer and ID). */
+  readonly detail?: string | null;
 }
 
 /** Debounce of the search while the person types. */
@@ -53,6 +62,8 @@ export function choiceFromRef(ref: string): PrincipalChoice {
   const prefix = at < 0 ? '' : ref.slice(0, at);
   const name = at < 0 ? ref : ref.slice(at + 1);
   if (prefix === 'group') return { ref, kind: 'group', name };
+  if (prefix === TECHNICAL_TOKEN_PREFIX) return { ref, kind: 'technical_token', name };
+  if (prefix === CI_PROJECT_PREFIX) return { ref, kind: 'ci_project', name };
   if (prefix === 'sa') {
     const slash = name.indexOf('/');
     return { ref, kind: 'service_account', name, project: slash < 0 ? null : name.slice(0, slash) };
@@ -61,9 +72,25 @@ export function choiceFromRef(ref: string): PrincipalChoice {
   return { ref, kind: 'other', name: ref };
 }
 
-/** The reference of a user name, a group name or a service account name the API keeps without its kind. */
+/** The field's own prefixes of the two kinds of the limits: no API reads them, the rule dialog turns them into its `who`. */
+export const TECHNICAL_TOKEN_PREFIX = 'technical-token';
+export const CI_PROJECT_PREFIX = 'ci-project';
+
+/**
+ * The reference of a user name, a group name or a service account name the API keeps without its kind; of a technical token its
+ * ID, of a CI project `<issuer>:<project ID>`.
+ */
 export function refOf(kind: PrincipalKind, name: string): string {
-  return `${kind === 'service_account' ? 'sa' : kind}:${name}`;
+  switch (kind) {
+    case 'service_account':
+      return `sa:${name}`;
+    case 'technical_token':
+      return `${TECHNICAL_TOKEN_PREFIX}:${name}`;
+    case 'ci_project':
+      return `${CI_PROJECT_PREFIX}:${name}`;
+    default:
+      return `${kind}:${name}`;
+  }
 }
 
 let nextId = 1;
@@ -75,8 +102,9 @@ let nextId = 1;
  *
  * Where the matches come from decides who may search (Q-UI-581): inside a project (`project`) the project's principal lookup
  * (Q-AUTHZ-182), which its Owner and a holder of `identities:read` call; everywhere else the suggestions of the admin area's
- * kinds (`GET /api/v1/search/suggestions`, `identities:read`). The field never widens what its caller may search: a refused
- * search shows its failure.
+ * kinds (`GET /api/v1/search/suggestions`, `identities:read`). A technical token and a CI project, the kinds of the download
+ * limits' rules, come from `GET /api/v1/limits/subjects` (inside a project with `project`). The field never widens what its
+ * caller may search: a refused search shows its failure.
  *
  * A combobox with a listbox (the ARIA pattern): the focus stays in the input, `aria-activedescendant` names the active match,
  * the arrows move it, Enter takes it, Escape closes the list and then empties the text, Backspace on an empty text removes the
@@ -375,6 +403,7 @@ let nextId = 1;
 })
 export class PrincipalField {
   private readonly projectsApi = inject(ProjectsApi);
+  private readonly limitsApi = inject(LimitsApi);
   private readonly searchApi = inject(SearchApi);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -501,8 +530,17 @@ export class PrincipalField {
   }
 
   protected iconOf(c: PrincipalChoice): string {
-    if (c.kind === 'other') return 'key';
-    return c.kind === 'group' ? 'groups' : 'smart_toy';
+    switch (c.kind) {
+      case 'other':
+      case 'technical_token':
+        return 'key';
+      case 'ci_project':
+        return 'rocket_launch';
+      case 'group':
+        return 'groups';
+      default:
+        return 'smart_toy';
+    }
   }
 
   protected primaryOf(c: PrincipalChoice): string {
@@ -514,6 +552,8 @@ export class PrincipalField {
     if (c.kind === 'user') return `@${c.name}`;
     if (c.kind === 'group') return $localize`:@@principal-field.kind-group:Group`;
     if (c.kind === 'other') return $localize`:@@principal-field.kind-other:CI identity`;
+    if (c.kind === 'technical_token') return c.detail || $localize`:@@principal-field.kind-technical-token:Technical token`;
+    if (c.kind === 'ci_project') return c.detail || $localize`:@@principal-field.kind-ci-project:CI project`;
     return c.project
       ? $localize`:@@principal-field.kind-project-account:Service account of ${c.project}:project:`
       : $localize`:@@principal-field.kind-account:Service account`;
@@ -624,9 +664,45 @@ export class PrincipalField {
     }
   }
 
-  /** The matches of the text from the project's lookup, or from the admin area's suggestions. */
+  /**
+   * The matches of the text: the people, groups and accounts from the project's lookup or the admin area's suggestions, the
+   * technical tokens and CI projects from the limits' suggestions (`GET /api/v1/limits/subjects`, R-UI-179).
+   */
   private async search(text: string, signal: AbortSignal): Promise<{ items: PrincipalChoice[]; more: boolean }> {
-    const kinds = this.kinds();
+    const all = this.kinds();
+    const limitKinds = all.flatMap((k) => (k === 'technical_token' ? ['technicalToken' as const] : k === 'ci_project' ? ['ci' as const] : []));
+    const kinds = all.filter((k): k is DirectoryKind => k === 'user' || k === 'group' || k === 'service_account');
+    const [directory, subjects] = await Promise.all([
+      kinds.length > 0 ? this.searchDirectory(text, kinds, signal) : Promise.resolve({ items: [], more: false }),
+      limitKinds.length > 0 ? this.searchSubjects(text, limitKinds, signal) : Promise.resolve({ items: [], more: false }),
+    ]);
+    return { items: [...directory.items, ...subjects.items], more: directory.more || subjects.more };
+  }
+
+  private async searchSubjects(
+    text: string,
+    kinds: readonly ('technicalToken' | 'ci')[],
+    signal: AbortSignal,
+  ): Promise<{ items: PrincipalChoice[]; more: boolean }> {
+    const found = await this.limitsApi.subjects(text, kinds, this.project(), signal);
+    const items = found.map((s): PrincipalChoice =>
+      s.kind === 'technicalToken'
+        ? { ref: refOf('technical_token', s.id), kind: 'technical_token', name: s.name, detail: s.account }
+        : {
+            ref: refOf('ci_project', s.id),
+            kind: 'ci_project',
+            name: s.projectPath || s.id,
+            detail: `${s.issuer} · ${s.projectId}`,
+          },
+    );
+    return { items, more: found.length >= 20 };
+  }
+
+  private async searchDirectory(
+    text: string,
+    kinds: readonly DirectoryKind[],
+    signal: AbortSignal,
+  ): Promise<{ items: PrincipalChoice[]; more: boolean }> {
     const key = this.project();
     if (key) {
       const found = await this.projectsApi.lookupPrincipals(key, text, kinds);

@@ -866,3 +866,88 @@ async function registryToken(ctx: APIRequestContext, edge: string, pat: string, 
   if (!token) throw new Error('the token service sent no token');
   return token;
 }
+
+/** The own profile of the renders. */
+export const limitProfile = 'partners';
+
+/**
+ * The download limits of the renders (R-UI-177 to R-UI-186): an own profile with a long name, rules at the three places (an IPv6
+ * prefix and a group at the instance, the power user at the main project with an hourly request figure the seed's own requests
+ * pass, so that the overview shows a caller at the limit in Audit), a maximum of the project with the long name, and the ceilings
+ * of a public remote. The mode stays Audit: the database is shared, and Enforce is rendered through the page's routes. Before the
+ * operations exist (the work package that builds them), it says so and seeds nothing; once they do, a second run adds nothing.
+ */
+export async function seedLimits(admin: Api): Promise<void> {
+  const settings = await admin.get('/api/v1/limits/settings');
+  if (settings.status() === 404) {
+    console.warn('seedLimits: the limits operations answer 404 (not built yet); no limits are seeded');
+    return;
+  }
+  await expectStatus(settings, [200], 'the limits settings');
+  await expectStatus(
+    await admin.post(
+      '/api/v1/limits/profiles',
+      {
+        key: limitProfile,
+        name: 'Partners with a contract for the nightly mirrors',
+        description: 'External partners with a contract for nightly mirrors of the release artifacts',
+        figures: { requestsPerSecond: 50, requestsBurst: 200, requestsPerHour: 5000, cachedBytesPerHour: 50_000_000_000, parallelDownloads: 6 },
+      },
+      { 'Idempotency-Key': `renders-profile-${limitProfile}` },
+    ),
+    [201, 409],
+    `limit profile ${limitProfile}`,
+  );
+  const rule = async (base: string, body: object, what: string): Promise<void> =>
+    expectStatus(await admin.post(base, body, { 'Idempotency-Key': `renders-rule-${what}` }), [201, 409], `limit rule ${what}`);
+  await rule(
+    '/api/v1/limits/assignments',
+    { who: { kind: 'address', prefix: '2001:db8:1:2::/64' }, profile: 'restricted', overrides: {}, note: 'A partner office behind one IPv6 prefix' },
+    'v6',
+  );
+  await rule(
+    '/api/v1/limits/assignments',
+    { who: { kind: 'group', group }, profile: limitProfile, overrides: { uncachedBytesPerHour: 20_000_000_000 }, note: '' },
+    'group',
+  );
+  await rule(
+    `/api/v1/projects/${mainProject}/limits/assignments`,
+    {
+      who: { kind: 'user', user: kinds.power },
+      profile: 'restricted',
+      overrides: { requestsPerHour: 20 },
+      note: 'Low on purpose: the renders show a caller at the limit',
+    },
+    'power',
+  );
+  await rule(
+    `/api/v1/projects/${mainProject}/repositories/npmjs/limits/assignments`,
+    { who: { kind: 'every', callerKind: 'anonymous' }, profile: 'anonymous', overrides: { upstreamRequestsPerHour: 5 }, note: '' },
+    'npmjs-anonymous',
+  );
+  const maximum = await admin.get(`/api/v1/projects/${longProject}/limits/maximum`);
+  if (maximum.status() === 404) {
+    await expectStatus(
+      await admin.ctx.put(`/api/v1/projects/${longProject}/limits/maximum`, {
+        data: { profile: 'technical', overrides: { bytesPerDay: 2_000_000_000_000 } },
+        headers: { 'X-CSRF-Token': admin.csrfToken, Origin: admin.originUrl },
+      }),
+      [200, 201],
+      `maximum of ${longProject}`,
+    );
+  }
+  const ceilingsUrl = `/api/v1/projects/${otherProject}/repositories/docker-hub-remote/limits/ceilings`;
+  const ceilings = await admin.get(ceilingsUrl);
+  await expectStatus(ceilings, [200], 'ceilings of docker-hub-remote');
+  await expectStatus(
+    await admin.ctx.put(ceilingsUrl, {
+      data: {
+        anonymous: { uncachedBytesPerHour: 10_000_000_000, upstreamRequestsPerHour: 100 },
+        signedIn: { uncachedBytesPerHour: 50_000_000_000, upstreamRequestsPerHour: 2000 },
+      },
+      headers: { 'X-CSRF-Token': admin.csrfToken, Origin: admin.originUrl, 'If-Match': ceilings.headers()['etag'] ?? '*' },
+    }),
+    [200],
+    'ceilings of docker-hub-remote',
+  );
+}

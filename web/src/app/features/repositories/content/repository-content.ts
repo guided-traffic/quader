@@ -1,3 +1,4 @@
+import { DownloadLink } from '../../../shared/download-link';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { VisibilityIcon, levelName } from '../../../shared/ui/visibility-level';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
@@ -68,6 +69,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     RepositoryFile,
     RepositoryFiles,
     RepositoryItems,
+    DownloadLink,
   ],
   templateUrl: './repository-content.html',
   styleUrl: './repository-content.scss',

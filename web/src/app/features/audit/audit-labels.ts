@@ -169,6 +169,30 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.group.members.changed:Group members changed`;
     case 'group.updated':
       return $localize`:@@audit.action.group.updated:Group changed`;
+    case 'limits.assignment.created':
+      return $localize`:@@audit.action.limits.assignment.created:Download limit rule created`;
+    case 'limits.assignment.deleted':
+      return $localize`:@@audit.action.limits.assignment.deleted:Download limit rule deleted`;
+    case 'limits.assignment.updated':
+      return $localize`:@@audit.action.limits.assignment.updated:Download limit rule changed`;
+    case 'limits.block.lifted':
+      return $localize`:@@audit.action.limits.block.lifted:Download block lifted`;
+    case 'limits.block.started':
+      return $localize`:@@audit.action.limits.block.started:Caller blocked after refused requests`;
+    case 'limits.ceiling.changed':
+      return $localize`:@@audit.action.limits.ceiling.changed:Repository ceiling changed`;
+    case 'limits.mode.changed':
+      return $localize`:@@audit.action.limits.mode.changed:Download limits switched between Audit and Enforce`;
+    case 'limits.profile.created':
+      return $localize`:@@audit.action.limits.profile.created:Limit profile created`;
+    case 'limits.profile.deleted':
+      return $localize`:@@audit.action.limits.profile.deleted:Limit profile deleted`;
+    case 'limits.profile.updated':
+      return $localize`:@@audit.action.limits.profile.updated:Limit profile changed`;
+    case 'limits.project_maximum.changed':
+      return $localize`:@@audit.action.limits.project_maximum.changed:Project maximum for download limits changed`;
+    case 'limits.settings.changed':
+      return $localize`:@@audit.action.limits.settings.changed:Download limit settings changed`;
     case 'mirror.bound_reached':
       return $localize`:@@audit.action.mirror.bound_reached:Mirror reached its limit`;
     case 'mirror.pass_completed':

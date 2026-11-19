@@ -1,6 +1,7 @@
 import { Locator, Page, expect } from '@playwright/test';
 import {
   Kind,
+  kinds,
   ansiblePackage,
   debPackage,
   deepFolder,
@@ -760,6 +761,96 @@ const upstreams: Screen[] = [
   { id: 'admin-upstream-oci', path: '/ui/admin/repositories/new/oci', kinds: ['admin'], walk: upstreamWalk('GitLab', true) },
 ];
 
+/**
+ * The download limits and the usage in Enforce (R-UI-177, R-UI-183): the settings and the usage answers are read through the
+ * page's routes with the mode Enforce. The render database is shared and stays in Audit, so another builder's run never meets a
+ * refusal of these limits.
+ */
+async function inEnforce(page: Page): Promise<void> {
+  await page.route(/\/api\/v1\/(limits\/settings|usage|users\/me\/usage|projects\/[^/]+\/usage)(\/|\?|$)/, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.text()).replaceAll('"mode":"audit"', '"mode":"enforce"');
+    await route.fulfill({ response: res, body });
+  });
+  await page.reload();
+}
+
+/** A page of the limits or the usage as it opens, then the same page in Enforce. */
+async function* limitsModes(page: Page): AsyncGenerator<string> {
+  yield '';
+  await inEnforce(page);
+  await expect(page.locator('main h1')).toBeVisible();
+  yield 'enforce';
+}
+
+/**
+ * The rules of the instance (R-UI-177, R-UI-179): as they open; for an administrator the rule dialog with the single figures
+ * opened, then the switch's dialog with the preview of the last 24 hours (R-UI-182), each cancelled; then in Enforce.
+ */
+async function* limitRulesWalk(page: Page): AsyncGenerator<string> {
+  yield '';
+  const add = page.locator('main').getByRole('button', { name: 'Add rule' });
+  if ((await add.count()) > 0) {
+    await add.click();
+    const dialog = page.getByRole('dialog', { name: 'Add rule' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('combobox', { name: 'Profile' }).selectOption('restricted');
+    await dialog.getByRole('button', { name: 'Change single figures' }).click();
+    await expect(dialog.locator('input[name="cachedBytesPerHour"]')).toBeVisible();
+    yield 'add-rule';
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await page.locator('main').getByRole('button', { name: 'Switch to Enforce…' }).click();
+    await expect(page.getByRole('dialog', { name: 'Switch to Enforce' })).toBeVisible();
+    yield 'switch';
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  }
+  await inEnforce(page);
+  await expect(page.locator('main quader-limit-mode')).toContainText('Enforce');
+  yield 'enforce';
+}
+
+/** A list of the usage: as it opens, with its filter drawer, then in Enforce (R-UI-183). */
+async function* usageWalk(page: Page): AsyncGenerator<string> {
+  yield '';
+  await page.locator('main .filter-toggle').first().click();
+  await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
+  yield 'filters';
+  await page.keyboard.press('Escape');
+  await inEnforce(page);
+  await expect(page.locator('main h1')).toBeVisible();
+  yield 'enforce';
+}
+
+/** A caller's usage (R-UI-184, R-UI-185): as it opens, with the explanation for a repository, the history as a table, in Enforce. */
+async function* usageDetailWalk(page: Page): AsyncGenerator<string> {
+  yield '';
+  await page.locator('main').getByRole('button', { name: 'Explain for a repository' }).click();
+  await page.locator('#explain-repository').fill(`${mainProject}/npm-internal`);
+  await page.locator('main quader-limit-explain').getByRole('button', { name: 'Explain', exact: true }).click();
+  await expect(page.locator('main ol.steps li').first()).toBeVisible();
+  yield 'explain';
+  await page.locator('main quader-usage-history').getByRole('button', { name: 'Show as table' }).click();
+  yield 'table';
+  await inEnforce(page);
+  await expect(page.locator('main h1')).toBeVisible();
+  yield 'enforce';
+}
+
+/** The section **Download limits** of a settings page opened (R-UI-180), then the rule dialog of an Owner. */
+async function* limitsSectionOpen(page: Page): AsyncGenerator<string> {
+  yield '';
+  const section = page.locator('main quader-disclosure').filter({ hasText: 'Download limits' }).first();
+  await section.locator('.toggle').click();
+  await expect(section.locator('.toggle')).toHaveAttribute('aria-expanded', 'true');
+  yield 'limits';
+  const add = section.getByRole('button', { name: 'Add rule' });
+  if ((await add.count()) === 0) return;
+  await add.click();
+  await expect(page.getByRole('dialog', { name: 'Add rule' })).toBeVisible();
+  yield 'add-rule';
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+}
+
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
 /** A signed-out visitor's page asks who is signed in and is told nobody. */
 const noSession = [{ match: /^GET \/api\/v1\/auth\/whoami answered 401$/, why: 'an anonymous visitor has no session' }];
@@ -897,6 +988,8 @@ export const screens: readonly Screen[] = [
   // The plain user holds a token (setup.ts): its revoke-all, last on the page behind Advanced.
   { id: 'profile-tokens-advanced', path: '/ui/profile/tokens', kinds: ['plain'], walk: advancedOpen },
   { id: 'profile-sessions', path: '/ui/profile/sessions', kinds: all },
+  // A user's own usage and limits (R-UI-185).
+  { id: 'profile-usage', path: '/ui/profile/usage', kinds: all, walk: usageDetailWalk },
   { id: 'not-found', path: '/ui/no-such-page', kinds: all },
 
   // What an Owner of the project maintains, and the settings a reader is offered in the list.
@@ -919,6 +1012,12 @@ export const screens: readonly Screen[] = [
   // A project's mapping editor without an issuer in the address: the issuer select and the policy picker (Q-UI-334).
   { id: 'project-ci-mapping-new', path: `${P}/ci/mappings/new`, kinds: owners },
   { id: 'project-settings', path: `${P}/settings`, kinds: owners, walk: visibilityOpen },
+  // The download limits of a project and of a remote repository, and the project's usage (R-UI-180, R-UI-183, R-UI-184).
+  { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen },
+  { id: 'repository-settings-limits', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: limitsSectionOpen },
+  { id: 'project-usage', path: `${P}/usage`, kinds: owners, walk: usageWalk },
+  { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },
+  { id: 'project-usage-caller', path: `${P}/usage/user/${kinds.power}`, kinds: owners, walk: usageDetailWalk },
   { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
 
   // The administrator's area (Q-UI-127).
@@ -947,6 +1046,16 @@ export const screens: readonly Screen[] = [
   { id: 'admin-permission-new', path: '/ui/admin/permissions/new', kinds: admins },
   { id: 'admin-roles', path: '/ui/admin/roles', kinds: admins, walk: principalSearch('Bind to', 'sa') },
   { id: 'admin-tokens', path: '/ui/admin/tokens', kinds: admins, walk: filtersOpen() },
+  // The usage and the download limits (R-UI-177 to R-UI-184): the administrator changes, the auditor reads.
+  { id: 'admin-usage', path: '/ui/admin/usage', kinds: auditors, walk: usageWalk },
+  { id: 'admin-usage-caller', path: `/ui/admin/usage/user/${kinds.power}`, kinds: auditors, walk: usageDetailWalk },
+  { id: 'admin-limits', path: '/ui/admin/limits', kinds: auditors, walk: limitRulesWalk },
+  { id: 'admin-limits-profiles', path: '/ui/admin/limits/profiles', kinds: auditors },
+  { id: 'admin-limits-profile', path: '/ui/admin/limits/profiles/standard', kinds: auditors },
+  { id: 'admin-limits-profile-unlimited', path: '/ui/admin/limits/profiles/unlimited', kinds: admins },
+  { id: 'admin-limits-profile-new', path: '/ui/admin/limits/profiles/new', kinds: admins },
+  { id: 'admin-limits-projects', path: '/ui/admin/limits/projects', kinds: auditors },
+  { id: 'admin-limits-blocks', path: '/ui/admin/limits/blocks', kinds: auditors },
   { id: 'admin-ci', path: '/ui/admin/ci', kinds: admins },
   { id: 'admin-ci-new', path: '/ui/admin/ci/new', kinds: admins },
   { id: 'admin-ci-issuances', path: '/ui/admin/ci/issuances', kinds: admins, walk: filtersOpen() },

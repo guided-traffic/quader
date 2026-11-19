@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Browser, chromium, expect, request } from '@playwright/test';
-import { Api, expectStatus, kinds, mainProject, seedContent, seedGrants, seedProjectsAndRepositories, syncAdvisories } from './seed';
+import { Api, expectStatus, kinds, mainProject, seedContent, seedGrants, seedLimits, seedProjectsAndRepositories, syncAdvisories } from './seed';
 import { authFile, edge, outDir, stateDir } from './paths';
 
 /**
@@ -26,6 +26,8 @@ export default async function setup(): Promise<void> {
   try {
     for (const kind of ['plain', 'power', 'admin', 'auditor'] as const) await signIn(browser, kind);
     await seedGrants(admin);
+    // Before the power user's requests: its rule at the main project makes it a caller at the limit (R-UI-183).
+    await seedLimits(admin);
     await publishAsPowerUser(browser);
     await plainUserToken(browser);
     await syncAdvisories(admin);

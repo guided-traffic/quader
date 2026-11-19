@@ -32,6 +32,12 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/security', { section: 'user', page: 'security-dashboard' }],
   ['/guides', { section: 'user', page: 'client-setup' }],
   ['/profile/tokens', { section: 'user', page: 'access-tokens' }],
+  // >>> W-26 limits
+  ['/profile/usage', { section: 'user', page: 'usage-and-limits' }],
+  ['/admin/usage', { section: 'admin', page: 'download-limits' }],
+  ['/admin/limits', { section: 'admin', page: 'download-limits' }],
+  ['/project/usage', { section: 'admin', page: 'download-limits' }],
+  // <<< W-26 limits
   ['/admin/projects', { section: 'admin', page: 'projects' }],
   ['/admin/repositories', { section: 'admin', page: 'repositories' }],
   ['/admin/endpoints', { section: 'admin', page: 'endpoints' }],

@@ -59,6 +59,13 @@ export const PROJECT_CONTEXT_ROUTES: Routes = [
         loadChildren: () =>
           import('../service-accounts/service-accounts.routes').then((m) => m.PROJECT_SERVICE_ACCOUNTS_ROUTES),
       },
+      // >>> W-26 limits
+      {
+        path: 'usage',
+        data: section($localize`:@@usage.heading:Usage`),
+        loadChildren: () => import('../usage/usage.routes').then((m) => m.PROJECT_USAGE_ROUTES),
+      },
+      // <<< W-26 limits
       // >>> M4 ci
       {
         path: 'ci',

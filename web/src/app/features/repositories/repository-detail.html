@@ -233,6 +233,12 @@
           </form>
         </quader-disclosure>
 
+        <!-- >>> W-26 limits -->
+        @if (limitsShown()) {
+          <quader-repository-limits [project]="project()" [repository]="key()" [remote]="repo.class === 'remote'" />
+        }
+        <!-- <<< W-26 limits -->
+
         <quader-disclosure
           i18n-heading="@@repo.field.notes"
           heading="Administrator notes"

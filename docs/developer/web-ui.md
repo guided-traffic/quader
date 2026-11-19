@@ -1270,6 +1270,14 @@ user who sees the project; what a caller may read is narrowed by the API, so a c
   yet. The built UI was checked in Chromium against a mocked API with axe (`color-contrast` included) in the light and the dark scheme and in German: no serious or critical violation on the
   report, the table form of the trend, a blocked finding, the triage dialog, the advisory, the sources and the package tab; the page does not scroll sideways at 390 CSS px.
 
+## The usage and download limits screens
+
+`features/limits/` (the admin area's **Download limits**, the rule table of every place, the profile editor, the sections of a
+project's and a repository's settings) and `features/usage/` (the usage overview, a caller's page, the profile's tab **Usage**) read
+the API through `LimitsApi` (R-UI-177 to R-UI-186). The files, the hand-written shapes and the component placed later on the service
+account's page are on [usage-and-limits.md](usage-and-limits.md#the-screens). A download link that a limit may refuse carries
+`quaderDownload` ([download-link.ts](../../web/src/app/shared/download-link.ts)).
+
 ## How to add a feature area
 
 1. Create `web/src/app/features/<area>/` with a standalone component per screen (`Component` with

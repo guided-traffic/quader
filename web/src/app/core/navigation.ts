@@ -121,6 +121,11 @@ export const NAV_AREAS: readonly NavArea[] = [
               { route: '/admin/groups', icon: 'group', label: $localize`:@@nav.groups:Groups`, capability: 'identities:read' },
               { route: '/admin/service-accounts', icon: 'smart_toy', label: $localize`:@@nav.service-accounts:Service accounts`, capability: 'identities:read' },
               { route: '/admin/tokens', icon: 'key', label: $localize`:@@nav.tokens:Tokens`, capability: 'tokens:read' },
+              // >>> W-26 limits
+              // After Tokens (Q-UI-730): who downloads what, and how much each caller may.
+              { route: '/admin/usage', icon: 'query_stats', label: $localize`:@@nav.usage:Usage`, capability: 'usage:read' },
+              { route: '/admin/limits', icon: 'data_usage', label: $localize`:@@nav.limits:Download limits`, capability: 'limits:read' },
+              // <<< W-26 limits
               // >>> M4 ci
               { route: '/admin/ci', icon: 'rocket_launch', label: $localize`:@@nav.ci:CI identity`, capability: 'ci:read' },
               // <<< M4 ci
@@ -186,6 +191,10 @@ export function projectEntries(key: string, session: SessionStore): readonly Nav
     ...(manages('identities:read')
       ? [{ route: at('service-accounts'), icon: 'smart_toy', label: $localize`:@@nav.service-accounts:Service accounts` }]
       : []),
+    // >>> W-26 limits
+    // The project's usage, after Service accounts, for its Owners and usage:read (R-UI-180).
+    ...(manages('usage:read') ? [{ route: at('usage'), icon: 'query_stats', label: $localize`:@@nav.usage:Usage` }] : []),
+    // <<< W-26 limits
     // >>> M4 ci
     ...(manages('ci:read') ? [{ route: at('ci'), icon: 'rocket_launch', label: $localize`:@@nav.ci:CI identity` }] : []),
     // <<< M4 ci

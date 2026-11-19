@@ -105,6 +105,36 @@ of step 9a. No PostgreSQL statement runs on a request: the index is in memory, t
 | Check 16 of the format kit ([checks_admission.go](../../internal/formats/formattest/checks_admission.go)) | Every format answers 429 before any byte when the admission refuses; the defect `WritesOwnDownload` fails it |
 | [ratelimit_test.go](../../internal/api/v1/ratelimit_test.go) | The package classes on `/files/` and `/v2/`, keyed by the subject |
 
+## The screens
+
+Work package 3 (R-UI-177 to R-UI-186, Q-UI-750 to Q-UI-758). Every screen reads the API through one service, `LimitsApi`; its
+shapes are written by hand in one file until `api/openapi.yaml` describes the operations.
+
+| File | Responsibility |
+|---|---|
+| [web/src/app/api/limits-types.ts](../../web/src/app/api/limits-types.ts) | The shapes of R-LIM-031 to R-LIM-035, by hand. When the generated client has them, each name becomes `Schema<'…'>` of `types.ts`; nothing else changes |
+| [web/src/app/api/limits-api.ts](../../web/src/app/api/limits-api.ts) | `LimitsApi` and `HttpLimitsApi`: profiles, rules of a place (`rulesPath`), ceilings, settings and the mode preview, a project's maximum, `projectRows` (the tab Projects, read by fan-out, Q-UI-756), blocks, the explanation, the subjects of the rule dialog, the usage lists, details and CSV address |
+| [web/src/app/api/testing/fakes-limits.ts](../../web/src/app/api/testing/fakes-limits.ts) | `FakeLimitsApi` and the fixtures from the specification's examples: the built-in profiles and an own one, rules of the three places, a maximum, ceilings, a block, a usage list with a long name, an IPv6 prefix, a caller at 100 %, an unlimited one, a blocked one, a CI project and the system, a detail with 288 five-minute points |
+| [web/src/app/features/limits/](../../web/src/app/features/limits/) | `figures.ts` (groups, units, decimal MB and GB, the compact line), `callers.ts` (how a rule's "who", a subject and a place are named), `caller-cell.ts`, `figure-fields.ts` (the eleven fields, with a profile's values as base for overrides), `limit-rules.ts` (`<quader-limit-rules>`, the table of every place), `rule-dialog.ts`, `limit-mode.ts` (the mode line and the switch's dialog), `limits-frame.ts` and the four tabs `limits-*-tab.ts`, `profile-editor.ts`, `maximum-dialog.ts`, `project-limits-section.ts`, `repository-limits-section.ts` (with the ceilings), `technical-token-limit.ts` (R-UI-181, see below), `limits.routes.ts` |
+| [web/src/app/features/usage/](../../web/src/app/features/usage/) | `usage-overview.ts` (the overview of the instance and of a project, its filters in the address, Q-UI-755), `usage-detail.ts` (a caller's page), `profile-usage.ts` (the profile's tab), `usage-budgets.ts` (the limits per budget key), `limit-explain.ts`, `usage-history.ts` (three charts and the table, Q-UI-754), `usage-tables.ts`, `usage-meter.ts`, `usage-words.ts`, `usage.routes.ts` with `usageGuard` |
+| [web/src/app/shared/download-link.ts](../../web/src/app/shared/download-link.ts) | `quaderDownload` on a download link: a one-byte probe, the notice of a refusal (R-UI-186, Q-UI-753); the words are [problem-messages-limits.ts](../../web/src/app/core/http/problem-messages-limits.ts) |
+| [web/src/app/shared/ui/principal-field.ts](../../web/src/app/shared/ui/principal-field.ts) | The kinds `technical_token` and `ci_project`, whose matches come from `GET /api/v1/limits/subjects` |
+
+- **Routes and side bars.** `/admin/usage`, `/admin/usage/{kind}/{id}`, `/admin/limits` with its tabs and
+  `/admin/limits/profiles/{new,key}` ([app.routes.ts](../../web/src/app/app.routes.ts)); `/projects/{project}/usage` and its callers
+  ([project-context.routes.ts](../../web/src/app/features/projects/project-context.routes.ts)); `/profile/usage`. The side-bar entries
+  are in [navigation.ts](../../web/src/app/core/navigation.ts) (Q-UI-750), the profile's tab in `profile-nav.ts`.
+- **Technical tokens (R-UI-181).** The service account's page is work package 1's. `TokenLimitCell` (**Limit**),
+  `TokenLastDayCell` (**Last 24 hours**) and `TechnicalTokenLimits` (`rules(place)`, `lastDay(scope)`, `edit` for **Set limit** and
+  **Change limit**, `remove` for **Remove limit**; `accountPlace` gives an account's place) are ready to be placed in the token list of
+  `web/src/app/features/service-accounts/` once that page lists technical tokens.
+- **Renders.** The screens `admin-usage*`, `admin-limits*`, `project-usage*`, `project-settings-limits`, `repository-settings-limits`
+  and `profile-usage` in [screens.ts](../../web/e2e/renders/screens.ts); Enforce is rendered through the page's routes (`inEnforce`),
+  never by switching the shared database. `seedLimits` in [seed.ts](../../web/e2e/renders/seed.ts) seeds nothing while the operations
+  answer 404.
+- **Tests.** [figures.spec.ts](../../web/src/app/features/limits/figures.spec.ts), [limits.spec.ts](../../web/src/app/features/limits/limits.spec.ts),
+  [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts) against the fakes, each screen through axe.
+
 ## Work packages
 
 Three packages, built in parallel worktrees on the base of the specification commit. Each runs the gates of its builder brief; the

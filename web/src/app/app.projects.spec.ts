@@ -73,6 +73,8 @@ describe('The project is the context of the content (Q-UI-129)', () => {
       'Members',
       'Permission policies',
       'Service accounts',
+      // The project's usage for its Owner (R-UI-180).
+      'Usage',
       'CI identity',
       'Settings',
     ]);

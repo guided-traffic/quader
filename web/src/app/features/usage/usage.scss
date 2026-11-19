@@ -1,0 +1,53 @@
+// The usage screens (R-UI-183 to R-UI-185): the period's segmented control, the views over the table, the mode's line. Only
+// Quader's tokens, so both schemes follow.
+
+:host {
+  display: block;
+}
+
+// The period: three buttons, the pressed one in the selection's fill, as the vulnerability trend's period (R-UI-183).
+.period {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1);
+
+  button[aria-pressed='true'] {
+    background: var(--quader-accent-container);
+    color: var(--quader-on-accent-container);
+  }
+}
+
+.views {
+  margin-block: var(--quader-space-3);
+}
+
+.mode-note {
+  margin: 0 0 var(--quader-space-3);
+}
+
+.section {
+  margin-block-start: var(--quader-space-6);
+
+  > h2 {
+    margin: 0 0 var(--quader-space-3);
+    font: var(--quader-type-title-medium);
+  }
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--quader-space-2) var(--quader-space-4);
+  margin-block-end: var(--quader-space-3);
+
+  h2 {
+    margin: 0;
+    font: var(--quader-type-title-medium);
+  }
+}
+
+.hint {
+  margin: 0 0 var(--quader-space-3);
+}

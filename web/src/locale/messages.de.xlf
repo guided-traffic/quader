@@ -27233,6 +27233,78 @@
         <target>nicht</target>
       </segment>
     </unit>
+    <unit id="audit.action.limits.assignment.created">
+      <segment>
+        <source>Download limit rule created</source>
+        <target>Download-Limit-Regel erstellt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.assignment.deleted">
+      <segment>
+        <source>Download limit rule deleted</source>
+        <target>Download-Limit-Regel gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.assignment.updated">
+      <segment>
+        <source>Download limit rule changed</source>
+        <target>Download-Limit-Regel geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.block.lifted">
+      <segment>
+        <source>Download block lifted</source>
+        <target>Download-Sperre aufgehoben</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.block.started">
+      <segment>
+        <source>Caller blocked after refused requests</source>
+        <target>Aufrufer nach abgewiesenen Anfragen gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.ceiling.changed">
+      <segment>
+        <source>Repository ceiling changed</source>
+        <target>Obergrenze des Repositorys geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.mode.changed">
+      <segment>
+        <source>Download limits switched between Audit and Enforce</source>
+        <target>Download-Limits zwischen Audit und Enforce umgeschaltet</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.profile.created">
+      <segment>
+        <source>Limit profile created</source>
+        <target>Limit-Profil erstellt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.profile.deleted">
+      <segment>
+        <source>Limit profile deleted</source>
+        <target>Limit-Profil gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.profile.updated">
+      <segment>
+        <source>Limit profile changed</source>
+        <target>Limit-Profil geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.project_maximum.changed">
+      <segment>
+        <source>Project maximum for download limits changed</source>
+        <target>Projekt-Maximum der Download-Limits geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.limits.settings.changed">
+      <segment>
+        <source>Download limit settings changed</source>
+        <target>Einstellungen der Download-Limits geändert</target>
+      </segment>
+    </unit>
     <unit id="audit.action.mirror.bound_reached">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:173</note>
@@ -34558,6 +34630,471 @@
     <unit id="sas.level.instance">
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-list.ts:236</note>
+    <unit id="usage.heading">
+      <notes>
+        <note category="location">src/app/app.routes.ts:151</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:65</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:127</note>
+        <note category="location">src/app/features/usage/usage.routes.ts:23</note>
+        <note category="location">src/app/features/usage/usage.routes.ts:41</note>
+      </notes>
+      <segment>
+        <source>Usage</source>
+        <target>Nutzung</target>
+      </segment>
+    </unit>
+    <unit id="limits.heading">
+      <notes>
+        <note category="location">src/app/app.routes.ts:157</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:22,23</note>
+        <note category="location">src/app/features/limits/limits.routes.ts:25</note>
+      </notes>
+      <segment>
+        <source>Download limits</source>
+        <target>Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="problem.limit_above_maximum">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:19</note>
+      </notes>
+      <segment>
+        <source>Some figures are above what you may set here: at most the instance&apos;s values for this caller, or the project&apos;s maximum.</source>
+        <target>Einige Werte liegen über dem, was Sie hier setzen dürfen: höchstens die Werte der Instanz für diesen Aufrufer oder das Maximum des Projekts.</target>
+      </segment>
+    </unit>
+    <unit id="problem.invalid_figure">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:21</note>
+      </notes>
+      <segment>
+        <source>A figure is not valid: a whole number of at least 1, or empty for unlimited; a burst needs the rate and is at least the rate.</source>
+        <target>Ein Wert ist ungültig: eine ganze Zahl ab 1 oder leer für unbegrenzt; ein Burst braucht die Rate und ist mindestens so groß wie sie.</target>
+      </segment>
+    </unit>
+    <unit id="problem.invalid_who">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:23</note>
+      </notes>
+      <segment>
+        <source>This rule cannot name that caller here.</source>
+        <target>Diese Regel kann diesen Aufrufer hier nicht nennen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.assignment_exists">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:25</note>
+      </notes>
+      <segment>
+        <source>There is a rule for this caller here already. Change that rule instead.</source>
+        <target>Für diesen Aufrufer gibt es hier schon eine Regel. Ändern Sie diese Regel.</target>
+      </segment>
+    </unit>
+    <unit id="problem.assignment_builtin">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:27</note>
+      </notes>
+      <segment>
+        <source>A built-in rule can be changed, not deleted, and applies to the same callers.</source>
+        <target>Eine eingebaute Regel kann geändert, aber nicht gelöscht werden und gilt für dieselben Aufrufer.</target>
+      </segment>
+    </unit>
+    <unit id="problem.profile_in_use">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:29</note>
+      </notes>
+      <segment>
+        <source>The profile is used by a rule or a project&apos;s maximum.</source>
+        <target>Das Profil wird von einer Regel oder dem Maximum eines Projekts verwendet.</target>
+      </segment>
+    </unit>
+    <unit id="problem.profile_builtin">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:31</note>
+      </notes>
+      <segment>
+        <source>A built-in profile cannot be deleted.</source>
+        <target>Ein eingebautes Profil kann nicht gelöscht werden.</target>
+      </segment>
+    </unit>
+    <unit id="problem.profile_immutable">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:33</note>
+      </notes>
+      <segment>
+        <source>Unlimited is always unlimited.</source>
+        <target>Unlimited ist immer unbegrenzt.</target>
+      </segment>
+    </unit>
+    <unit id="problem.block_ended">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:35</note>
+      </notes>
+      <segment>
+        <source>The block has ended already.</source>
+        <target>Die Sperre ist bereits abgelaufen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.wait.minutes">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:45</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="minutes"/> minutes</source>
+        <target><ph id="0" equiv="count" disp="minutes"/> Minuten</target>
+      </segment>
+    </unit>
+    <unit id="limits.minute">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:47</note>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:16</note>
+      </notes>
+      <segment>
+        <source>1 minute</source>
+        <target>1 Minute</target>
+      </segment>
+    </unit>
+    <unit id="limits.wait.second">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:48</note>
+      </notes>
+      <segment>
+        <source>1 second</source>
+        <target>1 Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.wait.seconds">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:48</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="seconds"/> seconds</source>
+        <target><ph id="0" equiv="count" disp="seconds"/> Sekunden</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.again">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:75</note>
+      </notes>
+      <segment>
+        <source>Try again in <ph id="0" equiv="wait" disp="waitText(wait)"/>.</source>
+        <target>Versuchen Sie es in <ph id="0" equiv="wait" disp="waitText(wait)"/> erneut.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.blocked-short">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:77</note>
+      </notes>
+      <segment>
+        <source>Downloads are paused for you after too many refused requests.</source>
+        <target>Downloads sind für Sie nach zu vielen abgewiesenen Anfragen pausiert.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.blocked">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:79</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:149</note>
+      </notes>
+      <segment>
+        <source>Downloads are paused for you until <ph id="0" equiv="time" disp="time"/> after too many refused requests.</source>
+        <target>Downloads sind für Sie bis <ph id="0" equiv="time" disp="time"/> pausiert, nach zu vielen abgewiesenen Anfragen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.download">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:85</note>
+      </notes>
+      <segment>
+        <source>Your download limit of <ph id="0" equiv="limit" disp="amount"/> is used up.</source>
+        <target>Ihr Download-Limit von <ph id="0" equiv="limit" disp="amount"/> ist aufgebraucht.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.upstream">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:88</note>
+      </notes>
+      <segment>
+        <source>Your limit of <ph id="0" equiv="limit" disp="amount"/> from the upstream is used up; what is cached can still be downloaded.</source>
+        <target>Ihr Limit von <ph id="0" equiv="limit" disp="amount"/> aus dem Upstream ist aufgebraucht; was im Cache liegt, kann weiter heruntergeladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.ceiling">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:90</note>
+      </notes>
+      <segment>
+        <source>The repository&apos;s limit from the upstream for all callers like you is used up; what is cached can still be downloaded.</source>
+        <target>Das Upstream-Limit des Repositorys für alle Aufrufer wie Sie ist aufgebraucht; was im Cache liegt, kann weiter heruntergeladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.parallel">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:95</note>
+      </notes>
+      <segment>
+        <source>You have <ph id="0" equiv="count" disp="limit"/> downloads running, the most you may have at once.</source>
+        <target>Bei Ihnen laufen <ph id="0" equiv="count" disp="limit"/> Downloads, so viele, wie Sie gleichzeitig haben dürfen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.requests">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:99</note>
+      </notes>
+      <segment>
+        <source>Your request limit of <ph id="0" equiv="limit" disp="amount"/> is used up.</source>
+        <target>Ihr Anfrage-Limit von <ph id="0" equiv="limit" disp="amount"/> ist aufgebraucht.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.too-many">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:100</note>
+      </notes>
+      <segment>
+        <source>Too many requests.</source>
+        <target>Zu viele Anfragen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.generic">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:103</note>
+      </notes>
+      <segment>
+        <source>A download limit refused this download.</source>
+        <target>Ein Download-Limit hat diesen Download abgewiesen.</target>
+      </segment>
+    </unit>
+    <unit id="nav.usage">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:126</note>
+        <note category="location">src/app/core/navigation.ts:196</note>
+      </notes>
+      <segment>
+        <source>Usage</source>
+        <target>Nutzung</target>
+      </segment>
+    </unit>
+    <unit id="nav.limits">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:127</note>
+      </notes>
+      <segment>
+        <source>Download limits</source>
+        <target>Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.every.user">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:28</note>
+      </notes>
+      <segment>
+        <source>Every signed-in user</source>
+        <target>Alle angemeldeten Benutzer</target>
+      </segment>
+    </unit>
+    <unit id="limits.every.technical-token">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:30</note>
+      </notes>
+      <segment>
+        <source>Every technical token</source>
+        <target>Alle technischen Tokens</target>
+      </segment>
+    </unit>
+    <unit id="limits.every.ci">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:32</note>
+      </notes>
+      <segment>
+        <source>Every CI job</source>
+        <target>Alle CI-Jobs</target>
+      </segment>
+    </unit>
+    <unit id="limits.every.anonymous">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:34</note>
+      </notes>
+      <segment>
+        <source>Every anonymous caller</source>
+        <target>Alle anonymen Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.every.administrator">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:36</note>
+      </notes>
+      <segment>
+        <source>Every administrator</source>
+        <target>Alle Administratoren</target>
+      </segment>
+    </unit>
+    <unit id="usage.kind.user">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:44</note>
+      </notes>
+      <segment>
+        <source>User</source>
+        <target>Benutzer</target>
+      </segment>
+    </unit>
+    <unit id="usage.kind.technical-token">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:46</note>
+      </notes>
+      <segment>
+        <source>Technical token</source>
+        <target>Technisches Token</target>
+      </segment>
+    </unit>
+    <unit id="usage.kind.ci">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:48</note>
+      </notes>
+      <segment>
+        <source>CI project</source>
+        <target>CI-Projekt</target>
+      </segment>
+    </unit>
+    <unit id="usage.kind.anonymous">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:50</note>
+        <note category="location">src/app/features/limits/callers.ts:155</note>
+      </notes>
+      <segment>
+        <source>Anonymous address</source>
+        <target>Anonyme Adresse</target>
+      </segment>
+    </unit>
+    <unit id="usage.kind.system">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:52</note>
+        <note category="location">src/app/features/limits/callers.ts:157</note>
+        <note category="location">src/app/features/limits/callers.ts:175</note>
+      </notes>
+      <segment>
+        <source>System</source>
+        <target>System</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.kind.user">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:60</note>
+      </notes>
+      <segment>
+        <source>Users</source>
+        <target>Benutzer</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.kind.technical-token">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:62</note>
+      </notes>
+      <segment>
+        <source>Technical tokens</source>
+        <target>Technische Tokens</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.kind.ci">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:64</note>
+      </notes>
+      <segment>
+        <source>CI</source>
+        <target>CI</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.kind.anonymous">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:66</note>
+      </notes>
+      <segment>
+        <source>Anonymous addresses</source>
+        <target>Anonyme Adressen</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.kind.system">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:68</note>
+      </notes>
+      <segment>
+        <source>System</source>
+        <target>System</target>
+      </segment>
+    </unit>
+    <unit id="limits.who.deleted">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:72</note>
+      </notes>
+      <segment>
+        <source>(deleted)</source>
+        <target>(gelöscht)</target>
+      </segment>
+    </unit>
+    <unit id="limits.who.group">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:92</note>
+      </notes>
+      <segment>
+        <source>Group</source>
+        <target>Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="limits.who.address">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:112</note>
+      </notes>
+      <segment>
+        <source>Address or range</source>
+        <target>Adresse oder Bereich</target>
+      </segment>
+    </unit>
+    <unit id="usage.title.token">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:169</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="subject.name"/> of <ph id="1" equiv="account" disp="subject.account"/></source>
+        <target><ph id="0" equiv="name" disp="subject.name"/> von <ph id="1" equiv="account" disp="subject.account"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.title.ci">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:171</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="project" disp="subject.projectPath || `${subject.issuer}:${subject.projectId}`"/> (CI)</source>
+        <target><ph id="0" equiv="project" disp="subject.projectPath || `${subject.issuer}:${subject.projectId}`"/> (CI)</target>
+      </segment>
+    </unit>
+    <unit id="limits.place.instance">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:183</note>
+      </notes>
+      <segment>
+        <source>at the instance</source>
+        <target>auf der Instanz</target>
+      </segment>
+    </unit>
+    <unit id="limits.place.project">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:185</note>
+      </notes>
+      <segment>
+        <source>in project <ph id="0" equiv="project" disp="place.project"/></source>
+        <target>im Projekt <ph id="0" equiv="project" disp="place.project"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.place.repository">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:187</note>
+      </notes>
+      <segment>
+        <source>at <ph id="0" equiv="repository" disp="place.repository"/></source>
+        <target>auf <ph id="0" equiv="repository" disp="place.repository"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.place.instance-label">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:195</note>
       </notes>
       <segment>
         <source>Instance</source>
@@ -34702,6 +35239,870 @@
     <unit id="tt-table.actions">
       <notes>
         <note category="location">src/app/features/service-accounts/technical-token-table.ts:123</note>
+    <unit id="limits.place.project-label">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:197</note>
+      </notes>
+      <segment>
+        <source>Project <ph id="0" equiv="project" disp="place.project"/></source>
+        <target>Projekt <ph id="0" equiv="project" disp="place.project"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.field.burst-needs-rate">
+      <notes>
+        <note category="location">src/app/features/limits/figure-fields.ts:36</note>
+      </notes>
+      <segment>
+        <source>A burst needs requests per second.</source>
+        <target>Ein Burst braucht Anfragen pro Sekunde.</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.burst-below-rate">
+      <notes>
+        <note category="location">src/app/features/limits/figure-fields.ts:37</note>
+      </notes>
+      <segment>
+        <source>The burst is at least the requests per second.</source>
+        <target>Der Burst ist mindestens so groß wie die Anfragen pro Sekunde.</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.cache-note">
+      <notes>
+        <note category="location">src/app/features/limits/figure-fields.ts:60,63</note>
+      </notes>
+      <segment>
+        <source> A very low rate makes a large file take longer than some clients wait for a whole download. </source>
+        <target> Eine sehr niedrige Rate lässt eine große Datei länger dauern, als manche Clients auf einen ganzen Download warten. </target>
+      </segment>
+    </unit>
+    <unit id="limits.unlimited">
+      <notes>
+        <note category="location">src/app/features/limits/figure-fields.ts:78,79</note>
+        <note category="location">src/app/features/limits/figures.ts:237</note>
+        <note category="location">src/app/features/limits/figures.ts:292</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:70,71</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:89,90</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:224</note>
+      </notes>
+      <segment>
+        <source>Unlimited</source>
+        <target>Unbegrenzt</target>
+      </segment>
+    </unit>
+    <unit id="limits.use-profile-value">
+      <notes>
+        <note category="location">src/app/features/limits/figure-fields.ts:89,90</note>
+      </notes>
+      <segment>
+        <source>Use the profile&apos;s value</source>
+        <target>Wert des Profils verwenden</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.requests">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:47</note>
+      </notes>
+      <segment>
+        <source>Requests</source>
+        <target>Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.requests-help">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:48</note>
+      </notes>
+      <segment>
+        <source>At the limit a request is answered 429 with the time to wait.</source>
+        <target>Am Limit wird eine Anfrage mit 429 und der Wartezeit beantwortet.</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.cache">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:53</note>
+      </notes>
+      <segment>
+        <source>From the cache</source>
+        <target>Aus dem Cache</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.cache-help">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:54</note>
+      </notes>
+      <segment>
+        <source>Above the rate a download is slowed down; above the hourly amount the next download is refused before it starts.</source>
+        <target>Über der Rate wird ein Download verlangsamt; über der stündlichen Menge wird der nächste Download abgewiesen, bevor er beginnt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.upstream">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:59</note>
+      </notes>
+      <segment>
+        <source>From the upstream</source>
+        <target>Aus dem Upstream</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.upstream-help">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:60</note>
+      </notes>
+      <segment>
+        <source>With the upstream budget used up, what is cached is still served.</source>
+        <target>Ist das Upstream-Budget aufgebraucht, wird weiter ausgeliefert, was im Cache liegt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.downloads">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:65</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+        <target>Downloads</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.downloads-help">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:66</note>
+      </notes>
+      <segment>
+        <source>A further download waits up to 10 seconds.</source>
+        <target>Ein weiterer Download wartet bis zu 10 Sekunden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.refused">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:71</note>
+      </notes>
+      <segment>
+        <source>Refused requests</source>
+        <target>Abgewiesene Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="limits.group.refused-help">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:72</note>
+      </notes>
+      <segment>
+        <source>Above the limit the caller is blocked for the block time.</source>
+        <target>Über dem Limit wird der Aufrufer für die Sperrzeit gesperrt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.requests-second">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:101</note>
+      </notes>
+      <segment>
+        <source>Per second</source>
+        <target>Pro Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.burst">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:103</note>
+      </notes>
+      <segment>
+        <source>Burst</source>
+        <target>Burst</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.requests-hour">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:105</note>
+      </notes>
+      <segment>
+        <source>Per hour</source>
+        <target>Pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.mb-second">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:108</note>
+      </notes>
+      <segment>
+        <source>MB per second</source>
+        <target>MB pro Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.gb-hour">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:111</note>
+      </notes>
+      <segment>
+        <source>GB per hour</source>
+        <target>GB pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.upstream-requests">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:113</note>
+      </notes>
+      <segment>
+        <source>Upstream requests per hour</source>
+        <target>Upstream-Anfragen pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.parallel">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:115</note>
+      </notes>
+      <segment>
+        <source>In parallel</source>
+        <target>Gleichzeitig</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.gb-day">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:117</note>
+      </notes>
+      <segment>
+        <source>GB per day</source>
+        <target>GB pro Tag</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.refused-hour">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:119</note>
+      </notes>
+      <segment>
+        <source>Per hour</source>
+        <target>Pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.requests-second">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:127</note>
+      </notes>
+      <segment>
+        <source>Requests per second</source>
+        <target>Anfragen pro Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.burst">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:129</note>
+      </notes>
+      <segment>
+        <source>Burst</source>
+        <target>Burst</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.requests-hour">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:131</note>
+      </notes>
+      <segment>
+        <source>Requests per hour</source>
+        <target>Anfragen pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.cache-second">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:133</note>
+      </notes>
+      <segment>
+        <source>From the cache per second</source>
+        <target>Aus dem Cache pro Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.cache-hour">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:135</note>
+      </notes>
+      <segment>
+        <source>From the cache per hour</source>
+        <target>Aus dem Cache pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.upstream-second">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:137</note>
+      </notes>
+      <segment>
+        <source>From the upstream per second</source>
+        <target>Aus dem Upstream pro Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.upstream-hour">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:139</note>
+      </notes>
+      <segment>
+        <source>From the upstream per hour</source>
+        <target>Aus dem Upstream pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.upstream-requests">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:141</note>
+      </notes>
+      <segment>
+        <source>Upstream requests per hour</source>
+        <target>Upstream-Anfragen pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.parallel">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:143</note>
+      </notes>
+      <segment>
+        <source>Parallel downloads</source>
+        <target>Gleichzeitige Downloads</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.day">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:145</note>
+      </notes>
+      <segment>
+        <source>Volume per day</source>
+        <target>Volumen pro Tag</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.refused">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:147</note>
+      </notes>
+      <segment>
+        <source>Refused per hour</source>
+        <target>Abgewiesen pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.ceiling-anonymous">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:149</note>
+      </notes>
+      <segment>
+        <source>Ceiling of all anonymous callers</source>
+        <target>Obergrenze aller anonymen Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.figure.ceiling-signed-in">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:151</note>
+      </notes>
+      <segment>
+        <source>Ceiling of all signed-in callers</source>
+        <target>Obergrenze aller angemeldeten Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.count-invalid">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:192</note>
+      </notes>
+      <segment>
+        <source>A whole number of at least 1, or empty for unlimited.</source>
+        <target>Eine ganze Zahl ab 1 oder leer für unbegrenzt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.field.amount-invalid">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:198</note>
+        <note category="location">src/app/features/limits/figures.ts:202</note>
+      </notes>
+      <segment>
+        <source>A number above 0, or empty for unlimited.</source>
+        <target>Eine Zahl über 0 oder leer für unbegrenzt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.limit.per-second">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:244</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="amount" disp="amount"/> per second</source>
+        <target><ph id="0" equiv="amount" disp="amount"/> pro Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.limit.burst">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:246</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="amount" disp="amount"/> burst</source>
+        <target><ph id="0" equiv="amount" disp="amount"/> Burst</target>
+      </segment>
+    </unit>
+    <unit id="limits.limit.per-day">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:248</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="amount" disp="amount"/> per day</source>
+        <target><ph id="0" equiv="amount" disp="amount"/> pro Tag</target>
+      </segment>
+    </unit>
+    <unit id="limits.limit.parallel">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:250</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="amount" disp="amount"/> in parallel</source>
+        <target><ph id="0" equiv="amount" disp="amount"/> gleichzeitig</target>
+      </segment>
+    </unit>
+    <unit id="limits.limit.per-hour">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:252</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="amount" disp="amount"/> per hour</source>
+        <target><ph id="0" equiv="amount" disp="amount"/> pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.compact.burst">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:269</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="c(burst)"/> burst</source>
+        <target><ph id="0" equiv="n" disp="c(burst)"/> Burst</target>
+      </segment>
+    </unit>
+    <unit id="limits.compact.cache">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:277</note>
+      </notes>
+      <segment>
+        <source>cache <ph id="0" equiv="values" disp="cache.join(&apos;, &apos;)"/></source>
+        <target>Cache <ph id="0" equiv="values" disp="cache.join(&apos;, &apos;)"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.compact.upstream-requests">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:284</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="c(ur)"/> req/h</source>
+        <target><ph id="0" equiv="n" disp="c(ur)"/> Anfr./h</target>
+      </segment>
+    </unit>
+    <unit id="limits.compact.upstream">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:285</note>
+      </notes>
+      <segment>
+        <source>upstream <ph id="0" equiv="values" disp="up.join(&apos;, &apos;)"/></source>
+        <target>Upstream <ph id="0" equiv="values" disp="up.join(&apos;, &apos;)"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.compact.parallel">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:287</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="c(par)"/> parallel</source>
+        <target><ph id="0" equiv="n" disp="c(par)"/> gleichzeitig</target>
+      </segment>
+    </unit>
+    <unit id="limits.compact.refused">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:291</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="c(ref)"/> refused/h</source>
+        <target><ph id="0" equiv="n" disp="c(ref)"/> abgewiesen/h</target>
+      </segment>
+    </unit>
+    <unit id="limits.override.unlimited">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:298</note>
+      </notes>
+      <segment>
+        <source>+ <ph id="0" equiv="figure" disp="what"/> unlimited</source>
+        <target>+ <ph id="0" equiv="figure" disp="what"/> unbegrenzt</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.requests">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:325</note>
+      </notes>
+      <segment>
+        <source>requests</source>
+        <target>Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.burst">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:327</note>
+      </notes>
+      <segment>
+        <source>burst</source>
+        <target>Burst</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.cache">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:330</note>
+      </notes>
+      <segment>
+        <source>cache</source>
+        <target>Cache</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.uncached">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:333</note>
+      </notes>
+      <segment>
+        <source>uncached</source>
+        <target>Upstream</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.upstream-requests">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:335</note>
+      </notes>
+      <segment>
+        <source>upstream requests</source>
+        <target>Upstream-Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.parallel">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:337</note>
+      </notes>
+      <segment>
+        <source>parallel</source>
+        <target>gleichzeitig</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.day">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:339</note>
+      </notes>
+      <segment>
+        <source>volume</source>
+        <target>Volumen</target>
+      </segment>
+    </unit>
+    <unit id="limits.short.refused">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:341</note>
+      </notes>
+      <segment>
+        <source>refused</source>
+        <target>abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="limits.override.more">
+      <notes>
+        <note category="location">src/app/features/limits/figures.ts:349</note>
+      </notes>
+      <segment>
+        <source>+ <ph id="0" equiv="count" disp="set.length - 2"/> more</source>
+        <target>+ <ph id="0" equiv="count" disp="set.length - 2"/> weitere</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.enforce-sentence">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:22</note>
+      </notes>
+      <segment>
+        <source>Limits refuse and slow requests.</source>
+        <target>Limits weisen Anfragen ab und verlangsamen sie.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.audit-sentence">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:23</note>
+      </notes>
+      <segment>
+        <source>Every limit is counted and shown; nothing is refused or slowed.</source>
+        <target>Jedes Limit wird gezählt und angezeigt; nichts wird abgewiesen oder verlangsamt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-enforce-title">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:43,45</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:98,100</note>
+      </notes>
+      <segment>
+        <source>Switch to Enforce</source>
+        <target>Zu Enforce wechseln</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-audit-title">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:45,47</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:100,104</note>
+      </notes>
+      <segment>
+        <source>Switch to Audit</source>
+        <target>Zu Audit wechseln</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.preview-none">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:56,58</note>
+      </notes>
+      <segment>
+        <source>In the last 24 hours no caller would have been limited.</source>
+        <target>In den letzten 24 Stunden wäre kein Aufrufer begrenzt worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.preview-figures">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:65,67</note>
+      </notes>
+      <segment>
+        <source>Would have refused most</source>
+        <target>Hätte am meisten abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.preview-kinds">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:76,78</note>
+      </notes>
+      <segment>
+        <source>Kinds of caller</source>
+        <target>Arten von Aufrufern</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.consequence">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:87,89</note>
+      </notes>
+      <segment>
+        <source>From now on, limits refuse and slow requests on every replica within seconds.</source>
+        <target>Ab jetzt weisen Limits Anfragen auf jedem Replikat binnen Sekunden ab und verlangsamen sie.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.preview-loading">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:89,92</note>
+      </notes>
+      <segment>
+        <source>Reading the last 24 hours…</source>
+        <target>Die letzten 24 Stunden werden gelesen …</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-audit-text">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:92,95</note>
+      </notes>
+      <segment>
+        <source>Limits will be counted and shown, and nothing will be refused or slowed.</source>
+        <target>Limits werden gezählt und angezeigt, und nichts wird abgewiesen oder verlangsamt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.cancel">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:96,97</note>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:55,57</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:69,70</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:181,182</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.one-caller">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:157</note>
+      </notes>
+      <segment>
+        <source>1 caller would have been limited.</source>
+        <target>1 Aufrufer wäre begrenzt worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.callers">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:158</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> callers would have been limited.</source>
+        <target><ph id="0" equiv="count" disp="count"/> Aufrufer wären begrenzt worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.one-refused">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:164</note>
+      </notes>
+      <segment>
+        <source>1 request would have been refused.</source>
+        <target>1 Anfrage wäre abgewiesen worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.refused">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:165</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> requests would have been refused.</source>
+        <target><ph id="0" equiv="count" disp="count"/> Anfragen wären abgewiesen worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.one-slowed">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:171</note>
+      </notes>
+      <segment>
+        <source>1 download would have been slowed down.</source>
+        <target>1 Download wäre verlangsamt worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.slowed">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:172</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> downloads would have been slowed down.</source>
+        <target><ph id="0" equiv="count" disp="count"/> Downloads wären verlangsamt worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.one-blocked">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:178</note>
+      </notes>
+      <segment>
+        <source>1 caller would have been blocked.</source>
+        <target>1 Aufrufer wäre gesperrt worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.blocked">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:179</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> callers would have been blocked.</source>
+        <target><ph id="0" equiv="count" disp="count"/> Aufrufer wären gesperrt worden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.label">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:217</note>
+      </notes>
+      <segment>
+        <source>Mode:</source>
+        <target>Modus:</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-enforce">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:223,224</note>
+      </notes>
+      <segment>
+        <source>Switch to Enforce…</source>
+        <target>Zu Enforce wechseln …</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-audit">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:225,227</note>
+      </notes>
+      <segment>
+        <source>Switch to Audit…</source>
+        <target>Zu Audit wechseln …</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.switched">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:290</note>
+      </notes>
+      <segment>
+        <source>Mode: <ph id="0" equiv="mode" disp="modeWord(result.value.mode)"/>. <ph id="1" equiv="sentence" disp="modeSentence(result.value.mode)"/></source>
+        <target>Modus: <ph id="0" equiv="mode" disp="modeWord(result.value.mode)"/>. <ph id="1" equiv="sentence" disp="modeSentence(result.value.mode)"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.empty">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:41,42</note>
+      </notes>
+      <segment>
+        <source>No rule here. Callers get the instance&apos;s limits.</source>
+        <target>Hier gibt es keine Regel. Aufrufer erhalten die Limits der Instanz.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.builtin">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:49,51</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:61,63</note>
+      </notes>
+      <segment>
+        <source>Built-in</source>
+        <target>Eingebaut</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.above-maximum">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:59,61</note>
+      </notes>
+      <segment>
+        <source>Above the maximum</source>
+        <target>Über dem Maximum</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.delete">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:93,94</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.caption-instance">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:146</note>
+      </notes>
+      <segment>
+        <source>Rules of the instance</source>
+        <target>Regeln der Instanz</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.caption-project">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:148</note>
+      </notes>
+      <segment>
+        <source>Rules of project <ph id="0" equiv="project" disp="place.project"/></source>
+        <target>Regeln des Projekts <ph id="0" equiv="project" disp="place.project"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.caption-repository">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:150</note>
+      </notes>
+      <segment>
+        <source>Rules of <ph id="0" equiv="repository" disp="place.repository"/></source>
+        <target>Regeln von <ph id="0" equiv="repository" disp="place.repository"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.col-who">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:155</note>
+      </notes>
+      <segment>
+        <source>Applies to</source>
+        <target>Gilt für</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.col-profile">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:156</note>
+      </notes>
+      <segment>
+        <source>Profile</source>
+        <target>Profil</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.col-note">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:157</note>
+      </notes>
+      <segment>
+        <source>Note</source>
+        <target>Notiz</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.col-actions">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:158</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:107</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:142</note>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:126</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -34801,6 +36202,814 @@
     <unit id="token-form.name">
       <notes>
         <note category="location">src/app/shared/access/token-form.ts:70,71</note>
+    <unit id="limits.rules.clamped">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:203</note>
+      </notes>
+      <segment>
+        <source>Lowered to what the instance or the project&apos;s maximum allows: <ph id="0" equiv="figures" disp="parts.join(&apos;; &apos;)"/>.</source>
+        <target>Gesenkt auf das, was die Instanz oder das Maximum des Projekts erlaubt: <ph id="0" equiv="figures" disp="parts.join(&apos;; &apos;)"/>.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.saved">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:218</note>
+      </notes>
+      <segment>
+        <source>Rule saved.</source>
+        <target>Regel gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.delete-title">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:226</note>
+      </notes>
+      <segment>
+        <source>Delete the rule for <ph id="0" equiv="name" disp="name"/>?</source>
+        <target>Die Regel für <ph id="0" equiv="name" disp="name"/> löschen?</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.delete-text">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:227</note>
+      </notes>
+      <segment>
+        <source>The caller gets the limits of the next place or of its kind from the next request on.</source>
+        <target>Der Aufrufer erhält ab der nächsten Anfrage die Limits des nächsten Orts oder seiner Art.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.delete-confirm">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:228</note>
+      </notes>
+      <segment>
+        <source>Delete rule</source>
+        <target>Regel löschen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.deleted">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:234</note>
+      </notes>
+      <segment>
+        <source>Rule deleted.</source>
+        <target>Regel gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.refused-of">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:18</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="refused" disp="formatCount(b.refused, locale)"/> of <ph id="1" equiv="limit" disp="formatCount(b.limit, locale)"/> per hour</source>
+        <target><ph id="0" equiv="refused" disp="formatCount(b.refused, locale)"/> von <ph id="1" equiv="limit" disp="formatCount(b.limit, locale)"/> pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.show-ended">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:38,39</note>
+      </notes>
+      <segment>
+        <source>Show ended blocks</source>
+        <target>Abgelaufene Sperren zeigen</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.caption">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:43</note>
+      </notes>
+      <segment>
+        <source>Blocks</source>
+        <target>Sperren</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.empty">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:50,51</note>
+      </notes>
+      <segment>
+        <source>Nothing is blocked.</source>
+        <target>Nichts ist gesperrt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.lifted-by">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:61,62</note>
+      </notes>
+      <segment>
+        <source>Lifted by <ph id="0" equiv="INTERPOLATION" disp="{{ b.liftedBy ?? &apos;–&apos; }}"/></source>
+        <target>Aufgehoben von <ph id="0" equiv="INTERPOLATION" disp="{{ b.liftedBy ?? &apos;–&apos; }}"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.lift">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:73,74</note>
+      </notes>
+      <segment>
+        <source>Lift</source>
+        <target>Aufheben</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.col-caller">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:102</note>
+      </notes>
+      <segment>
+        <source>Caller</source>
+        <target>Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.col-place">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:103</note>
+      </notes>
+      <segment>
+        <source>Place</source>
+        <target>Ort</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.col-started">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:104</note>
+      </notes>
+      <segment>
+        <source>Started</source>
+        <target>Begonnen</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.col-ends">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:105</note>
+      </notes>
+      <segment>
+        <source>Ends</source>
+        <target>Endet</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.col-refused">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:106</note>
+      </notes>
+      <segment>
+        <source>Refused requests</source>
+        <target>Abgewiesene Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.lift-title">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:149</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:265</note>
+      </notes>
+      <segment>
+        <source>Lift the block of <ph id="0" equiv="name" disp="name"/>?</source>
+        <target>Die Sperre von <ph id="0" equiv="name" disp="name"/> aufheben?</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.lift-text">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:150</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:266</note>
+      </notes>
+      <segment>
+        <source>The caller&apos;s requests are admitted again at once, and its refused requests count from zero.</source>
+        <target>Die Anfragen des Aufrufers werden sofort wieder angenommen, und seine abgewiesenen Anfragen zählen ab null.</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.lift-confirm">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:151</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:267</note>
+      </notes>
+      <segment>
+        <source>Lift block</source>
+        <target>Sperre aufheben</target>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.lifted">
+      <notes>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:157</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:272</note>
+      </notes>
+      <segment>
+        <source>Block lifted.</source>
+        <target>Sperre aufgehoben.</target>
+      </segment>
+    </unit>
+    <unit id="limits.description">
+      <notes>
+        <note category="location">src/app/features/limits/limits-frame.ts:24,25</note>
+      </notes>
+      <segment>
+        <source>How much each caller may download, and how fast.</source>
+        <target>Wie viel jeder Aufrufer herunterladen darf und wie schnell.</target>
+      </segment>
+    </unit>
+    <unit id="limits.nav">
+      <notes>
+        <note category="location">src/app/features/limits/limits-frame.ts:28,29</note>
+      </notes>
+      <segment>
+        <source>Download limits</source>
+        <target>Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.tab.rules">
+      <notes>
+        <note category="location">src/app/features/limits/limits-frame.ts:29,30</note>
+      </notes>
+      <segment>
+        <source>Rules</source>
+        <target>Regeln</target>
+      </segment>
+    </unit>
+    <unit id="limits.tab.profiles">
+      <notes>
+        <note category="location">src/app/features/limits/limits-frame.ts:30,31</note>
+      </notes>
+      <segment>
+        <source>Profiles</source>
+        <target>Profile</target>
+      </segment>
+    </unit>
+    <unit id="limits.tab.projects">
+      <notes>
+        <note category="location">src/app/features/limits/limits-frame.ts:31,32</note>
+      </notes>
+      <segment>
+        <source>Projects</source>
+        <target>Projekte</target>
+      </segment>
+    </unit>
+    <unit id="limits.tab.blocks">
+      <notes>
+        <note category="location">src/app/features/limits/limits-frame.ts:32,34</note>
+      </notes>
+      <segment>
+        <source>Blocks</source>
+        <target>Sperren</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.one-rule">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:18</note>
+      </notes>
+      <segment>
+        <source>1 rule</source>
+        <target>1 Regel</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.rules">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:18</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(a, locale)"/> rules</source>
+        <target><ph id="0" equiv="count" disp="formatCount(a, locale)"/> Regeln</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.one-maximum">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:22</note>
+      </notes>
+      <segment>
+        <source>1 project maximum</source>
+        <target>1 Projektmaximum</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.maximums">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:23</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(m, locale)"/> project maximums</source>
+        <target><ph id="0" equiv="count" disp="formatCount(m, locale)"/> Projektmaxima</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.new">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:40,43</note>
+      </notes>
+      <segment>
+        <source>New profile</source>
+        <target>Neues Profil</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.caption">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:44,45</note>
+      </notes>
+      <segment>
+        <source>Profiles</source>
+        <target>Profile</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.empty">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:52,53</note>
+      </notes>
+      <segment>
+        <source>There is no profile yet.</source>
+        <target>Es gibt noch kein Profil.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.delete">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:91,92</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.in-use">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:95,96</note>
+      </notes>
+      <segment>
+        <source>Used by <ph id="0" equiv="INTERPOLATION" disp="{{ usedBy(p) }}"/></source>
+        <target>Verwendet von <ph id="0" equiv="INTERPOLATION" disp="{{ usedBy(p) }}"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.col-name">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:138</note>
+      </notes>
+      <segment>
+        <source>Profile</source>
+        <target>Profil</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.col-description">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:139</note>
+      </notes>
+      <segment>
+        <source>Description</source>
+        <target>Beschreibung</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.col-figures">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:140</note>
+      </notes>
+      <segment>
+        <source>Figures</source>
+        <target>Werte</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.col-used">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:141</note>
+      </notes>
+      <segment>
+        <source>Used by</source>
+        <target>Verwendet von</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.delete-title">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:168</note>
+      </notes>
+      <segment>
+        <source>Delete profile <ph id="0" equiv="name" disp="p.name"/>?</source>
+        <target>Profil <ph id="0" equiv="name" disp="p.name"/> löschen?</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.delete-text">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:169</note>
+      </notes>
+      <segment>
+        <source>Nothing uses the profile. It is deleted for good.</source>
+        <target>Nichts verwendet das Profil. Es wird endgültig gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.delete-confirm">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:170</note>
+      </notes>
+      <segment>
+        <source>Delete profile</source>
+        <target>Profil löschen</target>
+      </segment>
+    </unit>
+    <unit id="limits.profiles.deleted">
+      <notes>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:177</note>
+      </notes>
+      <segment>
+        <source>Profile deleted.</source>
+        <target>Profil gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.none">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:23</note>
+      </notes>
+      <segment>
+        <source>None</source>
+        <target>Keines</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.one-change">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:28</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="profile" disp="name"/> + 1 change</source>
+        <target><ph id="0" equiv="profile" disp="name"/> + 1 Änderung</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.changes">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:29</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="profile" disp="name"/> + <ph id="1" equiv="count" disp="n"/> changes</source>
+        <target><ph id="0" equiv="profile" disp="name"/> + <ph id="1" equiv="count" disp="n"/> Änderungen</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.add">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:44,46</note>
+      </notes>
+      <segment>
+        <source>Add maximum</source>
+        <target>Maximum hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.caption">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:48,49</note>
+      </notes>
+      <segment>
+        <source>Projects with download limits</source>
+        <target>Projekte mit Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.remove">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:80,82</note>
+      </notes>
+      <segment>
+        <source>Remove maximum</source>
+        <target>Maximum entfernen</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.set">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:85,86</note>
+      </notes>
+      <segment>
+        <source>Set maximum</source>
+        <target>Maximum setzen</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.search">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:105</note>
+      </notes>
+      <segment>
+        <source>Filter projects</source>
+        <target>Projekte filtern</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.no-match">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:119</note>
+      </notes>
+      <segment>
+        <source>No project matches.</source>
+        <target>Kein Projekt passt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.empty">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:120</note>
+      </notes>
+      <segment>
+        <source>No project has a maximum. A project&apos;s Owner can set limits up to the instance&apos;s values.</source>
+        <target>Kein Projekt hat ein Maximum. Der Owner eines Projekts kann Limits bis zu den Werten der Instanz setzen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.col-project">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:123</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+        <target>Projekt</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.col-maximum">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:124</note>
+      </notes>
+      <segment>
+        <source>Maximum</source>
+        <target>Maximum</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.col-rules">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:125</note>
+      </notes>
+      <segment>
+        <source>Rules</source>
+        <target>Regeln</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.saved">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:169</note>
+      </notes>
+      <segment>
+        <source>Maximum saved.</source>
+        <target>Maximum gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.remove-title">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:176</note>
+      </notes>
+      <segment>
+        <source>Remove the maximum of <ph id="0" equiv="project" disp="r.project"/>?</source>
+        <target>Das Maximum von <ph id="0" equiv="project" disp="r.project"/> entfernen?</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.remove-text">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:178</note>
+      </notes>
+      <segment>
+        <source>The project&apos;s Owners can then set limits up to the instance&apos;s values only. Their rules above that are lowered from the next request on.</source>
+        <target>Die Owner des Projekts können dann Limits nur bis zu den Werten der Instanz setzen. Ihre Regeln darüber werden ab der nächsten Anfrage gesenkt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.remove-confirm">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:180</note>
+      </notes>
+      <segment>
+        <source>Remove maximum</source>
+        <target>Maximum entfernen</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.removed">
+      <notes>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:186</note>
+      </notes>
+      <segment>
+        <source>Maximum removed.</source>
+        <target>Maximum entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.minutes">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:17</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(minutes, locale)"/> minutes</source>
+        <target><ph id="0" equiv="count" disp="formatCount(minutes, locale)"/> Minuten</target>
+      </segment>
+    </unit>
+    <unit id="limits.rules.add">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:31,34</note>
+        <note category="location">src/app/features/limits/project-limits-section.ts:44,46</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:46,48</note>
+      </notes>
+      <segment>
+        <source>Add rule</source>
+        <target>Regel hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="limits.block-time.label">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:41,43</note>
+      </notes>
+      <segment>
+        <source>Block time in minutes (1 to 1,440)</source>
+        <target>Sperrzeit in Minuten (1 bis 1.440)</target>
+      </segment>
+    </unit>
+    <unit id="limits.save-changes">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:54,55</note>
+        <note category="location">src/app/features/limits/profile-editor.ts:104,106</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:103,104</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+        <target>Änderungen speichern</target>
+      </segment>
+    </unit>
+    <unit id="limits.block-time.text">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:62,63</note>
+      </notes>
+      <segment>
+        <source>Block time after too many refused requests: <ph id="0" equiv="INTERPOLATION" disp="{{ blockText(s.value.blockSeconds) }}"/></source>
+        <target>Sperrzeit nach zu vielen abgewiesenen Anfragen: <ph id="0" equiv="INTERPOLATION" disp="{{ blockText(s.value.blockSeconds) }}"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.block-time.change">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:65,66</note>
+      </notes>
+      <segment>
+        <source>Change</source>
+        <target>Ändern</target>
+      </segment>
+    </unit>
+    <unit id="limits.block-time.change-hidden">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:66,69</note>
+      </notes>
+      <segment>
+        <source> the block time</source>
+        <target> die Sperrzeit</target>
+      </segment>
+    </unit>
+    <unit id="limits.block-time.invalid">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:128</note>
+      </notes>
+      <segment>
+        <source>A whole number of minutes from 1 to 1,440.</source>
+        <target>Eine ganze Zahl von Minuten von 1 bis 1.440.</target>
+      </segment>
+    </unit>
+    <unit id="limits.block-time.saved">
+      <notes>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:153</note>
+      </notes>
+      <segment>
+        <source>Block time saved.</source>
+        <target>Sperrzeit gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.new-title">
+      <notes>
+        <note category="location">src/app/features/limits/limits.routes.ts:10</note>
+        <note category="location">src/app/features/limits/profile-editor.ts:43</note>
+      </notes>
+      <segment>
+        <source>New profile</source>
+        <target>Neues Profil</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.title">
+      <notes>
+        <note category="location">src/app/features/limits/limits.routes.ts:15</note>
+      </notes>
+      <segment>
+        <source>Download limit profile</source>
+        <target>Profil der Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.title.profiles">
+      <notes>
+        <note category="location">src/app/features/limits/limits.routes.ts:30</note>
+      </notes>
+      <segment>
+        <source>Profiles of the download limits</source>
+        <target>Profile der Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.title.projects">
+      <notes>
+        <note category="location">src/app/features/limits/limits.routes.ts:35</note>
+      </notes>
+      <segment>
+        <source>Projects of the download limits</source>
+        <target>Projekte der Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.title.blocks">
+      <notes>
+        <note category="location">src/app/features/limits/limits.routes.ts:40</note>
+      </notes>
+      <segment>
+        <source>Blocks of the download limits</source>
+        <target>Sperren der Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.maximum.change-title">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:32,34</note>
+      </notes>
+      <segment>
+        <source>Change maximum</source>
+        <target>Maximum ändern</target>
+      </segment>
+    </unit>
+    <unit id="limits.maximum.set-title">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:34,36</note>
+      </notes>
+      <segment>
+        <source>Set maximum</source>
+        <target>Maximum setzen</target>
+      </segment>
+    </unit>
+    <unit id="limits.maximum.hint">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:41,42</note>
+      </notes>
+      <segment>
+        <source>The project&apos;s Owners can set limits up to this maximum, where it is above the instance&apos;s values.</source>
+        <target>Die Owner des Projekts können Limits bis zu diesem Maximum setzen, wo es über den Werten der Instanz liegt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.maximum.project">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:46,47</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+        <target>Projekt</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.profile">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:55,56</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:137,138</note>
+      </notes>
+      <segment>
+        <source>Profile</source>
+        <target>Profil</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.single">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:63,64</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:162,163</note>
+      </notes>
+      <segment>
+        <source>Change single figures</source>
+        <target>Einzelne Werte ändern</target>
+      </segment>
+    </unit>
+    <unit id="limits.maximum.save">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:70,72</note>
+      </notes>
+      <segment>
+        <source>Save maximum</source>
+        <target>Maximum speichern</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.loading-profiles">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:91</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:226</note>
+      </notes>
+      <segment>
+        <source>Loading profiles…</source>
+        <target>Profile werden geladen …</target>
+      </segment>
+    </unit>
+    <unit id="limits.maximum.choose-project">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:94</note>
+      </notes>
+      <segment>
+        <source>Choose a project</source>
+        <target>Projekt wählen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.choose-profile">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:101</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:260</note>
+      </notes>
+      <segment>
+        <source>Choose a profile</source>
+        <target>Profil wählen</target>
+      </segment>
+    </unit>
+    <unit id="limits.maximum.project-required">
+      <notes>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:148</note>
+      </notes>
+      <segment>
+        <source>Choose a project.</source>
+        <target>Wählen Sie ein Projekt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.badge">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:46,47</note>
+      </notes>
+      <segment>
+        <source>Download limit profile</source>
+        <target>Profil der Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.name">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:61,62</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -34819,6 +37028,28 @@
     <unit id="token-form.description-optional">
       <notes>
         <note category="location">src/app/shared/access/token-form.ts:80,82</note>
+    <unit id="limits.profile.key">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:73,74</note>
+        <note category="location">src/app/features/limits/profile-editor.ts:81</note>
+      </notes>
+      <segment>
+        <source>Key</source>
+        <target>Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.key-hint">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:77,79</note>
+      </notes>
+      <segment>
+        <source>Lower case letters, digits and hyphens. It cannot be changed.</source>
+        <target>Kleinbuchstaben, Ziffern und Bindestriche. Er kann nicht geändert werden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.description">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:87,89</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -34877,6 +37108,1473 @@
       <segment>
         <source>Expired and revoked technical tokens</source>
         <target>Abgelaufene und widerrufene technische Token</target>
+    <unit id="limits.profile.unlimited">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:95,97</note>
+      </notes>
+      <segment>
+        <source>Unlimited is always unlimited.</source>
+        <target>Unlimited ist immer unbegrenzt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.create">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:102,103</note>
+      </notes>
+      <segment>
+        <source>Create profile</source>
+        <target>Profil anlegen</target>
+      </segment>
+    </unit>
+    <unit id="limits.loading">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:110,114</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:79,82</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:126,129</note>
+      </notes>
+      <segment>
+        <source>Loading.</source>
+        <target>Wird geladen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.name-invalid">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:204</note>
+      </notes>
+      <segment>
+        <source>A name of 1 to 64 characters.</source>
+        <target>Ein Name mit 1 bis 64 Zeichen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.key-invalid">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:211</note>
+      </notes>
+      <segment>
+        <source>2 to 32 lower case letters, digits and hyphens, starting with a letter.</source>
+        <target>2 bis 32 Kleinbuchstaben, Ziffern und Bindestriche, beginnend mit einem Buchstaben.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.created">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:226</note>
+      </notes>
+      <segment>
+        <source>Profile created.</source>
+        <target>Profil angelegt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.profile.saved">
+      <notes>
+        <note category="location">src/app/features/limits/profile-editor.ts:240</note>
+      </notes>
+      <segment>
+        <source>Profile saved.</source>
+        <target>Profil gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.one-rule">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:12</note>
+      </notes>
+      <segment>
+        <source>1 rule</source>
+        <target>1 Regel</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.rules">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:12</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> rules</source>
+        <target><ph id="0" equiv="count" disp="count"/> Regeln</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.maximum">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:13</note>
+      </notes>
+      <segment>
+        <source>Maximum: <ph id="0" equiv="profile" disp="maximum"/></source>
+        <target>Maximum: <ph id="0" equiv="profile" disp="maximum"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.section.heading">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:29,30</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:39,40</note>
+      </notes>
+      <segment>
+        <source>Download limits</source>
+        <target>Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.project-hint">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:31,34</note>
+      </notes>
+      <segment>
+        <source>How much the callers of this project&apos;s repositories may download.</source>
+        <target>Wie viel die Aufrufer der Repositorys dieses Projekts herunterladen dürfen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.project-sentence">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:34,36</note>
+      </notes>
+      <segment>
+        <source>Rules here apply to the project&apos;s repositories that have no rules of their own.</source>
+        <target>Regeln hier gelten für die Repositorys des Projekts, die keine eigenen Regeln haben.</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.maximum-given">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:37,38</note>
+      </notes>
+      <segment>
+        <source>Maximum given by an administrator: <ph id="0" equiv="INTERPOLATION" disp="{{ name }}"/></source>
+        <target>Von einem Administrator gegebenes Maximum: <ph id="0" equiv="INTERPOLATION" disp="{{ name }}"/></target>
+      </segment>
+    </unit>
+    <unit id="limits.section.no-maximum">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:39,42</note>
+      </notes>
+      <segment>
+        <source>No maximum: you can set limits up to the instance&apos;s values.</source>
+        <target>Kein Maximum: Sie können Limits bis zu den Werten der Instanz setzen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.project-usage">
+      <notes>
+        <note category="location">src/app/features/limits/project-limits-section.ts:50,53</note>
+      </notes>
+      <segment>
+        <source>Usage of this project</source>
+        <target>Nutzung dieses Projekts</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.repository-hint">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:41,44</note>
+      </notes>
+      <segment>
+        <source>How much each caller may download from this repository.</source>
+        <target>Wie viel jeder Aufrufer aus diesem Repository herunterladen darf.</target>
+      </segment>
+    </unit>
+    <unit id="limits.ceilings.heading">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:53,54</note>
+      </notes>
+      <segment>
+        <source>Ceilings</source>
+        <target>Obergrenzen</target>
+      </segment>
+    </unit>
+    <unit id="limits.ceilings.hint">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:54,55</note>
+      </notes>
+      <segment>
+        <source>All callers of one kind together; a request must fit both its caller&apos;s limit and the ceiling.</source>
+        <target>Alle Aufrufer einer Art zusammen; eine Anfrage muss sowohl in das Limit ihres Aufrufers als auch in die Obergrenze passen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.ceilings.gb">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:63,64</note>
+      </notes>
+      <segment>
+        <source>GB per hour from the upstream</source>
+        <target>GB pro Stunde aus dem Upstream</target>
+      </segment>
+    </unit>
+    <unit id="limits.ceilings.requests">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:82,84</note>
+      </notes>
+      <segment>
+        <source>Upstream requests per hour</source>
+        <target>Upstream-Anfragen pro Stunde</target>
+      </segment>
+    </unit>
+    <unit id="limits.section.repository-usage">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:114,118</note>
+      </notes>
+      <segment>
+        <source>Usage of this repository</source>
+        <target>Nutzung dieses Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="limits.ceilings.anonymous">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:204</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:165</note>
+      </notes>
+      <segment>
+        <source>All anonymous callers</source>
+        <target>Alle anonymen Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.ceilings.signed-in">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:205</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:166</note>
+      </notes>
+      <segment>
+        <source>All signed-in callers</source>
+        <target>Alle angemeldeten Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.ceilings.saved">
+      <notes>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:271</note>
+      </notes>
+      <segment>
+        <source>Ceilings saved.</source>
+        <target>Obergrenzen gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.applies-to">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:85,86</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:91,93</note>
+      </notes>
+      <segment>
+        <source>Applies to</source>
+        <target>Gilt für</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.address">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:102,104</note>
+      </notes>
+      <segment>
+        <source>Address or range</source>
+        <target>Adresse oder Bereich</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.address-hint">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:106,107</note>
+      </notes>
+      <segment>
+        <source>An address, or a range such as 198.51.100.0/24 or 2001:db8:1::/48</source>
+        <target>Eine Adresse oder ein Bereich wie 198.51.100.0/24 oder 2001:db8:1::/48</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.kind">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:113,114</note>
+      </notes>
+      <segment>
+        <source>Kind of caller</source>
+        <target>Art des Aufrufers</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.cap-maximum">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:151,152</note>
+      </notes>
+      <segment>
+        <source>You can set up to the instance&apos;s values for this caller, or up to the project&apos;s maximum (<ph id="0" equiv="INTERPOLATION" disp="{{ data.maximum }}"/>).</source>
+        <target>Sie können für diesen Aufrufer bis zu den Werten der Instanz setzen oder bis zum Maximum des Projekts (<ph id="0" equiv="INTERPOLATION" disp="{{ data.maximum }}"/>).</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.cap">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:154,156</note>
+      </notes>
+      <segment>
+        <source>You can set up to the instance&apos;s values for this caller.</source>
+        <target>Sie können für diesen Aufrufer bis zu den Werten der Instanz setzen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.note">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:174,176</note>
+      </notes>
+      <segment>
+        <source>Note (optional)</source>
+        <target>Notiz (optional)</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.change-title">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:217</note>
+      </notes>
+      <segment>
+        <source>Change rule</source>
+        <target>Regel ändern</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.set-title">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:219</note>
+      </notes>
+      <segment>
+        <source>Set limit</source>
+        <target>Limit setzen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.add-title">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:220</note>
+      </notes>
+      <segment>
+        <source>Add rule</source>
+        <target>Regel hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.save">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:222</note>
+      </notes>
+      <segment>
+        <source>Save rule</source>
+        <target>Regel speichern</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.set">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:224</note>
+      </notes>
+      <segment>
+        <source>Set limit</source>
+        <target>Limit setzen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.add">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:225</note>
+      </notes>
+      <segment>
+        <source>Add rule</source>
+        <target>Regel hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.who-user">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:230</note>
+      </notes>
+      <segment>
+        <source>A user</source>
+        <target>Ein Benutzer</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.who-group">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:231</note>
+      </notes>
+      <segment>
+        <source>A group</source>
+        <target>Eine Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.who-token">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:232</note>
+      </notes>
+      <segment>
+        <source>A technical token</source>
+        <target>Ein technisches Token</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.who-ci">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:233</note>
+      </notes>
+      <segment>
+        <source>A CI project</source>
+        <target>Ein CI-Projekt</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.who-address">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:234</note>
+      </notes>
+      <segment>
+        <source>An address or range</source>
+        <target>Eine Adresse oder ein Bereich</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.who-every">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:235</note>
+      </notes>
+      <segment>
+        <source>Every caller of a kind</source>
+        <target>Jeder Aufrufer einer Art</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.one-changed">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:273</note>
+      </notes>
+      <segment>
+        <source>1 changed</source>
+        <target>1 geändert</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.n-changed">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:273</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> changed</source>
+        <target><ph id="0" equiv="count" disp="n"/> geändert</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.group">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:345</note>
+      </notes>
+      <segment>
+        <source>Group</source>
+        <target>Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.token">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:347</note>
+      </notes>
+      <segment>
+        <source>Technical token</source>
+        <target>Technisches Token</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.ci">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:349</note>
+      </notes>
+      <segment>
+        <source>CI project</source>
+        <target>CI-Projekt</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.user">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:351</note>
+      </notes>
+      <segment>
+        <source>User</source>
+        <target>Benutzer</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.token-hint">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:358</note>
+      </notes>
+      <segment>
+        <source>Type the token&apos;s name or its account.</source>
+        <target>Geben Sie den Namen des Tokens oder sein Konto ein.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.ci-hint">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:360</note>
+      </notes>
+      <segment>
+        <source>Type the project&apos;s path.</source>
+        <target>Geben Sie den Pfad des Projekts ein.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.group-hint">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:362</note>
+      </notes>
+      <segment>
+        <source>Type the group&apos;s name.</source>
+        <target>Geben Sie den Namen der Gruppe ein.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.user-hint">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:364</note>
+      </notes>
+      <segment>
+        <source>Type a name or a username.</source>
+        <target>Geben Sie einen Namen oder einen Benutzernamen ein.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.who-required">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:372</note>
+      </notes>
+      <segment>
+        <source>Choose who the rule applies to.</source>
+        <target>Wählen Sie, für wen die Regel gilt.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.address-required">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:381</note>
+      </notes>
+      <segment>
+        <source>Type an address or a range.</source>
+        <target>Geben Sie eine Adresse oder einen Bereich ein.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.address-invalid">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:382</note>
+      </notes>
+      <segment>
+        <source>An IPv4 or IPv6 address, optionally with a prefix length such as /24.</source>
+        <target>Eine IPv4- oder IPv6-Adresse, optional mit einer Präfixlänge wie /24.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.above-cap">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:469</note>
+      </notes>
+      <segment>
+        <source>Above what you may set here.</source>
+        <target>Über dem, was Sie hier setzen dürfen.</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.at-most">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:470</note>
+      </notes>
+      <segment>
+        <source>At most <ph id="0" equiv="limit" disp="limitText(figure, cap, this.locale)"/> here.</source>
+        <target>Hier höchstens <ph id="0" equiv="limit" disp="limitText(figure, cap, this.locale)"/>.</target>
+      </segment>
+    </unit>
+    <unit id="profile.nav.usage">
+      <notes>
+        <note category="location">src/app/features/profile/profile-nav.ts:13,16</note>
+      </notes>
+      <segment>
+        <source>Usage</source>
+        <target>Nutzung</target>
+      </segment>
+    </unit>
+    <unit id="profile.usage.heading">
+      <notes>
+        <note category="location">src/app/features/profile/profile.routes.ts:17</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:32</note>
+      </notes>
+      <segment>
+        <source>Usage</source>
+        <target>Nutzung</target>
+      </segment>
+    </unit>
+    <unit id="explain.single-none">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:16</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: no rule for <ph id="1" equiv="name" disp="subjectName"/>.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: keine Regel für <ph id="1" equiv="name" disp="subjectName"/>.</target>
+      </segment>
+    </unit>
+    <unit id="explain.groups-none">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:18</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: no rule for its groups.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: keine Regel für seine Gruppen.</target>
+      </segment>
+    </unit>
+    <unit id="explain.kind-none">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:20</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: no rule for its kind.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: keine Regel für seine Art.</target>
+      </segment>
+    </unit>
+    <unit id="explain.single-match">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:26</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: the rule for <ph id="1" equiv="name" disp="subjectName"/> applies.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: die Regel für <ph id="1" equiv="name" disp="subjectName"/> gilt.</target>
+      </segment>
+    </unit>
+    <unit id="explain.groups-match">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:28</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: the rule for <ph id="1" equiv="groups" disp="names"/> applies.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: die Regel für <ph id="1" equiv="groups" disp="names"/> gilt.</target>
+      </segment>
+    </unit>
+    <unit id="explain.kind-match">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:30</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: the rule for <ph id="1" equiv="kind" disp="names"/> applies.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: die Regel für <ph id="1" equiv="kind" disp="names"/> gilt.</target>
+      </segment>
+    </unit>
+    <unit id="explain.open">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:47,48</note>
+      </notes>
+      <segment>
+        <source>Explain for a repository</source>
+        <target>Für ein Repository erklären</target>
+      </segment>
+    </unit>
+    <unit id="explain.repository">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:53,55</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="explain.ask">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:71,73</note>
+      </notes>
+      <segment>
+        <source>Explain</source>
+        <target>Erklären</target>
+      </segment>
+    </unit>
+    <unit id="explain.administrator">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:83,85</note>
+      </notes>
+      <segment>
+        <source>An administrator is decided at the instance alone.</source>
+        <target>Ein Administrator wird allein auf der Instanz entschieden.</target>
+      </segment>
+    </unit>
+    <unit id="explain.effective">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:86,87</note>
+      </notes>
+      <segment>
+        <source>Limits that apply</source>
+        <target>Geltende Limits</target>
+      </segment>
+    </unit>
+    <unit id="explain.clamp">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:89,90</note>
+      </notes>
+      <segment>
+        <source>Above the project&apos;s maximum</source>
+        <target>Über dem Maximum des Projekts</target>
+      </segment>
+    </unit>
+    <unit id="explain.ceiling">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:93,95</note>
+      </notes>
+      <segment>
+        <source>Ceiling of this remote</source>
+        <target>Obergrenze dieses Remote-Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="explain.clamped">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:218</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="figure" disp="figureName(f)"/>: <ph id="1" equiv="limit" disp="limitText(f, a.clamped[f] ?? null, this.locale)"/> applies</source>
+        <target><ph id="0" equiv="figure" disp="figureName(f)"/>: <ph id="1" equiv="limit" disp="limitText(f, a.clamped[f] ?? null, this.locale)"/> gilt</target>
+      </segment>
+    </unit>
+    <unit id="explain.ceiling-text">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:225</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="amount" disp="amount"/> from the upstream, upstream requests per hour: <ph id="1" equiv="count" disp="count"/></source>
+        <target><ph id="0" equiv="amount" disp="amount"/> aus dem Upstream, Upstream-Anfragen pro Stunde: <ph id="1" equiv="count" disp="count"/></target>
+      </segment>
+    </unit>
+    <unit id="profile.usage.description">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:32</note>
+      </notes>
+      <segment>
+        <source>What you downloaded, and the limits that apply to you.</source>
+        <target>Was Sie heruntergeladen haben und welche Limits für Sie gelten.</target>
+      </segment>
+    </unit>
+    <unit id="usage.period">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:34</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:81</note>
+        <note category="location">src/app/features/usage/usage-overview.html:14</note>
+      </notes>
+      <segment>
+        <source>Period</source>
+        <target>Zeitraum</target>
+      </segment>
+    </unit>
+    <unit id="profile.usage.audit">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:51,53</note>
+      </notes>
+      <segment>
+        <source>Limits are counted, not applied yet.</source>
+        <target>Limits werden gezählt, aber noch nicht angewendet.</target>
+      </segment>
+    </unit>
+    <unit id="profile.usage.empty">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:54,57</note>
+      </notes>
+      <segment>
+        <source>You have not downloaded anything in the last 24 hours.</source>
+        <target>Sie haben in den letzten 24 Stunden nichts heruntergeladen.</target>
+      </segment>
+    </unit>
+    <unit id="profile.usage.limits">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:58,59</note>
+      </notes>
+      <segment>
+        <source>Your limits</source>
+        <target>Ihre Limits</target>
+      </segment>
+    </unit>
+    <unit id="usage.by-repository">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:70,71</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:115,116</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:26,27</note>
+      </notes>
+      <segment>
+        <source>By repository</source>
+        <target>Nach Repository</target>
+      </segment>
+    </unit>
+    <unit id="usage.by-credential">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:75,76</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:121,122</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:78,79</note>
+      </notes>
+      <segment>
+        <source>By credential</source>
+        <target>Nach Zugangsdaten</target>
+      </segment>
+    </unit>
+    <unit id="profile.usage.you">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:105</note>
+      </notes>
+      <segment>
+        <source>you</source>
+        <target>Sie</target>
+      </segment>
+    </unit>
+    <unit id="usage.empty">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:119</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:194</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:183</note>
+      </notes>
+      <segment>
+        <source>No downloads <ph id="0" equiv="period" disp="periodPhrase(this.activePeriod())"/>.</source>
+        <target>Keine Downloads <ph id="0" equiv="period" disp="periodPhrase(this.activePeriod())"/>.</target>
+      </segment>
+    </unit>
+    <unit id="usage.who.group">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:25</note>
+      </notes>
+      <segment>
+        <source>the group <ph id="0" equiv="group" disp="w.displayName || w.group"/></source>
+        <target>die Gruppe <ph id="0" equiv="group" disp="w.displayName || w.group"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.who.address">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:29</note>
+      </notes>
+      <segment>
+        <source>the addresses <ph id="0" equiv="prefix" disp="w.prefix"/></source>
+        <target>die Adressen <ph id="0" equiv="prefix" disp="w.prefix"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.rule.builtin">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:44</note>
+      </notes>
+      <segment>
+        <source>the default for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/></source>
+        <target>der Vorgabe für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.rule.rule">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:45</note>
+      </notes>
+      <segment>
+        <source>the rule for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/></source>
+        <target>der Regel für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.rule.own">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:46</note>
+      </notes>
+      <segment>
+        <source>Your limits come from <ph id="0" equiv="rule" disp="what"/>.</source>
+        <target>Ihre Limits stammen aus <ph id="0" equiv="rule" disp="what"/>.</target>
+      </segment>
+    </unit>
+    <unit id="usage.rule.applies">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:46</note>
+      </notes>
+      <segment>
+        <source>Applies: <ph id="0" equiv="rule" disp="what"/>.</source>
+        <target>Es gilt: <ph id="0" equiv="rule" disp="what"/>.</target>
+      </segment>
+    </unit>
+    <unit id="usage.used-of">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:52</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="used" disp="amount(used)"/> of <ph id="1" equiv="limit" disp="amount(limit)"/></source>
+        <target><ph id="0" equiv="used" disp="amount(used)"/> von <ph id="1" equiv="limit" disp="amount(limit)"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.block.lift">
+      <notes>
+        <note category="location">src/app/features/usage/usage-detail.ts:96,98</note>
+      </notes>
+      <segment>
+        <source>Lift block</source>
+        <target>Sperre aufheben</target>
+      </segment>
+    </unit>
+    <unit id="usage.audit-line">
+      <notes>
+        <note category="location">src/app/features/usage/usage-detail.ts:101,104</note>
+        <note category="location">src/app/features/usage/usage-overview.html:59,62</note>
+      </notes>
+      <segment>
+        <source>Mode: <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Audit</pc>. Limits are counted, not applied.</source>
+        <target>Modus: <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Audit</pc>. Limits werden gezählt, nicht angewendet.</target>
+      </segment>
+    </unit>
+    <unit id="usage.limits">
+      <notes>
+        <note category="location">src/app/features/usage/usage-detail.ts:105,106</note>
+      </notes>
+      <segment>
+        <source>Limits</source>
+        <target>Limits</target>
+      </segment>
+    </unit>
+    <unit id="usage.block.text">
+      <notes>
+        <note category="location">src/app/features/usage/usage-detail.ts:255</note>
+      </notes>
+      <segment>
+        <source>Blocked until <ph id="0" equiv="time" disp="time"/> after <ph id="1" equiv="count" disp="formatCount(b.refused, this.locale)"/> refused requests in an hour</source>
+        <target>Gesperrt bis <ph id="0" equiv="time" disp="time"/> nach <ph id="1" equiv="count" disp="formatCount(b.refused, this.locale)"/> abgewiesenen Anfragen in einer Stunde</target>
+      </segment>
+    </unit>
+    <unit id="usage.block.text-short">
+      <notes>
+        <note category="location">src/app/features/usage/usage-detail.ts:256</note>
+      </notes>
+      <segment>
+        <source>Blocked until <ph id="0" equiv="time" disp="time"/> after too many refused requests</source>
+        <target>Gesperrt bis <ph id="0" equiv="time" disp="time"/> nach zu vielen abgewiesenen Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.title">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:62,63</note>
+      </notes>
+      <segment>
+        <source>Last 24 hours</source>
+        <target>Letzte 24 Stunden</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.table-label">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:75,77</note>
+      </notes>
+      <segment>
+        <source>Five-minute points of the last 24 hours</source>
+        <target>Fünf-Minuten-Punkte der letzten 24 Stunden</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.col-time">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:79,80</note>
+      </notes>
+      <segment>
+        <source>Time</source>
+        <target>Zeit</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.requests">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:80,81</note>
+        <note category="location">src/app/features/usage/usage-history.ts:355</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:161</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:55</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:123</note>
+      </notes>
+      <segment>
+        <source>Requests</source>
+        <target>Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.cached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:81,82</note>
+        <note category="location">src/app/features/usage/usage-history.ts:357</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:162</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:56</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:124</note>
+      </notes>
+      <segment>
+        <source>From the cache</source>
+        <target>Aus dem Cache</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.uncached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:82,83</note>
+        <note category="location">src/app/features/usage/usage-history.ts:359</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:163</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:57</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:125</note>
+      </notes>
+      <segment>
+        <source>From the upstream</source>
+        <target>Aus dem Upstream</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.upstream">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:83,84</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:164</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:58</note>
+      </notes>
+      <segment>
+        <source>Upstream requests</source>
+        <target>Upstream-Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.refused">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:84,85</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:165</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:59</note>
+      </notes>
+      <segment>
+        <source>Refused</source>
+        <target>Abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.col-limited">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:85,87</note>
+      </notes>
+      <segment>
+        <source>Limit events</source>
+        <target>Limit-Ereignisse</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.legend">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:140</note>
+      </notes>
+      <segment>
+        <source>Legend</source>
+        <target>Legende</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.legend-bars">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:140,142</note>
+      </notes>
+      <segment>
+        <source>Five minutes each</source>
+        <target>Je fünf Minuten</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.legend-marks">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:143,145</note>
+      </notes>
+      <segment>
+        <source>Refused requests or limit events</source>
+        <target>Abgewiesene Anfragen oder Limit-Ereignisse</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.empty">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:314</note>
+      </notes>
+      <segment>
+        <source>No downloads in the last 24 hours.</source>
+        <target>Keine Downloads in den letzten 24 Stunden.</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.charts-label">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:323</note>
+      </notes>
+      <segment>
+        <source>Requests, from the cache and from the upstream in five-minute points. Arrow keys read one point out.</source>
+        <target>Anfragen, aus dem Cache und aus dem Upstream in Fünf-Minuten-Punkten. Die Pfeiltasten lesen einen Punkt vor.</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.read-requests">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:342</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="this.count(p.requests)"/> requests</source>
+        <target><ph id="0" equiv="n" disp="this.count(p.requests)"/> Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.read-cached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:343</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="this.bytes(p.cachedBytes)"/> from the cache</source>
+        <target><ph id="0" equiv="n" disp="this.bytes(p.cachedBytes)"/> aus dem Cache</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.read-uncached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:344</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="this.bytes(p.uncachedBytes)"/> from the upstream</source>
+        <target><ph id="0" equiv="n" disp="this.bytes(p.uncachedBytes)"/> aus dem Upstream</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.read-refused">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:346</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="this.count(p.refused)"/> refused</source>
+        <target><ph id="0" equiv="n" disp="this.count(p.refused)"/> abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="usage.history.read-events">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:348</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="n" disp="this.count(events)"/> limit events</source>
+        <target><ph id="0" equiv="n" disp="this.count(events)"/> Limit-Ereignisse</target>
+      </segment>
+    </unit>
+    <unit id="usage.state.unlimited">
+      <notes>
+        <note category="location">src/app/features/usage/usage-meter.ts:19,21</note>
+        <note category="location">src/app/features/usage/usage-words.ts:21</note>
+      </notes>
+      <segment>
+        <source>Unlimited</source>
+        <target>Unbegrenzt</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.now">
+      <notes>
+        <note category="location">src/app/features/usage/usage-meter.ts:115</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:168</note>
+      </notes>
+      <segment>
+        <source>Now</source>
+        <target>Jetzt</target>
+      </segment>
+    </unit>
+    <unit id="usage.export">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:18,20</note>
+      </notes>
+      <segment>
+        <source>Export CSV</source>
+        <target>CSV exportieren</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.kind">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:29</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:138</note>
+      </notes>
+      <segment>
+        <source>Kind</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.state">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:33</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:140</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.project">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:38,39</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:142</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+        <target>Projekt</target>
+      </segment>
+    </unit>
+    <unit id="usage.views">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:47</note>
+      </notes>
+      <segment>
+        <source>Views</source>
+        <target>Ansichten</target>
+      </segment>
+    </unit>
+    <unit id="usage.view.all">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:47,48</note>
+      </notes>
+      <segment>
+        <source>All callers</source>
+        <target>Alle Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="usage.state.close">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:48,49</note>
+        <note category="location">src/app/features/usage/usage-words.ts:12</note>
+        <note category="location">src/app/features/usage/usage-words.ts:57</note>
+      </notes>
+      <segment>
+        <source>Close to the limit</source>
+        <target>Nahe am Limit</target>
+      </segment>
+    </unit>
+    <unit id="usage.state.would">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:51,53</note>
+        <note category="location">src/app/features/usage/usage-words.ts:16</note>
+        <note category="location">src/app/features/usage/usage-words.ts:61</note>
+      </notes>
+      <segment>
+        <source>Would have been limited</source>
+        <target>Wäre begrenzt worden</target>
+      </segment>
+    </unit>
+    <unit id="usage.state.reached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:53,56</note>
+        <note category="location">src/app/features/usage/usage-words.ts:17</note>
+        <note category="location">src/app/features/usage/usage-words.ts:61</note>
+      </notes>
+      <segment>
+        <source>Limit reached</source>
+        <target>Limit erreicht</target>
+      </segment>
+    </unit>
+    <unit id="usage.caption">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:63,64</note>
+      </notes>
+      <segment>
+        <source>Usage by caller</source>
+        <target>Nutzung nach Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="usage.state.blocked">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:82,83</note>
+        <note category="location">src/app/features/usage/usage-words.ts:19</note>
+        <note category="location">src/app/features/usage/usage-words.ts:59</note>
+      </notes>
+      <segment>
+        <source>Blocked</source>
+        <target>Gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="usage.search">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:93</note>
+      </notes>
+      <segment>
+        <source>Filter by name or address</source>
+        <target>Nach Name oder Adresse filtern</target>
+      </segment>
+    </unit>
+    <unit id="usage.heading-repository">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:129</note>
+      </notes>
+      <segment>
+        <source>Usage of <ph id="0" equiv="repository" disp="repo"/></source>
+        <target>Nutzung von <ph id="0" equiv="repository" disp="repo"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.heading-project">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:131</note>
+      </notes>
+      <segment>
+        <source>Usage of <ph id="0" equiv="project" disp="name"/></source>
+        <target>Nutzung von <ph id="0" equiv="project" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.any">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:148</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:204</note>
+      </notes>
+      <segment>
+        <source>Any</source>
+        <target>Alle</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.caller">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:160</note>
+      </notes>
+      <segment>
+        <source>Caller</source>
+        <target>Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="usage.empty.filtered">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:178</note>
+      </notes>
+      <segment>
+        <source>No caller matches.</source>
+        <target>Kein Aufrufer passt.</target>
+      </segment>
+    </unit>
+    <unit id="usage.empty.project">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:181</note>
+      </notes>
+      <segment>
+        <source>Nobody downloaded from this project in the last 24 hours.</source>
+        <target>Niemand hat in den letzten 24 Stunden aus diesem Projekt heruntergeladen.</target>
+      </segment>
+    </unit>
+    <unit id="usage.exact-bytes">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:332</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="bytes" disp="formatCount(n, this.locale)"/> bytes</source>
+        <target><ph id="0" equiv="bytes" disp="formatCount(n, this.locale)"/> Bytes</target>
+      </segment>
+    </unit>
+    <unit id="usage.meter-tooltip">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:340</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="figure" disp="figureName(u.figure)"/> <ph id="1" equiv="place" disp="placeText(u.place)"/>: <ph id="2" equiv="percent" disp="percent"/> % of the limit</source>
+        <target><ph id="0" equiv="figure" disp="figureName(u.figure)"/> <ph id="1" equiv="place" disp="placeText(u.place)"/>: <ph id="2" equiv="percent" disp="percent"/> % des Limits</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.repository">
+      <notes>
+        <note category="location">src/app/features/usage/usage-tables.ts:54</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="usage.credential.session">
+      <notes>
+        <note category="location">src/app/features/usage/usage-tables.ts:88,90</note>
+      </notes>
+      <segment>
+        <source>Browser session</source>
+        <target>Browser-Sitzung</target>
+      </segment>
+    </unit>
+    <unit id="usage.credential.token">
+      <notes>
+        <note category="location">src/app/features/usage/usage-tables.ts:120</note>
+      </notes>
+      <segment>
+        <source>Personal token</source>
+        <target>Persönliches Token</target>
+      </segment>
+    </unit>
+    <unit id="usage.col.credential">
+      <notes>
+        <note category="location">src/app/features/usage/usage-tables.ts:122</note>
+      </notes>
+      <segment>
+        <source>Credential</source>
+        <target>Zugangsdaten</target>
+      </segment>
+    </unit>
+    <unit id="usage.period.hour">
+      <notes>
+        <note category="location">src/app/features/usage/usage-words.ts:70</note>
+      </notes>
+      <segment>
+        <source>Last hour</source>
+        <target>Letzte Stunde</target>
+      </segment>
+    </unit>
+    <unit id="usage.period.day">
+      <notes>
+        <note category="location">src/app/features/usage/usage-words.ts:72</note>
+      </notes>
+      <segment>
+        <source>Last 24 hours</source>
+        <target>Letzte 24 Stunden</target>
+      </segment>
+    </unit>
+    <unit id="usage.period.30d">
+      <notes>
+        <note category="location">src/app/features/usage/usage-words.ts:74</note>
+      </notes>
+      <segment>
+        <source>Last 30 days</source>
+        <target>Letzte 30 Tage</target>
+      </segment>
+    </unit>
+    <unit id="usage.period.phrase-hour">
+      <notes>
+        <note category="location">src/app/features/usage/usage-words.ts:82</note>
+      </notes>
+      <segment>
+        <source>in the last hour</source>
+        <target>in der letzten Stunde</target>
+      </segment>
+    </unit>
+    <unit id="usage.period.phrase-day">
+      <notes>
+        <note category="location">src/app/features/usage/usage-words.ts:84</note>
+      </notes>
+      <segment>
+        <source>in the last 24 hours</source>
+        <target>in den letzten 24 Stunden</target>
+      </segment>
+    </unit>
+    <unit id="usage.period.phrase-30d">
+      <notes>
+        <note category="location">src/app/features/usage/usage-words.ts:86</note>
+      </notes>
+      <segment>
+        <source>in the last 30 days</source>
+        <target>in den letzten 30 Tagen</target>
+      </segment>
+    </unit>
+    <unit id="usage.detail.title">
+      <notes>
+        <note category="location">src/app/features/usage/usage.routes.ts:30</note>
+        <note category="location">src/app/features/usage/usage.routes.ts:48</note>
+      </notes>
+      <segment>
+        <source>Usage of a caller</source>
+        <target>Nutzung eines Aufrufers</target>
+      </segment>
+    </unit>
+    <unit id="limits.notice.see-usage">
+      <notes>
+        <note category="location">src/app/shared/download-link.ts:89</note>
+      </notes>
+      <segment>
+        <source>See your usage</source>
+        <target>Ihre Nutzung ansehen</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.kind-technical-token">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:555</note>
+      </notes>
+      <segment>
+        <source>Technical token</source>
+        <target>Technisches Token</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.kind-ci-project">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:556</note>
+      </notes>
+      <segment>
+        <source>CI project</source>
+        <target>CI-Projekt</target>
+      </segment>
+    </unit>
+    <unit id="limits.who.kind">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:118</note>
+      </notes>
+      <segment>
+        <source>Kind of caller</source>
+        <target>Art von Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="usage.kind.system-hint">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:167</note>
+      </notes>
+      <segment>
+        <source>Mirror passes and other background work</source>
+        <target>Mirror-Läufe und andere Arbeit im Hintergrund</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.caller-count-one">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:188</note>
+      </notes>
+      <segment>
+        <source>1 caller</source>
+        <target>1 Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.caller-count">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:188</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/> callers</source>
+        <target><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/> Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.times-one">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:192</note>
+      </notes>
+      <segment>
+        <source>once</source>
+        <target>einmal</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.times">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:192</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/> times</source>
+        <target><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/>-mal</target>
       </segment>
     </unit>
   </file>

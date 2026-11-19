@@ -1,3 +1,4 @@
+import { DownloadLink } from '../../shared/download-link';
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -79,6 +80,7 @@ interface TabEntry {
     GradeLabel,
     VersionSize,
     NoValue,
+    DownloadLink,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',

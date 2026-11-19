@@ -58,6 +58,9 @@ import { provideDebFakes } from './fakes-deb';
 // >>> T-22 search
 import { provideSearchFakes } from './fakes-search';
 // <<< T-22 search
+// >>> W-26 limits
+import { provideLimitsFakes } from './fakes-limits';
+// <<< W-26 limits
 
 /*
  * In-memory fakes of the typed service interfaces (R-UI-047 component tier). Screens of the later
@@ -440,5 +443,8 @@ export function provideFakeApis(): Provider[] {
     // >>> T-22 search
     ...provideSearchFakes(),
     // <<< T-22 search
+    // >>> W-26 limits
+    ...provideLimitsFakes(),
+    // <<< W-26 limits
   ];
 }

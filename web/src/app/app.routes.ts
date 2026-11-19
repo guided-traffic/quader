@@ -143,6 +143,21 @@ export const routes: Routes = [
             data: wrapper($localize`:@@route.tokens.title:Tokens`),
             loadChildren: () => import('./features/tokens/tokens.routes').then((m) => m.TOKENS_ROUTES),
           },
+          // >>> W-26 limits
+          // The download limits and the usage overview (R-UI-177, R-UI-183, Q-UI-730); the usage routes guard themselves, because a
+          // caller without usage:read is sent to its own usage (R-UI-185).
+          {
+            path: 'usage',
+            data: wrapper($localize`:@@usage.heading:Usage`),
+            loadChildren: () => import('./features/usage/usage.routes').then((m) => m.USAGE_ROUTES),
+          },
+          {
+            path: 'limits',
+            canActivate: [capabilityGuard('limits:read')],
+            data: wrapper($localize`:@@limits.heading:Download limits`),
+            loadChildren: () => import('./features/limits/limits.routes').then((m) => m.LIMITS_ROUTES),
+          },
+          // <<< W-26 limits
           // >>> M4 ci
           {
             path: 'ci',

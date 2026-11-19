@@ -28,6 +28,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { formatSize } from '../packages/format-size';
 import { projectRoleLabel } from './project-roles';
 import { PageHeader } from '../../shared/ui/page-header';
+import { ProjectLimitsSection } from '../limits/project-limits-section';
 
 /**
  * The settings of one project (R-UI-041, R-UI-054, Q-UI-129, Q-UI-215): the display name and the description edited in place by
@@ -39,7 +40,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'quader-project-settings',
-  imports: [PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, TextField, VisibilityLevelControl],
+  imports: [PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, TextField, VisibilityLevelControl],
   template: `
     <quader-page-header heading="Settings" i18n-heading="@@project.settings" />
 
@@ -145,6 +146,12 @@ import { PageHeader } from '../../shared/ui/page-header';
             <dd>{{ p.updatedAt | date: 'medium' }}</dd>
           </dl>
         </quader-disclosure>
+
+        <!-- >>> W-26 limits -->
+        @if (limitsShown()) {
+          <quader-project-limits [project]="p.key" />
+        }
+        <!-- <<< W-26 limits -->
 
         @if (canWrite()) {
           <quader-disclosure
@@ -262,6 +269,8 @@ export class ProjectSettings {
   protected readonly canWrite = computed(() => this.session.has('projects:write'));
   /** Changing the display name and the description: `projects:write`, or the Owner role of the project (R-AUTHZ-026). */
   protected readonly canEdit = computed(() => this.canWrite() || this.session.isOwnerOf(this.project()));
+  /** The section **Download limits**: for an Owner and the holders of `limits:read` (R-UI-180). */
+  protected readonly limitsShown = computed(() => this.session.has('limits:read') || this.session.isOwnerOf(this.project()));
   protected readonly roleText = projectRoleLabel;
   protected readonly size = formatSize;
   protected readonly empty = computed(() => {

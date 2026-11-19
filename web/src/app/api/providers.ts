@@ -47,6 +47,9 @@ import { DebApi, HttpDebApi } from './deb-api';
 // >>> T-22 search
 import { HttpSearchApi, SearchApi } from './search-api';
 // <<< T-22 search
+// >>> W-26 limits
+import { HttpLimitsApi, LimitsApi } from './limits-api';
+// <<< W-26 limits
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -105,5 +108,8 @@ export function provideApiServices(): Provider[] {
     // >>> T-22 search
     { provide: SearchApi, useClass: HttpSearchApi },
     // <<< T-22 search
+    // >>> W-26 limits
+    { provide: LimitsApi, useClass: HttpLimitsApi },
+    // <<< W-26 limits
   ];
 }

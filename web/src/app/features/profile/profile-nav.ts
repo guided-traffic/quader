@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-/** The three pages of the profile as the tab strip of links (UI-A-20); the current page is marked with `aria-current`. */
+/** The four pages of the profile as the tab strip of links (UI-A-20, R-UI-185); the current page is marked with `aria-current`. */
 @Component({
   selector: 'quader-profile-nav',
   imports: [RouterLink, RouterLinkActive],
@@ -10,6 +10,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       <a class="tab-link" routerLink="/profile" routerLinkActive [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" i18n="@@profile.nav.profile">Profile</a>
       <a class="tab-link" routerLink="/profile/tokens" routerLinkActive ariaCurrentWhenActive="page" i18n="@@profile.nav.tokens">Personal tokens</a>
       <a class="tab-link" routerLink="/profile/sessions" routerLinkActive ariaCurrentWhenActive="page" i18n="@@profile.nav.sessions">Sessions</a>
+      <a class="tab-link" routerLink="/profile/usage" routerLinkActive ariaCurrentWhenActive="page" i18n="@@profile.nav.usage">Usage</a>
     </nav>
   `,
   styles: `

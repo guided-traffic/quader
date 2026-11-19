@@ -1,0 +1,107 @@
+<quader-page-header [heading]="heading()">
+  <div actions class="period" role="group" i18n-aria-label="@@usage.period" aria-label="Period">
+    @for (p of periods; track p) {
+      <button class="btn btn-default" type="button" [attr.aria-pressed]="activePeriod() === p" (click)="setPeriod(p)">{{ periodText(p) }}</button>
+    }
+  </div>
+</quader-page-header>
+
+<quader-list-head
+  [searchLabel]="searchLabel"
+  [search]="query().q ?? ''"
+  (searchChange)="searchFor($event)"
+  [chips]="chips()"
+  (removeChip)="removeChip($event)"
+  [filtersOpen]="panelOpen()"
+  (filtersOpenChange)="panelOpen.set($event); $event && openedDrawer()"
+  [controls]="panel.panelId"
+>
+  <a headEnd class="btn btn-tertiary" [href]="exportUrl()" download i18n="@@usage.export">Export CSV</a>
+</quader-list-head>
+<quader-filter-panel
+  #panel
+  [open]="panelOpen()"
+  (openChange)="panelOpen.set($event)"
+  [activeCount]="chips().length"
+  (apply)="applyFilters()"
+  (clearAll)="clearFilters()"
+>
+  <quader-filter-category i18n-label="@@usage.filter.kind" label="Kind">
+    @for (k of kinds; track k) {
+      <quader-checkbox [checked]="stagedKinds().includes(k)" (checkedChange)="toggleKind(k, $event)">{{ kindLabel(k) }}</quader-checkbox>
+    }
+  </quader-filter-category>
+  <quader-select-field i18n-label="@@usage.filter.state" label="State" name="state" width="full" [options]="stateOptions()" [(value)]="stagedState" />
+  @if (scope() === 'instance') {
+    <quader-select-field
+      i18n-label="@@usage.filter.project"
+      label="Project"
+      name="project"
+      width="full"
+      [options]="projectOptions()"
+      [(value)]="stagedProject"
+    />
+  }
+</quader-filter-panel>
+
+<nav class="tab-nav views" i18n-aria-label="@@usage.views" aria-label="Views">
+  <a class="tab-link" [routerLink]="[]" [queryParams]="{ state: null }" queryParamsHandling="merge" [attr.aria-current]="!query().state ? 'page' : null" i18n="@@usage.view.all">All callers</a>
+  <a class="tab-link" [routerLink]="[]" [queryParams]="{ state: 'close' }" queryParamsHandling="merge" [attr.aria-current]="query().state === 'close' ? 'page' : null" i18n="@@usage.state.close">Close to the limit</a>
+  <a class="tab-link" [routerLink]="[]" [queryParams]="{ state: reachedState() }" queryParamsHandling="merge" [attr.aria-current]="query().state === reachedState() ? 'page' : null">
+    @if (mode() === 'audit') {
+      <ng-container i18n="@@usage.state.would">Would have been limited</ng-container>
+    } @else {
+      <ng-container i18n="@@usage.state.reached">Limit reached</ng-container>
+    }
+  </a>
+</nav>
+
+@if (mode() === 'audit' && loaded()) {
+  <p class="mode-note" i18n="@@usage.audit-line">Mode: <strong>Audit</strong>. Limits are counted, not applied.</p>
+}
+
+<quader-data-table
+  caption="Usage by caller"
+  i18n-caption="@@usage.caption"
+  [columns]="columns()"
+  [sort]="tableSort()"
+  (sortChange)="setSort($event)"
+  [loaded]="loaded()"
+  [loading]="loading()"
+  [error]="failure()"
+  (retry)="load()"
+  [empty]="rows().length === 0"
+  [emptyText]="emptyText()"
+  [hasMore]="next() !== null"
+  (more)="more()"
+>
+  @for (r of rows(); track r.subject.kind + r.subject.id) {
+    <tr>
+      <th scope="row">
+        <quader-caller-cell [view]="caller(r)" [link]="link(r)">
+          @if (r.state === 'blocked') {
+            <span class="badge bad"><span class="material-icons" aria-hidden="true">block</span><ng-container i18n="@@usage.state.blocked">Blocked</ng-container></span>
+          }
+        </quader-caller-cell>
+      </th>
+      <td class="num">{{ count(r.requests) }}</td>
+      <td class="num"><span [quaderTooltip]="exactBytes(r.cachedBytes)" >{{ bytes(r.cachedBytes) }}</span></td>
+      <td class="num"><span [quaderTooltip]="exactBytes(r.uncachedBytes)" >{{ bytes(r.uncachedBytes) }}</span></td>
+      <td class="num narrow-drop">{{ count(r.upstreamRequests) }}</td>
+      <td class="num narrow-drop">{{ count(r.refused) }}</td>
+      <td>
+        @if (r.utilisation || r.state === 'unlimited') {
+          <quader-usage-meter
+            [ratio]="r.state === 'unlimited' ? null : (r.utilisation?.ratio ?? 0)"
+            [state]="r.state"
+            [mode]="mode()"
+            [label]="meterLabel(r)"
+            [tooltip]="meterTooltip(r)"
+          />
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+    </tr>
+  }
+</quader-data-table>
