@@ -85,12 +85,32 @@ func Wrap(ctx context.Context, w http.ResponseWriter, e *limits.Engine, c *limit
 	return &Writer{ResponseWriter: w, ctx: ctx, e: e, c: c}
 }
 
-// WriteHeader records the status for the request log.
+// WriteHeader records the status for the request log; a 429 of the download limits gets the policy of the figure that refused
+// it (R-LIM-020).
 func (w *Writer) WriteHeader(code int) {
 	if w.status == 0 {
 		w.status = code
+		if code == http.StatusTooManyRequests {
+			SetRefusalPolicy(w.Header(), w.c)
+		}
 	}
 	w.ResponseWriter.WriteHeader(code)
+}
+
+// SetRefusalPolicy adds the RateLimit fields of the figure that refused a request beside the request figures' (R-LIM-020,
+// Q-LIM-23): "cached-hour", "uncached-hour", "upstream-hour", "day", "parallel" or "refused-hour", with qu for a figure that
+// counts bytes or downloads in progress. A request no such figure refused gets nothing.
+func SetRefusalPolicy(h http.Header, c *limits.Charge) {
+	p, ok := c.RefusalPolicy()
+	if !ok {
+		return
+	}
+	policy := `"` + p.Name + `";q=` + strconv.FormatInt(p.Quota, 10) + ";w=" + strconv.FormatInt(int64(p.Window/time.Second), 10)
+	if p.Unit != "" {
+		policy += `;qu="` + p.Unit + `"`
+	}
+	h.Add("RateLimit-Policy", policy)
+	h.Add("RateLimit", `"`+p.Name+`";r=0;t=`+strconv.FormatInt(int64((p.Reset+time.Second-1)/time.Second), 10))
 }
 
 // Write counts and paces.
@@ -155,15 +175,16 @@ func Log(ctx context.Context, c *limits.Charge) {
 	if ri == nil || c == nil {
 		return
 	}
-	ri.SetField("limits_subject", c.Subject.String())
-	ri.SetField("limits_place", c.Resolution.Place.LogName())
-	ri.SetField("limits_rule", c.Resolution.Rule.LogID())
-	ri.SetField("limits_outcome", c.Outcome())
 	cached, uncached := c.Totals()
-	ri.SetField("bytes_cached", strconv.FormatInt(cached, 10))
-	ri.SetField("bytes_uncached", strconv.FormatInt(uncached, 10))
+	ri.SetLimits(observability.LimitsFields{
+		Subject: c.Subject.String(), Place: c.Resolution.Place.LogName(), Rule: c.Resolution.Rule.LogID(), Outcome: c.Outcome(),
+		BytesCached: cached, BytesUncached: uncached,
+	})
+	if c.Addressed.Project != "" {
+		ri.AddressedRepo(c.Addressed.String())
+	}
 	if lim := c.Limiter(); lim != "" {
-		ri.SetLimit(lim, string(c.Mode))
+		ri.SetLimit(lim, c.CounterMode())
 	}
 }
 

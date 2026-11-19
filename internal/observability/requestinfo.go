@@ -31,6 +31,8 @@ type requestFacts struct {
 	limitMode     string
 	remoteAddr    string
 	host          string
+	// limits are the download limits' fields of a request on a protocol path (SetLimits); nil off them.
+	limits *LimitsFields
 	// extra are the fields a protocol layer adds to the record (SetField), in the
 	// order they were set.
 	extra []extraField
@@ -100,6 +102,16 @@ func (ri *RequestInfo) SetRepo(repo, format string) {
 	ri.set(func(v *requestFacts) { v.repo, v.format = repo, format })
 }
 
+// AddressedRepo records the repository a request addressed when no handler recorded one with its format: the download limits'
+// stage knows the address of every protocol path, the dispatcher the format of the ones it serves.
+func (ri *RequestInfo) AddressedRepo(repo string) {
+	ri.set(func(v *requestFacts) {
+		if v.repo == "" {
+			v.repo = repo
+		}
+	})
+}
+
 // SetCache records the cache outcome: hit, miss, stale or negative_hit.
 func (ri *RequestInfo) SetCache(c string) { ri.set(func(v *requestFacts) { v.cache = c }) }
 
@@ -117,6 +129,20 @@ func (ri *RequestInfo) SetRemoteAddr(a string) { ri.set(func(v *requestFacts) { 
 // SetHost records the effective host of the request (R-EP-003), after the
 // endpoint's host rule; the record clips it to MaxHost bytes.
 func (ri *RequestInfo) SetHost(h string) { ri.set(func(v *requestFacts) { v.host = h }) }
+
+// LimitsFields are the fields of the download limits in the request record of a request on a protocol path (R-OPS-010,
+// usage-and-limits.md R-LIM-030): the subject it was charged to, the place and the rule that applied, the outcome, and the
+// bytes from the cache and from the upstream.
+type LimitsFields struct {
+	Subject, Place, Rule, Outcome string
+	BytesCached, BytesUncached    int64
+}
+
+// SetLimits sets the download limits' fields of the record; a request off the protocol paths has none, and its record names
+// them null.
+func (ri *RequestInfo) SetLimits(f LimitsFields) {
+	ri.set(func(v *requestFacts) { v.limits = &f })
+}
 
 // SetField adds a field of the protocol to the request record: the access-log
 // fields a package format names (npm-command, npm-session, R-NPM-005). The value

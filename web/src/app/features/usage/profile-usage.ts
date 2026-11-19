@@ -9,7 +9,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { ProfileNav } from '../profile/profile-nav';
 import { LimitExplain } from './limit-explain';
 import { UsageBudgets } from './usage-budgets';
-import { blockedUntil, profileNames } from './usage-detail';
+import { blockedUntil } from './usage-detail';
 import { UsageHistory } from './usage-history';
 import { UsageByCredentialTable, UsageByRepositoryTable } from './usage-tables';
 import { PERIODS, periodLabel, periodPhrase } from './usage-words';
@@ -56,7 +56,7 @@ export function nothingInDay(d: UsageDetail): boolean {
 
       <section class="section" aria-labelledby="own-limits">
         <h2 id="own-limits" i18n="@@profile.usage.limits">Your limits</h2>
-        <quader-usage-budgets [budgets]="d.budgets" [mode]="d.mode" [profileNames]="names()" [own]="true" />
+        <quader-usage-budgets [budgets]="d.budgets" [mode]="d.mode" [own]="true" />
         <quader-limit-explain [subjectName]="you" />
       </section>
 
@@ -73,7 +73,7 @@ export function nothingInDay(d: UsageDetail): boolean {
 
       <section class="section" aria-labelledby="own-credentials">
         <h2 id="own-credentials" i18n="@@usage.by-credential">By credential</h2>
-        <quader-usage-by-credential [rows]="d.credentials ?? []" [emptyText]="emptyText()" />
+        <quader-usage-by-credential [rows]="d.credentials" [emptyText]="emptyText()" />
       </section>
     } @else {
       <p role="status" i18n="@@limits.loading">Loading.</p>
@@ -81,6 +81,10 @@ export function nothingInDay(d: UsageDetail): boolean {
   `,
   styleUrl: './usage.scss',
   styles: `
+    /* The icon stands on the middle of the notice's first line (R-UI-175): a 24 px glyph on the line of the text. */
+    .notice-block > .material-icons {
+      margin-block: calc((var(--quader-line) - 24px) / 2);
+    }
     .notice-block {
       display: flex;
       align-items: flex-start;
@@ -107,7 +111,6 @@ export class ProfileUsage {
   protected readonly activePeriod = computed<UsagePeriod>(() => (PERIODS.includes(this.period() as UsagePeriod) ? (this.period() as UsagePeriod) : 'day'));
   protected readonly detail = signal<UsageDetail | null>(null);
   protected readonly failure = signal<ApiError | null>(null);
-  protected readonly names = signal<ReadonlyMap<string, string>>(new Map());
   protected readonly blocked = computed(() => {
     const d = this.detail();
     return d ? blockedUntil(d) : null;
@@ -119,7 +122,6 @@ export class ProfileUsage {
   protected readonly emptyText = computed(() => $localize`:@@usage.empty:No downloads ${periodPhrase(this.activePeriod())}:period:.`);
 
   constructor() {
-    void profileNames(this.api).then((n) => this.names.set(n));
     effect(() => {
       this.activePeriod();
       untracked(() => void this.load());

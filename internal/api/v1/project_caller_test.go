@@ -113,6 +113,20 @@ func TestR_AUTHZ_026_TheDeclarationOfAProjectRole(t *testing.T) {
 			t.Errorf("owner of another project: %d, want 404: a project the caller is no member of answers like a missing one", got)
 		}
 	})
+	t.Run("R-API-082 the owner role without a project source admits an Owner of any project", func(t *testing.T) {
+		// GET /api/v1/limits/profiles: limits:read or an Owner of any project. Without the limits area wired, an admitted caller
+		// reaches the handler, which answers 503.
+		const path = "/api/v1/limits/profiles"
+		if got := call(projectCaller{members: map[string]authz.ProjectRole{"web": authz.ProjectRoleOwner}, owns: map[string]bool{"web": true}}, path); got != 503 {
+			t.Errorf("owner of a project: %d", got)
+		}
+		if got := call(projectCaller{members: map[string]authz.ProjectRole{"web": authz.ProjectRoleOwner}}, path); got != 403 {
+			t.Errorf("owner role through a narrow token: %d, want 403", got)
+		}
+		if got := call(projectCaller{members: map[string]authz.ProjectRole{"web": authz.ProjectRoleMaintainer}}, path); got != 403 {
+			t.Errorf("maintainer: %d, want 403", got)
+		}
+	})
 	t.Run("R-AUTHZ-026 a holder of projects:read, the auditor, keeps 403 where a non-member gets 404", func(t *testing.T) {
 		const path = "/api/v1/projects/web/service-accounts"
 		if got := call(projectCaller{caps: map[string]bool{"projects:read": true}}, path); got != 403 {

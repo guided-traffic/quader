@@ -1,7 +1,16 @@
 import { formatDate } from '@angular/common';
-import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  LOCALE_ID,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { UsagePoint } from '../../api/limits-api';
 import { formatBytes, formatCount } from '../limits/figures';
+import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { niceMax } from '../vulnerabilities/report-trend';
 
 const WIDTH = 640;
@@ -13,7 +22,11 @@ const BOTTOM = 4;
 
 /** The three quantities of the history, each a chart of its own: requests are counted, bytes measured (one axis per chart). */
 export type HistorySeries = 'requests' | 'cachedBytes' | 'uncachedBytes';
-export const HISTORY_SERIES: readonly HistorySeries[] = ['requests', 'cachedBytes', 'uncachedBytes'];
+export const HISTORY_SERIES: readonly HistorySeries[] = [
+  'requests',
+  'cachedBytes',
+  'uncachedBytes',
+];
 
 export interface HistoryChart {
   readonly series: HistorySeries;
@@ -23,6 +36,8 @@ export interface HistoryChart {
   readonly marks: readonly { readonly x: number; readonly i: number }[];
   readonly max: number;
   readonly slot: number;
+  /** No point has a value: the axis names only its 0, not a scale of nothing ("5 B"). */
+  readonly empty: boolean;
 }
 
 /** The columns of one chart in viewBox units (exported for the specs). */
@@ -42,9 +57,13 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
   });
   const marks =
     series === 'requests'
-      ? points.flatMap((p, i) => (p.refused + p.limitedEvents + p.wouldLimitEvents > 0 ? [{ x: LEFT + i * slot + barW / 2, i }] : []))
+      ? points.flatMap((p, i) =>
+          p.refused + p.limitedEvents + p.wouldLimitEvents > 0
+            ? [{ x: LEFT + i * slot + barW / 2, i }]
+            : [],
+        )
       : [];
-  return { series, path: d, marks, max, slot };
+  return { series, path: d, marks, max, slot, empty: d === '' };
 }
 
 /**
@@ -56,11 +75,18 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
 @Component({
   selector: 'quader-usage-history',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DataTable],
   template: `
     <section class="history" aria-labelledby="history-title">
       <div class="history-head">
         <h2 id="history-title" i18n="@@usage.history.title">Last 24 hours</h2>
-        <button class="btn btn-tertiary" type="button" [attr.aria-expanded]="asTable()" aria-controls="history-body" (click)="asTable.set(!asTable())">
+        <button
+          class="btn btn-tertiary"
+          type="button"
+          [attr.aria-expanded]="asTable()"
+          aria-controls="history-body"
+          (click)="asTable.set(!asTable())"
+        >
           @if (asTable()) {
             <ng-container i18n="@@vuln.trend.show-chart">Show as chart</ng-container>
           } @else {
@@ -72,33 +98,35 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
         @if (points().length === 0) {
           <p class="empty">{{ emptyText() }}</p>
         } @else if (asTable()) {
-          <div class="table-scroll" tabindex="0" role="region" i18n-aria-label="@@usage.history.table-label" aria-label="Five-minute points of the last 24 hours">
-            <table class="data">
-              <thead>
+          <!-- The shared data table: the columns that do not fit give way and then the rows stack (R-UI-174), as every list; its
+               288 points scroll in a region of their own, so the page below stays near. -->
+          <div
+            class="points-scroll"
+            tabindex="0"
+            role="region"
+            i18n-aria-label="@@usage.history.table-label"
+            aria-label="Five-minute points of the last 24 hours"
+          >
+            <quader-data-table
+              class="points"
+              caption="Five-minute points of the last 24 hours"
+              i18n-caption="@@usage.history.table-label"
+              [columns]="tableColumns"
+            >
+              @for (p of points(); track p.start) {
                 <tr>
-                  <th scope="col" i18n="@@usage.history.col-time">Time</th>
-                  <th scope="col" class="num" i18n="@@usage.col.requests">Requests</th>
-                  <th scope="col" class="num" i18n="@@usage.col.cached">From the cache</th>
-                  <th scope="col" class="num" i18n="@@usage.col.uncached">From the upstream</th>
-                  <th scope="col" class="num" i18n="@@usage.col.upstream">Upstream requests</th>
-                  <th scope="col" class="num" i18n="@@usage.col.refused">Refused</th>
-                  <th scope="col" class="num" i18n="@@usage.history.col-limited">Limit events</th>
+                  <th scope="row">
+                    <time [attr.datetime]="p.start">{{ time(p.start) }}</time>
+                  </th>
+                  <td class="num">{{ count(p.requests) }}</td>
+                  <td class="num">{{ bytes(p.cachedBytes) }}</td>
+                  <td class="num">{{ bytes(p.uncachedBytes) }}</td>
+                  <td class="num narrow-drop">{{ count(p.upstreamRequests) }}</td>
+                  <td class="num narrow-drop">{{ count(p.refused) }}</td>
+                  <td class="num">{{ count(p.limitedEvents + p.wouldLimitEvents) }}</td>
                 </tr>
-              </thead>
-              <tbody>
-                @for (p of points(); track p.start) {
-                  <tr>
-                    <th scope="row"><time [attr.datetime]="p.start">{{ time(p.start) }}</time></th>
-                    <td class="num">{{ count(p.requests) }}</td>
-                    <td class="num">{{ bytes(p.cachedBytes) }}</td>
-                    <td class="num">{{ bytes(p.uncachedBytes) }}</td>
-                    <td class="num">{{ count(p.upstreamRequests) }}</td>
-                    <td class="num">{{ count(p.refused) }}</td>
-                    <td class="num">{{ count(p.limitedEvents + p.wouldLimitEvents) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+              }
+            </quader-data-table>
           </div>
         } @else {
           <div
@@ -114,18 +142,41 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
             @for (c of charts(); track c.series) {
               <div class="chart">
                 <span class="chart-label">{{ seriesLabel(c.series) }}</span>
-                <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" preserveAspectRatio="none" aria-hidden="true" (pointermove)="point($event)">
-                  <line class="grid" [attr.x1]="left" [attr.x2]="width - 4" [attr.y1]="top" [attr.y2]="top" />
-                  <line class="axis" [attr.x1]="left" [attr.x2]="width - 4" [attr.y1]="height - 4" [attr.y2]="height - 4" />
+                <svg
+                  [attr.viewBox]="'0 0 ' + width + ' ' + height"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  (pointermove)="point($event)"
+                >
+                  <line
+                    class="grid"
+                    [attr.x1]="left"
+                    [attr.x2]="width - 4"
+                    [attr.y1]="top"
+                    [attr.y2]="top"
+                  />
+                  <line
+                    class="axis"
+                    [attr.x1]="left"
+                    [attr.x2]="width - 4"
+                    [attr.y1]="height - 4"
+                    [attr.y2]="height - 4"
+                  />
                   <path class="bars" [attr.d]="c.path" />
                   @for (m of c.marks; track m.i) {
                     <path class="mark" [attr.d]="'M' + m.x + ' 0l3 5h-6z'" />
                   }
                   @if (active() !== null) {
-                    <line class="cursor" [attr.x1]="left + (active()! + 0.5) * c.slot" [attr.x2]="left + (active()! + 0.5) * c.slot" [attr.y1]="0" [attr.y2]="height" />
+                    <line
+                      class="cursor"
+                      [attr.x1]="left + (active()! + 0.5) * c.slot"
+                      [attr.x2]="left + (active()! + 0.5) * c.slot"
+                      [attr.y1]="0"
+                      [attr.y2]="height"
+                    />
                   }
                 </svg>
-                <span class="tick tick-max">{{ tickText(c.series, c.max) }}</span>
+                <span class="tick tick-max">{{ c.empty ? '' : tickText(c.series, c.max) }}</span>
                 <span class="tick tick-zero">0</span>
               </div>
             }
@@ -137,10 +188,15 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
           </div>
           <p id="history-readout" class="readout" aria-live="polite">{{ readout() }}</p>
           <ul class="legend" i18n-aria-label="@@usage.history.legend" aria-label="Legend">
-            <li><span class="swatch" aria-hidden="true"></span><ng-container i18n="@@usage.history.legend-bars">Five minutes each</ng-container></li>
+            <li>
+              <span class="swatch" aria-hidden="true"></span
+              ><ng-container i18n="@@usage.history.legend-bars">Five minutes each</ng-container>
+            </li>
             <li>
               <span class="material-icons warn" aria-hidden="true">warning</span>
-              <ng-container i18n="@@usage.history.legend-marks">Refused requests or limit events</ng-container>
+              <ng-container i18n="@@usage.history.legend-marks"
+                >Refused requests or limit events</ng-container
+              >
             </li>
           </ul>
         }
@@ -275,36 +331,17 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
       border-radius: 2px;
       background: var(--quader-chart-low);
     }
-    .table-scroll {
-      max-block-size: 18rem;
+    .points-scroll {
+      max-block-size: 24rem;
       margin-block-start: var(--quader-space-2);
-      overflow: auto;
-      border: 1px solid var(--quader-border);
-      border-radius: var(--quader-radius-s);
+      overflow-y: auto;
     }
-    .table-scroll:focus-visible {
+    .points-scroll:focus-visible {
       outline: var(--quader-focus-ring);
-      outline-offset: -2px;
+      outline-offset: 2px;
     }
-    table {
-      inline-size: 100%;
-      border-collapse: collapse;
-    }
-    th,
-    td {
-      padding: var(--quader-space-1) var(--quader-space-3);
-      text-align: start;
-      white-space: nowrap;
-      border-block-end: 1px solid var(--quader-border);
-    }
-    .num {
-      text-align: end;
-      font-variant-numeric: tabular-nums;
-    }
-    thead th {
-      position: sticky;
-      inset-block-start: 0;
-      background: var(--quader-table-head-bg);
+    .points {
+      display: block;
     }
   `,
 })
@@ -313,6 +350,20 @@ export class UsageHistory {
 
   readonly points = input.required<readonly UsagePoint[]>();
   readonly emptyText = input($localize`:@@usage.history.empty:No downloads in the last 24 hours.`);
+  protected readonly tableColumns: readonly TableColumn[] = [
+    { id: 'time', label: $localize`:@@usage.history.col-time:Time` },
+    { id: 'requests', label: $localize`:@@usage.col.requests:Requests`, numeric: true },
+    { id: 'cached', label: $localize`:@@usage.col.cached:From the cache`, numeric: true },
+    { id: 'uncached', label: $localize`:@@usage.col.uncached:From the upstream`, numeric: true },
+    {
+      id: 'upstream',
+      label: $localize`:@@usage.col.upstream:Upstream requests`,
+      numeric: true,
+      narrow: true,
+    },
+    { id: 'refused', label: $localize`:@@usage.col.refused:Refused`, numeric: true, narrow: true },
+    { id: 'limited', label: $localize`:@@usage.history.col-limited:Limit events`, numeric: true },
+  ];
 
   protected readonly width = WIDTH;
   protected readonly height = HEIGHT;
@@ -323,7 +374,9 @@ export class UsageHistory {
   protected readonly active = signal<number | null>(null);
   protected readonly chartsLabel = $localize`:@@usage.history.charts-label:Requests, from the cache and from the upstream in five-minute points. Arrow keys read one point out.`;
 
-  protected readonly charts = computed(() => HISTORY_SERIES.map((s) => historyChart(this.points(), s)));
+  protected readonly charts = computed(() =>
+    HISTORY_SERIES.map((s) => historyChart(this.points(), s)),
+  );
 
   /** A label every six hours, at the point it names. */
   protected readonly times = computed(() => {
@@ -331,7 +384,9 @@ export class UsageHistory {
     const n = pts.length;
     return pts.flatMap((p, i) => {
       const d = new Date(p.start);
-      return d.getMinutes() === 0 && d.getHours() % 6 === 0 ? [{ at: p.start, label: this.time(p.start), percent: ((i + 0.5) / n) * 100 }] : [];
+      return d.getMinutes() === 0 && d.getHours() % 6 === 0
+        ? [{ at: p.start, label: this.time(p.start), percent: ((i + 0.5) / n) * 100 }]
+        : [];
     });
   });
 
@@ -344,9 +399,11 @@ export class UsageHistory {
       $localize`:@@usage.history.read-cached:${this.bytes(p.cachedBytes)}:n: from the cache`,
       $localize`:@@usage.history.read-uncached:${this.bytes(p.uncachedBytes)}:n: from the upstream`,
     ];
-    if (p.refused > 0) parts.push($localize`:@@usage.history.read-refused:${this.count(p.refused)}:n: refused`);
+    if (p.refused > 0)
+      parts.push($localize`:@@usage.history.read-refused:${this.count(p.refused)}:n: refused`);
     const events = p.limitedEvents + p.wouldLimitEvents;
-    if (events > 0) parts.push($localize`:@@usage.history.read-events:${this.count(events)}:n: limit events`);
+    if (events > 0)
+      parts.push($localize`:@@usage.history.read-events:${this.count(events)}:n: limit events`);
     return `${this.time(p.start)}: ${parts.join(' · ')}`;
   });
 

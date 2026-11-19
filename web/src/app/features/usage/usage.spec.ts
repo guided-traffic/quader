@@ -117,7 +117,9 @@ describe('The usage overview (R-UI-183)', () => {
 describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
   it('R-UI-184 shows the limits per budget key with meters, the rule and why, and the rates as text; passes axe', async () => {
     const { root, get } = await renderScreen(UsageDetailPage, { capabilities: ['usage:read', 'limits:read'], inputs: { kind: 'user', id: 'alice' } });
-    expect(text(root.querySelector('h1')!)).toBe('alice');
+    // Q-UI-765: the title names the caller, the reference stands under it.
+    expect(text(root.querySelector('h1')!)).toBe('Alice Example');
+    expect(text(root.querySelector('.reference')!)).toBe('@alice');
     expect(text(root)).toContain('Applies: the default for every signed-in user at the instance, profile Standard.');
     expect(text(root)).toContain('Applies: the rule for the group contractors at web/npm-remote, profile Restricted.');
     expect(text(root)).toContain('246 GB of 300 GB');
@@ -206,7 +208,7 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
   });
 
   it('R-UI-184 names the steps and links a token to its account', () => {
-    expect(stepText({ place: { kind: 'instance' }, step: 'kind', outcome: 'matched', rules: [{ id: 'b', who: { kind: 'every', callerKind: 'user' }, profile: 'standard' }] }, 'alice')).toBe(
+    expect(stepText({ place: { kind: 'instance' }, step: 'kind', outcome: 'matched', rules: [{ id: 'b', who: { kind: 'every', callerKind: 'user' }, profile: 'standard', profileName: 'Standard', builtin: true, capped: false }] }, 'alice')).toBe(
       'Instance: the rule for Every signed-in user applies.',
     );
     expect(accountLink('sa:web/npm-local/ci')).toEqual(['/projects', 'web', 'repositories', 'npm-local', 'service-accounts', 'ci']);

@@ -33,7 +33,12 @@ export function sortRepositories(rows: readonly UsageByRepository[], sort: Table
     >
       @for (r of sorted(); track r.repository) {
         <tr>
-          <th scope="row" translate="no">{{ r.repository }}</th>
+          @if (r.repository) {
+            <th scope="row" class="wrap-name" translate="no">{{ r.repository }}</th>
+          } @else {
+            <!-- Requests that named no repository: /v2/, the token service, a key that does not parse (R-LIM-005). -->
+            <th scope="row" class="muted" i18n="@@usage.no-repository">No repository</th>
+          }
           <td class="num">{{ count(r.requests) }}</td>
           <td class="num">{{ bytes(r.cachedBytes) }}</td>
           <td class="num">{{ bytes(r.uncachedBytes) }}</td>

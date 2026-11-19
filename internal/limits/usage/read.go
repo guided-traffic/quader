@@ -2,6 +2,7 @@ package usage
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/limits"
@@ -199,27 +200,50 @@ func (r Reader) Places(ctx context.Context, kind limits.SubjectKind, ref string,
 	return out, err
 }
 
-// Point is one five-minute point of a subject's history.
+// Point is one five-minute point of a subject's history, with the limits it met (limited in enforce, would-limit in audit).
 type Point struct {
 	Start                                         time.Time
 	Requests, Refused, Cached, Uncached, Upstream int64
+	Limited, WouldLimit                           int64
 }
 
-// History reads a subject's five-minute points of the last 24 hours.
+// History reads a subject's five-minute points of the last 24 hours. A point with limit events and no request of its own (a
+// refusal before the buffer counted one) is a point too.
 func (r Reader) History(ctx context.Context, kind limits.SubjectKind, ref string, s Scope) ([]Point, error) {
 	var out []Point
+	since := ts(r.now().Add(-24 * time.Hour))
 	err := r.in(ctx, func(qs *q.Queries) error {
-		rows, err := qs.UsageHistory(ctx, q.UsageHistoryParams{
-			Since: ts(r.now().Add(-24 * time.Hour)), SubjectKind: string(kind),
-			SubjectRef: ref, Repos: s.repos(),
-		})
+		rows, err := qs.UsageHistory(ctx, q.UsageHistoryParams{Since: since, SubjectKind: string(kind), SubjectRef: ref, Repos: s.repos()})
+		if err != nil {
+			return err
+		}
+		at := map[int64]int{}
 		for _, p := range rows {
+			at[p.BucketStart.Time.Unix()] = len(out)
 			out = append(out, Point{
 				Start: p.BucketStart.Time, Requests: p.Requests, Refused: p.Refused, Cached: p.CachedBytes,
 				Uncached: p.UncachedBytes, Upstream: p.UpstreamRequests,
 			})
 		}
-		return err
+		evs, err := qs.UsageHistoryEvents(ctx, q.UsageHistoryEventsParams{Since: since, SubjectKind: string(kind), SubjectRef: ref, Repos: s.repos()})
+		if err != nil {
+			return err
+		}
+		for _, e := range evs {
+			i, ok := at[e.BucketStart.Time.Unix()]
+			if !ok {
+				i = len(out)
+				at[e.BucketStart.Time.Unix()] = i
+				out = append(out, Point{Start: e.BucketStart.Time})
+			}
+			if e.Mode == string(limits.ModeEnforce) {
+				out[i].Limited += e.Events
+			} else {
+				out[i].WouldLimit += e.Events
+			}
+		}
+		sort.Slice(out, func(i, j int) bool { return out[i].Start.Before(out[j].Start) })
+		return nil
 	})
 	return out, err
 }

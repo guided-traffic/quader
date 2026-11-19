@@ -165,3 +165,47 @@ SELECT subject_kind, subject_ref, place, max(until)::timestamptz AS until
   FROM limit_block
  WHERE lifted_at IS NULL AND until > now()
  GROUP BY subject_kind, subject_ref, place;
+
+-- name: LimitUserNames :many
+-- The names of the users a page of the limits or the usage names (R-LIM-032, R-LIM-034).
+SELECT p.id::text AS id, p.name, COALESCE(u.display_name, '')::text AS display_name
+  FROM principal p
+  LEFT JOIN app_user u ON u.principal_id = p.id
+ WHERE p.id = ANY(sqlc.arg(ids)::text[]::uuid[]);
+
+-- name: LimitTechnicalTokenNames :many
+-- The names and accounts of technical tokens by ID (R-LIM-032, R-LIM-034); the account's principal name is its reference
+-- without the sa: prefix.
+SELECT t.id::text AS id, t.name, p.name AS account
+  FROM technical_token t
+  JOIN principal p ON p.id = t.service_account_id
+ WHERE t.id = ANY(sqlc.arg(ids)::text[]::uuid[]);
+
+-- name: LimitSearchTechnicalTokens :many
+-- Technical tokens for the rule dialog (R-LIM-034): by the token's or its account's name; a project narrows to the accounts of
+-- the project and of its repositories.
+SELECT t.id::text AS id, t.name, p.name AS account
+  FROM technical_token t
+  JOIN principal p ON p.id = t.service_account_id
+ WHERE (sqlc.arg(q)::text = '' OR strpos(lower(t.name), lower(sqlc.arg(q)::text)) > 0
+        OR strpos(lower(p.name), lower(sqlc.arg(q)::text)) > 0)
+   AND (sqlc.arg(project)::text = '' OR p.name LIKE sqlc.arg(project)::text || '/%')
+ ORDER BY t.name COLLATE "C", p.name COLLATE "C"
+ LIMIT sqlc.arg(row_limit);
+
+-- name: LimitCIProjects :many
+-- The CI projects that tokens were issued for (R-LIM-034), with the project path the newest issuance named: by issuer and
+-- project ID, or by a text in the path or equal to the ID. refs narrows to issuer:project pairs when not empty.
+SELECT DISTINCT ON (i.issuer_id, i.project_id)
+       i.issuer_id::text AS issuer_id, c.name AS issuer, i.project_id, COALESCE(i.project_path, '')::text AS project_path
+  FROM ci_token_issuances i
+  JOIN ci_issuers c ON c.id = i.issuer_id
+ WHERE (cardinality(sqlc.arg(refs)::text[]) = 0 OR i.issuer_id::text || ':' || i.project_id = ANY(sqlc.arg(refs)::text[]))
+   AND (sqlc.arg(q)::text = '' OR strpos(lower(COALESCE(i.project_path, '')), lower(sqlc.arg(q)::text)) > 0
+        OR i.project_id = sqlc.arg(q)::text)
+ ORDER BY i.issuer_id, i.project_id, i.issued_at DESC
+ LIMIT sqlc.arg(row_limit);
+
+-- name: LimitTokenHints :many
+-- The hint and description of personal tokens by ID, for a user's usage per credential (R-LIM-034).
+SELECT id::text AS id, hint, description FROM api_token WHERE id = ANY(sqlc.arg(ids)::text[]::uuid[]);

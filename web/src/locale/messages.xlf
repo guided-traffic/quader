@@ -379,9 +379,9 @@
       <notes>
         <note category="location">src/app/app.routes.ts:151</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:65</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:127</note>
-        <note category="location">src/app/features/usage/usage.routes.ts:23</note>
-        <note category="location">src/app/features/usage/usage.routes.ts:41</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:132</note>
+        <note category="location">src/app/features/usage/usage.routes.ts:43</note>
+        <note category="location">src/app/features/usage/usage.routes.ts:61</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -1487,7 +1487,7 @@
     <unit id="limits.notice.blocked">
       <notes>
         <note category="location">src/app/core/http/problem-messages-limits.ts:79</note>
-        <note category="location">src/app/features/usage/profile-usage.ts:149</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:151</note>
       </notes>
       <segment>
         <source>Downloads are paused for you until <ph id="0" equiv="time" disp="time"/> after too many refused requests.</source>
@@ -9994,7 +9994,7 @@
     <unit id="usage.kind.anonymous">
       <notes>
         <note category="location">src/app/features/limits/callers.ts:50</note>
-        <note category="location">src/app/features/limits/callers.ts:161</note>
+        <note category="location">src/app/features/limits/callers.ts:168</note>
       </notes>
       <segment>
         <source>Anonymous address</source>
@@ -10003,8 +10003,7 @@
     <unit id="usage.kind.system">
       <notes>
         <note category="location">src/app/features/limits/callers.ts:52</note>
-        <note category="location">src/app/features/limits/callers.ts:166</note>
-        <note category="location">src/app/features/limits/callers.ts:187</note>
+        <note category="location">src/app/features/limits/callers.ts:173</note>
       </notes>
       <segment>
         <source>System</source>
@@ -10084,31 +10083,15 @@
     </unit>
     <unit id="usage.kind.system-hint">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:167</note>
+        <note category="location">src/app/features/limits/callers.ts:174</note>
       </notes>
       <segment>
         <source>Mirror passes and other background work</source>
       </segment>
     </unit>
-    <unit id="usage.title.token">
-      <notes>
-        <note category="location">src/app/features/limits/callers.ts:181</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="name" disp="subject.name"/> of <ph id="1" equiv="account" disp="subject.account"/></source>
-      </segment>
-    </unit>
-    <unit id="usage.title.ci">
-      <notes>
-        <note category="location">src/app/features/limits/callers.ts:183</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="project" disp="subject.projectPath || `${subject.issuer}:${subject.projectId}`"/> (CI)</source>
-      </segment>
-    </unit>
     <unit id="limits.place.instance">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:195</note>
+        <note category="location">src/app/features/limits/callers.ts:210</note>
       </notes>
       <segment>
         <source>at the instance</source>
@@ -10116,7 +10099,7 @@
     </unit>
     <unit id="limits.place.project">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:197</note>
+        <note category="location">src/app/features/limits/callers.ts:212</note>
       </notes>
       <segment>
         <source>in project <ph id="0" equiv="project" disp="place.project"/></source>
@@ -10124,7 +10107,7 @@
     </unit>
     <unit id="limits.place.repository">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:199</note>
+        <note category="location">src/app/features/limits/callers.ts:214</note>
       </notes>
       <segment>
         <source>at <ph id="0" equiv="repository" disp="place.repository"/></source>
@@ -10132,7 +10115,7 @@
     </unit>
     <unit id="limits.place.instance-label">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:207</note>
+        <note category="location">src/app/features/limits/callers.ts:222</note>
       </notes>
       <segment>
         <source>Instance</source>
@@ -10140,7 +10123,7 @@
     </unit>
     <unit id="limits.place.project-label">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:209</note>
+        <note category="location">src/app/features/limits/callers.ts:224</note>
       </notes>
       <segment>
         <source>Project <ph id="0" equiv="project" disp="place.project"/></source>
@@ -10719,7 +10702,7 @@
         <note category="location">src/app/features/limits/limit-mode.ts:96,97</note>
         <note category="location">src/app/features/limits/limits-rules-tab.ts:55,57</note>
         <note category="location">src/app/features/limits/maximum-dialog.ts:69,70</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:181,182</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:187,188</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -10888,7 +10871,7 @@
     </unit>
     <unit id="limits.rules.caption-instance">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:131</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:132</note>
       </notes>
       <segment>
         <source>Rules of the instance</source>
@@ -10896,7 +10879,7 @@
     </unit>
     <unit id="limits.rules.caption-project">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:133</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:134</note>
       </notes>
       <segment>
         <source>Rules of project <ph id="0" equiv="project" disp="place.project"/></source>
@@ -10904,7 +10887,7 @@
     </unit>
     <unit id="limits.rules.caption-repository">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:135</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:136</note>
       </notes>
       <segment>
         <source>Rules of <ph id="0" equiv="repository" disp="place.repository"/></source>
@@ -10912,7 +10895,7 @@
     </unit>
     <unit id="limits.rules.col-who">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:140</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:141</note>
       </notes>
       <segment>
         <source>Applies to</source>
@@ -10920,7 +10903,7 @@
     </unit>
     <unit id="limits.rules.col-profile">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:141</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:142</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -10928,7 +10911,7 @@
     </unit>
     <unit id="limits.rules.col-note">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:142</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:143</note>
       </notes>
       <segment>
         <source>Note</source>
@@ -10936,9 +10919,9 @@
     </unit>
     <unit id="limits.rules.col-actions">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:143</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:144</note>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:107</note>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:142</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:138</note>
         <note category="location">src/app/features/limits/limits-projects-tab.ts:147</note>
       </notes>
       <segment>
@@ -10947,7 +10930,7 @@
     </unit>
     <unit id="limits.rules.clamped">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:188</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:189</note>
       </notes>
       <segment>
         <source>Lowered to what the instance or the project&apos;s maximum allows: <ph id="0" equiv="figures" disp="parts.join(&apos;; &apos;)"/>.</source>
@@ -10955,7 +10938,7 @@
     </unit>
     <unit id="limits.rules.saved">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:199</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:200</note>
       </notes>
       <segment>
         <source>Rule saved.</source>
@@ -10963,7 +10946,7 @@
     </unit>
     <unit id="limits.rules.delete-title">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:207</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:208</note>
       </notes>
       <segment>
         <source>Delete the rule for <ph id="0" equiv="name" disp="name"/>?</source>
@@ -10971,7 +10954,7 @@
     </unit>
     <unit id="limits.rules.delete-text">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:208</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:209</note>
       </notes>
       <segment>
         <source>The caller gets the limits of the next place or of its kind from the next request on.</source>
@@ -10979,7 +10962,7 @@
     </unit>
     <unit id="limits.rules.delete-confirm">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:209</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:210</note>
       </notes>
       <segment>
         <source>Delete rule</source>
@@ -10987,7 +10970,7 @@
     </unit>
     <unit id="limits.rules.deleted">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:215</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:216</note>
       </notes>
       <segment>
         <source>Rule deleted.</source>
@@ -11084,7 +11067,7 @@
     <unit id="limits.blocks.lift-title">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:149</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:265</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:257</note>
       </notes>
       <segment>
         <source>Lift the block of <ph id="0" equiv="name" disp="name"/>?</source>
@@ -11093,7 +11076,7 @@
     <unit id="limits.blocks.lift-text">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:150</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:266</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:258</note>
       </notes>
       <segment>
         <source>The caller&apos;s requests are admitted again at once, and its refused requests count from zero.</source>
@@ -11102,7 +11085,7 @@
     <unit id="limits.blocks.lift-confirm">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:151</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:267</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:259</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -11111,7 +11094,7 @@
     <unit id="limits.blocks.lifted">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:157</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:272</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:264</note>
       </notes>
       <segment>
         <source>Block lifted.</source>
@@ -11231,7 +11214,7 @@
     </unit>
     <unit id="limits.profiles.in-use">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:95,96</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:96,97</note>
       </notes>
       <segment>
         <source>Used by <ph id="0" equiv="INTERPOLATION" disp="{{ usedBy(p) }}"/></source>
@@ -11239,7 +11222,7 @@
     </unit>
     <unit id="limits.profiles.col-name">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:138</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:134</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -11247,7 +11230,7 @@
     </unit>
     <unit id="limits.profiles.col-description">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:139</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:135</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -11255,7 +11238,7 @@
     </unit>
     <unit id="limits.profiles.col-figures">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:140</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:136</note>
       </notes>
       <segment>
         <source>Figures</source>
@@ -11263,7 +11246,7 @@
     </unit>
     <unit id="limits.profiles.col-used">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:141</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:137</note>
       </notes>
       <segment>
         <source>Used by</source>
@@ -11271,7 +11254,7 @@
     </unit>
     <unit id="limits.profiles.delete-title">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:168</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:164</note>
       </notes>
       <segment>
         <source>Delete profile <ph id="0" equiv="name" disp="p.name"/>?</source>
@@ -11279,7 +11262,7 @@
     </unit>
     <unit id="limits.profiles.delete-text">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:169</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:165</note>
       </notes>
       <segment>
         <source>Nothing uses the profile. It is deleted for good.</source>
@@ -11287,7 +11270,7 @@
     </unit>
     <unit id="limits.profiles.delete-confirm">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:170</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:166</note>
       </notes>
       <segment>
         <source>Delete profile</source>
@@ -11295,7 +11278,7 @@
     </unit>
     <unit id="limits.profiles.deleted">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:177</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:173</note>
       </notes>
       <segment>
         <source>Profile deleted.</source>
@@ -11312,6 +11295,7 @@
     <unit id="limits.projects.one-change">
       <notes>
         <note category="location">src/app/features/limits/limits-projects-tab.ts:27</note>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:36</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="profile" disp="name"/> + 1 change</source>
@@ -11320,6 +11304,7 @@
     <unit id="limits.projects.changes">
       <notes>
         <note category="location">src/app/features/limits/limits-projects-tab.ts:28</note>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:37</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="profile" disp="name"/> + <ph id="1" equiv="count" disp="n"/> changes</source>
@@ -11597,7 +11582,7 @@
     <unit id="limits.rule.profile">
       <notes>
         <note category="location">src/app/features/limits/maximum-dialog.ts:55,56</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:137,138</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:140,141</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -11606,7 +11591,7 @@
     <unit id="limits.rule.single">
       <notes>
         <note category="location">src/app/features/limits/maximum-dialog.ts:63,64</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:162,163</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:165,166</note>
       </notes>
       <segment>
         <source>Change single figures</source>
@@ -11623,7 +11608,7 @@
     <unit id="limits.rule.loading-profiles">
       <notes>
         <note category="location">src/app/features/limits/maximum-dialog.ts:95</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:230</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:242</note>
       </notes>
       <segment>
         <source>Loading profiles…</source>
@@ -11640,7 +11625,7 @@
     <unit id="limits.rule.choose-profile">
       <notes>
         <note category="location">src/app/features/limits/maximum-dialog.ts:105</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:264</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:277</note>
       </notes>
       <segment>
         <source>Choose a profile</source>
@@ -11715,7 +11700,7 @@
       <notes>
         <note category="location">src/app/features/limits/profile-editor.ts:110,114</note>
         <note category="location">src/app/features/usage/profile-usage.ts:79,82</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:126,129</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:111,114</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -11902,8 +11887,8 @@
     </unit>
     <unit id="limits.rule.applies-to">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:85,86</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:91,93</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:88,89</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:94,96</note>
       </notes>
       <segment>
         <source>Applies to</source>
@@ -11911,7 +11896,7 @@
     </unit>
     <unit id="limits.rule.address">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:102,104</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:105,107</note>
       </notes>
       <segment>
         <source>Address or range</source>
@@ -11919,7 +11904,7 @@
     </unit>
     <unit id="limits.rule.address-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:106,107</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:109,110</note>
       </notes>
       <segment>
         <source>An address, or a range such as 198.51.100.0/24 or 2001:db8:1::/48</source>
@@ -11927,7 +11912,7 @@
     </unit>
     <unit id="limits.rule.kind">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:113,114</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:116,117</note>
       </notes>
       <segment>
         <source>Kind of caller</source>
@@ -11935,7 +11920,7 @@
     </unit>
     <unit id="limits.rule.cap-maximum">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:151,152</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:154,155</note>
       </notes>
       <segment>
         <source>You can set up to the instance&apos;s values for this caller, or up to the project&apos;s maximum (<ph id="0" equiv="INTERPOLATION" disp="{{ data.maximum }}"/>).</source>
@@ -11943,7 +11928,7 @@
     </unit>
     <unit id="limits.rule.cap">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:154,156</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:157,159</note>
       </notes>
       <segment>
         <source>You can set up to the instance&apos;s values for this caller.</source>
@@ -11951,15 +11936,32 @@
     </unit>
     <unit id="limits.rule.note">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:174,176</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:177,179</note>
       </notes>
       <segment>
         <source>Note (optional)</source>
       </segment>
     </unit>
+    <unit id="limits.token.remove-confirm">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:185,187</note>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:161</note>
+      </notes>
+      <segment>
+        <source>Remove limit</source>
+      </segment>
+    </unit>
+    <unit id="limits.rule.change-limit-title">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:232</note>
+      </notes>
+      <segment>
+        <source>Change limit</source>
+      </segment>
+    </unit>
     <unit id="limits.rule.change-title">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:221</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:233</note>
       </notes>
       <segment>
         <source>Change rule</source>
@@ -11967,7 +11969,7 @@
     </unit>
     <unit id="limits.rule.set-title">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:223</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:235</note>
       </notes>
       <segment>
         <source>Set limit</source>
@@ -11975,7 +11977,7 @@
     </unit>
     <unit id="limits.rule.add-title">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:224</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:236</note>
       </notes>
       <segment>
         <source>Add rule</source>
@@ -11983,7 +11985,7 @@
     </unit>
     <unit id="limits.rule.save">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:226</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:238</note>
       </notes>
       <segment>
         <source>Save rule</source>
@@ -11991,7 +11993,7 @@
     </unit>
     <unit id="limits.rule.set">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:228</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:240</note>
       </notes>
       <segment>
         <source>Set limit</source>
@@ -11999,7 +12001,7 @@
     </unit>
     <unit id="limits.rule.add">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:229</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:241</note>
       </notes>
       <segment>
         <source>Add rule</source>
@@ -12007,7 +12009,7 @@
     </unit>
     <unit id="limits.rule.who-user">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:234</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:246</note>
       </notes>
       <segment>
         <source>A user</source>
@@ -12015,7 +12017,7 @@
     </unit>
     <unit id="limits.rule.who-group">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:235</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:247</note>
       </notes>
       <segment>
         <source>A group</source>
@@ -12023,7 +12025,7 @@
     </unit>
     <unit id="limits.rule.who-token">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:236</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:248</note>
       </notes>
       <segment>
         <source>A technical token</source>
@@ -12031,7 +12033,7 @@
     </unit>
     <unit id="limits.rule.who-ci">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:237</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:249</note>
       </notes>
       <segment>
         <source>A CI project</source>
@@ -12039,7 +12041,7 @@
     </unit>
     <unit id="limits.rule.who-address">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:238</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:250</note>
       </notes>
       <segment>
         <source>An address or range</source>
@@ -12047,7 +12049,7 @@
     </unit>
     <unit id="limits.rule.who-every">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:239</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:251</note>
       </notes>
       <segment>
         <source>Every caller of a kind</source>
@@ -12055,7 +12057,7 @@
     </unit>
     <unit id="limits.rule.one-changed">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:277</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:290</note>
       </notes>
       <segment>
         <source>1 changed</source>
@@ -12063,7 +12065,7 @@
     </unit>
     <unit id="limits.rule.n-changed">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:277</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:290</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> changed</source>
@@ -12071,7 +12073,7 @@
     </unit>
     <unit id="limits.rule.group">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:351</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:369</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -12079,7 +12081,7 @@
     </unit>
     <unit id="limits.rule.token">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:353</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:371</note>
       </notes>
       <segment>
         <source>Technical token</source>
@@ -12087,7 +12089,7 @@
     </unit>
     <unit id="limits.rule.ci">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:355</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:373</note>
       </notes>
       <segment>
         <source>CI project</source>
@@ -12095,7 +12097,7 @@
     </unit>
     <unit id="limits.rule.user">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:357</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:375</note>
       </notes>
       <segment>
         <source>User</source>
@@ -12103,7 +12105,7 @@
     </unit>
     <unit id="limits.rule.token-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:364</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:382</note>
       </notes>
       <segment>
         <source>Type the token&apos;s name or its account.</source>
@@ -12111,7 +12113,7 @@
     </unit>
     <unit id="limits.rule.ci-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:366</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:384</note>
       </notes>
       <segment>
         <source>Type the project&apos;s path.</source>
@@ -12119,7 +12121,7 @@
     </unit>
     <unit id="limits.rule.group-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:368</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:386</note>
       </notes>
       <segment>
         <source>Type the group&apos;s name.</source>
@@ -12127,7 +12129,7 @@
     </unit>
     <unit id="limits.rule.user-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:370</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:388</note>
       </notes>
       <segment>
         <source>Type a name or a username.</source>
@@ -12135,7 +12137,7 @@
     </unit>
     <unit id="limits.rule.who-required">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:378</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:396</note>
       </notes>
       <segment>
         <source>Choose who the rule applies to.</source>
@@ -12143,7 +12145,7 @@
     </unit>
     <unit id="limits.rule.address-required">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:387</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:405</note>
       </notes>
       <segment>
         <source>Type an address or a range.</source>
@@ -12151,7 +12153,7 @@
     </unit>
     <unit id="limits.rule.address-invalid">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:388</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:406</note>
       </notes>
       <segment>
         <source>An IPv4 or IPv6 address, optionally with a prefix length such as /24.</source>
@@ -12159,7 +12161,7 @@
     </unit>
     <unit id="limits.rule.above-cap">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:475</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:493</note>
       </notes>
       <segment>
         <source>Above what you may set here.</source>
@@ -12167,10 +12169,66 @@
     </unit>
     <unit id="limits.rule.at-most">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:476</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:494</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="limit" disp="limitText(figure, cap, this.locale)"/> here.</source>
+      </segment>
+    </unit>
+    <unit id="limits.token.default">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:31</note>
+      </notes>
+      <segment>
+        <source>Default (<ph id="0" equiv="profile" disp="defaultProfile"/>)</source>
+      </segment>
+    </unit>
+    <unit id="limits.token.no-use-day">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:45</note>
+      </notes>
+      <segment>
+        <source>Not used in 24 h</source>
+      </segment>
+    </unit>
+    <unit id="limits.token.one-request">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:48</note>
+      </notes>
+      <segment>
+        <source>1 request</source>
+      </segment>
+    </unit>
+    <unit id="limits.token.requests">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:49</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(row.requests, locale)"/> requests</source>
+      </segment>
+    </unit>
+    <unit id="limits.token.last-day">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:51</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="requests" disp="requests"/> · <ph id="1" equiv="bytes" disp="bytes"/> in 24 h</source>
+      </segment>
+    </unit>
+    <unit id="limits.token.remove-title">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:159</note>
+      </notes>
+      <segment>
+        <source>Remove the limit of <ph id="0" equiv="name" disp="token.name"/>?</source>
+      </segment>
+    </unit>
+    <unit id="limits.token.remove-text">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:160</note>
+      </notes>
+      <segment>
+        <source>The token gets the default limit of technical tokens from the next request on.</source>
       </segment>
     </unit>
     <unit id="loggedout.heading">
@@ -23292,23 +23350,15 @@
     </unit>
     <unit id="sa.details">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:76</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:73</note>
       </notes>
       <segment>
         <source>Details</source>
       </segment>
     </unit>
-    <unit id="sa.details-hint">
-      <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:77,79</note>
-      </notes>
-      <segment>
-        <source>Status, administrator role and when the account was created.</source>
-      </segment>
-    </unit>
     <unit id="sa.status">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:80,82</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:75,77</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -23316,7 +23366,7 @@
     </unit>
     <unit id="sa.active">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:83,84</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:78,79</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -23324,7 +23374,7 @@
     </unit>
     <unit id="sa.disabled">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:85,86</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:80,81</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -23332,7 +23382,7 @@
     </unit>
     <unit id="sa.reference">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:88,89</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:83,84</note>
       </notes>
       <segment>
         <source>Reference</source>
@@ -23340,7 +23390,7 @@
     </unit>
     <unit id="sa.admin">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:91,92</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:86,87</note>
       </notes>
       <segment>
         <source>Administrator role</source>
@@ -23348,7 +23398,7 @@
     </unit>
     <unit id="sa.admin.yes">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:94,95</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:89,90</note>
       </notes>
       <segment>
         <source>Held by this account</source>
@@ -23356,7 +23406,7 @@
     </unit>
     <unit id="sa.admin.no">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:96,97</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:91,92</note>
       </notes>
       <segment>
         <source>Not held</source>
@@ -23364,7 +23414,7 @@
     </unit>
     <unit id="sa.created">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:100,101</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:95,96</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -23372,7 +23422,7 @@
     </unit>
     <unit id="sa.technical-tokens">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:112,113</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:107,108</note>
       </notes>
       <segment>
         <source>Technical tokens</source>
@@ -23380,7 +23430,7 @@
     </unit>
     <unit id="sa.technical-tokens-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:114,115</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:109,110</note>
       </notes>
       <segment>
         <source>One token for each system that uses this account, each with a limit of its own.</source>
@@ -23388,7 +23438,7 @@
     </unit>
     <unit id="sa.tokens-denied">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:120,122</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:115,117</note>
       </notes>
       <segment>
         <source>You need the permission to read identities to manage the tokens of this account.</source>
@@ -23396,7 +23446,7 @@
     </unit>
     <unit id="sa.advanced">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:127,128</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:122,123</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -23404,7 +23454,7 @@
     </unit>
     <unit id="tokens.revoke-all-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:131,133</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:126,128</note>
         <note category="location">src/app/features/tokens/token-manager.ts:137,139</note>
         <note category="location">src/app/features/users/user-detail.html:263,265</note>
       </notes>
@@ -23414,7 +23464,7 @@
     </unit>
     <unit id="tokens.revoke-all">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:133,135</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:128,130</note>
         <note category="location">src/app/features/tokens/token-manager.ts:139,141</note>
         <note category="location">src/app/features/users/user-detail.html:265,268</note>
       </notes>
@@ -23424,7 +23474,7 @@
     </unit>
     <unit id="sa.disable-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:139,140</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:134,135</note>
       </notes>
       <segment>
         <source>A disabled account can no longer authenticate; you can also revoke its tokens.</source>
@@ -23432,7 +23482,7 @@
     </unit>
     <unit id="sa.enable-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:141,142</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:136,137</note>
       </notes>
       <segment>
         <source>The account is disabled and cannot authenticate. Enabling it lets its tokens work again.</source>
@@ -23440,7 +23490,7 @@
     </unit>
     <unit id="sa.disable">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:146,147</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:141,142</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -23448,7 +23498,7 @@
     </unit>
     <unit id="sa.enable">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:148,149</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:143,144</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -23456,7 +23506,7 @@
     </unit>
     <unit id="sa.delete-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:151,152</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:146,147</note>
       </notes>
       <segment>
         <source>Deleting the account removes it and its tokens. This cannot be undone.</source>
@@ -23464,15 +23514,31 @@
     </unit>
     <unit id="sa.delete">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:152,154</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:147,149</note>
       </notes>
       <segment>
         <source>Delete</source>
       </segment>
     </unit>
+    <unit id="sa.details-hint">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:203</note>
+      </notes>
+      <segment>
+        <source>Status, administrator role and when the account was created.</source>
+      </segment>
+    </unit>
+    <unit id="sa.details-hint-place">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:204</note>
+      </notes>
+      <segment>
+        <source>Status, reference and when the account was created.</source>
+      </segment>
+    </unit>
     <unit id="sa.advanced-hint-tokens">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:210</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:208</note>
       </notes>
       <segment>
         <source>Revoke all tokens, disable or delete this account.</source>
@@ -23480,7 +23546,7 @@
     </unit>
     <unit id="sa.advanced-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:211</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:209</note>
       </notes>
       <segment>
         <source>Disable or delete this account.</source>
@@ -23488,7 +23554,7 @@
     </unit>
     <unit id="sa.saved">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:293</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:291</note>
       </notes>
       <segment>
         <source>Service account saved.</source>
@@ -23496,7 +23562,7 @@
     </unit>
     <unit id="sa.disable-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:303</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:301</note>
       </notes>
       <segment>
         <source>Disable this service account?</source>
@@ -23504,7 +23570,7 @@
     </unit>
     <unit id="sa.disable-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:304</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:302</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="account" disp="this.name()"/> can no longer authenticate.</source>
@@ -23512,7 +23578,7 @@
     </unit>
     <unit id="sa.disable-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:305</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:303</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -23520,7 +23586,7 @@
     </unit>
     <unit id="sa.disable-revoke">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:306</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:304</note>
       </notes>
       <segment>
         <source>Also revoke all tokens of this account</source>
@@ -23528,7 +23594,7 @@
     </unit>
     <unit id="sa.disabled-done">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:313</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:311</note>
       </notes>
       <segment>
         <source>Service account disabled.</source>
@@ -23536,7 +23602,7 @@
     </unit>
     <unit id="sa.enabled-done">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:320</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:318</note>
       </notes>
       <segment>
         <source>Service account enabled.</source>
@@ -23544,7 +23610,7 @@
     </unit>
     <unit id="sa.delete-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:325</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:323</note>
       </notes>
       <segment>
         <source>Delete this service account?</source>
@@ -23552,7 +23618,7 @@
     </unit>
     <unit id="sa.delete-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:326</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:324</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="account" disp="this.name()"/> and its tokens are removed. This cannot be undone.</source>
@@ -23560,7 +23626,7 @@
     </unit>
     <unit id="sa.delete-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:327</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:325</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -23568,7 +23634,7 @@
     </unit>
     <unit id="sa.deleted">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:333</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:331</note>
       </notes>
       <segment>
         <source>Service account deleted.</source>
@@ -23576,7 +23642,7 @@
     </unit>
     <unit id="tokens.revoke-all-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:351</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:349</note>
         <note category="location">src/app/features/tokens/token-manager.ts:311</note>
       </notes>
       <segment>
@@ -23585,7 +23651,7 @@
     </unit>
     <unit id="tokens.revoke-all-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:352</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:350</note>
         <note category="location">src/app/features/tokens/token-manager.ts:312</note>
       </notes>
       <segment>
@@ -23594,7 +23660,7 @@
     </unit>
     <unit id="tokens.revoke-all-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:353</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:351</note>
         <note category="location">src/app/features/tokens/token-manager.ts:313</note>
       </notes>
       <segment>
@@ -23603,7 +23669,7 @@
     </unit>
     <unit id="tokens.revoked-all">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:359</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:357</note>
         <note category="location">src/app/features/tokens/token-manager.ts:320</note>
       </notes>
       <segment>
@@ -23826,9 +23892,33 @@
         <source>Instance</source>
       </segment>
     </unit>
+    <unit id="tt-table.expires-line">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:58,59</note>
+      </notes>
+      <segment>
+        <source>expires <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
+      </segment>
+    </unit>
+    <unit id="tt-table.never-expires">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:60,62</note>
+      </notes>
+      <segment>
+        <source>never expires</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.soon">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:67,68</note>
+      </notes>
+      <segment>
+        <source>Expires soon</source>
+      </segment>
+    </unit>
     <unit id="tt-table.expired">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:56,57</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:99,100</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -23836,31 +23926,15 @@
     </unit>
     <unit id="tt-table.revoked">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:58,59</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:101,102</note>
       </notes>
       <segment>
         <source>Revoked</source>
       </segment>
     </unit>
-    <unit id="tt-table.soon">
-      <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:65,66</note>
-      </notes>
-      <segment>
-        <source>Expires soon</source>
-      </segment>
-    </unit>
-    <unit id="tt-table.never">
-      <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:69,70</note>
-      </notes>
-      <segment>
-        <source>Never</source>
-      </segment>
-    </unit>
     <unit id="tt-table.not-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:76,78</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:109,111</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -23868,7 +23942,7 @@
     </unit>
     <unit id="tt-table.rotate">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:83,84</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:116,117</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -23876,7 +23950,7 @@
     </unit>
     <unit id="tt-table.revoke">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:89,90</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:122,123</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -23884,7 +23958,7 @@
     </unit>
     <unit id="tt-table.renew">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:96,97</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:129,130</note>
       </notes>
       <segment>
         <source>Issue new secret</source>
@@ -23892,7 +23966,7 @@
     </unit>
     <unit id="tt-table.caption">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:110</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:166</note>
       </notes>
       <segment>
         <source>Technical tokens</source>
@@ -23900,15 +23974,31 @@
     </unit>
     <unit id="tt-table.empty">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:111</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:167</note>
       </notes>
       <segment>
         <source>This account has no technical token yet.</source>
       </segment>
     </unit>
+    <unit id="tt-table.set-limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:182</note>
+      </notes>
+      <segment>
+        <source>Set limit</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.change-limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:183</note>
+      </notes>
+      <segment>
+        <source>Change limit</source>
+      </segment>
+    </unit>
     <unit id="tt-table.rotate-tip">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:122</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:184</note>
       </notes>
       <segment>
         <source>Rotate: a new secret now, the old one ends after the overlap you choose. The token keeps its name and its limit.</source>
@@ -23916,31 +24006,47 @@
     </unit>
     <unit id="tt-table.token">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:125</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:190</note>
       </notes>
       <segment>
         <source>Token</source>
       </segment>
     </unit>
+    <unit id="tt-table.limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:195</note>
+      </notes>
+      <segment>
+        <source>Limit</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.help.limit-day">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:197</note>
+      </notes>
+      <segment>
+        <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens. Below it, what the token downloaded in the last 24 hours.</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.help.limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:198</note>
+      </notes>
+      <segment>
+        <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens.</source>
+      </segment>
+    </unit>
     <unit id="tt-table.ended">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:127</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:202</note>
       </notes>
       <segment>
         <source>Ended</source>
       </segment>
     </unit>
-    <unit id="tt-table.expires">
-      <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:128</note>
-      </notes>
-      <segment>
-        <source>Expires</source>
-      </segment>
-    </unit>
     <unit id="tt-table.last-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:131</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:205</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -23948,7 +24054,7 @@
     </unit>
     <unit id="tt-table.help.last-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:132</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:206</note>
       </notes>
       <segment>
         <source>The last time a secret of the token authenticated a request. Not every use is recorded immediately.</source>
@@ -23956,7 +24062,7 @@
     </unit>
     <unit id="tt-table.actions">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:134</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:208</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -23964,7 +24070,7 @@
     </unit>
     <unit id="tt.create">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:39,41</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:40,42</note>
       </notes>
       <segment>
         <source>New technical token</source>
@@ -23972,7 +24078,7 @@
     </unit>
     <unit id="tt.form-heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:50,52</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:51,53</note>
       </notes>
       <segment>
         <source>New technical token</source>
@@ -23980,7 +24086,7 @@
     </unit>
     <unit id="tt.secret-heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:52,54</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:53,55</note>
       </notes>
       <segment>
         <source>New secret for <ph id="0" equiv="INTERPOLATION" disp="{{ f.name }}"/></source>
@@ -23988,7 +24094,7 @@
     </unit>
     <unit id="tt.ended-heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:88,89</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:91,92</note>
       </notes>
       <segment>
         <source>Expired and revoked</source>
@@ -23996,7 +24102,7 @@
     </unit>
     <unit id="tt.loading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:98,101</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:101,104</note>
       </notes>
       <segment>
         <source>Loading technical tokens.</source>
@@ -24004,7 +24110,7 @@
     </unit>
     <unit id="tt.empty">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:125</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:133</note>
       </notes>
       <segment>
         <source>This account has no technical token yet.</source>
@@ -24012,7 +24118,7 @@
     </unit>
     <unit id="tt.empty-active">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:126</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:134</note>
       </notes>
       <segment>
         <source>No technical token of this account has a live secret.</source>
@@ -24020,7 +24126,7 @@
     </unit>
     <unit id="tt.ended-caption">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:127</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:135</note>
       </notes>
       <segment>
         <source>Expired and revoked technical tokens</source>
@@ -24028,7 +24134,7 @@
     </unit>
     <unit id="tt.create-submit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:136</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:144</note>
       </notes>
       <segment>
         <source>Create technical token</source>
@@ -24036,15 +24142,31 @@
     </unit>
     <unit id="tt.renew-submit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:137</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:145</note>
       </notes>
       <segment>
         <source>Issue new secret</source>
       </segment>
     </unit>
+    <unit id="tt.limit-removed">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:209</note>
+      </notes>
+      <segment>
+        <source>Limit removed.</source>
+      </segment>
+    </unit>
+    <unit id="tt.limit-saved">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:210</note>
+      </notes>
+      <segment>
+        <source>Limit saved.</source>
+      </segment>
+    </unit>
     <unit id="tt.revoke-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:241</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:281</note>
       </notes>
       <segment>
         <source>Revoke this technical token?</source>
@@ -24052,7 +24174,7 @@
     </unit>
     <unit id="tt.revoke-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:243</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:283</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="t.name"/> stops working at once on every replica. It keeps its name and its limit, and can get a new secret later.</source>
@@ -24060,7 +24182,7 @@
     </unit>
     <unit id="tt.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:245</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:285</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -24068,7 +24190,7 @@
     </unit>
     <unit id="tt.revoked">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:250</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:290</note>
       </notes>
       <segment>
         <source>Technical token revoked.</source>
@@ -28756,7 +28878,7 @@
     <unit id="usage.period">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:34</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:81</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:67</note>
         <note category="location">src/app/features/usage/usage-overview.html:3</note>
       </notes>
       <segment>
@@ -28790,7 +28912,7 @@
     <unit id="usage.by-repository">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:70,71</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:115,116</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:100,101</note>
         <note category="location">src/app/features/usage/usage-tables.ts:26,27</note>
       </notes>
       <segment>
@@ -28800,8 +28922,8 @@
     <unit id="usage.by-credential">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:75,76</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:121,122</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:78,79</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:106,107</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:83,84</note>
       </notes>
       <segment>
         <source>By credential</source>
@@ -28809,7 +28931,7 @@
     </unit>
     <unit id="profile.usage.you">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:105</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:109</note>
       </notes>
       <segment>
         <source>you</source>
@@ -28817,9 +28939,9 @@
     </unit>
     <unit id="usage.empty">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:119</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:194</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:178</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:122</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:187</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:184</note>
       </notes>
       <segment>
         <source>No downloads <ph id="0" equiv="period" disp="periodPhrase(this.activePeriod())"/>.</source>
@@ -28841,9 +28963,17 @@
         <source>the addresses <ph id="0" equiv="prefix" disp="w.prefix"/></source>
       </segment>
     </unit>
+    <unit id="usage.rule.none">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:41</note>
+      </notes>
+      <segment>
+        <source>No rule applies <ph id="0" equiv="place" disp="placeText(place)"/>: every figure is unlimited.</source>
+      </segment>
+    </unit>
     <unit id="usage.rule.builtin">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:44</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:45</note>
       </notes>
       <segment>
         <source>the default for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/></source>
@@ -28851,7 +28981,7 @@
     </unit>
     <unit id="usage.rule.rule">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:45</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:46</note>
       </notes>
       <segment>
         <source>the rule for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/></source>
@@ -28859,7 +28989,7 @@
     </unit>
     <unit id="usage.rule.own">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:46</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:47</note>
       </notes>
       <segment>
         <source>Your limits come from <ph id="0" equiv="rule" disp="what"/>.</source>
@@ -28867,7 +28997,7 @@
     </unit>
     <unit id="usage.rule.applies">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:46</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:47</note>
       </notes>
       <segment>
         <source>Applies: <ph id="0" equiv="rule" disp="what"/>.</source>
@@ -28875,7 +29005,7 @@
     </unit>
     <unit id="usage.used-of">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:52</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:53</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="used" disp="amount(used)"/> of <ph id="1" equiv="limit" disp="amount(limit)"/></source>
@@ -28883,7 +29013,7 @@
     </unit>
     <unit id="usage.block.lift">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:96,98</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:81,83</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -28891,7 +29021,7 @@
     </unit>
     <unit id="usage.audit-line">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:101,104</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:86,89</note>
         <note category="location">src/app/features/usage/usage-overview.html:60,63</note>
       </notes>
       <segment>
@@ -28900,7 +29030,7 @@
     </unit>
     <unit id="usage.limits">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:105,106</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:90,91</note>
       </notes>
       <segment>
         <source>Limits</source>
@@ -28908,7 +29038,7 @@
     </unit>
     <unit id="usage.block.text">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:255</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:247</note>
       </notes>
       <segment>
         <source>Blocked until <ph id="0" equiv="time" disp="time"/> after <ph id="1" equiv="count" disp="formatCount(b.refused, this.locale)"/> refused requests in an hour</source>
@@ -28916,7 +29046,7 @@
     </unit>
     <unit id="usage.block.text-short">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:256</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:248</note>
       </notes>
       <segment>
         <source>Blocked until <ph id="0" equiv="time" disp="time"/> after too many refused requests</source>
@@ -28924,7 +29054,7 @@
     </unit>
     <unit id="usage.history.title">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:62,63</note>
+        <note category="location">src/app/features/usage/usage-history.ts:82,84</note>
       </notes>
       <segment>
         <source>Last 24 hours</source>
@@ -28932,7 +29062,7 @@
     </unit>
     <unit id="vuln.trend.show-chart">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:65,67</note>
+        <note category="location">src/app/features/usage/usage-history.ts:91,93</note>
         <note category="location">src/app/features/vulnerabilities/report-trend.ts:95,97</note>
       </notes>
       <segment>
@@ -28941,7 +29071,7 @@
     </unit>
     <unit id="vuln.trend.show-table">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:67,69</note>
+        <note category="location">src/app/features/usage/usage-history.ts:93,95</note>
         <note category="location">src/app/features/vulnerabilities/report-trend.ts:97,99</note>
       </notes>
       <segment>
@@ -28950,87 +29080,16 @@
     </unit>
     <unit id="usage.history.table-label">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:75,77</note>
+        <note category="location">src/app/features/usage/usage-history.ts:108,110</note>
+        <note category="location">src/app/features/usage/usage-history.ts:112,113</note>
       </notes>
       <segment>
         <source>Five-minute points of the last 24 hours</source>
       </segment>
     </unit>
-    <unit id="usage.history.col-time">
-      <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:79,80</note>
-      </notes>
-      <segment>
-        <source>Time</source>
-      </segment>
-    </unit>
-    <unit id="usage.col.requests">
-      <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:80,81</note>
-        <note category="location">src/app/features/usage/usage-history.ts:356</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:161</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:55</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:123</note>
-      </notes>
-      <segment>
-        <source>Requests</source>
-      </segment>
-    </unit>
-    <unit id="usage.col.cached">
-      <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:81,82</note>
-        <note category="location">src/app/features/usage/usage-history.ts:358</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:162</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:56</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:124</note>
-      </notes>
-      <segment>
-        <source>From the cache</source>
-      </segment>
-    </unit>
-    <unit id="usage.col.uncached">
-      <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:82,83</note>
-        <note category="location">src/app/features/usage/usage-history.ts:360</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:163</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:57</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:125</note>
-      </notes>
-      <segment>
-        <source>From the upstream</source>
-      </segment>
-    </unit>
-    <unit id="usage.col.upstream">
-      <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:83,84</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:164</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:58</note>
-      </notes>
-      <segment>
-        <source>Upstream requests</source>
-      </segment>
-    </unit>
-    <unit id="usage.col.refused">
-      <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:84,85</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:165</note>
-        <note category="location">src/app/features/usage/usage-tables.ts:59</note>
-      </notes>
-      <segment>
-        <source>Refused</source>
-      </segment>
-    </unit>
-    <unit id="usage.history.col-limited">
-      <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:85,87</note>
-      </notes>
-      <segment>
-        <source>Limit events</source>
-      </segment>
-    </unit>
     <unit id="usage.history.legend">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:140</note>
+        <note category="location">src/app/features/usage/usage-history.ts:191,192</note>
       </notes>
       <segment>
         <source>Legend</source>
@@ -29038,7 +29097,7 @@
     </unit>
     <unit id="usage.history.legend-bars">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:140,142</note>
+        <note category="location">src/app/features/usage/usage-history.ts:193,195</note>
       </notes>
       <segment>
         <source>Five minutes each</source>
@@ -29046,7 +29105,7 @@
     </unit>
     <unit id="usage.history.legend-marks">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:143,145</note>
+        <note category="location">src/app/features/usage/usage-history.ts:198,200</note>
       </notes>
       <segment>
         <source>Refused requests or limit events</source>
@@ -29054,15 +29113,87 @@
     </unit>
     <unit id="usage.history.empty">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:315</note>
+        <note category="location">src/app/features/usage/usage-history.ts:352</note>
       </notes>
       <segment>
         <source>No downloads in the last 24 hours.</source>
       </segment>
     </unit>
+    <unit id="usage.history.col-time">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:354</note>
+      </notes>
+      <segment>
+        <source>Time</source>
+      </segment>
+    </unit>
+    <unit id="usage.col.requests">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:355</note>
+        <note category="location">src/app/features/usage/usage-history.ts:413</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:166</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:60</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:128</note>
+      </notes>
+      <segment>
+        <source>Requests</source>
+      </segment>
+    </unit>
+    <unit id="usage.col.cached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:356</note>
+        <note category="location">src/app/features/usage/usage-history.ts:415</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:167</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:61</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:129</note>
+      </notes>
+      <segment>
+        <source>From the cache</source>
+      </segment>
+    </unit>
+    <unit id="usage.col.uncached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:357</note>
+        <note category="location">src/app/features/usage/usage-history.ts:417</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:168</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:62</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:130</note>
+      </notes>
+      <segment>
+        <source>From the upstream</source>
+      </segment>
+    </unit>
+    <unit id="usage.col.upstream">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:360</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:169</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:63</note>
+      </notes>
+      <segment>
+        <source>Upstream requests</source>
+      </segment>
+    </unit>
+    <unit id="usage.col.refused">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:364</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:170</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:64</note>
+      </notes>
+      <segment>
+        <source>Refused</source>
+      </segment>
+    </unit>
+    <unit id="usage.history.col-limited">
+      <notes>
+        <note category="location">src/app/features/usage/usage-history.ts:365</note>
+      </notes>
+      <segment>
+        <source>Limit events</source>
+      </segment>
+    </unit>
     <unit id="usage.history.charts-label">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:324</note>
+        <note category="location">src/app/features/usage/usage-history.ts:375</note>
       </notes>
       <segment>
         <source>Requests, from the cache and from the upstream in five-minute points. Arrow keys read one point out.</source>
@@ -29070,7 +29201,7 @@
     </unit>
     <unit id="usage.history.read-requests">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:343</note>
+        <note category="location">src/app/features/usage/usage-history.ts:398</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.count(p.requests)"/> requests</source>
@@ -29078,7 +29209,7 @@
     </unit>
     <unit id="usage.history.read-cached">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:344</note>
+        <note category="location">src/app/features/usage/usage-history.ts:399</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.bytes(p.cachedBytes)"/> from the cache</source>
@@ -29086,7 +29217,7 @@
     </unit>
     <unit id="usage.history.read-uncached">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:345</note>
+        <note category="location">src/app/features/usage/usage-history.ts:400</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.bytes(p.uncachedBytes)"/> from the upstream</source>
@@ -29094,7 +29225,7 @@
     </unit>
     <unit id="usage.history.read-refused">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:347</note>
+        <note category="location">src/app/features/usage/usage-history.ts:403</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.count(p.refused)"/> refused</source>
@@ -29102,7 +29233,7 @@
     </unit>
     <unit id="usage.history.read-events">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:349</note>
+        <note category="location">src/app/features/usage/usage-history.ts:406</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.count(events)"/> limit events</source>
@@ -29120,7 +29251,7 @@
     <unit id="usage.col.now">
       <notes>
         <note category="location">src/app/features/usage/usage-meter.ts:102</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:167</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:173</note>
       </notes>
       <segment>
         <source>Now</source>
@@ -29137,7 +29268,7 @@
     <unit id="usage.filter.kind">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:30</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:138</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:143</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -29146,7 +29277,7 @@
     <unit id="usage.filter.state">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:34</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:140</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:145</note>
       </notes>
       <segment>
         <source>State</source>
@@ -29155,7 +29286,7 @@
     <unit id="usage.filter.project">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:39,40</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:142</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:147</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -29217,7 +29348,7 @@
     </unit>
     <unit id="usage.state.blocked">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:83,84</note>
+        <note category="location">src/app/features/usage/usage-overview.html:84,85</note>
         <note category="location">src/app/features/usage/usage-words.ts:19</note>
         <note category="location">src/app/features/usage/usage-words.ts:59</note>
       </notes>
@@ -29235,7 +29366,7 @@
     </unit>
     <unit id="usage.heading-repository">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:129</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:134</note>
       </notes>
       <segment>
         <source>Usage of <ph id="0" equiv="repository" disp="repo"/></source>
@@ -29243,7 +29374,7 @@
     </unit>
     <unit id="usage.heading-project">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:131</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:136</note>
       </notes>
       <segment>
         <source>Usage of <ph id="0" equiv="project" disp="name"/></source>
@@ -29251,8 +29382,8 @@
     </unit>
     <unit id="usage.filter.any">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:148</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:199</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:153</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:205</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -29260,7 +29391,7 @@
     </unit>
     <unit id="usage.col.caller">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:160</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:165</note>
       </notes>
       <segment>
         <source>Caller</source>
@@ -29268,7 +29399,7 @@
     </unit>
     <unit id="usage.empty.filtered">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:173</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:179</note>
       </notes>
       <segment>
         <source>No caller matches.</source>
@@ -29276,7 +29407,7 @@
     </unit>
     <unit id="usage.empty.project">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:176</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:182</note>
       </notes>
       <segment>
         <source>Nobody downloaded from this project in the last 24 hours.</source>
@@ -29284,7 +29415,7 @@
     </unit>
     <unit id="usage.exact-bytes">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:327</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:333</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="bytes" disp="formatCount(n, this.locale)"/> bytes</source>
@@ -29292,15 +29423,23 @@
     </unit>
     <unit id="usage.meter-tooltip">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:335</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:341</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="figure" disp="figureName(u.figure)"/> <ph id="1" equiv="place" disp="placeText(u.place)"/>: <ph id="2" equiv="percent" disp="percent"/> % of the limit</source>
       </segment>
     </unit>
+    <unit id="usage.no-repository">
+      <notes>
+        <note category="location">src/app/features/usage/usage-tables.ts:40,42</note>
+      </notes>
+      <segment>
+        <source>No repository</source>
+      </segment>
+    </unit>
     <unit id="usage.col.repository">
       <notes>
-        <note category="location">src/app/features/usage/usage-tables.ts:54</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:59</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -29308,7 +29447,7 @@
     </unit>
     <unit id="usage.credential.session">
       <notes>
-        <note category="location">src/app/features/usage/usage-tables.ts:88,90</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:93,95</note>
       </notes>
       <segment>
         <source>Browser session</source>
@@ -29316,7 +29455,7 @@
     </unit>
     <unit id="usage.credential.token">
       <notes>
-        <note category="location">src/app/features/usage/usage-tables.ts:120</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:125</note>
       </notes>
       <segment>
         <source>Personal token</source>
@@ -29324,7 +29463,7 @@
     </unit>
     <unit id="usage.col.credential">
       <notes>
-        <note category="location">src/app/features/usage/usage-tables.ts:122</note>
+        <note category="location">src/app/features/usage/usage-tables.ts:127</note>
       </notes>
       <segment>
         <source>Credential</source>
@@ -29376,15 +29515,6 @@
       </notes>
       <segment>
         <source>in the last 30 days</source>
-      </segment>
-    </unit>
-    <unit id="usage.detail.title">
-      <notes>
-        <note category="location">src/app/features/usage/usage.routes.ts:30</note>
-        <note category="location">src/app/features/usage/usage.routes.ts:48</note>
-      </notes>
-      <segment>
-        <source>Usage of a caller</source>
       </segment>
     </unit>
     <unit id="user-create.title">
@@ -33623,7 +33753,7 @@
     </unit>
     <unit id="table.empty">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:148</note>
+        <note category="location">src/app/shared/ui/data-table.ts:149</note>
       </notes>
       <segment>
         <source>Nothing to show.</source>
@@ -33631,7 +33761,7 @@
     </unit>
     <unit id="table.help-label">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:287</note>
+        <note category="location">src/app/shared/ui/data-table.ts:293</note>
       </notes>
       <segment>
         <source>About the column <ph id="0" equiv="column" disp="c.label"/></source>

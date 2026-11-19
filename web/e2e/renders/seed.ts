@@ -1,4 +1,7 @@
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { APIRequestContext, APIResponse } from '@playwright/test';
 import {
@@ -11,6 +14,7 @@ import {
   vendorPackages,
   zipArchive,
 } from './advisories';
+import { stateDir } from './paths';
 
 /**
  * The data of `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): four projects (one with a long name and key), repositories of every
@@ -867,23 +871,227 @@ async function registryToken(ctx: APIRequestContext, edge: string, pat: string, 
   return token;
 }
 
+
 /** The own profile of the renders. */
 export const limitProfile = 'partners';
+/** The CI issuer and the CI project of the renders' usage (R-LIM-001: a CI project is charged by issuer and project ID). */
+export const ciIssuer = 'gitlab-internal';
+export const ciProject = { id: '4711', path: 'acme/customer-portal/web-frontend' } as const;
+/** The anonymous callers of the renders: an IPv6 prefix with a rule of its own, a blocked address, a small one (R-LIM-002). */
+export const anonymousV6 = '2001:db8:1:2::/64';
+export const blockedAddress = '198.51.100.23';
+export const quietAddress = '203.0.113.9';
+
+/** The UI development profile's PostgreSQL container (deploy/ui-dev/compose.yaml). */
+const postgresContainer = 'quader-ui-dev-postgres';
+
+/**
+ * Runs SQL in the UI development profile's database through its container (deploy/ui-dev/compose.yaml), as the profile's
+ * database owner. It is the renders' seam for what no request makes in the seed's time: 24 hours and 30 days of usage, the CI
+ * issuer of a CI project, a block. Quader has no path that writes any of it.
+ */
+function psql(sql: string): void {
+  const password = readFileSync(join(stateDir, 'secrets', 'db-pass'), 'utf8').trim();
+  execFileSync(
+    'docker',
+    ['exec', '-i', '-e', `PGPASSWORD=${password}`, postgresContainer, 'psql', '-q', '-v', 'ON_ERROR_STOP=1', 'host=localhost dbname=quader user=quader sslmode=require'],
+    { input: sql, stdio: ['pipe', 'inherit', 'inherit'] },
+  );
+}
+
+/** A text as an SQL literal. */
+const lit = (s: string): string => `'${s.replace(/'/g, "''")}'`;
+
+/** The ID of a technical token by its account's stored name and its name, as SQL (R-AUTH-045). */
+const tokenRef = (account: string, name: string): string =>
+  `(SELECT t.id::text FROM technical_token t JOIN principal p ON p.id = t.service_account_id WHERE p.name = ${lit(account)} AND t.name = ${lit(name)})`;
+const userRef = (name: string): string => `(SELECT id::text FROM principal WHERE kind = 'user' AND name = ${lit(name)})`;
+const repoId = (project: string, key: string): string =>
+  `(SELECT r.id FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = ${lit(project)} AND r.key = ${lit(key)})`;
+const projectPlace = (project: string): string => `(SELECT 'project:' || id::text FROM project WHERE key = ${lit(project)})`;
+const repoPlace = (project: string, key: string): string => `('repository:' || ${repoId(project, key)}::text)`;
+
+/** The CI issuer and one issuance of the renders' CI project, so that the project is named by its path (R-LIM-034). */
+function ciIssuerSql(): string {
+  return `
+INSERT INTO ci_issuers (id, name, kind, issuer, allowed_audiences, required_claims, pin_claims, single_use_subject_tokens, enabled, description)
+SELECT gen_random_uuid(), ${lit(ciIssuer)}, 'gitlab', 'https://gitlab.renders.invalid', '{quader}', '{project_id}', '{project_id}', false, false,
+       'The renders'' CI issuer: disabled, its key set is never fetched.'
+ WHERE NOT EXISTS (SELECT 1 FROM ci_issuers WHERE name = ${lit(ciIssuer)});
+INSERT INTO ci_token_issuances (token_id, issuer_id, mapping_ids, mapping_names, subject_kind, project_id, project_path, job_id, claims,
+                                grants, granted_scope, issued_at, expires_at)
+SELECT gen_random_uuid(), i.id, '{}', '{}', 'id_token', ${lit(ciProject.id)}, ${lit(ciProject.path)}, '1', '{}', '[]', '', now(), now() + interval '1 hour'
+  FROM ci_issuers i
+ WHERE i.name = ${lit(ciIssuer)}
+   AND NOT EXISTS (SELECT 1 FROM ci_token_issuances x WHERE x.issuer_id = i.id AND x.project_id = ${lit(ciProject.id)});
+`;
+}
+
+/**
+ * One caller's usage at one place (R-LIM-027): its requests, bytes from the cache and from the upstream, upstream requests and
+ * refused requests in the last 24 hours and, of those, in the last hour, and the profile whose limits the rows record.
+ */
+interface UsageSeed {
+  readonly kind: 'user' | 'technical_token' | 'ci' | 'anonymous' | 'system';
+  /** The subject's reference, as SQL. */
+  readonly ref: string;
+  /** The credential column (R-LIM-027): a user's session or personal token, empty for the other kinds; as SQL. */
+  readonly credential: string;
+  readonly place: string;
+  readonly repo: string;
+  readonly day: readonly [number, number, number, number, number];
+  readonly hour: readonly [number, number, number, number, number];
+  /** The profile whose figures the rows record as the budget key's limits; null for an unlimited caller. */
+  readonly profile: string | null;
+  /** A figure the rows record lower than the profile's: an override. */
+  readonly requestsPerHour?: number;
+}
+
+const GB = 1_000_000_000;
+const MB = 1_000_000;
+
+/**
+ * The usage of the renders: every kind of caller, apart by orders of magnitude, with a day's history in five-minute points and a
+ * month in hours; the tightest figure of the project's heavy mirror token at 82 % (close to the limit), the IPv6 prefix above its
+ * hour (would have been limited), the administrator unlimited.
+ */
+function usageSeeds(): readonly UsageSeed[] {
+  const instanceToken = tokenRef(serviceAccount, 'release');
+  const projectToken = tokenRef(`${mainProject}/${projectServiceAccount}`, longTechnicalToken);
+  const repoToken = tokenRef(`${mainProject}/npm-internal/${repositoryServiceAccount}`, 'release');
+  const ci = `((SELECT id::text FROM ci_issuers WHERE name = ${lit(ciIssuer)}) || ':${ciProject.id}')`;
+  // The plain user's personal token "laptop" (setup.ts), so that its usage splits into the session and the token (R-UI-184).
+  const laptop = `COALESCE((SELECT t.id::text FROM api_token t WHERE t.principal_id::text = ${userRef(kinds.plain)} AND t.description = 'laptop' ORDER BY t.created_at LIMIT 1), 'session')`;
+  return [
+    { kind: 'technical_token', ref: projectToken, credential: `''`, place: projectPlace(mainProject), repo: repoId(mainProject, 'npmjs'),
+      day: [2_400_000, 4_100 * GB, 210 * GB, 18_000, 40], hour: [164_000, 190 * GB, 9 * GB, 900, 2], profile: 'technical' },
+    { kind: 'ci', ref: ci, credential: `''`, place: `'instance'`, repo: repoId(mainProject, 'npm-internal'),
+      day: [380_000, 1_400 * GB, 0, 0, 120], hour: [21_000, 60 * GB, 0, 0, 4], profile: 'technical' },
+    { kind: 'technical_token', ref: instanceToken, credential: `''`, place: `'instance'`, repo: repoId(otherProject, 'base-images'),
+      day: [120_400, 640 * GB, 12 * GB, 800, 0], hour: [5_200, 31 * GB, 0, 0, 0], profile: 'technical' },
+    { kind: 'user', ref: userRef(kinds.power), credential: `'session'`, place: `'instance'`, repo: repoId(otherProject, 'base-images'),
+      day: [48_210, 1_203 * MB, 50 * MB, 120, 3], hour: [2_300, 70 * MB, 0, 0, 0], profile: 'standard' },
+    { kind: 'technical_token', ref: repoToken, credential: `''`, place: `'instance'`, repo: repoId(mainProject, 'npm-internal'),
+      day: [3_400, 12 * GB, 0, 0, 0], hour: [150, 500 * MB, 0, 0, 0], profile: 'technical' },
+    { kind: 'user', ref: userRef(kinds.plain), credential: `'session'`, place: `'instance'`, repo: repoId(mainProject, 'assets'),
+      day: [1_204, 3_200 * MB, 0, 0, 0], hour: [40, 90 * MB, 0, 0, 0], profile: 'standard' },
+    { kind: 'user', ref: userRef(kinds.plain), credential: laptop, place: `'instance'`, repo: repoId(mainProject, 'npm-internal'),
+      day: [2_900, 1_100 * MB, 0, 0, 0], hour: [95, 30 * MB, 0, 0, 0], profile: 'standard' },
+    { kind: 'user', ref: userRef(kinds.admin), credential: `'session'`, place: `'instance'`, repo: repoId(mainProject, 'assets'),
+      day: [310, 45 * MB, 0, 0, 0], hour: [12, 2 * MB, 0, 0, 0], profile: null },
+    { kind: 'anonymous', ref: lit(anonymousV6), credential: `''`, place: `'instance'`, repo: repoId(otherProject, 'docker-hub-remote'),
+      day: [24_000, 9_800 * MB, 1_900 * MB, 140, 12], hour: [5_600, 2_100 * MB, 0, 0, 0], profile: 'restricted' },
+    { kind: 'anonymous', ref: lit(blockedAddress), credential: `''`, place: `'instance'`,
+      repo: repoId(otherProject, 'docker-hub-remote'), day: [61, 0, 0, 0, 61], hour: [61, 0, 0, 0, 61], profile: 'anonymous' },
+    { kind: 'anonymous', ref: lit(quietAddress), credential: `''`, place: repoPlace(mainProject, 'npmjs'), repo: repoId(mainProject, 'npmjs'),
+      day: [1_400, 30 * MB, 2 * MB, 3, 0], hour: [12, 0, 0, 0, 0], profile: 'anonymous' },
+    { kind: 'system', ref: `'system'`, credential: `''`, place: `'instance'`, repo: repoId(otherProject, 'docker-hub-remote'),
+      day: [0, 0, 40 * GB, 2_000, 0], hour: [0, 0, 1_600 * MB, 80, 0], profile: null },
+  ];
+}
+
+/** The rows of one caller: 288 five-minute points of the last 24 hours and 720 hourly ones of the last 30 days. */
+function usageSql(s: UsageSeed): string {
+  const limit = (column: string): string => (s.profile ? `(SELECT ${column} FROM limit_profile WHERE key = ${lit(s.profile)})` : 'NULL');
+  const limits = [
+    s.requestsPerHour !== undefined ? String(s.requestsPerHour) : limit('requests_per_hour'),
+    limit('cached_bytes_per_hour'),
+    limit('uncached_bytes_per_hour'),
+    limit('upstream_requests_per_hour'),
+    limit('bytes_per_day'),
+  ].join(', ');
+  // A day's shape: quiet at night, busy from the morning to the evening, never the same twice.
+  const shape = (at: string, i: string): string =>
+    `(0.3 + 1.4 * greatest(0, sin(pi() * (extract(hour FROM ${at}) + extract(minute FROM ${at}) / 60 - 6) / 14)))` +
+    ` * (0.6 + 0.8 * mod((abs(sin(${i} * 12.9898 + 78.233)) * 43758.5453)::numeric, 1))`;
+  const share = (n: number, h: number, i: string, at: string): string =>
+    `CASE WHEN ${i} < 12 THEN ${Math.round(h / 12)} ELSE round(${n - h} / 276.0 * ${shape(at, i)})::bigint END`;
+  const [rq, cb, ub, up, rf] = s.day;
+  const [hrq, hcb, hub, hup, hrf] = s.hour;
+  const at5 = `(n.t - make_interval(mins => 5 * i))`;
+  const at1 = `(date_trunc('hour', now()) - make_interval(hours => i))`;
+  const hourly = (n: number): string => `round(${n} / 24.0 * ${shape(at1, 'i')} * (0.7 + 0.3 * cos(i / 24.0)))::bigint`;
+  return `
+INSERT INTO usage_bucket (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, repository_id, requests, refused,
+                          cached_bytes, uncached_bytes, upstream_requests, limit_requests_hour, limit_cached_hour, limit_uncached_hour,
+                          limit_upstream_hour, limit_bytes_day)
+SELECT '5m', ${at5}, ${lit(s.kind)}, ${s.ref}, ${s.credential}, ${s.place}, ${s.repo},
+       ${share(rq, hrq, 'i', at5)}, ${share(rf, hrf, 'i', at5)}, ${share(cb, hcb, 'i', at5)}, ${share(ub, hub, 'i', at5)},
+       ${share(up, hup, 'i', at5)}, ${limits}
+  FROM (SELECT to_timestamp(floor(extract(epoch FROM now()) / 300) * 300) AS t) n, generate_series(0, 287) i
+ WHERE ${s.ref} IS NOT NULL
+ON CONFLICT DO NOTHING;
+INSERT INTO usage_bucket (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, repository_id, requests, refused,
+                          cached_bytes, uncached_bytes, upstream_requests, limit_requests_hour, limit_cached_hour, limit_uncached_hour,
+                          limit_upstream_hour, limit_bytes_day)
+SELECT '1h', ${at1}, ${lit(s.kind)}, ${s.ref}, ${s.credential}, ${s.place}, ${s.repo},
+       ${hourly(rq)}, ${hourly(rf)}, ${hourly(cb)}, ${hourly(ub)}, ${hourly(up)}, ${limits}
+  FROM generate_series(1, 720) i
+ WHERE ${s.ref} IS NOT NULL
+ON CONFLICT DO NOTHING;
+`;
+}
+
+/** The limits the callers met (R-LIM-027): would-limit events in Audit for the IPv6 prefix and the heavy mirror, the block's refusals. */
+function eventsSql(): string {
+  const events = (kind: string, ref: string, place: string, repo: string, figure: string, perBucket: number, from: number, to: number): string => `
+INSERT INTO usage_limit_event (granularity, bucket_start, subject_kind, subject_ref, place, repository_id, figure, mode, count)
+SELECT '5m', n.t - make_interval(mins => 5 * i), ${lit(kind)}, ${ref}, ${place}, ${repo}, ${lit(figure)}, 'audit', ${perBucket}
+  FROM (SELECT to_timestamp(floor(extract(epoch FROM now()) / 300) * 300) AS t) n, generate_series(${from}, ${to}) i
+ WHERE ${ref} IS NOT NULL
+ON CONFLICT DO NOTHING;`;
+  const projectToken = tokenRef(`${mainProject}/${projectServiceAccount}`, longTechnicalToken);
+  return [
+    events('anonymous', lit(anonymousV6), `'instance'`, repoId(otherProject, 'docker-hub-remote'), 'requestsPerHour', 50, 0, 11),
+    events('technical_token', projectToken, projectPlace(mainProject), repoId(mainProject, 'npmjs'), 'cachedBytesPerSecond', 3, 20, 59),
+    events('anonymous', lit(blockedAddress), `'instance'`, repoId(otherProject, 'docker-hub-remote'), 'refusedPerHour', 1, 0, 0),
+  ].join('\n');
+}
+
+/** An active block of the blocked address, which probed the public remote, and a block of yesterday that ended (R-LIM-025). */
+function blocksSql(): string {
+  const place = `'instance'`;
+  return `
+INSERT INTO limit_block (id, subject_kind, subject_ref, place, started_at, until, refused_count, refused_limit)
+SELECT gen_random_uuid(), 'anonymous', ${lit(blockedAddress)}, ${place}, now() - interval '3 minutes', now() + interval '12 minutes', 61, 60
+ WHERE NOT EXISTS (SELECT 1 FROM limit_block WHERE subject_ref = ${lit(blockedAddress)} AND lifted_at IS NULL AND until > now());
+INSERT INTO limit_block (id, subject_kind, subject_ref, place, started_at, until, refused_count, refused_limit)
+SELECT gen_random_uuid(), 'anonymous', ${lit(quietAddress)}, 'instance', now() - interval '20 hours', now() - interval '19 hours 45 minutes', 64, 60
+ WHERE NOT EXISTS (SELECT 1 FROM limit_block WHERE subject_ref = ${lit(quietAddress)} AND started_at > now() - interval '1 day');
+`;
+}
+
+/**
+ * The usage of the renders (R-UI-181, R-UI-183 to R-UI-185): written into the usage store through the profile's database (`psql`),
+ * because requests cannot make a day's history, a CI project and a block in the seed's time. The callers no request of the renders
+ * charges (the technical tokens, the CI project, the documentation addresses) are written anew on every run, so their figures stay
+ * the ones below; the users and the system, whom the renders' own requests charge too, get the buckets they miss and keep the rest.
+ */
+export function seedUsage(): void {
+  const seeds = usageSeeds();
+  const own = seeds.filter((u) => u.kind !== 'user' && u.kind !== 'system');
+  const forget = own.map(
+    (u) => `DELETE FROM usage_bucket WHERE subject_kind = ${lit(u.kind)} AND subject_ref = ${u.ref};
+DELETE FROM usage_limit_event WHERE subject_kind = ${lit(u.kind)} AND subject_ref = ${u.ref};`,
+  );
+  // The tokens that downloaded were used a moment ago: their rows say so beside their last 24 hours (R-UI-181).
+  const used = seeds
+    .filter((u) => u.kind === 'technical_token')
+    .map((u) => `UPDATE api_token SET last_used_at = now() - interval '3 minutes' WHERE technical_token_id::text = ${u.ref} AND revoked_at IS NULL;`);
+  psql(['BEGIN;', ...forget, ...seeds.map(usageSql), eventsSql(), blocksSql(), ...used, 'COMMIT;'].join('\n'));
+}
 
 /**
  * The download limits of the renders (R-UI-177 to R-UI-186): an own profile with a long name, rules at the three places (an IPv6
- * prefix and a group at the instance, the power user at the main project with an hourly request figure the seed's own requests
- * pass, so that the overview shows a caller at the limit in Audit), a maximum of the project with the long name, and the ceilings
- * of a public remote. The mode stays Audit: the database is shared, and Enforce is rendered through the page's routes. Before the
- * operations exist (the work package that builds them), it says so and seeds nothing; once they do, a second run adds nothing.
+ * prefix, a group and a CI project at the instance, the power user and the project's heavy mirror token at the main project, every
+ * anonymous caller at a remote), a maximum of the project with the long name, and the ceilings of a public remote. The power user's
+ * hourly request figure is low on purpose: the seed's own requests pass it, so the overview shows a caller at the limit in Audit.
+ * The mode stays Audit: the database is shared, and Enforce is rendered through the page's routes. A second run adds nothing.
  */
 export async function seedLimits(admin: Api): Promise<void> {
   const settings = await admin.get('/api/v1/limits/settings');
-  if (settings.status() === 404) {
-    console.warn('seedLimits: the limits operations answer 404 (not built yet); no limits are seeded');
-    return;
-  }
   await expectStatus(settings, [200], 'the limits settings');
+  psql(ciIssuerSql());
   await expectStatus(
     await admin.post(
       '/api/v1/limits/profiles',
@@ -902,13 +1110,18 @@ export async function seedLimits(admin: Api): Promise<void> {
     expectStatus(await admin.post(base, body, { 'Idempotency-Key': `renders-rule-${what}` }), [201, 409], `limit rule ${what}`);
   await rule(
     '/api/v1/limits/assignments',
-    { who: { kind: 'address', prefix: '2001:db8:1:2::/64' }, profile: 'restricted', overrides: {}, note: 'A partner office behind one IPv6 prefix' },
+    { who: { kind: 'address', prefix: anonymousV6 }, profile: 'restricted', overrides: {}, note: 'A partner office behind one IPv6 prefix' },
     'v6',
   );
   await rule(
     '/api/v1/limits/assignments',
     { who: { kind: 'group', group }, profile: limitProfile, overrides: { uncachedBytesPerHour: 20_000_000_000 }, note: '' },
     'group',
+  );
+  await rule(
+    '/api/v1/limits/assignments',
+    { who: { kind: 'ciProject', issuer: ciIssuer, projectId: ciProject.id }, profile: 'technical', overrides: { bytesPerDay: 2_000_000_000_000 }, note: 'The release pipeline of the customer portal' },
+    'ci',
   );
   await rule(
     `/api/v1/projects/${mainProject}/limits/assignments`,
@@ -920,19 +1133,28 @@ export async function seedLimits(admin: Api): Promise<void> {
     },
     'power',
   );
+  // The project's heavy mirror token, set where its account lives (R-LIM-038): its row on the account's page names the rule.
+  const tokens = await admin.get(`/api/v1/projects/${mainProject}/service-accounts/${projectServiceAccount}/technical-tokens`);
+  await expectStatus(tokens, [200], `technical tokens of ${projectServiceAccount}`);
+  const mirror = ((await tokens.json()) as { items: { id: string; name: string }[] }).items.find((t) => t.name === longTechnicalToken);
+  if (mirror) {
+    await rule(
+      `/api/v1/projects/${mainProject}/limits/assignments`,
+      { who: { kind: 'technicalToken', technicalToken: mirror.id }, profile: 'technical', overrides: { cachedBytesPerSecond: 100_000_000 }, note: '' },
+      'mirror-token',
+    );
+  }
   await rule(
     `/api/v1/projects/${mainProject}/repositories/npmjs/limits/assignments`,
     { who: { kind: 'every', callerKind: 'anonymous' }, profile: 'anonymous', overrides: { upstreamRequestsPerHour: 5 }, note: '' },
     'npmjs-anonymous',
   );
+  // A project's first maximum takes no If-Match (Q-API-354).
   const maximum = await admin.get(`/api/v1/projects/${longProject}/limits/maximum`);
   if (maximum.status() === 404) {
     await expectStatus(
-      await admin.ctx.put(`/api/v1/projects/${longProject}/limits/maximum`, {
-        data: { profile: 'technical', overrides: { bytesPerDay: 2_000_000_000_000 } },
-        headers: { 'X-CSRF-Token': admin.csrfToken, Origin: admin.originUrl },
-      }),
-      [200, 201],
+      await admin.put(`/api/v1/projects/${longProject}/limits/maximum`, { profile: 'technical', overrides: { bytesPerDay: 2_000_000_000_000 } }),
+      [201],
       `maximum of ${longProject}`,
     );
   }
@@ -940,13 +1162,14 @@ export async function seedLimits(admin: Api): Promise<void> {
   const ceilings = await admin.get(ceilingsUrl);
   await expectStatus(ceilings, [200], 'ceilings of docker-hub-remote');
   await expectStatus(
-    await admin.ctx.put(ceilingsUrl, {
-      data: {
+    await admin.put(
+      ceilingsUrl,
+      {
         anonymous: { uncachedBytesPerHour: 10_000_000_000, upstreamRequestsPerHour: 100 },
         signedIn: { uncachedBytesPerHour: 50_000_000_000, upstreamRequestsPerHour: 2000 },
       },
-      headers: { 'X-CSRF-Token': admin.csrfToken, Origin: admin.originUrl, 'If-Match': ceilings.headers()['etag'] ?? '*' },
-    }),
+      { 'If-Match': ceilings.headers()['etag'] ?? '*' },
+    ),
     [200],
     'ceilings of docker-hub-remote',
   );

@@ -43,7 +43,7 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
     >
       @for (r of ordered(); track r.id) {
         <tr>
-          <th scope="row">
+          <th scope="row" class="wrap-name">
             <quader-caller-cell [view]="view(r)" [actionable]="canWrite()" (activate)="change(r)">
               @if (r.builtin) {
                 <span class="badge" i18n="@@limits.rules.builtin">Built-in</span>
@@ -89,11 +89,12 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
     :host {
       display: block;
     }
-    .profile {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      gap: var(--quader-space-1) var(--quader-space-2);
+    /*
+     * Running text, so that a stacked row's "Profile" stands on the profile's first line, also where a long name wraps (Q-UI-762):
+     * as a box of its own the name stood under its column's name.
+     */
+    .profile > .badge {
+      margin-inline-start: var(--quader-space-2);
     }
     .override {
       display: block;

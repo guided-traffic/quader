@@ -34630,6 +34630,12 @@
     <unit id="sas.level.instance">
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-list.ts:236</note>
+      </notes>
+      <segment>
+        <source>Instance</source>
+        <target>Instanz</target>
+      </segment>
+    </unit>
     <unit id="usage.heading">
       <notes>
         <note category="location">src/app/app.routes.ts:151</note>
@@ -35047,24 +35053,6 @@
         <target>Adresse oder Bereich</target>
       </segment>
     </unit>
-    <unit id="usage.title.token">
-      <notes>
-        <note category="location">src/app/features/limits/callers.ts:169</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="name" disp="subject.name"/> of <ph id="1" equiv="account" disp="subject.account"/></source>
-        <target><ph id="0" equiv="name" disp="subject.name"/> von <ph id="1" equiv="account" disp="subject.account"/></target>
-      </segment>
-    </unit>
-    <unit id="usage.title.ci">
-      <notes>
-        <note category="location">src/app/features/limits/callers.ts:171</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="project" disp="subject.projectPath || `${subject.issuer}:${subject.projectId}`"/> (CI)</source>
-        <target><ph id="0" equiv="project" disp="subject.projectPath || `${subject.issuer}:${subject.projectId}`"/> (CI)</target>
-      </segment>
-    </unit>
     <unit id="limits.place.instance">
       <notes>
         <note category="location">src/app/features/limits/callers.ts:183</note>
@@ -35108,15 +35096,6 @@
       <segment>
         <source>Expires soon</source>
         <target>Läuft bald ab</target>
-      </segment>
-    </unit>
-    <unit id="tt-table.never">
-      <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:57,58</note>
-      </notes>
-      <segment>
-        <source>Never</source>
-        <target>Nie</target>
       </segment>
     </unit>
     <unit id="tt-table.not-used">
@@ -35209,15 +35188,6 @@
         <target>Token</target>
       </segment>
     </unit>
-    <unit id="tt-table.expires">
-      <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:117</note>
-      </notes>
-      <segment>
-        <source>Expires</source>
-        <target>Läuft ab</target>
-      </segment>
-    </unit>
     <unit id="tt-table.last-used">
       <notes>
         <note category="location">src/app/features/service-accounts/technical-token-table.ts:120</note>
@@ -35239,6 +35209,12 @@
     <unit id="tt-table.actions">
       <notes>
         <note category="location">src/app/features/service-accounts/technical-token-table.ts:123</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
     <unit id="limits.place.project-label">
       <notes>
         <note category="location">src/app/features/limits/callers.ts:197</note>
@@ -36202,6 +36178,12 @@
     <unit id="token-form.name">
       <notes>
         <note category="location">src/app/shared/access/token-form.ts:70,71</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
     <unit id="limits.rules.clamped">
       <notes>
         <note category="location">src/app/features/limits/limit-rules.ts:203</note>
@@ -37028,6 +37010,12 @@
     <unit id="token-form.description-optional">
       <notes>
         <note category="location">src/app/shared/access/token-form.ts:80,82</note>
+      </notes>
+      <segment>
+        <source>Description (optional)</source>
+        <target>Beschreibung (optional)</target>
+      </segment>
+    </unit>
     <unit id="limits.profile.key">
       <notes>
         <note category="location">src/app/features/limits/profile-editor.ts:73,74</note>
@@ -37108,6 +37096,8 @@
       <segment>
         <source>Expired and revoked technical tokens</source>
         <target>Abgelaufene und widerrufene technische Token</target>
+      </segment>
+    </unit>
     <unit id="limits.profile.unlimited">
       <notes>
         <note category="location">src/app/features/limits/profile-editor.ts:95,97</note>
@@ -38486,16 +38476,6 @@
         <target>in den letzten 30 Tagen</target>
       </segment>
     </unit>
-    <unit id="usage.detail.title">
-      <notes>
-        <note category="location">src/app/features/usage/usage.routes.ts:30</note>
-        <note category="location">src/app/features/usage/usage.routes.ts:48</note>
-      </notes>
-      <segment>
-        <source>Usage of a caller</source>
-        <target>Nutzung eines Aufrufers</target>
-      </segment>
-    </unit>
     <unit id="limits.notice.see-usage">
       <notes>
         <note category="location">src/app/shared/download-link.ts:89</note>
@@ -38575,6 +38555,181 @@
       <segment>
         <source><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/> times</source>
         <target><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/>-mal</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.remove-confirm">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:185,187</note>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:135</note>
+      </notes>
+      <segment>
+        <source>Remove limit</source>
+        <target>Limit entfernen</target>
+      </segment>
+    </unit>
+    <unit id="limits.rule.change-limit-title">
+      <notes>
+        <note category="location">src/app/features/limits/rule-dialog.ts:232</note>
+      </notes>
+      <segment>
+        <source>Change limit</source>
+        <target>Limit ändern</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.default">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:30</note>
+      </notes>
+      <segment>
+        <source>Default (<ph id="0" equiv="profile" disp="defaultProfile"/>)</source>
+        <target>Vorgabe (<ph id="0" equiv="profile" disp="defaultProfile"/>)</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.one-request">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:44</note>
+      </notes>
+      <segment>
+        <source>1 request</source>
+        <target>1 Anfrage</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.requests">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:45</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(row.requests, locale)"/> requests</source>
+        <target><ph id="0" equiv="count" disp="formatCount(row.requests, locale)"/> Anfragen</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.remove-title">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:133</note>
+      </notes>
+      <segment>
+        <source>Remove the limit of <ph id="0" equiv="name" disp="token.name"/>?</source>
+        <target>Das Limit von <ph id="0" equiv="name" disp="token.name"/> entfernen?</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.remove-text">
+      <notes>
+        <note category="location">src/app/features/limits/technical-token-limit.ts:134</note>
+      </notes>
+      <segment>
+        <source>The token gets the default limit of technical tokens from the next request on.</source>
+        <target>Der Token erhält ab der nächsten Anfrage das vorgegebene Limit technischer Tokens.</target>
+      </segment>
+    </unit>
+    <unit id="sa.details-hint-place">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:204</note>
+      </notes>
+      <segment>
+        <source>Status, reference and when the account was created.</source>
+        <target>Status, Referenz und Erstellungszeitpunkt des Kontos.</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.set-limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:172</note>
+      </notes>
+      <segment>
+        <source>Set limit</source>
+        <target>Limit setzen</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.change-limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:173</note>
+      </notes>
+      <segment>
+        <source>Change limit</source>
+        <target>Limit ändern</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:182</note>
+      </notes>
+      <segment>
+        <source>Limit</source>
+        <target>Limit</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.help.limit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:183</note>
+      </notes>
+      <segment>
+        <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens.</source>
+        <target>Das Download-Limit dieses Tokens: seine eigene Regel am Ort des Kontos oder die Vorgabe für technische Tokens.</target>
+      </segment>
+    </unit>
+    <unit id="tt.limit-removed">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:214</note>
+      </notes>
+      <segment>
+        <source>Limit removed.</source>
+        <target>Limit entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="tt.limit-saved">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:215</note>
+      </notes>
+      <segment>
+        <source>Limit saved.</source>
+        <target>Limit gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="usage.rule.none">
+      <notes>
+        <note category="location">src/app/features/usage/usage-budgets.ts:41</note>
+      </notes>
+      <segment>
+        <source>No rule applies <ph id="0" equiv="place" disp="placeText(place)"/>: every figure is unlimited.</source>
+        <target>Keine Regel gilt <ph id="0" equiv="place" disp="placeText(place)"/>: jede Kennzahl ist unbegrenzt.</target>
+      </segment>
+    </unit>
+    <unit id="usage.no-repository">
+      <notes>
+        <note category="location">src/app/features/usage/usage-tables.ts:40,42</note>
+      </notes>
+      <segment>
+        <source>No repository</source>
+        <target>Kein Repository</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.no-use-day">
+      <segment>
+        <source>Not used in 24 h</source>
+        <target>In 24 Std. nicht genutzt</target>
+      </segment>
+    </unit>
+    <unit id="limits.token.last-day">
+      <segment>
+        <source><ph id="0" equiv="requests" disp="requests"/> · <ph id="1" equiv="bytes" disp="bytes"/> in 24 h</source>
+        <target><ph id="0" equiv="requests" disp="requests"/> · <ph id="1" equiv="bytes" disp="bytes"/> in 24 Std.</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.help.limit-day">
+      <segment>
+        <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens. Below it, what the token downloaded in the last 24 hours.</source>
+        <target>Das Download-Limit dieses Tokens: seine eigene Regel am Ort des Kontos oder die Vorgabe für technische Tokens. Darunter, was das Token in den letzten 24 Stunden heruntergeladen hat.</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.expires-line">
+      <segment>
+        <source>expires <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
+        <target>läuft <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;"></pc> ab</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.never-expires">
+      <segment>
+        <source>never expires</source>
+        <target>läuft nie ab</target>
       </segment>
     </unit>
   </file>

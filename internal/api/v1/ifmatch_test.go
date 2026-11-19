@@ -29,9 +29,16 @@ var ifMatchExempt = map[string]string{
 	"setAvatar":        "an image replaced as a whole and addressed by its digest (R-API-012, R-API-055)",
 }
 
+// ifMatchOnReplace are the PUT operations that create a resource where none exists and replace it where one does (Q-API-354):
+// they declare the optional If-Match parameter and the 428 answer, and the handler requires the header for a replace only.
+var ifMatchOnReplace = map[string]string{
+	"setLimitProjectMaximum": "a project's first maximum is set by PUT (R-LIM-033)",
+}
+
 // TestR_API_012_OneMechanismForAMissingIfMatch holds the declaration side of
 // Q-API-43: every PUT and PATCH either declares x-quader-if-match: required with
-// the shared IfMatch parameter, or is on the exempt list; no operation spells the
+// the shared IfMatch parameter, or is on the exempt list, or creates by PUT and
+// declares the shared optional parameter (Q-API-354); no operation spells the
 // header inline on a PUT or PATCH.
 func TestR_API_012_OneMechanismForAMissingIfMatch(t *testing.T) {
 	type operation struct {
@@ -57,24 +64,35 @@ func TestR_API_012_OneMechanismForAMissingIfMatch(t *testing.T) {
 				t.Fatal(err)
 			}
 			seen[op.OperationID] = true
-			ref, inline := false, false
+			ref, optional, inline := false, false, false
 			for _, p := range op.Parameters {
 				if p["$ref"] == "#/components/parameters/IfMatch" {
 					ref = true
+				}
+				if p["$ref"] == "#/components/parameters/IfMatchOptional" {
+					optional = true
 				}
 				if p["name"] == "If-Match" {
 					inline = true
 				}
 			}
 			name := strings.ToUpper(method) + " " + path + " (" + op.OperationID + ")"
+			_, creates := ifMatchOnReplace[op.OperationID]
 			switch {
+			case creates:
+				if op.IfMatch == "required" || ref || inline || !optional {
+					t.Errorf("Q-API-354 %s creates by PUT: it declares the shared optional If-Match alone", name)
+				}
+				if op.Responses["428"] == nil || op.Responses["201"] == nil {
+					t.Errorf("Q-API-354 %s does not document the 201 of a create and the 428 of a replace", name)
+				}
 			case op.IfMatch == "required" && (!ref || inline):
 				t.Errorf("R-API-012 %s requires If-Match but does not reference the shared parameter alone", name)
 			case op.IfMatch != "required":
 				if _, ok := ifMatchExempt[op.OperationID]; !ok {
 					t.Errorf("R-API-012 %s neither requires If-Match nor is exempt", name)
 				}
-				if ref || inline {
+				if ref || optional || inline {
 					t.Errorf("R-API-012 %s is exempt but declares an If-Match parameter", name)
 				}
 			case op.Responses["428"] == nil:
@@ -83,9 +101,11 @@ func TestR_API_012_OneMechanismForAMissingIfMatch(t *testing.T) {
 		}
 	}
 	var stale []string
-	for id := range ifMatchExempt {
-		if !seen[id] {
-			stale = append(stale, id)
+	for _, list := range []map[string]string{ifMatchExempt, ifMatchOnReplace} {
+		for id := range list {
+			if !seen[id] {
+				stale = append(stale, id)
+			}
 		}
 	}
 	sort.Strings(stale)

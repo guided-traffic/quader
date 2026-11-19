@@ -1,7 +1,8 @@
 # Usage and limits
 
-Status: specification of walk item W-26 (the owner's decisions of 2026-11-19); not implemented. The work packages that build it
-are cut in [docs/developer/usage-and-limits.md](../developer/usage-and-limits.md).
+Status: specification of walk item W-26 (the owner's decisions of 2026-11-19); built. The code is described in
+[docs/developer/usage-and-limits.md](../developer/usage-and-limits.md); what it does not do yet is named on
+[security/usage-and-limits.md](../security/usage-and-limits.md) and below.
 
 This page specifies how much a caller may download from Quader and how fast, and how the people who run an installation see what
 every caller downloads. It covers:
@@ -884,8 +885,9 @@ codes:
   figure adds that figure's policy and remaining, with `qu="content-bytes"` for byte figures and `qu="concurrent-requests"` for
   `parallelDownloads` (`"cached-hour"`, `"uncached-hour"`, `"upstream-hour"`, `"day"`, `"parallel"`, `"refused-hour"`). The endpoint's
   class and, in `audit`, the R-API-016 class add their own members as today.
-- **Request log**: the fields of R-LIM-030; the `429` names the figure in `limiter` (`limits.<figure>`) and the mode in
-  `limit_mode`.
+- **Request log**: the fields of R-LIM-030; the `429` names the figure in `limiter` (`limits.<figure>`) and the counter's mode in
+  `limit_mode` (`cluster`, or `fallback` while the replica counts its share alone, as R-OPS-010 defines the field;
+  [Q-LIM-51](#q-lim-51--the-request-logs-limit_mode-of-a-refusal-is-the-counters-mode-as-for-every-limiter)).
 
 Acceptance criteria:
 
@@ -1168,8 +1170,11 @@ Priority: **MVP** · Covers: BEYOND-030
   grow a replica's memory without bound.
 - **The daily task `limits-cleanup`** (on `worker`, `25 3 * * *` by default, R-OPS-019): folds the hourly rows older than 30 days into the daily
   sums and deletes them; deletes five-minute rows older than 25 hours, daily sums older than the summary retention, `limit_block`
-  rows older than 30 days; deletes the usage rows, blocks and rules whose user, group or technical token no longer exists
-  ([Q-LIM-25](#q-lim-25--the-usage-of-a-deleted-user-is-erased-by-the-daily-task-within-a-day)).
+  rows older than 30 days; deletes the usage rows and blocks of users that no longer exist
+  ([Q-LIM-25](#q-lim-25--the-usage-of-a-deleted-user-is-erased-by-the-daily-task-within-a-day)), the blocks of technical tokens that no
+  longer exist, and the rules whose user, group or technical token no longer exists. A technical token is gone when it was deleted,
+  with its service account, or with the repository of its account; its usage rows stay until their retention, shown as a deleted
+  token (R-LIM-038, [Q-LIM-49](#q-lim-49--a-deleted-technical-tokens-rules-and-blocks-go-with-the-daily-task-its-usage-stays)).
 - **Erasure.** A deleted user's rows are gone within one day of the deletion, with the daily task; the daily sums never held the
   user. The audit trail keeps what R-OPS-017 keeps.
 - **Addresses** ([Q-LIM-22](#q-lim-22--an-address-is-stored-as-its-subject-prefix-and-deleted-with-the-hourly-rows)) are stored as
@@ -1375,7 +1380,7 @@ Priority: **MVP** · Covers: BEYOND-030
 | `PATCH /api/v1/limits/settings` | Change them; a change of `mode` needs recent authentication | 200; 412; 422; 428 | `limits:write` |
 | `GET /api/v1/limits/mode-preview` | What `enforce` would have done in the last 24 hours | 200 | `limits:read` |
 | `GET /api/v1/projects/{projectKey}/limits/maximum` | The project's maximum | 200; 404 (none, or no project) | `limits:read` or an Owner of the project |
-| `PUT /api/v1/projects/{projectKey}/limits/maximum` | Set or replace it | 200, 201; 412; 422; 428 | `limits:write` |
+| `PUT /api/v1/projects/{projectKey}/limits/maximum` | Set or replace it: a first maximum without `If-Match` (201), a replace with it (200; 428 without) ([api-and-ui.md](api-and-ui.md) Q-API-354) | 200, 201; 412; 422; 428 | `limits:write` |
 | `DELETE /api/v1/projects/{projectKey}/limits/maximum` | Remove it | 204; 404; 412 | `limits:write` |
 | `GET /api/v1/limits/blocks?active=&place=` | Blocks (active by default), newest first; `place` is `project:<projectKey>` (the project and its repositories) or `repository:<projectKey>/<repoKey>` | 200 | `limits:read`; an Owner with `place` of its project |
 | `GET /api/v1/limits/projects` | Per project its maximum (`null` without one) and the number of rules at the project and at its repositories ([api-and-ui.md](api-and-ui.md) Q-API-351) | 200 | `limits:read` |
@@ -1430,7 +1435,7 @@ Priority: **MVP** · Covers: BEYOND-030
 | `GET /api/v1/usage/subjects/{kind}/{id}` | One subject's detail | `usage:read` |
 | `GET /api/v1/projects/{projectKey}/usage/subjects/{kind}/{id}` | One subject's detail within the project | `usage:read` or an Owner |
 | `GET /api/v1/users/me/usage` | The caller's own detail | every signed-in user |
-| `GET /api/v1/limits/subjects?q=&kinds=&project=` | Suggestions of technical tokens and CI projects for the rule dialog, by name, 20 at most | `limits:read` or an Owner of `project` |
+| `GET /api/v1/limits/subjects?q=&kinds=&project=` | Suggestions of technical tokens and CI projects for the rule dialog, by name, 20 at most ([Q-LIM-50](#q-lim-50--the-rule-dialog-suggests-every-technical-token-by-name-and-the-ci-projects-tokens-were-issued-for)) | `limits:read` or an Owner of `project` |
 
 **Parameters of the lists**: `period` = `hour` (the last 60 minutes of five-minute buckets), `day` (the last 24 hours of
 five-minute buckets) or `30d` (the last 30 days of hourly buckets), default `day`; `kind` = one or more of `user`, `technicalToken`,
@@ -1485,7 +1490,7 @@ A subject's detail:
   "budgets": [
     {
       "place": {"kind": "instance"},
-      "rule": {"id": "builtin:user", "who": {"kind": "every", "callerKind": "user"}, "profile": "standard", "builtin": true},
+      "rule": {"id": "builtin:user", "who": {"kind": "every", "callerKind": "user"}, "profile": "standard", "profileName": "Standard", "builtin": true, "capped": false},
       "figures": {
         "requestsPerHour": {"limit": 50000, "used": 31000, "windowSeconds": 3600},
         "cachedBytesPerHour": {"limit": 300000000000, "used": 246000000000, "windowSeconds": 3600},
@@ -1507,8 +1512,12 @@ A subject's detail:
 }
 ```
 
-*(example)* `used` of a windowed figure is the live estimate of the Valkey window (one pipeline of reads for the subject's budget
-keys); `history` holds the five-minute points of the last 24 hours whatever `period` is; `repositories` and `credentials` follow
+*(example)* `budgets` are the subject's budget keys of the last 24 hours, the places its usage rows recorded; `rule` and every
+`limit` are what applies there now, from the compiled index
+([Q-LIM-52](#q-lim-52--a-budget-key-of-the-detail-names-the-rule-that-applies-there-now)); `used` of a windowed figure is the live
+estimate of the Valkey window (one pipeline of reads for the subject's budget keys); a rule names its profile's name
+(`profileName`, [Q-LIM-53](#q-lim-53--a-rule-of-the-detail-and-the-explanation-names-its-profile)); `history` holds the five-minute
+points of the last 24 hours whatever `period` is; `repositories` and `credentials` follow
 `period`; `credentials` only for a user. A project Owner's detail holds only the budgets, history, repositories and credentials of
 the project's repositories.
 
@@ -2212,6 +2221,85 @@ Status: **Decided by the development agent** — selected from the options below
 Stage 7 checks the block and the class of `GET /v2/_token` and defers its request windows (`limits.Charge.DeferRequestFigures`); the
 handler's `Retarget` counts them once: under the subject of a valid Quader token, else under the address. A presented credential
 that failed is a refused request of the address. **Applied in the spec:** R-LIM-003.
+
+
+### Q-LIM-49 · A deleted technical token's rules and blocks go with the daily task; its usage stays
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-LIM-028 listed the usage rows, blocks and rules "whose user, group or technical token no longer exists" for deletion,
+R-LIM-038 and R-AUTH-045 keep a deleted technical token's usage until its retention.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `limits-cleanup` deletes the rules and blocks of a technical token that no longer exists; its usage rows stay until their retention, named as a deleted token (chosen) | Deleting the token, its account or the account's repository is enough | A token names a system, not a person: there is nothing to erase, and its consumption stays visible for the month it covers | A rule names a deleted token until the next run of the task |
+| (b) Its usage rows go too, as a deleted user's | — | One rule for both kinds | The history of a system's consumption is gone the day it is replaced |
+| (c) The delete of the token deletes its rules in its transaction | — | No rule names a deleted token | The identity area writes the limits' tables |
+
+**Choice:** (a). Revisit if a technical token's name is found to carry personal data. **Applied in the spec:** R-LIM-028. Code:
+`DeleteRulesOfDeletedSubjects`, `EraseBlocksOfDeletedSubjects` in
+[limits_usage.sql](../../internal/meta/postgres/queries/limits_usage.sql).
+
+### Q-LIM-50 · The rule dialog suggests every technical token by name, and the CI projects tokens were issued for
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `GET /api/v1/limits/subjects` answered the subjects that had usage rows; the rule dialog of R-UI-179 searches technical
+tokens and CI projects by name, also ones that downloaded nothing yet (a rule is often set before the first request).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Technical tokens from the identity tables by the token's or the account's name; with `project=` the accounts of that project and its repositories. CI projects from the CI issuances by path or ID; for an Owner, who names its project, the CI projects that downloaded from the project's repositories in 30 days (chosen) | — | A token is found the day it is made; an Owner sees no CI project of another project | A CI project that never had a token issued is not suggested (its rule names issuer and ID by hand) |
+| (b) The subjects with usage rows | As built first | One source | A new token cannot be chosen |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-034. Code: `SuggestLimitSubjects` in
+[usage_api.go](../../internal/api/v1/usage_api.go), `LimitSearchTechnicalTokens`, `LimitCIProjects` in
+[limits.sql](../../internal/meta/postgres/queries/limits.sql).
+
+### Q-LIM-51 · The request log's limit_mode of a refusal is the counter's mode, as for every limiter
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-LIM-020 put the mode (`audit`, `enforce`) into `limit_mode`; R-OPS-010 defines the field as the limiter's counter mode
+(`cluster`, `fallback`, `replica`). The limits refuse only in `enforce`, so the mode said nothing a refusal did not.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `limit_mode` is `cluster` or `fallback`; the mode is read from `limits_outcome` (`limited:` or `would_limit:`) (chosen) | — | One meaning of the field for every limiter | — |
+| (b) `audit` or `enforce` | As R-LIM-020 read | — | Two enumerations in one field; a search for `fallback` misses the limits |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-020. Code: `Charge.CounterMode` in [charge.go](../../internal/limits/charge.go).
+
+### Q-LIM-52 · A budget key of the detail names the rule that applies there now
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the usage rows record a budget key's place and its hour and day limits, not its rule (R-LIM-027); the detail of R-LIM-034
+names each budget key's rule and every figure, the rates included.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The detail resolves the subject at each place its rows recorded on the index compiled from the store (`limits.Index.ResolveAt`): the rule and the figures that apply there now (chosen) | — | No column more in the hottest table; the rates and the parallel downloads are named too | A rule changed within the day is shown as it is now, not as it was |
+| (b) Store the rule's ID in every usage row | — | The rule that applied to each row | A column more in every row, written every ten seconds; still no rates |
+
+**Choice:** (a). Revisit if the owner wants the history of a budget's rules. **Applied in the spec:** R-LIM-034. Code: `budgetKeys` in
+[usage_api.go](../../internal/api/v1/usage_api.go).
+
+
+### Q-LIM-53 · A rule of the detail and the explanation names its profile
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the detail and the explanation name a rule's profile by its key; the profiles are read with `limits:read` or as an Owner
+(R-API-082), so a user's own page (R-UI-185) could not name the profile its limits come from.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A rule of the detail, the explanation and its steps carries `profileName` beside `profile` (chosen) | — | Every reader of its own usage reads the name; no profile list is read for one word | A name more in each rule |
+| (b) Every signed-in user reads the profiles | — | One read | The figures of every profile are no business of a user |
+| (c) The built-in profiles' names in the UI | As built first | No API change | An own profile shows its key |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-034, R-LIM-035. Code: `ruleRef` in [limits_api.go](../../internal/api/v1/limits_api.go).
 
 
 ## What this does not cover

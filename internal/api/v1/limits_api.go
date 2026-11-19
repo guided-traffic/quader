@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -471,32 +470,36 @@ func openapiUUID(s string) (openapi_types.UUID, error) {
 	return u, err
 }
 
-// whoRep renders the "who" of a rule with its read-only names.
-func (s *Server) whoRep(ctx context.Context, l LimitsServices, r limits.Rule) map[string]any {
+// whoRep renders the "who" of a rule with its read-only names; a user, a group or a technical token that no longer exists is
+// marked deleted until limits-cleanup removes the rule (R-LIM-028).
+func (s *Server) whoRep(ctx context.Context, l LimitsServices, n store.Names, r limits.Rule) map[string]any {
 	out := map[string]any{}
 	switch r.WhoKind {
-	case limits.WhoUser, limits.WhoGroup:
-		field := "user"
-		if r.WhoKind == limits.WhoGroup {
-			field = "group"
+	case limits.WhoUser:
+		out["kind"], out["user"], out["deleted"] = "user", r.WhoRef, true
+		if u, ok := n.Users[r.WhoRef]; ok {
+			out["user"], out["displayName"], out["deleted"] = u.Name, u.Name, false
+			if u.DisplayName != "" {
+				out["displayName"] = u.DisplayName
+			}
 		}
-		out["kind"] = field
-		out[field] = r.WhoRef
-		out["deleted"] = true
+	case limits.WhoGroup:
+		out["kind"], out["group"], out["deleted"] = "group", r.WhoRef, true
 		if l.Principals != nil {
 			if p, err := l.Principals.ByID(ctx, r.WhoRef); err == nil {
-				out[field], out["displayName"], out["deleted"] = p.Name, p.Name, false
+				out["group"], out["displayName"], out["deleted"] = p.Name, p.Name, false
 			}
 		}
 	case limits.WhoTechnicalToken:
-		out["kind"], out["technicalToken"] = "technicalToken", r.WhoRef
+		out["kind"], out["technicalToken"], out["deleted"] = "technicalToken", r.WhoRef, true
+		if t, ok := n.Tokens[r.WhoRef]; ok {
+			out["name"], out["account"], out["deleted"] = t.Name, "sa:"+t.Account, false
+		}
 	case limits.WhoCIProject:
-		issuer, project, _ := strings.Cut(r.WhoRef, ":")
+		issuer, project, path := s.ciNames(ctx, l, n, r.WhoRef)
 		out["kind"], out["issuer"], out["projectId"] = "ciProject", issuer, project
-		if l.CI != nil {
-			if name, ok, err := l.CI.IssuerName(ctx, issuer); err == nil && ok {
-				out["issuer"] = name
-			}
+		if path != nil {
+			out["projectPath"] = path
 		}
 	case limits.WhoAddress:
 		out["kind"], out["prefix"] = "address", r.WhoRef
@@ -508,6 +511,21 @@ func (s *Server) whoRep(ctx context.Context, l LimitsServices, r limits.Rule) ma
 		out["kind"], out["callerKind"] = "every", k
 	}
 	return out
+}
+
+// ruleRef is a rule as the detail and the explanation name it (R-LIM-034, R-LIM-035), with its profile's name: a caller who
+// reads its own usage names the profile without reading the profiles (Q-LIM-53).
+func (s *Server) ruleRef(ctx context.Context, l LimitsServices, n store.Names, x *limits.Index, r *limits.Rule) any {
+	if r == nil {
+		return nil
+	}
+	name := r.Profile
+	if p, ok := x.Profile(r.Profile); ok {
+		name = p.Name
+	}
+	return map[string]any{
+		"id": r.LogID(), "who": s.whoRep(ctx, l, n, *r), "profile": r.Profile, "profileName": name, "builtin": r.Builtin, "capped": r.Capped,
+	}
 }
 
 func clampedRep(eff limits.Figures, clamped [limits.NumFigures]bool) map[string]any {
@@ -524,10 +542,10 @@ func clampedRep(eff limits.Figures, clamped [limits.NumFigures]bool) map[string]
 	return out
 }
 
-func (s *Server) ruleRep(ctx context.Context, l LimitsServices, x *limits.Index, r limits.Rule) map[string]any {
+func (s *Server) ruleRep(ctx context.Context, l LimitsServices, n store.Names, x *limits.Index, r limits.Rule) map[string]any {
 	eff, clamped := x.EffectiveOf(r)
 	return map[string]any{
-		"id": r.ID, "place": placeRep(r.Place), "who": s.whoRep(ctx, l, r), "profile": r.Profile, "overrides": r.Overrides,
+		"id": r.ID, "place": placeRep(r.Place), "who": s.whoRep(ctx, l, n, r), "profile": r.Profile, "overrides": r.Overrides,
 		"effective": eff, "clamped": clampedRep(eff, clamped), "capped": r.Capped, "builtin": r.Builtin, "note": r.Note,
 		"version": r.Version, "createdAt": r.CreatedAt.UTC(), "createdBy": s.principalName(ctx, l, r.CreatedBy),
 		"updatedAt": r.UpdatedAt.UTC(), "updatedBy": s.principalName(ctx, l, r.UpdatedBy),
@@ -550,12 +568,23 @@ func (s *Server) listRulesLimit(w http.ResponseWriter, r *http.Request, projectK
 		return
 	}
 	whoKind, profile := r.URL.Query().Get("whoKind"), r.URL.Query().Get("profile")
+	var refs nameRefs
+	for _, rule := range snap.Rules {
+		if samePlace(rule.Place, place) {
+			refs.rule(rule)
+		}
+	}
+	n, err := s.names(ctx, l, refs)
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	items := []map[string]any{}
 	for _, rule := range snap.Rules {
 		if !samePlace(rule.Place, place) || (profile != "" && rule.Profile != profile) {
 			continue
 		}
-		rep := s.ruleRep(ctx, l, x, rule)
+		rep := s.ruleRep(ctx, l, n, x, rule)
 		if whoKind != "" && rep["who"].(map[string]any)["kind"] != whoKind {
 			continue
 		}
@@ -661,8 +690,15 @@ func (s *Server) answerRule(w http.ResponseWriter, r *http.Request, l LimitsServ
 	x := limits.NewIndex(snap)
 	for _, rule := range snap.Rules {
 		if rule.ID == id && samePlace(rule.Place, place) {
+			var refs nameRefs
+			refs.rule(rule)
+			n, err := s.names(ctx, l, refs)
+			if err != nil {
+				httpserver.Problem(w, r, err)
+				return
+			}
 			SetETag(w, rule.Version, "")
-			writeJSON(w, r, status, s.ruleRep(ctx, l, x, rule))
+			writeJSON(w, r, status, s.ruleRep(ctx, l, n, x, rule))
 			return
 		}
 	}
@@ -1136,7 +1172,9 @@ type maximumWrite struct {
 	UpdatedBy any              `json:"updatedBy"`
 }
 
-// SetLimitProjectMaximum implements PUT /api/v1/projects/{projectKey}/limits/maximum.
+// SetLimitProjectMaximum implements PUT /api/v1/projects/{projectKey}/limits/maximum. The first maximum of a project is created
+// without If-Match, since nothing exists whose ETag a client could have loaded; a replace requires it as every PUT of R-API-012
+// does, and an If-Match sent for a maximum that does not exist fails, as RFC 9110 section 13.1.1 has it (Q-API-354).
 func (s *Server) SetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, projectKey string, _ gen.SetLimitProjectMaximumParams) {
 	ctx := r.Context()
 	l, snap, _, err := s.snapshot(ctx)
@@ -1144,9 +1182,18 @@ func (s *Server) SetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, 
 	if err == nil {
 		place, _, err = s.limitPlace(ctx, l, projectKey, "")
 	}
+	cur, exists := findMaximum(snap, projectKey)
 	var pre Precondition
 	if err == nil {
-		pre, err = requireIfMatch(r)
+		pre, err = ParseIfMatch(r)
+	}
+	switch {
+	case err != nil:
+	case exists:
+		err = pre.Require()
+	case pre.Present:
+		err = errs.E(errs.PreconditionFailed, errs.CodePreconditionFailed,
+			"The project has no maximum that If-Match could name: send none to set a first one.")
 	}
 	var in maximumWrite
 	if err == nil {
@@ -1155,7 +1202,6 @@ func (s *Server) SetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, 
 	if _, ok := findProfile(snap, in.Profile); err == nil && !ok {
 		err = errs.E(errs.NotFound, errs.CodeNotFound, "No profile has this key.")
 	}
-	cur, exists := findMaximum(snap, projectKey)
 	version := int64(0)
 	if exists {
 		version = cur.Version

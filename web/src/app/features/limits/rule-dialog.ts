@@ -37,6 +37,9 @@ export interface RuleDialogData {
   readonly who?: LimitWho;
   /** The caller writes without `limits:write`: its rule is capped (R-LIM-016). */
   readonly capped: boolean;
+  /** A technical token's own rule (R-UI-181, Q-UI-759): the dialog is **Change limit** and offers **Remove limit**, which it answers
+   *  with `'remove'` for the caller to confirm and do. */
+  readonly tokenRule?: boolean;
   /** The project's maximum's profile name, for the line that names the cap. */
   readonly maximum?: string | null;
 }
@@ -178,12 +181,19 @@ export const ADDRESS_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?|[0-9a-
         />
       </div>
       <div class="dialog-actions">
+        @if (data.tokenRule && data.rule) {
+          <button class="btn btn-tertiary remove" type="button" (click)="remove()" i18n="@@limits.token.remove-confirm">Remove limit</button>
+        }
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@limits.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="busy() || !profileKey()">{{ confirmLabel }}</button>
       </div>
     </form>
   `,
   styles: `
+    /* Remove limit stands apart from the dialog's answer, at the row's start. */
+    .remove {
+      margin-inline-end: auto;
+    }
     quader-error-notice {
       display: block;
       margin-block-end: var(--quader-space-3);
@@ -211,14 +221,16 @@ export const ADDRESS_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?|[0-9a-
 })
 export class LimitRuleDialog {
   protected readonly data = inject<RuleDialogData>(DIALOG_DATA);
-  private readonly ref = inject<DialogRef<Versioned<LimitRule> | 'deleted'>>(DialogRef);
+  private readonly ref = inject<DialogRef<Versioned<LimitRule> | 'deleted' | 'remove'>>(DialogRef);
   private readonly api = inject(LimitsApi);
   private readonly conflicts = inject(ConflictResolver);
   private readonly locale = inject(LOCALE_ID);
 
   protected readonly project = placeProject(this.data.place);
   protected readonly title = this.data.rule
-    ? $localize`:@@limits.rule.change-title:Change rule`
+    ? this.data.tokenRule
+      ? $localize`:@@limits.rule.change-limit-title:Change limit`
+      : $localize`:@@limits.rule.change-title:Change rule`
     : this.data.who
       ? $localize`:@@limits.rule.set-title:Set limit`
       : $localize`:@@limits.rule.add-title:Add rule`;
@@ -248,7 +260,8 @@ export class LimitRuleDialog {
   protected readonly note = signal(this.data.rule?.note ?? '');
 
   protected readonly profiles = signal<readonly LimitProfile[] | null>(null);
-  protected readonly profileKey = signal(this.data.rule?.profile ?? '');
+  /** A default is a value in the field: a technical token's first limit starts from the profile its kind gets (R-LIM-038). */
+  protected readonly profileKey = signal(this.data.rule?.profile ?? (this.data.who?.kind === 'technicalToken' ? 'technical' : ''));
   protected readonly profile = computed(() => this.profiles()?.find((p) => p.key === this.profileKey()) ?? null);
   protected readonly texts = signal<FigureTexts>(textsOf(null));
   protected readonly overridden = signal<ReadonlySet<Figure>>(new Set());
@@ -330,6 +343,11 @@ export class LimitRuleDialog {
 
   protected compact(p: LimitProfile): string {
     return compactFigures(p.figures, this.locale);
+  }
+
+  /** **Remove limit** of a token's rule: the caller confirms and deletes (TechnicalTokenLimits.remove). */
+  protected remove(): void {
+    this.ref.close('remove');
   }
 
   protected principalKinds(): readonly PrincipalKind[] {

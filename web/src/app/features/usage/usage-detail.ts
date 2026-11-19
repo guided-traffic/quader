@@ -1,7 +1,7 @@
 import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { LimitBlock, LimitProfile, LimitsApi, UsageDetail, UsagePeriod, UsageScope, UsageSubject, UsageSubjectKind } from '../../api/limits-api';
+import { LimitBlock, LimitsApi, UsageDetail, UsagePeriod, UsageScope, UsageSubject, UsageSubjectKind } from '../../api/limits-api';
 import { ApiError } from '../../api/problem';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
@@ -9,31 +9,13 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
-import { CallerCell } from '../limits/caller-cell';
-import { subjectKindLabel, subjectTitle, subjectView } from '../limits/callers';
+import { subjectKindLabel, subjectReference, subjectTitle, subjectView } from '../limits/callers';
 import { formatCount } from '../limits/figures';
 import { LimitExplain } from './limit-explain';
 import { UsageBudgets } from './usage-budgets';
 import { UsageHistory } from './usage-history';
 import { UsageByCredentialTable, UsageByRepositoryTable } from './usage-tables';
 import { PERIODS, periodLabel, periodPhrase } from './usage-words';
-
-/** The names of the built-in profiles (R-LIM-010), for a reader who may not list the profiles. */
-const BUILTIN_NAMES: Readonly<Record<string, string>> = {
-  unlimited: 'Unlimited',
-  standard: 'Standard',
-  technical: 'Technical',
-  restricted: 'Restricted',
-  anonymous: 'Anonymous',
-};
-
-/** The profiles' names by key: the list where the caller may read it, the built-ins' names in any case. */
-export async function profileNames(api: LimitsApi): Promise<ReadonlyMap<string, string>> {
-  const names = new Map(Object.entries(BUILTIN_NAMES));
-  const list = await api.profiles().catch(() => [] as readonly LimitProfile[]);
-  for (const p of list) names.set(p.key, p.name);
-  return names;
-}
 
 /** The page of a technical token's service account (R-UI-181): `sa:<name>`, `sa:<project>/<name>`, `sa:<project>/<repo>/<name>`. */
 export function accountLink(account: string): readonly string[] | null {
@@ -56,7 +38,8 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
 }
 
 /**
- * A caller's usage, and which limit applies (R-UI-184): the caller, its kind and for a technical token its account; a block with
+ * A caller's usage, and which limit applies (R-UI-184): the caller as the title, under it its kind and its reference (a user's
+ * `@name`, a technical token's account, Q-UI-765); a block with
  * **Lift block** for whoever may lift it; the limits of each budget key now with their meters; **Explain for a repository**; the
  * last 24 hours; and, for the period of the head, **By repository** and, for a user, **By credential**. In a project only the
  * project's repositories are counted (R-LIM-029).
@@ -64,11 +47,14 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
 @Component({
   selector: 'quader-usage-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallerCell, ErrorNotice, LimitExplain, PageHeader, RouterLink, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
+  imports: [ErrorNotice, LimitExplain, PageHeader, RouterLink, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
   template: `
     <quader-page-header [heading]="title()" [name]="true">
       <span meta class="meta">
         <span class="badge">{{ kindLabel() }}</span>
+        @if (reference(); as ref) {
+          <span class="reference" translate="no">{{ ref }}</span>
+        }
         @if (account(); as a) {
           @if (accountRoute(a); as route) {
             <a [routerLink]="route" translate="no">{{ a }}</a>
@@ -87,7 +73,6 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
     @if (failure(); as e) {
       <quader-error-notice [error]="e" (retry)="load()" />
     } @else if (detail(); as d) {
-      <div class="who"><quader-caller-cell [view]="caller(d.subject)" /></div>
       @if (blockedEnd(); as until) {
         <div class="notice-block" role="status">
           <span class="material-icons bad" aria-hidden="true">block</span>
@@ -103,7 +88,7 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
 
       <section class="section" aria-labelledby="limits-title">
         <h2 id="limits-title" i18n="@@usage.limits">Limits</h2>
-        <quader-usage-budgets [budgets]="d.budgets" [mode]="d.mode" [profileNames]="names()" />
+        <quader-usage-budgets [budgets]="d.budgets" [mode]="d.mode" />
         <quader-limit-explain [subject]="{ kind: d.subject.kind, id: d.subject.id }" [subjectName]="caller(d.subject).primary" />
       </section>
 
@@ -119,7 +104,7 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
       @if (d.subject.kind === 'user') {
         <section class="section" aria-labelledby="credentials-title">
           <h2 id="credentials-title" i18n="@@usage.by-credential">By credential</h2>
-          <quader-usage-by-credential [rows]="d.credentials ?? []" [emptyText]="emptyText()" />
+          <quader-usage-by-credential [rows]="d.credentials" [emptyText]="emptyText()" />
         </section>
       }
     } @else {
@@ -134,8 +119,12 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
       align-items: flex-start;
       gap: var(--quader-space-2);
     }
-    .who {
-      margin-block-end: var(--quader-space-3);
+    .reference {
+      color: var(--quader-text-muted);
+    }
+    /* The icon stands on the middle of the notice's first line (R-UI-175): a 24 px glyph on the line of the text. */
+    .notice-block > .material-icons {
+      margin-block: calc((var(--quader-line) - 24px) / 2);
     }
     .notice-block {
       display: flex;
@@ -173,12 +162,16 @@ export class UsageDetailPage {
   protected readonly activePeriod = computed<UsagePeriod>(() => (PERIODS.includes(this.period() as UsagePeriod) ? (this.period() as UsagePeriod) : 'day'));
   protected readonly detail = signal<UsageDetail | null>(null);
   protected readonly failure = signal<ApiError | null>(null);
-  protected readonly names = signal<ReadonlyMap<string, string>>(new Map(Object.entries(BUILTIN_NAMES)));
   protected readonly block = signal<LimitBlock | null>(null);
 
+  /** The thing (Q-UI-765): a user's display name, a token's name, a CI project's path, an address; its reference under it. */
   protected readonly title = computed(() => {
     const d = this.detail();
     return d ? subjectTitle(d.subject) : this.id();
+  });
+  protected readonly reference = computed(() => {
+    const d = this.detail();
+    return d ? subjectReference(d.subject) : null;
   });
   protected readonly kindLabel = computed(() => subjectKindLabel((this.detail()?.subject.kind ?? this.kind()) as UsageSubjectKind));
   protected readonly account = computed(() => {
@@ -194,7 +187,6 @@ export class UsageDetailPage {
   protected readonly emptyText = computed(() => $localize`:@@usage.empty:No downloads ${periodPhrase(this.activePeriod())}:period:.`);
 
   constructor() {
-    void profileNames(this.api).then((n) => this.names.set(n));
     effect(() => {
       this.kind();
       this.id();

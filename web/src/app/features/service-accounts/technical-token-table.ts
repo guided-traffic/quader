@@ -1,5 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
+import { LimitProfile, UsageRow } from '../../api/limits-api';
 import { TechnicalToken } from '../../api/technical-tokens-api';
+import { TokenLastDayCell, TokenLimitCell } from '../limits/technical-token-limit';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { Tooltip } from '../../shared/ui/tooltip';
@@ -19,17 +21,28 @@ export function lastUsed(t: TechnicalToken): string | null {
   return out;
 }
 
+/** What the table shows of the download limits (R-UI-181): the profiles' names, the default, the last 24 hours, who may set. */
+export interface TokenLimitsView {
+  readonly profiles: readonly LimitProfile[];
+  /** The profile a token without a rule of its own gets: Technical, Unlimited for an account that holds `admin`. */
+  readonly defaultProfile: string;
+  /** The last 24 hours by the token's ID; null for a caller who may not read the usage (the limit stands without its second line). */
+  readonly lastDay: ReadonlyMap<string, UsageRow> | null;
+  /** The caller may set the token's limit: `limits:write`, or an Owner of the account's project. */
+  readonly canSet: boolean;
+}
+
 /**
- * A list of technical tokens of a service account (R-UI-181, Q-UI-740): the token (its name, below it the hint of its current secret and
- * its description), when its secret expires, when it was last used, and at the row's end **Rotate** and **Revoke**, quiet buttons
- * with their words, for an active token; a token without a live secret says **Expired** or **Revoked** and offers **Issue new
- * secret**. The section lists the active tokens and the ended ones in a table each, so that the action cells of one table are
- * built one way (R-UI-163, R-UI-176). The download-limit columns **Limit** and **Last 24 hours** and the action **Set limit** of R-UI-181 stand between the
- * token and its expiry and before **Revoke** (`columns`, the row's cells, `actions`); the limits area adds them.
+ * A list of technical tokens of a service account (R-UI-181, Q-UI-740): the token (its name, below it the hint of its current secret
+ * with when it expires, and its description), its limit with its last 24 hours as the cell's second line (Q-UI-759, Q-UI-761), when
+ * it was last used, and at the row's end **Rotate** and **Revoke**, quiet buttons with their words, for an active token; a token
+ * without a live secret says **Expired** or **Revoked**, shows no limit and offers **Issue new secret**. The limit opens the rule
+ * dialog where the caller may set it (**Set limit**, **Change limit**, **Remove limit**). The section lists the active tokens and the
+ * ended ones in a table each, so that the action cells of one table are built one way (R-UI-163, R-UI-176).
  */
 @Component({
   selector: 'quader-technical-token-table',
-  imports: [DataTable, TimeAgo, Tooltip],
+  imports: [DataTable, TimeAgo, TokenLastDayCell, TokenLimitCell, Tooltip],
   template: `
     <quader-data-table [caption]="caption()" [columns]="columns()" [empty]="tokens().length === 0" [emptyText]="emptyText()">
       @for (t of tokens(); track t.id) {
@@ -37,18 +50,48 @@ export function lastUsed(t: TechnicalToken): string | null {
           <th scope="row" class="wrap-name">
             <span translate="no">{{ t.name }}</span>
             @if (secretOf(t); as s) {
-              <code translate="no" class="secondary">{{ s.hint }}</code>
+              <!-- An active token's secret with its expiry on one line (Q-UI-761): the hint names the secret that expires. -->
+              <span class="secondary"
+                ><code translate="no">{{ s.hint }}</code>
+                @if (t.state === 'active') {
+                  @if (s.expiresAt) {
+                    · <span class="expiry" i18n="@@tt-table.expires-line">expires <quader-time-ago [at]="s.expiresAt" absolute="title" /></span>
+                  } @else {
+                    · <span class="expiry" i18n="@@tt-table.never-expires">never expires</span>
+                  }
+                }
+              </span>
+              @if (t.state === 'active' && soon(t)) {
+                <span class="badge warn"
+                  ><span class="material-icons" aria-hidden="true">schedule</span
+                  ><ng-container i18n="@@tt-table.soon">Expires soon</ng-container></span
+                >
+              }
             }
             @if (t.description) {
               <span class="secondary">{{ t.description }}</span>
             }
           </th>
-          <!-- The limits area's columns Limit and Last 24 hours stand here (R-UI-181). -->
+          @if (limits(); as l) {
+            <td>
+              @if (l.canSet) {
+                <button class="open link" type="button" (click)="setLimit.emit(t)">
+                  <quader-token-limit [limit]="t.limit" [profiles]="l.profiles" [defaultProfile]="l.defaultProfile" />
+                  <span class="visually-hidden">, {{ t.limit ? changeWord : setWord }} {{ t.name }}</span>
+                </button>
+              } @else {
+                <quader-token-limit [limit]="t.limit" [profiles]="l.profiles" [defaultProfile]="l.defaultProfile" />
+              }
+              @if (l.lastDay; as days) {
+                <quader-token-last-day class="secondary" [usage]="days.get(t.id) ?? null" />
+              }
+            </td>
+          }
           <!-- A time relative to now; the absolute time is its title (Q-UI-431). -->
-          <td>
-            @if (t.state !== 'active') {
-              <!-- An ended token: when its last secret ended, below it how, as "Expires soon" stands below the time of an
-                   active token, so that the cell's first line is on the row's line (R-UI-172). -->
+          @if (t.state !== 'active') {
+            <td>
+              <!-- An ended token: when its last secret ended, below it how, so that the cell's first line is on the row's line
+                   (R-UI-172). -->
               @if (endOf(t); as at) {
                 <quader-time-ago [at]="at" absolute="title" /><br />
               }
@@ -57,18 +100,8 @@ export function lastUsed(t: TechnicalToken): string | null {
               } @else {
                 <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@tt-table.revoked">Revoked</ng-container></span>
               }
-            } @else if (secretOf(t)?.expiresAt; as at) {
-              <quader-time-ago [at]="at" absolute="title" />
-              @if (soon(t)) {
-                <br /><span class="badge warn"
-                  ><span class="material-icons" aria-hidden="true">schedule</span
-                  ><ng-container i18n="@@tt-table.soon">Expires soon</ng-container></span
-                >
-              }
-            } @else {
-              <ng-container i18n="@@tt-table.never">Never</ng-container>
-            }
-          </td>
+            </td>
+          }
           <td>
             @if (used(t); as at) {
               <quader-time-ago [at]="at" absolute="title" />
@@ -104,6 +137,29 @@ export function lastUsed(t: TechnicalToken): string | null {
     </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
+  styles: `
+    /* The expiry breaks from the hint, never inside ("expires" / "in 4 weeks" read as two facts). */
+    .expiry {
+      white-space: nowrap;
+    }
+    /* The limit opens its rule dialog: the thing the row sets is its own link (R-UI-163, Q-UI-758). */
+    .open {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--quader-link);
+      font: inherit;
+      text-align: start;
+      cursor: pointer;
+    }
+    .open:hover {
+      text-decoration: underline;
+    }
+    .open:focus-visible {
+      outline: var(--quader-focus-ring);
+      outline-offset: 2px;
+    }
+  `,
 })
 export class TechnicalTokenTable {
   readonly tokens = input.required<readonly TechnicalToken[]>();
@@ -114,18 +170,36 @@ export class TechnicalTokenTable {
   readonly canRotate = input(false);
   readonly canRevoke = input(false);
   readonly canIssue = input(false);
+  /** The download limits' columns and actions; null leaves them out (a caller who reads neither limits nor usage). */
+  readonly limits = input<TokenLimitsView | null>(null);
   readonly rotate = output<TechnicalToken>();
+  /** The limit's cell opens the rule dialog: **Set limit**, **Change limit**, and in it **Remove limit** (R-UI-181, Q-UI-759). */
+  readonly setLimit = output<TechnicalToken>();
   readonly revoke = output<TechnicalToken>();
   /** **Issue new secret** of a token without a live secret (Q-AUTH-416). */
   readonly renew = output<TechnicalToken>();
 
+  protected readonly setWord = $localize`:@@tt-table.set-limit:Set limit`;
+  protected readonly changeWord = $localize`:@@tt-table.change-limit:Change limit`;
   protected readonly rotateText = $localize`:@@tt-table.rotate-tip:Rotate: a new secret now, the old one ends after the overlap you choose. The token keeps its name and its limit.`;
-  /** The token wraps and declares its least width (Q-UI-308); the times and the actions are as wide as their content. */
+  /**
+   * The token wraps and declares its least width (Q-UI-308); the times and the actions are as wide as their content. An active
+   * token's expiry stands beside its secret's hint, so that the list is a table at 1,024 px (Q-UI-761).
+   */
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'token', label: $localize`:@@tt-table.token:Token`, width: '10rem', prefer: true },
-    this.ended()
-      ? { id: 'ended', label: $localize`:@@tt-table.ended:Ended` }
-      : { id: 'expires', label: $localize`:@@tt-table.expires:Expires` },
+    ...(this.limits()
+      ? [
+          {
+            id: 'limit',
+            label: $localize`:@@tt-table.limit:Limit`,
+            help: this.limits()?.lastDay
+              ? $localize`:@@tt-table.help.limit-day:The download limit of this token: its own rule at the account's place, or the default of technical tokens. Below it, what the token downloaded in the last 24 hours.`
+              : $localize`:@@tt-table.help.limit:The download limit of this token: its own rule at the account's place, or the default of technical tokens.`,
+          },
+        ]
+      : []),
+    ...(this.ended() ? [{ id: 'ended', label: $localize`:@@tt-table.ended:Ended` }] : []),
     {
       id: 'lastUsed',
       label: $localize`:@@tt-table.last-used:Last used`,

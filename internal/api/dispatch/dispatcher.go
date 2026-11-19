@@ -34,6 +34,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/limits"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -326,6 +327,8 @@ func (d *Dispatcher) serveRoute(w http.ResponseWriter, r *http.Request, f format
 	if id, perr := strconv.ParseInt(repo.ID, 10, 64); perr == nil {
 		limits.FromContext(ctx).Served(id)
 	}
+	// The request record names the repository and the format of every request on a protocol path (R-OPS-010, R-LIM-030).
+	observability.RequestInfoFrom(ctx).SetRepo(key.String(), string(f.Descriptor().ID))
 	if cacheView && repo.Class != repository.Remote {
 		fail(errs.E(errs.NotFound, errs.CodeRepositoryNotFound, "No repository has the requested key."))
 		return

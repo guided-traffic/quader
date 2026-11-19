@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/qname"
 )
@@ -98,13 +101,74 @@ func toTechnicalSecrets(in []token.Secret) []gen.TechnicalTokenSecret {
 	return out
 }
 
-// toTechnicalToken renders a technical token. limit is the token's own download-limit rule at its account's place, which the
-// limits area reads (usage-and-limits.md R-LIM-038); null while none is set.
-func toTechnicalToken(sa principal.ServiceAccount, t token.TechnicalToken) gen.TechnicalToken {
+// toTechnicalToken renders a technical token. limit is the token's own download-limit rule at its account's place (R-AUTH-045,
+// usage-and-limits.md R-LIM-038); null while none is set and on a replica without the limits area.
+func toTechnicalToken(sa principal.ServiceAccount, t token.TechnicalToken, limit *gen.TechnicalTokenLimit) gen.TechnicalToken {
 	return gen.TechnicalToken{
 		Id: uuidOf(t.ID), Name: t.Name, Description: t.Description, Account: toTechnicalAccount(sa), State: gen.TechnicalTokenState(t.State),
-		Secrets: toTechnicalSecrets(t.Secrets), CreatedAt: utc(t.CreatedAt), CreatedBy: optString(t.CreatedBy),
+		Secrets: toTechnicalSecrets(t.Secrets), Limit: limit, CreatedAt: utc(t.CreatedAt), CreatedBy: optString(t.CreatedBy),
 	}
+}
+
+// accountLimitPlace is the place a service account's tokens have their own rule at (R-LIM-038): the instance, the account's
+// project, or its repository.
+func accountLimitPlace(sa principal.ServiceAccount) limits.Place {
+	switch sa.Level() {
+	case principal.LevelRepository:
+		return limits.Place{Kind: limits.PlaceRepository, Repo: qname.Repo{Project: sa.Project, Key: sa.Repository}, ProjectKey: sa.Project}
+	case principal.LevelProject:
+		return limits.Place{Kind: limits.PlaceProject, ProjectKey: sa.Project}
+	}
+	return limits.InstancePlace()
+}
+
+// tokenLimits are the rules of the account's place that name one of its technical tokens, by the token's ID (R-LIM-038). The
+// limits are read from the store, as every read of the limits API is; a replica without the limits area answers none.
+func (s *Server) tokenLimits(ctx context.Context, sa principal.ServiceAccount) (map[string]tokenLimit, error) {
+	l := s.o.Limits
+	if l.Store == nil {
+		return nil, nil
+	}
+	snap, err := l.Store.Snapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	place := accountLimitPlace(sa)
+	out := map[string]tokenLimit{}
+	for _, r := range snap.Rules {
+		if r.WhoKind != limits.WhoTechnicalToken || r.Place.Kind != place.Kind {
+			continue
+		}
+		if (place.Kind == limits.PlaceProject && r.Place.ProjectKey != place.ProjectKey) || (place.Kind == limits.PlaceRepository && r.Place.Repo != place.Repo) {
+			continue
+		}
+		n := 0
+		for _, set := range r.Overrides.Set {
+			if set {
+				n++
+			}
+		}
+		out[r.WhoRef] = tokenLimit{rep: &gen.TechnicalTokenLimit{Rule: uuidOf(r.ID), Profile: r.Profile, Overrides: n}, at: r.UpdatedAt}
+	}
+	return out, nil
+}
+
+// tokenLimit is a technical token's own rule and when it last changed.
+type tokenLimit struct {
+	rep *gen.TechnicalTokenLimit
+	at  time.Time
+}
+
+// technicalETag is the tag of a read of a technical token. Its limit changes with a rule, not with the token's revision, and a
+// strong validator changes with every observable change of the representation (R-API-012, RFC 9110 section 8.8.1): the tag is
+// the revision, then the rule's change time as ".<microseconds>" while the token has a rule. A write accepts both forms and
+// compares the revision, as a repository's does (withoutActivity).
+func technicalETag(revision int64, l tokenLimit) string {
+	tag := ETag(revision, "")
+	if l.rep != nil {
+		tag = tag[:len(tag)-1] + "." + strconv.FormatInt(l.at.UnixMicro(), 10) + `"`
+	}
+	return tag
 }
 
 // listTechnical answers GET …/technical-tokens.
@@ -117,13 +181,17 @@ func (s *Server) listTechnical(w http.ResponseWriter, r *http.Request, a account
 	if err == nil {
 		list, err = s.o.Auth.Tokens.ListTechnical(r.Context(), sa.ID)
 	}
+	var lims map[string]tokenLimit
+	if err == nil {
+		lims, err = s.tokenLimits(r.Context(), sa)
+	}
 	if err != nil {
 		failIdentity(w, r, err)
 		return
 	}
 	items := make([]gen.TechnicalToken, 0, len(list))
 	for _, t := range list {
-		items = append(items, toTechnicalToken(sa, t))
+		items = append(items, toTechnicalToken(sa, t, lims[t.ID].rep))
 	}
 	writeJSON(w, r, http.StatusOK, gen.TechnicalTokenList{Items: items})
 }
@@ -138,15 +206,20 @@ func (s *Server) getTechnical(w http.ResponseWriter, r *http.Request, a accountR
 	if err == nil {
 		t, err = s.o.Auth.Tokens.GetTechnical(r.Context(), sa.ID, tokenName)
 	}
+	var lims map[string]tokenLimit
+	if err == nil {
+		lims, err = s.tokenLimits(r.Context(), sa)
+	}
 	if err != nil {
 		failIdentity(w, r, err)
 		return
 	}
-	if NotModified(w, r, ETag(t.Revision, "")) {
+	tag := technicalETag(t.Revision, lims[t.ID])
+	if NotModified(w, r, tag) {
 		return
 	}
-	SetETag(w, t.Revision, "")
-	writeJSON(w, r, http.StatusOK, toTechnicalToken(sa, t))
+	w.Header().Set("ETag", tag)
+	writeJSON(w, r, http.StatusOK, toTechnicalToken(sa, t, lims[t.ID].rep))
 }
 
 // technicalPatchBody is a merge patch of a technical token: the description; the read-only members are accepted and ignored,
@@ -170,6 +243,7 @@ func (s *Server) updateTechnical(w http.ResponseWriter, r *http.Request, a accou
 		return
 	}
 	pre, err := ParseIfMatch(r)
+	pre = withoutActivity(pre)
 	var raw []byte
 	if err == nil {
 		raw, err = ReadMergePatch(w, r, s.bodyLimit())
@@ -199,12 +273,16 @@ func (s *Server) updateTechnical(w http.ResponseWriter, r *http.Request, a accou
 	default:
 		t, err = s.o.Auth.Tokens.UpdateTechnical(r.Context(), s.caller(r), sa, tokenName, *desc, expectedRevision(pre))
 	}
+	var lims map[string]tokenLimit
+	if err == nil {
+		lims, err = s.tokenLimits(r.Context(), sa)
+	}
 	if err != nil {
 		failIdentity(w, r, err)
 		return
 	}
 	SetETag(w, t.Revision, "")
-	writeJSON(w, r, http.StatusOK, toTechnicalToken(sa, t))
+	writeJSON(w, r, http.StatusOK, toTechnicalToken(sa, t, lims[t.ID].rep))
 }
 
 // deleteTechnical answers DELETE …/technical-tokens/{tokenName}.
@@ -367,10 +445,14 @@ func (s *Server) issueTechnical(w http.ResponseWriter, r *http.Request, body []b
 			if err != nil {
 				return Outcome{}, err
 			}
-			rec := toTechnicalToken(sa, t)
+			lims, err := s.tokenLimits(ctx, sa)
+			if err != nil {
+				return Outcome{}, err
+			}
+			rec := toTechnicalToken(sa, t, lims[t.ID].rep)
 			out := gen.TechnicalTokenCreated{
 				Id: rec.Id, Name: rec.Name, Description: rec.Description, Account: rec.Account, State: gen.TechnicalTokenCreatedState(rec.State),
-				Secrets: rec.Secrets, CreatedAt: rec.CreatedAt, CreatedBy: rec.CreatedBy, Token: created.Secret, SecretId: uuidOf(created.Record.ID),
+				Secrets: rec.Secrets, Limit: rec.Limit, CreatedAt: rec.CreatedAt, CreatedBy: rec.CreatedBy, Token: created.Secret, SecretId: uuidOf(created.Record.ID),
 			}
 			return Outcome{
 				Status: http.StatusCreated, Body: out, SecretID: created.Record.ID,

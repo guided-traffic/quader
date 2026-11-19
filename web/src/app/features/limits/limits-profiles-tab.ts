@@ -91,8 +91,9 @@ export function usedByText(p: LimitProfile, locale: string): string {
                   <ng-container i18n="@@limits.profiles.delete">Delete</ng-container>
                   <span class="visually-hidden" translate="no"> {{ p.name }}</span>
                 </button>
+                <!-- The reason is the row's column Used by; the disabled button names it to a screen reader (R-UI-178). -->
                 @if (inUse) {
-                  <span class="reason" [id]="'used-' + p.key" i18n="@@limits.profiles.in-use">Used by {{ usedBy(p) }}</span>
+                  <span class="visually-hidden" [id]="'used-' + p.key" i18n="@@limits.profiles.in-use">Used by {{ usedBy(p) }}</span>
                 }
               }
             </td>
@@ -114,11 +115,6 @@ export function usedByText(p: LimitProfile, locale: string): string {
       gap: var(--quader-space-1) var(--quader-space-2);
     }
     .figures {
-      color: var(--quader-text-muted);
-      font: var(--quader-type-body-small);
-    }
-    .reason {
-      display: block;
       color: var(--quader-text-muted);
       font: var(--quader-type-body-small);
     }

@@ -5544,7 +5544,9 @@ export interface paths {
         get: operations["getLimitProjectMaximum"];
         /**
          * Set a project's maximum
-         * @description Set or replace it (R-LIM-033); `If-Match: *` creates one.
+         * @description Set or replace it (R-LIM-033). The first maximum of a project is set without `If-Match` (201); a replace requires the
+         *     `ETag` loaded with it (`428` without, `412` for a stale one), and an `If-Match` sent where the project has no maximum answers
+         *     `412` (Q-API-354).
          */
         put: operations["setLimitProjectMaximum"];
         post?: never;
@@ -11273,8 +11275,36 @@ export interface components {
             /** @description The project of the account, `null` for an instance-wide one. */
             project: string | null;
         };
-        /** @description Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes. */
+        /** @description Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes. */
         LimitFigures: {
+            /** Format: int64 */
+            requestsPerSecond: number | null;
+            /** Format: int64 */
+            requestsBurst: number | null;
+            /** Format: int64 */
+            requestsPerHour: number | null;
+            /** Format: int64 */
+            cachedBytesPerSecond: number | null;
+            /** Format: int64 */
+            cachedBytesPerHour: number | null;
+            /** Format: int64 */
+            uncachedBytesPerSecond: number | null;
+            /** Format: int64 */
+            uncachedBytesPerHour: number | null;
+            /** Format: int64 */
+            upstreamRequestsPerHour: number | null;
+            /** Format: int64 */
+            parallelDownloads: number | null;
+            /** Format: int64 */
+            bytesPerDay: number | null;
+            /** Format: int64 */
+            refusedPerHour: number | null;
+        };
+        /**
+         * @description Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+         *     In a profile's write, a figure left out is unlimited (R-LIM-031).
+         */
+        LimitFigureOverrides: {
             /** Format: int64 */
             requestsPerSecond?: number | null;
             /** Format: int64 */
@@ -11298,6 +11328,8 @@ export interface components {
             /** Format: int64 */
             refusedPerHour?: number | null;
         };
+        /** @enum {string} */
+        LimitFigureName: "requestsPerSecond" | "requestsBurst" | "requestsPerHour" | "cachedBytesPerSecond" | "cachedBytesPerHour" | "uncachedBytesPerSecond" | "uncachedBytesPerHour" | "upstreamRequestsPerHour" | "parallelDownloads" | "bytesPerDay" | "refusedPerHour";
         LimitProfile: {
             key: string;
             name: string;
@@ -11305,23 +11337,24 @@ export interface components {
             builtin: boolean;
             figures: components["schemas"]["LimitFigures"];
             usedBy: {
-                assignments?: number;
-                projectMaximums?: number;
+                assignments: number;
+                projectMaximums: number;
             };
             /** Format: int64 */
             version: number;
             /** Format: date-time */
-            createdAt?: string;
-            createdBy?: string | null;
+            createdAt: string;
+            createdBy: string | null;
             /** Format: date-time */
-            updatedAt?: string;
-            updatedBy?: string | null;
+            updatedAt: string;
+            updatedBy: string | null;
         };
         LimitProfileWrite: {
+            /** @description On create only; immutable. */
             key?: string;
             name: string;
             description?: string;
-            figures: components["schemas"]["LimitFigures"];
+            figures: components["schemas"]["LimitFigureOverrides"];
             readonly builtin?: boolean;
             readonly usedBy?: Record<string, never>;
             readonly version?: number;
@@ -11332,62 +11365,104 @@ export interface components {
         };
         LimitProfileList: {
             items: components["schemas"]["LimitProfile"][];
-            nextCursor?: string | null;
+            nextCursor: string | null;
         };
-        LimitPlace: {
+        LimitPlaceInstance: {
             /** @enum {string} */
-            kind: "instance" | "project" | "repository";
-            project?: string;
-            repository?: string;
+            kind: "instance";
         };
-        /** @description The caller a rule names (R-LIM-011, R-LIM-032). */
-        LimitWho: {
+        LimitPlaceProject: {
             /** @enum {string} */
-            kind: "user" | "technicalToken" | "ciProject" | "address" | "group" | "every";
-            user?: string;
-            group?: string;
-            technicalToken?: string;
-            issuer?: string;
-            projectId?: string;
-            prefix?: string;
+            kind: "project";
+            /** @description The project's key. */
+            project: string;
+        };
+        LimitPlaceRepository: {
             /** @enum {string} */
-            callerKind?: "user" | "technicalToken" | "ci" | "anonymous" | "administrator";
+            kind: "repository";
+            /** @description `<projectKey>/<repoKey>`. */
+            repository: string;
+        };
+        /** @description Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014). */
+        LimitPlace: components["schemas"]["LimitPlaceInstance"] | components["schemas"]["LimitPlaceProject"] | components["schemas"]["LimitPlaceRepository"];
+        LimitWhoUser: {
+            /** @enum {string} */
+            kind: "user";
+            /** @description The username. */
+            user: string;
             readonly displayName?: string;
+            readonly deleted?: boolean;
+        };
+        LimitWhoTechnicalToken: {
+            /** @enum {string} */
+            kind: "technicalToken";
+            /**
+             * Format: uuid
+             * @description The technical token's ID.
+             */
+            technicalToken: string;
             readonly name?: string;
+            /** @description The account's reference, `sa:web/partner`. */
             readonly account?: string;
+            readonly deleted?: boolean;
+        };
+        LimitWhoCIProject: {
+            /** @enum {string} */
+            kind: "ciProject";
+            /** @description The CI issuer's name. */
+            issuer: string;
+            projectId: string;
+            /** @description The path the issuer's tokens named last; absent when none is known. */
             readonly projectPath?: string;
             readonly deleted?: boolean;
         };
+        LimitWhoAddress: {
+            /** @enum {string} */
+            kind: "address";
+            /** @description An address or a prefix, stored canonical. */
+            prefix: string;
+        };
+        LimitWhoGroup: {
+            /** @enum {string} */
+            kind: "group";
+            /** @description The group's name. */
+            group: string;
+            readonly displayName?: string;
+            readonly deleted?: boolean;
+        };
+        LimitWhoEvery: {
+            /** @enum {string} */
+            kind: "every";
+            /** @enum {string} */
+            callerKind: "user" | "technicalToken" | "ci" | "anonymous" | "administrator";
+        };
+        /** @description The caller a rule names (R-LIM-011, R-LIM-032). */
+        LimitWho: components["schemas"]["LimitWhoUser"] | components["schemas"]["LimitWhoTechnicalToken"] | components["schemas"]["LimitWhoCIProject"] | components["schemas"]["LimitWhoAddress"] | components["schemas"]["LimitWhoGroup"] | components["schemas"]["LimitWhoEvery"];
         LimitAssignment: {
             id: string;
             place: components["schemas"]["LimitPlace"];
             who: components["schemas"]["LimitWho"];
             profile: string;
-            overrides: {
-                [key: string]: number | null;
-            };
+            overrides: components["schemas"]["LimitFigureOverrides"];
             effective: components["schemas"]["LimitFigures"];
-            clamped: {
-                [key: string]: number | null;
-            };
+            clamped: components["schemas"]["LimitFigureOverrides"];
             capped: boolean;
             builtin: boolean;
             note: string;
             /** Format: int64 */
             version: number;
             /** Format: date-time */
-            createdAt?: string;
-            createdBy?: string | null;
+            createdAt: string;
+            createdBy: string | null;
             /** Format: date-time */
-            updatedAt?: string;
-            updatedBy?: string | null;
+            updatedAt: string;
+            updatedBy: string | null;
         };
+        /** @description A rule's write; `who` on create, immutable after (a different one on replace answers 409 `assignment_builtin`). */
         LimitAssignmentWrite: {
-            who: components["schemas"]["LimitWho"];
+            who?: components["schemas"]["LimitWho"];
             profile: string;
-            overrides?: {
-                [key: string]: number | null;
-            };
+            overrides?: components["schemas"]["LimitFigureOverrides"];
             note?: string;
             readonly id?: string;
             readonly place?: Record<string, never>;
@@ -11403,13 +11478,13 @@ export interface components {
         };
         LimitAssignmentList: {
             items: components["schemas"]["LimitAssignment"][];
-            nextCursor?: string | null;
+            nextCursor: string | null;
         };
         LimitCeiling: {
             /** Format: int64 */
-            uncachedBytesPerHour?: number | null;
+            uncachedBytesPerHour: number | null;
             /** Format: int64 */
-            upstreamRequestsPerHour?: number | null;
+            upstreamRequestsPerHour: number | null;
         };
         LimitCeilings: {
             repository: string;
@@ -11417,9 +11492,12 @@ export interface components {
             signedIn: components["schemas"]["LimitCeiling"];
             /** Format: int64 */
             version: number;
-            /** Format: date-time */
-            updatedAt?: string | null;
-            updatedBy?: string | null;
+            /**
+             * Format: date-time
+             * @description `null` while no ceiling was ever set.
+             */
+            updatedAt: string | null;
+            updatedBy: string | null;
         };
         LimitCeilingsWrite: {
             anonymous: components["schemas"]["LimitCeiling"];
@@ -11429,105 +11507,191 @@ export interface components {
             readonly updatedAt?: string | null;
             readonly updatedBy?: string | null;
         };
+        /** @enum {string} */
+        LimitMode: "audit" | "enforce";
         LimitSettings: {
-            /** @enum {string} */
-            mode: "audit" | "enforce";
+            mode: components["schemas"]["LimitMode"];
             blockSeconds: number;
             /** Format: int64 */
             version: number;
             /** Format: date-time */
-            updatedAt?: string;
-            updatedBy?: string | null;
+            updatedAt: string;
+            updatedBy: string | null;
         };
         LimitSettingsPatch: {
-            /** @enum {string} */
-            mode?: "audit" | "enforce";
+            mode?: components["schemas"]["LimitMode"];
             blockSeconds?: number;
         };
+        UsagePeriod: {
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+        };
+        /** @enum {string} */
+        UsageSubjectKind: "user" | "technicalToken" | "ci" | "anonymous" | "system";
         LimitModePreview: {
-            period: {
-                /** Format: date-time */
-                from?: string;
-                /** Format: date-time */
-                to?: string;
-            };
+            period: components["schemas"]["UsagePeriod"];
             subjects: number;
+            /** Format: int64 */
             refusedRequests: number;
+            /** Format: int64 */
             slowedDownloads: number;
             blockedSubjects: number;
             byFigure: {
-                figure?: string;
-                subjects?: number;
-                events?: number;
+                /** @description A figure's API name, or `ceiling.anonymous`, `ceiling.signedIn`. */
+                figure: string;
+                subjects: number;
+                /** Format: int64 */
+                events: number;
             }[];
             byKind: {
-                kind?: string;
-                subjects?: number;
+                kind: components["schemas"]["UsageSubjectKind"];
+                subjects: number;
             }[];
         };
         LimitProjectMaximum: {
             project: string;
             profile: string;
-            overrides: {
-                [key: string]: number | null;
-            };
+            overrides: components["schemas"]["LimitFigureOverrides"];
             effective: components["schemas"]["LimitFigures"];
             /** Format: int64 */
             version: number;
             /** Format: date-time */
-            updatedAt?: string;
-            updatedBy?: string | null;
+            updatedAt: string;
+            updatedBy: string | null;
         };
         LimitProjectMaximumWrite: {
             profile: string;
-            overrides?: {
-                [key: string]: number | null;
-            };
+            overrides?: components["schemas"]["LimitFigureOverrides"];
             readonly project?: string;
             readonly effective?: Record<string, never>;
             readonly version?: number;
             readonly updatedAt?: string;
             readonly updatedBy?: string | null;
         };
+        UsageSubjectUser: {
+            /** @enum {string} */
+            kind: "user";
+            /** @description The username; the principal's ID of a user that was deleted. */
+            id: string;
+            name: string;
+            displayName: string | null;
+            deleted: boolean;
+        };
+        UsageSubjectTechnicalToken: {
+            /** @enum {string} */
+            kind: "technicalToken";
+            /** Format: uuid */
+            id: string;
+            /** @description The token's name; its ID when it was deleted. */
+            name: string;
+            /** @description The account's reference, `sa:web/partner`; empty when the token was deleted. */
+            account: string;
+            /** @enum {string|null} */
+            level: "instance" | "project" | "repository" | null;
+            deleted: boolean;
+        };
+        UsageSubjectCI: {
+            /** @enum {string} */
+            kind: "ci";
+            /** @description `<issuer name>:<project ID>`. */
+            id: string;
+            issuer: string;
+            projectId: string;
+            projectPath: string | null;
+        };
+        UsageSubjectAnonymous: {
+            /** @enum {string} */
+            kind: "anonymous";
+            id: string;
+            /** @description An IPv4 address, an IPv6 `/64` prefix, or `unknown`. */
+            address: string;
+        };
+        UsageSubjectSystem: {
+            /** @enum {string} */
+            kind: "system";
+            id: string;
+        };
+        /** @description A subject of the usage store as the API names it (R-LIM-034). */
+        UsageSubject: components["schemas"]["UsageSubjectUser"] | components["schemas"]["UsageSubjectTechnicalToken"] | components["schemas"]["UsageSubjectCI"] | components["schemas"]["UsageSubjectAnonymous"] | components["schemas"]["UsageSubjectSystem"];
         LimitBlock: {
             id: string;
-            subject: Record<string, never>;
+            subject: components["schemas"]["UsageSubject"];
             place: components["schemas"]["LimitPlace"];
             /** Format: date-time */
             startedAt: string;
             /** Format: date-time */
             until: string;
+            /** Format: int64 */
             refused: number;
+            /** Format: int64 */
             limit: number;
             /** Format: date-time */
-            liftedAt?: string | null;
-            liftedBy?: string | null;
+            liftedAt: string | null;
+            liftedBy: string | null;
         };
         LimitBlockList: {
             items: components["schemas"]["LimitBlock"][];
-            nextCursor?: string | null;
+            nextCursor: string | null;
+        };
+        /** @description The rule a budget key stands under, as the detail and the explanation name it (`builtin:<kind>` for a built-in rule). */
+        LimitRuleRef: {
+            id: string;
+            who: components["schemas"]["LimitWho"];
+            profile: string;
+            /** @description The profile's name, for a caller who reads no profiles (its own usage). */
+            profileName: string;
+            builtin: boolean;
+            capped: boolean;
+        };
+        LimitExplainStep: {
+            place: components["schemas"]["LimitPlace"];
+            /** @enum {string} */
+            step: "single" | "groups" | "kind";
+            /** @enum {string} */
+            outcome: "none" | "matched";
+            rules?: components["schemas"]["LimitRuleRef"][];
+        };
+        LimitExplainCeiling: {
+            /** @enum {string} */
+            class: "anonymous" | "signedIn";
+            /** Format: int64 */
+            uncachedBytesPerHour: number | null;
+            /** Format: int64 */
+            upstreamRequestsPerHour: number | null;
         };
         LimitExplanation: {
-            subject: Record<string, never>;
-            repository?: string | null;
-            /** @enum {string} */
-            mode: "audit" | "enforce";
+            subject: components["schemas"]["UsageSubject"];
+            repository: string | null;
+            mode: components["schemas"]["LimitMode"];
             administrator: boolean;
-            steps: Record<string, never>[];
+            steps: components["schemas"]["LimitExplainStep"][];
             place: components["schemas"]["LimitPlace"];
-            rule: Record<string, never> | null;
+            /** @description The rule that applies; `null` for a subject no rule matched (a store without the built-in rules). */
+            rule: components["schemas"]["LimitRuleRef"] | null;
             effective: components["schemas"]["LimitFigures"];
-            clamped: Record<string, never>;
+            clamped: components["schemas"]["LimitFigureOverrides"];
+            /** @description Per figure that did not come from the rule's profile: `override`, `group:<name>` or `clamp`. */
             figureSources: {
                 [key: string]: string;
             };
-            ceiling?: Record<string, never> | null;
+            /** @description The remote's ceiling of the subject's class; `null` for a repository that is not remote. */
+            ceiling: components["schemas"]["LimitExplainCeiling"] | null;
         };
+        LimitSubjectSuggestion: components["schemas"]["UsageSubjectTechnicalToken"] | components["schemas"]["UsageSubjectCI"];
         LimitSubjectSuggestions: {
-            items: Record<string, never>[];
+            items: components["schemas"]["LimitSubjectSuggestion"][];
         };
+        UsageUtilisation: {
+            ratio: number;
+            figure: components["schemas"]["LimitFigureName"];
+            place: components["schemas"]["LimitPlace"];
+        };
+        /** @enum {string} */
+        UsageState: "normal" | "close" | "limitReached" | "wouldBeLimited" | "blocked" | "unlimited";
         UsageRow: {
-            subject: Record<string, never>;
+            subject: components["schemas"]["UsageSubject"];
             /** Format: int64 */
             requests: number;
             /** Format: int64 */
@@ -11542,43 +11706,136 @@ export interface components {
             limitedEvents: number;
             /** Format: int64 */
             wouldLimitEvents: number;
-            utilisation?: Record<string, never> | null;
-            /** @enum {string} */
-            state: "normal" | "close" | "limitReached" | "wouldBeLimited" | "blocked" | "unlimited";
+            utilisation: components["schemas"]["UsageUtilisation"] | null;
+            state: components["schemas"]["UsageState"];
             /** Format: date-time */
-            blockedUntil?: string | null;
+            blockedUntil: string | null;
         };
         UsageList: {
-            period: {
-                /** Format: date-time */
-                from?: string;
-                /** Format: date-time */
-                to?: string;
-            };
-            /** @enum {string} */
-            mode: "audit" | "enforce";
+            period: components["schemas"]["UsagePeriod"];
+            mode: components["schemas"]["LimitMode"];
             items: components["schemas"]["UsageRow"][];
-            nextCursor?: string | null;
+            nextCursor: string | null;
+        };
+        /** @description One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone. */
+        UsageBudgetFigure: {
+            /** Format: int64 */
+            limit: number | null;
+            /** Format: int64 */
+            used?: number;
+            windowSeconds?: number;
+            /** Format: int64 */
+            burst?: number | null;
+        };
+        UsageBudgetFigures: {
+            requestsPerSecond: components["schemas"]["UsageBudgetFigure"];
+            requestsPerHour: components["schemas"]["UsageBudgetFigure"];
+            cachedBytesPerSecond: components["schemas"]["UsageBudgetFigure"];
+            cachedBytesPerHour: components["schemas"]["UsageBudgetFigure"];
+            uncachedBytesPerSecond: components["schemas"]["UsageBudgetFigure"];
+            uncachedBytesPerHour: components["schemas"]["UsageBudgetFigure"];
+            upstreamRequestsPerHour: components["schemas"]["UsageBudgetFigure"];
+            parallelDownloads: components["schemas"]["UsageBudgetFigure"];
+            bytesPerDay: components["schemas"]["UsageBudgetFigure"];
+            refusedPerHour: components["schemas"]["UsageBudgetFigure"];
+        };
+        /** @description One budget key of the subject (R-LIM-014) in the last 24 hours, its place, the rule that applies there now, and every figure. */
+        UsageBudget: {
+            place: components["schemas"]["LimitPlace"];
+            rule: components["schemas"]["LimitRuleRef"] | null;
+            figures: components["schemas"]["UsageBudgetFigures"];
+            /** Format: date-time */
+            blockedUntil: string | null;
+        };
+        UsageTotals: {
+            /** Format: int64 */
+            requests: number;
+            /** Format: int64 */
+            refused: number;
+            /** Format: int64 */
+            cachedBytes: number;
+            /** Format: int64 */
+            uncachedBytes: number;
+            /** Format: int64 */
+            upstreamRequests: number;
+            /** Format: int64 */
+            limitedEvents: number;
+            /** Format: int64 */
+            wouldLimitEvents: number;
+        };
+        UsagePoint: {
+            /** Format: date-time */
+            start: string;
+            /** Format: int64 */
+            requests: number;
+            /** Format: int64 */
+            cachedBytes: number;
+            /** Format: int64 */
+            uncachedBytes: number;
+            /** Format: int64 */
+            upstreamRequests: number;
+            /** Format: int64 */
+            refused: number;
+            /** Format: int64 */
+            limitedEvents: number;
+            /** Format: int64 */
+            wouldLimitEvents: number;
+        };
+        UsageByRepository: {
+            /** @description `<projectKey>/<repoKey>`; empty for requests that named no repository. */
+            repository: string;
+            /** Format: int64 */
+            requests: number;
+            /** Format: int64 */
+            cachedBytes: number;
+            /** Format: int64 */
+            uncachedBytes: number;
+            /** Format: int64 */
+            upstreamRequests: number;
+            /** Format: int64 */
+            refused: number;
+        };
+        UsageCredentialSession: {
+            /** @enum {string} */
+            kind: "session";
+        };
+        UsageCredentialToken: {
+            /** @enum {string} */
+            kind: "token";
+            id: string;
+            /** @description `null` for a token that was deleted. */
+            hint: string | null;
+            description: string | null;
+        };
+        UsageByCredential: {
+            credential: components["schemas"]["UsageCredentialSession"] | components["schemas"]["UsageCredentialToken"];
+            /** Format: int64 */
+            requests: number;
+            /** Format: int64 */
+            cachedBytes: number;
+            /** Format: int64 */
+            uncachedBytes: number;
         };
         UsageDetail: {
-            subject: Record<string, never>;
-            period: Record<string, never>;
-            /** @enum {string} */
-            mode: "audit" | "enforce";
-            totals: Record<string, never>;
-            budgets: Record<string, never>[];
-            history: Record<string, never>[];
-            repositories: Record<string, never>[];
-            credentials: Record<string, never>[];
+            subject: components["schemas"]["UsageSubject"];
+            period: components["schemas"]["UsagePeriod"];
+            mode: components["schemas"]["LimitMode"];
+            totals: components["schemas"]["UsageTotals"];
+            budgets: components["schemas"]["UsageBudget"][];
+            history: components["schemas"]["UsagePoint"][];
+            repositories: components["schemas"]["UsageByRepository"][];
+            /** @description A user's consumption per credential; empty for every other kind. */
+            credentials: components["schemas"]["UsageByCredential"][];
+        };
+        LimitProjectRow: {
+            project: string;
+            maximum: components["schemas"]["LimitProjectMaximum"] | null;
+            projectRules: number;
+            repositoryRules: number;
         };
         LimitProjectList: {
-            items: {
-                project: string;
-                maximum: Record<string, never> | null;
-                projectRules: number;
-                repositoryRules: number;
-            }[];
-            nextCursor?: string | null;
+            items: components["schemas"]["LimitProjectRow"][];
+            nextCursor: string | null;
         };
     };
     responses: {
@@ -23952,9 +24209,9 @@ export interface operations {
     setLimitProjectMaximum: {
         parameters: {
             query?: never;
-            header: {
-                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
-                "If-Match": components["parameters"]["IfMatch"];
+            header?: {
+                /** @description The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012). */
+                "If-Match"?: components["parameters"]["IfMatchOptional"];
             };
             path: {
                 /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
@@ -23970,6 +24227,16 @@ export interface operations {
         responses: {
             /** @description The answer. */
             200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitProjectMaximum"];
+                };
+            };
+            /** @description The project's first maximum. */
+            201: {
                 headers: {
                     ETag: components["headers"]["ETag"];
                     [name: string]: unknown;

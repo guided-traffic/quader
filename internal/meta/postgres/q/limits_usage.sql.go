@@ -25,7 +25,8 @@ func (q *Queries) DeleteLimitBlocksBefore(ctx context.Context, cutoff string) (i
 
 const deleteRulesOfDeletedSubjects = `-- name: DeleteRulesOfDeletedSubjects :many
 DELETE FROM limit_assignment a
- WHERE a.who_kind IN ('user', 'group') AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = a.who_ref)
+ WHERE (a.who_kind IN ('user', 'group') AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = a.who_ref))
+    OR (a.who_kind = 'technical_token' AND NOT EXISTS (SELECT 1 FROM technical_token t WHERE t.id::text = a.who_ref))
 RETURNING a.id::text AS id, a.place_kind, a.who_kind, a.who_ref
 `
 
@@ -36,7 +37,8 @@ type DeleteRulesOfDeletedSubjectsRow struct {
 	WhoRef    string
 }
 
-// The rules whose user or group no longer exists (R-LIM-011): returned for the audit events of limits-cleanup.
+// The rules whose user, group or technical token no longer exists (R-LIM-011, R-LIM-038): returned for the audit events of
+// limits-cleanup. A technical token is gone when it was deleted, with its service account, or with the repository of its account.
 func (q *Queries) DeleteRulesOfDeletedSubjects(ctx context.Context) ([]DeleteRulesOfDeletedSubjectsRow, error) {
 	rows, err := q.db.Query(ctx, deleteRulesOfDeletedSubjects)
 	if err != nil {
@@ -110,9 +112,12 @@ func (q *Queries) DeleteUsageSummaries(ctx context.Context, cutoff string) (int6
 
 const eraseBlocksOfDeletedSubjects = `-- name: EraseBlocksOfDeletedSubjects :execrows
 DELETE FROM limit_block k
- WHERE k.subject_kind = 'user' AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = k.subject_ref)
+ WHERE (k.subject_kind = 'user' AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = k.subject_ref))
+    OR (k.subject_kind = 'technical_token' AND NOT EXISTS (SELECT 1 FROM technical_token t WHERE t.id::text = k.subject_ref))
 `
 
+// The blocks of users and technical tokens that no longer exist (R-LIM-028): a deleted technical token sends no request, so its
+// block holds nothing any more.
 func (q *Queries) EraseBlocksOfDeletedSubjects(ctx context.Context) (int64, error) {
 	result, err := q.db.Exec(ctx, eraseBlocksOfDeletedSubjects)
 	if err != nil {
@@ -139,8 +144,8 @@ DELETE FROM usage_bucket b
  WHERE b.subject_kind = 'user' AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = b.subject_ref)
 `
 
-// Erasure (R-LIM-028, Q-LIM-25): the rows of users and technical tokens that no longer exist. A technical token's rows are
-// kept until their retention when its table does not exist yet (work package 1 adds it).
+// Erasure (R-LIM-028, Q-LIM-25): the rows of users that no longer exist. A deleted technical token's rows stay until their
+// retention and are shown as a deleted token (R-LIM-038, Q-LIM-49): they name a system, not a person.
 func (q *Queries) EraseUsageOfDeletedSubjects(ctx context.Context) (int64, error) {
 	result, err := q.db.Exec(ctx, eraseUsageOfDeletedSubjects)
 	if err != nil {
@@ -152,20 +157,23 @@ func (q *Queries) EraseUsageOfDeletedSubjects(ctx context.Context) (int64, error
 const foldUsageDays = `-- name: FoldUsageDays :execrows
 INSERT INTO usage_daily_summary AS s (day, repository_id, subject_kind, subjects, requests, refused, cached_bytes,
                                      uncached_bytes, upstream_requests, background_fetches, limited_events, would_limit_events)
-SELECT (b.bucket_start AT TIME ZONE 'UTC')::date, b.repository_id, b.subject_kind, count(DISTINCT b.subject_ref),
-       sum(b.requests), sum(b.refused), sum(b.cached_bytes), sum(b.uncached_bytes), sum(b.upstream_requests),
-       sum(b.background_fetches),
+SELECT d.day, d.repository_id, d.subject_kind, d.subjects, d.requests, d.refused, d.cached_bytes, d.uncached_bytes,
+       d.upstream_requests, d.background_fetches,
        COALESCE((SELECT sum(e.count) FROM usage_limit_event e
                   WHERE e.granularity = '1h' AND e.mode = 'enforce' AND e.bucket_start < $1::text::timestamptz
-                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = (b.bucket_start AT TIME ZONE 'UTC')::date
-                    AND e.repository_id IS NOT DISTINCT FROM b.repository_id AND e.subject_kind = b.subject_kind), 0),
+                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = d.day
+                    AND e.repository_id IS NOT DISTINCT FROM d.repository_id AND e.subject_kind = d.subject_kind), 0),
        COALESCE((SELECT sum(e.count) FROM usage_limit_event e
                   WHERE e.granularity = '1h' AND e.mode = 'audit' AND e.bucket_start < $1::text::timestamptz
-                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = (b.bucket_start AT TIME ZONE 'UTC')::date
-                    AND e.repository_id IS NOT DISTINCT FROM b.repository_id AND e.subject_kind = b.subject_kind), 0)
-  FROM usage_bucket b
- WHERE b.granularity = '1h' AND b.bucket_start < $1::text::timestamptz
- GROUP BY (b.bucket_start AT TIME ZONE 'UTC')::date, b.repository_id, b.subject_kind
+                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = d.day
+                    AND e.repository_id IS NOT DISTINCT FROM d.repository_id AND e.subject_kind = d.subject_kind), 0)
+  FROM (SELECT (b.bucket_start AT TIME ZONE 'UTC')::date AS day, b.repository_id, b.subject_kind,
+               count(DISTINCT b.subject_ref) AS subjects, sum(b.requests) AS requests, sum(b.refused) AS refused,
+               sum(b.cached_bytes) AS cached_bytes, sum(b.uncached_bytes) AS uncached_bytes,
+               sum(b.upstream_requests) AS upstream_requests, sum(b.background_fetches) AS background_fetches
+          FROM usage_bucket b
+         WHERE b.granularity = '1h' AND b.bucket_start < $1::text::timestamptz
+         GROUP BY (b.bucket_start AT TIME ZONE 'UTC')::date, b.repository_id, b.subject_kind) d
 ON CONFLICT (day, repository_id, subject_kind) DO UPDATE
    SET subjects = s.subjects + EXCLUDED.subjects, requests = s.requests + EXCLUDED.requests, refused = s.refused + EXCLUDED.refused,
        cached_bytes = s.cached_bytes + EXCLUDED.cached_bytes, uncached_bytes = s.uncached_bytes + EXCLUDED.uncached_bytes,
@@ -176,7 +184,7 @@ ON CONFLICT (day, repository_id, subject_kind) DO UPDATE
 `
 
 // limits-cleanup (R-LIM-028): the hourly rows older than the cutoff become daily sums without a person, per day, repository
-// and kind of caller.
+// and kind of caller, with the limit events of the same day, repository and kind.
 func (q *Queries) FoldUsageDays(ctx context.Context, cutoff string) (int64, error) {
 	result, err := q.db.Exec(ctx, foldUsageDays, cutoff)
 	if err != nil {
@@ -490,6 +498,54 @@ func (q *Queries) UsageHistory(ctx context.Context, arg UsageHistoryParams) ([]U
 			&i.UncachedBytes,
 			&i.UpstreamRequests,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const usageHistoryEvents = `-- name: UsageHistoryEvents :many
+SELECT e.bucket_start, e.mode, sum(e.count)::bigint AS events
+  FROM usage_limit_event e
+ WHERE e.granularity = '5m' AND e.bucket_start >= $1::text::timestamptz AND e.subject_kind = $2
+   AND e.subject_ref = $3
+   AND (cardinality($4::bigint[]) = 0 OR e.repository_id = ANY($4::bigint[]))
+ GROUP BY e.bucket_start, e.mode
+`
+
+type UsageHistoryEventsParams struct {
+	Since       string
+	SubjectKind string
+	SubjectRef  string
+	Repos       []int64
+}
+
+type UsageHistoryEventsRow struct {
+	BucketStart pgtype.Timestamptz
+	Mode        string
+	Events      int64
+}
+
+// The limits one subject met per five-minute point of the last 24 hours, by mode (R-LIM-034 history).
+func (q *Queries) UsageHistoryEvents(ctx context.Context, arg UsageHistoryEventsParams) ([]UsageHistoryEventsRow, error) {
+	rows, err := q.db.Query(ctx, usageHistoryEvents,
+		arg.Since,
+		arg.SubjectKind,
+		arg.SubjectRef,
+		arg.Repos,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []UsageHistoryEventsRow{}
+	for rows.Next() {
+		var i UsageHistoryEventsRow
+		if err := rows.Scan(&i.BucketStart, &i.Mode, &i.Events); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

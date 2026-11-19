@@ -88,6 +88,7 @@ func (a *App) wireAPI(_ context.Context, lim limitsArea, az authzArea, dl downlo
 	limit, err := v1.NewRateLimit(v1.RateLimitOptions{
 		Config: cfg.RateLimits, Limiters: lim.set, IsAdmin: isAdmin, Registry: a.tele.metrics.Registry(),
 		Challenged: v1.ChallengedByLevels(levels), Limits: dl.engine, IsAdministrator: a.isAdministrator(az),
+		Repo: a.limitsRepo,
 	})
 	if err != nil {
 		return apiArea{}, err

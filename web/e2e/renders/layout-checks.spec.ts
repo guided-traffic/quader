@@ -219,6 +219,33 @@ test.describe('a table\'s row (R-UI-176)', () => {
     expect(ok, describe(ok)).toEqual([]);
   });
 
+  // An ended token's row at 1440 px before Q-UI-762: "Ended" with its time and "Expired" under it, centred against "Limit" and
+  // "Last used", stood a line above them.
+  const facts = (align: string, ended = '<quader-time-ago>3 days ago</quader-time-ago><br /><span class="warn">Expired</span>'): [string, string] => [
+    `<div class="quader-data-table stacked" style="inline-size:420px"><table class="data" style="display:block;inline-size:auto"><tbody style="display:block">
+       <tr style="display:flex;flex-wrap:wrap;align-items:${align};gap:4px 20px">
+         <th scope="row" style="flex:1 1 0;align-self:flex-start;display:block">nightly-mirror</th>
+         <td data-label="Limit" style="display:block;order:2">Default (Technical)</td>
+         <td data-label="Ended" style="display:block;order:2">${ended}</td>
+         <td data-label="Last used" style="display:block;order:2">4 days ago</td>
+       </tr></tbody></table></div>`,
+    `table.data tbody td[data-label]::before { content: attr(data-label) ' '; color: #666; }
+     table.data tbody tr::before { content: ''; order: 1; flex-basis: 100%; block-size: 0; }`,
+  ];
+
+  test('Q-UI-762 a stacked row: names of one line on one line pass, a value of two lines centred against its neighbours is found', async ({ page }) => {
+    const centred = await check(page, ...facts('center'));
+    expect(only(centred, 'stacked-offset'), describe(centred)).toHaveLength(1);
+    const ok = (await check(page, ...facts('baseline'))).filter((f) => f.check !== 'stacked-fits');
+    expect(ok, describe(ok)).toEqual([]);
+  });
+
+  test("Q-UI-763 a stacked row: a value under its column's name is found", async ({ page }) => {
+    const meter = '<div style="display:flex;flex-direction:column"><span><span style="display:inline-block;inline-size:64px;block-size:6px;background:#888"></span> 22%</span><span class="badge">Close to the limit</span></div>';
+    const apart = await check(page, ...facts('baseline', meter));
+    expect(only(apart, 'label-apart'), describe(apart)).toHaveLength(1);
+  });
+
   test('R-UI-176 a document\'s table is not measured', async ({ page }) => {
     const found = await check(page, `<div class="readme"><table class="data"><tbody><tr><th>a</th><td class="low">b</td></tr></tbody></table></div>`, 'table.data td.low { padding-block-start: 30px; }');
     expect(found, describe(found)).toEqual([]);
@@ -475,6 +502,31 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
       expect(found, describe(found)).toEqual([]);
     });
   }
+
+  // A stacked row with the app's stylesheet (Q-UI-762, Q-UI-763): an ended token's time of two lines beside its neighbours, and a
+  // meter in `td.meter-cell` (the meter's own styles, usage-meter.ts, inline) with its state under the bar. The table is stacked by
+  // hand, so the check that its columns would fit is left out.
+  const stackedFacts = `<div class="quader-data-table stacked" style="inline-size:390px"><div class="table-frame"><div class="table-scroll"><table class="data"><tbody>
+      <tr>
+        <th scope="row"><span>nightly-mirror</span></th>
+        <td data-label="Limit"><button type="button" class="link">Default (Technical)</button><span class="secondary">Not used in 24 h</span></td>
+        <td data-label="Ended">3 days ago<br /><span class="warn"><span class="material-icons" aria-hidden="true">history</span> Expired</span></td>
+        <td data-label="Last used">4 days ago</td>
+        <td class="meter-cell" data-label="Now"><span style="display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:flex-start;gap:8px"><span style="flex:1 1 4rem;max-inline-size:8rem;block-size:6px;margin-block:calc((var(--quader-line) - 6px) / 2);background:#888"></span><span>22%</span></span><span class="badge warn" style="align-self:flex-start"><span class="material-icons" aria-hidden="true">warning</span>Close to the limit</span></span></td>
+        <td class="actions"><button type="button" class="btn btn-tertiary">Issue new secret</button></td>
+      </tr></tbody></table></div></div></div>`;
+  test("Q-UI-762 a stacked row's facts with the app's stylesheet: names on one line, the meter on its name's line", async ({ page }) => {
+    const found = (await check(page, stackedFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
+    expect(found, describe(found)).toEqual([]);
+  });
+
+  test("Q-UI-762 the guard can fail: the stacked row's facts centred, and the meter as a box after its name", async ({ page }) => {
+    const before = `.quader-data-table.stacked table.data tbody tr { align-items: center; }
+      .quader-data-table.stacked table.data td.meter-cell:not([data-empty]) { display: block; flex-basis: auto; }`;
+    const found = await check(page, stackedFacts, before, true);
+    expect(only(found, 'stacked-offset').length, describe(found)).toBeGreaterThan(0);
+    expect(only(found, 'label-apart'), describe(found)).toHaveLength(1);
+  });
 
   test("R-UI-176 the guard can fail: the owner's row without the line rule is found with the app's stylesheet", async ({ page }) => {
     const html = patterns[0]!.html.replace('btn btn-tertiary btn-icon on-line', 'btn btn-tertiary btn-icon');

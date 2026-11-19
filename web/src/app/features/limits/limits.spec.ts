@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ApiError } from '../../api/problem';
-import { LimitsApi } from '../../api/limits-api';
+import { LimitProfile, LimitsApi } from '../../api/limits-api';
 import { FakeLimitsApi } from '../../api/testing/fakes-limits';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { SessionApi } from '../../api/session-api';
@@ -313,13 +313,18 @@ describe('Download limits of a project and a repository (R-UI-180)', () => {
 describe('A technical token’s limit and last 24 hours (R-UI-181)', () => {
   it('R-UI-181 names the limit and the last 24 hours of a token', async () => {
     expect(tokenLimitText(null, [], 'Technical')).toBe('Default (Technical)');
-    const rule = (await new FakeLimitsApi().rules({ kind: 'repository', repository: 'web/npm-remote' }))[0]!;
-    expect(tokenLimitText(rule, [], 'Technical')).toBe('restricted + 1 change');
-    expect(lastDayText({ requests: 1204, cachedBytes: 3_000_000_000, uncachedBytes: 200_000_000 }, 'en-US')).toBe('1,204 requests · 3.2 GB');
-    expect(lastDayText(null, 'en-US')).toBe('Not used');
+    expect(tokenLimitText({ rule: '0193f2a6-0000-7000-8000-000000000001', profile: 'restricted', overrides: 1 }, [], 'Technical')).toBe(
+      'restricted + 1 change',
+    );
+    expect(tokenLimitText({ rule: 'r', profile: 'technical', overrides: 0 }, [{ key: 'technical', name: 'Technical' } as LimitProfile], 'Technical')).toBe(
+      'Technical',
+    );
+    expect(lastDayText({ requests: 1204, cachedBytes: 3_000_000_000, uncachedBytes: 200_000_000 }, 'en-US')).toBe('1,204 requests · 3.2 GB in 24 h');
+    expect(lastDayText(null, 'en-US')).toBe('Not used in 24 h');
+    expect(lastDayText({ requests: 0, cachedBytes: 0, uncachedBytes: 0 }, 'en-US')).toBe('Not used in 24 h');
     const { root } = await renderScreen(TokenLastDayCell, { inputs: { usage: { requests: 1, cachedBytes: 10, uncachedBytes: 0 } } });
-    expect(text(root)).toBe('1 request · 10 B');
-    const cell = await renderScreen(TokenLimitCell, { inputs: { rule: null } });
+    expect(text(root)).toBe('1 request · 10 B in 24 h');
+    const cell = await renderScreen(TokenLimitCell, { inputs: { limit: null } });
     expect(text(cell.root)).toBe('Default (Technical)');
   });
 });

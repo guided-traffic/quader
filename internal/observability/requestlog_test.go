@@ -34,10 +34,11 @@ func TestRequestLog(t *testing.T) {
 		h, _ := newStack(t, &buf, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ri := RequestInfoFrom(r.Context())
 			ri.SetHandler("npm.packument")
-			ri.SetRepo("npm-all", "npm")
+			ri.SetRepo("web/npm-all", "npm")
 			ri.SetPrincipal("alice", "user", "u-1")
 			ri.SetToken("tok-9", "bearer")
 			ri.SetCache("hit")
+			ri.SetLimits(LimitsFields{Subject: "user:u-1", Place: "instance", Rule: "builtin:user", Outcome: "admitted", BytesCached: 5})
 			_, _ = w.Write([]byte("hello"))
 		}))
 		req := httptest.NewRequest(http.MethodGet, "/api/npm/npm-all/express?token=SECRETVAL", strings.NewReader("12345"))
@@ -53,7 +54,8 @@ func TestRequestLog(t *testing.T) {
 		want := []string{
 			"time", "trace_id", "listener", "remote_addr", "peer_addr", "method", "path", "handler", "status",
 			"request_bytes", "response_bytes", "duration_ms", "user_agent", "principal", "principal_type", "principal_id", "token_id",
-			"auth_method", "repo", "format", "cache", "deny_reason", "limiter", "limit_mode", "log", "level", "replica", "role",
+			"auth_method", "project", "repo", "format", "cache", "deny_reason", "limiter", "limit_mode", "limits_subject", "limits_place",
+			"limits_rule", "limits_outcome", "bytes_cached", "bytes_uncached", "log", "level", "replica", "role",
 		}
 		for _, k := range want {
 			if _, ok := rec[k]; !ok {
@@ -64,8 +66,9 @@ func TestRequestLog(t *testing.T) {
 			"log": "request", "level": "INFO", "listener": "client", "method": "GET", "handler": "npm.packument",
 			"status": float64(200), "response_bytes": float64(5), "user_agent": "npm/10", "principal": "alice",
 			"principal_type": "user", "principal_id": "u-1", "token_id": "tok-9", "auth_method": "bearer",
-			"repo": "npm-all", "format": "npm", "cache": "hit", "peer_addr": "10.1.2.3", "remote_addr": "10.1.2.3",
-			"deny_reason": nil, "limiter": nil, "limit_mode": nil,
+			"project": "web", "repo": "web/npm-all", "format": "npm", "cache": "hit", "peer_addr": "10.1.2.3", "remote_addr": "10.1.2.3",
+			"deny_reason": nil, "limiter": nil, "limit_mode": nil, "limits_subject": "user:u-1", "limits_place": "instance",
+			"limits_rule": "builtin:user", "limits_outcome": "admitted", "bytes_cached": float64(5), "bytes_uncached": float64(0),
 		}
 		for k, v := range check {
 			if rec[k] != v {
@@ -96,6 +99,11 @@ func TestRequestLog(t *testing.T) {
 		}
 		if rec["request_bytes"] != float64(-1) || rec["status"] != float64(404) {
 			t.Errorf("bytes/status: %v", rec)
+		}
+		for _, k := range []string{"project", "limits_subject", "limits_place", "limits_rule", "limits_outcome", "bytes_cached", "bytes_uncached"} {
+			if v, ok := rec[k]; !ok || v != nil {
+				t.Errorf("R-LIM-030 %s off a protocol path = %#v, present %v; want null", k, v, ok)
+			}
 		}
 	})
 

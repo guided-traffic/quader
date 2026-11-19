@@ -1,5 +1,5 @@
 import { PROFILE_FIGURES, sampleInstanceRules } from '../../api/testing/fakes-limits';
-import { everyLabel, subjectTitle, whoView } from './callers';
+import { everyLabel, subjectReference, subjectTitle, whoView } from './callers';
 import { readTexts, textsOf } from './figure-fields';
 import { compactFigures, formatBytes, fromField, limitText, overridesSummary, toField } from './figures';
 import { orderRules } from './limit-rules';
@@ -62,10 +62,14 @@ describe('Download limits: figures and callers (R-UI-178, R-UI-179, Q-UI-736)', 
     expect(everyLabel('user')).toBe('Every signed-in user');
     expect(whoView({ kind: 'address', prefix: '2001:db8:1:2::/64' })).toMatchObject({ mono: true, primary: '2001:db8:1:2::/64' });
     expect(whoView({ kind: 'group', group: 'gone', deleted: true }).secondary).toBe('(deleted)');
-    expect(subjectTitle({ kind: 'technicalToken', id: 't', name: 'deploy-prod', account: 'sa:web/partner', level: 'project' })).toBe(
-      'deploy-prod of sa:web/partner',
-    );
-    expect(subjectTitle({ kind: 'ci', id: 'g:4711', issuer: 'g', projectId: '4711', projectPath: 'acme/web' })).toBe('acme/web (CI)');
+    // Q-UI-765: the title names the thing, the reference stands under it.
+    expect(subjectTitle({ kind: 'user', id: 'u', name: 'priya', displayName: 'Priya Raman', deleted: false })).toBe('Priya Raman');
+    expect(subjectReference({ kind: 'user', id: 'u', name: 'priya', displayName: 'Priya Raman', deleted: false })).toBe('@priya');
+    expect(subjectTitle({ kind: 'technicalToken', id: 't', name: 'deploy-prod', account: 'sa:web/partner', level: 'project', deleted: false })).toBe('deploy-prod');
+    expect(subjectReference({ kind: 'technicalToken', id: 't', name: 'deploy-prod', account: 'sa:web/partner', level: 'project', deleted: false })).toBeNull();
+    expect(subjectTitle({ kind: 'ci', id: 'g:4711', issuer: 'g', projectId: '4711', projectPath: 'acme/web' })).toBe('acme/web');
+    expect(subjectReference({ kind: 'ci', id: 'g:4711', issuer: 'g', projectId: '4711', projectPath: 'acme/web' })).toBe('g');
+    expect(subjectTitle({ kind: 'anonymous', id: '198.51.100.23', address: '198.51.100.23' })).toBe('198.51.100.23');
   });
 
   it('R-UI-178 suggests a key from the name and formats amounts', () => {

@@ -64,6 +64,7 @@
   caption="Usage by caller"
   i18n-caption="@@usage.caption"
   [columns]="columns()"
+  narrowBelow="80rem"
   [sort]="tableSort()"
   (sortChange)="setSort($event)"
   [loaded]="loaded()"
@@ -77,7 +78,7 @@
 >
   @for (r of rows(); track r.subject.kind + r.subject.id) {
     <tr>
-      <th scope="row">
+      <th scope="row" class="wrap-name">
         <quader-caller-cell [view]="caller(r)" [link]="link(r)">
           @if (r.state === 'blocked') {
             <span class="badge bad"><span class="material-icons" aria-hidden="true">block</span><ng-container i18n="@@usage.state.blocked">Blocked</ng-container></span>
@@ -89,11 +90,12 @@
       <td class="num"><span [quaderTooltip]="exactBytes(r.uncachedBytes)" >{{ bytes(r.uncachedBytes) }}</span></td>
       <td class="num narrow-drop">{{ count(r.upstreamRequests) }}</td>
       <td class="num narrow-drop">{{ count(r.refused) }}</td>
-      <td>
+      <td class="meter-cell">
         @if (r.utilisation || r.state === 'unlimited') {
+          <!-- A block is the caller's badge; the meter does not say it a second time. -->
           <quader-usage-meter
             [ratio]="r.state === 'unlimited' ? null : (r.utilisation?.ratio ?? 0)"
-            [state]="r.state"
+            [state]="r.state === 'blocked' ? 'normal' : r.state"
             [mode]="mode()"
             [label]="meterLabel(r)"
             [tooltip]="meterTooltip(r)"

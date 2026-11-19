@@ -8,7 +8,10 @@
 
 /** One defect of the layout, as the render report and failures.txt name it. */
 export interface LayoutFinding {
-  /** Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `clipped`, `stacked-fits`, `sideways`, `empty-scroll`. */
+  /**
+   * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `label-apart`, `clipped`,
+   * `stacked-fits`, `sideways`, `empty-scroll`.
+   */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
   readonly what: string;
@@ -463,6 +466,58 @@ export function layoutFindings(): LayoutFinding[] {
     if (signatures.size > 1 && example) {
       add('row-actions', example, '', `the action cells of one table are built ${signatures.size} ways: ${[...signatures].map(([k, n]) => `${k} (${n})`).join(', ')}`);
     }
+  }
+
+  // ---- stacked-offset and label-apart: the facts of a stacked row (R-UI-174, R-UI-175, Q-UI-762) ---------------------------
+  // After its first line a row that stands as a block is a run of facts, each its column's name (`td[data-label]::before`) and
+  // its value. The value's first line stands on the name's line (`label-apart`: a meter's box under its "Now"), and the facts side
+  // by side on one line of the block have their names on one middle within LINE_TOLERANCE px (`stacked-offset`: an ended token's
+  // "Ended", centred with its two lines against "Limit" and "Last used", a line above them); a value of two lines grows downwards.
+  // The name is a pseudo-element, which has no box to measure: an empty mark (a zero-width space) put before the value for the
+  // measurement stands on its line, and is taken out again in the same task.
+  for (const row of Array.from(document.querySelectorAll<HTMLTableRowElement>('.quader-data-table.stacked table.data > tbody > tr'))) {
+    if (!shown(row)) continue;
+    const facts: { cell: Element; box: DOMRect; value: DOMRect | null; name: DOMRect }[] = [];
+    for (const cell of Array.from(row.cells)) {
+      if (!cell.matches('td[data-label]:not(.actions)') || !shown(cell) || getComputedStyle(cell, '::before').content === 'none') continue;
+      const parts = [lines(cell)[0]?.reduce((a, b) => (a.top <= b.top ? a : b)) ?? null];
+      for (const unit of Array.from(cell.querySelectorAll(UNIT))) if (outermost(unit) && shown(unit) && !positioned(unit)) parts.push(boxOf(unit));
+      const value = parts.filter((r): r is DOMRect => r !== null).reduce<DOMRect | null>((a, b) => (a && a.top <= b.top ? a : b), null);
+      const mark = document.createElement('span');
+      mark.textContent = '​';
+      cell.prepend(mark);
+      facts.push({ cell, box: cell.getBoundingClientRect(), value, name: mark.getBoundingClientRect() });
+      mark.remove();
+    }
+    for (const f of facts) {
+      if (f.value && f.value.top >= f.name.bottom - LINE_TOLERANCE) {
+        add('label-apart', f.cell, f.cell.textContent ?? '', `the value starts ${Math.round(f.value.top - f.name.top)} px below the column's name, on a line of its own`);
+      }
+    }
+    // The facts of one line of the block: their boxes share height, as the boxes of two lines do not.
+    const byTop = [...facts].sort((a, b) => a.box.top - b.box.top);
+    let line: typeof facts = [];
+    let bottom = 0;
+    const measureLine = (): void => {
+      const [first, ...rest] = line;
+      if (!first) return;
+      for (const f of rest) {
+        const off = middle(f.name) - middle(first.name);
+        if (Math.abs(off) > LINE_TOLERANCE) {
+          const firstName = first.cell.getAttribute('data-label') ?? '';
+          add('stacked-offset', f.cell, f.cell.textContent ?? '', `the column's name "${f.cell.getAttribute('data-label') ?? ''}" is ${Math.abs(off).toFixed(1)} px ${off > 0 ? 'below' : 'above'} "${firstName}" on its line of the block`);
+        }
+      }
+    };
+    for (const f of byTop) {
+      if (line.length > 0 && f.box.top >= bottom - LINE_TOLERANCE) {
+        measureLine();
+        line = [];
+      }
+      bottom = line.length === 0 ? f.box.bottom : Math.max(bottom, f.box.bottom);
+      line.push(f);
+    }
+    measureLine();
   }
 
   // ---- clipped: a text cut although there is room beside it (R-UI-173) ----------------------------------------------------

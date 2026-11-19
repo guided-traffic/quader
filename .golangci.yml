@@ -2,7 +2,9 @@
 version: "2"
 
 run:
-  timeout: 5m
+  # A cold run over the whole tree with every build tag passed five minutes on the development machine and ended with
+  # "0 issues" and "Timeout exceeded"; ten leave room on a cold runner.
+  timeout: 10m
   tests: true
   build-tags:
     - integration

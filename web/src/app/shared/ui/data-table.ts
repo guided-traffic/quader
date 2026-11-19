@@ -130,6 +130,7 @@ let nextTableId = 1;
   `,
   host: {
     class: 'quader-data-table',
+    '[class.narrow-early]': 'narrowBelow() === "80rem"',
     '[class.stack]': 'stack()',
   },
 })
@@ -157,6 +158,11 @@ export class DataTable {
    * turns it off.
    */
   readonly stack = input(true);
+  /**
+   * The list's width below which the columns marked `narrow` give way: 64 rem (Q-UI-308), or 80 rem for a list whose every column
+   * is a figure with a sortable header, which holds seven columns only from there (the usage overview, Q-UI-760).
+   */
+  readonly narrowBelow = input<'64rem' | '80rem'>('64rem');
 
   protected readonly captionId = `quader-table-${nextTableId++}`;
 

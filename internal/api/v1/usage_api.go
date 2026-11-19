@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
@@ -124,13 +125,13 @@ func (s *Server) placeParam(ctx context.Context, l LimitsServices, v string) (pr
 	return "", nil, badParam("place", "must be project:<key> or repository:<project>/<key>")
 }
 
-func (s *Server) blockRep(ctx context.Context, l LimitsServices, b store.BlockRow) map[string]any {
+func (s *Server) blockRep(ctx context.Context, l LimitsServices, n store.Names, b store.BlockRow) map[string]any {
 	var lifted any
 	if b.LiftedAt != nil {
 		lifted = b.LiftedAt.UTC()
 	}
 	return map[string]any{
-		"id": b.ID, "subject": s.subjectRep(ctx, l, b.Subject.Kind, b.Subject.Ref), "place": s.placeName(ctx, l, b.PlaceKey),
+		"id": b.ID, "subject": s.subjectRep(ctx, l, n, b.Subject.Kind, b.Subject.Ref), "place": s.placeName(ctx, l, b.PlaceKey),
 		"startedAt": b.Started.UTC(), "until": b.Until.UTC(), "refused": b.Refused, "limit": b.Limit, "liftedAt": lifted,
 		"liftedBy": s.principalName(ctx, l, b.LiftedBy),
 	}
@@ -163,13 +164,21 @@ func (s *Server) ListLimitBlocks(w http.ResponseWriter, r *http.Request, params 
 	if err == nil {
 		rows, err = l.Store.Blocks(ctx, active, places, limit)
 	}
+	var refs nameRefs
+	for _, b := range rows {
+		refs.subject(b.Subject.Kind, b.Subject.Ref)
+	}
+	var n store.Names
+	if err == nil {
+		n, err = s.names(ctx, l, refs)
+	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
 	items := make([]map[string]any, 0, len(rows))
 	for _, b := range rows {
-		items = append(items, s.blockRep(ctx, l, b))
+		items = append(items, s.blockRep(ctx, l, n, b))
 	}
 	writeJSON(w, r, http.StatusOK, map[string]any{"items": items, "nextCursor": nil})
 }
@@ -276,32 +285,34 @@ func (s *Server) subjectOfParam(ctx context.Context, l LimitsServices, kind, id 
 		return limits.Subject{Kind: k, Ref: id}, nil
 	case limits.KindSystem:
 		return limits.System(), nil
+	case limits.KindTechnicalToken:
+		return s.tokenSubject(ctx, l, id), nil
 	}
 	return limits.Subject{Kind: k, Ref: id}, nil
 }
 
-// subjectRep renders a subject with its names (R-LIM-034).
-func (s *Server) subjectRep(ctx context.Context, l LimitsServices, kind limits.SubjectKind, ref string) map[string]any {
-	out := map[string]any{"kind": kind.APIName(), "id": ref}
-	switch kind {
-	case limits.KindUser:
-		if l.Principals != nil {
-			if p, err := l.Principals.ByID(ctx, ref); err == nil {
-				out["id"], out["name"], out["displayName"] = p.Name, p.Name, p.Name
-			}
+// tokenSubject is a technical token's subject with its account's groups and administrator role, which resolution reads as it
+// reads a user's (R-LIM-013, R-LIM-038). A token that no longer exists is its ID alone.
+func (s *Server) tokenSubject(ctx context.Context, l LimitsServices, id string) limits.Subject {
+	out := limits.Subject{Kind: limits.KindTechnicalToken, Ref: id}
+	var refs nameRefs
+	refs.subject(limits.KindTechnicalToken, id)
+	n, err := s.names(ctx, l, refs)
+	t, ok := n.Tokens[id]
+	if err != nil || !ok || l.Principals == nil {
+		return out
+	}
+	acct, err := l.Principals.ByName(ctx, principal.KindServiceAccount, t.Account)
+	if err != nil {
+		return out
+	}
+	if groups, err := l.Principals.Groups(ctx, acct.ID); err == nil {
+		for _, g := range groups {
+			out.Groups = append(out.Groups, g.ID)
 		}
-	case limits.KindCI:
-		issuer, project, _ := strings.Cut(ref, ":")
-		out["issuer"], out["projectId"] = issuer, project
-		if l.CI != nil {
-			if name, ok, err := l.CI.IssuerName(ctx, issuer); err == nil && ok {
-				out["issuer"], out["id"] = name, name+":"+project
-			}
-		}
-	case limits.KindAnonymous:
-		out["address"] = ref
-	case limits.KindSystem:
-		out["id"] = "system"
+	}
+	if l.IsAdministrator != nil {
+		out.Admin = l.IsAdministrator(ctx, acct.ID, out.Groups)
 	}
 	return out
 }
@@ -329,26 +340,34 @@ func (s *Server) explain(ctx context.Context, l LimitsServices, subj limits.Subj
 		repoID, _ = strconv.ParseInt(stored.ID, 10, 64)
 	}
 	res := x.Resolve(subj, repo, true)
+	var refs nameRefs
+	refs.subject(subj.Kind, subj.Ref)
+	for _, st := range res.Steps {
+		for _, r := range st.Rules {
+			refs.rule(*r)
+		}
+	}
+	if res.Rule != nil {
+		refs.rule(*res.Rule)
+	}
+	n, err := s.names(ctx, l, refs)
+	if err != nil {
+		return nil, err
+	}
 	steps := make([]map[string]any, 0, len(res.Steps))
 	for _, st := range res.Steps {
 		step := map[string]any{"place": placeRep(st.Place), "step": st.Step, "outcome": "none"}
 		if st.Matched {
 			step["outcome"] = "matched"
-			rules := make([]map[string]any, 0, len(st.Rules))
+			rules := make([]any, 0, len(st.Rules))
 			for _, r := range st.Rules {
-				rules = append(rules, map[string]any{"id": r.LogID(), "who": s.whoRep(ctx, l, *r), "profile": r.Profile})
+				rules = append(rules, s.ruleRef(ctx, l, n, x, r))
 			}
 			step["rules"] = rules
 		}
 		steps = append(steps, step)
 	}
-	var rule any
-	if res.Rule != nil {
-		rule = map[string]any{
-			"id": res.Rule.LogID(), "who": s.whoRep(ctx, l, *res.Rule), "profile": res.Rule.Profile,
-			"capped": res.Rule.Capped, "builtin": res.Rule.Builtin,
-		}
-	}
+	rule := s.ruleRef(ctx, l, n, x, res.Rule)
 	sources := map[string]string{}
 	for i, src := range res.Sources {
 		if src != "" {
@@ -371,7 +390,7 @@ func (s *Server) explain(ctx context.Context, l LimitsServices, subj limits.Subj
 		repoOut = repo.String()
 	}
 	return map[string]any{
-		"subject": s.subjectRep(ctx, l, subj.Kind, subj.Ref), "repository": repoOut, "mode": snap.Settings.Mode,
+		"subject": s.subjectRep(ctx, l, n, subj.Kind, subj.Ref), "repository": repoOut, "mode": snap.Settings.Mode,
 		"administrator": subj.Admin, "steps": steps, "place": placeRep(res.Place), "rule": rule, "effective": res.Figures,
 		"clamped": clampedRep(res.Figures, res.Clamped), "figureSources": sources, "ceiling": ceiling,
 	}, nil
@@ -469,33 +488,93 @@ func (s *Server) GetMyLimits(w http.ResponseWriter, r *http.Request, params gen.
 	writeJSON(w, r, http.StatusOK, out)
 }
 
-// SuggestLimitSubjects implements GET /api/v1/limits/subjects: technical tokens and CI projects by name for the rule dialog.
-// The technical tokens are the identity area's (work package 1); until it lands, the suggestions are the CI projects that
-// have usage rows.
+// suggestionLimit is the most suggestions of one answer (R-LIM-034).
+const suggestionLimit = 20
+
+// SuggestLimitSubjects implements GET /api/v1/limits/subjects: technical tokens and CI projects by name for the rule dialog
+// (R-LIM-034, R-UI-179). The technical tokens are every token whose name or account matches, of the accounts of the instance,
+// the projects and the repositories; with project= the accounts of that project and its repositories. The CI projects are the
+// ones CI tokens were issued for, by path or ID; an Owner, who names its project, gets the CI projects that downloaded from the
+// project's repositories in the last 30 days, since the issuances of other projects are not its to read (Q-LIM-50).
 func (s *Server) SuggestLimitSubjects(w http.ResponseWriter, r *http.Request, params gen.SuggestLimitSubjectsParams) {
 	ctx := r.Context()
 	l, err := s.limitsServices()
-	var rows []usage.SubjectUsage
+	reader := false
 	if err == nil {
-		rows, err = l.Usage.Subjects(ctx, usage.Period30d, usage.Scope{}, []limits.SubjectKind{limits.KindCI, limits.KindTechnicalToken}, "")
+		reader, err = s.holds(ctx, string(authz.LimitsRead))
+	}
+	project := limitParam(params.Project)
+	if err == nil && !reader && (project == "" || !s.owns(ctx, project)) {
+		err = errs.E(errs.Forbidden, errs.CodeForbidden, "An Owner asks for the subjects of its own project.")
+	}
+	want := map[string]bool{}
+	if params.Kinds != nil {
+		for _, k := range *params.Kinds {
+			for _, one := range strings.Split(string(k), ",") {
+				want[one] = true
+			}
+		}
+	}
+	all := len(want) == 0
+	text := strings.TrimSpace(limitParam(params.Q))
+	items := []map[string]any{}
+	if err == nil && (all || want["technicalToken"]) {
+		var tokens []store.TokenName
+		tokens, err = l.Store.SearchTechnicalTokens(ctx, text, project, suggestionLimit)
+		for _, t := range tokens {
+			items = append(items, tokenSubject(t))
+		}
+	}
+	if err == nil && (all || want["ci"]) && len(items) < suggestionLimit {
+		items, err = s.ciSuggestions(ctx, l, text, project, reader, items)
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
-	q := strings.ToLower(limitParam(params.Q))
-	items := []map[string]any{}
+	writeJSON(w, r, http.StatusOK, map[string]any{"items": items})
+}
+
+// ciSuggestions adds the CI projects of a suggestion (R-LIM-034).
+func (s *Server) ciSuggestions(ctx context.Context, l LimitsServices, text, project string, reader bool, items []map[string]any) ([]map[string]any, error) {
+	room := suggestionLimit - len(items)
+	if reader && project == "" {
+		found, err := l.Store.SearchCIProjects(ctx, text, room)
+		for _, c := range found {
+			items = append(items, ciSubject(c))
+		}
+		return items, err
+	}
+	scope, err := s.projectScope(ctx, l, project, "")
+	if err != nil {
+		return items, err
+	}
+	rows, err := l.Usage.Subjects(ctx, usage.Period30d, scope, []limits.SubjectKind{limits.KindCI}, "")
+	if err != nil {
+		return items, err
+	}
+	var refs nameRefs
 	for _, u := range rows {
-		rep := s.subjectRep(ctx, l, u.Kind, u.Ref)
-		if id, _ := rep["id"].(string); q != "" && !strings.Contains(strings.ToLower(id), q) {
+		refs.subject(u.Kind, u.Ref)
+	}
+	n, err := s.names(ctx, l, refs)
+	if err != nil {
+		return items, err
+	}
+	needle := strings.ToLower(text)
+	sort.Slice(rows, func(i, j int) bool { return rows[i].Ref < rows[j].Ref })
+	for _, u := range rows {
+		rep := s.subjectRep(ctx, l, n, u.Kind, u.Ref)
+		path, _ := rep["projectPath"].(string)
+		if needle != "" && !strings.Contains(strings.ToLower(path), needle) && rep["projectId"] != text {
 			continue
 		}
 		items = append(items, rep)
-		if len(items) == 20 {
+		if room--; room == 0 {
 			break
 		}
 	}
-	writeJSON(w, r, http.StatusOK, map[string]any{"items": items})
+	return items, nil
 }
 
 // ---- usage (R-LIM-034)
@@ -577,8 +656,26 @@ func parseUsageQuery(r *http.Request) (usageQuery, error) {
 type usageRow struct {
 	rep   map[string]any
 	name  string
+	text  string // what the search q= matches: every name of the subject, lower case
 	state string
 	u     usage.SubjectUsage
+}
+
+// subjectNames are the name a row sorts and exports by and the text its search matches (R-LIM-034: "a search on the subject's
+// name or address"): a user's name and display name, a technical token's name and account, a CI project's path and ID.
+func subjectNames(rep map[string]any) (name, text string) {
+	str := func(k string) string { v, _ := rep[k].(string); return v }
+	switch rep["kind"] {
+	case "user", "technicalToken":
+		name = str("name")
+	case "ci":
+		if name = str("projectPath"); name == "" {
+			name = str("id")
+		}
+	default:
+		name = str("id")
+	}
+	return name, strings.ToLower(strings.Join([]string{name, str("id"), str("displayName"), str("account"), str("address")}, "\x00"))
 }
 
 // usageRows reads, names and states the rows of a scope (R-LIM-034).
@@ -599,12 +696,20 @@ func (s *Server) usageRows(ctx context.Context, l LimitsServices, uq usageQuery,
 			blocked[k] = b.Until
 		}
 	}
+	var refs nameRefs
+	for _, u := range rows {
+		refs.subject(u.Kind, u.Ref)
+	}
+	n, err := s.names(ctx, l, refs)
+	if err != nil {
+		return nil, mode, time.Time{}, time.Time{}, err
+	}
 	now := time.Now()
 	from, _ := uq.period.Window(now)
 	out := make([]usageRow, 0, len(rows))
 	for _, u := range rows {
-		rep := s.subjectRep(ctx, l, u.Kind, u.Ref)
-		name, _ := rep["id"].(string)
+		rep := s.subjectRep(ctx, l, n, u.Kind, u.Ref)
+		name, text := subjectNames(rep)
 		until, isBlocked := blocked[string(u.Kind)+":"+u.Ref]
 		state := usageState(u, mode, isBlocked, now)
 		var util any
@@ -615,7 +720,7 @@ func (s *Server) usageRows(ctx context.Context, l LimitsServices, uq usageQuery,
 		if isBlocked {
 			blockedUntil = until.UTC()
 		}
-		out = append(out, usageRow{u: u, name: name, state: state, rep: map[string]any{
+		out = append(out, usageRow{u: u, name: name, text: text, state: state, rep: map[string]any{
 			"subject": rep, "requests": u.Requests, "refused": u.Refused, "cachedBytes": u.Cached, "uncachedBytes": u.Uncached,
 			"upstreamRequests": u.Upstream, "limitedEvents": u.Limited, "wouldLimitEvents": u.WouldLimit, "utilisation": util,
 			"state": state, "blockedUntil": blockedUntil,
@@ -648,7 +753,7 @@ func filterSort(rows []usageRow, uq usageQuery) []usageRow {
 		if uq.state != "" && r.state != uq.state {
 			continue
 		}
-		if uq.q != "" && !strings.Contains(strings.ToLower(r.name), uq.q) {
+		if uq.q != "" && !strings.Contains(r.text, uq.q) {
 			continue
 		}
 		out = append(out, r)
@@ -824,19 +929,13 @@ func (s *Server) ExportUsage(w http.ResponseWriter, r *http.Request, params gen.
 // project and at its repositories, in one read for the projects tab of the download limits.
 func (s *Server) ListLimitProjects(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	// Only the projects with a maximum or a rule (R-UI-177): a project's repositories alone do not make it a row.
 	l, snap, x, err := s.snapshot(ctx)
-	var repos []repository.Repository
-	if err == nil {
-		repos, err = l.Repos.List(ctx)
-	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
 	keys := map[string]bool{}
-	for _, repo := range repos {
-		keys[repo.Name.Project] = true
-	}
 	projectRules, repoRules := map[string]int{}, map[string]int{}
 	for _, rule := range snap.Rules {
 		switch rule.Place.Kind {
@@ -932,11 +1031,37 @@ func (s *Server) detail(ctx context.Context, l LimitsServices, subj limits.Subje
 	if err != nil {
 		return nil, err
 	}
+	var cs []usage.CredentialUsage
+	if subj.Kind == limits.KindUser {
+		if cs, err = l.Usage.Credentials(ctx, period, subj.Ref, scope); err != nil {
+			return nil, err
+		}
+	}
+	budgets, err := s.budgetKeys(ctx, l, subj, scope)
+	if err != nil {
+		return nil, err
+	}
+	var refs nameRefs
+	refs.subject(subj.Kind, subj.Ref)
+	for _, b := range budgets {
+		if b.res.Rule != nil {
+			refs.rule(*b.res.Rule)
+		}
+	}
+	for _, c := range cs {
+		if c.Credential != limits.SessionCredential {
+			refs.r.APITokens = append(refs.r.APITokens, c.Credential)
+		}
+	}
+	n, err := s.names(ctx, l, refs)
+	if err != nil {
+		return nil, err
+	}
 	hist := make([]map[string]any, 0, len(history))
 	for _, p := range history {
 		hist = append(hist, map[string]any{
-			"start": p.Start.UTC(), "requests": p.Requests, "cachedBytes": p.Cached,
-			"uncachedBytes": p.Uncached, "upstreamRequests": p.Upstream, "refused": p.Refused,
+			"start": p.Start.UTC(), "requests": p.Requests, "cachedBytes": p.Cached, "uncachedBytes": p.Uncached,
+			"upstreamRequests": p.Upstream, "refused": p.Refused, "limitedEvents": p.Limited, "wouldLimitEvents": p.WouldLimit,
 		})
 	}
 	repoRows := make([]map[string]any, 0, len(repos))
@@ -950,76 +1075,140 @@ func (s *Server) detail(ctx context.Context, l LimitsServices, subj limits.Subje
 			"uncachedBytes": x.Uncached, "upstreamRequests": x.Upstream, "refused": x.Refused,
 		})
 	}
-	creds := []map[string]any{}
-	if subj.Kind == limits.KindUser {
-		cs, err := l.Usage.Credentials(ctx, period, subj.Ref, scope)
-		if err != nil {
-			return nil, err
-		}
-		for _, c := range cs {
-			cred := map[string]any{"kind": "token", "id": c.Credential}
-			if c.Credential == limits.SessionCredential {
-				cred = map[string]any{"kind": "session"}
+	creds := make([]map[string]any, 0, len(cs))
+	for _, c := range cs {
+		cred := map[string]any{"kind": "session"}
+		if c.Credential != limits.SessionCredential {
+			cred = map[string]any{"kind": "token", "id": c.Credential, "hint": nil, "description": nil}
+			if h, ok := n.APITokens[c.Credential]; ok {
+				cred["hint"], cred["description"] = h.Hint, h.Description
 			}
-			creds = append(creds, map[string]any{"credential": cred, "requests": c.Requests, "cachedBytes": c.Cached, "uncachedBytes": c.Uncached})
 		}
+		creds = append(creds, map[string]any{"credential": cred, "requests": c.Requests, "cachedBytes": c.Cached, "uncachedBytes": c.Uncached})
 	}
-	budgets, err := s.budgets(ctx, l, subj, scope)
-	if err != nil {
-		return nil, err
+	budgetReps := make([]map[string]any, 0, len(budgets))
+	for _, b := range budgets {
+		budgetReps = append(budgetReps, s.budgetRep(ctx, l, n, b))
 	}
 	now := time.Now()
 	from, _ := period.Window(now)
 	return map[string]any{
-		"subject": s.subjectRep(ctx, l, subj.Kind, subj.Ref), "period": map[string]any{"from": from.UTC(), "to": now.UTC()},
+		"subject": s.subjectRep(ctx, l, n, subj.Kind, subj.Ref), "period": map[string]any{"from": from.UTC(), "to": now.UTC()},
 		"mode": l.Engine.Mode(),
 		"totals": map[string]any{
 			"requests": u.Requests, "refused": u.Refused, "cachedBytes": u.Cached, "uncachedBytes": u.Uncached,
 			"upstreamRequests": u.Upstream, "limitedEvents": u.Limited, "wouldLimitEvents": u.WouldLimit,
 		},
-		"budgets": budgets, "history": hist, "repositories": repoRows, "credentials": creds,
+		"budgets": budgetReps, "history": hist, "repositories": repoRows, "credentials": creds,
 	}, nil
 }
 
-// budgets are the subject's budget keys of the last day in the scope with the live estimate of each windowed figure (one
-// pipeline of reads per key, R-LIM-034) and the limits the rows recorded.
-func (s *Server) budgets(ctx context.Context, l LimitsServices, subj limits.Subject, scope usage.Scope) ([]map[string]any, error) {
-	rows, err := l.Usage.Subjects(ctx, usage.PeriodDay, scope, []limits.SubjectKind{subj.Kind}, subj.Ref)
-	if err != nil || len(rows) == 0 {
-		return []map[string]any{}, err
-	}
+// budgetKey is one budget key of a subject's detail: its place key, the rule that applies there now, the live estimate of its
+// windowed figures and the end of an active block.
+type budgetKey struct {
+	key     string
+	x       *limits.Index
+	res     limits.Resolution
+	used    limits.Figures
+	blocked time.Time
+}
+
+// budgetKeys are the subject's budget keys of the last 24 hours in the scope (R-LIM-034): the places its usage rows recorded,
+// each with the rule that applies there now from the index (limits.Index.ResolveAt), the live estimate of each windowed figure
+// (one pipeline of reads per key) and its active block.
+func (s *Server) budgetKeys(ctx context.Context, l LimitsServices, subj limits.Subject, scope usage.Scope) ([]budgetKey, error) {
 	places, err := l.Usage.Places(ctx, subj.Kind, subj.Ref, scope)
+	if err != nil || len(places) == 0 {
+		return nil, err
+	}
+	_, _, x, err := s.snapshot(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]map[string]any, 0, len(places))
+	keys := make([]string, 0, len(places))
 	for _, p := range places {
-		key := subj.String() + "@" + p.Place
-		used, _ := l.Engine.Live(ctx, key)
-		fig := func(f limits.Figure, w int) map[string]any {
-			m := map[string]any{"used": used[f]}
-			if p.Limits[f] > 0 {
-				m["limit"] = p.Limits[f]
-			} else {
-				m["limit"] = nil
-			}
-			if w > 0 {
-				m["windowSeconds"] = w
-			}
-			return m
-		}
-		out = append(out, map[string]any{
-			"place": s.placeName(ctx, l, p.Place),
-			"figures": map[string]any{
-				"requestsPerHour": fig(limits.RequestsPerHour, 3600), "cachedBytesPerHour": fig(limits.CachedBytesPerHour, 3600),
-				"uncachedBytesPerHour": fig(limits.UncachedBytesPerHour, 3600), "upstreamRequestsPerHour": fig(limits.UpstreamRequestsPerHour, 3600),
-				"bytesPerDay": fig(limits.BytesPerDay, 86400), "parallelDownloads": map[string]any{"used": used[limits.ParallelDownloads]},
-				"refusedPerHour": map[string]any{"used": used[limits.RefusedPerHour], "windowSeconds": 3600},
-			},
-			"blockedUntil": nil,
-		})
+		keys = append(keys, p.Place)
 	}
+	blocks, err := l.Store.Blocks(ctx, true, keys, 1_000)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]budgetKey, 0, len(places))
+	for _, p := range places {
+		b := budgetKey{key: p.Place, x: x, res: x.ResolveAt(subj, s.fullPlace(ctx, l, p.Place))}
+		b.used, _ = l.Engine.Live(ctx, subj.String()+"@"+p.Place)
+		for _, blk := range blocks {
+			if blk.PlaceKey == p.Place && blk.Subject.Kind == subj.Kind && blk.Subject.Ref == subj.Ref && blk.Until.After(b.blocked) {
+				b.blocked = blk.Until
+			}
+		}
+		out = append(out, b)
+	}
+	sort.SliceStable(out, func(i, j int) bool { return placeOrder(out[i].key) < placeOrder(out[j].key) })
 	return out, nil
+}
+
+// placeOrder puts the instance first, then the projects, then the repositories.
+func placeOrder(key string) int {
+	switch {
+	case strings.HasPrefix(key, "project:"):
+		return 1
+	case strings.HasPrefix(key, "repository:"):
+		return 2
+	}
+	return 0
+}
+
+// fullPlace reads a place key of the store into the place the index resolves at: a repository by its name, a project by its
+// key.
+func (s *Server) fullPlace(ctx context.Context, l LimitsServices, key string) limits.Place {
+	p := placeOfKey(key)
+	switch p.Kind {
+	case limits.PlaceRepository:
+		if l.Repos != nil {
+			if repo, err := l.Repos.ByID(ctx, p.RepoID); err == nil {
+				p.Repo, p.ProjectKey, p.ProjectID = repo.Name, repo.Name.Project, repo.ProjectID
+			}
+		}
+	case limits.PlaceProject:
+		p.ProjectKey = s.projectKeyOf(ctx, l, p.ProjectID)
+	}
+	return p
+}
+
+// budgetRep renders a budget key with every figure (R-LIM-034): a windowed figure its limit, the live estimate and its window;
+// a rate its limit (and the burst of the request rate).
+func (s *Server) budgetRep(ctx context.Context, l LimitsServices, n store.Names, b budgetKey) map[string]any {
+	limit := func(f limits.Figure) any {
+		if v := b.res.Figures[f]; v > 0 {
+			return v
+		}
+		return nil
+	}
+	windowed := func(f limits.Figure, w int) map[string]any {
+		return map[string]any{"limit": limit(f), "used": b.used[f], "windowSeconds": w}
+	}
+	var blocked any
+	if !b.blocked.IsZero() {
+		blocked = b.blocked.UTC()
+	}
+	return map[string]any{
+		"place": s.placeName(ctx, l, b.key),
+		"rule":  s.ruleRef(ctx, l, n, b.x, b.res.Rule),
+		"figures": map[string]any{
+			"requestsPerSecond":       map[string]any{"limit": limit(limits.RequestsPerSecond), "burst": limit(limits.RequestsBurst)},
+			"requestsPerHour":         windowed(limits.RequestsPerHour, 3600),
+			"cachedBytesPerSecond":    map[string]any{"limit": limit(limits.CachedBytesPerSecond)},
+			"cachedBytesPerHour":      windowed(limits.CachedBytesPerHour, 3600),
+			"uncachedBytesPerSecond":  map[string]any{"limit": limit(limits.UncachedBytesPerSecond)},
+			"uncachedBytesPerHour":    windowed(limits.UncachedBytesPerHour, 3600),
+			"upstreamRequestsPerHour": windowed(limits.UpstreamRequestsPerHour, 3600),
+			"parallelDownloads":       map[string]any{"limit": limit(limits.ParallelDownloads), "used": b.used[limits.ParallelDownloads]},
+			"bytesPerDay":             windowed(limits.BytesPerDay, 86400),
+			"refusedPerHour":          windowed(limits.RefusedPerHour, 3600),
+		},
+		"blockedUntil": blocked,
+	}
 }
 
 // GetUsageSubject implements GET /api/v1/usage/subjects/{kind}/{id}.

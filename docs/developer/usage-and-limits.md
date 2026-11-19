@@ -2,8 +2,8 @@
 
 The download limits of [spec/usage-and-limits.md](../spec/usage-and-limits.md) (walk item W-26): who a request is charged to,
 which rule applies, the counters in Valkey, the decisions at stage 7, before a download and before an upstream exchange, the pacing of
-a body, the usage store behind the overview, and the API. Work package 2 (accounting and enforcement) is built; the technical tokens
-(package 1) and the screens (package 3) land beside it. The section "Work packages" is removed when the third has landed.
+a body, the usage store behind the overview, the API and the screens. The technical tokens the limits charge are identity's
+([identity.md](identity.md)); their limit and their last 24 hours are columns of the token list, described here.
 
 ## What has to be in your head first
 
@@ -38,7 +38,8 @@ a body, the usage store behind the overview, and the API. Work package 2 (accoun
 |---|---|---|
 | Stage 6, authentication | [chain.go](../../internal/httpserver/chain.go) `Chain.AuthFailed`, wired to `App.limitsFailedCredential` | A refused credential on a protocol path is one request and one refused request of the client's address (`Engine.FailedCredential`, R-LIM-003); nothing of the subject the token names |
 | Stage 7 | [ratelimit.go](../../internal/api/v1/ratelimit.go) `protocolStage.serve` | Skips a preflight and a request the decision point challenges (Q-API-290). Derives the caller (`httplimit.CallerOf`, the administrator through `authz.Index.HoldsAdmin`), resolves the place (`Engine.Begin` → `Index.Resolve`), and runs one batch (`Engine.Check`): the burst and hour windows of the budget key, its block marker, and the package class of R-API-016 in force (`cluster.Limiter.BatchTake`). Wraps the response in `httplimit.Writer` and puts the charge in the context; at the end writes the log fields and finishes the charge |
-| Repository of the address | [qname/address.go](../../internal/qname/address.go) `ParseProtocolAddress` | `/api/<format>/…`, `/files/…` and `/v2/<project>/<key>/…` (`ParseRegistryAddress`, Q-LIM-41); a path that names none is decided at the instance |
+| Repository of the address | [qname/address.go](../../internal/qname/address.go) `ParseProtocolAddress`; [wire_limits.go](../../internal/app/wire_limits.go) `limitsRepo` | `/api/<format>/…`, `/files/…` and `/v2/<project>/<key>/…` (`ParseRegistryAddress`, Q-LIM-41); on a host bound to a repository of the registry format (R-EP-007) every path below `/v2/` but `/v2/`, `/v2/_catalog` and `/v2/_token` names the bound repository (`dispatch.Dispatcher.BoundRepository`, the reading the match of `/v2/` uses); a path that names none is decided at the instance |
+| A refusal's answer | [errors.go](../../internal/limits/errors.go) `refusal`, [engine.go](../../internal/limits/engine.go) `Engine.refuse`; [httplimit.go](../../internal/limits/httplimit/httplimit.go) `SetRefusalPolicy` | The problem of R-LIM-020 with "Your limits: <base URL>/ui/profile/usage" for a signed-in caller (the base URL of the endpoint the request came in on, `limits.Options.BaseURL`); the charge keeps the refusing figure's RateLimit policy (`"cached-hour"`, `"uncached-hour"`, `"upstream-hour"`, `"day"`, `"parallel"`, `"refused-hour"`, `qu` for bytes and downloads), which the counting writer adds to the 429 it writes beside the request figures' (stage 7 adds it to a refusal of its own) |
 | The format dispatcher | [dispatcher.go](../../internal/api/dispatch/dispatcher.go) `serveRoute` | Marks a refusal of the decision point (`DenyHidden`, `DenyVisible`) and a credentialed `repository_not_found` as refused (R-LIM-008); records the repository that served |
 | The raw-file handler | [rawfiles/handler.go](../../internal/api/rawfiles/handler.go) `get`, `refusedAccess` | The same refusal mark; `ServeOptions.Admit` for a file |
 | The registry's token service | [registry/token.go](../../internal/api/registry/token.go) `Token.ServeHTTP` | Stage 7 deferred the request windows (`DeferRequestFigures`); the handler charges them once, to the token's subject or to the address (`Charge.Retarget`, Q-LIM-48) |
@@ -50,13 +51,14 @@ a body, the usage store behind the overview, and the API. Work package 2 (accoun
 | Background requests | `fetcher.run` | `Engine.System(repo)`: upstream requests and uncached bytes recorded under `system`, checked against nothing |
 | The flush | [limits/flush.go](../../internal/limits/flush.go) `Engine.Flush` | Once a second, one batch: `INCRBY` of the bytes and refusals of every budget key and ceiling, `ZREM` of ended leases, `ZADD XX` renewals of leases older than 20 s, `ZCARD` of paced keys, the block markers found due; then the deltas to the usage buffer |
 | The usage buffer | [limits/usage/buffer.go](../../internal/limits/usage/buffer.go) `Buffer.Flush` | Every ten seconds one transaction: one upsert of the five-minute and hourly rows, one of the limit events, in key order |
+| The request record | [httplimit.go](../../internal/limits/httplimit/httplimit.go) `Log`; [dispatcher.go](../../internal/api/dispatch/dispatcher.go) `serveRoute` | `observability.LimitsFields`: `limits_subject`, `limits_place`, `limits_rule`, `limits_outcome`, `bytes_cached`, `bytes_uncached` as fields of their own, null off the protocol paths; the dispatcher records the repository and the format of what it serves, the stage the addressed repository where nothing else did (`project` is the repository's project); a refusal's `limit_mode` is the counter's mode, `cluster` or `fallback` (Q-LIM-51) |
 
 ## Package layout
 
 | Package | Layer | Responsibility |
 |---|---|---|
 | [`internal/limits`](../../internal/limits) | domain | `figures.go` (figures, overrides), `subject.go` (subjects, address prefixes, `SubjectOf`), `model.go` (places, rules, profiles, ceilings, maxima, settings, the built-ins), `index.go` (`Index`, `Resolve`, the clamp), `charge.go` (`Charge` and its context), `engine.go` (`Check`, `Admit`, `MayFetch`, `FailedCredential`, `Retarget`, `System`), `flush.go` (the charge buffer, blocks, `LiftBlock`, `Live`), `pacer.go` (pacing, `CountingReader`), `errors.go` (the refusals of R-LIM-020), `metrics.go` |
-| [`internal/limits/store`](../../internal/limits/store) | domain | The PostgreSQL store: `Snapshot` for the index, the writes of the API (audited, announcing the area `limits`), the record of blocks |
+| [`internal/limits/store`](../../internal/limits/store) | domain | The PostgreSQL store: `Snapshot` for the index, the writes of the API (audited, announcing the area `limits`), the record of blocks, `Names` (the names of the users, technical tokens, CI projects and personal tokens an answer names, read once per answer) and the searches of the rule dialog's suggestions |
 | [`internal/limits/usage`](../../internal/limits/usage) | domain | The usage buffer, the reads of the overview and the detail, `limits-cleanup` |
 | [`internal/limits/httplimit`](../../internal/limits/httplimit) | edge | `ProtocolPath`, `Repo`, `CallerOf`, the counting and pacing `Writer`, the log fields, the `RateLimit` fields |
 | [`internal/cluster/valkey_limits.go`](../../internal/cluster/valkey_limits.go) | infrastructure | `LimitBatch`, `LimitCounters` (Valkey), `MemoryLimits` (the replica's fallback and the unit tests), `Estimate`, `RoomAfter` |
@@ -99,149 +101,64 @@ of step 9a. No PostgreSQL statement runs on a request: the index is in memory, t
 | Test | What it holds |
 |---|---|
 | `TestR_LIM_013_WorkedExamples`, `TestR_LIM_016_TheClamp` | The worked examples of R-LIM-013 and R-LIM-016 on `Index.Resolve` and `Index.CapFor` |
+| `TestR_LIM_034_TheRuleOfABudgetKeyIsTheOneThatAppliesThereNow` | `Index.ResolveAt`, the rule of a budget key in the detail (Q-LIM-52) |
 | `TestR_LIM_001_TheSubjectOfEveryCaller`, `TestR_LIM_002_AddressPrefix`, `TestR_LIM_004_Figures` | Subjects, prefixes, figures |
 | `TestR_LIM_017_RequestWindowsAndCost`, `TestR_LIM_021_…`, `TestR_LIM_022_StepNineA`, `TestR_LIM_023_Pacing`, `TestR_LIM_024_ParallelDownloads`, `TestR_LIM_025_TheBlock` | The engine on in-memory counters: windows, cost, Audit, the admission, 9a and the ceiling, pacing shares and the floor, leases and their fallback share, blocks and their lift |
 | `TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind` ([formats/all](../../internal/formats/all)) | The kind of every route of the six formats |
 | Check 16 of the format kit ([checks_admission.go](../../internal/formats/formattest/checks_admission.go)) | Every format answers 429 before any byte when the admission refuses; the defect `WritesOwnDownload` fails it |
 | [ratelimit_test.go](../../internal/api/v1/ratelimit_test.go) | The package classes on `/files/` and `/v2/`, keyed by the subject |
+| [ifmatch_test.go](../../internal/api/v1/ifmatch_test.go) | A project's first maximum by `PUT` without `If-Match`, a replace with it (Q-API-354) |
+| [requestlog_test.go](../../internal/observability/requestlog_test.go) | The limits' fields of the request record, null off the protocol paths |
+| Integration set `limits` ([test/integration/limits](../../test/integration/limits)) | A cached download's round trips, Audit and Enforce, a failed credential, the overview; `TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken` (a docker-style exchange with a technical token's secret, then a `/v2/` request); `TestR_LIM_028_ADeletedTechnicalTokensRuleGoesAndItsUsageStays` (the token record's `limit`, a run of `limits-cleanup`, which also runs the fold of the hourly rows into the daily sums: `FoldUsageDays` grouped by an expression its subqueries named ungrouped and failed every run until 2026-11-19); `TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch`; `TestR_LIM_019_WithValkeyStoppedTheReplicaDecidesOnItsShare` |
+
+What no test here holds yet: a replica that dies with leases held (R-LIM-024's expiry of its leases after `limits.parallel.lease`;
+the integration stack stops a replica only gracefully, which releases its leases), and the e2e set `limits` of R-LIM-039 (the six
+clients against a small profile in both modes on the kind cluster).
 
 ## The screens
 
-Work package 3 (R-UI-177 to R-UI-186, Q-UI-750 to Q-UI-758). Every screen reads the API through one service, `LimitsApi`; its
-shapes are written by hand in one file until `api/openapi.yaml` describes the operations.
+R-UI-177 to R-UI-186. Every screen reads the API through one service, `LimitsApi`; its shapes are the generated client's.
 
 | File | Responsibility |
 |---|---|
-| [web/src/app/api/limits-types.ts](../../web/src/app/api/limits-types.ts) | The shapes of R-LIM-031 to R-LIM-035, by hand. When the generated client has them, each name becomes `Schema<'…'>` of `types.ts`; nothing else changes |
-| [web/src/app/api/limits-api.ts](../../web/src/app/api/limits-api.ts) | `LimitsApi` and `HttpLimitsApi`: profiles, rules of a place (`rulesPath`), ceilings, settings and the mode preview, a project's maximum, `projectRows` (the tab Projects, read by fan-out, Q-UI-756), blocks, the explanation, the subjects of the rule dialog, the usage lists, details and CSV address |
+| [web/src/app/api/limits-types.ts](../../web/src/app/api/limits-types.ts) | The shapes of R-LIM-031 to R-LIM-035 as `Schema<'…'>` of the generated client (`api/openapi.yaml`): the unions of a rule's "who", a place, a usage subject and a credential are discriminated by `kind` in the document, so a screen narrows on it |
+| [web/src/app/api/limits-api.ts](../../web/src/app/api/limits-api.ts) | `LimitsApi` and `HttpLimitsApi`: profiles, rules of a place (`rulesPath`), ceilings, settings and the mode preview, a project's maximum (a first one without `If-Match`, Q-API-354), `projectRows` (`GET /api/v1/limits/projects` and the project list for the display names, Q-UI-756), blocks, the explanation, the subjects of the rule dialog, the usage lists (the instance's filter **Project** is `UsageScope.projectFilter`, `project=`, Q-UI-755), details and CSV address |
 | [web/src/app/api/testing/fakes-limits.ts](../../web/src/app/api/testing/fakes-limits.ts) | `FakeLimitsApi` and the fixtures from the specification's examples: the built-in profiles and an own one, rules of the three places, a maximum, ceilings, a block, a usage list with a long name, an IPv6 prefix, a caller at 100 %, an unlimited one, a blocked one, a CI project and the system, a detail with 288 five-minute points |
-| [web/src/app/features/limits/](../../web/src/app/features/limits/) | `figures.ts` (groups, units, decimal MB and GB, the compact line), `callers.ts` (how a rule's "who", a subject and a place are named), `caller-cell.ts`, `figure-fields.ts` (the eleven fields, with a profile's values as base for overrides), `limit-rules.ts` (`<quader-limit-rules>`, the table of every place), `rule-dialog.ts`, `limit-mode.ts` (the mode line and the switch's dialog), `limits-frame.ts` and the four tabs `limits-*-tab.ts`, `profile-editor.ts`, `maximum-dialog.ts`, `project-limits-section.ts`, `repository-limits-section.ts` (with the ceilings), `technical-token-limit.ts` (R-UI-181, see below), `limits.routes.ts` |
+| [web/src/app/features/limits/](../../web/src/app/features/limits/) | `figures.ts` (groups, units, decimal MB and GB, the compact line), `callers.ts` (how a rule's "who", a subject and a place are named), `caller-cell.ts`, `figure-fields.ts` (the eleven fields, with a profile's values as base for overrides), `limit-rules.ts` (`<quader-limit-rules>`, the table of every place), `rule-dialog.ts`, `limit-mode.ts` (the mode line and the switch's dialog), `limits-frame.ts` and the four tabs `limits-*-tab.ts`, `profile-editor.ts`, `maximum-dialog.ts`, `project-limits-section.ts`, `repository-limits-section.ts` (with the ceilings), `technical-token-limit.ts` (the cell **Limit** with its second line, the last 24 hours, and `TechnicalTokenLimits`, R-UI-181), `limits.routes.ts` |
 | [web/src/app/features/usage/](../../web/src/app/features/usage/) | `usage-overview.ts` (the overview of the instance and of a project, its filters in the address, Q-UI-755), `usage-detail.ts` (a caller's page), `profile-usage.ts` (the profile's tab), `usage-budgets.ts` (the limits per budget key), `limit-explain.ts`, `usage-history.ts` (three charts and the table, Q-UI-754), `usage-tables.ts`, `usage-meter.ts`, `usage-words.ts`, `usage.routes.ts` with `usageGuard` |
 | [web/src/app/shared/download-link.ts](../../web/src/app/shared/download-link.ts) | `quaderDownload` on a download link: a one-byte probe, the notice of a refusal (R-UI-186, Q-UI-753); the words are [problem-messages-limits.ts](../../web/src/app/core/http/problem-messages-limits.ts) |
-| [web/src/app/shared/ui/principal-field.ts](../../web/src/app/shared/ui/principal-field.ts) | The kinds `technical_token` and `ci_project`, whose matches come from `GET /api/v1/limits/subjects` |
+| [web/src/app/shared/ui/principal-field.ts](../../web/src/app/shared/ui/principal-field.ts) | The kinds `technical_token` and `ci_project`, whose matches come from `GET /api/v1/limits/subjects` (every technical token by its or its account's name, the CI projects tokens were issued for, Q-LIM-50) |
 
 - **Routes and side bars.** `/admin/usage`, `/admin/usage/{kind}/{id}`, `/admin/limits` with its tabs and
   `/admin/limits/profiles/{new,key}` ([app.routes.ts](../../web/src/app/app.routes.ts)); `/projects/{project}/usage` and its callers
   ([project-context.routes.ts](../../web/src/app/features/projects/project-context.routes.ts)); `/profile/usage`. The side-bar entries
   are in [navigation.ts](../../web/src/app/core/navigation.ts) (Q-UI-750), the profile's tab in `profile-nav.ts`.
-- **Technical tokens (R-UI-181).** The service account's page is work package 1's. `TokenLimitCell` (**Limit**),
-  `TokenLastDayCell` (**Last 24 hours**) and `TechnicalTokenLimits` (`rules(place)`, `lastDay(scope)`, `edit` for **Set limit** and
-  **Change limit**, `remove` for **Remove limit**; `accountPlace` gives an account's place) are ready to be placed in the token list of
-  `web/src/app/features/service-accounts/` once that page lists technical tokens.
-- **Renders.** The screens `admin-usage*`, `admin-limits*`, `project-usage*`, `project-settings-limits`, `repository-settings-limits`
-  and `profile-usage` in [screens.ts](../../web/e2e/renders/screens.ts); Enforce is rendered through the page's routes (`inEnforce`),
-  never by switching the shared database. `seedLimits` in [seed.ts](../../web/e2e/renders/seed.ts) seeds nothing while the operations
-  answer 404.
+- **Technical tokens (R-UI-181, Q-UI-759, Q-UI-761).** The section **Technical tokens** of a service account's page
+  ([technical-tokens.ts](../../web/src/app/features/service-accounts/technical-tokens.ts)) reads the profiles and the last 24 hours once
+  with the list and hands them to [technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts)
+  (`TokenLimitsView`): the column **Limit** between **Token** (with the secret's expiry beside its hint) and **Last used**, the token record's `limit` (R-AUTH-045) on the row's
+  line and the last 24 hours as the cell's second line ("95,695 requests · 518.8 GB in 24 h", "Not used in 24 h"); the limit opens
+  the rule dialog (**Set limit**, **Change limit** with **Remove limit** in it), and the action cell keeps **Rotate** and **Revoke**.
+  The column shows for `limits:read` and an Owner of the account's project, its second line for whoever reads the usage of the scope;
+  the list of ended tokens shows no limit, so that both lists are tables at 1,024 px.
+- **A caller's page (R-UI-184, Q-UI-765).** The title is `subjectTitle` of [callers.ts](../../web/src/app/features/limits/callers.ts)
+  (a user's display name, a token's name, a CI project's path, an address), the reference under it `subjectReference`; the route's
+  title resolver `callerTitle` in [usage.routes.ts](../../web/src/app/features/usage/usage.routes.ts) reads the same name for the
+  breadcrumb's last step and the window's title.
+- **The token record's `limit`.** [technical_tokens_api.go](../../internal/api/v1/technical_tokens_api.go) `tokenLimits` reads the rules
+  of the account's place that name one of its tokens from the store; the read tag of a token follows its rule's change
+  (`technicalETag`), a write compares the revision only.
+- **Renders.** The screens `admin-usage*`, `admin-limits*`, `project-usage*`, `project-settings-limits`, `repository-settings-limits`,
+  `profile-usage` and the service accounts' pages (`*-service-account*`, with the state `set-limit`) in
+  [screens.ts](../../web/e2e/renders/screens.ts); Enforce is rendered through the page's routes (`inEnforce`), never by switching the
+  shared database. `seedLimits` in [seed.ts](../../web/e2e/renders/seed.ts) writes the profile, the rules, a maximum and the ceilings
+  through the API; `seedUsage` writes a day of five-minute and a month of hourly usage of every kind of caller, apart by orders of
+  magnitude, the limit events, a block and the CI issuer of a CI project into the profile's database through its container
+  (`psql`): requests cannot make a day's history in the seed's time, and Quader has no path that writes it.
+- **The overview's columns.** The usage overview names `narrowBelow="80rem"` on its data table: **Upstream requests** and **Refused**
+  give way below 80 rem of the list, so the list is a table, not stacked rows, beside the side bar at 1440 px (Q-UI-760). A caller's
+  history table is the shared data table too.
+- **Profile names.** A rule of the detail and the explanation carries `profileName` (Q-LIM-53): the profile tab of a user names the
+  profile its limits come from without reading the profiles.
 - **Tests.** [figures.spec.ts](../../web/src/app/features/limits/figures.spec.ts), [limits.spec.ts](../../web/src/app/features/limits/limits.spec.ts),
   [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts) against the fakes, each screen through axe.
-
-## Work packages
-
-Three packages, built in parallel worktrees on the base of the specification commit. Each runs the gates of its builder brief; the
-development agent merges them in the order **1, 2, 3**.
-
-### Work package 1 · Technical tokens on three levels
-
-- **Requirements:** [R-AUTH-045](../spec/identity-and-authentication.md#r-auth-045--technical-tokens),
-  [R-AUTH-046](../spec/identity-and-authentication.md#r-auth-046--service-accounts-of-a-repository),
-  [R-AUTHZ-039](../spec/authorization.md#r-authz-039--the-actions-of-a-repositorys-service-account), the rows of technical tokens and
-  repository service accounts in [R-API-082](../spec/api-and-ui.md#r-api-082--the-operations-of-usage-limits-and-technical-tokens),
-  [R-UI-181](../spec/api-and-ui.md#r-ui-181--technical-tokens-at-the-instance-a-project-and-a-repository) without its **Limit** and
-  **Last 24 hours** columns and its **Set limit** action, the identity part of R-LIM-038; the amended R-AUTH-020, R-AUTH-022,
-  R-AUTH-026, R-AUTH-027, R-AUTH-030, R-AUTH-041, R-AUTHZ-001, R-AUTHZ-026, R-REPO-060.
-- **Owns:** `internal/auth/principal` (service accounts, the repository level), `internal/auth/token` (technical tokens, the cache
-  entry, rotation, new secrets, `token-cleanup`), `internal/authz` (`index.go` and the decision: the account grants, source
-  `account:<reference>`), `internal/project/move.go` (renaming a repository's accounts), `internal/api/v1/project_accounts_api.go`,
-  `groups_api.go` (the instance accounts' routes), `tokens_api.go`, a new `repository_accounts_api.go`, `internal/app/wire_identity.go`,
-  `web/src/app/features/service-accounts/`, the repository settings' section **Service accounts** as a component of its own.
-- **Migrations:** 00080 (`technical_token`, `api_token.technical_token_id` and its check, `service_account.repository_id`, its
-  guard `AI005`, `service_account_repository_grant`, the trigger that deletes the principal of an account removed with its
-  repository), 00081 reserved.
-- **Shared, and who owns the conflict:** `internal/httpserver/principal.go` (adds `Credential.TechnicalTokenID`; package 1 owns it,
-  package 2 adds the identical line if it lands first); `api/openapi.yaml` (the identity operations; the development agent merges by
-  operation); `internal/config` (`max_technical_tokens_per_account`; package 2 owns the file's conflict);
-  `web/src/app/features/repositories/settings-sections.ts` and `repository-detail.ts` (one entry for its section; package 3 owns the
-  conflict); `web/e2e/renders/screens.ts`, `seed.ts`, the locale files (appended; package 3 owns the conflict).
-- **Tests:** unit in the packages it owns, including `TestR_AUTHZ_039_…` for the decision and the explanation; integration sets
-  `idapi`, `identity`, `projects`, `authz` (the acceptance criteria of R-AUTH-045, R-AUTH-046, R-AUTHZ-039); renders of the service
-  account page at the three levels (light and dark, 1440 and 390, `admin` and `power`), the repository settings' section, the
-  create dialog with the name field, the token row of an expired token.
-- **Must not touch:** `internal/proxy`, `internal/limits`, `internal/api/edge`, `internal/api/v1/ratelimit.go`, the limits and usage
-  screens.
-- **Built.** What the next packages build on:
-  - Package 2 reads the budget subject from `httpserver.Credential.TechnicalTokenID` (empty for every credential but a SAT; for a
-    registry token the underlying token's), set by the stage from the token cache entry (`token.Info.TechnicalTokenID`). The row is
-    `technical_token` (stable ID across rotations and new secrets); `TechnicalToken.limit` of the API is always `null` until the limits
-    area fills it ([technical_tokens_api.go](../../internal/api/v1/technical_tokens_api.go), `toTechnicalToken`).
-  - Package 3 adds the columns **Limit** and **Last 24 hours** and the action **Set limit** in
-    [technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts): the two columns between
-    **Token** and **Expires** (`columns`, and the row's cells between its `th` and the time `td`, where a comment marks the place),
-    **Set limit** before **Revoke** in the action cell. The table is used twice in
-    [technical-tokens.ts](../../web/src/app/features/service-accounts/technical-tokens.ts), for the active and for the ended tokens
-    (Q-UI-740), and serves the three levels.
-  - The repository settings' section is `RepositoryServiceAccounts`
-    ([repository-service-accounts.ts](../../web/src/app/features/service-accounts/repository-service-accounts.ts)), opened by
-    `repository-detail.ts` as the lazy section `service-accounts`; an account's page at a repository is the repository's child route
-    `service-accounts/:name` ([repositories.routes.ts](../../web/src/app/features/repositories/repositories.routes.ts)).
-
-### Work package 2 · Accounting and enforcement
-
-- **Requirements:** [R-LIM-001](../spec/usage-and-limits.md#r-lim-001--the-subject-a-request-is-charged-to) to R-LIM-037 and
-  R-LIM-039, [R-API-016](../spec/api-and-ui.md#r-api-016--rate-limits), the limits and usage rows of R-API-082,
-  [R-AUTHZ-040](../spec/authorization.md#r-authz-040--capabilities-for-download-limits-and-usage), step 9a of
-  [R-REPO-025](../spec/repositories-and-proxy.md#r-repo-025--remote-request-path), the amended R-ARCH-005 step 7, R-ARCH-031,
-  R-ARCH-034, R-OPS-007, R-OPS-010, R-OPS-016, R-OPS-019.
-- **Owns:** `internal/limits/…` (new), `internal/api/v1/ratelimit.go`, `limits_api.go`, `usage_api.go` (new),
-  `internal/api/edge/content.go`, `internal/api/dispatch/dispatcher.go` (the writer), `internal/api/rawfiles/handler.go` (the
-  writer and `Admit`), `internal/api/registry/token.go` (`Retarget`), `internal/proxy` (`Request.Charge`, `mayFetch`, the leader's
-  charge, the counted and paced body), `internal/formathost/remote.go` and `ingest.go` (passing the charge and `Admit`),
-  `internal/qname` (the registry family), `internal/cluster` (the limiter changes, the family `lim`, the area `limits`),
-  `internal/config` (the `limits` section, the comments of `api.rate_limits`), `internal/formats/formats.go` (`ContractVersion` 6),
-  every format's `ContractVersion` literal, `internal/formats/testdata/contract.txt`, `internal/formats/formattest` (the kit check),
-  `internal/formats/all/all_test.go` (the kind table), `internal/app/wire_api.go` and a new `wire_limits.go`, `deploy/dev/valkey.yaml`
-  and the integration stack's Valkey user (the ACL), the integration set `test/integration/limits` (new), the e2e set `limits`.
-- **Migrations:** 00082 (`limit_profile` with the five built-ins, `limit_assignment` with the built-in rules, `limit_ceiling`,
-  `limit_project_maximum`, `limit_settings`, `limit_block`), 00083 (`usage_bucket`, `usage_limit_event`, `usage_daily_summary`),
-  00084 and 00085 reserved.
-- **Shared, and who owns the conflict:** `internal/httpserver/principal.go` (reads `Credential.TechnicalTokenID`; package 1 owns it);
-  `api/openapi.yaml` (the limits and usage operations); `docs/developer/` pages of the proxy, Valkey and formats (sections of its own).
-- **Tests:** unit as R-LIM-039; the integration set `limits` with three replicas through `testenv`, Valkey stopped, a replica killed
-  with leases held; the sets `proxy`, `ociremote`, `files`, `packages`, `api` again (the stage moved); the contract test and the
-  kind table for the six formats; the e2e set `e2e (limits)`. The attribution of technical tokens is tested with a credential
-  carrying `TechnicalTokenID` before package 1 lands, against real tokens after.
-- **Must not touch:** the identity tables and their services, the screens.
-
-### Work package 3 · The screens
-
-- **Requirements:** [R-UI-177](../spec/api-and-ui.md#r-ui-177--download-limits-in-the-admin-area) to R-UI-180,
-  [R-UI-182](../spec/api-and-ui.md#r-ui-182--the-mode-switch) to R-UI-186, and the **Limit** and **Last 24 hours** columns and the
-  **Set limit** action of R-UI-181.
-- **Owns:** `web/src/app/features/limits/` and `web/src/app/features/usage/` (new: the admin pages, the profile editor, the rule
-  table and dialog `<quader-limit-rules>`, the overview, the detail, the mode switch), the project settings' and the repository
-  settings' section **Download limits** as components of their own, the profile's tab **Usage**, the download-refused notice in the
-  shared error handling, the principal field's two kinds (`web/src/app/shared/ui/principal-field.ts`), the routes and side-bar
-  entries (`app.routes.ts`, `project-context.routes.ts`, `core/navigation.ts`, `profile.routes.ts`, `profile-nav.ts`).
-- **Migrations:** none.
-- **Shared, and who owns the conflict:** `settings-sections.ts`, `repository-detail.ts`, the project settings page, the service
-  account page of package 1 (it adds the two columns and the action there after package 1 landed), `screens.ts`, `seed.ts`, the
-  locale files; package 3 owns each conflict.
-- **Builds against fakes:** the generated client of the operations of R-API-082 once package 2's `api/openapi.yaml` exists; until
-  then hand-written types from the JSON examples of R-LIM-031 to R-LIM-035, replaced by the generated ones before it lands, and
-  component tests against fixtures of those examples.
-- **Verifiable only after package 2 landed:** every render with real data (the seed needs the operations), the overview's sort and
-  states on stored usage, the CSV export, the mode preview's numbers, the explanation, the notice of a real 429. After package 1:
-  the token columns and **Set limit**.
-- **Tests:** component tests per screen; renders of every screen of R-UI-177 to R-UI-186 in both modes (`audit`, `enforce`),
-  light and dark, 1440 and 390, as `admin`, `power` (an Owner) and `plain` (own usage only), with long names, an IPv6 prefix, an
-  empty state each; the journeys it changes type-check.
-- **Must not touch:** Go code.
-
-### Reserved identifiers
-
-| Package | Requirement IDs (amend only) | Decision IDs it may take | Migrations |
-|---|---|---|---|
-| 1 | R-AUTH-045, R-AUTH-046, R-AUTHZ-039, R-UI-181 | Q-AUTH-418 to Q-AUTH-429, Q-AUTHZ-299 to Q-AUTHZ-309, Q-UI-740 to Q-UI-749 | 00080, 00081 |
-| 2 | R-LIM-001 to R-LIM-039, R-API-016, R-API-082, R-AUTHZ-040 | Q-LIM-40 to Q-LIM-79, Q-API-350 to Q-API-369, Q-ARCH-513 to Q-ARCH-522, Q-REPO-332 to Q-REPO-339 | 00082 to 00085 |
-| 3 | R-UI-177 to R-UI-180, R-UI-182 to R-UI-186 | Q-UI-750 to Q-UI-779 | none |
-
-A gap a builder finds takes the next free `H-` number at the time it lands, after H-1012.

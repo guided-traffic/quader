@@ -287,6 +287,45 @@ type Policy struct {
 	Window    time.Duration
 	Remaining int64
 	Reset     time.Duration
+	// Unit is the quota unit qu of a figure that does not count requests: content-bytes, concurrent-requests.
+	Unit string
+}
+
+// refusalPolicy names the policy of a figure that refuses beside the request figures (R-LIM-020); ok is false for the request
+// figures, whose policies stage 7 sends on every answer.
+func refusalPolicy(f Figure) (name, unit string, ok bool) {
+	switch f {
+	case CachedBytesPerHour:
+		return "cached-hour", "content-bytes", true
+	case UncachedBytesPerHour:
+		return "uncached-hour", "content-bytes", true
+	case UpstreamRequestsPerHour:
+		return "upstream-hour", "", true
+	case BytesPerDay:
+		return "day", "content-bytes", true
+	case ParallelDownloads:
+		return "parallel", "concurrent-requests", true
+	case RefusedPerHour:
+		return "refused-hour", "", true
+	}
+	return "", "", false
+}
+
+// refuse records the refusal's RateLimit policy on the charge and returns its error (R-LIM-020): the counting writer of stage 7
+// adds the policy to the 429 it writes.
+func (e *Engine) refuse(c *Charge, rf refusal, quota int64) *errs.Error {
+	err := rf.err()
+	f, _ := ParseFigure(rf.figure)
+	if name, unit, ok := refusalPolicy(f); ok && c != nil {
+		w := rf.window
+		if w <= 0 {
+			w = time.Second
+		}
+		c.mu.Lock()
+		c.refusal = &Policy{Name: name, Quota: quota, Window: w, Reset: err.RetryAfter, Unit: unit}
+		c.mu.Unlock()
+	}
+	return err
 }
 
 // ClassCheck adds the check of a class of R-API-016 to the batch of stage 7 and returns the function that decides it.
@@ -342,10 +381,10 @@ func (e *Engine) Check(ctx context.Context, c *Charge, at time.Time, class Class
 				c.mu.Lock()
 				c.outcome, c.limiter = "blocked", "limits.refusedPerHour"
 				c.mu.Unlock()
-				st.Err = refusal{
+				st.Err = e.refuse(c, refusal{
 					code: CodeCallerBlocked, figure: RefusedPerHour.String(), limit: f[RefusedPerHour], window: hour,
 					place: c.Resolution.Place, retry: retry, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
-				}.err()
+				}, f[RefusedPerHour])
 			}
 		}
 	}
@@ -468,11 +507,11 @@ func (e *Engine) Admit(ctx context.Context, c *Charge) error {
 		e.decided(c, chk.fig.String(), enforce)
 		if enforce {
 			e.dropLease(ctx, c)
-			return refusal{
+			return e.refuse(c, refusal{
 				code: CodeDownloadLimitReached, figure: chk.fig.String(), limit: f[chk.fig], window: chk.w,
 				place: c.Resolution.Place, retry: cluster.RoomAfter(r.Cur, r.Prev, el, chk.w, lim, 1),
 				signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
-			}.err()
+			}, lim)
 		}
 	}
 	if parOp >= 0 {
@@ -535,10 +574,10 @@ func (e *Engine) parallel(ctx context.Context, c *Charge, count int64, local boo
 		}
 	}
 	e.decided(c, ParallelDownloads.String(), true)
-	return refusal{
+	return e.refuse(c, refusal{
 		code: CodeTooManyParallelDownloads, figure: ParallelDownloads.String(), limit: f[ParallelDownloads],
 		place: c.Resolution.Place, retry: time.Second, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
-	}.err()
+	}, e.scaledUp(f[ParallelDownloads], false))
 }
 
 // dropLease gives a lease up at once (ZREM): a refused or waiting download does not hold a slot.
@@ -649,7 +688,7 @@ func (e *Engine) MayFetch(ctx context.Context, c *Charge, repoID int64, artifact
 			if k.ceiling {
 				rf.ceiling = class
 			}
-			return &BudgetError{Err: rf.err()}
+			return &BudgetError{Err: e.refuse(c, rf, lim)}
 		}
 	}
 	if parOp >= 0 {

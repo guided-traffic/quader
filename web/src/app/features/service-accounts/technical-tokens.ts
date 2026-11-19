@@ -13,8 +13,9 @@ import { TokenSecret } from '../../shared/access/token-secret';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { QuaderDialog } from '../../shared/ui/dialog';
+import { TechnicalTokenLimits, accountPlace } from '../limits/technical-token-limit';
 import { RotateDialog } from '../tokens/token-manager';
-import { TechnicalTokenTable, currentSecret } from './technical-token-table';
+import { TechnicalTokenTable, TokenLimitsView, currentSecret } from './technical-token-table';
 
 /** What the open form issues: a new technical token, or a new secret of the named one. */
 type FormFor = { readonly kind: 'token' } | { readonly kind: 'secret'; readonly name: string };
@@ -81,8 +82,10 @@ type FormFor = { readonly kind: 'token' } | { readonly kind: 'secret'; readonly 
         [emptyText]="tokens().length === 0 ? noToken : noActiveToken"
         [canRotate]="isAdmin()"
         [canRevoke]="canRevoke()"
+        [limits]="limits()"
         (rotate)="rotate($event)"
         (revoke)="revoke($event)"
+        (setLimit)="setLimit($event)"
       />
       @if (ended().length > 0) {
         <h3 class="ended" i18n="@@tt.ended-heading">Expired and revoked</h3>
@@ -117,8 +120,13 @@ export class TechnicalTokens {
   private readonly confirmer = inject(Confirm);
   private readonly notifier = inject(Notifier);
   private readonly dialog = inject(QuaderDialog);
+  private readonly tokenLimits = inject(TechnicalTokenLimits);
 
   protected readonly tokens = signal<readonly TechnicalToken[]>([]);
+  /** The download limits' columns (R-UI-181): read once with the list, null for a caller who reads no limits. */
+  protected readonly limits = signal<TokenLimitsView | null>(null);
+  // The ended tokens show no limit: a token without a live secret downloads nothing, and its rule shows again in the active table
+  // when **Issue new secret**, their one action (Q-UI-740), gives it a secret; so the table is a table at 1,024 px (Q-UI-761).
   /** The tokens with a live secret, and the ones without: a table each (R-UI-163). */
   protected readonly active = computed(() => this.tokens().filter((t) => t.state === 'active'));
   protected readonly ended = computed(() => this.tokens().filter((t) => t.state !== 'active'));
@@ -152,6 +160,10 @@ export class TechnicalTokens {
    */
   protected readonly offerAdmin = computed(() => this.isAdmin() && this.account().level === 'instance' && this.account().isAdmin);
   protected readonly canRevoke = computed(() => this.session.has('tokens:revoke') || this.owner());
+  /** Reads the limits: `limits:read`, or an Owner of the account's project (R-LIM-029, R-API-082). */
+  private readonly canReadLimits = computed(() => this.session.has('limits:read') || this.owner());
+  /** Sets a token's limit at its account's place: `limits:write`, or an Owner below its project (R-UI-181, R-LIM-016). */
+  private readonly canSetLimit = computed(() => this.session.has('limits:write') || this.owner());
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.secret.set(null));
@@ -164,11 +176,39 @@ export class TechnicalTokens {
   async reload(): Promise<void> {
     this.loadError.set(null);
     try {
-      this.tokens.set(await this.api.list(this.address()));
+      const [tokens, limits] = await Promise.all([this.api.list(this.address()), this.readLimits()]);
+      this.tokens.set(tokens);
+      this.limits.set(limits);
       this.loaded.set(true);
     } catch (e) {
       this.loadError.set(asApiError(e));
     }
+  }
+
+  /**
+   * What the table shows of the limits: the profiles' names, the default of the account's tokens (Unlimited for an account that
+   * holds `admin`, R-LIM-038) and the last 24 hours of the tokens, read in the instance's usage for a holder of `usage:read` and in
+   * the project's for its Owner.
+   */
+  private async readLimits(): Promise<TokenLimitsView | null> {
+    if (!this.canReadLimits()) return null;
+    const a = this.account();
+    const scope = this.session.has('usage:read') || !a.project ? {} : { project: a.project };
+    const [profiles, lastDay] = await Promise.all([this.tokenLimits.profiles(), this.tokenLimits.lastDay(scope)]);
+    const defaultKey = a.isAdmin ? 'unlimited' : 'technical';
+    const defaultProfile = profiles.find((p) => p.key === defaultKey)?.name ?? (a.isAdmin ? 'Unlimited' : 'Technical');
+    return { profiles, defaultProfile, lastDay, canSet: this.canSetLimit() };
+  }
+
+  /** **Set limit**, **Change limit** and **Remove limit**: the rule dialog at the account's place, capped for an Owner (R-UI-181, R-LIM-016). */
+  protected async setLimit(t: TechnicalToken): Promise<void> {
+    const place = accountPlace(this.address());
+    const capped = !this.session.has('limits:write') && place.kind !== 'instance';
+    await this.act(async () => {
+      const answer = await this.tokenLimits.edit(place, t, capped);
+      if (answer === 'removed') this.notifier.status($localize`:@@tt.limit-removed:Limit removed.`);
+      else if (answer) this.notifier.status($localize`:@@tt.limit-saved:Limit saved.`);
+    });
   }
 
   protected openCreate(): void {

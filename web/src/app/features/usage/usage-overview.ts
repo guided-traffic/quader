@@ -94,7 +94,12 @@ export class UsageOverview {
   protected readonly kinds = KINDS;
   protected readonly periods = PERIODS;
 
-  protected readonly usageScope = computed<UsageScope>(() => ({ project: this.project() ?? null, repository: this.repository() ?? null }));
+  /** The project scope reads the project's list; the instance's filter **Project** narrows the instance's list (Q-UI-755). */
+  protected readonly usageScope = computed<UsageScope>(() =>
+    this.scope() === 'instance'
+      ? { projectFilter: this.project() ?? null }
+      : { project: this.project() ?? null, repository: this.repository() ?? null },
+  );
   protected readonly query = computed<UsageQuery>(() => {
     const sort = SORTS.includes(this.sort() as UsageSort) ? (this.sort() as UsageSort) : undefined;
     return {
@@ -163,7 +168,8 @@ export class UsageOverview {
     { id: 'uncached', label: $localize`:@@usage.col.uncached:From the upstream`, numeric: true, sortable: true },
     { id: 'upstream', label: $localize`:@@usage.col.upstream:Upstream requests`, numeric: true, sortable: true, narrow: true },
     { id: 'refused', label: $localize`:@@usage.col.refused:Refused`, numeric: true, sortable: true, narrow: true },
-    // The meter is as wide as its figure and its state: no least width, so the seven columns fit beside the side bar at 1440 px.
+    // The meter is as wide as its figure and its state, no least width. Upstream requests and Refused give way below 80 rem of the
+    // list (narrowBelow, Q-UI-760): beside the side bar at 1440 px the seven figure headers leave the caller no room.
     { id: 'now', label: $localize`:@@usage.col.now:Now`, sortable: true },
   ]);
 
@@ -212,7 +218,7 @@ export class UsageOverview {
       const page = await this.api.usage(scope, query, null);
       if (generation !== this.generation) return;
       this.rows.set(page.items);
-      this.next.set(page.next ?? page.nextCursor ?? null);
+      this.next.set(page.nextCursor);
       this.mode.set(page.mode);
       this.loaded.set(true);
     } catch (e) {
@@ -233,7 +239,7 @@ export class UsageOverview {
       const page = await this.api.usage(this.usageScope(), this.query(), cursor);
       if (generation !== this.generation) return;
       this.rows.update((r) => [...r, ...page.items]);
-      this.next.set(page.next ?? page.nextCursor ?? null);
+      this.next.set(page.nextCursor);
     } catch (e) {
       this.failure.set(asApiError(e));
     } finally {

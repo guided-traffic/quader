@@ -252,7 +252,7 @@ const row = (r: Partial<UsageRow> & Pick<UsageRow, 'subject'>): UsageRow => ({
 export function sampleUsageRows(now = Date.now()): UsageRow[] {
   return [
     row({
-      subject: { kind: 'user', id: 'alice', name: 'alice', displayName: 'Alice Example' },
+      subject: { kind: 'user', id: 'alice', name: 'alice', displayName: 'Alice Example', deleted: false },
       requests: 48210,
       refused: 3,
       cachedBytes: 1_203_000_000,
@@ -280,6 +280,7 @@ export function sampleUsageRows(now = Date.now()): UsageRow[] {
         name: 'nightly-mirror-of-the-customer-portal-release-artifacts',
         account: 'sa:customer-portal-release-delivery/release-pipeline',
         level: 'project',
+        deleted: false,
       },
       requests: 120400,
       cachedBytes: 640_000_000_000,
@@ -288,7 +289,7 @@ export function sampleUsageRows(now = Date.now()): UsageRow[] {
       utilisation: { ratio: 0.31, figure: 'requestsPerHour', place: { kind: 'project', project: 'customer-portal-release-delivery' } },
     }),
     row({
-      subject: { kind: 'user', id: 'ada', name: 'ada', displayName: 'Ada Admin' },
+      subject: { kind: 'user', id: 'ada', name: 'ada', displayName: 'Ada Admin', deleted: false },
       requests: 310,
       cachedBytes: 45_000_000,
       state: 'unlimited',
@@ -332,14 +333,14 @@ export function sampleHistory(now = Date.parse('2026-11-20T10:00:00Z')): UsagePo
 /** The detail of R-LIM-034's example. */
 export function sampleDetail(mode: LimitMode = 'audit'): UsageDetail {
   return {
-    subject: { kind: 'user', id: 'alice', name: 'alice', displayName: 'Alice Example' },
+    subject: { kind: 'user', id: 'alice', name: 'alice', displayName: 'Alice Example', deleted: false },
     period: { from: '2026-11-19T10:00:00Z', to: '2026-11-20T10:00:00Z' },
     mode,
     totals: { requests: 48210, refused: 3, cachedBytes: 1_203_000_000, uncachedBytes: 50_000_000, upstreamRequests: 120, limitedEvents: 0, wouldLimitEvents: 2 },
     budgets: [
       {
         place: INSTANCE,
-        rule: { id: 'builtin:user', who: { kind: 'every', callerKind: 'user' }, profile: 'standard', builtin: true },
+        rule: { id: 'builtin:user', who: { kind: 'every', callerKind: 'user' }, profile: 'standard', profileName: 'Standard', builtin: true, capped: false },
         figures: {
           requestsPerHour: { limit: 50000, used: 31000, windowSeconds: 3600 },
           cachedBytesPerHour: { limit: 300 * GB, used: 246 * GB, windowSeconds: 3600 },
@@ -356,7 +357,7 @@ export function sampleDetail(mode: LimitMode = 'audit'): UsageDetail {
       },
       {
         place: { kind: 'repository', repository: 'web/npm-remote' },
-        rule: { id: '0193f2a0-7c1e-7b55-9a10-3f2c8d4e5a61', who: { kind: 'group', group: 'contractors' }, profile: 'restricted' },
+        rule: { id: '0193f2a0-7c1e-7b55-9a10-3f2c8d4e5a61', who: { kind: 'group', group: 'contractors' }, profile: 'restricted', profileName: 'Restricted', builtin: false, capped: false },
         figures: {
           requestsPerHour: { limit: 5000, used: 5000, windowSeconds: 3600 },
           cachedBytesPerHour: { limit: 50 * GB, used: 12 * GB, windowSeconds: 3600 },
@@ -398,9 +399,9 @@ export function sampleDetail(mode: LimitMode = 'audit'): UsageDetail {
 /** The explanation of R-LIM-035's example: Alice at web/npm-remote. */
 export function sampleExplanation(): LimitExplanation {
   const place: LimitPlace = { kind: 'repository', repository: 'web/npm-remote' };
-  const r = { id: '0193f2a0-7c1e-7b55-9a10-3f2c8d4e5a61', who: { kind: 'group' as const, group: 'contractors' }, profile: 'restricted' };
+  const r = { id: '0193f2a0-7c1e-7b55-9a10-3f2c8d4e5a61', who: { kind: 'group' as const, group: 'contractors' }, profile: 'restricted', profileName: 'Restricted', builtin: false, capped: true };
   return {
-    subject: { kind: 'user', id: 'alice', name: 'alice', displayName: 'Alice Example' },
+    subject: { kind: 'user', id: 'alice', name: 'alice', displayName: 'Alice Example', deleted: false },
     repository: 'web/npm-remote',
     mode: 'enforce',
     administrator: false,
@@ -409,7 +410,7 @@ export function sampleExplanation(): LimitExplanation {
       { place, step: 'groups', outcome: 'matched', rules: [r] },
     ],
     place,
-    rule: { ...r, capped: true },
+    rule: r,
     effective: { ...PROFILE_FIGURES['restricted']!, uncachedBytesPerHour: 20 * GB },
     clamped: {},
     figureSources: { uncachedBytesPerHour: 'override' },
@@ -455,7 +456,7 @@ export class FakeLimitsApi extends LimitsApi {
   detailValue: UsageDetail = sampleDetail();
   explanation: LimitExplanation = sampleExplanation();
   suggestions: LimitSubjectSuggestion[] = [
-    { kind: 'technicalToken', id: 'tt-1', name: 'deploy-prod', account: 'sa:web/partner', level: 'project' },
+    { kind: 'technicalToken', id: 'tt-1', name: 'deploy-prod', account: 'sa:web/partner', level: 'project', deleted: false },
     { kind: 'ci', id: 'gitlab-internal:4711', issuer: 'gitlab-internal', projectId: '4711', projectPath: 'acme/web' },
   ];
   /** A failure for the next calls of a method, by its name. */
@@ -499,7 +500,7 @@ export class FakeLimitsApi extends LimitsApi {
     this.bodies.push(write);
     this.ifMatch.push(etag);
     const old = this.profileList.find((p) => p.key === key)!;
-    const next: LimitProfile = { ...old, name: write.name, description: write.description, figures: { ...figures({}), ...write.figures } as Figures, version: old.version + 1 };
+    const next: LimitProfile = { ...old, name: write.name, description: write.description ?? '', figures: { ...figures({}), ...write.figures } as Figures, version: old.version + 1 };
     this.profileList = this.profileList.map((p) => (p.key === key ? next : p));
     return { value: next, etag: this.etag(next) };
   }
@@ -671,7 +672,7 @@ export class FakeLimitsApi extends LimitsApi {
     if (query.kind?.length) items = items.filter((r) => query.kind!.includes(r.subject.kind));
     if (query.state) items = items.filter((r) => r.state === query.state);
     if (query.q) items = items.filter((r) => JSON.stringify(r.subject).toLowerCase().includes(query.q!.toLowerCase()));
-    return { period: { from: '2026-11-19T10:00:00Z', to: '2026-11-20T10:00:00Z' }, mode: this.settingsValue.mode, items, next: null };
+    return { period: { from: '2026-11-19T10:00:00Z', to: '2026-11-20T10:00:00Z' }, mode: this.settingsValue.mode, items, nextCursor: null };
   }
 
   override async subjectUsage(scope: UsageScope, kind: UsageSubjectKind, id: string, period: UsagePeriod): Promise<UsageDetail> {

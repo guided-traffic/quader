@@ -52,7 +52,7 @@ export function blockActive(b: LimitBlock, now = Date.now()): boolean {
     >
       @for (b of blocks(); track b.id) {
         <tr>
-          <th scope="row"><quader-caller-cell [view]="caller(b)" /></th>
+          <th scope="row" class="wrap-name"><quader-caller-cell [view]="caller(b)" /></th>
           <td translate="no">{{ place(b) }}</td>
           <td><quader-time-ago [at]="b.startedAt" absolute="title" /></td>
           <td>

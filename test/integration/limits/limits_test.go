@@ -35,9 +35,18 @@ type env struct {
 
 // newEnv starts one replica with Valkey, a generic local repository with one file, an administrator and a reader. The flush
 // intervals are short so the counters and the usage store follow within a second.
-func newEnv(t *testing.T) *env {
+func newEnv(t *testing.T) *env { return newEnvWith(t, envOptions{valkey: true}) }
+
+// envOptions vary the installation of newEnv: Valkey stopped (R-LIM-019), the replica's role, rows written before it starts.
+type envOptions struct {
+	valkey bool
+	role   string
+	seed   func(st *testenv.Stack)
+}
+
+func newEnvWith(t *testing.T, o envOptions) *env {
 	t.Helper()
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "limits", Valkey: true, Env: []string{
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "limits", Valkey: o.valkey, Env: []string{
 		"QUADER_LIMITS_FLUSH_INTERVAL=200ms", "QUADER_LIMITS_USAGE_FLUSH_INTERVAL=1s", "QUADER_LIMITS_PARALLEL_WAIT=0s",
 	}})
 	ada, reader := st.User("ada"), st.User("reader")
@@ -48,7 +57,10 @@ func newEnv(t *testing.T) *env {
 	st.Repository(rFiles, "local", "generic", `{}`)
 	st.Policy("readers", []string{"read"}, []string{rFiles}, reader)
 	st.Policy("writers", []string{"read", "deploy"}, []string{rFiles}, ada)
-	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web-1"})
+	if o.seed != nil {
+		o.seed(st)
+	}
+	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: o.role})
 	e.file = bytes.Repeat([]byte("q"), fileSize)
 	e.filePath = "/files/it/" + rFiles + "/a.bin"
 	if a := st.Do(e.r, "PUT", e.filePath, e.admin, e.file, "Content-Type", "application/octet-stream"); a.Status/100 != 2 {
@@ -134,6 +146,13 @@ func TestR_LIM_026_AuditRefusesNothingNewAndEnforceRefuses(t *testing.T) {
 		a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil)
 		if a.Status != 429 || a.Code(t) != "download_limit_reached" || a.JSON(t)["figure"] != "cachedBytesPerHour" {
 			t.Fatalf("%d %s", a.Status, a.Body)
+		}
+		// R-LIM-020: the refusing figure's RateLimit policy beside the request figures', and the signed-in caller's link.
+		if p := strings.Join(a.Header.Values("RateLimit-Policy"), ", "); !strings.Contains(p, `"cached-hour";q=`) || !strings.Contains(p, `qu="content-bytes"`) {
+			t.Fatalf("RateLimit-Policy %q", p)
+		}
+		if d, _ := a.JSON(t)["detail"].(string); !strings.HasSuffix(d, "Your limits: http://"+testenv.DefaultHost+"/ui/profile/usage") {
+			t.Fatalf("detail %q", d)
 		}
 	})
 	t.Run("R-LIM-012 an administrator is unlimited", func(t *testing.T) {

@@ -205,6 +205,12 @@ func TestR_LIM_021_TheCheckBeforeADownload(t *testing.T) {
 	if e.Extensions["figure"] != "cachedBytesPerHour" || e.RetryAfter < time.Second || e.RetryAfter > time.Hour {
 		t.Fatalf("problem %+v", e)
 	}
+	t.Run("R-LIM-020 the refusal carries the figure's RateLimit policy", func(t *testing.T) {
+		p, ok := c.RefusalPolicy()
+		if !ok || p.Name != "cached-hour" || p.Unit != "content-bytes" || p.Quota != 100*mb || p.Window != time.Hour || p.Reset != e.RetryAfter {
+			t.Fatalf("%+v %v", p, ok)
+		}
+	})
 }
 
 func TestR_LIM_024_ParallelDownloads(t *testing.T) {

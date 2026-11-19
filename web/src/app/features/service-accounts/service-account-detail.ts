@@ -70,12 +70,7 @@ import { TechnicalTokens } from './technical-tokens';
           }
         </form>
 
-        <quader-disclosure
-          i18n-heading="@@sa.details"
-          heading="Details"
-          i18n-hint="@@sa.details-hint"
-          hint="Status, administrator role and when the account was created."
-        >
+        <quader-disclosure i18n-heading="@@sa.details" heading="Details" [hint]="a.project ? detailsHintPlace : detailsHintInstance">
           <dl class="facts">
             <dt i18n="@@sa.status">Status</dt>
             <dd>
@@ -204,6 +199,9 @@ export class ServiceAccountDetail {
       (this.session.has('tokens:revoke') || this.session.isOwnerOf(this.projectKey()))
     );
   });
+  /** The hint of **Details**: only an account of the instance can hold the administrator role (R-AUTH-046, R-AUTHZ-039). */
+  protected readonly detailsHintInstance = $localize`:@@sa.details-hint:Status, administrator role and when the account was created.`;
+  protected readonly detailsHintPlace = $localize`:@@sa.details-hint-place:Status, reference and when the account was created.`;
   /** The hint of the section Advanced names **Revoke all tokens** while it is offered. */
   protected readonly advancedHint = computed(() =>
     this.offersRevokeAll()

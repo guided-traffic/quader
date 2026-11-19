@@ -185,6 +185,9 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     expect(text(row.querySelector('th')!)).toContain('nightly-mirror');
     expect(text(row.querySelector('th')!)).toContain('qdr_sat_7Hq2');
     expect(text(row.querySelector('th')!)).toContain('The nightly mirror job');
+    // Q-UI-761: the expiry stands beside the secret's hint, and the list has no column Expires.
+    expect(text(row.querySelector('th .secondary')!)).toMatch(/^qdr_sat_7Hq2 · (expires .+|never expires)$/);
+    expect([...technicalSection(root).querySelectorAll('thead th')].map((h) => text(h))).not.toContain('Expires');
   });
 
   it('R-UI-181 Q-AUTH-416 an expired token says Expired and gets a new secret through the form without its name', async () => {

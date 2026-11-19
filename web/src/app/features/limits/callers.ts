@@ -141,14 +141,21 @@ export function subjectView(subject: UsageSubject): CallerView {
   const base = { mono: false, deleted: false, translate: false };
   switch (subject.kind) {
     case 'user':
-      return { ...base, icon: 'avatar', seed: subject.name, primary: subject.displayName || subject.name, secondary: `@${subject.name}` };
+      return {
+        ...base,
+        icon: 'avatar',
+        seed: subject.name,
+        primary: subject.displayName || subject.name,
+        secondary: subject.deleted ? deletedSuffix() : `@${subject.name}`,
+        deleted: subject.deleted,
+      };
     case 'technicalToken':
       return {
         ...base,
         icon: 'key',
         primary: subject.name,
-        secondary: subject.deleted ? `${subject.account} ${deletedSuffix()}` : subject.account,
-        deleted: !!subject.deleted,
+        secondary: subject.deleted ? deletedSuffix() : subject.account,
+        deleted: subject.deleted,
       };
     case 'ci':
       return {
@@ -171,20 +178,28 @@ export function subjectView(subject: UsageSubject): CallerView {
 }
 
 /**
- * The title of a caller's page (R-UI-184): "alice", "deploy-prod of sa:web/partner", "198.51.100.23", "acme/web (CI)".
+ * The title of a caller's page (R-UI-184, Q-UI-765): the thing, not its reference. A user's display name ("Priya Raman"), a
+ * technical token's name, a CI project's path, an address; the page's breadcrumb ends with the same words.
  */
 export function subjectTitle(subject: UsageSubject): string {
+  return subjectView(subject).primary;
+}
+
+/**
+ * The reference under a caller's title (R-UI-184, Q-UI-765): a user's `@name`, a CI project's issuer, the background work of
+ * System; null where the line holds it otherwise (a technical token's account is a link there) or the title is the reference
+ * (an address).
+ */
+export function subjectReference(subject: UsageSubject): string | null {
   switch (subject.kind) {
     case 'user':
-      return subject.name;
-    case 'technicalToken':
-      return $localize`:@@usage.title.token:${subject.name}:name: of ${subject.account}:account:`;
     case 'ci':
-      return $localize`:@@usage.title.ci:${subject.projectPath || `${subject.issuer}:${subject.projectId}`}:project: (CI)`;
-    case 'anonymous':
-      return subject.address;
     case 'system':
-      return $localize`:@@usage.kind.system:System`;
+      return subjectView(subject).secondary;
+    case 'technicalToken':
+      return subject.deleted ? deletedSuffix() : null;
+    case 'anonymous':
+      return null;
   }
 }
 

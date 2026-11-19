@@ -4,13 +4,14 @@ import { collectAll } from './pagination';
 import { ApiError } from './problem';
 import { ProjectsApi } from './projects-api';
 import { cleanQuery, seg } from './query';
-import { RepositoriesApi, Versioned } from './repositories-api';
+import { Versioned } from './repositories-api';
 import {
   LimitBlock,
   LimitCeilings,
   LimitExplanation,
   LimitPlace,
   LimitProfile,
+  LimitProjectRow,
   LimitProfileWrite,
   LimitRule,
   LimitRuleWrite,
@@ -34,14 +35,20 @@ export * from './limits-types';
 /*
  * The download limits and the usage overview (R-API-082; bodies R-LIM-031 to R-LIM-035): profiles, rules at the three places,
  * the ceilings of a remote, the mode, a project's maximum, blocks, the explanation, the subjects of the rule dialog and the
- * usage lists and details. The shapes are written by hand in limits-types.ts until the generated client describes them.
+ * usage lists and details. The shapes are the generated client's (limits-types.ts); a path without parameters is read through
+ * the typed `ApiClient.get`.
  */
 
-/** Where a usage list or detail is read: the instance, a project, or one repository of a project. */
+/**
+ * Where a usage list or detail is read: the instance, a project (its Owner's scope), or one repository of a project. The
+ * instance's filter **Project** is `projectFilter`: the instance's list narrowed with `project=` (Q-API-353, Q-UI-755).
+ */
 export interface UsageScope {
   readonly project?: string | null;
   /** The repository's key within `project`. */
   readonly repository?: string | null;
+  /** The instance's list narrowed to one project's repositories; ignored with `project`. */
+  readonly projectFilter?: string | null;
 }
 
 /** The filters of a usage list (R-LIM-034). */
@@ -61,6 +68,16 @@ export interface ProjectLimitsRow {
   readonly maximum: Versioned<ProjectMaximum> | null;
   /** The rules of the project and of its repositories. */
   readonly rules: number;
+}
+
+/** A row of `GET /api/v1/limits/projects` with the project's display name; the maximum's `ETag` is its version (R-API-012). */
+export function projectLimitsRow(row: LimitProjectRow, displayName: string | undefined): ProjectLimitsRow {
+  return {
+    project: row.project,
+    displayName: displayName || row.project,
+    maximum: row.maximum ? { value: row.maximum, etag: `"${row.maximum.version}"` } : null,
+    rules: row.projectRules + row.repositoryRules,
+  };
 }
 
 /** The base path of a place's rules (R-LIM-032). */
@@ -98,6 +115,7 @@ export function usageParams(scope: UsageScope, query: UsageQuery): QueryParams {
     sort: query.sort,
     order: query.order,
     repository: scope.project && scope.repository ? scope.repository : undefined,
+    project: !scope.project && scope.projectFilter ? scope.projectFilter : undefined,
   });
 }
 
@@ -150,7 +168,7 @@ export abstract class LimitsApi {
 
   // A project's maximum (R-LIM-033): null where the project has none.
   abstract maximum(project: string): Promise<Versioned<ProjectMaximum> | null>;
-  /** `etag` null sets a first maximum. */
+  /** `etag` null sets a first maximum, which takes no `If-Match` (Q-API-354). */
   abstract putMaximum(project: string, write: ProjectMaximumWrite, etag: string | null): Promise<Versioned<ProjectMaximum>>;
   abstract deleteMaximum(project: string, etag?: string): Promise<void>;
   /** The rows of the admin area's tab **Projects**: every project with a maximum or a rule. */
@@ -186,28 +204,13 @@ async function all<T>(client: ApiClient, url: string, params: QueryParams = {}):
   return collectAll(client.page<T>(url, params), 200);
 }
 
-/** Runs `work` for every item, at most `width` at a time, keeping the order. */
-async function inParallel<I, O>(items: readonly I[], width: number, work: (item: I) => Promise<O>): Promise<O[]> {
-  const out: O[] = new Array(items.length);
-  let next = 0;
-  const lanes = Array.from({ length: Math.min(width, items.length) }, async () => {
-    while (next < items.length) {
-      const i = next++;
-      out[i] = await work(items[i]!);
-    }
-  });
-  await Promise.all(lanes);
-  return out;
-}
-
 @Injectable()
 export class HttpLimitsApi extends LimitsApi {
   private readonly client = inject(ApiClient);
   private readonly projects = inject(ProjectsApi);
-  private readonly repositories = inject(RepositoriesApi);
 
   override async profiles(): Promise<readonly LimitProfile[]> {
-    return (await this.client.getJson<{ items: LimitProfile[] }>('/api/v1/limits/profiles')).body.items;
+    return (await this.client.get('/api/v1/limits/profiles')).body.items;
   }
 
   override async profile(key: string): Promise<Versioned<LimitProfile>> {
@@ -264,7 +267,7 @@ export class HttpLimitsApi extends LimitsApi {
   }
 
   override async settings(): Promise<Versioned<LimitSettings>> {
-    return versioned(await this.client.getJson<LimitSettings>('/api/v1/limits/settings'));
+    return versioned(await this.client.get('/api/v1/limits/settings'));
   }
 
   override async patchSettings(
@@ -275,7 +278,7 @@ export class HttpLimitsApi extends LimitsApi {
   }
 
   override async modePreview(): Promise<ModePreview> {
-    return (await this.client.getJson<ModePreview>('/api/v1/limits/mode-preview')).body;
+    return (await this.client.get('/api/v1/limits/mode-preview')).body;
   }
 
   override async maximum(project: string): Promise<Versioned<ProjectMaximum> | null> {
@@ -298,20 +301,16 @@ export class HttpLimitsApi extends LimitsApi {
   }
 
   /**
-   * The specification has no operation that lists the projects with a maximum or rules; this reads every project's maximum and
-   * the rules of the project and of its repositories, six at a time. One aggregate operation replaces it here, nowhere else.
+   * The rows of the tab **Projects** from `GET /api/v1/limits/projects` (Q-API-351, Q-UI-756): every project with a maximum or a
+   * rule, in one read; the projects' display names come from the project list.
    */
   override async projectRows(): Promise<readonly ProjectLimitsRow[]> {
-    const projects = await collectAll(this.projects.list({}));
-    const repositories = await this.repositories.listAll();
-    const rows = await inParallel(projects, 6, async (p): Promise<ProjectLimitsRow> => {
-      const maximum = await this.maximum(p.key);
-      const own = await this.rules({ kind: 'project', project: p.key });
-      const repos = repositories.filter((r) => r.project === p.key);
-      const counts = await inParallel(repos, 6, async (r) => (await this.rules({ kind: 'repository', repository: `${p.key}/${r.key}` })).length);
-      return { project: p.key, displayName: p.displayName, maximum, rules: own.length + counts.reduce((a, b) => a + b, 0) };
-    });
-    return rows.filter((r) => r.maximum !== null || r.rules > 0);
+    const [answer, projects] = await Promise.all([
+      this.client.get('/api/v1/limits/projects'),
+      collectAll(this.projects.list({})).catch(() => []),
+    ]);
+    const names = new Map(projects.map((p) => [p.key, p.displayName]));
+    return answer.body.items.map((r) => projectLimitsRow(r, names.get(r.project)));
   }
 
   override async blocks(filter: { readonly active?: boolean; readonly place?: string }): Promise<readonly LimitBlock[]> {
@@ -324,11 +323,11 @@ export class HttpLimitsApi extends LimitsApi {
 
   override async explain(subject: { kind: UsageSubjectKind; id: string }, repository: string): Promise<LimitExplanation> {
     const params = { subject: `${subject.kind}/${subject.id}`, repository };
-    return (await this.client.getJson<LimitExplanation>('/api/v1/limits/explain', { params })).body;
+    return (await this.client.get('/api/v1/limits/explain', { params })).body;
   }
 
   override async myLimits(repository: string): Promise<LimitExplanation> {
-    return (await this.client.getJson<LimitExplanation>('/api/v1/users/me/limits', { params: { repository } })).body;
+    return (await this.client.get('/api/v1/users/me/limits', { params: { repository } })).body;
   }
 
   override async subjects(
@@ -337,8 +336,8 @@ export class HttpLimitsApi extends LimitsApi {
     project: string | null,
     signal?: AbortSignal,
   ): Promise<readonly LimitSubjectSuggestion[]> {
-    const params = cleanQuery({ q, kinds: kinds.join(','), project });
-    return (await this.client.getJson<{ items: LimitSubjectSuggestion[] }>('/api/v1/limits/subjects', { params, signal })).body.items;
+    const params = cleanQuery({ q, kinds: kinds.length ? [...kinds] : undefined, project });
+    return (await this.client.get('/api/v1/limits/subjects', { params, signal })).body.items;
   }
 
   override async usage(scope: UsageScope, query: UsageQuery, cursor: string | null, limit = 50): Promise<UsageList> {
@@ -353,6 +352,6 @@ export class HttpLimitsApi extends LimitsApi {
   }
 
   override async myUsage(period: UsagePeriod): Promise<UsageDetail> {
-    return (await this.client.getJson<UsageDetail>('/api/v1/users/me/usage', { params: { period } })).body;
+    return (await this.client.get('/api/v1/users/me/usage', { params: { period } })).body;
   }
 }

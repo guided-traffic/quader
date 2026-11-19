@@ -1516,132 +1516,282 @@ func (e JobState) Valid() bool {
 	}
 }
 
-// Defines values for LimitExplanationMode.
+// Defines values for LimitExplainCeilingClass.
 const (
-	LimitExplanationModeAudit   LimitExplanationMode = "audit"
-	LimitExplanationModeEnforce LimitExplanationMode = "enforce"
+	LimitExplainCeilingClassAnonymous LimitExplainCeilingClass = "anonymous"
+	LimitExplainCeilingClassSignedIn  LimitExplainCeilingClass = "signedIn"
 )
 
-// Valid indicates whether the value is a known member of the LimitExplanationMode enum.
-func (e LimitExplanationMode) Valid() bool {
+// Valid indicates whether the value is a known member of the LimitExplainCeilingClass enum.
+func (e LimitExplainCeilingClass) Valid() bool {
 	switch e {
-	case LimitExplanationModeAudit:
+	case LimitExplainCeilingClassAnonymous:
 		return true
-	case LimitExplanationModeEnforce:
+	case LimitExplainCeilingClassSignedIn:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LimitPlaceKind.
+// Defines values for LimitExplainStepOutcome.
 const (
-	LimitPlaceKindInstance   LimitPlaceKind = "instance"
-	LimitPlaceKindProject    LimitPlaceKind = "project"
-	LimitPlaceKindRepository LimitPlaceKind = "repository"
+	LimitExplainStepOutcomeMatched LimitExplainStepOutcome = "matched"
+	LimitExplainStepOutcomeNone    LimitExplainStepOutcome = "none"
 )
 
-// Valid indicates whether the value is a known member of the LimitPlaceKind enum.
-func (e LimitPlaceKind) Valid() bool {
+// Valid indicates whether the value is a known member of the LimitExplainStepOutcome enum.
+func (e LimitExplainStepOutcome) Valid() bool {
 	switch e {
-	case LimitPlaceKindInstance:
+	case LimitExplainStepOutcomeMatched:
 		return true
-	case LimitPlaceKindProject:
-		return true
-	case LimitPlaceKindRepository:
+	case LimitExplainStepOutcomeNone:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LimitSettingsMode.
+// Defines values for LimitExplainStepStep.
 const (
-	LimitSettingsModeAudit   LimitSettingsMode = "audit"
-	LimitSettingsModeEnforce LimitSettingsMode = "enforce"
+	Groups LimitExplainStepStep = "groups"
+	Kind   LimitExplainStepStep = "kind"
+	Single LimitExplainStepStep = "single"
 )
 
-// Valid indicates whether the value is a known member of the LimitSettingsMode enum.
-func (e LimitSettingsMode) Valid() bool {
+// Valid indicates whether the value is a known member of the LimitExplainStepStep enum.
+func (e LimitExplainStepStep) Valid() bool {
 	switch e {
-	case LimitSettingsModeAudit:
+	case Groups:
 		return true
-	case LimitSettingsModeEnforce:
+	case Kind:
+		return true
+	case Single:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LimitSettingsPatchMode.
+// Defines values for LimitFigureName.
 const (
-	LimitSettingsPatchModeAudit   LimitSettingsPatchMode = "audit"
-	LimitSettingsPatchModeEnforce LimitSettingsPatchMode = "enforce"
+	BytesPerDay             LimitFigureName = "bytesPerDay"
+	CachedBytesPerHour      LimitFigureName = "cachedBytesPerHour"
+	CachedBytesPerSecond    LimitFigureName = "cachedBytesPerSecond"
+	ParallelDownloads       LimitFigureName = "parallelDownloads"
+	RefusedPerHour          LimitFigureName = "refusedPerHour"
+	RequestsBurst           LimitFigureName = "requestsBurst"
+	RequestsPerHour         LimitFigureName = "requestsPerHour"
+	RequestsPerSecond       LimitFigureName = "requestsPerSecond"
+	UncachedBytesPerHour    LimitFigureName = "uncachedBytesPerHour"
+	UncachedBytesPerSecond  LimitFigureName = "uncachedBytesPerSecond"
+	UpstreamRequestsPerHour LimitFigureName = "upstreamRequestsPerHour"
 )
 
-// Valid indicates whether the value is a known member of the LimitSettingsPatchMode enum.
-func (e LimitSettingsPatchMode) Valid() bool {
+// Valid indicates whether the value is a known member of the LimitFigureName enum.
+func (e LimitFigureName) Valid() bool {
 	switch e {
-	case LimitSettingsPatchModeAudit:
+	case BytesPerDay:
 		return true
-	case LimitSettingsPatchModeEnforce:
+	case CachedBytesPerHour:
+		return true
+	case CachedBytesPerSecond:
+		return true
+	case ParallelDownloads:
+		return true
+	case RefusedPerHour:
+		return true
+	case RequestsBurst:
+		return true
+	case RequestsPerHour:
+		return true
+	case RequestsPerSecond:
+		return true
+	case UncachedBytesPerHour:
+		return true
+	case UncachedBytesPerSecond:
+		return true
+	case UpstreamRequestsPerHour:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LimitWhoCallerKind.
+// Defines values for LimitMode.
 const (
-	LimitWhoCallerKindAdministrator  LimitWhoCallerKind = "administrator"
-	LimitWhoCallerKindAnonymous      LimitWhoCallerKind = "anonymous"
-	LimitWhoCallerKindCi             LimitWhoCallerKind = "ci"
-	LimitWhoCallerKindTechnicalToken LimitWhoCallerKind = "technicalToken"
-	LimitWhoCallerKindUser           LimitWhoCallerKind = "user"
+	LimitModeAudit   LimitMode = "audit"
+	LimitModeEnforce LimitMode = "enforce"
 )
 
-// Valid indicates whether the value is a known member of the LimitWhoCallerKind enum.
-func (e LimitWhoCallerKind) Valid() bool {
+// Valid indicates whether the value is a known member of the LimitMode enum.
+func (e LimitMode) Valid() bool {
 	switch e {
-	case LimitWhoCallerKindAdministrator:
+	case LimitModeAudit:
 		return true
-	case LimitWhoCallerKindAnonymous:
-		return true
-	case LimitWhoCallerKindCi:
-		return true
-	case LimitWhoCallerKindTechnicalToken:
-		return true
-	case LimitWhoCallerKindUser:
+	case LimitModeEnforce:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LimitWhoKind.
+// Defines values for LimitPlaceInstanceKind.
 const (
-	LimitWhoKindAddress        LimitWhoKind = "address"
-	LimitWhoKindCiProject      LimitWhoKind = "ciProject"
-	LimitWhoKindEvery          LimitWhoKind = "every"
-	LimitWhoKindGroup          LimitWhoKind = "group"
-	LimitWhoKindTechnicalToken LimitWhoKind = "technicalToken"
-	LimitWhoKindUser           LimitWhoKind = "user"
+	LimitPlaceInstanceKindInstance LimitPlaceInstanceKind = "instance"
 )
 
-// Valid indicates whether the value is a known member of the LimitWhoKind enum.
-func (e LimitWhoKind) Valid() bool {
+// Valid indicates whether the value is a known member of the LimitPlaceInstanceKind enum.
+func (e LimitPlaceInstanceKind) Valid() bool {
 	switch e {
-	case LimitWhoKindAddress:
+	case LimitPlaceInstanceKindInstance:
 		return true
-	case LimitWhoKindCiProject:
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitPlaceProjectKind.
+const (
+	LimitPlaceProjectKindProject LimitPlaceProjectKind = "project"
+)
+
+// Valid indicates whether the value is a known member of the LimitPlaceProjectKind enum.
+func (e LimitPlaceProjectKind) Valid() bool {
+	switch e {
+	case LimitPlaceProjectKindProject:
 		return true
-	case LimitWhoKindEvery:
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitPlaceRepositoryKind.
+const (
+	LimitPlaceRepositoryKindRepository LimitPlaceRepositoryKind = "repository"
+)
+
+// Valid indicates whether the value is a known member of the LimitPlaceRepositoryKind enum.
+func (e LimitPlaceRepositoryKind) Valid() bool {
+	switch e {
+	case LimitPlaceRepositoryKindRepository:
 		return true
-	case LimitWhoKindGroup:
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoAddressKind.
+const (
+	LimitWhoAddressKindAddress LimitWhoAddressKind = "address"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoAddressKind enum.
+func (e LimitWhoAddressKind) Valid() bool {
+	switch e {
+	case LimitWhoAddressKindAddress:
 		return true
-	case LimitWhoKindTechnicalToken:
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoCIProjectKind.
+const (
+	LimitWhoCIProjectKindCiProject LimitWhoCIProjectKind = "ciProject"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoCIProjectKind enum.
+func (e LimitWhoCIProjectKind) Valid() bool {
+	switch e {
+	case LimitWhoCIProjectKindCiProject:
 		return true
-	case LimitWhoKindUser:
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoEveryCallerKind.
+const (
+	LimitWhoEveryCallerKindAdministrator  LimitWhoEveryCallerKind = "administrator"
+	LimitWhoEveryCallerKindAnonymous      LimitWhoEveryCallerKind = "anonymous"
+	LimitWhoEveryCallerKindCi             LimitWhoEveryCallerKind = "ci"
+	LimitWhoEveryCallerKindTechnicalToken LimitWhoEveryCallerKind = "technicalToken"
+	LimitWhoEveryCallerKindUser           LimitWhoEveryCallerKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoEveryCallerKind enum.
+func (e LimitWhoEveryCallerKind) Valid() bool {
+	switch e {
+	case LimitWhoEveryCallerKindAdministrator:
+		return true
+	case LimitWhoEveryCallerKindAnonymous:
+		return true
+	case LimitWhoEveryCallerKindCi:
+		return true
+	case LimitWhoEveryCallerKindTechnicalToken:
+		return true
+	case LimitWhoEveryCallerKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoEveryKind.
+const (
+	LimitWhoEveryKindEvery LimitWhoEveryKind = "every"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoEveryKind enum.
+func (e LimitWhoEveryKind) Valid() bool {
+	switch e {
+	case LimitWhoEveryKindEvery:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoGroupKind.
+const (
+	LimitWhoGroupKindGroup LimitWhoGroupKind = "group"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoGroupKind enum.
+func (e LimitWhoGroupKind) Valid() bool {
+	switch e {
+	case LimitWhoGroupKindGroup:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoTechnicalTokenKind.
+const (
+	LimitWhoTechnicalTokenKindTechnicalToken LimitWhoTechnicalTokenKind = "technicalToken"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoTechnicalTokenKind enum.
+func (e LimitWhoTechnicalTokenKind) Valid() bool {
+	switch e {
+	case LimitWhoTechnicalTokenKindTechnicalToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitWhoUserKind.
+const (
+	LimitWhoUserKindUser LimitWhoUserKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the LimitWhoUserKind enum.
+func (e LimitWhoUserKind) Valid() bool {
+	switch e {
+	case LimitWhoUserKindUser:
 		return true
 	default:
 		return false
@@ -3421,66 +3571,186 @@ func (e UpstreamTestResultErrorCode) Valid() bool {
 	}
 }
 
-// Defines values for UsageDetailMode.
+// Defines values for UsageCredentialSessionKind.
 const (
-	UsageDetailModeAudit   UsageDetailMode = "audit"
-	UsageDetailModeEnforce UsageDetailMode = "enforce"
+	UsageCredentialSessionKindSession UsageCredentialSessionKind = "session"
 )
 
-// Valid indicates whether the value is a known member of the UsageDetailMode enum.
-func (e UsageDetailMode) Valid() bool {
+// Valid indicates whether the value is a known member of the UsageCredentialSessionKind enum.
+func (e UsageCredentialSessionKind) Valid() bool {
 	switch e {
-	case UsageDetailModeAudit:
-		return true
-	case UsageDetailModeEnforce:
+	case UsageCredentialSessionKindSession:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for UsageListMode.
+// Defines values for UsageCredentialTokenKind.
 const (
-	UsageListModeAudit   UsageListMode = "audit"
-	UsageListModeEnforce UsageListMode = "enforce"
+	UsageCredentialTokenKindToken UsageCredentialTokenKind = "token"
 )
 
-// Valid indicates whether the value is a known member of the UsageListMode enum.
-func (e UsageListMode) Valid() bool {
+// Valid indicates whether the value is a known member of the UsageCredentialTokenKind enum.
+func (e UsageCredentialTokenKind) Valid() bool {
 	switch e {
-	case UsageListModeAudit:
-		return true
-	case UsageListModeEnforce:
+	case UsageCredentialTokenKindToken:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for UsageRowState.
+// Defines values for UsageState.
 const (
-	UsageRowStateBlocked        UsageRowState = "blocked"
-	UsageRowStateClose          UsageRowState = "close"
-	UsageRowStateLimitReached   UsageRowState = "limitReached"
-	UsageRowStateNormal         UsageRowState = "normal"
-	UsageRowStateUnlimited      UsageRowState = "unlimited"
-	UsageRowStateWouldBeLimited UsageRowState = "wouldBeLimited"
+	UsageStateBlocked        UsageState = "blocked"
+	UsageStateClose          UsageState = "close"
+	UsageStateLimitReached   UsageState = "limitReached"
+	UsageStateNormal         UsageState = "normal"
+	UsageStateUnlimited      UsageState = "unlimited"
+	UsageStateWouldBeLimited UsageState = "wouldBeLimited"
 )
 
-// Valid indicates whether the value is a known member of the UsageRowState enum.
-func (e UsageRowState) Valid() bool {
+// Valid indicates whether the value is a known member of the UsageState enum.
+func (e UsageState) Valid() bool {
 	switch e {
-	case UsageRowStateBlocked:
+	case UsageStateBlocked:
 		return true
-	case UsageRowStateClose:
+	case UsageStateClose:
 		return true
-	case UsageRowStateLimitReached:
+	case UsageStateLimitReached:
 		return true
-	case UsageRowStateNormal:
+	case UsageStateNormal:
 		return true
-	case UsageRowStateUnlimited:
+	case UsageStateUnlimited:
 		return true
-	case UsageRowStateWouldBeLimited:
+	case UsageStateWouldBeLimited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageSubjectAnonymousKind.
+const (
+	UsageSubjectAnonymousKindAnonymous UsageSubjectAnonymousKind = "anonymous"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectAnonymousKind enum.
+func (e UsageSubjectAnonymousKind) Valid() bool {
+	switch e {
+	case UsageSubjectAnonymousKindAnonymous:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageSubjectCIKind.
+const (
+	UsageSubjectCIKindCi UsageSubjectCIKind = "ci"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectCIKind enum.
+func (e UsageSubjectCIKind) Valid() bool {
+	switch e {
+	case UsageSubjectCIKindCi:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageSubjectKind.
+const (
+	UsageSubjectKindAnonymous      UsageSubjectKind = "anonymous"
+	UsageSubjectKindCi             UsageSubjectKind = "ci"
+	UsageSubjectKindSystem         UsageSubjectKind = "system"
+	UsageSubjectKindTechnicalToken UsageSubjectKind = "technicalToken"
+	UsageSubjectKindUser           UsageSubjectKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectKind enum.
+func (e UsageSubjectKind) Valid() bool {
+	switch e {
+	case UsageSubjectKindAnonymous:
+		return true
+	case UsageSubjectKindCi:
+		return true
+	case UsageSubjectKindSystem:
+		return true
+	case UsageSubjectKindTechnicalToken:
+		return true
+	case UsageSubjectKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageSubjectSystemKind.
+const (
+	UsageSubjectSystemKindSystem UsageSubjectSystemKind = "system"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectSystemKind enum.
+func (e UsageSubjectSystemKind) Valid() bool {
+	switch e {
+	case UsageSubjectSystemKindSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageSubjectTechnicalTokenKind.
+const (
+	UsageSubjectTechnicalTokenKindTechnicalToken UsageSubjectTechnicalTokenKind = "technicalToken"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectTechnicalTokenKind enum.
+func (e UsageSubjectTechnicalTokenKind) Valid() bool {
+	switch e {
+	case UsageSubjectTechnicalTokenKindTechnicalToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageSubjectTechnicalTokenLevel.
+const (
+	UsageSubjectTechnicalTokenLevelInstance    UsageSubjectTechnicalTokenLevel = "instance"
+	UsageSubjectTechnicalTokenLevelLessThannil UsageSubjectTechnicalTokenLevel = "<nil>"
+	UsageSubjectTechnicalTokenLevelProject     UsageSubjectTechnicalTokenLevel = "project"
+	UsageSubjectTechnicalTokenLevelRepository  UsageSubjectTechnicalTokenLevel = "repository"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectTechnicalTokenLevel enum.
+func (e UsageSubjectTechnicalTokenLevel) Valid() bool {
+	switch e {
+	case UsageSubjectTechnicalTokenLevelInstance:
+		return true
+	case UsageSubjectTechnicalTokenLevelLessThannil:
+		return true
+	case UsageSubjectTechnicalTokenLevelProject:
+		return true
+	case UsageSubjectTechnicalTokenLevelRepository:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UsageSubjectUserKind.
+const (
+	UsageSubjectUserKindUser UsageSubjectUserKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectUserKind enum.
+func (e UsageSubjectUserKind) Valid() bool {
+	switch e {
+	case UsageSubjectUserKindUser:
 		return true
 	default:
 		return false
@@ -7820,22 +8090,30 @@ type LastReencryption struct {
 
 // LimitAssignment defines model for LimitAssignment.
 type LimitAssignment struct {
-	Builtin   bool            `json:"builtin"`
-	Capped    bool            `json:"capped"`
-	Clamped   map[string]*int `json:"clamped"`
-	CreatedAt *time.Time      `json:"createdAt,omitempty"`
-	CreatedBy *string         `json:"createdBy,omitempty"`
+	Builtin bool `json:"builtin"`
+	Capped  bool `json:"capped"`
 
-	// Effective Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
-	Effective LimitFigures    `json:"effective"`
-	Id        string          `json:"id"`
-	Note      string          `json:"note"`
-	Overrides map[string]*int `json:"overrides"`
-	Place     LimitPlace      `json:"place"`
-	Profile   string          `json:"profile"`
-	UpdatedAt *time.Time      `json:"updatedAt,omitempty"`
-	UpdatedBy *string         `json:"updatedBy,omitempty"`
-	Version   int64           `json:"version"`
+	// Clamped Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+	// In a profile's write, a figure left out is unlimited (R-LIM-031).
+	Clamped   LimitFigureOverrides `json:"clamped"`
+	CreatedAt time.Time            `json:"createdAt"`
+	CreatedBy *string              `json:"createdBy"`
+
+	// Effective Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
+	Effective LimitFigures `json:"effective"`
+	Id        string       `json:"id"`
+	Note      string       `json:"note"`
+
+	// Overrides Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+	// In a profile's write, a figure left out is unlimited (R-LIM-031).
+	Overrides LimitFigureOverrides `json:"overrides"`
+
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	Place     LimitPlace `json:"place"`
+	Profile   string     `json:"profile"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+	UpdatedBy *string    `json:"updatedBy"`
+	Version   int64      `json:"version"`
 
 	// Who The caller a rule names (R-LIM-011, R-LIM-032).
 	Who LimitWho `json:"who"`
@@ -7844,10 +8122,10 @@ type LimitAssignment struct {
 // LimitAssignmentList defines model for LimitAssignmentList.
 type LimitAssignmentList struct {
 	Items      []LimitAssignment `json:"items"`
-	NextCursor *string           `json:"nextCursor,omitempty"`
+	NextCursor *string           `json:"nextCursor"`
 }
 
-// LimitAssignmentWrite defines model for LimitAssignmentWrite.
+// LimitAssignmentWrite A rule's write; `who` on create, immutable after (a different one on replace answers 409 `assignment_builtin`).
 type LimitAssignmentWrite struct {
 	Builtin   *bool                   `json:"builtin,omitempty"`
 	Capped    *bool                   `json:"capped,omitempty"`
@@ -7857,7 +8135,10 @@ type LimitAssignmentWrite struct {
 	Effective *map[string]interface{} `json:"effective,omitempty"`
 	Id        *string                 `json:"id,omitempty"`
 	Note      *string                 `json:"note,omitempty"`
-	Overrides *map[string]*int        `json:"overrides,omitempty"`
+
+	// Overrides Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+	// In a profile's write, a figure left out is unlimited (R-LIM-031).
+	Overrides *LimitFigureOverrides   `json:"overrides,omitempty"`
 	Place     *map[string]interface{} `json:"place,omitempty"`
 	Profile   string                  `json:"profile"`
 	UpdatedAt *string                 `json:"updatedAt,omitempty"`
@@ -7865,32 +8146,36 @@ type LimitAssignmentWrite struct {
 	Version   *int                    `json:"version,omitempty"`
 
 	// Who The caller a rule names (R-LIM-011, R-LIM-032).
-	Who LimitWho `json:"who"`
+	Who *LimitWho `json:"who,omitempty"`
 }
 
 // LimitBlock defines model for LimitBlock.
 type LimitBlock struct {
-	Id        string                 `json:"id"`
-	LiftedAt  *time.Time             `json:"liftedAt,omitempty"`
-	LiftedBy  *string                `json:"liftedBy,omitempty"`
-	Limit     int                    `json:"limit"`
-	Place     LimitPlace             `json:"place"`
-	Refused   int                    `json:"refused"`
-	StartedAt time.Time              `json:"startedAt"`
-	Subject   map[string]interface{} `json:"subject"`
-	Until     time.Time              `json:"until"`
+	Id       string     `json:"id"`
+	LiftedAt *time.Time `json:"liftedAt"`
+	LiftedBy *string    `json:"liftedBy"`
+	Limit    int64      `json:"limit"`
+
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	Place     LimitPlace `json:"place"`
+	Refused   int64      `json:"refused"`
+	StartedAt time.Time  `json:"startedAt"`
+
+	// Subject A subject of the usage store as the API names it (R-LIM-034).
+	Subject UsageSubject `json:"subject"`
+	Until   time.Time    `json:"until"`
 }
 
 // LimitBlockList defines model for LimitBlockList.
 type LimitBlockList struct {
 	Items      []LimitBlock `json:"items"`
-	NextCursor *string      `json:"nextCursor,omitempty"`
+	NextCursor *string      `json:"nextCursor"`
 }
 
 // LimitCeiling defines model for LimitCeiling.
 type LimitCeiling struct {
-	UncachedBytesPerHour    *int64 `json:"uncachedBytesPerHour,omitempty"`
-	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour,omitempty"`
+	UncachedBytesPerHour    *int64 `json:"uncachedBytesPerHour"`
+	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour"`
 }
 
 // LimitCeilings defines model for LimitCeilings.
@@ -7898,9 +8183,11 @@ type LimitCeilings struct {
 	Anonymous  LimitCeiling `json:"anonymous"`
 	Repository string       `json:"repository"`
 	SignedIn   LimitCeiling `json:"signedIn"`
-	UpdatedAt  *time.Time   `json:"updatedAt,omitempty"`
-	UpdatedBy  *string      `json:"updatedBy,omitempty"`
-	Version    int64        `json:"version"`
+
+	// UpdatedAt `null` while no ceiling was ever set.
+	UpdatedAt *time.Time `json:"updatedAt"`
+	UpdatedBy *string    `json:"updatedBy"`
+	Version   int64      `json:"version"`
 }
 
 // LimitCeilingsWrite defines model for LimitCeilingsWrite.
@@ -7913,28 +8200,68 @@ type LimitCeilingsWrite struct {
 	Version    *int         `json:"version,omitempty"`
 }
 
-// LimitExplanation defines model for LimitExplanation.
-type LimitExplanation struct {
-	Administrator bool                    `json:"administrator"`
-	Ceiling       *map[string]interface{} `json:"ceiling,omitempty"`
-	Clamped       map[string]interface{}  `json:"clamped"`
-
-	// Effective Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
-	Effective     LimitFigures             `json:"effective"`
-	FigureSources map[string]string        `json:"figureSources"`
-	Mode          LimitExplanationMode     `json:"mode"`
-	Place         LimitPlace               `json:"place"`
-	Repository    *string                  `json:"repository,omitempty"`
-	Rule          *map[string]interface{}  `json:"rule"`
-	Steps         []map[string]interface{} `json:"steps"`
-	Subject       map[string]interface{}   `json:"subject"`
+// LimitExplainCeiling defines model for LimitExplainCeiling.
+type LimitExplainCeiling struct {
+	Class                   LimitExplainCeilingClass `json:"class"`
+	UncachedBytesPerHour    *int64                   `json:"uncachedBytesPerHour"`
+	UpstreamRequestsPerHour *int64                   `json:"upstreamRequestsPerHour"`
 }
 
-// LimitExplanationMode defines model for LimitExplanation.Mode.
-type LimitExplanationMode string
+// LimitExplainCeilingClass defines model for LimitExplainCeiling.Class.
+type LimitExplainCeilingClass string
 
-// LimitFigures Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
-type LimitFigures struct {
+// LimitExplainStep defines model for LimitExplainStep.
+type LimitExplainStep struct {
+	Outcome LimitExplainStepOutcome `json:"outcome"`
+
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	Place LimitPlace           `json:"place"`
+	Rules *[]LimitRuleRef      `json:"rules,omitempty"`
+	Step  LimitExplainStepStep `json:"step"`
+}
+
+// LimitExplainStepOutcome defines model for LimitExplainStep.Outcome.
+type LimitExplainStepOutcome string
+
+// LimitExplainStepStep defines model for LimitExplainStep.Step.
+type LimitExplainStepStep string
+
+// LimitExplanation defines model for LimitExplanation.
+type LimitExplanation struct {
+	Administrator bool `json:"administrator"`
+
+	// Ceiling The remote's ceiling of the subject's class; `null` for a repository that is not remote.
+	Ceiling *LimitExplainCeiling `json:"ceiling"`
+
+	// Clamped Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+	// In a profile's write, a figure left out is unlimited (R-LIM-031).
+	Clamped LimitFigureOverrides `json:"clamped"`
+
+	// Effective Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
+	Effective LimitFigures `json:"effective"`
+
+	// FigureSources Per figure that did not come from the rule's profile: `override`, `group:<name>` or `clamp`.
+	FigureSources map[string]string `json:"figureSources"`
+	Mode          LimitMode         `json:"mode"`
+
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	Place      LimitPlace `json:"place"`
+	Repository *string    `json:"repository"`
+
+	// Rule The rule that applies; `null` for a subject no rule matched (a store without the built-in rules).
+	Rule  *LimitRuleRef      `json:"rule"`
+	Steps []LimitExplainStep `json:"steps"`
+
+	// Subject A subject of the usage store as the API names it (R-LIM-034).
+	Subject UsageSubject `json:"subject"`
+}
+
+// LimitFigureName defines model for LimitFigureName.
+type LimitFigureName string
+
+// LimitFigureOverrides Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+// In a profile's write, a figure left out is unlimited (R-LIM-031).
+type LimitFigureOverrides struct {
 	BytesPerDay             *int64 `json:"bytesPerDay,omitempty"`
 	CachedBytesPerHour      *int64 `json:"cachedBytesPerHour,omitempty"`
 	CachedBytesPerSecond    *int64 `json:"cachedBytesPerSecond,omitempty"`
@@ -7948,53 +8275,95 @@ type LimitFigures struct {
 	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour,omitempty"`
 }
 
+// LimitFigures Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
+type LimitFigures struct {
+	BytesPerDay             *int64 `json:"bytesPerDay"`
+	CachedBytesPerHour      *int64 `json:"cachedBytesPerHour"`
+	CachedBytesPerSecond    *int64 `json:"cachedBytesPerSecond"`
+	ParallelDownloads       *int64 `json:"parallelDownloads"`
+	RefusedPerHour          *int64 `json:"refusedPerHour"`
+	RequestsBurst           *int64 `json:"requestsBurst"`
+	RequestsPerHour         *int64 `json:"requestsPerHour"`
+	RequestsPerSecond       *int64 `json:"requestsPerSecond"`
+	UncachedBytesPerHour    *int64 `json:"uncachedBytesPerHour"`
+	UncachedBytesPerSecond  *int64 `json:"uncachedBytesPerSecond"`
+	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour"`
+}
+
+// LimitMode defines model for LimitMode.
+type LimitMode string
+
 // LimitModePreview defines model for LimitModePreview.
 type LimitModePreview struct {
 	BlockedSubjects int `json:"blockedSubjects"`
 	ByFigure        []struct {
-		Events   *int    `json:"events,omitempty"`
-		Figure   *string `json:"figure,omitempty"`
-		Subjects *int    `json:"subjects,omitempty"`
+		Events int64 `json:"events"`
+
+		// Figure A figure's API name, or `ceiling.anonymous`, `ceiling.signedIn`.
+		Figure   string `json:"figure"`
+		Subjects int    `json:"subjects"`
 	} `json:"byFigure"`
 	ByKind []struct {
-		Kind     *string `json:"kind,omitempty"`
-		Subjects *int    `json:"subjects,omitempty"`
+		Kind     UsageSubjectKind `json:"kind"`
+		Subjects int              `json:"subjects"`
 	} `json:"byKind"`
-	Period struct {
-		From *time.Time `json:"from,omitempty"`
-		To   *time.Time `json:"to,omitempty"`
-	} `json:"period"`
-	RefusedRequests int `json:"refusedRequests"`
-	SlowedDownloads int `json:"slowedDownloads"`
-	Subjects        int `json:"subjects"`
+	Period          UsagePeriod `json:"period"`
+	RefusedRequests int64       `json:"refusedRequests"`
+	SlowedDownloads int64       `json:"slowedDownloads"`
+	Subjects        int         `json:"subjects"`
 }
 
-// LimitPlace defines model for LimitPlace.
+// LimitPlace Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
 type LimitPlace struct {
-	Kind       LimitPlaceKind `json:"kind"`
-	Project    *string        `json:"project,omitempty"`
-	Repository *string        `json:"repository,omitempty"`
+	union json.RawMessage
 }
 
-// LimitPlaceKind defines model for LimitPlace.Kind.
-type LimitPlaceKind string
+// LimitPlaceInstance defines model for LimitPlaceInstance.
+type LimitPlaceInstance struct {
+	Kind LimitPlaceInstanceKind `json:"kind"`
+}
+
+// LimitPlaceInstanceKind defines model for LimitPlaceInstance.Kind.
+type LimitPlaceInstanceKind string
+
+// LimitPlaceProject defines model for LimitPlaceProject.
+type LimitPlaceProject struct {
+	Kind LimitPlaceProjectKind `json:"kind"`
+
+	// Project The project's key.
+	Project string `json:"project"`
+}
+
+// LimitPlaceProjectKind defines model for LimitPlaceProject.Kind.
+type LimitPlaceProjectKind string
+
+// LimitPlaceRepository defines model for LimitPlaceRepository.
+type LimitPlaceRepository struct {
+	Kind LimitPlaceRepositoryKind `json:"kind"`
+
+	// Repository `<projectKey>/<repoKey>`.
+	Repository string `json:"repository"`
+}
+
+// LimitPlaceRepositoryKind defines model for LimitPlaceRepository.Kind.
+type LimitPlaceRepositoryKind string
 
 // LimitProfile defines model for LimitProfile.
 type LimitProfile struct {
-	Builtin     bool       `json:"builtin"`
-	CreatedAt   *time.Time `json:"createdAt,omitempty"`
-	CreatedBy   *string    `json:"createdBy,omitempty"`
-	Description string     `json:"description"`
+	Builtin     bool      `json:"builtin"`
+	CreatedAt   time.Time `json:"createdAt"`
+	CreatedBy   *string   `json:"createdBy"`
+	Description string    `json:"description"`
 
-	// Figures Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+	// Figures Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
 	Figures   LimitFigures `json:"figures"`
 	Key       string       `json:"key"`
 	Name      string       `json:"name"`
-	UpdatedAt *time.Time   `json:"updatedAt,omitempty"`
-	UpdatedBy *string      `json:"updatedBy,omitempty"`
+	UpdatedAt time.Time    `json:"updatedAt"`
+	UpdatedBy *string      `json:"updatedBy"`
 	UsedBy    struct {
-		Assignments     *int `json:"assignments,omitempty"`
-		ProjectMaximums *int `json:"projectMaximums,omitempty"`
+		Assignments     int `json:"assignments"`
+		ProjectMaximums int `json:"projectMaximums"`
 	} `json:"usedBy"`
 	Version int64 `json:"version"`
 }
@@ -8002,7 +8371,7 @@ type LimitProfile struct {
 // LimitProfileList defines model for LimitProfileList.
 type LimitProfileList struct {
 	Items      []LimitProfile `json:"items"`
-	NextCursor *string        `json:"nextCursor,omitempty"`
+	NextCursor *string        `json:"nextCursor"`
 }
 
 // LimitProfileWrite defines model for LimitProfileWrite.
@@ -8012,8 +8381,11 @@ type LimitProfileWrite struct {
 	CreatedBy   *string `json:"createdBy,omitempty"`
 	Description *string `json:"description,omitempty"`
 
-	// Figures Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
-	Figures   LimitFigures            `json:"figures"`
+	// Figures Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+	// In a profile's write, a figure left out is unlimited (R-LIM-031).
+	Figures LimitFigureOverrides `json:"figures"`
+
+	// Key On create only; immutable.
 	Key       *string                 `json:"key,omitempty"`
 	Name      string                  `json:"name"`
 	UpdatedAt *string                 `json:"updatedAt,omitempty"`
@@ -8024,86 +8396,170 @@ type LimitProfileWrite struct {
 
 // LimitProjectList defines model for LimitProjectList.
 type LimitProjectList struct {
-	Items []struct {
-		Maximum         *map[string]interface{} `json:"maximum"`
-		Project         string                  `json:"project"`
-		ProjectRules    int                     `json:"projectRules"`
-		RepositoryRules int                     `json:"repositoryRules"`
-	} `json:"items"`
-	NextCursor *string `json:"nextCursor,omitempty"`
+	Items      []LimitProjectRow `json:"items"`
+	NextCursor *string           `json:"nextCursor"`
 }
 
 // LimitProjectMaximum defines model for LimitProjectMaximum.
 type LimitProjectMaximum struct {
-	// Effective Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
-	Effective LimitFigures    `json:"effective"`
-	Overrides map[string]*int `json:"overrides"`
-	Profile   string          `json:"profile"`
-	Project   string          `json:"project"`
-	UpdatedAt *time.Time      `json:"updatedAt,omitempty"`
-	UpdatedBy *string         `json:"updatedBy,omitempty"`
-	Version   int64           `json:"version"`
+	// Effective Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
+	Effective LimitFigures `json:"effective"`
+
+	// Overrides Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+	// In a profile's write, a figure left out is unlimited (R-LIM-031).
+	Overrides LimitFigureOverrides `json:"overrides"`
+	Profile   string               `json:"profile"`
+	Project   string               `json:"project"`
+	UpdatedAt time.Time            `json:"updatedAt"`
+	UpdatedBy *string              `json:"updatedBy"`
+	Version   int64                `json:"version"`
 }
 
 // LimitProjectMaximumWrite defines model for LimitProjectMaximumWrite.
 type LimitProjectMaximumWrite struct {
 	Effective *map[string]interface{} `json:"effective,omitempty"`
-	Overrides *map[string]*int        `json:"overrides,omitempty"`
-	Profile   string                  `json:"profile"`
-	Project   *string                 `json:"project,omitempty"`
-	UpdatedAt *string                 `json:"updatedAt,omitempty"`
-	UpdatedBy *string                 `json:"updatedBy,omitempty"`
-	Version   *int                    `json:"version,omitempty"`
+
+	// Overrides Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+	// In a profile's write, a figure left out is unlimited (R-LIM-031).
+	Overrides *LimitFigureOverrides `json:"overrides,omitempty"`
+	Profile   string                `json:"profile"`
+	Project   *string               `json:"project,omitempty"`
+	UpdatedAt *string               `json:"updatedAt,omitempty"`
+	UpdatedBy *string               `json:"updatedBy,omitempty"`
+	Version   *int                  `json:"version,omitempty"`
+}
+
+// LimitProjectRow defines model for LimitProjectRow.
+type LimitProjectRow struct {
+	Maximum         *LimitProjectMaximum `json:"maximum"`
+	Project         string               `json:"project"`
+	ProjectRules    int                  `json:"projectRules"`
+	RepositoryRules int                  `json:"repositoryRules"`
+}
+
+// LimitRuleRef The rule a budget key stands under, as the detail and the explanation name it (`builtin:<kind>` for a built-in rule).
+type LimitRuleRef struct {
+	Builtin bool   `json:"builtin"`
+	Capped  bool   `json:"capped"`
+	Id      string `json:"id"`
+	Profile string `json:"profile"`
+
+	// ProfileName The profile's name, for a caller who reads no profiles (its own usage).
+	ProfileName string `json:"profileName"`
+
+	// Who The caller a rule names (R-LIM-011, R-LIM-032).
+	Who LimitWho `json:"who"`
 }
 
 // LimitSettings defines model for LimitSettings.
 type LimitSettings struct {
-	BlockSeconds int               `json:"blockSeconds"`
-	Mode         LimitSettingsMode `json:"mode"`
-	UpdatedAt    *time.Time        `json:"updatedAt,omitempty"`
-	UpdatedBy    *string           `json:"updatedBy,omitempty"`
-	Version      int64             `json:"version"`
+	BlockSeconds int       `json:"blockSeconds"`
+	Mode         LimitMode `json:"mode"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	UpdatedBy    *string   `json:"updatedBy"`
+	Version      int64     `json:"version"`
 }
-
-// LimitSettingsMode defines model for LimitSettings.Mode.
-type LimitSettingsMode string
 
 // LimitSettingsPatch defines model for LimitSettingsPatch.
 type LimitSettingsPatch struct {
-	BlockSeconds *int                    `json:"blockSeconds,omitempty"`
-	Mode         *LimitSettingsPatchMode `json:"mode,omitempty"`
+	BlockSeconds *int       `json:"blockSeconds,omitempty"`
+	Mode         *LimitMode `json:"mode,omitempty"`
 }
 
-// LimitSettingsPatchMode defines model for LimitSettingsPatch.Mode.
-type LimitSettingsPatchMode string
+// LimitSubjectSuggestion defines model for LimitSubjectSuggestion.
+type LimitSubjectSuggestion struct {
+	union json.RawMessage
+}
 
 // LimitSubjectSuggestions defines model for LimitSubjectSuggestions.
 type LimitSubjectSuggestions struct {
-	Items []map[string]interface{} `json:"items"`
+	Items []LimitSubjectSuggestion `json:"items"`
 }
 
 // LimitWho The caller a rule names (R-LIM-011, R-LIM-032).
 type LimitWho struct {
-	Account        *string             `json:"account,omitempty"`
-	CallerKind     *LimitWhoCallerKind `json:"callerKind,omitempty"`
-	Deleted        *bool               `json:"deleted,omitempty"`
-	DisplayName    *string             `json:"displayName,omitempty"`
-	Group          *string             `json:"group,omitempty"`
-	Issuer         *string             `json:"issuer,omitempty"`
-	Kind           LimitWhoKind        `json:"kind"`
-	Name           *string             `json:"name,omitempty"`
-	Prefix         *string             `json:"prefix,omitempty"`
-	ProjectId      *string             `json:"projectId,omitempty"`
-	ProjectPath    *string             `json:"projectPath,omitempty"`
-	TechnicalToken *string             `json:"technicalToken,omitempty"`
-	User           *string             `json:"user,omitempty"`
+	union json.RawMessage
 }
 
-// LimitWhoCallerKind defines model for LimitWho.CallerKind.
-type LimitWhoCallerKind string
+// LimitWhoAddress defines model for LimitWhoAddress.
+type LimitWhoAddress struct {
+	Kind LimitWhoAddressKind `json:"kind"`
 
-// LimitWhoKind defines model for LimitWho.Kind.
-type LimitWhoKind string
+	// Prefix An address or a prefix, stored canonical.
+	Prefix string `json:"prefix"`
+}
+
+// LimitWhoAddressKind defines model for LimitWhoAddress.Kind.
+type LimitWhoAddressKind string
+
+// LimitWhoCIProject defines model for LimitWhoCIProject.
+type LimitWhoCIProject struct {
+	Deleted *bool `json:"deleted,omitempty"`
+
+	// Issuer The CI issuer's name.
+	Issuer    string                `json:"issuer"`
+	Kind      LimitWhoCIProjectKind `json:"kind"`
+	ProjectId string                `json:"projectId"`
+
+	// ProjectPath The path the issuer's tokens named last; absent when none is known.
+	ProjectPath *string `json:"projectPath,omitempty"`
+}
+
+// LimitWhoCIProjectKind defines model for LimitWhoCIProject.Kind.
+type LimitWhoCIProjectKind string
+
+// LimitWhoEvery defines model for LimitWhoEvery.
+type LimitWhoEvery struct {
+	CallerKind LimitWhoEveryCallerKind `json:"callerKind"`
+	Kind       LimitWhoEveryKind       `json:"kind"`
+}
+
+// LimitWhoEveryCallerKind defines model for LimitWhoEvery.CallerKind.
+type LimitWhoEveryCallerKind string
+
+// LimitWhoEveryKind defines model for LimitWhoEvery.Kind.
+type LimitWhoEveryKind string
+
+// LimitWhoGroup defines model for LimitWhoGroup.
+type LimitWhoGroup struct {
+	Deleted     *bool   `json:"deleted,omitempty"`
+	DisplayName *string `json:"displayName,omitempty"`
+
+	// Group The group's name.
+	Group string            `json:"group"`
+	Kind  LimitWhoGroupKind `json:"kind"`
+}
+
+// LimitWhoGroupKind defines model for LimitWhoGroup.Kind.
+type LimitWhoGroupKind string
+
+// LimitWhoTechnicalToken defines model for LimitWhoTechnicalToken.
+type LimitWhoTechnicalToken struct {
+	// Account The account's reference, `sa:web/partner`.
+	Account *string                    `json:"account,omitempty"`
+	Deleted *bool                      `json:"deleted,omitempty"`
+	Kind    LimitWhoTechnicalTokenKind `json:"kind"`
+	Name    *string                    `json:"name,omitempty"`
+
+	// TechnicalToken The technical token's ID.
+	TechnicalToken openapi_types.UUID `json:"technicalToken"`
+}
+
+// LimitWhoTechnicalTokenKind defines model for LimitWhoTechnicalToken.Kind.
+type LimitWhoTechnicalTokenKind string
+
+// LimitWhoUser defines model for LimitWhoUser.
+type LimitWhoUser struct {
+	Deleted     *bool            `json:"deleted,omitempty"`
+	DisplayName *string          `json:"displayName,omitempty"`
+	Kind        LimitWhoUserKind `json:"kind"`
+
+	// User The username.
+	User string `json:"user"`
+}
+
+// LimitWhoUserKind defines model for LimitWhoUser.Kind.
+type LimitWhoUserKind string
 
 // LocalFormatName The formats whose classes contain `local`. The create form offers these for a local repository.
 type LocalFormatName string
@@ -10855,52 +11311,258 @@ type UpstreamTestResult struct {
 // UpstreamTestResultErrorCode defines model for UpstreamTestResult.Error.Code.
 type UpstreamTestResultErrorCode string
 
-// UsageDetail defines model for UsageDetail.
-type UsageDetail struct {
-	Budgets      []map[string]interface{} `json:"budgets"`
-	Credentials  []map[string]interface{} `json:"credentials"`
-	History      []map[string]interface{} `json:"history"`
-	Mode         UsageDetailMode          `json:"mode"`
-	Period       map[string]interface{}   `json:"period"`
-	Repositories []map[string]interface{} `json:"repositories"`
-	Subject      map[string]interface{}   `json:"subject"`
-	Totals       map[string]interface{}   `json:"totals"`
+// UsageBudget One budget key of the subject (R-LIM-014) in the last 24 hours, its place, the rule that applies there now, and every figure.
+type UsageBudget struct {
+	BlockedUntil *time.Time         `json:"blockedUntil"`
+	Figures      UsageBudgetFigures `json:"figures"`
+
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	Place LimitPlace    `json:"place"`
+	Rule  *LimitRuleRef `json:"rule"`
 }
 
-// UsageDetailMode defines model for UsageDetail.Mode.
-type UsageDetailMode string
+// UsageBudgetFigure One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+type UsageBudgetFigure struct {
+	Burst         *int64 `json:"burst,omitempty"`
+	Limit         *int64 `json:"limit"`
+	Used          *int64 `json:"used,omitempty"`
+	WindowSeconds *int   `json:"windowSeconds,omitempty"`
+}
+
+// UsageBudgetFigures defines model for UsageBudgetFigures.
+type UsageBudgetFigures struct {
+	// BytesPerDay One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	BytesPerDay UsageBudgetFigure `json:"bytesPerDay"`
+
+	// CachedBytesPerHour One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	CachedBytesPerHour UsageBudgetFigure `json:"cachedBytesPerHour"`
+
+	// CachedBytesPerSecond One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	CachedBytesPerSecond UsageBudgetFigure `json:"cachedBytesPerSecond"`
+
+	// ParallelDownloads One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	ParallelDownloads UsageBudgetFigure `json:"parallelDownloads"`
+
+	// RefusedPerHour One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	RefusedPerHour UsageBudgetFigure `json:"refusedPerHour"`
+
+	// RequestsPerHour One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	RequestsPerHour UsageBudgetFigure `json:"requestsPerHour"`
+
+	// RequestsPerSecond One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	RequestsPerSecond UsageBudgetFigure `json:"requestsPerSecond"`
+
+	// UncachedBytesPerHour One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	UncachedBytesPerHour UsageBudgetFigure `json:"uncachedBytesPerHour"`
+
+	// UncachedBytesPerSecond One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	UncachedBytesPerSecond UsageBudgetFigure `json:"uncachedBytesPerSecond"`
+
+	// UpstreamRequestsPerHour One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	UpstreamRequestsPerHour UsageBudgetFigure `json:"upstreamRequestsPerHour"`
+}
+
+// UsageByCredential defines model for UsageByCredential.
+type UsageByCredential struct {
+	CachedBytes   int64                        `json:"cachedBytes"`
+	Credential    UsageByCredential_Credential `json:"credential"`
+	Requests      int64                        `json:"requests"`
+	UncachedBytes int64                        `json:"uncachedBytes"`
+}
+
+// UsageByCredential_Credential defines model for UsageByCredential.Credential.
+type UsageByCredential_Credential struct {
+	union json.RawMessage
+}
+
+// UsageByRepository defines model for UsageByRepository.
+type UsageByRepository struct {
+	CachedBytes int64 `json:"cachedBytes"`
+	Refused     int64 `json:"refused"`
+
+	// Repository `<projectKey>/<repoKey>`; empty for requests that named no repository.
+	Repository       string `json:"repository"`
+	Requests         int64  `json:"requests"`
+	UncachedBytes    int64  `json:"uncachedBytes"`
+	UpstreamRequests int64  `json:"upstreamRequests"`
+}
+
+// UsageCredentialSession defines model for UsageCredentialSession.
+type UsageCredentialSession struct {
+	Kind UsageCredentialSessionKind `json:"kind"`
+}
+
+// UsageCredentialSessionKind defines model for UsageCredentialSession.Kind.
+type UsageCredentialSessionKind string
+
+// UsageCredentialToken defines model for UsageCredentialToken.
+type UsageCredentialToken struct {
+	Description *string `json:"description"`
+
+	// Hint `null` for a token that was deleted.
+	Hint *string                  `json:"hint"`
+	Id   string                   `json:"id"`
+	Kind UsageCredentialTokenKind `json:"kind"`
+}
+
+// UsageCredentialTokenKind defines model for UsageCredentialToken.Kind.
+type UsageCredentialTokenKind string
+
+// UsageDetail defines model for UsageDetail.
+type UsageDetail struct {
+	Budgets []UsageBudget `json:"budgets"`
+
+	// Credentials A user's consumption per credential; empty for every other kind.
+	Credentials  []UsageByCredential `json:"credentials"`
+	History      []UsagePoint        `json:"history"`
+	Mode         LimitMode           `json:"mode"`
+	Period       UsagePeriod         `json:"period"`
+	Repositories []UsageByRepository `json:"repositories"`
+
+	// Subject A subject of the usage store as the API names it (R-LIM-034).
+	Subject UsageSubject `json:"subject"`
+	Totals  UsageTotals  `json:"totals"`
+}
 
 // UsageList defines model for UsageList.
 type UsageList struct {
-	Items      []UsageRow    `json:"items"`
-	Mode       UsageListMode `json:"mode"`
-	NextCursor *string       `json:"nextCursor,omitempty"`
-	Period     struct {
-		From *time.Time `json:"from,omitempty"`
-		To   *time.Time `json:"to,omitempty"`
-	} `json:"period"`
+	Items      []UsageRow  `json:"items"`
+	Mode       LimitMode   `json:"mode"`
+	NextCursor *string     `json:"nextCursor"`
+	Period     UsagePeriod `json:"period"`
 }
 
-// UsageListMode defines model for UsageList.Mode.
-type UsageListMode string
+// UsagePeriod defines model for UsagePeriod.
+type UsagePeriod struct {
+	From time.Time `json:"from"`
+	To   time.Time `json:"to"`
+}
+
+// UsagePoint defines model for UsagePoint.
+type UsagePoint struct {
+	CachedBytes      int64     `json:"cachedBytes"`
+	LimitedEvents    int64     `json:"limitedEvents"`
+	Refused          int64     `json:"refused"`
+	Requests         int64     `json:"requests"`
+	Start            time.Time `json:"start"`
+	UncachedBytes    int64     `json:"uncachedBytes"`
+	UpstreamRequests int64     `json:"upstreamRequests"`
+	WouldLimitEvents int64     `json:"wouldLimitEvents"`
+}
 
 // UsageRow defines model for UsageRow.
 type UsageRow struct {
-	BlockedUntil     *time.Time              `json:"blockedUntil,omitempty"`
-	CachedBytes      int64                   `json:"cachedBytes"`
-	LimitedEvents    int64                   `json:"limitedEvents"`
-	Refused          int64                   `json:"refused"`
-	Requests         int64                   `json:"requests"`
-	State            UsageRowState           `json:"state"`
-	Subject          map[string]interface{}  `json:"subject"`
-	UncachedBytes    int64                   `json:"uncachedBytes"`
-	UpstreamRequests int64                   `json:"upstreamRequests"`
-	Utilisation      *map[string]interface{} `json:"utilisation,omitempty"`
-	WouldLimitEvents int64                   `json:"wouldLimitEvents"`
+	BlockedUntil  *time.Time `json:"blockedUntil"`
+	CachedBytes   int64      `json:"cachedBytes"`
+	LimitedEvents int64      `json:"limitedEvents"`
+	Refused       int64      `json:"refused"`
+	Requests      int64      `json:"requests"`
+	State         UsageState `json:"state"`
+
+	// Subject A subject of the usage store as the API names it (R-LIM-034).
+	Subject          UsageSubject      `json:"subject"`
+	UncachedBytes    int64             `json:"uncachedBytes"`
+	UpstreamRequests int64             `json:"upstreamRequests"`
+	Utilisation      *UsageUtilisation `json:"utilisation"`
+	WouldLimitEvents int64             `json:"wouldLimitEvents"`
 }
 
-// UsageRowState defines model for UsageRow.State.
-type UsageRowState string
+// UsageState defines model for UsageState.
+type UsageState string
+
+// UsageSubject A subject of the usage store as the API names it (R-LIM-034).
+type UsageSubject struct {
+	union json.RawMessage
+}
+
+// UsageSubjectAnonymous defines model for UsageSubjectAnonymous.
+type UsageSubjectAnonymous struct {
+	// Address An IPv4 address, an IPv6 `/64` prefix, or `unknown`.
+	Address string                    `json:"address"`
+	Id      string                    `json:"id"`
+	Kind    UsageSubjectAnonymousKind `json:"kind"`
+}
+
+// UsageSubjectAnonymousKind defines model for UsageSubjectAnonymous.Kind.
+type UsageSubjectAnonymousKind string
+
+// UsageSubjectCI defines model for UsageSubjectCI.
+type UsageSubjectCI struct {
+	// Id `<issuer name>:<project ID>`.
+	Id          string             `json:"id"`
+	Issuer      string             `json:"issuer"`
+	Kind        UsageSubjectCIKind `json:"kind"`
+	ProjectId   string             `json:"projectId"`
+	ProjectPath *string            `json:"projectPath"`
+}
+
+// UsageSubjectCIKind defines model for UsageSubjectCI.Kind.
+type UsageSubjectCIKind string
+
+// UsageSubjectKind defines model for UsageSubjectKind.
+type UsageSubjectKind string
+
+// UsageSubjectSystem defines model for UsageSubjectSystem.
+type UsageSubjectSystem struct {
+	Id   string                 `json:"id"`
+	Kind UsageSubjectSystemKind `json:"kind"`
+}
+
+// UsageSubjectSystemKind defines model for UsageSubjectSystem.Kind.
+type UsageSubjectSystemKind string
+
+// UsageSubjectTechnicalToken defines model for UsageSubjectTechnicalToken.
+type UsageSubjectTechnicalToken struct {
+	// Account The account's reference, `sa:web/partner`; empty when the token was deleted.
+	Account string                           `json:"account"`
+	Deleted bool                             `json:"deleted"`
+	Id      openapi_types.UUID               `json:"id"`
+	Kind    UsageSubjectTechnicalTokenKind   `json:"kind"`
+	Level   *UsageSubjectTechnicalTokenLevel `json:"level"`
+
+	// Name The token's name; its ID when it was deleted.
+	Name string `json:"name"`
+}
+
+// UsageSubjectTechnicalTokenKind defines model for UsageSubjectTechnicalToken.Kind.
+type UsageSubjectTechnicalTokenKind string
+
+// UsageSubjectTechnicalTokenLevel defines model for UsageSubjectTechnicalToken.Level.
+type UsageSubjectTechnicalTokenLevel string
+
+// UsageSubjectUser defines model for UsageSubjectUser.
+type UsageSubjectUser struct {
+	Deleted     bool    `json:"deleted"`
+	DisplayName *string `json:"displayName"`
+
+	// Id The username; the principal's ID of a user that was deleted.
+	Id   string               `json:"id"`
+	Kind UsageSubjectUserKind `json:"kind"`
+	Name string               `json:"name"`
+}
+
+// UsageSubjectUserKind defines model for UsageSubjectUser.Kind.
+type UsageSubjectUserKind string
+
+// UsageTotals defines model for UsageTotals.
+type UsageTotals struct {
+	CachedBytes      int64 `json:"cachedBytes"`
+	LimitedEvents    int64 `json:"limitedEvents"`
+	Refused          int64 `json:"refused"`
+	Requests         int64 `json:"requests"`
+	UncachedBytes    int64 `json:"uncachedBytes"`
+	UpstreamRequests int64 `json:"upstreamRequests"`
+	WouldLimitEvents int64 `json:"wouldLimitEvents"`
+}
+
+// UsageUtilisation defines model for UsageUtilisation.
+type UsageUtilisation struct {
+	Figure LimitFigureName `json:"figure"`
+
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	Place LimitPlace `json:"place"`
+	Ratio float32    `json:"ratio"`
+}
 
 // User A user (R-AUTH-016). `isAdmin`, `adminVia` and `lockedUntil` are derived and read only.
 type User struct {
@@ -12510,8 +13172,8 @@ type DeleteLimitProjectMaximumParams struct {
 
 // SetLimitProjectMaximumParams defines parameters for SetLimitProjectMaximum.
 type SetLimitProjectMaximumParams struct {
-	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
-	IfMatch IfMatch `json:"If-Match"`
+	// IfMatch The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012).
+	IfMatch *IfMatchOptional `json:"If-Match,omitempty"`
 }
 
 // ListProjectPermissionPoliciesParams defines parameters for ListProjectPermissionPolicies.
@@ -14023,6 +14685,322 @@ func (a PackageVersion_Metadata) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// AsLimitPlaceInstance returns the union data inside the LimitPlace as a LimitPlaceInstance
+func (t LimitPlace) AsLimitPlaceInstance() (LimitPlaceInstance, error) {
+	var body LimitPlaceInstance
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitPlaceInstance overwrites any union data inside the LimitPlace as the provided LimitPlaceInstance
+func (t *LimitPlace) FromLimitPlaceInstance(v LimitPlaceInstance) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitPlaceInstance performs a merge with any union data inside the LimitPlace, using the provided LimitPlaceInstance
+func (t *LimitPlace) MergeLimitPlaceInstance(v LimitPlaceInstance) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitPlaceProject returns the union data inside the LimitPlace as a LimitPlaceProject
+func (t LimitPlace) AsLimitPlaceProject() (LimitPlaceProject, error) {
+	var body LimitPlaceProject
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitPlaceProject overwrites any union data inside the LimitPlace as the provided LimitPlaceProject
+func (t *LimitPlace) FromLimitPlaceProject(v LimitPlaceProject) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitPlaceProject performs a merge with any union data inside the LimitPlace, using the provided LimitPlaceProject
+func (t *LimitPlace) MergeLimitPlaceProject(v LimitPlaceProject) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitPlaceRepository returns the union data inside the LimitPlace as a LimitPlaceRepository
+func (t LimitPlace) AsLimitPlaceRepository() (LimitPlaceRepository, error) {
+	var body LimitPlaceRepository
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitPlaceRepository overwrites any union data inside the LimitPlace as the provided LimitPlaceRepository
+func (t *LimitPlace) FromLimitPlaceRepository(v LimitPlaceRepository) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitPlaceRepository performs a merge with any union data inside the LimitPlace, using the provided LimitPlaceRepository
+func (t *LimitPlace) MergeLimitPlaceRepository(v LimitPlaceRepository) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LimitPlace) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LimitPlace) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsUsageSubjectTechnicalToken returns the union data inside the LimitSubjectSuggestion as a UsageSubjectTechnicalToken
+func (t LimitSubjectSuggestion) AsUsageSubjectTechnicalToken() (UsageSubjectTechnicalToken, error) {
+	var body UsageSubjectTechnicalToken
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectTechnicalToken overwrites any union data inside the LimitSubjectSuggestion as the provided UsageSubjectTechnicalToken
+func (t *LimitSubjectSuggestion) FromUsageSubjectTechnicalToken(v UsageSubjectTechnicalToken) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectTechnicalToken performs a merge with any union data inside the LimitSubjectSuggestion, using the provided UsageSubjectTechnicalToken
+func (t *LimitSubjectSuggestion) MergeUsageSubjectTechnicalToken(v UsageSubjectTechnicalToken) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageSubjectCI returns the union data inside the LimitSubjectSuggestion as a UsageSubjectCI
+func (t LimitSubjectSuggestion) AsUsageSubjectCI() (UsageSubjectCI, error) {
+	var body UsageSubjectCI
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectCI overwrites any union data inside the LimitSubjectSuggestion as the provided UsageSubjectCI
+func (t *LimitSubjectSuggestion) FromUsageSubjectCI(v UsageSubjectCI) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectCI performs a merge with any union data inside the LimitSubjectSuggestion, using the provided UsageSubjectCI
+func (t *LimitSubjectSuggestion) MergeUsageSubjectCI(v UsageSubjectCI) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LimitSubjectSuggestion) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LimitSubjectSuggestion) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLimitWhoUser returns the union data inside the LimitWho as a LimitWhoUser
+func (t LimitWho) AsLimitWhoUser() (LimitWhoUser, error) {
+	var body LimitWhoUser
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitWhoUser overwrites any union data inside the LimitWho as the provided LimitWhoUser
+func (t *LimitWho) FromLimitWhoUser(v LimitWhoUser) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitWhoUser performs a merge with any union data inside the LimitWho, using the provided LimitWhoUser
+func (t *LimitWho) MergeLimitWhoUser(v LimitWhoUser) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitWhoTechnicalToken returns the union data inside the LimitWho as a LimitWhoTechnicalToken
+func (t LimitWho) AsLimitWhoTechnicalToken() (LimitWhoTechnicalToken, error) {
+	var body LimitWhoTechnicalToken
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitWhoTechnicalToken overwrites any union data inside the LimitWho as the provided LimitWhoTechnicalToken
+func (t *LimitWho) FromLimitWhoTechnicalToken(v LimitWhoTechnicalToken) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitWhoTechnicalToken performs a merge with any union data inside the LimitWho, using the provided LimitWhoTechnicalToken
+func (t *LimitWho) MergeLimitWhoTechnicalToken(v LimitWhoTechnicalToken) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitWhoCIProject returns the union data inside the LimitWho as a LimitWhoCIProject
+func (t LimitWho) AsLimitWhoCIProject() (LimitWhoCIProject, error) {
+	var body LimitWhoCIProject
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitWhoCIProject overwrites any union data inside the LimitWho as the provided LimitWhoCIProject
+func (t *LimitWho) FromLimitWhoCIProject(v LimitWhoCIProject) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitWhoCIProject performs a merge with any union data inside the LimitWho, using the provided LimitWhoCIProject
+func (t *LimitWho) MergeLimitWhoCIProject(v LimitWhoCIProject) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitWhoAddress returns the union data inside the LimitWho as a LimitWhoAddress
+func (t LimitWho) AsLimitWhoAddress() (LimitWhoAddress, error) {
+	var body LimitWhoAddress
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitWhoAddress overwrites any union data inside the LimitWho as the provided LimitWhoAddress
+func (t *LimitWho) FromLimitWhoAddress(v LimitWhoAddress) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitWhoAddress performs a merge with any union data inside the LimitWho, using the provided LimitWhoAddress
+func (t *LimitWho) MergeLimitWhoAddress(v LimitWhoAddress) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitWhoGroup returns the union data inside the LimitWho as a LimitWhoGroup
+func (t LimitWho) AsLimitWhoGroup() (LimitWhoGroup, error) {
+	var body LimitWhoGroup
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitWhoGroup overwrites any union data inside the LimitWho as the provided LimitWhoGroup
+func (t *LimitWho) FromLimitWhoGroup(v LimitWhoGroup) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitWhoGroup performs a merge with any union data inside the LimitWho, using the provided LimitWhoGroup
+func (t *LimitWho) MergeLimitWhoGroup(v LimitWhoGroup) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitWhoEvery returns the union data inside the LimitWho as a LimitWhoEvery
+func (t LimitWho) AsLimitWhoEvery() (LimitWhoEvery, error) {
+	var body LimitWhoEvery
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitWhoEvery overwrites any union data inside the LimitWho as the provided LimitWhoEvery
+func (t *LimitWho) FromLimitWhoEvery(v LimitWhoEvery) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitWhoEvery performs a merge with any union data inside the LimitWho, using the provided LimitWhoEvery
+func (t *LimitWho) MergeLimitWhoEvery(v LimitWhoEvery) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LimitWho) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LimitWho) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsRepositorySummary returns the union data inside the RepositoryList_Items_Item as a RepositorySummary
 func (t RepositoryList_Items_Item) AsRepositorySummary() (RepositorySummary, error) {
 	var body RepositorySummary
@@ -14143,6 +15121,208 @@ func (t RepositoryRead) MarshalJSON() ([]byte, error) {
 }
 
 func (t *RepositoryRead) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsUsageCredentialSession returns the union data inside the UsageByCredential_Credential as a UsageCredentialSession
+func (t UsageByCredential_Credential) AsUsageCredentialSession() (UsageCredentialSession, error) {
+	var body UsageCredentialSession
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageCredentialSession overwrites any union data inside the UsageByCredential_Credential as the provided UsageCredentialSession
+func (t *UsageByCredential_Credential) FromUsageCredentialSession(v UsageCredentialSession) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageCredentialSession performs a merge with any union data inside the UsageByCredential_Credential, using the provided UsageCredentialSession
+func (t *UsageByCredential_Credential) MergeUsageCredentialSession(v UsageCredentialSession) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageCredentialToken returns the union data inside the UsageByCredential_Credential as a UsageCredentialToken
+func (t UsageByCredential_Credential) AsUsageCredentialToken() (UsageCredentialToken, error) {
+	var body UsageCredentialToken
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageCredentialToken overwrites any union data inside the UsageByCredential_Credential as the provided UsageCredentialToken
+func (t *UsageByCredential_Credential) FromUsageCredentialToken(v UsageCredentialToken) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageCredentialToken performs a merge with any union data inside the UsageByCredential_Credential, using the provided UsageCredentialToken
+func (t *UsageByCredential_Credential) MergeUsageCredentialToken(v UsageCredentialToken) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t UsageByCredential_Credential) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *UsageByCredential_Credential) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsUsageSubjectUser returns the union data inside the UsageSubject as a UsageSubjectUser
+func (t UsageSubject) AsUsageSubjectUser() (UsageSubjectUser, error) {
+	var body UsageSubjectUser
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectUser overwrites any union data inside the UsageSubject as the provided UsageSubjectUser
+func (t *UsageSubject) FromUsageSubjectUser(v UsageSubjectUser) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectUser performs a merge with any union data inside the UsageSubject, using the provided UsageSubjectUser
+func (t *UsageSubject) MergeUsageSubjectUser(v UsageSubjectUser) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageSubjectTechnicalToken returns the union data inside the UsageSubject as a UsageSubjectTechnicalToken
+func (t UsageSubject) AsUsageSubjectTechnicalToken() (UsageSubjectTechnicalToken, error) {
+	var body UsageSubjectTechnicalToken
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectTechnicalToken overwrites any union data inside the UsageSubject as the provided UsageSubjectTechnicalToken
+func (t *UsageSubject) FromUsageSubjectTechnicalToken(v UsageSubjectTechnicalToken) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectTechnicalToken performs a merge with any union data inside the UsageSubject, using the provided UsageSubjectTechnicalToken
+func (t *UsageSubject) MergeUsageSubjectTechnicalToken(v UsageSubjectTechnicalToken) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageSubjectCI returns the union data inside the UsageSubject as a UsageSubjectCI
+func (t UsageSubject) AsUsageSubjectCI() (UsageSubjectCI, error) {
+	var body UsageSubjectCI
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectCI overwrites any union data inside the UsageSubject as the provided UsageSubjectCI
+func (t *UsageSubject) FromUsageSubjectCI(v UsageSubjectCI) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectCI performs a merge with any union data inside the UsageSubject, using the provided UsageSubjectCI
+func (t *UsageSubject) MergeUsageSubjectCI(v UsageSubjectCI) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageSubjectAnonymous returns the union data inside the UsageSubject as a UsageSubjectAnonymous
+func (t UsageSubject) AsUsageSubjectAnonymous() (UsageSubjectAnonymous, error) {
+	var body UsageSubjectAnonymous
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectAnonymous overwrites any union data inside the UsageSubject as the provided UsageSubjectAnonymous
+func (t *UsageSubject) FromUsageSubjectAnonymous(v UsageSubjectAnonymous) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectAnonymous performs a merge with any union data inside the UsageSubject, using the provided UsageSubjectAnonymous
+func (t *UsageSubject) MergeUsageSubjectAnonymous(v UsageSubjectAnonymous) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageSubjectSystem returns the union data inside the UsageSubject as a UsageSubjectSystem
+func (t UsageSubject) AsUsageSubjectSystem() (UsageSubjectSystem, error) {
+	var body UsageSubjectSystem
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectSystem overwrites any union data inside the UsageSubject as the provided UsageSubjectSystem
+func (t *UsageSubject) FromUsageSubjectSystem(v UsageSubjectSystem) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectSystem performs a merge with any union data inside the UsageSubject, using the provided UsageSubjectSystem
+func (t *UsageSubject) MergeUsageSubjectSystem(v UsageSubjectSystem) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t UsageSubject) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *UsageSubject) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -20661,27 +21841,23 @@ func (siw *ServerInterfaceWrapper) SetLimitProjectMaximum(w http.ResponseWriter,
 
 	headers := r.Header
 
-	// ------------- Required header parameter "If-Match" -------------
+	// ------------- Optional header parameter "If-Match" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
-		var IfMatch IfMatch
+		var IfMatch IfMatchOptional
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
 			return
 		}
 
-		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
 		if err != nil {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
 			return
 		}
 
-		params.IfMatch = IfMatch
+		params.IfMatch = &IfMatch
 
-	} else {
-		err := fmt.Errorf("Header parameter If-Match is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
-		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

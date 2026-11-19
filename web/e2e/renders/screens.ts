@@ -21,6 +21,9 @@ import {
   remoteImage,
   repositoryServiceAccount,
   serviceAccount,
+  blockedAddress,
+  ciIssuer,
+  ciProject,
 } from './seed';
 import { gradedPackage, manyVersionsPackage } from './advisories';
 import { routeTooMany } from './suggestions';
@@ -426,6 +429,16 @@ async function* allSections(page: Page): AsyncGenerator<string> {
 async function* technicalTokens(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main quader-technical-token-table tbody tr').first()).toBeVisible();
   yield '';
+  // The rule dialog of a token's limit, at the account's place (R-UI-181): its limit opens Set limit for a token without a rule.
+  const setLimit = page.locator('main quader-technical-token-table').first().getByRole('button', { name: /Set limit/ });
+  if ((await setLimit.count()) > 0) {
+    await setLimit.first().click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('combobox', { name: 'Profile' })).toBeVisible();
+    yield 'set-limit';
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+  }
   const create = page.locator('main').getByRole('button', { name: 'New technical token' });
   if ((await create.count()) === 0) return;
   await create.click();
@@ -766,13 +779,20 @@ const upstreams: Screen[] = [
  * page's routes with the mode Enforce. The render database is shared and stays in Audit, so another builder's run never meets a
  * refusal of these limits.
  */
+const enforceAnswers = /\/api\/v1\/(limits\/settings|usage|users\/me\/usage|projects\/[^/]+\/usage)(\/|\?|$)/;
+
 async function inEnforce(page: Page): Promise<void> {
-  await page.route(/\/api\/v1\/(limits\/settings|usage|users\/me\/usage|projects\/[^/]+\/usage)(\/|\?|$)/, async (route) => {
+  await page.route(enforceAnswers, async (route) => {
     const res = await route.fetch();
     const body = (await res.text()).replaceAll('"mode":"audit"', '"mode":"enforce"');
     await route.fulfill({ response: res, body });
   });
   await page.reload();
+}
+
+/** The answers as they are again: the next width of a walk opens its page in Audit, the database's mode. */
+async function backToAudit(page: Page): Promise<void> {
+  await page.unroute(enforceAnswers);
 }
 
 /** A page of the limits or the usage as it opens, then the same page in Enforce. */
@@ -781,6 +801,7 @@ async function* limitsModes(page: Page): AsyncGenerator<string> {
   await inEnforce(page);
   await expect(page.locator('main h1')).toBeVisible();
   yield 'enforce';
+  await backToAudit(page);
 }
 
 /**
@@ -807,6 +828,7 @@ async function* limitRulesWalk(page: Page): AsyncGenerator<string> {
   await inEnforce(page);
   await expect(page.locator('main quader-limit-mode')).toContainText('Enforce');
   yield 'enforce';
+  await backToAudit(page);
 }
 
 /** A list of the usage: as it opens, with its filter drawer, then in Enforce (R-UI-183). */
@@ -819,6 +841,7 @@ async function* usageWalk(page: Page): AsyncGenerator<string> {
   await inEnforce(page);
   await expect(page.locator('main h1')).toBeVisible();
   yield 'enforce';
+  await backToAudit(page);
 }
 
 /** A caller's usage (R-UI-184, R-UI-185): as it opens, with the explanation for a repository, the history as a table, in Enforce. */
@@ -834,6 +857,7 @@ async function* usageDetailWalk(page: Page): AsyncGenerator<string> {
   await inEnforce(page);
   await expect(page.locator('main h1')).toBeVisible();
   yield 'enforce';
+  await backToAudit(page);
 }
 
 /** The section **Download limits** of a settings page opened (R-UI-180), then the rule dialog of an Owner. */
@@ -853,6 +877,7 @@ async function* limitsSectionOpen(page: Page): AsyncGenerator<string> {
 
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
 /** A signed-out visitor's page asks who is signed in and is told nobody. */
+const noMaximum = [{ match: /^GET \/api\/v1\/projects\/[^/]+\/limits\/maximum answered 404$/, why: 'a project without a maximum answers 404 (R-LIM-033)' }];
 const noSession = [{ match: /^GET \/api\/v1\/auth\/whoami answered 401$/, why: 'an anonymous visitor has no session' }];
 const owners: readonly Kind[] = ['power', 'admin'];
 const admins: readonly Kind[] = ['admin'];
@@ -1013,7 +1038,8 @@ export const screens: readonly Screen[] = [
   { id: 'project-ci-mapping-new', path: `${P}/ci/mappings/new`, kinds: owners },
   { id: 'project-settings', path: `${P}/settings`, kinds: owners, walk: visibilityOpen },
   // The download limits of a project and of a remote repository, and the project's usage (R-UI-180, R-UI-183, R-UI-184).
-  { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen },
+  // The main project has no maximum: its read answers 404, which says "none" (R-LIM-033).
+  { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen, expected: noMaximum },
   { id: 'repository-settings-limits', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: limitsSectionOpen },
   { id: 'project-usage', path: `${P}/usage`, kinds: owners, walk: usageWalk },
   { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },
@@ -1049,6 +1075,9 @@ export const screens: readonly Screen[] = [
   // The usage and the download limits (R-UI-177 to R-UI-184): the administrator changes, the auditor reads.
   { id: 'admin-usage', path: '/ui/admin/usage', kinds: auditors, walk: usageWalk },
   { id: 'admin-usage-caller', path: `/ui/admin/usage/user/${kinds.power}`, kinds: auditors, walk: usageDetailWalk },
+  // A blocked anonymous address and a CI project as callers (R-UI-184): the block's notice, a subject without credentials.
+  { id: 'admin-usage-caller-blocked', path: `/ui/admin/usage/anonymous/${blockedAddress}`, kinds: admins, walk: limitsModes },
+  { id: 'admin-usage-caller-ci', path: `/ui/admin/usage/ci/${ciIssuer}:${ciProject.id}`, kinds: admins },
   { id: 'admin-limits', path: '/ui/admin/limits', kinds: auditors, walk: limitRulesWalk },
   { id: 'admin-limits-profiles', path: '/ui/admin/limits/profiles', kinds: auditors },
   { id: 'admin-limits-profile', path: '/ui/admin/limits/profiles/standard', kinds: auditors },

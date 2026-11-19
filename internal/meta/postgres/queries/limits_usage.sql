@@ -90,6 +90,15 @@ SELECT b.bucket_start, sum(b.requests)::bigint AS requests, sum(b.refused)::bigi
  GROUP BY b.bucket_start
  ORDER BY b.bucket_start;
 
+-- name: UsageHistoryEvents :many
+-- The limits one subject met per five-minute point of the last 24 hours, by mode (R-LIM-034 history).
+SELECT e.bucket_start, e.mode, sum(e.count)::bigint AS events
+  FROM usage_limit_event e
+ WHERE e.granularity = '5m' AND e.bucket_start >= sqlc.arg(since)::text::timestamptz AND e.subject_kind = sqlc.arg(subject_kind)
+   AND e.subject_ref = sqlc.arg(subject_ref)
+   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR e.repository_id = ANY(sqlc.arg(repos)::bigint[]))
+ GROUP BY e.bucket_start, e.mode;
+
 -- name: UsageRepositories :many
 -- One subject's consumption per serving repository in a period.
 SELECT COALESCE(b.repository_id, 0)::bigint AS repository_id, COALESCE(p.key, '')::text AS project_key,
@@ -125,23 +134,26 @@ SELECT e.subject_kind, e.subject_ref, e.figure, sum(e.count)::bigint AS events
 
 -- name: FoldUsageDays :execrows
 -- limits-cleanup (R-LIM-028): the hourly rows older than the cutoff become daily sums without a person, per day, repository
--- and kind of caller.
+-- and kind of caller, with the limit events of the same day, repository and kind.
 INSERT INTO usage_daily_summary AS s (day, repository_id, subject_kind, subjects, requests, refused, cached_bytes,
                                      uncached_bytes, upstream_requests, background_fetches, limited_events, would_limit_events)
-SELECT (b.bucket_start AT TIME ZONE 'UTC')::date, b.repository_id, b.subject_kind, count(DISTINCT b.subject_ref),
-       sum(b.requests), sum(b.refused), sum(b.cached_bytes), sum(b.uncached_bytes), sum(b.upstream_requests),
-       sum(b.background_fetches),
+SELECT d.day, d.repository_id, d.subject_kind, d.subjects, d.requests, d.refused, d.cached_bytes, d.uncached_bytes,
+       d.upstream_requests, d.background_fetches,
        COALESCE((SELECT sum(e.count) FROM usage_limit_event e
                   WHERE e.granularity = '1h' AND e.mode = 'enforce' AND e.bucket_start < sqlc.arg(cutoff)::text::timestamptz
-                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = (b.bucket_start AT TIME ZONE 'UTC')::date
-                    AND e.repository_id IS NOT DISTINCT FROM b.repository_id AND e.subject_kind = b.subject_kind), 0),
+                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = d.day
+                    AND e.repository_id IS NOT DISTINCT FROM d.repository_id AND e.subject_kind = d.subject_kind), 0),
        COALESCE((SELECT sum(e.count) FROM usage_limit_event e
                   WHERE e.granularity = '1h' AND e.mode = 'audit' AND e.bucket_start < sqlc.arg(cutoff)::text::timestamptz
-                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = (b.bucket_start AT TIME ZONE 'UTC')::date
-                    AND e.repository_id IS NOT DISTINCT FROM b.repository_id AND e.subject_kind = b.subject_kind), 0)
-  FROM usage_bucket b
- WHERE b.granularity = '1h' AND b.bucket_start < sqlc.arg(cutoff)::text::timestamptz
- GROUP BY (b.bucket_start AT TIME ZONE 'UTC')::date, b.repository_id, b.subject_kind
+                    AND (e.bucket_start AT TIME ZONE 'UTC')::date = d.day
+                    AND e.repository_id IS NOT DISTINCT FROM d.repository_id AND e.subject_kind = d.subject_kind), 0)
+  FROM (SELECT (b.bucket_start AT TIME ZONE 'UTC')::date AS day, b.repository_id, b.subject_kind,
+               count(DISTINCT b.subject_ref) AS subjects, sum(b.requests) AS requests, sum(b.refused) AS refused,
+               sum(b.cached_bytes) AS cached_bytes, sum(b.uncached_bytes) AS uncached_bytes,
+               sum(b.upstream_requests) AS upstream_requests, sum(b.background_fetches) AS background_fetches
+          FROM usage_bucket b
+         WHERE b.granularity = '1h' AND b.bucket_start < sqlc.arg(cutoff)::text::timestamptz
+         GROUP BY (b.bucket_start AT TIME ZONE 'UTC')::date, b.repository_id, b.subject_kind) d
 ON CONFLICT (day, repository_id, subject_kind) DO UPDATE
    SET subjects = s.subjects + EXCLUDED.subjects, requests = s.requests + EXCLUDED.requests, refused = s.refused + EXCLUDED.refused,
        cached_bytes = s.cached_bytes + EXCLUDED.cached_bytes, uncached_bytes = s.uncached_bytes + EXCLUDED.uncached_bytes,
@@ -163,8 +175,8 @@ DELETE FROM usage_daily_summary WHERE day < sqlc.arg(cutoff)::text::date;
 DELETE FROM limit_block WHERE until < sqlc.arg(cutoff)::text::timestamptz;
 
 -- name: EraseUsageOfDeletedSubjects :execrows
--- Erasure (R-LIM-028, Q-LIM-25): the rows of users and technical tokens that no longer exist. A technical token's rows are
--- kept until their retention when its table does not exist yet (work package 1 adds it).
+-- Erasure (R-LIM-028, Q-LIM-25): the rows of users that no longer exist. A deleted technical token's rows stay until their
+-- retention and are shown as a deleted token (R-LIM-038, Q-LIM-49): they name a system, not a person.
 DELETE FROM usage_bucket b
  WHERE b.subject_kind = 'user' AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = b.subject_ref);
 
@@ -173,11 +185,16 @@ DELETE FROM usage_limit_event e
  WHERE e.subject_kind = 'user' AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = e.subject_ref);
 
 -- name: EraseBlocksOfDeletedSubjects :execrows
+-- The blocks of users and technical tokens that no longer exist (R-LIM-028): a deleted technical token sends no request, so its
+-- block holds nothing any more.
 DELETE FROM limit_block k
- WHERE k.subject_kind = 'user' AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = k.subject_ref);
+ WHERE (k.subject_kind = 'user' AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = k.subject_ref))
+    OR (k.subject_kind = 'technical_token' AND NOT EXISTS (SELECT 1 FROM technical_token t WHERE t.id::text = k.subject_ref));
 
 -- name: DeleteRulesOfDeletedSubjects :many
--- The rules whose user or group no longer exists (R-LIM-011): returned for the audit events of limits-cleanup.
+-- The rules whose user, group or technical token no longer exists (R-LIM-011, R-LIM-038): returned for the audit events of
+-- limits-cleanup. A technical token is gone when it was deleted, with its service account, or with the repository of its account.
 DELETE FROM limit_assignment a
- WHERE a.who_kind IN ('user', 'group') AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = a.who_ref)
+ WHERE (a.who_kind IN ('user', 'group') AND NOT EXISTS (SELECT 1 FROM principal p WHERE p.id::text = a.who_ref))
+    OR (a.who_kind = 'technical_token' AND NOT EXISTS (SELECT 1 FROM technical_token t WHERE t.id::text = a.who_ref))
 RETURNING a.id::text AS id, a.place_kind, a.who_kind, a.who_ref;

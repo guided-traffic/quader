@@ -69,6 +69,8 @@ type Charge struct {
 	events  []event
 	// pacedWould marks that a would-limit of a pacing figure was recorded once for this request.
 	pacedWould [2]bool
+	// refusal is the RateLimit policy of the figure that refused the request in enforce, beside the request figures' (R-LIM-020).
+	refusal *Policy
 }
 
 type event struct {
@@ -211,6 +213,29 @@ func (c *Charge) Limiter() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.limiter
+}
+
+// CounterMode is the request record's limit_mode of a refusal of the download limits (R-OPS-010): cluster while the replica
+// counts in Valkey, fallback while it counts its share alone (R-LIM-019).
+func (c *Charge) CounterMode() string {
+	if c != nil && c.e != nil && c.e.fallback.Load() {
+		return "fallback"
+	}
+	return "cluster"
+}
+
+// RefusalPolicy is the RateLimit policy of the figure that refused the request (R-LIM-020, Q-LIM-23): set in enforce by every
+// refusal but the request figures', whose policies stage 7 sends on every answer.
+func (c *Charge) RefusalPolicy() (Policy, bool) {
+	if c == nil {
+		return Policy{}, false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.refusal == nil {
+		return Policy{}, false
+	}
+	return *c.refusal, true
 }
 
 // note records a decision that limited or would have limited the request, once per figure.

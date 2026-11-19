@@ -68,6 +68,9 @@ type RateLimitOptions struct {
 	// IsAdministrator reports whether the caller's principal holds the role admin now, whatever the token's scope: the
 	// administrator of R-LIM-012 (Q-LIM-18). Nil means nobody is.
 	IsAdministrator func(r *http.Request) bool
+	// Repo is the repository a protocol request names for the download limits (R-LIM-005), which knows a host bound to a
+	// repository (R-EP-007); nil reads the address alone (httplimit.Repo).
+	Repo func(r *http.Request) qname.Repo
 }
 
 // LevelReader is the part of the grant index [ChallengedByLevels] reads; *authz.Index implements it.
@@ -231,7 +234,11 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 		next.ServeHTTP(w, r)
 		return
 	}
-	charge := s.o.Limits.Begin(caller, httplimit.Repo(r))
+	repo := httplimit.Repo
+	if s.o.Repo != nil {
+		repo = s.o.Repo
+	}
+	charge := s.o.Limits.Begin(caller, repo(r))
 	if r.URL.Path == httplimit.TokenPath {
 		charge.DeferRequestFigures() // the token service charges its subject after it authenticated (R-LIM-003)
 	}
@@ -254,6 +261,7 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 	st := s.o.Limits.Check(ctx, charge, received, check)
 	httplimit.SetPolicies(w.Header(), st.Policies)
 	if st.Err != nil {
+		httplimit.SetRefusalPolicy(w.Header(), charge)
 		httplimit.Log(ctx, charge)
 		s.o.Limits.Finish(charge)
 		httpserver.Problem(w, r, st.Err)

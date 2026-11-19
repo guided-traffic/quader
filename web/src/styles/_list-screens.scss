@@ -336,6 +336,14 @@ td.class-cell .material-icons {
   }
 }
 
+// A list that names it (`narrowBelow`) lets them give way below 80 rem already: the usage overview's seven figure columns with
+// their sortable headers need about 73 rem before the caller has room (Q-UI-760).
+@container table (max-width: 80rem) {
+  .quader-data-table.narrow-early .narrow-drop {
+    display: none;
+  }
+}
+
 // The toolbar of a list that has no list head (Browse).
 .list-toolbar {
   display: flex;
@@ -694,11 +702,13 @@ td.class-cell .material-icons {
     }
 
     // The name and the actions on the first line; the break (`::before`, a line of its own of no height); then the other cells,
-    // each as wide as its name and value, side by side, a long value on a line of its own where it breaks inside itself.
+    // each as wide as its name and value, side by side, a long value on a line of its own where it breaks inside itself. The cells
+    // of one line stand on one baseline, the first line of each: a value of two lines grows downwards (R-UI-175, Q-UI-762);
+    // centred, an ended token's "Ended" stood a line above "Limit" and "Last used" beside it.
     tbody tr {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: baseline;
       gap: var(--quader-space-1) var(--quader-space-5);
       padding-block: var(--quader-space-3);
       border-block-end: 1px solid var(--quader-border);
@@ -774,6 +784,17 @@ td.class-cell .material-icons {
 
     td[data-empty] {
       display: none;
+    }
+
+    // A meter (`td.meter-cell`: the usage overview's **Now**) takes a line of the block's whole width: the column's name, the bar
+    // and its figure on one line, the state under the bar (Q-UI-763). As an inline name before the meter's box, the name stood on a
+    // line of its own above the bar.
+    td.meter-cell:not([data-empty]) {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
+      column-gap: var(--quader-space-2);
+      flex-basis: 100%;
     }
 
     td.num {

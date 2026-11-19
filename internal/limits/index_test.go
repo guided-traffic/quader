@@ -71,6 +71,26 @@ func workedIndex() *Index {
 	return NewIndex(s)
 }
 
+// R-LIM-034, Q-LIM-52: the rule of a budget key the usage rows recorded is the one that applies at that place now.
+func TestR_LIM_034_TheRuleOfABudgetKeyIsTheOneThatAppliesThereNow(t *testing.T) {
+	x := workedIndex()
+	release := Subject{Kind: KindTechnicalToken, Ref: "tt-release"}
+	if res := x.ResolveAt(release, repoPlace(webNpmLocal, 12)); res.Rule == nil || res.Rule.ID != "r-release" || res.Figures[ParallelDownloads] != 100 {
+		t.Fatalf("the repository's rule: %+v", res.Rule)
+	}
+	if res := x.ResolveAt(release, InstancePlace()); res.Rule == nil || res.Rule.ID != "builtin-"+EveryTechnicalToken {
+		t.Fatalf("the instance's rule: %+v", res.Rule)
+	}
+	// A project without rules of its own falls through to the instance, as resolution does.
+	if res := x.ResolveAt(release, Place{Kind: PlaceProject, ProjectKey: "web"}); res.Place.Kind != PlaceInstance {
+		t.Fatalf("the project's place: %+v", res.Place)
+	}
+	admin := Subject{Kind: KindUser, Ref: "u-ada", Admin: true}
+	if res := x.ResolveAt(admin, repoPlace(webNpmRemote, 11)); res.Rule == nil || res.Rule.ID != "builtin-"+EveryAdministrator {
+		t.Fatalf("an administrator is decided at the instance: %+v", res.Rule)
+	}
+}
+
 func TestR_LIM_013_WorkedExamples(t *testing.T) {
 	x := workedIndex()
 	std, restr, tech, anon := BuiltinProfiles()[ProfileStandard], BuiltinProfiles()[ProfileRestricted], BuiltinProfiles()[ProfileTechnical], BuiltinProfiles()[ProfileAnonymous]

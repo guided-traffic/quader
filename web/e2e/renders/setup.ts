@@ -1,7 +1,18 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Browser, chromium, expect, request } from '@playwright/test';
-import { Api, expectStatus, kinds, mainProject, seedContent, seedGrants, seedLimits, seedProjectsAndRepositories, syncAdvisories } from './seed';
+import {
+  Api,
+  expectStatus,
+  kinds,
+  mainProject,
+  seedContent,
+  seedGrants,
+  seedLimits,
+  seedProjectsAndRepositories,
+  seedUsage,
+  syncAdvisories,
+} from './seed';
 import { authFile, edge, outDir, stateDir } from './paths';
 
 /**
@@ -30,6 +41,8 @@ export default async function setup(): Promise<void> {
     await seedLimits(admin);
     await publishAsPowerUser(browser);
     await plainUserToken(browser);
+    // After the technical tokens and the sign-ins, whose principals the usage names (R-LIM-001).
+    seedUsage();
     await syncAdvisories(admin);
     for (const kind of ['plain', 'power', 'admin'] as const) await openRecent(browser, kind);
   } finally {

@@ -4,11 +4,12 @@ Perspective: how much one caller can take from Quader and from the upstreams beh
 what the usage overview records about people and addresses, and where the bounds stop. The mechanisms are specified on
 [spec/usage-and-limits.md](../spec/usage-and-limits.md) (walk item W-26, the owner's decisions of 2026-11-19) and
 [identity-and-authentication.md](../spec/identity-and-authentication.md) R-AUTH-045 and R-AUTH-046 (technical tokens, a
-repository's service accounts). The technical tokens and a repository's service accounts are built (work package 1; the code is
-described on [tokens-and-credentials.md](tokens-and-credentials.md) and [permissions.md](permissions.md#account-grants)), and so are
-the accounting and the enforcement (work package 2 of [developer/usage-and-limits.md](../developer/usage-and-limits.md)). Where the
-code differs from what the specification promises, the gap is named below. What was built before on the same paths is on [api-edge.md](api-edge.md) (the request classes of R-API-016) and
-[endpoints-and-exposure.md](endpoints-and-exposure.md) (the endpoint's class).
+repository's service accounts). All of it is built: the technical tokens and a repository's service accounts (the code is described
+on [tokens-and-credentials.md](tokens-and-credentials.md) and [permissions.md](permissions.md#account-grants)), the accounting, the
+enforcement, the usage store and the screens ([developer/usage-and-limits.md](../developer/usage-and-limits.md)). Where the code
+differs from what the specification promises, the gap is named below. What was built before on the same paths is on
+[api-edge.md](api-edge.md) (the request classes of R-API-016) and [endpoints-and-exposure.md](endpoints-and-exposure.md) (the
+endpoint's class).
 
 ## What the limits protect, and what they do not
 
@@ -64,8 +65,8 @@ Per case:
 
 | Mode | Stage | Subject | What bounds it | Live or dormant |
 |---|---|---|---|---|
-| `audit` (the default) | 7 | the address prefix | the request classes `package_anonymous` (20 per second, burst 100) of R-API-016, now on `/v2/` too; nothing on bytes, upstream requests or parallel downloads ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce)) | live once built, on every installation that has a public remote on an endpoint the internet reaches and stays in `audit` (H-1009) |
-| `enforce` | 7 | the address prefix | the profile Anonymous: 20 per second, 2,000 per hour | live once built |
+| `audit` (the default) | 7 | the address prefix | the request classes `package_anonymous` (20 per second, burst 100) of R-API-016, now on `/v2/` too; nothing on bytes, upstream requests or parallel downloads ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce)) | live on every installation that has a public remote on an endpoint the internet reaches and stays in `audit` (H-1009) |
+| `enforce` | 7 | the address prefix | the profile Anonymous: 20 per second, 2,000 per hour | live |
 | `enforce` | step 9a of R-REPO-025 | the address prefix and the remote's anonymous ceiling | 20 upstream requests and 2 GB from the upstream per hour per address; the ceiling for all anonymous callers, which is unset by default ([Q-LIM-16](../spec/usage-and-limits.md#q-lim-16--a-ceiling-is-a-remote-repositorys-for-the-two-upstream-figures-and-none-is-set-by-default)) | live; the installation's upstream quota is bounded only once a ceiling is set (H-1007) |
 | `enforce` | `edge.ServeItem` | the address prefix | 10 GB from the cache per hour, 30 GB a day, 4 parallel downloads, paced at 20 MB/s per address | live; many addresses together are bounded by the replicas' capacity only (H-1007) |
 | both | the usage store | the address prefix | the per-replica buffer is bounded (100,000 keys, then an overflow row), the Valkey keys expire within 48 hours | Valkey eviction is H-1008 |
@@ -104,7 +105,10 @@ repository only, is administered by the project's Owners, moves with its reposit
 policy, a group, a role binding or a project membership ([R-AUTHZ-039](../spec/authorization.md#r-authz-039--the-actions-of-a-repositorys-service-account)).
 Its tokens follow the Owner's token bounds (never non-expiring, no administrator scope, no system item). Rotation and a new secret
 keep the token's budget subject, so a leaked secret that is revoked and replaced keeps its system's limit; the leaked secret itself
-is dead. Built: the subject is the technical token's ID, which the authentication stage hands on as `Credential.TechnicalTokenID`
+is dead. A deleted token's rules go with the daily task `limits-cleanup`; a new token never inherits them, since a rule names the
+token's ID ([Q-LIM-49](../spec/usage-and-limits.md#q-lim-49--a-deleted-technical-tokens-rules-and-blocks-go-with-the-daily-task-its-usage-stays)).
+A registry token issued for a technical token's secret spends the technical token's budget, on the token request and on every
+registry request after it (tested on the request path: `TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken`). Built: the subject is the technical token's ID, which the authentication stage hands on as `Credential.TechnicalTokenID`
 ([principal.go](../../internal/httpserver/principal.go)); a rotation's successor and a new secret carry the same ID
 ([rotate.go](../../internal/auth/token/rotate.go), [technical.go](../../internal/auth/token/technical.go)). A repository's account
 being deleted keeps authenticated tokens for as long as the delete job runs, with no right
@@ -129,15 +133,14 @@ The gaps of the spec page whose mechanisms this page describes:
 ### H-1009 · In Audit mode nothing of the download limits refuses: an anonymous caller of a public remote is bounded by the request classes alone
 
 Component: the mode of [R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce). Subject: every remote repository whose
-artifacts are `public`, on an endpoint the internet reaches. Dormant until built; live then on every installation in `audit`, which
-is the default. What makes it real: a caller without a credential can make the remote fetch from its upstream as many artifacts as
+artifacts are `public`, on an endpoint the internet reaches. Live on every installation in `audit`, which is the default. What makes it real: a caller without a credential can make the remote fetch from its upstream as many artifacts as
 20 requests per second admit, spending the installation's upstream quota and storage, until an administrator switches to `enforce`
 or sets the remote's ceilings (which apply in `enforce` only).
 
 ### H-1010 · Anonymous callers behind one address are blocked by refused requests another caller sends from it
 
 Component: the block of [R-LIM-025](../spec/usage-and-limits.md#r-lim-025--the-block-after-refused-requests). Subject: readers of
-`public` repositories without a credential behind a shared address (a NAT, a CI fleet, a proxy). Dormant until built and in
+`public` repositories without a credential behind a shared address (a NAT, a CI fleet, a proxy). Dormant in `audit`; live in
 `enforce`. What makes it real: anyone behind the same address sends `refusedPerHour` wrong tokens (60 an hour with the profile
 Anonymous); every anonymous request from the address is then refused for the block time, again after each block. Callers with a
 valid credential are not affected.
@@ -146,14 +149,14 @@ valid credential are not affected.
 
 Component: the usage overview's project scope ([R-LIM-029](../spec/usage-and-limits.md#r-lim-029--who-sees-which-usage),
 [Q-LIM-21](../spec/usage-and-limits.md#q-lim-21--a-project-owner-sees-the-addresses-of-the-anonymous-callers-of-its-repositories)).
-Subject: every person who reads a project's `public` repositories without a credential. Dormant until built. What makes it real: an
+Subject: every person who reads a project's `public` repositories without a credential. Live. What makes it real: an
 Owner who is not entitled by the installation's data protection rules to see visitors' addresses reads them for 30 days, and can
 export them as CSV.
 
 ### H-1012 · The budget of an anonymous caller is as good as the client address
 
 Component: the anonymous subject of [R-LIM-002](../spec/usage-and-limits.md#r-lim-002--the-address-of-an-anonymous-subject) on
-the client address of R-ARCH-006. Subject: every anonymous budget and block. Dormant until built. What makes it real: a
+the client address of R-ARCH-006. Subject: every anonymous budget and block. Live. What makes it real: a
 `server.trusted_proxies` that trusts a network the client controls lets it choose an address per request and never meet a budget or
 a block; an empty one behind an edge proxy makes every anonymous caller the proxy's address, so one caller's consumption or block
 is everyone's.

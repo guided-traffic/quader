@@ -386,6 +386,10 @@ Priority: **MVP** · Covers: ADMAPI-001, ADMAPI-041, IAM-032
   whose capability it does not hold) answers 404, exactly like a project that does not exist; a member whose role is
   lower answers 403 `forbidden`. The Owner's administration needs a credential that may administer: a UI session or a
   token with `admin: true` ([Q-AUTHZ-215](authorization.md#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)).
+  An operation outside `/projects/` that an Owner of any project may call (the profiles, the explanation, the blocks and the
+  subjects of the download limits, R-API-082) declares `projectRole: owner` without `project`: the shared step admits the
+  holder of the capability or an Owner of any project, and the handler decides on the project the request names
+  ([Q-API-355](#q-api-355--projectrole-owner-without-a-project-admits-an-owner-of-any-project)).
 - Administrative read operations are reachable by a token carrying the matching system scope item
   instead of the administrator role (`identities:read`, `policies:read`, `settings:read`,
   `audit:read`, `repositories:read-config`, `tokens:read`; R-AUTH-025), so read-only automation
@@ -7551,13 +7555,18 @@ renders, 2026-11-18).
   at its longest value) need more than its region has, and only there
   ([Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)).
 - A stacked row is the name with its actions on the first line, then the other cells side by side, as many to a line as fit, each
-  with its column's name ([Q-UI-681](#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)).
+  with its column's name ([Q-UI-681](#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)). Every name stands on its value's first
+  line, and the cells of one line have their first lines on one line; a value of two lines grows downwards
+  ([Q-UI-762](#q-ui-762--the-cells-of-a-stacked-rows-line-stand-on-one-baseline)). A meter takes a line of its own: its column's name,
+  the bar and its figure on one line, the state under the bar
+  ([Q-UI-763](#q-ui-763--a-meter-in-a-stacked-row-is-a-line-of-its-own-name-bar-and-figure-on-one-line)).
 
 Acceptance criteria:
 
 - Unit test: the table stacks where its least width exceeds its region's and not where it fits, measured again when its rows
   change (`data-table.spec.ts`).
-- The render run's report names no `stacked-fits` finding: a stacked table whose columns would fit is a finding.
+- The render run's report names no `stacked-fits`, no `stacked-offset` and no `label-apart` finding: a stacked table whose columns
+  would fit is a finding, and so is a stacked row's name off its value's line or off its neighbours' line.
 
 ### R-UI-175 · A control or an icon beside a text stands on the middle of that text's first line
 Priority: **MVP** · Covers: quader-only
@@ -7644,7 +7653,7 @@ neither.
   ([Q-UI-751](#q-ui-751--the-rule-table-lists-the-rules-in-the-order-resolution-tries-them-at-every-place)), each with the badge
   **Built-in**, their action **Change** and no **Delete**. Under the table one line: "Block time after too many refused requests: 15 minutes" with **Change** (a field in minutes,
   1 to 1,440, saved through `PATCH /api/v1/limits/settings`).
-- **Projects** ([Q-UI-756](#q-ui-756--the-tab-projects-reads-each-projects-maximum-and-rules-until-one-operation-lists-them)): one row per project that has a maximum or a rule: the project (mark, display name, key), **Maximum** (the profile's
+- **Projects** ([Q-UI-756](#q-ui-756--the-tab-projects-reads-every-projects-maximum-and-rule-counts-in-one-operation)): one row per project that has a maximum or a rule: the project (mark, display name, key), **Maximum** (the profile's
   name with "+ N changes" for overrides, or "None"), **Rules** (the number at the project and its repositories). For a holder of
   `limits:write` the maximum is the link that opens its dialog (**Set maximum** where there is none), with the profile select and
   the override fields of R-UI-179's dialog, and **Remove maximum** is the row's one action
@@ -7776,16 +7785,21 @@ it is named for the system that uses it and has a budget of its own
 - **The service account's page** (R-UI-026) at the instance (`/admin/service-accounts/{name}`), at a project
   (`/projects/{project}/service-accounts/{name}`) and at a repository (`/projects/{project}/repositories/{repo}/service-accounts/{name}`)
   calls its section **Technical tokens**, open while the account has one. Its list: **Token** (the name, under it the hint of its
-  current secret and its description), **Limit** (the profile of the token's own rule, "+ N changes", or "Default (Technical)"),
-  **Last 24 hours** (requests and bytes, "1,204 requests · 3.2 GB"), **Expires**, **Last used**, and the actions **Rotate**,
-  **Set limit**, **Revoke**. A token without a live secret shows **Expired** or **Revoked** and the action **Issue new secret**.
+  current secret with its expiry, "qdr_sat_kMbd · expires in 2 months" or "· never expires", **Expires soon** under it in the last
+  days, and its description), **Limit** (the profile of the token's own rule, "+ N changes", or "Default (Technical)", and as the
+  cell's second line the last 24 hours, "95,695 requests · 518.8 GB in 24 h" or "Not used in 24 h",
+  [Q-UI-761](#q-ui-761--a-technical-tokens-last-24-hours-is-the-second-line-of-its-limit)), **Last used**, and the actions
+  **Rotate** and **Revoke**; the limit itself opens its rule dialog, **Set limit** or **Change limit** with **Remove limit**
+  in it ([Q-UI-759](#q-ui-759--a-technical-tokens-limit-opens-its-rule-dialog-and-the-row-keeps-rotate-and-revoke)). A token without
+  a live secret is listed apart, without its limit, and shows **Expired** or **Revoked** and the action **Issue new secret**. At
+  1,024 px and wider both lists are tables.
 - **New technical token** (the section's head) opens the create dialog of R-UI-026 with **Name** first (required; help: "The system
   that uses this token, for example `nightly-mirror`. It cannot be changed."), then description, expiry, scope and endpoints as
   today. The secret is shown once, as today.
 - **Set limit** opens the rule dialog of R-UI-179 with the "who" fixed to this token and the place of its account (the instance,
-  the project, the repository); a token with a rule shows **Change limit** and **Remove limit**.
+  the project, the repository); for a token with a rule it is **Change limit**, with **Remove limit** at the dialog's foot.
 - The tokens with a live secret and the ended ones are two tables of the section, the ended ones under **Expired and revoked** with
-  the column **Ended** (when and how the last secret ended) in place of **Expires**, so that the action cells of a table are built one
+  the column **Ended** (when and how the last secret ended) after **Token**, so that the action cells of a table are built one
   way (R-UI-163, [Q-UI-740](#q-ui-740--the-ended-technical-tokens-are-a-table-of-their-own)).
 - **Rotate** is offered to the administrator role; an Owner revokes and issues a new secret
   ([Q-AUTH-419](identity-and-authentication.md#q-auth-419--an-owner-of-the-project-does-not-rotate-the-secret-of-a-technical-token-it-issues-a-new-one)).
@@ -7805,7 +7819,7 @@ it is named for the system that uses it and has a budget of its own
 Acceptance criteria:
 
 - An Owner creates the repository account `ci` on `web/npm-local` with Read and Deploy, issues the technical token `release`, and
-  the token publishes to `web/npm-local`; rotating it keeps the row and its **Last 24 hours**.
+  the token publishes to `web/npm-local`; rotating it keeps the row and its last 24 hours.
 
 ### R-UI-182 · The mode switch
 Priority: **MVP** · Covers: BEYOND-030
@@ -7844,7 +7858,7 @@ display name>", for a repository "Usage of <repository key>".
   button (`…/usage/export` with the same filters).
 - **Two views as links over the table**: **Close to the limit** and **Limit reached** (in Audit **Would have been limited**), each the state
   filter set, beside **All callers**. The filters, the period, the search and the sort are the page address's parameters, so a link
-  opens the overview filtered ([Q-UI-755](#q-ui-755--the-usage-overview-keeps-its-filters-in-the-address-the-instances-project-filter-reads-the-projects-usage)).
+  opens the overview filtered ([Q-UI-755](#q-ui-755--the-usage-overview-keeps-its-filters-in-the-address-the-instances-project-filter-narrows-the-instances-list)).
 - **In Audit mode** a line under the head says "Mode: Audit. Limits are counted, not applied." and every state reads "Would have been
   limited" instead of "Limit reached".
 - **Columns**: **Caller** (as R-UI-179's first column; an anonymous address in the monospace type, a CI project by path, "System" for
@@ -7859,8 +7873,8 @@ display name>", for a repository "Usage of <repository key>".
 - Every numeric column sorts (the head's sort control and the column header); bytes in decimal units with one decimal ("1.2 GB"),
   the exact count in the tooltip.
 - A row opens the subject's detail (R-UI-184).
-- From 64 rem of the list every column shows; below, **Upstream requests** and **Refused** give way first, then the row stacks
-  (R-UI-174).
+- From 80 rem of the list every column shows; below, **Upstream requests** and **Refused** give way first, then the row stacks
+  (R-UI-174, [Q-UI-760](#q-ui-760--the-usage-overviews-upstream-requests-and-refused-give-way-below-80-rem)).
 - **Empty states**: no usage in the period, "No downloads in the last 24 hours."; a filter that matches nothing, "No caller matches.";
   in a project scope without protocol traffic, "Nobody downloaded from this project in the last 24 hours."
 - **What each kind of user sees** (R-UI-067): an administrator and an auditor the instance scope with addresses; a project Owner its
@@ -7878,9 +7892,12 @@ Acceptance criteria:
 Priority: **MVP** · Covers: BEYOND-030
 
 `/admin/usage/{kind}/{id}` and `/projects/{project}/usage/{kind}/{id}` (`GET …/usage/subjects/{kind}/{id}`). The title names the
-caller ("alice", "deploy-prod of sa:web/partner", "198.51.100.23", "acme/web (CI)").
+caller, not its reference: a user's display name ("Priya Raman"), a technical token's name ("deploy-prod"), a CI project's path
+("acme/web"), an address ("198.51.100.23"); the breadcrumb's last step is the same words
+([Q-UI-765](#q-ui-765--a-callers-page-is-titled-with-the-callers-name-and-its-reference-stands-under-it)).
 
-- **Top**: the caller as in R-UI-183's first column, its kind, and for a technical token a link to its account; when blocked, a notice
+- **Top**: under the title the caller's kind and its reference (a user's `@priya`, a CI project's issuer), for a technical token a
+  link to its account; when blocked, a notice
   "Blocked until 10:55 after 61 refused requests in an hour" with **Lift block** for a caller who may lift it.
 - **Limits**: one block per budget key (the instance, and each project or repository whose rule applies to it): its place, the rule
   that applies and why in one sentence, read from the explanation ("Rule for the group contractors at web/npm-remote, profile
@@ -15776,6 +15793,42 @@ operation does; it costs the same statement with a list of repositories. The pro
 `usage:read`. **Applied in the spec:** R-API-082, [usage-and-limits.md](usage-and-limits.md) R-LIM-034.
 
 
+### Q-API-354 · A PUT that creates takes no If-Match, and requires it when it replaces
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `PUT /api/v1/projects/{projectKey}/limits/maximum` sets a project's first maximum or replaces it (R-LIM-033, 201 or 200).
+R-API-012 requires `If-Match` on every PUT of a resource that carries a revision `ETag`, and `If-Match: *` passes only when the
+resource exists (RFC 9110 section 13.1.1). A first maximum has no `ETag` a client could have loaded: the operation as built answered
+428 without the header and could never be called correctly for a create (the render seed and the maximum dialog both send none).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The create takes no `If-Match`; a replace requires it (428 without, 412 for a stale one); an `If-Match` sent where nothing exists answers 412 (chosen) | The operation declares the optional `If-Match` and documents 201 and 428 | RFC 9110's semantics of `If-Match` on a missing resource; a concurrent second create meets the stored version 0 rule and answers 412 | One more form of declaration besides required and exempt |
+| (b) A create sends `If-Match: *` | — | One rule | `*` means "exists" in RFC 9110 and fails on a missing resource |
+| (c) A separate `POST` creates | — | The general create | A second operation for one singleton |
+
+**Choice:** (a). The declaration test of R-API-012 knows the form (`ifMatchOnReplace` in
+[ifmatch_test.go](../../internal/api/v1/ifmatch_test.go)). **Applied in the spec:** R-LIM-033 of
+[usage-and-limits.md](usage-and-limits.md). Code: [limits_api.go](../../internal/api/v1/limits_api.go) `SetLimitProjectMaximum`.
+
+### Q-API-355 · projectRole owner without a project admits an Owner of any project
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-API-082 admits "`limits:read` or an Owner of any project" to the profiles of the download limits, and an Owner of the
+project the request names to the explanation, the blocks and the subjects; their paths name no project. The shared step asked
+"Owner of the project ''" for a declaration without `project`, which no caller is, and refused every Owner with 403 (the renders
+of 2026-11-19).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Without `project`, `projectRole: owner` admits a caller that may administer at least one project it is an Owner of; the handler decides on the project the request names (chosen) | The reader role already meant "a member of any project" without a project source | One declaration form, the same rule for both roles; the handler keeps the narrow check | The shared step admits an Owner the handler may still refuse |
+| (b) The operations declare `authenticated` and decide everything in the handler | — | No change of the shared step | The capability's audit of a refusal is lost; the declaration test of R-API-008 no longer reads who may call |
+
+**Choice:** (a). **Applied in the spec:** R-API-008. Code: `projectRoleAdmits` in
+[authorize.go](../../internal/api/v1/authorize.go), tested in `TestR_AUTHZ_026_TheDeclarationOfAProjectRole`.
+
 ### Q-API-345 · The usage list is one operation per scope, with the period, the kind, the state and the sort as parameters
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -18325,22 +18378,6 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Applied in the spec:** R-UI-181.
 
-### Q-UI-740 · The ended technical tokens are a table of their own
-
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
-
-Context: an active token's row offers **Rotate** and **Revoke**, an ended token's **Issue new secret**; R-UI-163 and the renders'
-check of R-UI-176 hold the action cells of one table to one construction, and a credential's **Revoke** is never in a menu (Q-UI-641).
-
-| Option | What it means | For | Against |
-|---|---|---|---|
-| (a) Two tables in the section: the active tokens, and **Expired and revoked** with the column **Ended** (chosen) | Each table's rows offer the same actions | The rule holds; an ended token says when it ended, not a date of a secret that no longer counts | Two lists in one section |
-| (b) One table, each row's actions in a menu | One list | — | **Revoke** of a credential in a menu (Q-UI-641) |
-| (c) One table, an ended row's state and **Issue new secret** beside each other | As R-UI-181 first read | One list | The rows of one table built two ways; at 390 px the badge and the button squeeze the token's name |
-
-**Choice:** (a). **Rationale:** the owner's screens are built one way per table, and the ended tokens are what an operator renews or
-leaves. The development agent would revisit this if an ended token got the actions of an active one. **Applied in the spec:** R-UI-181.
-
 ### Q-UI-735 · A user's own usage is a tab of the profile
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -18362,6 +18399,22 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Binary units (MiB, GiB) | — | Like storage sizes | The owner's numbers would not reappear as he wrote them |
 
 **Choice:** (a). **Applied in the spec:** R-UI-178, R-UI-183.
+
+### Q-UI-740 · The ended technical tokens are a table of their own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: an active token's row offers **Rotate** and **Revoke**, an ended token's **Issue new secret**; R-UI-163 and the renders'
+check of R-UI-176 hold the action cells of one table to one construction, and a credential's **Revoke** is never in a menu (Q-UI-641).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two tables in the section: the active tokens, and **Expired and revoked** with the column **Ended** (chosen) | Each table's rows offer the same actions | The rule holds; an ended token says when it ended, not a date of a secret that no longer counts | Two lists in one section |
+| (b) One table, each row's actions in a menu | One list | — | **Revoke** of a credential in a menu (Q-UI-641) |
+| (c) One table, an ended row's state and **Issue new secret** beside each other | As R-UI-181 first read | One list | The rows of one table built two ways; at 390 px the badge and the button squeeze the token's name |
+
+**Choice:** (a). **Rationale:** the owner's screens are built one way per table, and the ended tokens are what an operator renews or
+leaves. The development agent would revisit this if an ended token got the actions of an active one. **Applied in the spec:** R-UI-181.
 
 ### Q-UI-750 · The admin area's two entries stand in Identity after Tokens; the project's Usage in Access after Service accounts
 
@@ -18442,34 +18495,35 @@ scheme for colour-blind readers (the categorical check of 2026-11-19: ΔE 5.8 de
 
 **Choice:** (a). **Applied in the spec:** R-UI-184. Code: [usage-history.ts](../../web/src/app/features/usage/usage-history.ts).
 
-### Q-UI-755 · The usage overview keeps its filters in the address; the instance's Project filter reads the project's usage
+### Q-UI-755 · The usage overview keeps its filters in the address; the instance's Project filter narrows the instance's list
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the mode switch links to the overview filtered by **Would have been limited** (R-UI-182), and `GET /api/v1/usage` has no
-`project` parameter (R-LIM-034), while R-UI-183 gives the instance scope a filter **Project**.
+Context: the mode switch links to the overview filtered by **Would have been limited** (R-UI-182), and R-UI-183 gives the instance
+scope a filter **Project**; `GET /api/v1/usage` narrows to one project's repositories with `project=` (Q-API-353).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The period, kinds, state, search, sort and project are the address's parameters; with a project the instance's page reads `GET /api/v1/projects/{key}/usage`, which `usage:read` may (chosen) | — | A link opens the overview as it was; no new operation | A project's list is the project's rows, the same as its Owner sees |
-| (b) A `project` parameter of `GET /api/v1/usage` | — | One operation | A change of package 2's contract |
+| (a) The period, kinds, state, search, sort and project are the address's parameters; the instance's filter **Project** sends `project=` to `GET /api/v1/usage` and its export (chosen) | — | A link opens the overview as it was; the instance's rows stay the instance's (a caller's row opens its instance detail) | — |
+| (b) With a project, the instance's page reads `GET /api/v1/projects/{key}/usage` | — | The Owner's list | A second scope behind one page; the rows' links would lead into the project's detail |
 
 **Choice:** (a). **Applied in the spec:** R-UI-182, R-UI-183. Code:
-[usage-overview.ts](../../web/src/app/features/usage/usage-overview.ts).
+[usage-overview.ts](../../web/src/app/features/usage/usage-overview.ts), `UsageScope.projectFilter` in
+[limits-api.ts](../../web/src/app/api/limits-api.ts).
 
-### Q-UI-756 · The tab Projects reads each project's maximum and rules until one operation lists them
+### Q-UI-756 · The tab Projects reads every project's maximum and rule counts in one operation
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-UI-177's tab **Projects** lists every project with a maximum or a rule; R-API-082 has no operation that lists them.
+Context: R-UI-177's tab **Projects** lists every project with a maximum or a rule; `GET /api/v1/limits/projects` (Q-API-351)
+answers each such project's maximum and its rules at the project and at its repositories, by key.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The UI reads every project's maximum and the rules of the project and its repositories, six at a time, in one method of its API service (chosen) | — | Built on the operations that exist; replaced in one place | Many requests on an installation with many repositories |
-| (b) An operation `GET /api/v1/limits/projects` | — | One request | Not specified; package 2's contract |
+| (a) The tab reads `GET /api/v1/limits/projects` and the project list for the display names, two requests (chosen) | — | Two requests whatever the number of repositories | The display name is a second read |
+| (b) Read every project's maximum and the rules of every project and repository | — | No operation of its own | A request per project and per repository |
 
-**Choice:** (a). Revisit with the first installation that has more than a few hundred repositories, or when the operation of (b)
-exists. **Applied in the spec:** R-UI-177. Code: [limits-api.ts](../../web/src/app/api/limits-api.ts) `projectRows`.
+**Choice:** (a). **Applied in the spec:** R-UI-177. Code: [limits-api.ts](../../web/src/app/api/limits-api.ts) `projectRows`.
 
 ### Q-UI-757 · The overview's meter says the percentage, the caller's page the amounts
 
@@ -18503,6 +18557,135 @@ check `row-actions` found two) and never a menu of one entry.
 
 ## What this does not cover
 
+
+### Q-UI-759 · A technical token's limit opens its rule dialog, and the row keeps Rotate and Revoke
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-181 gave an active token's row **Rotate**, **Set limit** and **Revoke**, and a token with a rule **Change limit** and
+**Remove limit**: up to four words in one action cell. With the columns **Limit** and **Last 24 hours** the table of a service
+account's page (about 54 rem beside the side bar) no longer held three words of actions and stacked its rows at 1440 px (the render
+of 2026-11-19). The token record carries its own rule (`limit` of R-AUTH-045), and Q-UI-758 opens the thing a row sets by its name.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The **Limit** cell is the button that opens the rule dialog: **Set limit** for "Default (Technical)", **Change limit** with **Remove limit** at the dialog's foot for a token's own rule; the action cell keeps **Rotate** and **Revoke** (chosen) | The words are the dialog's title and the cell's name for a screen reader | The row fits at 1440 px; one way to open what a row sets (Q-UI-758); the action cell of a token is built as before | **Set limit** is no word of the row |
+| (b) **Rotate**, **Set limit** or **Remove limit**, **Revoke** in the action cell | — | Every word of R-UI-181 in the row | The rows stack at 1440 px |
+| (c) The limit's actions in a menu | — | One word less | A credential's row with a menu and words (Q-UI-641) |
+
+**Choice:** (a). The ended tokens' table keeps **Issue new secret** as its one action (Q-UI-740) and shows no limit (Q-UI-761).
+The limit shows for a caller who reads the limits (`limits:read`, or an Owner of the account's project); its line of the last 24
+hours for one who reads the usage, in the instance's overview for `usage:read`, in the project's for its Owner. Revisit if the
+owner wants the words in the row. **Applied in the spec:** R-UI-181. Code:
+[technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts),
+[technical-token-limit.ts](../../web/src/app/features/limits/technical-token-limit.ts), `tokenRule` of
+[rule-dialog.ts](../../web/src/app/features/limits/rule-dialog.ts).
+
+### Q-UI-760 · The usage overview's Upstream requests and Refused give way below 80 rem
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-183 showed all seven columns from 64 rem of the list. Measured in the renders of 2026-11-19, the six figure columns
+with their sortable headers and the meter need 73 rem of the list on their own; beside the side bar at 1440 px the list has 68.6
+rem, so the rows stacked at the owner's usual width.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The two narrow columns give way below 80 rem of the list, a threshold this list names (`narrowBelow` of the data table) (chosen) | At 1440 px the list shows Caller, Requests, From the cache, From the upstream and Now; the two figures are on the caller's page and in the export | A table, not stacked rows, at 1440 px; the caller's name has room | Two columns fewer at 1440 px |
+| (b) Shorter headers or a state without its badge | — | Seven columns | The owner's words and the house's status badge change for one list, and it still did not fit by a few pixels |
+| (c) Stacked rows at 1440 px | As built first | Every figure in view | A list of blocks where a table fits |
+
+**Choice:** (a). Revisit when the side bar is narrower or the headers lose their sort icons. **Applied in the spec:** R-UI-183.
+Code: [usage-overview.html](../../web/src/app/features/usage/usage-overview.html),
+[data-table.ts](../../web/src/app/shared/ui/data-table.ts) `narrowBelow`, [_list-screens.scss](../../web/src/styles/_list-screens.scss).
+
+### Q-UI-761 · A technical token's last 24 hours is the second line of its limit
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-181 with Q-UI-759 gave the token list of a service account the columns **Token**, **Limit**, **Last 24 hours**,
+**Expires**, **Last used** and the actions. The page's column is about 54 rem wide, and the list stood as blocks at 1440 px (the
+development agent's look at the renders of 2026-11-19). Measured as the table measures itself (its columns at their least widths,
+the renders of 2026-11-19, an administrator's list with **Rotate** and **Revoke**): with the last 24 hours under the limit the list
+still needed 728 px (**Token** 160 at 8 rem, **Limit** 157, **Expires** 109, **Last used** 127, the actions 175) and had 872 px at
+1440 px and 688 px at 1024 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Limit** holds the limit on the row's line and the last 24 hours as its second line ("95,695 requests · 518.8 GB in 24 h", "Not used in 24 h", whole from 50 rem of the list, broken between requests and bytes below); the secret's expiry stands beside its hint in **Token** ("qdr_sat_kMbd · expires in 2 months", **Expires soon** under it); the ended tokens' list shows no limit (chosen) | Measured: 651 px at 1024 px, up to 721 px at 1440 px; the ended list 603 px (**Token** 192, **Ended**, **Last used** 127, **Issue new secret** 175); both are tables at 1440 and 1024 px, blocks at 390 px | Two columns less; the limit and what it limits read together, and so do a secret and its end; the ended list keeps when and how a token ended | No column **Expires** to scan; an ended token's rule shows again only with its new secret |
+| (b) **Limit** with its second line and **Token** at 8 rem, the column **Expires** kept | — | The column of R-UI-026's token lists | 728 px: blocks at 1024 px |
+| (c) A column **Last 24 hours** of its own and the section as wide as the page | — | Every figure a column | The page's column is the house's measure for a detail page; still blocks at 1024 px |
+| (d) Drop **Last used** from the list | — | Room | The one figure that says whether a system still uses its token |
+
+**Choice:** (a). An ended token downloads nothing; its rule stays and shows in the active list when **Issue new secret** gives it a
+secret again (Q-UI-740). **Applied in the spec:** R-UI-181. Code:
+[technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts),
+[technical-tokens.ts](../../web/src/app/features/service-accounts/technical-tokens.ts),
+[technical-token-limit.ts](../../web/src/app/features/limits/technical-token-limit.ts).
+
+### Q-UI-762 · The cells of a stacked row's line stand on one baseline
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a stacked row (R-UI-174) centred its cells on each line of the block. An ended token's **Ended** holds the time and under it
+**Expired** or **Revoked**; centred against **Limit** and **Last used** of one line, its name stood half a line above theirs at 1440
+px, and at 390 px it floated beside them (the development agent's look at the renders of 2026-11-19). The render checks did not see
+it: `row-offset` measures a stacked row's first line only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The cells of a block stand on one baseline, the first line of each; a value of two lines grows downwards; two checks in the renders, `stacked-offset` (the names of one line on one middle) and `label-apart` (a value under its name) (chosen) | One rule in `_list-screens.scss` for every list | Every block of every list, and the next cell of two lines is found by the renders and by a fixture with the app's stylesheet | A field's frame in a block stands on the baseline as before (R-UI-175) |
+| (b) Cells at the line's top | — | Simple | A cell whose first line is taller (a field, a link button) puts its name lower than its neighbours' |
+| (c) The ended token's time and state on one line | — | This one cell | The next cell of two lines repeats it |
+
+**Choice:** (a). **Applied in the spec:** R-UI-174. Code: [_list-screens.scss](../../web/src/styles/_list-screens.scss),
+[layout.ts](../../web/e2e/renders/layout.ts), fixtures in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts).
+
+### Q-UI-763 · A meter in a stacked row is a line of its own: name, bar and figure on one line
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in the usage overview's stacked rows (R-UI-183 at 390 px) the column's name **Now** stood on a line of its own above its
+meter, because the meter is a box (the bar with its figure, the state under it) and the name is text before it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `td.meter-cell`: in a block the cell takes the block's whole width, the name in a column of its own and beside it the bar with its figure, the state under the bar; "Now Unlimited" on one line (chosen) | The same pattern in every row, blocked, close to the limit or unlimited | The name reads as the label of its bar, as the other facts do; `label-apart` finds a meter that slips under its name again | The meter's line is a line of the block even beside short facts |
+| (b) The meter inline after its name, the state wrapping after it | — | No class | The state badge wraps beside or under the name, differently per row |
+
+**Choice:** (a). **Applied in the spec:** R-UI-174, R-UI-183. Code: [_list-screens.scss](../../web/src/styles/_list-screens.scss),
+[usage-overview.html](../../web/src/app/features/usage/usage-overview.html).
+
+### Q-UI-764 · A link in a dialog has the app's link style
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the dialog **Switch to Enforce** (R-UI-182) links its figures and kinds of caller to the overview. A dialog stands in the
+overlay outside the page's `.content`, whose rule gives a link its colour (R-UI-044), so the links were the browser's blue and violet,
+in the dark scheme too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page's link rule for every dialog's body (`.dialog-body a`, `_dialog.scss`) (chosen) | The link colour, the underline's offset, the focus ring | Every dialog's link at once, in both schemes | — |
+| (b) A style in the one dialog | — | Local | The next dialog with a link repeats the defect |
+
+**Choice:** (a). **Applied in the spec:** R-UI-044. Code: [_dialog.scss](../../web/src/styles/_dialog.scss).
+
+### Q-UI-765 · A caller's page is titled with the caller's name, and its reference stands under it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-184 titled a caller's page with its reference ("priya", "deploy-prod of sa:web/partner", "acme/web (CI)"), repeated
+the caller with its picture under the title, and the breadcrumb ended with the kind and the address's ID ("user / priya"). The
+title names the thing (the product rule of 2026-11-12).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The title is the caller's name: a user's display name, a technical token's name, a CI project's path, an address; under it the kind and the reference (`@priya`, the issuer, a link to the token's account); the breadcrumb's last step is the title, read by the route's title resolver (chosen) | `subjectTitle`, `subjectReference` of `callers.ts`, `callerTitle` of `usage.routes.ts` | The page reads as the overview's row that opened it; the window's title says whose usage it is | The resolver reads the caller's last hour once more for the breadcrumb |
+| (b) The title from the page, the breadcrumb unchanged | — | No second read | The breadcrumb ends with "user / priya", not with the page's title |
+
+**Choice:** (a). **Applied in the spec:** R-UI-184. Code: [callers.ts](../../web/src/app/features/limits/callers.ts),
+[usage-detail.ts](../../web/src/app/features/usage/usage-detail.ts), [usage.routes.ts](../../web/src/app/features/usage/usage.routes.ts).
 
 ### Q-UI-240 · An Ansible package has a Documentation tab and a Contents tab; the README tab is its first page
 

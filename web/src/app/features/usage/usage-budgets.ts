@@ -1,12 +1,12 @@
-import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, inject, input } from '@angular/core';
-import { BudgetFigure, BudgetRule, Figure, LimitMode, LimitPlace, UsageBudget } from '../../api/limits-api';
+import { ChangeDetectionStrategy, Component, LOCALE_ID, inject, input } from '@angular/core';
+import { BudgetFigure, BudgetFigures, BudgetRule, Figure, LimitMode, LimitPlace, UsageBudget } from '../../api/limits-api';
 import { placeLabel, placeText, whoView } from '../limits/callers';
 import { figureName, formatBytes, formatCount, limitText, unitOf } from '../limits/figures';
 import { UsageMeter } from './usage-meter';
 import { stateOfRatio } from './usage-words';
 
 /** The windowed figures with a meter, and the rates as text, in the order of R-UI-184. */
-export const WINDOWED: readonly Figure[] = [
+export const WINDOWED: readonly (keyof BudgetFigures)[] = [
   'requestsPerHour',
   'cachedBytesPerHour',
   'uncachedBytesPerHour',
@@ -15,7 +15,7 @@ export const WINDOWED: readonly Figure[] = [
   'parallelDownloads',
   'refusedPerHour',
 ];
-export const RATES: readonly Figure[] = ['requestsPerSecond', 'cachedBytesPerSecond', 'uncachedBytesPerSecond'];
+export const RATES: readonly (keyof BudgetFigures)[] = ['requestsPerSecond', 'cachedBytesPerSecond', 'uncachedBytesPerSecond'];
 
 /** "the group contractors", "alice", "every signed-in user": a rule's "who" inside a sentence. */
 function whoPhrase(rule: BudgetRule): string {
@@ -37,7 +37,8 @@ function whoPhrase(rule: BudgetRule): string {
  * built-in rule "Default for every signed-in user at the instance, profile Standard."; on the profile "Your limits come from …"
  * (R-UI-185).
  */
-export function ruleSentence(rule: BudgetRule, place: LimitPlace, profileName: string, own: boolean): string {
+export function ruleSentence(rule: BudgetRule | null, place: LimitPlace, profileName: string, own: boolean): string {
+  if (!rule) return $localize`:@@usage.rule.none:No rule applies ${placeText(place)}:place:: every figure is unlimited.`;
   const who = whoPhrase(rule);
   const where = placeText(place);
   const what = rule.builtin
@@ -140,20 +141,17 @@ export class UsageBudgets {
 
   readonly budgets = input.required<readonly UsageBudget[]>();
   readonly mode = input<LimitMode>('audit');
-  /** The profiles' names by key; a key without a name is shown as it is. */
-  readonly profileNames = input<ReadonlyMap<string, string>>(new Map());
   /** The caller's own limits: "Your limits come from …" (R-UI-185). */
   readonly own = input(false);
 
   protected readonly placeName = placeLabel;
-  private readonly names = computed(() => this.profileNames());
 
   protected placeKey(p: LimitPlace): string {
     return p.kind === 'instance' ? 'instance' : p.kind === 'project' ? `p:${p.project}` : `r:${p.repository}`;
   }
 
   protected sentence(b: UsageBudget): string {
-    return ruleSentence(b.rule, b.place, this.names().get(b.rule.profile) ?? b.rule.profile, this.own());
+    return ruleSentence(b.rule, b.place, b.rule?.profileName ?? '', this.own());
   }
 
   protected stateOf(ratio: number | null) {
@@ -162,7 +160,7 @@ export class UsageBudgets {
 
   protected windowed(b: UsageBudget): FigureRow[] {
     return WINDOWED.map((f) => {
-      const fig: BudgetFigure | undefined = b.figures[f];
+      const fig: BudgetFigure = b.figures[f];
       const limit = fig?.limit ?? null;
       const used = fig?.used ?? 0;
       if (limit === null) return { figure: f, name: figureName(f), ratio: null, text: '' };

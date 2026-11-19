@@ -63,6 +63,19 @@
   }
 }
 
+// A link in a dialog's body is a link of the page (R-UI-044): the dialog stands in the overlay outside `.content`, whose rule
+// (_shell.scss) gives the page's links their colour, so the links of **Switch to Enforce** were the browser's blue and violet
+// (Q-UI-764).
+.dialog-body a:not(.btn):not(.tab-link) {
+  color: var(--quader-link);
+  text-underline-offset: 0.2em;
+
+  &:focus-visible {
+    outline: var(--quader-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
 .dialog-actions {
   display: flex;
   flex: none;

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/guided-traffic/quader/internal/limits/httplimit"
 	"github.com/guided-traffic/quader/internal/limits/store"
 	"github.com/guided-traffic/quader/internal/limits/usage"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The download limits (usage-and-limits.md, W-26): every role builds the engine, its compiled index and its buffers, because
@@ -63,6 +65,14 @@ func (a *App) wireDownloadLimits(ctx context.Context, in infra) (downloadLimitsA
 		Index: idx.get, Replica: a.id.Instance, FlushInterval: cfg.FlushInterval, LeaseTTL: cfg.Parallel.Lease,
 		ParallelWait: cfg.Parallel.Wait, MinPacing: cfg.Pacing.MinBytesPerSecond, Usage: buf, Blocks: st, Metrics: metrics,
 		Log: log,
+		// The "Your limits" link of a refusal (R-LIM-020) names the base URL the caller reached the installation by: its
+		// endpoint's, else the instance's.
+		BaseURL: func(ctx context.Context) string {
+			if b := httpserver.InfoFrom(ctx).BaseURL; b != "" {
+				return b
+			}
+			return a.cfg.Server.BaseURL
+		},
 		Share: func() int {
 			if f := share.Load(); f != nil {
 				return (*f)()
@@ -146,6 +156,22 @@ func (c ciIssuerNames) IssuerName(ctx context.Context, id string) (string, bool,
 	return "", false, nil
 }
 
+// limitsRepo is the repository a protocol request names for the download limits (R-LIM-005): the one its address names, and
+// on a host whose root is bound to a repository of the registry format (R-EP-006, R-EP-007) that repository for every path below
+// /v2/ but the version check, the catalog and the token service, as the dispatcher's match of /v2/ reads it
+// (dispatch.Dispatcher.BoundRepository). The format host's area is read when a request asks, after every area was wired.
+func (a *App) limitsRepo(r *http.Request) qname.Repo {
+	p := r.URL.Path
+	if strings.HasPrefix(p, "/v2/") && p != "/v2/" && p != "/v2/_catalog" && p != httplimit.TokenPath {
+		if disp := part[formatHostArea](a.parts).disp; disp != nil {
+			if bound, ok, err := disp.BoundRepository(r); err == nil && ok {
+				return bound
+			}
+		}
+	}
+	return httplimit.Repo(r)
+}
+
 // limitsFailedCredential records a request on a protocol path whose credential the authentication stage refused (R-LIM-003):
 // one request and one refused request of the client's address, never of the subject the credential names.
 func (a *App) limitsFailedCredential() func(*http.Request, error) {
@@ -157,7 +183,7 @@ func (a *App) limitsFailedCredential() func(*http.Request, error) {
 		if errs.KindOf(err) != errs.Unauthenticated || !httplimit.ProtocolPath(r.URL.Path) {
 			return
 		}
-		eng.FailedCredential(httplimit.CallerOf(r, httpserver.AnonymousPrincipal(), false), httplimit.Repo(r))
+		eng.FailedCredential(httplimit.CallerOf(r, httpserver.AnonymousPrincipal(), false), a.limitsRepo(r))
 	}
 }
 

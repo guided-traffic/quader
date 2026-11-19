@@ -36,7 +36,7 @@ The instance is in one of two modes, shown under the heading of **Download limit
 - Every figure column sorts. The links over the table show all callers, those **Close to the limit**, and those at the limit.
 - **Filters** narrows by **Kind** (Users, Technical tokens, CI, Anonymous addresses, System), **State** and **Project**; the search finds a name or an address.
 - **Export CSV** downloads the list with the same filters.
-- A caller's name opens its page: its limits now per place with the rule that applies and why, **Explain for a repository**, the last 24 hours, and its usage by repository and, for a user, by credential. A blocked caller's page shows **Lift block**.
+- A caller's name opens its page, titled with the caller's name (a user's display name, a technical token's name, a CI project's path, an address) and the reference under it (`@priya`, the token's service account): its limits now per place with the rule that applies and why, **Explain for a repository**, the last 24 hours, and its usage by repository and, for a user, by credential. A blocked caller's page shows **Lift block**.
 
 A project's Owner opens **Usage** in the project's side bar: the same list for the project's repositories, with the names of the users and technical tokens and the addresses of the anonymous callers that used them. From a repository's settings, **Usage of this repository** narrows it to that repository. The usage of single callers is kept 30 days; after that only daily sums per repository and kind of caller remain.
 
@@ -51,7 +51,7 @@ A project's Owner opens **Usage** in the project's side bar: the same list for t
 
 A project's Owner sets limits in the project's **Settings**, section **Download limits** (the rules for the project's repositories without rules of their own), and in a repository's **Settings**, section **Download limits** (the rules of that repository and, for a remote repository, its ceilings). An Owner's rule above the instance's values and the project's maximum is refused with the most it may be ("At most 30 GB per hour here"); when an administrator lowers the maximum, an Owner's rule above it is lowered from the next request on and marked **Above the maximum**.
 
-A technical token's limit is set on its service account's page with **Set limit**; see [Managing tokens](tokens.md).
+A technical token's limit is set on its service account's page: its **Limit** opens **Set limit** (or **Change limit**, with **Remove limit**); see [Managing tokens](tokens.md). When a technical token is deleted, its rules go with the daily cleanup and its usage stays in the overview for its retention, named as a deleted token.
 
 ## What the limits do not cover
 

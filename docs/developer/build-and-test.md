@@ -32,7 +32,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `build` | `CGO_ENABLED=0 go build -trimpath` into `bin/quader`, with version, commit and date set through `-ldflags` in [internal/buildinfo](../../internal/buildinfo) |
 | `generate` | `go generate` over every package: the configuration schema today, sqlc and oapi-codegen as their packages arrive |
 | `generate-check` | `generate`, then `git diff --exit-code` and a check for untracked generated files (E0.1) |
-| `lint` | pinned golangci-lint over `./...` with the build tags `integration`, `e2e`, `compat` and `chart`, so every test tier is linted (configuration in [.golangci.yml](../../.golangci.yml)), then `go vet` |
+| `lint` | pinned golangci-lint over `./...` with the build tags `integration`, `e2e`, `compat` and `chart`, so every test tier is linted (configuration in [.golangci.yml](../../.golangci.yml), whose `run.timeout` is 10 minutes: a cold run over the whole tree takes more than five), then `go vet` |
 | `gosec` | the same golangci-lint with only gosec enabled (CI: GoSec Security Scan) |
 | `vuln` | pinned govulncheck over `./...` |
 | `cyclo`, `cyclo-report` | pinned gocyclo: fails above `CYCLO_THRESHOLD`; the report lists the most complex functions, tests included |

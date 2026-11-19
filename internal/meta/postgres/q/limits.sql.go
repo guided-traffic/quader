@@ -415,6 +415,58 @@ func (q *Queries) LimitBlocks(ctx context.Context, arg LimitBlocksParams) ([]Lim
 	return items, nil
 }
 
+const limitCIProjects = `-- name: LimitCIProjects :many
+SELECT DISTINCT ON (i.issuer_id, i.project_id)
+       i.issuer_id::text AS issuer_id, c.name AS issuer, i.project_id, COALESCE(i.project_path, '')::text AS project_path
+  FROM ci_token_issuances i
+  JOIN ci_issuers c ON c.id = i.issuer_id
+ WHERE (cardinality($1::text[]) = 0 OR i.issuer_id::text || ':' || i.project_id = ANY($1::text[]))
+   AND ($2::text = '' OR strpos(lower(COALESCE(i.project_path, '')), lower($2::text)) > 0
+        OR i.project_id = $2::text)
+ ORDER BY i.issuer_id, i.project_id, i.issued_at DESC
+ LIMIT $3
+`
+
+type LimitCIProjectsParams struct {
+	Refs     []string
+	Q        string
+	RowLimit int32
+}
+
+type LimitCIProjectsRow struct {
+	IssuerID    string
+	Issuer      string
+	ProjectID   string
+	ProjectPath string
+}
+
+// The CI projects that tokens were issued for (R-LIM-034), with the project path the newest issuance named: by issuer and
+// project ID, or by a text in the path or equal to the ID. refs narrows to issuer:project pairs when not empty.
+func (q *Queries) LimitCIProjects(ctx context.Context, arg LimitCIProjectsParams) ([]LimitCIProjectsRow, error) {
+	rows, err := q.db.Query(ctx, limitCIProjects, arg.Refs, arg.Q, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LimitCIProjectsRow{}
+	for rows.Next() {
+		var i LimitCIProjectsRow
+		if err := rows.Scan(
+			&i.IssuerID,
+			&i.Issuer,
+			&i.ProjectID,
+			&i.ProjectPath,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const limitCeilings = `-- name: LimitCeilings :many
 SELECT repository_id, class, uncached_bytes_per_hour, upstream_requests_per_hour, version, updated_at,
        COALESCE(updated_by::text, '')::text AS updated_by
@@ -621,6 +673,51 @@ func (q *Queries) LimitProjectMaxima(ctx context.Context) ([]LimitProjectMaximaR
 	return items, nil
 }
 
+const limitSearchTechnicalTokens = `-- name: LimitSearchTechnicalTokens :many
+SELECT t.id::text AS id, t.name, p.name AS account
+  FROM technical_token t
+  JOIN principal p ON p.id = t.service_account_id
+ WHERE ($1::text = '' OR strpos(lower(t.name), lower($1::text)) > 0
+        OR strpos(lower(p.name), lower($1::text)) > 0)
+   AND ($2::text = '' OR p.name LIKE $2::text || '/%')
+ ORDER BY t.name COLLATE "C", p.name COLLATE "C"
+ LIMIT $3
+`
+
+type LimitSearchTechnicalTokensParams struct {
+	Q        string
+	Project  string
+	RowLimit int32
+}
+
+type LimitSearchTechnicalTokensRow struct {
+	ID      string
+	Name    string
+	Account string
+}
+
+// Technical tokens for the rule dialog (R-LIM-034): by the token's or its account's name; a project narrows to the accounts of
+// the project and of its repositories.
+func (q *Queries) LimitSearchTechnicalTokens(ctx context.Context, arg LimitSearchTechnicalTokensParams) ([]LimitSearchTechnicalTokensRow, error) {
+	rows, err := q.db.Query(ctx, limitSearchTechnicalTokens, arg.Q, arg.Project, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LimitSearchTechnicalTokensRow{}
+	for rows.Next() {
+		var i LimitSearchTechnicalTokensRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Account); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const limitSettings = `-- name: LimitSettings :one
 SELECT mode, block_seconds, version, updated_at, COALESCE(updated_by::text, '')::text AS updated_by
   FROM limit_settings WHERE id
@@ -645,6 +742,106 @@ func (q *Queries) LimitSettings(ctx context.Context) (LimitSettingsRow, error) {
 		&i.UpdatedBy,
 	)
 	return i, err
+}
+
+const limitTechnicalTokenNames = `-- name: LimitTechnicalTokenNames :many
+SELECT t.id::text AS id, t.name, p.name AS account
+  FROM technical_token t
+  JOIN principal p ON p.id = t.service_account_id
+ WHERE t.id = ANY($1::text[]::uuid[])
+`
+
+type LimitTechnicalTokenNamesRow struct {
+	ID      string
+	Name    string
+	Account string
+}
+
+// The names and accounts of technical tokens by ID (R-LIM-032, R-LIM-034); the account's principal name is its reference
+// without the sa: prefix.
+func (q *Queries) LimitTechnicalTokenNames(ctx context.Context, ids []string) ([]LimitTechnicalTokenNamesRow, error) {
+	rows, err := q.db.Query(ctx, limitTechnicalTokenNames, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LimitTechnicalTokenNamesRow{}
+	for rows.Next() {
+		var i LimitTechnicalTokenNamesRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Account); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const limitTokenHints = `-- name: LimitTokenHints :many
+SELECT id::text AS id, hint, description FROM api_token WHERE id = ANY($1::text[]::uuid[])
+`
+
+type LimitTokenHintsRow struct {
+	ID          string
+	Hint        string
+	Description string
+}
+
+// The hint and description of personal tokens by ID, for a user's usage per credential (R-LIM-034).
+func (q *Queries) LimitTokenHints(ctx context.Context, ids []string) ([]LimitTokenHintsRow, error) {
+	rows, err := q.db.Query(ctx, limitTokenHints, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LimitTokenHintsRow{}
+	for rows.Next() {
+		var i LimitTokenHintsRow
+		if err := rows.Scan(&i.ID, &i.Hint, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const limitUserNames = `-- name: LimitUserNames :many
+SELECT p.id::text AS id, p.name, COALESCE(u.display_name, '')::text AS display_name
+  FROM principal p
+  LEFT JOIN app_user u ON u.principal_id = p.id
+ WHERE p.id = ANY($1::text[]::uuid[])
+`
+
+type LimitUserNamesRow struct {
+	ID          string
+	Name        string
+	DisplayName string
+}
+
+// The names of the users a page of the limits or the usage names (R-LIM-032, R-LIM-034).
+func (q *Queries) LimitUserNames(ctx context.Context, ids []string) ([]LimitUserNamesRow, error) {
+	rows, err := q.db.Query(ctx, limitUserNames, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LimitUserNamesRow{}
+	for rows.Next() {
+		var i LimitUserNamesRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateLimitAssignment = `-- name: UpdateLimitAssignment :execrows

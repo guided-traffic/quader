@@ -239,6 +239,26 @@ func (x *Index) Resolve(s Subject, repo qname.Repo, trace bool) Resolution {
 	return res
 }
 
+// ResolveAt is the rule that applies now to a budget key the usage store recorded (R-LIM-034): for a repository the resolution
+// of a request to it, for a project the project's rules and then the instance's, for the instance the instance's. A place
+// whose rule went since resolves as a request would now.
+func (x *Index) ResolveAt(s Subject, p Place) Resolution {
+	if p.Kind == PlaceRepository && !p.Repo.IsZero() {
+		return x.Resolve(s, p.Repo, false)
+	}
+	var res Resolution
+	if p.Kind == PlaceProject && !s.Admin {
+		if pr := x.projects[p.ProjectKey]; pr != nil && x.resolveAt(pr, s, &res, false) {
+			return res
+		}
+	}
+	if x.resolveAt(x.instance, s, &res, false) {
+		return res
+	}
+	res.Place = InstancePlace()
+	return res
+}
+
 // resolveAt runs step 3 of R-LIM-013 at one place.
 func (x *Index) resolveAt(pr *placeRules, s Subject, res *Resolution, trace bool) bool {
 	note := func(step string, matched bool, rules ...*Rule) {

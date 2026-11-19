@@ -189,6 +189,7 @@ func RequestLog(log *slog.Logger, m *Metrics, opts ...RequestOption) func(http.H
 				nullable("principal_id", facts.principalID),
 				nullable("token_id", facts.tokenID),
 				slog.String("auth_method", auth),
+				nullable("project", projectOf(facts.repo)),
 				nullable("repo", facts.repo),
 				nullable("format", facts.format),
 				nullable("cache", facts.cache),
@@ -196,11 +197,34 @@ func RequestLog(log *slog.Logger, m *Metrics, opts ...RequestOption) func(http.H
 				nullable("limiter", facts.limiter),
 				nullable("limit_mode", facts.limitMode),
 			}
+			attrs = append(attrs, limitsAttrs(facts.limits)...)
 			for _, f := range facts.extra {
 				attrs = append(attrs, nullable(f.name, clipField(f.value, MaxExtraField, o.scrub)))
 			}
 			rlog.LogAttrs(ctx, slog.LevelInfo, "request completed", attrs...)
 		})
+	}
+}
+
+// projectOf is the project key of a repository's qualified name <projectKey>/<repoKey>.
+func projectOf(repo string) string {
+	if i := strings.IndexByte(repo, '/'); i > 0 {
+		return repo[:i]
+	}
+	return ""
+}
+
+// limitsAttrs are the download limits' fields (R-OPS-010, R-LIM-030): every key present, null off the protocol paths.
+func limitsAttrs(f *LimitsFields) []slog.Attr {
+	if f == nil {
+		return []slog.Attr{
+			slog.Any("limits_subject", nil), slog.Any("limits_place", nil), slog.Any("limits_rule", nil),
+			slog.Any("limits_outcome", nil), slog.Any("bytes_cached", nil), slog.Any("bytes_uncached", nil),
+		}
+	}
+	return []slog.Attr{
+		nullable("limits_subject", f.Subject), nullable("limits_place", f.Place), nullable("limits_rule", f.Rule),
+		nullable("limits_outcome", f.Outcome), slog.Int64("bytes_cached", f.BytesCached), slog.Int64("bytes_uncached", f.BytesUncached),
 	}
 }
 

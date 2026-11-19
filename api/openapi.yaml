@@ -15234,12 +15234,13 @@ paths:
       tags: [limits]
       summary: Set a project's maximum
       description: |
-        Set or replace it (R-LIM-033); `If-Match: *` creates one.
+        Set or replace it (R-LIM-033). The first maximum of a project is set without `If-Match` (201); a replace requires the
+        `ETag` loaded with it (`428` without, `412` for a stale one), and an `If-Match` sent where the project has no maximum answers
+        `412` (Q-API-354).
       x-quader-permission:
         permission: limits:write
-      x-quader-if-match: required
       parameters:
-        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IfMatchOptional"
       requestBody:
         required: true
         content:
@@ -15249,6 +15250,15 @@ paths:
       responses:
         "200":
           description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitProjectMaximum"
+        "201":
+          description: The project's first maximum.
           headers:
             ETag:
               $ref: "#/components/headers/ETag"
@@ -24294,56 +24304,47 @@ components:
     # >>> W-26 limits
     LimitFigures:
       type: object
-      description: Every figure of R-LIM-004; `null` is unlimited. Bytes are bytes.
+      description: Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
+      additionalProperties: false
+      required: [requestsPerSecond, requestsBurst, requestsPerHour, cachedBytesPerSecond, cachedBytesPerHour, uncachedBytesPerSecond,
+        uncachedBytesPerHour, upstreamRequestsPerHour, parallelDownloads, bytesPerDay, refusedPerHour]
+      properties:
+        requestsPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        requestsBurst: {type: [integer, "null"], format: int64, minimum: 1}
+        requestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        cachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        cachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        uncachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        uncachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        upstreamRequestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        parallelDownloads: {type: [integer, "null"], format: int64, minimum: 1}
+        bytesPerDay: {type: [integer, "null"], format: int64, minimum: 1}
+        refusedPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+    LimitFigureOverrides:
+      type: object
+      description: |
+        Single figures (R-LIM-011): a named figure is set to its value, `null` to unlimited; a figure left out keeps the profile's.
+        In a profile's write, a figure left out is unlimited (R-LIM-031).
       additionalProperties: false
       properties:
-        requestsPerSecond:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        requestsBurst:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        requestsPerHour:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        cachedBytesPerSecond:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        cachedBytesPerHour:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        uncachedBytesPerSecond:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        uncachedBytesPerHour:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        upstreamRequestsPerHour:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        parallelDownloads:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        bytesPerDay:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
-        refusedPerHour:
-          type: [integer, "null"]
-          format: int64
-          minimum: 1
+        requestsPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        requestsBurst: {type: [integer, "null"], format: int64, minimum: 1}
+        requestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        cachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        cachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        uncachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        uncachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        upstreamRequestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        parallelDownloads: {type: [integer, "null"], format: int64, minimum: 1}
+        bytesPerDay: {type: [integer, "null"], format: int64, minimum: 1}
+        refusedPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+    LimitFigureName:
+      type: string
+      enum: [requestsPerSecond, requestsBurst, requestsPerHour, cachedBytesPerSecond, cachedBytesPerHour, uncachedBytesPerSecond,
+        uncachedBytesPerHour, upstreamRequestsPerHour, parallelDownloads, bytesPerDay, refusedPerHour]
     LimitProfile:
       type: object
-      required: [key, name, description, builtin, figures, usedBy, version]
+      required: [key, name, description, builtin, figures, usedBy, version, createdAt, createdBy, updatedAt, updatedBy]
       properties:
         key: {type: string}
         name: {type: string}
@@ -24352,6 +24353,7 @@ components:
         figures: {$ref: "#/components/schemas/LimitFigures"}
         usedBy:
           type: object
+          required: [assignments, projectMaximums]
           properties:
             assignments: {type: integer}
             projectMaximums: {type: integer}
@@ -24364,10 +24366,10 @@ components:
       type: object
       required: [name, figures]
       properties:
-        key: {type: string, pattern: "^[a-z][a-z0-9-]{1,31}$"}
+        key: {type: string, pattern: "^[a-z][a-z0-9-]{1,31}$", description: On create only; immutable.}
         name: {type: string, minLength: 1, maxLength: 64}
         description: {type: string, maxLength: 1024}
-        figures: {$ref: "#/components/schemas/LimitFigures"}
+        figures: {$ref: "#/components/schemas/LimitFigureOverrides"}
         builtin: {type: boolean, readOnly: true}
         usedBy: {type: object, readOnly: true}
         version: {type: integer, readOnly: true}
@@ -24377,48 +24379,102 @@ components:
         updatedBy: {type: [string, "null"], readOnly: true}
     LimitProfileList:
       type: object
-      required: [items]
+      required: [items, nextCursor]
       properties:
         items:
           type: array
           items: {$ref: "#/components/schemas/LimitProfile"}
         nextCursor: {type: [string, "null"]}
+    LimitPlaceInstance:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [instance]}
+    LimitPlaceProject:
+      type: object
+      required: [kind, project]
+      properties:
+        kind: {type: string, enum: [project]}
+        project: {type: string, description: The project's key.}
+    LimitPlaceRepository:
+      type: object
+      required: [kind, repository]
+      properties:
+        kind: {type: string, enum: [repository]}
+        repository: {type: string, description: "`<projectKey>/<repoKey>`."}
     LimitPlace:
+      description: Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+      oneOf:
+        - $ref: "#/components/schemas/LimitPlaceInstance"
+        - $ref: "#/components/schemas/LimitPlaceProject"
+        - $ref: "#/components/schemas/LimitPlaceRepository"
+    LimitWhoUser:
       type: object
-      required: [kind]
+      required: [kind, user]
       properties:
-        kind: {type: string, enum: [instance, project, repository]}
-        project: {type: string}
-        repository: {type: string}
-    LimitWho:
-      type: object
-      required: [kind]
-      description: "The caller a rule names (R-LIM-011, R-LIM-032)."
-      properties:
-        kind: {type: string, enum: [user, technicalToken, ciProject, address, group, every]}
-        user: {type: string}
-        group: {type: string}
-        technicalToken: {type: string}
-        issuer: {type: string}
-        projectId: {type: string}
-        prefix: {type: string}
-        callerKind: {type: string, enum: [user, technicalToken, ci, anonymous, administrator]}
+        kind: {type: string, enum: [user]}
+        user: {type: string, description: The username.}
         displayName: {type: string, readOnly: true}
-        name: {type: string, readOnly: true}
-        account: {type: string, readOnly: true}
-        projectPath: {type: string, readOnly: true}
         deleted: {type: boolean, readOnly: true}
+    LimitWhoTechnicalToken:
+      type: object
+      required: [kind, technicalToken]
+      properties:
+        kind: {type: string, enum: [technicalToken]}
+        technicalToken: {type: string, format: uuid, description: The technical token's ID.}
+        name: {type: string, readOnly: true}
+        account: {type: string, readOnly: true, description: "The account's reference, `sa:web/partner`."}
+        deleted: {type: boolean, readOnly: true}
+    LimitWhoCIProject:
+      type: object
+      required: [kind, issuer, projectId]
+      properties:
+        kind: {type: string, enum: [ciProject]}
+        issuer: {type: string, description: The CI issuer's name.}
+        projectId: {type: string}
+        projectPath: {type: string, readOnly: true, description: The path the issuer's tokens named last; absent when none is known.}
+        deleted: {type: boolean, readOnly: true}
+    LimitWhoAddress:
+      type: object
+      required: [kind, prefix]
+      properties:
+        kind: {type: string, enum: [address]}
+        prefix: {type: string, description: "An address or a prefix, stored canonical."}
+    LimitWhoGroup:
+      type: object
+      required: [kind, group]
+      properties:
+        kind: {type: string, enum: [group]}
+        group: {type: string, description: The group's name.}
+        displayName: {type: string, readOnly: true}
+        deleted: {type: boolean, readOnly: true}
+    LimitWhoEvery:
+      type: object
+      required: [kind, callerKind]
+      properties:
+        kind: {type: string, enum: [every]}
+        callerKind: {type: string, enum: [user, technicalToken, ci, anonymous, administrator]}
+    LimitWho:
+      description: "The caller a rule names (R-LIM-011, R-LIM-032)."
+      oneOf:
+        - $ref: "#/components/schemas/LimitWhoUser"
+        - $ref: "#/components/schemas/LimitWhoTechnicalToken"
+        - $ref: "#/components/schemas/LimitWhoCIProject"
+        - $ref: "#/components/schemas/LimitWhoAddress"
+        - $ref: "#/components/schemas/LimitWhoGroup"
+        - $ref: "#/components/schemas/LimitWhoEvery"
     LimitAssignment:
       type: object
-      required: [id, place, who, profile, overrides, effective, clamped, capped, builtin, note, version]
+      required: [id, place, who, profile, overrides, effective, clamped, capped, builtin, note, version, createdAt, createdBy,
+        updatedAt, updatedBy]
       properties:
         id: {type: string}
         place: {$ref: "#/components/schemas/LimitPlace"}
         who: {$ref: "#/components/schemas/LimitWho"}
         profile: {type: string}
-        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        overrides: {$ref: "#/components/schemas/LimitFigureOverrides"}
         effective: {$ref: "#/components/schemas/LimitFigures"}
-        clamped: {type: object, additionalProperties: {type: [integer, "null"]}}
+        clamped: {$ref: "#/components/schemas/LimitFigureOverrides"}
         capped: {type: boolean}
         builtin: {type: boolean}
         note: {type: string}
@@ -24429,11 +24485,12 @@ components:
         updatedBy: {type: [string, "null"]}
     LimitAssignmentWrite:
       type: object
-      required: [who, profile]
+      required: [profile]
+      description: A rule's write; `who` on create, immutable after (a different one on replace answers 409 `assignment_builtin`).
       properties:
         who: {$ref: "#/components/schemas/LimitWho"}
         profile: {type: string}
-        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        overrides: {$ref: "#/components/schemas/LimitFigureOverrides"}
         note: {type: string, maxLength: 512}
         id: {type: string, readOnly: true}
         place: {type: object, readOnly: true}
@@ -24448,7 +24505,7 @@ components:
         updatedBy: {type: [string, "null"], readOnly: true}
     LimitAssignmentList:
       type: object
-      required: [items]
+      required: [items, nextCursor]
       properties:
         items:
           type: array
@@ -24456,18 +24513,19 @@ components:
         nextCursor: {type: [string, "null"]}
     LimitCeiling:
       type: object
+      required: [uncachedBytesPerHour, upstreamRequestsPerHour]
       properties:
         uncachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
         upstreamRequestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
     LimitCeilings:
       type: object
-      required: [repository, anonymous, signedIn, version]
+      required: [repository, anonymous, signedIn, version, updatedAt, updatedBy]
       properties:
         repository: {type: string}
         anonymous: {$ref: "#/components/schemas/LimitCeiling"}
         signedIn: {$ref: "#/components/schemas/LimitCeiling"}
         version: {type: integer, format: int64}
-        updatedAt: {type: [string, "null"], format: date-time}
+        updatedAt: {type: [string, "null"], format: date-time, description: "`null` while no ceiling was ever set."}
         updatedBy: {type: [string, "null"]}
     LimitCeilingsWrite:
       type: object
@@ -24479,11 +24537,14 @@ components:
         version: {type: integer, readOnly: true}
         updatedAt: {type: [string, "null"], readOnly: true}
         updatedBy: {type: [string, "null"], readOnly: true}
+    LimitMode:
+      type: string
+      enum: [audit, enforce]
     LimitSettings:
       type: object
-      required: [mode, blockSeconds, version]
+      required: [mode, blockSeconds, version, updatedAt, updatedBy]
       properties:
-        mode: {type: string, enum: [audit, enforce]}
+        mode: {$ref: "#/components/schemas/LimitMode"}
         blockSeconds: {type: integer, minimum: 60, maximum: 86400}
         version: {type: integer, format: int64}
         updatedAt: {type: string, format: date-time}
@@ -24491,43 +24552,50 @@ components:
     LimitSettingsPatch:
       type: object
       properties:
-        mode: {type: string, enum: [audit, enforce]}
+        mode: {$ref: "#/components/schemas/LimitMode"}
         blockSeconds: {type: integer, minimum: 60, maximum: 86400}
+    UsagePeriod:
+      type: object
+      required: [from, to]
+      properties:
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+    UsageSubjectKind:
+      type: string
+      enum: [user, technicalToken, ci, anonymous, system]
     LimitModePreview:
       type: object
       required: [period, subjects, refusedRequests, slowedDownloads, blockedSubjects, byFigure, byKind]
       properties:
-        period:
-          type: object
-          properties:
-            from: {type: string, format: date-time}
-            to: {type: string, format: date-time}
+        period: {$ref: "#/components/schemas/UsagePeriod"}
         subjects: {type: integer}
-        refusedRequests: {type: integer}
-        slowedDownloads: {type: integer}
+        refusedRequests: {type: integer, format: int64}
+        slowedDownloads: {type: integer, format: int64}
         blockedSubjects: {type: integer}
         byFigure:
           type: array
           items:
             type: object
+            required: [figure, subjects, events]
             properties:
-              figure: {type: string}
+              figure: {type: string, description: "A figure's API name, or `ceiling.anonymous`, `ceiling.signedIn`."}
               subjects: {type: integer}
-              events: {type: integer}
+              events: {type: integer, format: int64}
         byKind:
           type: array
           items:
             type: object
+            required: [kind, subjects]
             properties:
-              kind: {type: string}
+              kind: {$ref: "#/components/schemas/UsageSubjectKind"}
               subjects: {type: integer}
     LimitProjectMaximum:
       type: object
-      required: [project, profile, overrides, effective, version]
+      required: [project, profile, overrides, effective, version, updatedAt, updatedBy]
       properties:
         project: {type: string}
         profile: {type: string}
-        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        overrides: {$ref: "#/components/schemas/LimitFigureOverrides"}
         effective: {$ref: "#/components/schemas/LimitFigures"}
         version: {type: integer, format: int64}
         updatedAt: {type: string, format: date-time}
@@ -24537,62 +24605,165 @@ components:
       required: [profile]
       properties:
         profile: {type: string}
-        overrides: {type: object, additionalProperties: {type: [integer, "null"]}}
+        overrides: {$ref: "#/components/schemas/LimitFigureOverrides"}
         project: {type: string, readOnly: true}
         effective: {type: object, readOnly: true}
         version: {type: integer, readOnly: true}
         updatedAt: {type: string, readOnly: true}
         updatedBy: {type: [string, "null"], readOnly: true}
+    UsageSubjectUser:
+      type: object
+      required: [kind, id, name, displayName, deleted]
+      properties:
+        kind: {type: string, enum: [user]}
+        id: {type: string, description: The username; the principal's ID of a user that was deleted.}
+        name: {type: string}
+        displayName: {type: [string, "null"]}
+        deleted: {type: boolean}
+    UsageSubjectTechnicalToken:
+      type: object
+      required: [kind, id, name, account, level, deleted]
+      properties:
+        kind: {type: string, enum: [technicalToken]}
+        id: {type: string, format: uuid}
+        name: {type: string, description: The token's name; its ID when it was deleted.}
+        account: {type: string, description: "The account's reference, `sa:web/partner`; empty when the token was deleted."}
+        level: {type: [string, "null"], enum: [instance, project, repository, null]}
+        deleted: {type: boolean}
+    UsageSubjectCI:
+      type: object
+      required: [kind, id, issuer, projectId, projectPath]
+      properties:
+        kind: {type: string, enum: [ci]}
+        id: {type: string, description: "`<issuer name>:<project ID>`."}
+        issuer: {type: string}
+        projectId: {type: string}
+        projectPath: {type: [string, "null"]}
+    UsageSubjectAnonymous:
+      type: object
+      required: [kind, id, address]
+      properties:
+        kind: {type: string, enum: [anonymous]}
+        id: {type: string}
+        address: {type: string, description: "An IPv4 address, an IPv6 `/64` prefix, or `unknown`."}
+    UsageSubjectSystem:
+      type: object
+      required: [kind, id]
+      properties:
+        kind: {type: string, enum: [system]}
+        id: {type: string}
+    UsageSubject:
+      description: A subject of the usage store as the API names it (R-LIM-034).
+      oneOf:
+        - $ref: "#/components/schemas/UsageSubjectUser"
+        - $ref: "#/components/schemas/UsageSubjectTechnicalToken"
+        - $ref: "#/components/schemas/UsageSubjectCI"
+        - $ref: "#/components/schemas/UsageSubjectAnonymous"
+        - $ref: "#/components/schemas/UsageSubjectSystem"
     LimitBlock:
       type: object
-      required: [id, subject, place, startedAt, until, refused, limit]
+      required: [id, subject, place, startedAt, until, refused, limit, liftedAt, liftedBy]
       properties:
         id: {type: string}
-        subject: {type: object}
+        subject: {$ref: "#/components/schemas/UsageSubject"}
         place: {$ref: "#/components/schemas/LimitPlace"}
         startedAt: {type: string, format: date-time}
         until: {type: string, format: date-time}
-        refused: {type: integer}
-        limit: {type: integer}
+        refused: {type: integer, format: int64}
+        limit: {type: integer, format: int64}
         liftedAt: {type: [string, "null"], format: date-time}
         liftedBy: {type: [string, "null"]}
     LimitBlockList:
       type: object
-      required: [items]
+      required: [items, nextCursor]
       properties:
         items:
           type: array
           items: {$ref: "#/components/schemas/LimitBlock"}
         nextCursor: {type: [string, "null"]}
+    LimitRuleRef:
+      type: object
+      description: The rule a budget key stands under, as the detail and the explanation name it (`builtin:<kind>` for a built-in rule).
+      required: [id, who, profile, profileName, builtin, capped]
+      properties:
+        id: {type: string}
+        who: {$ref: "#/components/schemas/LimitWho"}
+        profile: {type: string}
+        profileName: {type: string, description: "The profile's name, for a caller who reads no profiles (its own usage)."}
+        builtin: {type: boolean}
+        capped: {type: boolean}
+    LimitExplainStep:
+      type: object
+      required: [place, step, outcome]
+      properties:
+        place: {$ref: "#/components/schemas/LimitPlace"}
+        step: {type: string, enum: [single, groups, kind]}
+        outcome: {type: string, enum: [none, matched]}
+        rules:
+          type: array
+          items: {$ref: "#/components/schemas/LimitRuleRef"}
+    LimitExplainCeiling:
+      type: object
+      required: [class, uncachedBytesPerHour, upstreamRequestsPerHour]
+      properties:
+        class: {type: string, enum: [anonymous, signedIn]}
+        uncachedBytesPerHour: {type: [integer, "null"], format: int64}
+        upstreamRequestsPerHour: {type: [integer, "null"], format: int64}
     LimitExplanation:
       type: object
-      required: [subject, mode, administrator, steps, place, rule, effective, clamped, figureSources]
+      required: [subject, repository, mode, administrator, steps, place, rule, effective, clamped, figureSources, ceiling]
       properties:
-        subject: {type: object}
+        subject: {$ref: "#/components/schemas/UsageSubject"}
         repository: {type: [string, "null"]}
-        mode: {type: string, enum: [audit, enforce]}
+        mode: {$ref: "#/components/schemas/LimitMode"}
         administrator: {type: boolean}
         steps:
           type: array
-          items: {type: object}
+          items: {$ref: "#/components/schemas/LimitExplainStep"}
         place: {$ref: "#/components/schemas/LimitPlace"}
-        rule: {type: [object, "null"]}
+        rule:
+          description: The rule that applies; `null` for a subject no rule matched (a store without the built-in rules).
+          oneOf:
+            - $ref: "#/components/schemas/LimitRuleRef"
+            - type: "null"
         effective: {$ref: "#/components/schemas/LimitFigures"}
-        clamped: {type: object}
-        figureSources: {type: object, additionalProperties: {type: string}}
-        ceiling: {type: [object, "null"]}
+        clamped: {$ref: "#/components/schemas/LimitFigureOverrides"}
+        figureSources:
+          type: object
+          description: "Per figure that did not come from the rule's profile: `override`, `group:<name>` or `clamp`."
+          additionalProperties: {type: string}
+        ceiling:
+          description: The remote's ceiling of the subject's class; `null` for a repository that is not remote.
+          oneOf:
+            - $ref: "#/components/schemas/LimitExplainCeiling"
+            - type: "null"
+    LimitSubjectSuggestion:
+      oneOf:
+        - $ref: "#/components/schemas/UsageSubjectTechnicalToken"
+        - $ref: "#/components/schemas/UsageSubjectCI"
     LimitSubjectSuggestions:
       type: object
       required: [items]
       properties:
         items:
           type: array
-          items: {type: object}
+          items: {$ref: "#/components/schemas/LimitSubjectSuggestion"}
+    UsageUtilisation:
+      type: object
+      required: [ratio, figure, place]
+      properties:
+        ratio: {type: number}
+        figure: {$ref: "#/components/schemas/LimitFigureName"}
+        place: {$ref: "#/components/schemas/LimitPlace"}
+    UsageState:
+      type: string
+      enum: [normal, close, limitReached, wouldBeLimited, blocked, unlimited]
     UsageRow:
       type: object
-      required: [subject, requests, refused, cachedBytes, uncachedBytes, upstreamRequests, limitedEvents, wouldLimitEvents, state]
+      required: [subject, requests, refused, cachedBytes, uncachedBytes, upstreamRequests, limitedEvents, wouldLimitEvents,
+        utilisation, state, blockedUntil]
       properties:
-        subject: {type: object}
+        subject: {$ref: "#/components/schemas/UsageSubject"}
         requests: {type: integer, format: int64}
         refused: {type: integer, format: int64}
         cachedBytes: {type: integer, format: int64}
@@ -24600,56 +24771,154 @@ components:
         upstreamRequests: {type: integer, format: int64}
         limitedEvents: {type: integer, format: int64}
         wouldLimitEvents: {type: integer, format: int64}
-        utilisation: {type: [object, "null"]}
-        state: {type: string, enum: [normal, close, limitReached, wouldBeLimited, blocked, unlimited]}
+        utilisation:
+          oneOf:
+            - $ref: "#/components/schemas/UsageUtilisation"
+            - type: "null"
+        state: {$ref: "#/components/schemas/UsageState"}
         blockedUntil: {type: [string, "null"], format: date-time}
     UsageList:
       type: object
-      required: [period, mode, items]
+      required: [period, mode, items, nextCursor]
       properties:
-        period:
-          type: object
-          properties:
-            from: {type: string, format: date-time}
-            to: {type: string, format: date-time}
-        mode: {type: string, enum: [audit, enforce]}
+        period: {$ref: "#/components/schemas/UsagePeriod"}
+        mode: {$ref: "#/components/schemas/LimitMode"}
         items:
           type: array
           items: {$ref: "#/components/schemas/UsageRow"}
         nextCursor: {type: [string, "null"]}
+    UsageBudgetFigure:
+      type: object
+      description: One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+      required: [limit]
+      properties:
+        limit: {type: [integer, "null"], format: int64}
+        used: {type: integer, format: int64}
+        windowSeconds: {type: integer}
+        burst: {type: [integer, "null"], format: int64}
+    UsageBudgetFigures:
+      type: object
+      additionalProperties: false
+      required: [requestsPerSecond, requestsPerHour, cachedBytesPerSecond, cachedBytesPerHour, uncachedBytesPerSecond,
+        uncachedBytesPerHour, upstreamRequestsPerHour, parallelDownloads, bytesPerDay, refusedPerHour]
+      properties:
+        requestsPerSecond: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        requestsPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        cachedBytesPerSecond: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        cachedBytesPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        uncachedBytesPerSecond: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        uncachedBytesPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        upstreamRequestsPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        parallelDownloads: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        bytesPerDay: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        refusedPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
+    UsageBudget:
+      type: object
+      description: One budget key of the subject (R-LIM-014) in the last 24 hours, its place, the rule that applies there now, and every figure.
+      required: [place, rule, figures, blockedUntil]
+      properties:
+        place: {$ref: "#/components/schemas/LimitPlace"}
+        rule:
+          oneOf:
+            - $ref: "#/components/schemas/LimitRuleRef"
+            - type: "null"
+        figures: {$ref: "#/components/schemas/UsageBudgetFigures"}
+        blockedUntil: {type: [string, "null"], format: date-time}
+    UsageTotals:
+      type: object
+      required: [requests, refused, cachedBytes, uncachedBytes, upstreamRequests, limitedEvents, wouldLimitEvents]
+      properties:
+        requests: {type: integer, format: int64}
+        refused: {type: integer, format: int64}
+        cachedBytes: {type: integer, format: int64}
+        uncachedBytes: {type: integer, format: int64}
+        upstreamRequests: {type: integer, format: int64}
+        limitedEvents: {type: integer, format: int64}
+        wouldLimitEvents: {type: integer, format: int64}
+    UsagePoint:
+      type: object
+      required: [start, requests, cachedBytes, uncachedBytes, upstreamRequests, refused, limitedEvents, wouldLimitEvents]
+      properties:
+        start: {type: string, format: date-time}
+        requests: {type: integer, format: int64}
+        cachedBytes: {type: integer, format: int64}
+        uncachedBytes: {type: integer, format: int64}
+        upstreamRequests: {type: integer, format: int64}
+        refused: {type: integer, format: int64}
+        limitedEvents: {type: integer, format: int64}
+        wouldLimitEvents: {type: integer, format: int64}
+    UsageByRepository:
+      type: object
+      required: [repository, requests, cachedBytes, uncachedBytes, upstreamRequests, refused]
+      properties:
+        repository: {type: string, description: "`<projectKey>/<repoKey>`; empty for requests that named no repository."}
+        requests: {type: integer, format: int64}
+        cachedBytes: {type: integer, format: int64}
+        uncachedBytes: {type: integer, format: int64}
+        upstreamRequests: {type: integer, format: int64}
+        refused: {type: integer, format: int64}
+    UsageCredentialSession:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [session]}
+    UsageCredentialToken:
+      type: object
+      required: [kind, id, hint, description]
+      properties:
+        kind: {type: string, enum: [token]}
+        id: {type: string}
+        hint: {type: [string, "null"], description: "`null` for a token that was deleted."}
+        description: {type: [string, "null"]}
+    UsageByCredential:
+      type: object
+      required: [credential, requests, cachedBytes, uncachedBytes]
+      properties:
+        credential:
+          oneOf:
+            - $ref: "#/components/schemas/UsageCredentialSession"
+            - $ref: "#/components/schemas/UsageCredentialToken"
+        requests: {type: integer, format: int64}
+        cachedBytes: {type: integer, format: int64}
+        uncachedBytes: {type: integer, format: int64}
     UsageDetail:
       type: object
       required: [subject, period, mode, totals, budgets, history, repositories, credentials]
       properties:
-        subject: {type: object}
-        period: {type: object}
-        mode: {type: string, enum: [audit, enforce]}
-        totals: {type: object}
+        subject: {$ref: "#/components/schemas/UsageSubject"}
+        period: {$ref: "#/components/schemas/UsagePeriod"}
+        mode: {$ref: "#/components/schemas/LimitMode"}
+        totals: {$ref: "#/components/schemas/UsageTotals"}
         budgets:
           type: array
-          items: {type: object}
+          items: {$ref: "#/components/schemas/UsageBudget"}
         history:
           type: array
-          items: {type: object}
+          items: {$ref: "#/components/schemas/UsagePoint"}
         repositories:
           type: array
-          items: {type: object}
+          items: {$ref: "#/components/schemas/UsageByRepository"}
         credentials:
           type: array
-          items: {type: object}
+          description: A user's consumption per credential; empty for every other kind.
+          items: {$ref: "#/components/schemas/UsageByCredential"}
+    LimitProjectRow:
+      type: object
+      required: [project, maximum, projectRules, repositoryRules]
+      properties:
+        project: {type: string}
+        maximum:
+          oneOf:
+            - $ref: "#/components/schemas/LimitProjectMaximum"
+            - type: "null"
+        projectRules: {type: integer}
+        repositoryRules: {type: integer}
     LimitProjectList:
       type: object
-      required: [items]
+      required: [items, nextCursor]
       properties:
         items:
           type: array
-          items:
-            type: object
-            required: [project, maximum, projectRules, repositoryRules]
-            properties:
-              project: {type: string}
-              maximum: {type: [object, "null"]}
-              projectRules: {type: integer}
-              repositoryRules: {type: integer}
+          items: {$ref: "#/components/schemas/LimitProjectRow"}
         nextCursor: {type: [string, "null"]}
     # <<< W-26 limits

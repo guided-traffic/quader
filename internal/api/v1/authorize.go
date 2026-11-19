@@ -496,8 +496,8 @@ func (s *Server) hideProject(r *http.Request, key string, refusal error) error {
 
 // projectRoleAdmits is the extra way in of a declaration that names projectRole (Q-AUTHZ-207): the
 // caller does not hold the capability, as a question without an audit event, and is an Owner of the
-// addressed project (projectRole owner), or a member of it (reader); without a project source a member
-// of any project. A token is a member only of the projects its scope reaches (Q-AUTHZ-215: no scope,
+// addressed project (projectRole owner), or a member of it (reader); without a project source an Owner of
+// any project, or a member of any project. A token is a member only of the projects its scope reaches (Q-AUTHZ-215: no scope,
 // inherit, admin: true, the system item projects:read, or a repository element that names the project). A caller that holds the capability, or is no member, is left to Access.Require, so the
 // refusal and its audit event are the ones of any capability. An Access that cannot answer the question
 // admits nobody here.
@@ -516,9 +516,26 @@ func (s *Server) projectRoleAdmits(r *http.Request, q Requirement) bool {
 			return false
 		}
 	}
-	if q.ProjectRole == "owner" {
+	if q.ProjectRole == "owner" && project != "" {
 		owns, err := pa.Owns(ctx, project)
 		return err == nil && owns
+	}
+	if q.ProjectRole == "owner" {
+		// Without a project source, an Owner of any project (R-API-082: the profiles, the explanation, the blocks and the
+		// subjects of the download limits): the handler then decides on the project the request names.
+		members, err := pa.Memberships(ctx)
+		if err != nil {
+			return false
+		}
+		for _, m := range members {
+			if m.Role != authz.ProjectRoleOwner {
+				continue
+			}
+			if owns, err := pa.Owns(ctx, m.Key); err == nil && owns {
+				return true
+			}
+		}
+		return false
 	}
 	members, err := pa.Memberships(ctx)
 	if err != nil {
