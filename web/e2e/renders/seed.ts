@@ -36,6 +36,8 @@ export interface RepoSeed {
   readonly members?: readonly string[];
   /** The upstream of a remote repository whose format has no well-known one. */
   readonly url?: string;
+  /** The names the repository admits (R-REPO-005); absent admits every name. */
+  readonly includePatterns?: readonly string[];
   /** The member `vulnerabilities` of the repository document (R-VULN-002). */
   readonly vulnerabilities?: { readonly matchPublicAdvisories: 'auto' | 'always' | 'never' };
   /** The levels of the artifacts and of the wiki (R-AUTHZ-033); absent takes the lower of the installation's default and the project's level. */
@@ -94,6 +96,17 @@ export const repositories: readonly RepoSeed[] = [
   { project: otherProject, key: 'base-images', format: 'oci', class: 'local', description: 'Hardened base images.' },
   { project: otherProject, key: 'docker-hub-remote', format: 'oci', class: 'remote', description: 'Docker Hub, cached.' },
   { project: otherProject, key: 'containers', format: 'oci', class: 'virtual', members: ['base-images', 'docker-hub-remote'] },
+  // A remote that a visitor without a session pulls through (owner, 2026-11-19): public, and bound to one namespace of the
+  // upstream, because a request without a credential fills its cache.
+  {
+    project: otherProject,
+    key: 'guidedtraffic',
+    format: 'oci',
+    class: 'remote',
+    description: 'The guidedtraffic images of Docker Hub, cached. Open to everyone, also without signing in.',
+    visibility: { artifacts: 'public', wiki: 'internal' },
+    includePatterns: ['guidedtraffic/*'],
+  },
   { project: otherProject, key: longDebKey, format: 'deb', class: 'local', description: 'Packages of the platform team for Debian 12 and 13.' },
   { project: otherProject, key: 'debian', format: 'deb', class: 'remote', description: 'deb.debian.org, cached.' },
   { project: otherProject, key: 'apt', format: 'deb', class: 'virtual', members: [longDebKey] },
@@ -262,6 +275,7 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
     const body: Record<string, unknown> = { key: r.key, class: r.class, format: r.format };
     if (r.description) body['description'] = r.description;
     if (r.visibility) body['visibility'] = r.visibility;
+    if (r.includePatterns) body['includePatterns'] = r.includePatterns;
     if (r.class === 'remote' && r.url) body['remote'] = { url: r.url };
     if (r.vulnerabilities) body['vulnerabilities'] = r.vulnerabilities;
     if (r.class === 'virtual') {
