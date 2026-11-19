@@ -1403,6 +1403,63 @@ agent** is not decided until the owner has said so.
   of its own, a new source of rights (Q-AUTHZ-296, INV-9 amended); and the caller that led a fetch pays all of it
   (Q-LIM-5). Three gaps of protocols are named there for him: NuGet and apt do not show why a request was refused; Docker
   Hub counts pulls differently from Quader's upstream requests; an expired Debian `InRelease` cannot be served stale.
+  **Built in four packages, on `main` the same night** (2026-11-19). Three were built in parallel against the
+  specification and merged in their order; a fourth closed the seams between them and built the owner's review.
+  - **What a user has:** a service account of the instance, a project or a repository issues one **technical token per
+    system**, each with its own budget (the stored service-account tokens are deleted by the migration; the accounts
+    stay). Every request on the paths of the six formats, the registry's `/v2/` and `/files/` is counted against its
+    caller and its place; in **Enforce** (the state a new instance starts in) a request is answered 429, a download is
+    refused before its first byte or slowed, a remote serves what is cached, and a caller with too many refused
+    requests is blocked; in **Audit** nothing at all is refused or slowed on these paths and the overview says "Would
+    have been limited". The request classes `package_read` and `package_anonymous` and their configuration keys are
+    gone; `package_write` limits publishes in Enforce until upload figures exist. The admin area has **Usage** and
+    **Download limits** (rules, profiles, projects, blocks, the switch with a preview of the last 24 hours); a project and a
+    repository have a closed section **Download limits**; a project Owner has **Usage** in the side bar, every user a
+    **Usage** tab of the profile.
+  - **What the merge showed, for the next parallel build:** the screens had been written against shapes typed by hand
+    from the specification, because the API did not exist yet; on the merged tree the seed stopped at its first call
+    (a project's first maximum was refused without `If-Match`, a create that could never succeed), an Owner got 403 on
+    four operations its screens need, and the daily fold of the usage rows had never run without an error. None of it
+    was visible to a package's own gates. The fourth package made the OpenAPI document describe every body field by
+    field and the screens read the generated client, so the next disagreement fails the type check.
+  - **Looked at by the development agent** (the pictures of the fourth package, both schemes, 1440 and 390): five
+    findings went back and were fixed before the landing (the technical-token table was stacked blocks at every width;
+    the cell "Ended" stood off its neighbours' line; "Now" stood above its meter in the stacked overview; the links of
+    the switch dialog were the browser's; a caller's page was titled with the reference). Two checks joined the render
+    checks for it (`stacked-offset`, `label-apart`). An error of the development agent at the merge: the German
+    locale file was resolved by taking both sides of five hunks and was no longer XML; the count of units still
+    matched and no gate built the German bundle before the fourth builder did. The full render set then ran on the landed tree three times: the first found 13 failed screens of 371 (a project's settings asked for its maximum and got 404 for the ordinary state "none", now 200 with `maximum: null`, Q-API-356; the two new checks on four older screens, two of them real and fixed, two a check that was too strict and now measures whether the value would have fitted; a check whose own marker moved the cell it measured; an older bug of the create form that asked whether a key it had suggested itself was free); the second stopped in the seed, which on a new database, as in every run of CI, passed the management API's write budget (the builder's database had been filled already; the UI development profile now raises the write class); the third passed 371 of 371 with no layout finding, and the development agent looked at the switch to Audit, the Enforce state and the changed older screens.
+  - **The owner's review of the eight** (2026-11-19 evening, in the chat, one at a time; written into his working
+    paper by the development agent): seven as built, option (a): Q-LIM-7, Q-LIM-16, Q-LIM-2, Q-LIM-21, Q-LIM-10,
+    Q-AUTHZ-296, Q-LIM-5. **Q-LIM-4 differently, option (b): in Audit nothing at all is refused on the protocol
+    paths**, also not by the request classes that existed before. On the development agent's objection (the default
+    state would have no request limit; a public remote would pass anonymous upstream requests on unbounded) he
+    answered: "Du kannst wenn es dich so beschäftigt auch gerne den Enforce zum Standard machen. Ich erwarte dass
+    ein Admin sich im klaren ist, was er braucht. Die Default Installation ist einfach für mich immer zum testen und
+    ausprobieren." The development agent took the leave: **a new instance starts in Enforce**; Audit is pure
+    observation, and the switch to Audit says that it turns the protection off. The argument "an installation that
+    updates loses its limit" of the specification was not one before the first stable release and is dropped.
+  - **Decided by the builders, for the owner's walkthrough:** an Owner does not rotate a technical token, it revokes
+    and issues a new secret (Q-AUTH-419); the limit of a technical token is set from its cell of the token table, and
+    the expiry stands beside the token's hint instead of in a column (Q-UI-759, Q-UI-761); ended tokens are a table of
+    their own (Q-UI-740); a deleted technical token's rules and blocks go with the daily task, its usage stays until
+    retention, named as deleted (Q-LIM-49); the single figures of a rule start with the profile's values (Q-UI-752); a
+    download of the UI asks for one byte first, to show a refusal instead of failing (Q-UI-753).
+  - **What Audit leaves open** is written down as H-1015 of the security page of the limits: while an administrator
+    has switched to Audit, an instance has no request limit on its package and registry addresses, and a public remote
+    passes anonymous upstream requests on unbounded (F-155 stays open in Audit, by the owner's decision). Dormant in the
+    state an instance starts in.
+  - **Not built, and not verified:** the kind legs run in Enforce for the first time with this push (their load tests'
+    technical tokens get the Technical profile; no leg was run with it before the landing). The e2e set `limits` of
+    R-LIM-039 is not written (six clients against a tiny profile, each figure once in both modes, each client's message
+    read), nor the integration test of a killed replica's leases. Not measured: the k6 legs with the limits on the
+    request path (the engine's benchmark only: two Valkey round trips and about 6 µs per cached download; the warm-up
+    p99 of the load legs before the limits is in the night's record). Not verified end to end: the `RateLimit` policies of
+    the parallel, upstream and refused figures; the charging of a host bound to a repository; the fold's sums with rows
+    older than 30 days; the journeys `02-repository-and-files` and `12-projects`, changed and type-checked, run by CI
+    only. `TestR_LIM_001` failed once in 13 runs of the builder with "1 request charged to an address", not reproduced;
+    it prints the rows if it happens again. A screen cannot change a technical token's description or delete one (API
+    only).
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
@@ -1974,6 +2031,19 @@ agent** is not decided until the owner has said so.
     **twice**, once from a GitHub-hosted job (zstd) and once from a self-hosted one (gzip, no `zstd` in the runners'
     image), 165 and 161 MB for the modules, 136 and 121 MB for the npm clients. With all five clients images that is
     nearer 6 GB than the estimated 4; `zstd` in the runners' image would halve it.
+- **F-160 · `drain-load-e` failed its latency condition in the night's baseline run, with every functional condition held**
+  (nightly 44595121737 of 2026-11-19, dispatched 19:08 UTC on the code of `ad01d57e`, the seven legs the night before had
+  not run; the first nightly on the runners' own image and with the CI caches, and the last before the download limits).
+  R-HA-059: the k6 p99 from the first eviction until two minutes after the drain was 1.48 s over 35,826 requests against a
+  warm-up of 532 ms, the limit being twice the warm-up (npm alone 551 ms to 1.698 s, NuGet alone 326 to 737 ms). Held:
+  449 `npm ci`, 43 publishes, 330 restores and 45 pushes all exit 0, every acknowledged publish installs, no SIGKILL, the
+  backup Job completed over two pods, `gc-full` was handed over; one upload probe got a 502 once and passed on its
+  second attempt (the pattern of H-795). The same night: `nuget-ha` green (37 min), `cold-crash` green (10 min),
+  `drain-load-b` green (p99 500 ms to 533 ms), `drain-load-c` green (479 ms, judged outside the switchover window),
+  `Latency` green (pick-up with Valkey p99 16 ms, propagation p99 2 ms, 900 uploads on 10,000 files p99 3.26 s of 6 s),
+  the vulnerability scanning performance green. Not re-run by itself: the full nightly after the landing of the download
+  limits runs the leg again, and the warm-up p99 of the load legs (479 to 532 ms before the limits) is the comparison for
+  what the limits cost on the request path. Cause not known; one red run.
 - **F-159 · A unit test with a date in it turned the gating job `web (Angular)` red on its seventh day** (2026-11-19 from
   12:31:51 UTC, Test and Release 44525198691): two tests of the grade card held a fixture time of 2026-11-12 12:31:51 UTC
   and expected its relative time to read "now", minutes, hours, "yesterday" or days ago; from the seventh day on it reads
@@ -1996,44 +2066,10 @@ What a run did, in short, so the next run starts where it stopped. The plan item
 **Run of 2026-11-18/19, state on 2026-11-19 at 14:30 local time** (releases v0.61.0 to v0.63.3; `main` at `ad01d57e`, everything
 pushed). The newest first, because this is where the next run starts.
 
-- **In work, not on `main`** (state of 2026-11-19, 16:30): the three packages of the download limits (W-26) are built and
-  **merged on the local branch `w26-merged`** of the development machine (`24c13a14`: package 1 `7e5bbbe9`, package 2
-  `861ad257`, package 3 `24c13a14`, on top of `0db39e1e`; not pushed, because no screen of it has been seen with real
-  data). A fourth builder closes the seams on that base (brief: `.out/w26-p4-brief.md` of the checkout). Landing after it:
-  cherry-pick its commit onto `w26-merged`, the gates, the pictures looked at, then the four commits onto `main` with the
-  plan entry below them, in one push.
-  - **What the merge changed:** package 2's migrations became 00081 (`limits`) and 00082 (`usage`), because the numbers
-    may have no gap and package 1 used 00080 only; the gap H-1013 of the security page of the limits (a technical token
-    charged to the client address) is removed, package 1 closed it (`auth.Stage.accept` fills the credential, also for a
-    registry token; H-1013 is now the one of `permissions.md`); the decisions Q-ARCH-513 and Q-ARCH-514 stand before
-    Q-ARCH-520; the twelve `limits.*` audit events got their plain names in English and German (a test of the UI held
-    it); the locale files were merged unit by unit (4220 units each). On the merged tree: `go test ./internal/...
-    ./cmd/...`, `make lint` (the cold run exceeded the five minutes of `.golangci.yml`, the warm one passed: the limit is
-    raised by package 4), `make web-lint`, `make web-test` (1709), `make generate-check`, the link check, vet with the
-    integration and e2e tags, `make ui-layout-test`.
-  - **What the first render run showed:** nothing to look at. The UI database held a draft of migration 00080 from a
-    builder's run (purged, it is fixture data); on a fresh one the seed stopped at its first call of the API as built
-    (`PUT` of a project's maximum answers 428 without `If-Match`). The screens were written against hand-written shapes
-    from the specification, not against the API: package 3 could only render error states, and the builder said so.
-  - **Package 4, its ten points:** the screens on the generated client; the tab Projects and the project filter on the
-    operations package 2 added (`GET /api/v1/limits/projects`, `project=`); the technical-token table's **Limit** and
-    **Last 24 hours** columns and **Set limit** (R-UI-181); a deleted technical token's usage rows and rules
-    (R-LIM-028); a registry token of a technical token charged to it, proven on the request path; what package 2
-    built partly (R-LIM-020 `RateLimit` fields and the "Your limits" link, R-LIM-030, R-LIM-034, a host bound to a
-    repository); a seed with a realistic instance and every screen rendered and looked at; the journeys and the
-    integration tests of R-LIM-019; the documents (the developer page's work packages removed); the lint's time limit.
-  - **Not built by any package, said by their builders:** the e2e set `limits` of R-LIM-039 (it needs the kind
-    cluster); the k6 legs with the limits on the request path (the engine benchmark measured 2 Valkey round trips,
-    about 6 µs, per cached download; `querybudget` stayed green); a screen to change a technical token's description
-    or delete one (API only); an Owner cannot rotate a technical token, it revokes and issues a new secret
-    (Q-AUTH-419, the builder's decision against the first wording of R-UI-181, for the owner's walkthrough).
-  - **Breaking, for the owner's installation:** migration 00080 deletes the stored service-account tokens (the
-    accounts stay); `POST …/service-accounts/{name}/tokens` is gone; a service account's body names `reference`
-    instead of `principal`.
-  W-25 (a probe starts the download in the background; trigger and platforms decided) is built after them on the hook of
-  R-LIM-037 (`Charge.Background` exists).
-- **With the owner:** eight decisions of the specification in his working paper (built as specified until he chooses
-  otherwise; an answer other than the first option goes to the builders); of W-24, the column's name **Last download** where
+- **In work:** nothing is unlanded. The download limits (W-26) are on `main` in four commits (see its entry: what is
+  built, what the merge showed, what is not verified). Next on it: W-25 (a probe starts the download in the background;
+  trigger and platforms decided) on the hook `Charge.Background` of R-LIM-037; the e2e set `limits`.
+- **With the owner** (the eight decisions of the working paper are answered, see W-26): of W-24, the column's name **Last download** where
   his word was "Last fetched", and **Published** of a remote-only version being the time it was cached; `zstd` in the runners'
   image; a registry mirror in the runners' cluster for the kind node and dev profile images; whether the public remote for the
   guidedtraffic images is also wanted on his installation (W-22); the setup page of a public remote offering a visitor
@@ -2047,11 +2083,11 @@ pushed). The newest first, because this is where the next run starts.
 - **To check, not yet seen:**
   - Of the CI caches (the first run is read, see its record at F-158): a run that touches npm or NuGet must show their
     clients images loaded, not built; the integration shards and `e2e (access-long)` of 44531328598 to their end.
-  - The seven legs of the second nightly that did not run (`nuget-ha`, `cold-crash`, `drain-load-b`, `-c`, `-e`, `Latency`,
-    the vulnerability scanning performance): again in the night, on a quiet `main`; the first legs on the runners' new image
-    and with the caches.
-  - Whether the late scheduled nightly of 11-19 deferred to the dispatched full run (a run of the schedule on `76d280f1`
-    completed at about 12:00 UTC; its legs' summaries are not read).
+  - The full nightly on `main` with the download limits (dispatched after their landing in the night of 11-19): every
+    leg in Enforce for the first time; `drain-load-e` again (F-160); the warm-up p99 of the load legs against the
+    night's baseline. The seven legs that had not run are read (F-160: six green, one red on latency alone).
+  - Answered: the late scheduled nightly of 11-19 (44504268621) did defer to the dispatched run; every leg ended within
+    a minute, nothing ran.
   - A full render set with the check `joined`; the changed kind test `e1_01_login_test.go` of W-21; F-126; the owner's
     installation on the newest release (not reachable from the development machine).
   - The owner's view of the UI (`https://localhost:4200/ui/`) is down while builders render; start it again from `main` after
