@@ -1209,6 +1209,32 @@ agent** is not decided until the owner has said so.
   render runs. **The checks also run in CI, decided by the owner on 2026-11-19** ("Ja, die Renderprüfung soll auch
   in der CI laufen."): a job of Test and Release on every push, without a path filter, outside the needs of Semantic
   Release until the first stable release (Q-ARCH-457); given to the same builder (Q-ARCH-510 to Q-ARCH-512).
+  - **Built** (on `main` the same day; R-UI-175 and R-UI-176, Q-UI-720 to Q-UI-726, Q-ARCH-510 to Q-ARCH-512; 926
+    requirements, 631 of them MVP): one rule for the whole UI, a control or an icon beside a text has its middle on the
+    middle of that text's first line within 1 px and does not make the line taller (`--quader-line`, the class `on-line`
+    for a control of 32 px, badges of a fixed 20 px). The owner's row: 65 px with the button's middle at 32 and the name's
+    at 24 before, 49 px with both at 24 after. The checks measure middles now and take a button's glyph for the button and
+    the nearest text of its row for its label; 32 fixture pages hold them, one of them the owner's row (`make
+    ui-layout-test`). **The first full run with them failed 270 of 331 screens with 2,876 finding lines**, by cause: icons
+    of a line of text 1,482, actions beside a heading 394, controls of 32 px at a row's top 303, badges and statuses 79,
+    the actions of stacked rows 62, the mark of an external link 57, pictures 20, and 479 that the check had wrong and now
+    knows as a layout (a control beside a framed box, a column of controls, a badge that wraps like a word). The last
+    full run: 333 screens, 332 passed, no layout finding, 21.4 min; the one failure a click that ran into its timeout in
+    `repository-settings-oci-virtual` as the administrator at 1,024 px, green when rendered alone, cause not read. No entry
+    was added to the allowed list. Two guards that need no stack: the style guide's patterns are rendered with the compiled
+    stylesheet in the unit run, and a lint rule refuses `vertical-align: middle` and `align-items: last baseline`, which
+    found nine more places. The job `UI layout checks` of Test and Release runs the full set on every push on
+    `self-hosted`, outside the needs of Semantic Release; **it has never run on a runner**, and its package, browser,
+    compose and upload steps are unverified.
+    **What the guard cannot see, by the builder's list:** a control beside a framed box is not measured at all; pictures
+    and controls that are none of the listed kinds, absolutely placed ones and text drawn by CSS; states the set does not
+    render (open menus, hover, most dialogs, error states); an offset of 1 px or less; a control a wrapping toolbar moves to
+    a line of its own; a top-aligned row in a component no render shows.
+    **Looked at by the development agent:** the owner's screen as a visitor (the button on the name's line) and an opened
+    row of `repository-oci`. Seen there and not judged: the copy button attached to the field of the pull command is drawn
+    taller than the field (about 46 px against 32); the copy button's component is unchanged by this work, the state is
+    new in the set, and the stack was the next builder's, so whether the change caused it is not known. It is the first
+    case of the gap named first.
 - **W-24 · A remote repository lists what was fetched, and every cell of the row is true** (owner, 2026-11-19, with
   pictures of `platform/guidedtraffic` and of its image `guidedtraffic/kubectl`: one image, one tag `latest`, size 0 B,
   **Last fetched** "Never", downloads 0): "Wie kann es sein, dass es nur ein einziges Image gibt und das keine Größe hat und
