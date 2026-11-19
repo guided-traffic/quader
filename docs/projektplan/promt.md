@@ -1156,7 +1156,35 @@ agent** is not decided until the owner has said so.
   list ("1,145 findings · 112 fixable"). The pictures showed one thing the builder's reading of the styles had not: the
   description of the creation form kept the form's width, because a later rule gave every text area the full width; fixed.
   Not done: the wiki's visibility behind a disclosure, which waits for W-11 in the same forms.
+- **W-21 · An ended session must not leave the visitor in front of an error on every page** (owner, 2026-11-19, with a
+  picture of **Guides** on the local stack: a red notice "The session has ended. Sign in again." and a request ID): "Wenn
+  ich nicht angemeldet bin, und auf Guides klicke bekomme ich diese Fehlermeldung. Wie ist hier unser Intent?" Read from the
+  stack's log (the request ID of the picture) and reproduced: the browser still sent the cookie of an ended session; the
+  server answers that cookie with `401 session_expired` on every route and never as a request without a credential
+  (R-AUTH-001, wanted); the UI took the 401 of `whoami` at load for "not signed in", and since a repository is `public` it
+  started as a visitor, with a cookie it cannot delete (`HttpOnly`): `GET /api/v1/formats`, the projects and the banner
+  all answered 401, where the same requests without a cookie answer 200. The case Q-AUTH-177 named as its revisit
+  condition. The intent of the specification: a visitor without a credential gets the guides without credential steps
+  while something is `public`, and never an error there. **Decided by the owner on 2026-11-19** ("Option A", from three:
+  the sign-in screen with the notice that the session has ended / on as a visitor without a word / the server counts a
+  dead cookie as no credential): a browser whose session has ended lands on the sign-in screen, which says so and offers
+  to sign in or to continue without signing in. The development agent's part of it: `whoami` takes the dead cookie away
+  with its `session_expired`, as the sign-out does, on that one route only. To a builder on 2026-11-19 (Q-AUTH-410 to
+  Q-AUTH-414, R-UI-175, R-UI-176, Q-UI-710 to Q-UI-714).
+- **W-22 · A public remote repository for the guidedtraffic images** (owner, 2026-11-19): "kannst du auch bitte ein public
+  remote Repo hinzufügen. Nutze doch bitte https://hub.docker.com/u/guidedtraffic als remote und mach es zugänglich alle
+  pull through auch für nicht angemeldete user." Read by the development agent as: on the stack he is looking at, and in
+  its seed. Done on the running stack through the API: `platform/guidedtraffic`, OCI, remote, Docker Hub, artifacts
+  `public`, `includePatterns: ["guidedtraffic/*"]`. Verified without a credential: the manifest of
+  `guidedtraffic/kubectl:latest` 200 (fetched from the upstream), `library/alpine` through the same repository 404 (outside
+  the pattern), the same image through `docker-hub-remote` 401 (not public). The create answered the warning
+  `public_populates_remote`: a request without a credential fills the cache, which is what was asked for, bounded by the
+  pattern. Not known: whether the owner also wants it on his installation, which cannot be reached from the development
+  machine.
 - **Seen by the development agent, not decided:**
+  - **The setup page of a public remote offers a visitor `docker login`** (2026-11-19, `platform/guidedtraffic` without a
+    credential): the first snippet of `client-setup?client=docker` is `docker login … --username quader`, though the guide
+    of a visitor is to come without credential steps and the pull that follows needs none.
   - A session that has ended shows a red box on the page, "The session has ended. Sign in again." with a request ID and "Give
     this ID to your administrator", and under it the page as if it were empty ("The project has no member yet."). An ended
     session is no error to report; the reader needs the sign-in.
