@@ -1538,6 +1538,27 @@ agent** is not decided until the owner has said so.
   did what F-147 built it for (the job failed after 5 minutes instead of at its limit), and the remedy is the one written
   there: run the failed jobs again. Open: whether five minutes are too few for a download on a loaded pool, the question
   F-150 answered for the browser's install; one occurrence is not a measurement.
+- **F-154 · The Ubuntu archive did not answer, and the last seven legs of the second full nightly ended in their package
+  step** (2026-11-19 from 06:28 UTC, HA and Performance 44453781574: `nuget-ha`, `cold-crash`, `drain-load-b`, `-c`, `-e`,
+  `Latency` and `Vulnerability scanning performance`, each red after two and a half minutes in `Install build tools` with
+  `Unable to locate package build-essential`; the 24 legs before them were green). No leg's test ran. At 06:50 UTC `archive.ubuntu.com` took 18 to 23 s
+  to connect, or accepted and sent nothing, from the owner's network as well, over IPv4 and IPv6. The third time after
+  F-117 (11-09) and the hung `chart` job of 11-18; the script of that day did what it was built for (a red leg in minutes
+  with the host named, not a hung one), and a second red step, `make dev-down` without `make`, is noise of the first.
+  **One defect of the script found in the first of the seven and fixed:** in `nuget-ha` each of the two hosts answered during
+  one of the two updates (`archive.ubuntu.com` in full after 51 s of the first, `security.ubuntu.com` after 24 s of the
+  second), and the leg still had no index, because the 60 s bound ended both updates and an update that is ended keeps
+  nothing. apt needs 41 s to give up a silent source once (the log, and a container beside a source that accepts and never
+  answers: 41 s without a retry, 82 s with one, 168 s with three), so with three retries it could never end inside the
+  bound. The update now retries no request itself, ends inside the bound with the indexes of the sources that answered, and
+  the script reads once more when a source was not read. In the container the script before the change failed after 120 s
+  as in the leg, the script after it installed the package in 85 s
+  ([releasing.md](../developer/releasing.md#os-packages-in-the-jobs)). **What the fix does not reach:** the other six
+  legs, where `archive.ubuntu.com` itself was silent in both updates; it carries `main`, and no order of calls installs a
+  compiler without it. **For the owner, now with a third occurrence and a lost nightly behind it:** every leg fetches 82
+  to 102 MB of packages from that one host before it does anything; the runners use the stock image
+  (`ghcr.io/actions/actions-runner`), so the remedy named at F-117 and F-147, an image that carries the packages, is an
+  image to build and keep, in the runner's repository. The script ends at once on such an image.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
