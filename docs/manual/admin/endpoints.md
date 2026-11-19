@@ -102,7 +102,7 @@ A refused credential answers `401` exactly like an unknown token, so the answer 
 
 ### Bind a token to an endpoint
 
-A token's scope has a list of endpoint names; an empty list means unbound. The token screens of the web UI do not offer the binding yet. Create the token through the management API, for example `POST /api/v1/service-accounts/{name}/tokens`, or `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` for a service account of a project, with `"scope": {"endpoints": ["customers"], ...}`, or with `quader admin token` and a scope file. A token bound to `customers` works only there, so a leaked customer token is useless on the default endpoint.
+A token's scope has a list of endpoint names; an empty list means unbound. The token screens of the web UI do not offer the binding yet. Create the token through the management API, for example `POST /api/v1/service-accounts/{name}/technical-tokens`, or `POST /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens` for a service account of a project, with `"scope": {"endpoints": ["customers"], ...}`, or with `quader admin token` and a scope file. A token bound to `customers` works only there, so a leaked customer token is useless on the default endpoint.
 
 ## Exposure rules
 

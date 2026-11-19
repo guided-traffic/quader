@@ -44,9 +44,9 @@ func TestR_API_014_IdentityTxForms(t *testing.T) {
 			}
 			// The owner lock and the active count of the token read the service
 			// account the transaction created.
-			created, err = a.tokens.CreateTx(ctx, tx, token.CreateRequest{
-				Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "tx", Via: "api", Admin: true,
-			})
+			created, err = a.tokens.CreateTechnicalTx(ctx, tx, sa, token.TechnicalCreate{Name: "tx", Request: token.CreateRequest{
+				Caller: admin, Via: "api", Admin: true,
+			}})
 			return err
 		})
 		if err != nil {
@@ -90,7 +90,7 @@ func TestR_API_014_IdentityTxForms(t *testing.T) {
 			if _, err := a.manager.CreateGroupTx(ctx, tx, admin, principal.NewGroup{Name: "tx-gone-team", Members: []string{"tx-gone"}}); err != nil {
 				return err
 			}
-			if _, err := a.tokens.CreateTx(ctx, tx, token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "gone", Via: "api", Admin: true}); err != nil {
+			if _, err := a.tokens.CreateTechnicalTx(ctx, tx, sa, token.TechnicalCreate{Name: "gone", Request: token.CreateRequest{Caller: admin, Via: "api", Admin: true}}); err != nil {
 				return err
 			}
 			return errRollback

@@ -23,7 +23,9 @@ import {
   IdentityApi,
   MembershipChange,
   NewGroup,
+  NewRepositoryServiceAccount,
   NewServiceAccount,
+  RepositoryAction,
   NewUser,
   ServiceAccount,
   ServiceAccountFilters,
@@ -45,6 +47,14 @@ import {
   TokenFilters,
   TokensApi,
 } from '../tokens-api';
+import {
+  AccountAddress,
+  NewTechnicalToken,
+  NewTechnicalTokenSecret,
+  TechnicalToken,
+  TechnicalTokenCreated,
+  TechnicalTokensApi,
+} from '../technical-tokens-api';
 
 /*
  * In-memory fakes of the identity, token, session, settings, policy and role services (R-UI-047
@@ -123,6 +133,57 @@ export function sampleToken(over: Partial<Token> = {}): Token {
     rotatedFrom: null,
     selfRotatable: false,
     ciContext: null,
+    technicalToken: null,
+    ...over,
+  };
+}
+
+/** A service account record as the API answers it (R-AUTH-020, R-AUTH-046), with what `over` changes. */
+export function sampleAccount(over: Partial<ServiceAccount> = {}): ServiceAccount {
+  const name = over.name ?? 'ci-bot';
+  const project = over.project ?? null;
+  const repository = over.repository ?? null;
+  return {
+    id: '00000000-0000-7000-8000-000000000021',
+    name,
+    reference: `sa:${[project, repository, name].filter((p) => p).join('/')}`,
+    level: repository ? 'repository' : project ? 'project' : 'instance',
+    description: 'Deploy jobs',
+    status: 'active',
+    project,
+    repository,
+    actions: repository ? ['read'] : null,
+    isAdmin: false,
+    technicalTokens: 0,
+    version: 1,
+    createdAt: '2026-09-01T08:00:00Z',
+    ...over,
+  };
+}
+
+/** A technical token as the API answers it (R-AUTH-045), with one live secret unless `over` says otherwise. */
+export function sampleTechnicalToken(over: Partial<TechnicalToken> = {}): TechnicalToken {
+  return {
+    id: '00000000-0000-7000-8000-0000000000c1',
+    name: 'nightly-mirror',
+    description: 'The nightly mirror job',
+    account: { reference: 'sa:ci-bot', level: 'instance', project: null, repository: null },
+    state: 'active',
+    secrets: [
+      {
+        id: '00000000-0000-7000-8000-0000000000c2',
+        hint: 'qdr_sat_7Hq2',
+        scope: { inherit: true, admin: false, repositories: [], system: [] },
+        createdAt: '2026-10-01T10:00:00Z',
+        expiresAt: '2027-01-01T10:00:00Z',
+        revokedAt: null,
+        lastUsedAt: null,
+        rotatedFrom: null,
+      },
+    ],
+    limit: null,
+    createdAt: '2026-10-01T10:00:00Z',
+    createdBy: 'ada',
     ...over,
   };
 }
@@ -190,18 +251,7 @@ export class FakeIdentityApi extends IdentityApi {
       { principal: 'sa:ci-bot', kind: 'service_account', sources: ['manual', 'oidc:corp'] },
     ],
   };
-  accounts: ServiceAccount[] = [
-    {
-      id: '00000000-0000-7000-8000-000000000021',
-      name: 'ci-bot',
-      principal: 'sa:ci-bot',
-      description: 'Deploy jobs',
-      status: 'active',
-      project: null,
-      isAdmin: false,
-      createdAt: '2026-09-01T08:00:00Z',
-    },
-  ];
+  accounts: ServiceAccount[] = [sampleAccount()];
   failure: ApiError | null = null;
   /** The `external` a user created without the member takes (the installation's `newUsersExternal`). */
   newUsersExternal = false;
@@ -468,7 +518,10 @@ export class FakeIdentityApi extends IdentityApi {
       arrayPages(() =>
         sorted(
           this.accounts.filter(
-            (a) => (!filters.q || a.name.includes(filters.q)) && (!filters.project || a.project === filters.project),
+            (a) =>
+              (!filters.q || a.name.includes(filters.q)) &&
+              (!filters.project || a.project === filters.project) &&
+              (filters.everywhere || !filters.project || (a.repository ?? null) === (filters.repository ?? null)),
           ),
           (a) => a.name,
           filters.sort,
@@ -479,31 +532,42 @@ export class FakeIdentityApi extends IdentityApi {
       );
   }
 
-  override async serviceAccount(name: string, project: string | null = null): Promise<Versioned<ServiceAccount>> {
-    const found = this.accounts.find((a) => a.name === name && a.project === project);
+  private at(a: ServiceAccount, name: string, project: string | null, repository: string | null): boolean {
+    return a.name === name && a.project === project && (a.repository ?? null) === repository;
+  }
+
+  override async serviceAccount(
+    name: string,
+    project: string | null = null,
+    repository: string | null = null,
+  ): Promise<Versioned<ServiceAccount>> {
+    const found = this.accounts.find((a) => this.at(a, name, project, repository));
     if (!found) throw problem(404, 'not_found');
     return { value: found, etag: this.etagOf(`service-account:${name}`) };
   }
 
   override async createServiceAccount(
     project: string | null,
-    body: NewServiceAccount,
+    body: NewServiceAccount | NewRepositoryServiceAccount,
     idempotencyKey: string,
+    repository: string | null = null,
   ): Promise<ServiceAccount> {
     this.fail();
     this.keys.push(idempotencyKey);
-    this.calls.push(`createServiceAccount ${project ? `${project}/` : ''}${body.name}`);
-    if (this.accounts.some((a) => a.name === body.name && a.project === project)) throw problem(409, 'already_exists');
-    const created: ServiceAccount = {
-      id: `sa-${project ?? ''}-${body.name}`,
+    const actions = 'actions' in body ? body.actions : undefined;
+    this.calls.push(
+      `createServiceAccount ${[project, repository, body.name].filter((p) => p).join('/')}${actions ? ` ${actions.join(',')}` : ''}`,
+    );
+    if (this.accounts.some((a) => this.at(a, body.name, project, repository))) throw problem(409, 'already_exists');
+    const created = sampleAccount({
+      id: `sa-${project ?? ''}-${repository ?? ''}-${body.name}`,
       name: body.name,
-      principal: project ? `sa:${project}/${body.name}` : `sa:${body.name}`,
       project,
-      isAdmin: false,
+      repository,
+      actions: repository ? (actions ?? ['read']) : null,
       description: body.description ?? '',
-      status: 'active',
       createdAt: '2026-10-29T10:00:00Z',
-    };
+    });
     this.accounts = [...this.accounts, created];
     return created;
   }
@@ -511,15 +575,16 @@ export class FakeIdentityApi extends IdentityApi {
   override async updateServiceAccount(
     name: string,
     project: string | null,
-    patch: { description?: string },
+    patch: { description?: string; actions?: RepositoryAction[] },
     etag: string,
+    repository: string | null = null,
   ): Promise<Versioned<ServiceAccount>> {
     this.fail();
-    this.calls.push(`updateServiceAccount ${name}`);
-    const current = (await this.serviceAccount(name, project)).value;
+    this.calls.push(`updateServiceAccount ${name}${patch.actions ? ` ${patch.actions.join(',')}` : ''}`);
+    const current = (await this.serviceAccount(name, project, repository)).value;
     this.guard(`service-account:${name}`, etag);
     const next = { ...current, ...patch };
-    this.accounts = this.accounts.map((a) => (a.name === name && a.project === project ? next : a));
+    this.accounts = this.accounts.map((a) => (this.at(a, name, project, repository) ? next : a));
     return { value: next, etag: this.etagOf(`service-account:${name}`) };
   }
 
@@ -613,18 +678,6 @@ export class FakeTokensApi extends TokensApi {
     return this.created(request, { kind: 'user', name: 'alice' }, 'pat');
   }
 
-  override async createForServiceAccount(
-    name: string,
-    _project: string | null,
-    request: CreateTokenRequest,
-    idempotencyKey: string,
-  ): Promise<TokenCreated> {
-    this.fail();
-    this.keys.push(idempotencyKey);
-    this.calls.push(`createForServiceAccount ${name} ${request.description}`);
-    return this.created(request, { kind: 'service_account', name }, 'sat');
-  }
-
   override async rotate(id: string, overlapSeconds: number, idempotencyKey: string): Promise<TokenCreated> {
     this.fail();
     this.keys.push(idempotencyKey);
@@ -659,6 +712,94 @@ export class FakeTokensApi extends TokensApi {
 
   override async revokeAllOwn(): Promise<void> {
     this.calls.push('revokeAllOwn');
+  }
+}
+
+/** The technical tokens of the accounts (R-AUTH-045), keyed by the account's reference; every write is in `calls`. */
+export class FakeTechnicalTokensApi extends TechnicalTokensApi {
+  readonly calls: string[] = [];
+  readonly keys: string[] = [];
+  tokens: Record<string, TechnicalToken[]> = { 'sa:ci-bot': [sampleTechnicalToken()] };
+  failure: ApiError | null = null;
+
+  private ref(a: AccountAddress): string {
+    return `sa:${[a.project, a.repository, a.name].filter((p) => p).join('/')}`;
+  }
+
+  private fail(): void {
+    const f = this.failure;
+    if (f) {
+      this.failure = null;
+      throw f;
+    }
+  }
+
+  private created(t: TechnicalToken): TechnicalTokenCreated {
+    return { ...t, token: SECRET_VALUE.replace('qdr_pat_', 'qdr_sat_'), secretId: t.secrets[0]?.id ?? t.id };
+  }
+
+  /** The account of the last list, for assertions. */
+  lastList: AccountAddress | null = null;
+  /** The last create's request, for assertions. */
+  lastRequest: NewTechnicalToken | null = null;
+
+  override async list(account: AccountAddress): Promise<readonly TechnicalToken[]> {
+    this.fail();
+    this.lastList = account;
+    return this.tokens[this.ref(account)] ?? [];
+  }
+
+  override async create(account: AccountAddress, request: NewTechnicalToken, idempotencyKey: string): Promise<TechnicalTokenCreated> {
+    this.fail();
+    this.keys.push(idempotencyKey);
+    this.calls.push(`create ${this.ref(account)} ${request.name}`);
+    this.lastRequest = request;
+    const list = this.tokens[this.ref(account)] ?? [];
+    if (list.some((t) => t.name === request.name)) throw problem(409, 'already_exists');
+    const level = account.repository ? 'repository' : account.project ? 'project' : 'instance';
+    const t = sampleTechnicalToken({
+      id: `tt-${request.name}`,
+      name: request.name,
+      description: request.description ?? '',
+      account: { reference: this.ref(account), level, project: account.project, repository: account.repository },
+    });
+    this.tokens[this.ref(account)] = [...list, t];
+    return this.created(t);
+  }
+
+  override async newSecret(
+    account: AccountAddress,
+    tokenName: string,
+    _request: NewTechnicalTokenSecret,
+    idempotencyKey: string,
+  ): Promise<TechnicalTokenCreated> {
+    this.fail();
+    this.keys.push(idempotencyKey);
+    this.calls.push(`newSecret ${this.ref(account)} ${tokenName}`);
+    const list = this.tokens[this.ref(account)] ?? [];
+    const found = list.find((t) => t.name === tokenName);
+    if (!found) throw problem(404, 'not_found');
+    if (found.state === 'active') throw problem(409, 'technical_token_active');
+    const next: TechnicalToken = { ...found, state: 'active', secrets: sampleTechnicalToken().secrets };
+    this.tokens[this.ref(account)] = list.map((t) => (t.name === tokenName ? next : t));
+    return this.created(next);
+  }
+
+  override async update(account: AccountAddress, tokenName: string, description: string): Promise<Versioned<TechnicalToken>> {
+    this.fail();
+    this.calls.push(`update ${this.ref(account)} ${tokenName}`);
+    const list = this.tokens[this.ref(account)] ?? [];
+    const found = list.find((t) => t.name === tokenName);
+    if (!found) throw problem(404, 'not_found');
+    const next = { ...found, description };
+    this.tokens[this.ref(account)] = list.map((t) => (t.name === tokenName ? next : t));
+    return { value: next, etag: '"2"' };
+  }
+
+  override async remove(account: AccountAddress, tokenName: string): Promise<void> {
+    this.fail();
+    this.calls.push(`remove ${this.ref(account)} ${tokenName}`);
+    this.tokens[this.ref(account)] = (this.tokens[this.ref(account)] ?? []).filter((t) => t.name !== tokenName);
   }
 }
 
@@ -947,6 +1088,7 @@ export function provideAccessFakes(): Provider[] {
   return [
     { provide: IdentityApi, useClass: FakeIdentityApi },
     { provide: TokensApi, useClass: FakeTokensApi },
+    { provide: TechnicalTokensApi, useClass: FakeTechnicalTokensApi },
     { provide: SessionsApi, useClass: FakeSessionsApi },
     { provide: AuthSettingsApi, useClass: FakeAuthSettingsApi },
     { provide: PolicyApi, useClass: FakePolicyApi },

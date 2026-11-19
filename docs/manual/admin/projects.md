@@ -129,14 +129,23 @@ A project service account is addressed as `/api/v1/projects/<projectKey>/service
 
 A project service account is granted only by the policies of its project. It cannot be a group member (`project_account_not_groupable`), a project member (`principal_not_allowed`) or hold a system role (`role_not_allowed`), and a global policy or another project's policy cannot name it (`principal_outside_project`), so no grant of a global group ever reaches it.
 
-An Owner issues its tokens with `POST /api/v1/projects/<projectKey>/service-accounts/<name>/tokens`, with these limits:
+An Owner gives it a technical token for each system that uses it, on the account's page (**Technical tokens › New technical token**) or with `POST /api/v1/projects/<projectKey>/service-accounts/<name>/technical-tokens`, and a new secret of an ended token with **Issue new secret** (`POST …/technical-tokens/<tokenName>/secrets`); see [Managing tokens](tokens.md#tokens-of-users-and-service-accounts). The limits:
 
 - The token always expires, at most after the maximum lifetime of service-account tokens (see [Managing tokens](tokens.md#lifetime-limits-and-defaults)).
 - The token has no administrator scope and names no system item (`invalid_scope`).
 - The token can be bound to endpoints, as any service-account token.
-- The token cannot rotate itself: a request with `selfRotatable: true` is refused, because each rotation would give it its full lifetime again. Issue a new token when it nears its end.
+- The token cannot rotate itself: a request with `selfRotatable: true` is refused, because each rotation would give it its full lifetime again. An Owner does not rotate it either: revoke the secret and issue a new one when it nears its end.
 
 Disabling the account makes all of its tokens fail. Deleting it removes its tokens.
+
+## Service accounts of a repository
+
+A system that needs one repository only (a release pipeline that publishes to it, a mirror that reads it) gets a service account of that repository. Open the repository's **Settings**, section **Service accounts**, and choose **New service account**: a name, an optional description and the **Rights on this repository** (**read**, **annotate**, **deploy**, **overwrite**, **delete**, **manage**). The account is referenced as `sa:<projectKey>/<repositoryKey>/<name>`, for example `sa:web/npm-internal/release`, and its page has the same **Technical tokens** as every service account. The API is `/api/v1/projects/<projectKey>/repositories/<repositoryKey>/service-accounts[/<name>]` with `actions` in the body (`read` alone when the body names none).
+
+- Its rights are the ones chosen, on this repository and nowhere else. A policy, a role, a group or another repository's package owner cannot name it (`principal_outside_repository`, `role_not_allowed`, `project_account_not_groupable`).
+- It is managed by the Owners of the project and by administrators of Quader, like a project's account, and its tokens have the same limits.
+- **It follows its repository.** When the repository moves to another project, the account moves with it and becomes `sa:<newProject>/<repositoryKey>/<name>`; its rights and tokens stay. When the repository is deleted, the account and its tokens are deleted with it; while a deletion with content runs as a job, the tokens still sign in but reach nothing.
+- An account of a virtual repository holds **read** and **manage** only; the other rights take effect nowhere there.
 
 ## Create and delete a project
 

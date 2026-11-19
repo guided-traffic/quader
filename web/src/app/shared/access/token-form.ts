@@ -25,6 +25,8 @@ const PRESET_SECONDS: Readonly<Record<string, number>> = {
 
 /** The non-secret part of the form, for a draft kept across re-authentication (R-UI-042). */
 export interface TokenDraft {
+  /** The name of a technical token (R-AUTH-045); empty for every other form. */
+  readonly name?: string;
   readonly description: string;
   readonly lifetime: string;
   readonly customDate: string;
@@ -36,7 +38,17 @@ export interface TokenDraft {
 }
 
 /**
- * The create form of a personal or service-account token (R-UI-029, R-UI-026): description,
+ * What the form creates (R-UI-181): a personal token (`token`, a required description), a technical token of a service account
+ * (`technical`: its name first, required, then an optional description), or a new secret of a technical token (`secret`: neither,
+ * the name is the token's and stays).
+ */
+export type TokenFormMode = 'token' | 'technical' | 'secret';
+
+/** The request the form emits: a create of a token, with the name of a technical token in the mode `technical`. */
+export type TokenFormRequest = CreateTokenRequest & { readonly name?: string };
+
+/**
+ * The create form of a personal token or of a technical token of a service account (R-UI-029, R-UI-026, R-UI-181): description,
  * lifetime (presets, a custom date, or "never" where the owner may have a non-expiring token) and
  * scope (administrator rights for a caller who is one, the owner's repository permissions, or repositories and
  * actions; grammar of R-AUTH-024, Q-UI-213). It
@@ -50,17 +62,39 @@ export interface TokenDraft {
   imports: [Checkbox, SelectField, TextField],
   template: `
     <form class="form" (submit)="submit($event)" novalidate>
-      <quader-text-field
-        width="name"
-        i18n-label="@@token-form.description"
-        label="Description"
-        name="description"
-        [(value)]="description"
-        [required]="true"
-        [error]="fieldError('/description', 'description')"
-        i18n-hint="@@token-form.description-hint"
-        hint="What the token is for, for example the machine or the job."
-      />
+      @if (mode() === 'technical') {
+        <quader-text-field
+          width="name"
+          i18n-label="@@token-form.name"
+          label="Name"
+          name="name"
+          [(value)]="name"
+          [required]="true"
+          [error]="fieldError('/name', 'name')"
+          i18n-hint="@@token-form.name-hint"
+          hint="The system that uses this token, for example nightly-mirror. It cannot be changed."
+        />
+        <quader-text-field
+          width="name"
+          i18n-label="@@token-form.description-optional"
+          label="Description (optional)"
+          name="description"
+          [(value)]="description"
+          [error]="fieldError('/description', 'description')"
+        />
+      } @else if (mode() === 'token') {
+        <quader-text-field
+          width="name"
+          i18n-label="@@token-form.description"
+          label="Description"
+          name="description"
+          [(value)]="description"
+          [required]="true"
+          [error]="fieldError('/description', 'description')"
+          i18n-hint="@@token-form.description-hint"
+          hint="What the token is for, for example the machine or the job."
+        />
+      }
       <quader-select-field
         i18n-label="@@token-form.lifetime"
         label="Lifetime"
@@ -186,9 +220,10 @@ export interface TokenDraft {
       flex-wrap: wrap;
       gap: var(--quader-space-1) var(--quader-space-3);
     }
+    /* The radio stands on the middle of its label's first line, also when a narrow screen wraps the label (R-UI-175). */
     .radio {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: var(--quader-space-2);
       min-block-size: 24px;
       margin-block-end: var(--quader-space-1);
@@ -215,6 +250,8 @@ export class TokenForm {
   readonly lifetimeCapped = input(false);
   /** The type of the token this form creates; it decides which endpoints can be offered. */
   readonly tokenType = input<'pat' | 'sat'>('pat');
+  /** What the form creates: a personal token, a technical token with its name, or a new secret of one (R-UI-181). */
+  readonly mode = input<TokenFormMode>('token');
   /** Offers administrator rights: only for the personal token of a caller who holds the administrator role (Q-UI-213). */
   readonly offerAdmin = input(false);
   readonly submitLabel = input.required<string>();
@@ -224,7 +261,7 @@ export class TokenForm {
   /** A draft restored after re-authentication. */
   readonly restore = input<TokenDraft | null>(null);
 
-  readonly submitted = output<CreateTokenRequest>();
+  readonly submitted = output<TokenFormRequest>();
   readonly cancelled = output<void>();
   /** The current non-secret form content, for the draft kept across re-authentication. */
   readonly draft = output<TokenDraft>();
@@ -233,6 +270,7 @@ export class TokenForm {
   private readonly session = inject(SessionStore);
 
   protected readonly actionList = TOKEN_ACTIONS;
+  protected readonly name = signal('');
   protected readonly description = signal('');
   protected readonly lifetime = signal('default');
   protected readonly customDate = signal('');
@@ -279,6 +317,7 @@ export class TokenForm {
       const d = this.restore();
       if (!d) return;
       untracked(() => {
+        this.name.set(d.name ?? '');
         this.description.set(d.description);
         this.lifetime.set(d.lifetime);
         this.customDate.set(d.customDate);
@@ -311,6 +350,7 @@ export class TokenForm {
   /** Emits the current content as a draft; the parent keeps it when re-authentication interrupts. */
   currentDraft(): TokenDraft {
     return {
+      name: this.name(),
       description: this.description(),
       lifetime: this.lifetime(),
       customDate: this.customDate(),
@@ -327,8 +367,12 @@ export class TokenForm {
     this.draft.emit(this.currentDraft());
     const errors: Record<string, string> = {};
     const description = this.description().trim();
-    if (!description) {
+    const name = this.name().trim();
+    if (this.mode() === 'token' && !description) {
       errors['description'] = $localize`:@@token-form.err.description:Enter a description.`;
+    }
+    if (this.mode() === 'technical' && !/^[a-z0-9][a-z0-9-]{0,62}$/.test(name)) {
+      errors['name'] = $localize`:@@token-form.err.name:Enter the name of the system: lower-case letters, digits and -, for example nightly-mirror.`;
     }
     const lifetime = this.lifetime();
     if (lifetime === 'custom' && !/^\d{4}-\d{2}-\d{2}$/.test(this.customDate())) {
@@ -347,12 +391,14 @@ export class TokenForm {
     if (Object.keys(errors).length > 0) return;
 
     const request: {
+      name?: string;
       description: string;
       selfRotatable: boolean;
       ttlSeconds?: number;
       expiresAt?: string;
       scope?: CreateTokenRequest['scope'];
     } = { description, selfRotatable: false };
+    if (this.mode() === 'technical') request.name = name;
     if (lifetime === 'never') request.ttlSeconds = 0;
     else if (lifetime === 'custom') request.expiresAt = `${this.customDate()}T23:59:59Z`;
     else if (lifetime in PRESET_SECONDS) request.ttlSeconds = PRESET_SECONDS[lifetime];

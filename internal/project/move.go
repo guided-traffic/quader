@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/ci/claims"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -129,6 +130,12 @@ func (s *service) MoveRepository(ctx context.Context, actor authz.Subject, from 
 			return errs.E(errs.NotFound, errs.CodeNotFound, fmt.Sprintf("The repository %q does not exist.", from.String()))
 		}
 		id := strconv.FormatInt(repo.ID, 10)
+		// The repository's service accounts move with it (R-AUTH-046, Q-AUTHZ-297): renamed <target>/<repoKey>/<name> and of the
+		// target project in this transaction; their actions, technical tokens and budgets stay with the IDs. A move that left
+		// one behind is refused by the database at commit (AI005).
+		if err := principal.MoveRepositoryAccountsTx(ctx, tx, s.o.Recorder, s.o.Changes, actorOf(actor), from, repo.ID, toProject, toID); err != nil {
+			return err
+		}
 		// A repository never lies above its project: a move into a project of a lower level takes its levels down to it, in
 		// this transaction (R-AUTHZ-033 rule 3). The configuration version the cache keys follow is the one the lowering left.
 		lowered, loweredVersion, wasLowered, err := lowerMoved(ctx, qs, repo.ID, toID)

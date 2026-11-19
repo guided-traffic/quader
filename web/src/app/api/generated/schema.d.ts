@@ -1231,15 +1231,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Create a service-account token
-         * @description Creates a SAT (R-AUTH-027) of an instance-wide service account. The caller is an administrator (a session with recent
-         *     authentication, or a token with `admin: true`) or a SAT of the same account under the derivation rule. A non-expiring
-         *     token (`ttlSeconds: 0`) needs the administrator and `auth.tokens.sat.allow_non_expiring`. The value is in this answer
-         *     only and the answer is never cached. The tokens of a project's account are created under
-         *     `/api/v1/projects/{projectKey}/service-accounts/{name}/tokens`.
-         */
-        post: operations["createServiceAccountToken"];
+        post?: never;
         /**
          * Revoke all tokens of a service account
          * @description Revokes every active token of an instance-wide service account with reason `admin` (R-AUTH-029).
@@ -1262,21 +1254,399 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Create a token of a project service account
-         * @description Creates a SAT of a service account of the project (R-AUTH-027, Q-AUTHZ-177). The caller is an Owner of the
-         *     project acting with a session (with recent authentication) or a token with `admin: true`, or an administrator
-         *     of Quader. A non-expiring token (`ttlSeconds: 0`) needs an administrator of Quader and
-         *     `auth.tokens.sat.allow_non_expiring`. A token an Owner creates is never non-expiring, lives at most
-         *     `auth.tokens.sat` maximum lifetime, names no `system` item and has `admin: false` (`422 invalid_scope`); an
-         *     `endpoints` binding is allowed. The value is in this answer only and the answer is never cached.
-         */
-        post: operations["createProjectServiceAccountToken"];
+        post?: never;
         /**
          * Revoke all tokens of a project service account
          * @description Revokes every active token of the account with reason `admin` (R-AUTH-029).
          */
         delete: operations["revokeProjectServiceAccountTokens"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the service accounts of a repository
+         * @description The service accounts of the repository ordered by name, with cursor pagination (R-API-010) over `name` (R-AUTH-046). The
+         *     principal reference is `sa:<project>/<repository>/<name>`. An Owner of the project, or a holder of `identities:read`, may
+         *     call it; a project the caller cannot see answers `404`, and so does a repository that does not exist or is being deleted.
+         */
+        get: operations["listRepositoryServiceAccounts"];
+        put?: never;
+        /**
+         * Create a service account of a repository
+         * @description A service account of the repository (R-AUTH-046) that holds a set of actions on it, given at the account (R-AUTHZ-039,
+         *     Q-AUTHZ-296): `read` when `actions` is absent. It has no login, session or UI access; it is no policy principal, group
+         *     member, project member or role holder. It moves with the repository and is deleted with it. An Owner of the project, or a
+         *     holder of `identities:write`, creates it (Q-AUTH-417). Optional `Idempotency-Key`.
+         */
+        post: operations["createRepositoryServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read a service account of a repository
+         * @description One service account of the repository with its actions (R-AUTH-046). An account of another place answers `404` here.
+         */
+        get: operations["getRepositoryServiceAccount"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a service account of a repository
+         * @description Deletes the account with its technical tokens and its actions (R-AUTH-046); each live secret is revoked first.
+         */
+        delete: operations["deleteRepositoryServiceAccount"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a service account of a repository
+         * @description Changes the description and the actions on the repository (R-AUTH-046, R-AUTHZ-039); at least one action. A change of the
+         *     actions is in force on every replica within the bound of R-AUTHZ-028 and is journaled, so a restore replays a narrowing.
+         *     JSON merge patch; read-only members are ignored.
+         */
+        patch: operations["updateRepositoryServiceAccount"];
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable a service account of a repository
+         * @description Every token of the account fails with `401 principal_disabled` (R-AUTH-020). With `revokeTokens: true` they are
+         *     also revoked; the default is `false`, so enabling the account again restores its tokens (Q-AUTH-41).
+         */
+        post: operations["disableRepositoryServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable a service account of a repository
+         * @description Enables the account (R-AUTH-046).
+         */
+        post: operations["enableRepositoryServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-accounts/{name}/technical-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the technical tokens of an instance-wide service account
+         * @description The technical tokens of the account by name, each with its live secrets or its last one (R-AUTH-045). A caller that holds
+         *     `identities:read` may call it.
+         */
+        get: operations["listServiceAccountTechnicalTokens"];
+        put?: never;
+        /**
+         * Create a technical token of an instance-wide service account
+         * @description Creates a technical token named for the system that uses it, with its first `qdr_sat_` secret (R-AUTH-045, R-AUTH-027). The
+         *     caller is an administrator of Quader (a session with recent authentication, or a token with `admin: true`), or a secret of a technical token of the same account under the derivation rule. The name is unique among the account's technical tokens (`409 already_exists`); the account holds
+         *     at most `auth.tokens.max_active_per_principal.sat` technical tokens with a live secret (`409 token_limit_reached`) and
+         *     at most `auth.tokens.max_technical_tokens_per_account` in all (`409 technical_token_limit_reached`). The secret is in this
+         *     answer only and the answer is never cached.
+         */
+        post: operations["createServiceAccountTechnicalToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-accounts/{name}/technical-tokens/{tokenName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a technical token of an instance-wide service account
+         * @description One technical token with its live secrets or its last one (R-AUTH-045).
+         */
+        get: operations["getServiceAccountTechnicalToken"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a technical token of an instance-wide service account
+         * @description Revokes the token's live secrets (each with its journaled `token.revoked` and the cascade of R-AUTH-029) and deletes the
+         *     technical token (R-AUTH-045). Its download-limit rules go with the daily task `limits-cleanup`; its usage stays until its
+         *     retention. A holder of `tokens:revoke` may call it; every role that holds `identities:write` holds it.
+         */
+        delete: operations["deleteServiceAccountTechnicalToken"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a technical token of an instance-wide service account
+         * @description Changes the description (R-AUTH-045); the name is immutable. JSON merge patch.
+         */
+        patch: operations["updateServiceAccountTechnicalToken"];
+        trace?: never;
+    };
+    "/api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a new secret of a technical token of an instance-wide service account
+         * @description A new secret for a technical token whose every secret expired or was revoked (R-AUTH-045, Q-AUTH-416); while a secret is
+         *     live it answers `409 technical_token_active` (rotate it instead). The technical token keeps its ID, name, budget and
+         *     history. The callers and rules are the ones of the create. The secret is in this answer only.
+         */
+        post: operations["createServiceAccountTechnicalTokenSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the technical tokens of a project's service account
+         * @description The technical tokens of the account by name, each with its live secrets or its last one (R-AUTH-045). A caller that holds
+         *     `identities:read` or an Owner of the project may call it.
+         */
+        get: operations["listProjectServiceAccountTechnicalTokens"];
+        put?: never;
+        /**
+         * Create a technical token of a project's service account
+         * @description Creates a technical token named for the system that uses it, with its first `qdr_sat_` secret (R-AUTH-045, R-AUTH-027). The
+         *     caller is an administrator of Quader, an Owner of the project through a UI session (with recent authentication) or a token with `admin: true` (a delegated token: never non-expiring, at most `auth.tokens.sat.max_ttl`, `admin: false`, no `system` item, not self-rotatable; Q-AUTHZ-177), or a secret of a technical token of the same account under the derivation rule. The name is unique among the account's technical tokens (`409 already_exists`); the account holds
+         *     at most `auth.tokens.max_active_per_principal.sat` technical tokens with a live secret (`409 token_limit_reached`) and
+         *     at most `auth.tokens.max_technical_tokens_per_account` in all (`409 technical_token_limit_reached`). The secret is in this
+         *     answer only and the answer is never cached.
+         */
+        post: operations["createProjectServiceAccountTechnicalToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read a technical token of a project's service account
+         * @description One technical token with its live secrets or its last one (R-AUTH-045).
+         */
+        get: operations["getProjectServiceAccountTechnicalToken"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a technical token of a project's service account
+         * @description Revokes the token's live secrets (each with its journaled `token.revoked` and the cascade of R-AUTH-029) and deletes the
+         *     technical token (R-AUTH-045). Its download-limit rules go with the daily task `limits-cleanup`; its usage stays until its
+         *     retention. A holder of `tokens:revoke` or an Owner of the project may call it; every role that holds `identities:write` holds it.
+         */
+        delete: operations["deleteProjectServiceAccountTechnicalToken"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a technical token of a project's service account
+         * @description Changes the description (R-AUTH-045); the name is immutable. JSON merge patch.
+         */
+        patch: operations["updateProjectServiceAccountTechnicalToken"];
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a new secret of a technical token of a project's service account
+         * @description A new secret for a technical token whose every secret expired or was revoked (R-AUTH-045, Q-AUTH-416); while a secret is
+         *     live it answers `409 technical_token_active` (rotate it instead). The technical token keeps its ID, name, budget and
+         *     history. The callers and rules are the ones of the create. The secret is in this answer only.
+         */
+        post: operations["createProjectServiceAccountTechnicalTokenSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the technical tokens of a repository's service account
+         * @description The technical tokens of the account by name, each with its live secrets or its last one (R-AUTH-045). A caller that holds
+         *     `identities:read` or an Owner of the project may call it.
+         */
+        get: operations["listRepositoryServiceAccountTechnicalTokens"];
+        put?: never;
+        /**
+         * Create a technical token of a repository's service account
+         * @description Creates a technical token named for the system that uses it, with its first `qdr_sat_` secret (R-AUTH-045, R-AUTH-027). The
+         *     caller is an administrator of Quader, an Owner of the project through a UI session (with recent authentication) or a token with `admin: true` (a delegated token: never non-expiring, at most `auth.tokens.sat.max_ttl`, `admin: false`, no `system` item, not self-rotatable; Q-AUTHZ-177), or a secret of a technical token of the same account under the derivation rule. The name is unique among the account's technical tokens (`409 already_exists`); the account holds
+         *     at most `auth.tokens.max_active_per_principal.sat` technical tokens with a live secret (`409 token_limit_reached`) and
+         *     at most `auth.tokens.max_technical_tokens_per_account` in all (`409 technical_token_limit_reached`). The secret is in this
+         *     answer only and the answer is never cached.
+         */
+        post: operations["createRepositoryServiceAccountTechnicalToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read a technical token of a repository's service account
+         * @description One technical token with its live secrets or its last one (R-AUTH-045).
+         */
+        get: operations["getRepositoryServiceAccountTechnicalToken"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a technical token of a repository's service account
+         * @description Revokes the token's live secrets (each with its journaled `token.revoked` and the cascade of R-AUTH-029) and deletes the
+         *     technical token (R-AUTH-045). Its download-limit rules go with the daily task `limits-cleanup`; its usage stays until its
+         *     retention. A holder of `tokens:revoke` or an Owner of the project may call it; every role that holds `identities:write` holds it.
+         */
+        delete: operations["deleteRepositoryServiceAccountTechnicalToken"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a technical token of a repository's service account
+         * @description Changes the description (R-AUTH-045); the name is immutable. JSON merge patch.
+         */
+        patch: operations["updateRepositoryServiceAccountTechnicalToken"];
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a new secret of a technical token of a repository's service account
+         * @description A new secret for a technical token whose every secret expired or was revoked (R-AUTH-045, Q-AUTH-416); while a secret is
+         *     live it answers `409 technical_token_active` (rotate it instead). The technical token keeps its ID, name, budget and
+         *     history. The callers and rules are the ones of the create. The secret is in this answer only.
+         */
+        post: operations["createRepositoryServiceAccountTechnicalTokenSecret"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6461,34 +6831,56 @@ export interface components {
             items: components["schemas"]["CiIssuerChoice"][];
         };
         /**
-         * @description A service account (R-AUTH-020). `name` is the name within its project, unique among the accounts of that project, or among the instance-wide accounts when `project` is `null` (Q-AUTHZ-209).
+         * @description A service account (R-AUTH-020, R-AUTH-046) of the instance, a project or a repository. `name` is the name within its place:
+         *     unique among the accounts of the repository, of the project, or among the instance-wide accounts (Q-AUTHZ-209).
          * @example {
          *       "id": "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a12",
-         *       "name": "ci-bot",
-         *       "principal": "sa:ci-bot",
-         *       "description": "Deploy jobs",
+         *       "name": "ci",
+         *       "reference": "sa:web/npm-local/ci",
+         *       "level": "repository",
+         *       "description": "release pipeline",
          *       "status": "active",
-         *       "createdAt": "2026-09-01T08:00:00Z",
-         *       "project": null,
-         *       "isAdmin": false
+         *       "createdAt": "2026-11-20T09:00:00Z",
+         *       "project": "web",
+         *       "repository": "npm-local",
+         *       "actions": [
+         *         "read",
+         *         "deploy"
+         *       ],
+         *       "isAdmin": false,
+         *       "technicalTokens": 1,
+         *       "version": 1
          *     }
          */
         ServiceAccount: {
             /** Format: uuid */
             id: string;
-            /** @description Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for a project's account, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024). */
+            /** @description Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for an account of a project or a repository, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024). */
             isAdmin: boolean;
-            /** @description The name within the project; the stored name is `<project>/<name>` for a project's account. */
+            /** @description The name within its place; the stored name is `<project>/<name>` for a project's account and `<project>/<repository>/<name>` for a repository's. */
             name: string;
-            /** @description The reference, `sa:<name>` or `sa:<project>/<name>`. */
-            principal: string;
+            /** @description The principal reference, `sa:<name>`, `sa:<project>/<name>` or `sa:<project>/<repository>/<name>`. */
+            reference: string;
+            /** @enum {string} */
+            level: "instance" | "project" | "repository";
             description: string;
             /** @enum {string} */
             status: "active" | "disabled";
             /** Format: date-time */
             createdAt: string;
-            /** @description The key of the project the account belongs to (R-AUTHZ-026), `null` for an instance-wide account. Fixed at creation. */
+            /** @description The key of the project the account belongs to (R-AUTHZ-026), `null` for an instance-wide account. A project's account keeps it; a repository's account follows its repository when it moves (R-REPO-060). */
             project: string | null;
+            /** @description The key, within `project`, of the repository a repository's account belongs to (R-AUTH-046); `null` otherwise. */
+            repository: string | null;
+            /** @description The actions a repository's account holds on its repository (R-AUTHZ-039), in the order read, annotate, deploy, overwrite, delete, manage; `null` for every other account, whose rights come from policies. */
+            actions: ("read" | "annotate" | "deploy" | "overwrite" | "delete" | "manage")[] | null;
+            /** @description The account's technical tokens, ended ones included (R-AUTH-045). */
+            technicalTokens: number;
+            /**
+             * Format: int64
+             * @description The revision the `ETag` carries.
+             */
+            version: number;
         };
         ServiceAccountList: {
             items: components["schemas"]["ServiceAccount"][];
@@ -6509,6 +6901,186 @@ export interface components {
         /** @description The read-only members of `ServiceAccount` are accepted and ignored. */
         ServiceAccountPatch: {
             description?: string;
+        };
+        /**
+         * @example {
+         *       "name": "ci",
+         *       "description": "release pipeline",
+         *       "actions": [
+         *         "read",
+         *         "deploy"
+         *       ]
+         *     }
+         */
+        NewRepositoryServiceAccount: {
+            /** @description Matches `^[a-z0-9][a-z0-9-]{1,62}$`, unique among the accounts of the repository. */
+            name: string;
+            description?: string;
+            /** @description The actions the account holds on the repository (R-AUTHZ-039); at least one; `[read]` when absent. */
+            actions?: ("read" | "annotate" | "deploy" | "overwrite" | "delete" | "manage")[];
+        };
+        /**
+         * @description The description and the actions of a repository's account (R-AUTH-046, R-AUTHZ-039). The read-only members of
+         *     `ServiceAccount` are accepted and ignored.
+         */
+        RepositoryServiceAccountPatch: {
+            description?: string;
+            actions?: ("read" | "annotate" | "deploy" | "overwrite" | "delete" | "manage")[];
+        };
+        /** @description One `qdr_sat_` secret of a technical token; neither the value nor its hash. */
+        TechnicalTokenSecret: {
+            /**
+             * Format: uuid
+             * @description The token ID of the secret, the one `/api/v1/tokens/{id}` reads, rotates and revokes.
+             */
+            id: string;
+            hint: string;
+            scope: components["schemas"]["TokenScope"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the secret was revoked; `null` for one that was not.
+             */
+            revokedAt: string | null;
+            /** Format: date-time */
+            lastUsedAt: string | null;
+            /** Format: uuid */
+            rotatedFrom: string | null;
+        };
+        TechnicalTokenAccount: {
+            reference: string;
+            /** @enum {string} */
+            level: "instance" | "project" | "repository";
+            project: string | null;
+            repository: string | null;
+        };
+        /**
+         * @description A technical token (R-AUTH-045): a named line of `qdr_sat_` secrets of a service account with a stable ID, the subject of its
+         *     budget. `state` is `active` while a secret is live, else `expired` or `revoked` by the end of its last secret; `secrets` are
+         *     the live ones (one, two during a rotation's overlap) or the last one of a token without a live secret. `limit` is the token's
+         *     own rule at its account's place, `null` when the default applies (usage-and-limits.md R-LIM-038).
+         * @example {
+         *       "id": "0193f2a5-11aa-7d3e-9b02-5c6d7e8f9a0b",
+         *       "name": "nightly-mirror",
+         *       "description": "the partner's nightly mirror job",
+         *       "account": {
+         *         "reference": "sa:web/partner",
+         *         "level": "project",
+         *         "project": "web",
+         *         "repository": null
+         *       },
+         *       "state": "active",
+         *       "secrets": [
+         *         {
+         *           "id": "0193f2a5-2b3c-7d4e-8f50-6a7b8c9d0e1f",
+         *           "hint": "qdr_sat_7Hq2",
+         *           "scope": {
+         *             "inherit": true,
+         *             "admin": false,
+         *             "repositories": [],
+         *             "system": []
+         *           },
+         *           "createdAt": "2026-11-20T09:00:00Z",
+         *           "expiresAt": "2026-12-20T09:00:00Z",
+         *           "revokedAt": null,
+         *           "lastUsedAt": "2026-11-21T02:00:11Z",
+         *           "rotatedFrom": null
+         *         }
+         *       ],
+         *       "limit": null,
+         *       "createdAt": "2026-11-20T09:00:00Z",
+         *       "createdBy": "priya"
+         *     }
+         */
+        TechnicalToken: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description: string;
+            account: components["schemas"]["TechnicalTokenAccount"];
+            /** @enum {string} */
+            state: "active" | "expired" | "revoked";
+            secrets: components["schemas"]["TechnicalTokenSecret"][];
+            /** @description The token's own download-limit rule at its account's place; `null` while the default of its kind applies. */
+            limit: components["schemas"]["TechnicalTokenLimit"] | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The reference of the principal that created it; `null` when it is gone. */
+            createdBy: string | null;
+        };
+        TechnicalTokenLimit: {
+            /** Format: uuid */
+            rule: string;
+            profile: string;
+            /** @description How many figures the rule sets beside its profile. */
+            overrides: number;
+        };
+        TechnicalTokenList: {
+            items: components["schemas"]["TechnicalToken"][];
+            /** @description Always `null`; an account holds at most `auth.tokens.max_technical_tokens_per_account`. */
+            nextCursor: string | null;
+        };
+        /**
+         * @description The technical token and the request of its first secret, with the rules of R-AUTH-026 and R-AUTH-027.
+         * @example {
+         *       "name": "nightly-mirror",
+         *       "description": "the partner's nightly mirror job",
+         *       "ttlSeconds": 2592000,
+         *       "scope": {
+         *         "inherit": true
+         *       },
+         *       "selfRotatable": false
+         *     }
+         */
+        NewTechnicalToken: {
+            /** @description The system that uses the token, `^[a-z0-9][a-z0-9-]{0,62}$`; unique among the account's technical tokens and immutable. */
+            name: string;
+            description?: string;
+            /** @description The lifetime of the secret. `0` asks for a non-expiring one (an administrator, with `auth.tokens.sat.allow_non_expiring`). Exclusive with `expiresAt`. */
+            ttlSeconds?: number;
+            /** Format: date-time */
+            expiresAt?: string;
+            scope?: components["schemas"]["TokenScope"];
+            /** @default false */
+            selfRotatable: boolean;
+        };
+        /** @description The request of a new secret of a technical token without a live one (Q-AUTH-416), as a create without `name` and `description`. */
+        NewTechnicalTokenSecret: {
+            ttlSeconds?: number;
+            /** Format: date-time */
+            expiresAt?: string;
+            scope?: components["schemas"]["TokenScope"];
+            /** @default false */
+            selfRotatable: boolean;
+        };
+        /** @description The description; the name is immutable. The read-only members of `TechnicalToken` are accepted and ignored. */
+        TechnicalTokenPatch: {
+            description?: string;
+        };
+        /**
+         * @description The technical token with the secret a create or a new secret issued: `token` is the value, shown in this answer only (sent
+         *     with `Cache-Control: no-store`), and `secretId` its token ID.
+         */
+        TechnicalTokenCreated: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description: string;
+            account: components["schemas"]["TechnicalTokenAccount"];
+            /** @enum {string} */
+            state: "active" | "expired" | "revoked";
+            secrets: components["schemas"]["TechnicalTokenSecret"][];
+            limit: components["schemas"]["TechnicalTokenLimit"] | null;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string | null;
+            /** @description The secret. Shown once. */
+            token: string;
+            /** Format: uuid */
+            secretId: string;
         };
         TokenScopePatterns: {
             include?: string[];
@@ -6618,6 +7190,16 @@ export interface components {
             ciContext: {
                 [key: string]: unknown;
             } | null;
+            /** @description The technical token a service-account token is a secret of (R-AUTH-045), `null` for every other type. */
+            technicalToken: components["schemas"]["TechnicalTokenRef"] | null;
+        };
+        TechnicalTokenRef: {
+            /**
+             * Format: uuid
+             * @description The technical token's stable ID, the subject of its budget (usage-and-limits.md R-LIM-001).
+             */
+            id: string;
+            name: string;
         };
         /**
          * @description A token with its value. The value is in this answer only; the answer is sent with `Cache-Control: no-store`.
@@ -12679,50 +13261,6 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
-    createServiceAccountToken: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
-                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description The token with its value. */
-            201: {
-                headers: {
-                    Location: components["headers"]["Location"];
-                    /** @description `no-store`: the answer holds a secret or must not be reused. */
-                    "Cache-Control"?: "no-store";
-                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenCreated"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            415: components["responses"]["UnsupportedMediaType"];
-            422: components["responses"]["Unprocessable"];
-            429: components["responses"]["TooManyRequests"];
-            500: components["responses"]["Internal"];
-            503: components["responses"]["Unavailable"];
-        };
-    };
     revokeServiceAccountTokens: {
         parameters: {
             query?: never;
@@ -12744,52 +13282,6 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-            500: components["responses"]["Internal"];
-            503: components["responses"]["Unavailable"];
-        };
-    };
-    createProjectServiceAccountToken: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
-                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
-                projectKey: components["parameters"]["ProjectKey"];
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description The token with its value. */
-            201: {
-                headers: {
-                    Location: components["headers"]["Location"];
-                    /** @description `no-store`: the answer holds a secret or must not be reused. */
-                    "Cache-Control"?: "no-store";
-                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenCreated"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            415: components["responses"]["UnsupportedMediaType"];
-            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];
@@ -12818,6 +13310,996 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listRepositoryServiceAccounts: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive substring of the name. */
+                q?: string;
+                /** @description `name` is the default; a leading `-` reverses the order. */
+                sort?: "name";
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of service accounts. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createRepositoryServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewRepositoryServiceAccount"];
+            };
+        };
+        responses: {
+            /** @description The service account. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getRepositoryServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The service account. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            /** @description The `If-None-Match` tag is the current one. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteRepositoryServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The service account is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateRepositoryServiceAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["RepositoryServiceAccountPatch"];
+            };
+        };
+        responses: {
+            /** @description The service account after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    disableRepositoryServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DisableRequest"];
+            };
+        };
+        responses: {
+            /** @description The service account is disabled. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    enableRepositoryServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The service account is enabled. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listServiceAccountTechnicalTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical tokens. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTechnicalToken"];
+            };
+        };
+        responses: {
+            /** @description The technical token with its secret. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    /** @description `no-store`: the answer holds a secret or must not be reused. */
+                    "Cache-Control"?: "no-store";
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical token. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalToken"];
+                };
+            };
+            /** @description The `If-None-Match` tag is the current one. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical token is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["TechnicalTokenPatch"];
+            };
+        };
+        responses: {
+            /** @description The technical token after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalToken"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createServiceAccountTechnicalTokenSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NewTechnicalTokenSecret"];
+            };
+        };
+        responses: {
+            /** @description The technical token with its new secret. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    /** @description `no-store`: the answer holds a secret or must not be reused. */
+                    "Cache-Control"?: "no-store";
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listProjectServiceAccountTechnicalTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical tokens. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createProjectServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTechnicalToken"];
+            };
+        };
+        responses: {
+            /** @description The technical token with its secret. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    /** @description `no-store`: the answer holds a secret or must not be reused. */
+                    "Cache-Control"?: "no-store";
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getProjectServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical token. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalToken"];
+                };
+            };
+            /** @description The `If-None-Match` tag is the current one. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteProjectServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical token is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateProjectServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["TechnicalTokenPatch"];
+            };
+        };
+        responses: {
+            /** @description The technical token after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalToken"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createProjectServiceAccountTechnicalTokenSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NewTechnicalTokenSecret"];
+            };
+        };
+        responses: {
+            /** @description The technical token with its new secret. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    /** @description `no-store`: the answer holds a secret or must not be reused. */
+                    "Cache-Control"?: "no-store";
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listRepositoryServiceAccountTechnicalTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical tokens. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createRepositoryServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTechnicalToken"];
+            };
+        };
+        responses: {
+            /** @description The technical token with its secret. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    /** @description `no-store`: the answer holds a secret or must not be reused. */
+                    "Cache-Control"?: "no-store";
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getRepositoryServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical token. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalToken"];
+                };
+            };
+            /** @description The `If-None-Match` tag is the current one. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteRepositoryServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The technical token is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateRepositoryServiceAccountTechnicalToken: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["TechnicalTokenPatch"];
+            };
+        };
+        responses: {
+            /** @description The technical token after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalToken"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createRepositoryServiceAccountTechnicalTokenSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                name: string;
+                tokenName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NewTechnicalTokenSecret"];
+            };
+        };
+        responses: {
+            /** @description The technical token with its new secret. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    /** @description `no-store`: the answer holds a secret or must not be reused. */
+                    "Cache-Control"?: "no-store";
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TechnicalTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

@@ -25,13 +25,13 @@ import (
 
 const (
 	serviceAccountUsage = "usage: quader admin service-account create <name> [--description <text>] [--admin] [--config <file>]"
-	tokenUsage          = "usage: quader admin token create --service-account <name|project/name> [--ttl 15m] [--scope-file <file>] [--config <file>]\n" +
+	tokenUsage          = "usage: quader admin token create --service-account <name|project/name|project/repository/name> [--name admin-cli] [--ttl 15m] [--scope-file <file>] [--config <file>]\n" +
 		"       quader admin token revoke --id <uuid> | --value-stdin [--config <file>]"
 	userUsage = "usage: quader admin user disable <username> [--keep-tokens] [--config <file>]"
 )
 
-// adminTokenDescription is the description of a token the command creates: the
-// token has no human owner to describe it (R-AUTH-027 requires one).
+// adminTokenDescription is the description of a technical token the command creates: the token has no human owner to
+// describe it.
 const adminTokenDescription = "created by quader admin token create"
 
 // identityParts are the identity components a command works with, built over
@@ -106,12 +106,16 @@ func tokenCmd(args []string, s streams) error {
 	return usageError{tokenUsage}
 }
 
-// tokenCreate prints the secret of a new service-account token to stdout, and
+// tokenCreate prints the secret of a service-account token to stdout, and
 // nothing else, so that T=$(quader admin token create ...) captures it
-// (R-AUTH-015). The secret is never logged.
+// (R-AUTH-015). The secret is a secret of the account's technical token --name
+// (R-AUTH-045): a new technical token, or a new secret of the one of that name
+// when it has no live secret (409 technical_token_active while it has one,
+// Q-AUTH-418). The secret is never logged.
 func tokenCreate(args []string, s streams) error {
 	c := newFlags("admin token create", s)
-	sa := c.fs.String("service-account", "", "the service account that owns the token: <name>, or <project>/<name> for a project's account; a leading sa: is accepted")
+	sa := c.fs.String("service-account", "", "the service account that owns the token: <name>, <project>/<name> for a project's account or <project>/<repository>/<name> for a repository's; a leading sa: is accepted")
+	name := c.fs.String("name", "admin-cli", "the technical token: the name of the system that uses it")
 	ttl := c.fs.Duration("ttl", 15*time.Minute, "lifetime of the token; at most the SAT maximum")
 	scopeFile := c.fs.String("scope-file", "", "file with the scope document of R-AUTH-024; the default scope when absent")
 	return withIdentity(c, s, args, func(ctx context.Context, id *identityParts) error {
@@ -131,9 +135,9 @@ func tokenCreate(args []string, s streams) error {
 			return err
 		}
 		secs := int64(ttl.Seconds())
-		created, err := id.tokens.Create(ctx, token.CreateRequest{
-			Caller: id.caller, Type: token.TypeSAT, OwnerID: acct.ID, Description: adminTokenDescription,
-			Scope: scope, TTL: token.TTLRequest{Seconds: &secs}, Via: "admin-cli", Admin: true,
+		created, err := id.tokens.IssueTechnical(ctx, acct, token.TechnicalCreate{
+			Name: *name, Description: adminTokenDescription,
+			Request: token.CreateRequest{Caller: id.caller, Scope: scope, TTL: token.TTLRequest{Seconds: &secs}, Via: "admin-cli", Admin: true},
 		})
 		if err != nil {
 			return err

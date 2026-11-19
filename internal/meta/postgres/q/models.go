@@ -143,6 +143,7 @@ type ApiToken struct {
 	RejectionLoggedAt pgtype.Timestamptz
 	ExpiryNotifiedAt  pgtype.Timestamptz
 	CiContext         json.RawMessage
+	TechnicalTokenID  pgtype.UUID
 }
 
 type AppUser struct {
@@ -1106,9 +1107,15 @@ type SecretKeyCanary struct {
 }
 
 type ServiceAccount struct {
-	PrincipalID pgtype.UUID
-	Description string
-	ProjectID   pgtype.UUID
+	PrincipalID  pgtype.UUID
+	Description  string
+	ProjectID    pgtype.UUID
+	RepositoryID pgtype.Int8
+}
+
+type ServiceAccountRepositoryGrant struct {
+	ServiceAccountID pgtype.UUID
+	Actions          []string
 }
 
 type StorageUsageDelta struct {
@@ -1133,6 +1140,16 @@ type SystemState struct {
 	Value     json.RawMessage
 	UpdatedAt pgtype.Timestamptz
 	UpdatedBy pgtype.UUID
+}
+
+type TechnicalToken struct {
+	ID               pgtype.UUID
+	ServiceAccountID pgtype.UUID
+	Name             string
+	Description      string
+	CreatedAt        pgtype.Timestamptz
+	CreatedBy        pgtype.UUID
+	Revision         int64
 }
 
 type UiAsset struct {

@@ -264,6 +264,10 @@ func (e *Engine) readShape(st *evalState, sub Subject, r *repoInfo, allEndpoint 
 		// A project role reads every package of every repository of its project (R-AUTHZ-026).
 		any, unrestricted = true, true
 	}
+	if g, ok := st.idx.accountGrantOf(st.sub, r.ID); ok && g.actions.Has(Read) {
+		// A repository's service account reads every package of its repository (R-AUTHZ-039).
+		any, unrestricted = true, true
+	}
 	any = any || levelAny
 	switch {
 	case !any:
@@ -316,6 +320,9 @@ func (e *Engine) readsByPath(st *evalState, sub Subject, r *repoInfo) bool {
 	}
 	if roleActions(st.roleIn(r.proj), r).Has(Read) {
 		return false
+	}
+	if g, ok := st.idx.accountGrantOf(st.sub, r.ID); ok && g.actions.Has(Read) {
+		return false // the actions of a repository's account cover every path of it (R-AUTHZ-039)
 	}
 	byPath := false
 	for _, p := range st.pset {

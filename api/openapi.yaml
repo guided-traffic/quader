@@ -3229,73 +3229,6 @@ paths:
           $ref: "#/components/responses/Unavailable"
 
   /api/v1/service-accounts/{name}/tokens:
-    post:
-      operationId: createServiceAccountToken
-      x-quader-maintenance: allowed
-      tags: [tokens]
-      summary: Create a service-account token
-      description: |
-        Creates a SAT (R-AUTH-027) of an instance-wide service account. The caller is an administrator (a session with recent
-        authentication, or a token with `admin: true`) or a SAT of the same account under the derivation rule. A non-expiring
-        token (`ttlSeconds: 0`) needs the administrator and `auth.tokens.sat.allow_non_expiring`. The value is in this answer
-        only and the answer is never cached. The tokens of a project's account are created under
-        `/api/v1/projects/{projectKey}/service-accounts/{name}/tokens`.
-      x-quader-recent-auth: true
-      x-quader-permission:
-        authenticated: true
-      x-quader-idempotency-key: optional
-      parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: "#/components/parameters/IdempotencyKey"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateTokenRequest"
-      responses:
-        "201":
-          description: The token with its value.
-          headers:
-            Location:
-              $ref: "#/components/headers/Location"
-            Cache-Control:
-              description: '`no-store`: the answer holds a secret or must not be reused.'
-              schema:
-                type: string
-                enum: [no-store]
-            Idempotency-Replayed:
-              $ref: "#/components/headers/IdempotencyReplayed"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TokenCreated"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthenticated"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
-        "413":
-          $ref: "#/components/responses/PayloadTooLarge"
-        "415":
-          $ref: "#/components/responses/UnsupportedMediaType"
-        "422":
-          $ref: "#/components/responses/Unprocessable"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/Internal"
-        "503":
-          $ref: "#/components/responses/Unavailable"
     delete:
       operationId: revokeServiceAccountTokens
       x-quader-maintenance: allowed
@@ -3329,74 +3262,6 @@ paths:
   /api/v1/projects/{projectKey}/service-accounts/{name}/tokens:
     parameters:
       - $ref: "#/components/parameters/ProjectKey"
-    post:
-      operationId: createProjectServiceAccountToken
-      x-quader-maintenance: allowed
-      tags: [tokens]
-      summary: Create a token of a project service account
-      description: |
-        Creates a SAT of a service account of the project (R-AUTH-027, Q-AUTHZ-177). The caller is an Owner of the
-        project acting with a session (with recent authentication) or a token with `admin: true`, or an administrator
-        of Quader. A non-expiring token (`ttlSeconds: 0`) needs an administrator of Quader and
-        `auth.tokens.sat.allow_non_expiring`. A token an Owner creates is never non-expiring, lives at most
-        `auth.tokens.sat` maximum lifetime, names no `system` item and has `admin: false` (`422 invalid_scope`); an
-        `endpoints` binding is allowed. The value is in this answer only and the answer is never cached.
-      x-quader-recent-auth: true
-      x-quader-permission:
-        authenticated: true
-      x-quader-idempotency-key: optional
-      parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: "#/components/parameters/IdempotencyKey"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateTokenRequest"
-      responses:
-        "201":
-          description: The token with its value.
-          headers:
-            Location:
-              $ref: "#/components/headers/Location"
-            Cache-Control:
-              description: '`no-store`: the answer holds a secret or must not be reused.'
-              schema:
-                type: string
-                enum: [no-store]
-            Idempotency-Replayed:
-              $ref: "#/components/headers/IdempotencyReplayed"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TokenCreated"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthenticated"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
-        "413":
-          $ref: "#/components/responses/PayloadTooLarge"
-        "415":
-          $ref: "#/components/responses/UnsupportedMediaType"
-        "422":
-          $ref: "#/components/responses/Unprocessable"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/Internal"
-        "503":
-          $ref: "#/components/responses/Unavailable"
     delete:
       operationId: revokeProjectServiceAccountTokens
       x-quader-maintenance: allowed
@@ -3423,6 +3288,1315 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: listRepositoryServiceAccounts
+      tags: [service-accounts]
+      summary: List the service accounts of a repository
+      description: |
+        The service accounts of the repository ordered by name, with cursor pagination (R-API-010) over `name` (R-AUTH-046). The
+        principal reference is `sa:<project>/<repository>/<name>`. An Owner of the project, or a holder of `identities:read`, may
+        call it; a project the caller cannot see answers `404`, and so does a repository that does not exist or is being deleted.
+      x-quader-permission:
+        permission: identities:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive substring of the name.
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: "`name` is the default; a leading `-` reverses the order."
+          schema:
+            type: string
+            enum: [name]
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of service accounts.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceAccountList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createRepositoryServiceAccount
+      tags: [service-accounts]
+      summary: Create a service account of a repository
+      description: |
+        A service account of the repository (R-AUTH-046) that holds a set of actions on it, given at the account (R-AUTHZ-039,
+        Q-AUTHZ-296): `read` when `actions` is absent. It has no login, session or UI access; it is no policy principal, group
+        member, project member or role holder. It moves with the repository and is deleted with it. An Owner of the project, or a
+        holder of `identities:write`, creates it (Q-AUTH-417). Optional `Idempotency-Key`.
+      x-quader-permission:
+        permission: identities:write
+        project: path.projectKey
+        projectRole: owner
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewRepositoryServiceAccount"
+      responses:
+        "201":
+          description: The service account.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceAccount"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: getRepositoryServiceAccount
+      tags: [service-accounts]
+      summary: Read a service account of a repository
+      description: |
+        One service account of the repository with its actions (R-AUTH-046). An account of another place answers `404` here.
+      x-quader-permission:
+        permission: identities:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The service account.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceAccount"
+        "304":
+          description: The `If-None-Match` tag is the current one.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    patch:
+      operationId: updateRepositoryServiceAccount
+      tags: [service-accounts]
+      summary: Change a service account of a repository
+      description: |
+        Changes the description and the actions on the repository (R-AUTH-046, R-AUTHZ-039); at least one action. A change of the
+        actions is in force on every replica within the bound of R-AUTHZ-028 and is journaled, so a restore replays a narrowing.
+        JSON merge patch; read-only members are ignored.
+      x-quader-permission:
+        permission: identities:write
+        project: path.projectKey
+        projectRole: owner
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/RepositoryServiceAccountPatch"
+      responses:
+        "200":
+          description: The service account after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceAccount"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteRepositoryServiceAccount
+      tags: [service-accounts]
+      summary: Delete a service account of a repository
+      description: |
+        Deletes the account with its technical tokens and its actions (R-AUTH-046); each live secret is revoked first.
+      x-quader-permission:
+        permission: identities:write
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The service account is deleted.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/disable:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    post:
+      operationId: disableRepositoryServiceAccount
+      tags: [service-accounts]
+      summary: Disable a service account of a repository
+      description: |
+        Every token of the account fails with `401 principal_disabled` (R-AUTH-020). With `revokeTokens: true` they are
+        also revoked; the default is `false`, so enabling the account again restores its tokens (Q-AUTH-41).
+      x-quader-permission:
+        permission: identities:write
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisableRequest"
+      responses:
+        "204":
+          description: The service account is disabled.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/enable:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    post:
+      operationId: enableRepositoryServiceAccount
+      tags: [service-accounts]
+      summary: Enable a service account of a repository
+      description: |
+        Enables the account (R-AUTH-046).
+      x-quader-permission:
+        permission: identities:write
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The service account is enabled.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/service-accounts/{name}/technical-tokens:
+    get:
+      operationId: listServiceAccountTechnicalTokens
+      tags: [service-accounts]
+      summary: List the technical tokens of an instance-wide service account
+      description: |
+        The technical tokens of the account by name, each with its live secrets or its last one (R-AUTH-045). A caller that holds
+        `identities:read` may call it.
+      x-quader-permission:
+        permission: identities:read
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The technical tokens.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createServiceAccountTechnicalToken
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Create a technical token of an instance-wide service account
+      description: |
+        Creates a technical token named for the system that uses it, with its first `qdr_sat_` secret (R-AUTH-045, R-AUTH-027). The
+        caller is an administrator of Quader (a session with recent authentication, or a token with `admin: true`), or a secret of a technical token of the same account under the derivation rule. The name is unique among the account's technical tokens (`409 already_exists`); the account holds
+        at most `auth.tokens.max_active_per_principal.sat` technical tokens with a live secret (`409 token_limit_reached`) and
+        at most `auth.tokens.max_technical_tokens_per_account` in all (`409 technical_token_limit_reached`). The secret is in this
+        answer only and the answer is never cached.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTechnicalToken"
+      responses:
+        "201":
+          description: The technical token with its secret.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Cache-Control:
+              description: '`no-store`: the answer holds a secret or must not be reused.'
+              schema:
+                type: string
+                enum: [no-store]
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/service-accounts/{name}/technical-tokens/{tokenName}:
+    get:
+      operationId: getServiceAccountTechnicalToken
+      tags: [service-accounts]
+      summary: Read a technical token of an instance-wide service account
+      description: |
+        One technical token with its live secrets or its last one (R-AUTH-045).
+      x-quader-permission:
+        permission: identities:read
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The technical token.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalToken"
+        "304":
+          description: The `If-None-Match` tag is the current one.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    patch:
+      operationId: updateServiceAccountTechnicalToken
+      tags: [service-accounts]
+      summary: Change a technical token of an instance-wide service account
+      description: |
+        Changes the description (R-AUTH-045); the name is immutable. JSON merge patch.
+      x-quader-permission:
+        permission: identities:write
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/TechnicalTokenPatch"
+      responses:
+        "200":
+          description: The technical token after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalToken"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteServiceAccountTechnicalToken
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Delete a technical token of an instance-wide service account
+      description: |
+        Revokes the token's live secrets (each with its journaled `token.revoked` and the cascade of R-AUTH-029) and deletes the
+        technical token (R-AUTH-045). Its download-limit rules go with the daily task `limits-cleanup`; its usage stays until its
+        retention. A holder of `tokens:revoke` may call it; every role that holds `identities:write` holds it.
+      x-quader-permission:
+        permission: tokens:revoke
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The technical token is deleted.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets:
+    post:
+      operationId: createServiceAccountTechnicalTokenSecret
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Issue a new secret of a technical token of an instance-wide service account
+      description: |
+        A new secret for a technical token whose every secret expired or was revoked (R-AUTH-045, Q-AUTH-416); while a secret is
+        live it answers `409 technical_token_active` (rotate it instead). The technical token keeps its ID, name, budget and
+        history. The callers and rules are the ones of the create. The secret is in this answer only.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTechnicalTokenSecret"
+      responses:
+        "201":
+          description: The technical token with its new secret.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Cache-Control:
+              description: '`no-store`: the answer holds a secret or must not be reused.'
+              schema:
+                type: string
+                enum: [no-store]
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+    get:
+      operationId: listProjectServiceAccountTechnicalTokens
+      tags: [service-accounts]
+      summary: List the technical tokens of a project's service account
+      description: |
+        The technical tokens of the account by name, each with its live secrets or its last one (R-AUTH-045). A caller that holds
+        `identities:read` or an Owner of the project may call it.
+      x-quader-permission:
+        permission: identities:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The technical tokens.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createProjectServiceAccountTechnicalToken
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Create a technical token of a project's service account
+      description: |
+        Creates a technical token named for the system that uses it, with its first `qdr_sat_` secret (R-AUTH-045, R-AUTH-027). The
+        caller is an administrator of Quader, an Owner of the project through a UI session (with recent authentication) or a token with `admin: true` (a delegated token: never non-expiring, at most `auth.tokens.sat.max_ttl`, `admin: false`, no `system` item, not self-rotatable; Q-AUTHZ-177), or a secret of a technical token of the same account under the derivation rule. The name is unique among the account's technical tokens (`409 already_exists`); the account holds
+        at most `auth.tokens.max_active_per_principal.sat` technical tokens with a live secret (`409 token_limit_reached`) and
+        at most `auth.tokens.max_technical_tokens_per_account` in all (`409 technical_token_limit_reached`). The secret is in this
+        answer only and the answer is never cached.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTechnicalToken"
+      responses:
+        "201":
+          description: The technical token with its secret.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Cache-Control:
+              description: '`no-store`: the answer holds a secret or must not be reused.'
+              schema:
+                type: string
+                enum: [no-store]
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+    get:
+      operationId: getProjectServiceAccountTechnicalToken
+      tags: [service-accounts]
+      summary: Read a technical token of a project's service account
+      description: |
+        One technical token with its live secrets or its last one (R-AUTH-045).
+      x-quader-permission:
+        permission: identities:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The technical token.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalToken"
+        "304":
+          description: The `If-None-Match` tag is the current one.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    patch:
+      operationId: updateProjectServiceAccountTechnicalToken
+      tags: [service-accounts]
+      summary: Change a technical token of a project's service account
+      description: |
+        Changes the description (R-AUTH-045); the name is immutable. JSON merge patch.
+      x-quader-permission:
+        permission: identities:write
+        project: path.projectKey
+        projectRole: owner
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/TechnicalTokenPatch"
+      responses:
+        "200":
+          description: The technical token after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalToken"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteProjectServiceAccountTechnicalToken
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Delete a technical token of a project's service account
+      description: |
+        Revokes the token's live secrets (each with its journaled `token.revoked` and the cascade of R-AUTH-029) and deletes the
+        technical token (R-AUTH-045). Its download-limit rules go with the daily task `limits-cleanup`; its usage stays until its
+        retention. A holder of `tokens:revoke` or an Owner of the project may call it; every role that holds `identities:write` holds it.
+      x-quader-permission:
+        permission: tokens:revoke
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The technical token is deleted.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+    post:
+      operationId: createProjectServiceAccountTechnicalTokenSecret
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Issue a new secret of a technical token of a project's service account
+      description: |
+        A new secret for a technical token whose every secret expired or was revoked (R-AUTH-045, Q-AUTH-416); while a secret is
+        live it answers `409 technical_token_active` (rotate it instead). The technical token keeps its ID, name, budget and
+        history. The callers and rules are the ones of the create. The secret is in this answer only.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTechnicalTokenSecret"
+      responses:
+        "201":
+          description: The technical token with its new secret.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Cache-Control:
+              description: '`no-store`: the answer holds a secret or must not be reused.'
+              schema:
+                type: string
+                enum: [no-store]
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: listRepositoryServiceAccountTechnicalTokens
+      tags: [service-accounts]
+      summary: List the technical tokens of a repository's service account
+      description: |
+        The technical tokens of the account by name, each with its live secrets or its last one (R-AUTH-045). A caller that holds
+        `identities:read` or an Owner of the project may call it.
+      x-quader-permission:
+        permission: identities:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The technical tokens.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createRepositoryServiceAccountTechnicalToken
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Create a technical token of a repository's service account
+      description: |
+        Creates a technical token named for the system that uses it, with its first `qdr_sat_` secret (R-AUTH-045, R-AUTH-027). The
+        caller is an administrator of Quader, an Owner of the project through a UI session (with recent authentication) or a token with `admin: true` (a delegated token: never non-expiring, at most `auth.tokens.sat.max_ttl`, `admin: false`, no `system` item, not self-rotatable; Q-AUTHZ-177), or a secret of a technical token of the same account under the derivation rule. The name is unique among the account's technical tokens (`409 already_exists`); the account holds
+        at most `auth.tokens.max_active_per_principal.sat` technical tokens with a live secret (`409 token_limit_reached`) and
+        at most `auth.tokens.max_technical_tokens_per_account` in all (`409 technical_token_limit_reached`). The secret is in this
+        answer only and the answer is never cached.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTechnicalToken"
+      responses:
+        "201":
+          description: The technical token with its secret.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Cache-Control:
+              description: '`no-store`: the answer holds a secret or must not be reused.'
+              schema:
+                type: string
+                enum: [no-store]
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: getRepositoryServiceAccountTechnicalToken
+      tags: [service-accounts]
+      summary: Read a technical token of a repository's service account
+      description: |
+        One technical token with its live secrets or its last one (R-AUTH-045).
+      x-quader-permission:
+        permission: identities:read
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The technical token.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalToken"
+        "304":
+          description: The `If-None-Match` tag is the current one.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    patch:
+      operationId: updateRepositoryServiceAccountTechnicalToken
+      tags: [service-accounts]
+      summary: Change a technical token of a repository's service account
+      description: |
+        Changes the description (R-AUTH-045); the name is immutable. JSON merge patch.
+      x-quader-permission:
+        permission: identities:write
+        project: path.projectKey
+        projectRole: owner
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/TechnicalTokenPatch"
+      responses:
+        "200":
+          description: The technical token after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalToken"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteRepositoryServiceAccountTechnicalToken
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Delete a technical token of a repository's service account
+      description: |
+        Revokes the token's live secrets (each with its journaled `token.revoked` and the cascade of R-AUTH-029) and deletes the
+        technical token (R-AUTH-045). Its download-limit rules go with the daily task `limits-cleanup`; its usage stays until its
+        retention. A holder of `tokens:revoke` or an Owner of the project may call it; every role that holds `identities:write` holds it.
+      x-quader-permission:
+        permission: tokens:revoke
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The technical token is deleted.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    post:
+      operationId: createRepositoryServiceAccountTechnicalTokenSecret
+      x-quader-maintenance: allowed
+      tags: [service-accounts]
+      summary: Issue a new secret of a technical token of a repository's service account
+      description: |
+        A new secret for a technical token whose every secret expired or was revoked (R-AUTH-045, Q-AUTH-416); while a secret is
+        live it answers `409 technical_token_active` (rotate it instead). The technical token keeps its ID, name, budget and
+        history. The callers and rules are the ones of the create. The secret is in this answer only.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenName
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTechnicalTokenSecret"
+      responses:
+        "201":
+          description: The technical token with its new secret.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Cache-Control:
+              description: '`no-store`: the answer holds a secret or must not be reused.'
+              schema:
+                type: string
+                enum: [no-store]
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicalTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -15456,21 +16630,26 @@ components:
     # <<< M4 ci
     ServiceAccount:
       type: object
-      description: A service account (R-AUTH-020). `name` is the name within its project, unique among the accounts of that project, or among the instance-wide accounts when `project` is `null` (Q-AUTHZ-209).
-      required: [id, name, principal, description, status, createdAt, project, isAdmin]
+      description: |
+        A service account (R-AUTH-020, R-AUTH-046) of the instance, a project or a repository. `name` is the name within its place:
+        unique among the accounts of the repository, of the project, or among the instance-wide accounts (Q-AUTHZ-209).
+      required: [id, name, reference, level, description, status, createdAt, project, repository, actions, isAdmin, technicalTokens, version]
       properties:
         id:
           type: string
           format: uuid
         isAdmin:
           type: boolean
-          description: Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for a project's account, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024).
+          description: Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for an account of a project or a repository, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024).
         name:
           type: string
-          description: The name within the project; the stored name is `<project>/<name>` for a project's account.
-        principal:
+          description: The name within its place; the stored name is `<project>/<name>` for a project's account and `<project>/<repository>/<name>` for a repository's.
+        reference:
           type: string
-          description: The reference, `sa:<name>` or `sa:<project>/<name>`.
+          description: The principal reference, `sa:<name>`, `sa:<project>/<name>` or `sa:<project>/<repository>/<name>`.
+        level:
+          type: string
+          enum: [instance, project, repository]
         description:
           type: string
         status:
@@ -15481,16 +16660,37 @@ components:
           format: date-time
         project:
           type: [string, "null"]
-          description: The key of the project the account belongs to (R-AUTHZ-026), `null` for an instance-wide account. Fixed at creation.
+          description: The key of the project the account belongs to (R-AUTHZ-026), `null` for an instance-wide account. A project's account keeps it; a repository's account follows its repository when it moves (R-REPO-060).
+        repository:
+          type: [string, "null"]
+          description: The key, within `project`, of the repository a repository's account belongs to (R-AUTH-046); `null` otherwise.
+        actions:
+          type: [array, "null"]
+          description: The actions a repository's account holds on its repository (R-AUTHZ-039), in the order read, annotate, deploy, overwrite, delete, manage; `null` for every other account, whose rights come from policies.
+          items:
+            type: string
+            enum: [read, annotate, deploy, overwrite, delete, manage]
+        technicalTokens:
+          type: integer
+          description: The account's technical tokens, ended ones included (R-AUTH-045).
+        version:
+          type: integer
+          format: int64
+          description: The revision the `ETag` carries.
       example:
         id: 0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a12
-        name: ci-bot
-        principal: "sa:ci-bot"
-        description: Deploy jobs
+        name: ci
+        reference: "sa:web/npm-local/ci"
+        level: repository
+        description: release pipeline
         status: active
-        createdAt: "2026-09-01T08:00:00Z"
-        project: null
+        createdAt: "2026-11-20T09:00:00Z"
+        project: web
+        repository: npm-local
+        actions: [read, deploy]
         isAdmin: false
+        technicalTokens: 1
+        version: 1
     ServiceAccountList:
       type: object
       required: [items, nextCursor]
@@ -15520,6 +16720,241 @@ components:
       properties:
         description:
           type: string
+    NewRepositoryServiceAccount:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Matches `^[a-z0-9][a-z0-9-]{1,62}$`, unique among the accounts of the repository.
+        description:
+          type: string
+        actions:
+          type: array
+          description: The actions the account holds on the repository (R-AUTHZ-039); at least one; `[read]` when absent.
+          items:
+            type: string
+            enum: [read, annotate, deploy, overwrite, delete, manage]
+      example:
+        name: ci
+        description: release pipeline
+        actions: [read, deploy]
+    RepositoryServiceAccountPatch:
+      type: object
+      description: |
+        The description and the actions of a repository's account (R-AUTH-046, R-AUTHZ-039). The read-only members of
+        `ServiceAccount` are accepted and ignored.
+      properties:
+        description:
+          type: string
+        actions:
+          type: array
+          items:
+            type: string
+            enum: [read, annotate, deploy, overwrite, delete, manage]
+    TechnicalTokenSecret:
+      type: object
+      description: One `qdr_sat_` secret of a technical token; neither the value nor its hash.
+      required: [id, hint, scope, createdAt, expiresAt, revokedAt, lastUsedAt, rotatedFrom]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The token ID of the secret, the one `/api/v1/tokens/{id}` reads, rotates and revokes.
+        hint:
+          type: string
+        scope:
+          $ref: "#/components/schemas/TokenScope"
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: [string, "null"]
+          format: date-time
+        revokedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the secret was revoked; `null` for one that was not.
+        lastUsedAt:
+          type: [string, "null"]
+          format: date-time
+        rotatedFrom:
+          type: [string, "null"]
+          format: uuid
+    TechnicalTokenAccount:
+      type: object
+      required: [reference, level, project, repository]
+      properties:
+        reference:
+          type: string
+        level:
+          type: string
+          enum: [instance, project, repository]
+        project:
+          type: [string, "null"]
+        repository:
+          type: [string, "null"]
+    TechnicalToken:
+      type: object
+      description: |
+        A technical token (R-AUTH-045): a named line of `qdr_sat_` secrets of a service account with a stable ID, the subject of its
+        budget. `state` is `active` while a secret is live, else `expired` or `revoked` by the end of its last secret; `secrets` are
+        the live ones (one, two during a rotation's overlap) or the last one of a token without a live secret. `limit` is the token's
+        own rule at its account's place, `null` when the default applies (usage-and-limits.md R-LIM-038).
+      required: [id, name, description, account, state, secrets, limit, createdAt, createdBy]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        account:
+          $ref: "#/components/schemas/TechnicalTokenAccount"
+        state:
+          type: string
+          enum: [active, expired, revoked]
+        secrets:
+          type: array
+          items:
+            $ref: "#/components/schemas/TechnicalTokenSecret"
+        limit:
+          description: The token's own download-limit rule at its account's place; `null` while the default of its kind applies.
+          oneOf:
+            - $ref: "#/components/schemas/TechnicalTokenLimit"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: [string, "null"]
+          description: The reference of the principal that created it; `null` when it is gone.
+      example:
+        id: 0193f2a5-11aa-7d3e-9b02-5c6d7e8f9a0b
+        name: nightly-mirror
+        description: the partner's nightly mirror job
+        account: {reference: "sa:web/partner", level: project, project: web, repository: null}
+        state: active
+        secrets:
+          - {id: 0193f2a5-2b3c-7d4e-8f50-6a7b8c9d0e1f, hint: qdr_sat_7Hq2, scope: {inherit: true, admin: false, repositories: [], system: []},
+             createdAt: "2026-11-20T09:00:00Z", expiresAt: "2026-12-20T09:00:00Z", revokedAt: null, lastUsedAt: "2026-11-21T02:00:11Z",
+             rotatedFrom: null}
+        limit: null
+        createdAt: "2026-11-20T09:00:00Z"
+        createdBy: priya
+    TechnicalTokenLimit:
+      type: object
+      required: [rule, profile, overrides]
+      properties:
+        rule:
+          type: string
+          format: uuid
+        profile:
+          type: string
+        overrides:
+          type: integer
+          description: How many figures the rule sets beside its profile.
+    TechnicalTokenList:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TechnicalToken"
+        nextCursor:
+          type: [string, "null"]
+          description: Always `null`; an account holds at most `auth.tokens.max_technical_tokens_per_account`.
+    NewTechnicalToken:
+      type: object
+      description: The technical token and the request of its first secret, with the rules of R-AUTH-026 and R-AUTH-027.
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: The system that uses the token, `^[a-z0-9][a-z0-9-]{0,62}$`; unique among the account's technical tokens and immutable.
+        description:
+          type: string
+          maxLength: 1024
+        ttlSeconds:
+          type: integer
+          minimum: 0
+          description: The lifetime of the secret. `0` asks for a non-expiring one (an administrator, with `auth.tokens.sat.allow_non_expiring`). Exclusive with `expiresAt`.
+        expiresAt:
+          type: string
+          format: date-time
+        scope:
+          $ref: "#/components/schemas/TokenScope"
+        selfRotatable:
+          type: boolean
+          default: false
+      example:
+        name: nightly-mirror
+        description: the partner's nightly mirror job
+        ttlSeconds: 2592000
+        scope: {inherit: true}
+        selfRotatable: false
+    NewTechnicalTokenSecret:
+      type: object
+      description: The request of a new secret of a technical token without a live one (Q-AUTH-416), as a create without `name` and `description`.
+      properties:
+        ttlSeconds:
+          type: integer
+          minimum: 0
+        expiresAt:
+          type: string
+          format: date-time
+        scope:
+          $ref: "#/components/schemas/TokenScope"
+        selfRotatable:
+          type: boolean
+          default: false
+    TechnicalTokenPatch:
+      type: object
+      description: The description; the name is immutable. The read-only members of `TechnicalToken` are accepted and ignored.
+      properties:
+        description:
+          type: string
+          maxLength: 1024
+    TechnicalTokenCreated:
+      type: object
+      description: |
+        The technical token with the secret a create or a new secret issued: `token` is the value, shown in this answer only (sent
+        with `Cache-Control: no-store`), and `secretId` its token ID.
+      required: [id, name, description, account, state, secrets, limit, createdAt, createdBy, token, secretId]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        account:
+          $ref: "#/components/schemas/TechnicalTokenAccount"
+        state:
+          type: string
+          enum: [active, expired, revoked]
+        secrets:
+          type: array
+          items:
+            $ref: "#/components/schemas/TechnicalTokenSecret"
+        limit:
+          oneOf:
+            - $ref: "#/components/schemas/TechnicalTokenLimit"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: [string, "null"]
+        token:
+          type: string
+          description: The secret. Shown once.
+        secretId:
+          type: string
+          format: uuid
     TokenScopePatterns:
       type: object
       properties:
@@ -15623,7 +17058,8 @@ components:
       type: object
       description: A token as a list or an inspection shows it (R-AUTH-028). Neither the value nor its hash is part of it.
       required: [id, type, hint, owner, ownerIsAdmin, description, scope, unknownEndpoints, createdAt, createdBy, createdVia, expiresAt,
-                 lastUsedAt, lastUsedAddr, state, revokedAt, revokedBy, revocationReason, rotatedFrom, selfRotatable, ciContext]
+                 lastUsedAt, lastUsedAddr, state, revokedAt, revokedBy, revocationReason, rotatedFrom, selfRotatable, ciContext,
+                 technicalToken]
       properties:
         id:
           type: string
@@ -15689,6 +17125,21 @@ components:
         ciContext:
           type: [object, "null"]
           additionalProperties: true
+        technicalToken:
+          description: The technical token a service-account token is a secret of (R-AUTH-045), `null` for every other type.
+          oneOf:
+            - $ref: "#/components/schemas/TechnicalTokenRef"
+            - type: "null"
+    TechnicalTokenRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The technical token's stable ID, the subject of its budget (usage-and-limits.md R-LIM-001).
+        name:
+          type: string
     TokenCreated:
       type: object
       description: |

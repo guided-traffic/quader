@@ -33,6 +33,9 @@ func init() {
 	tables.Register("service_account", tables.Data, tables.Options{})
 	tables.Register("api_token", tables.Data, tables.Options{})
 	tables.Register("auth_settings", tables.Data, tables.Options{})
+	// Technical tokens and the actions of a repository's service account (00080, R-AUTH-045, R-AUTHZ-039).
+	tables.Register("technical_token", tables.Data, tables.Options{})
+	tables.Register("service_account_repository_grant", tables.Data, tables.Options{})
 
 	// Login state (00008_login, R-AUTH-005 to R-AUTH-014, R-AUTH-038). Sessions and
 	// flows hold ID tokens and PKCE verifiers: a restore ends them all (R-AUTH-015).

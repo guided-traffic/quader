@@ -44,10 +44,11 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 		"QUADER_DATABASE_SSL_MODE=verify-full", "QUADER_DATABASE_SSL_ROOT_CERT_FILE=" + testenv.CAFile(t),
 		"QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "QUADER_LOG_LEVEL=warn",
 	}
-	run := func(account string) (int, string, string) {
+	// run issues a secret of the account's technical token name (R-AUTH-045, Q-AUTH-418).
+	run := func(account, name string) (int, string, string) {
 		runCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(runCtx, bin, "admin", "token", "create", "--service-account", account)
+		cmd := exec.CommandContext(runCtx, bin, "admin", "token", "create", "--service-account", account, "--name", name)
 		cmd.Env = append(os.Environ(), cfgEnv...)
 		var o, er bytes.Buffer
 		cmd.Stdout, cmd.Stderr = &o, &er
@@ -62,14 +63,18 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 		return code, strings.TrimSpace(o.String()), er.String()
 	}
 
-	for _, ref := range []string{"web/partner", "sa:web/partner", "ops", "sa:ops"} {
-		code, out, errOut := run(ref)
+	for i, ref := range []string{"web/partner", "sa:web/partner", "ops", "sa:ops"} {
+		code, out, errOut := run(ref, "cli-"+strconv.Itoa(i))
 		if code != 0 || !strings.HasPrefix(out, "qdr_sat_") {
 			t.Errorf("%s: exit %d, stdout %q, stderr %s", ref, code, out, errOut)
 		}
 	}
+	// A technical token whose secret is live gets no second one from the command (409 technical_token_active).
+	if code, out, errOut := run("web/partner", "cli-0"); code == 0 || out != "" || !strings.Contains(errOut, "technical_token_active") {
+		t.Errorf("a second secret of a live token: exit %d, stdout %q, stderr %s", code, out, errOut)
+	}
 	for _, ref := range []string{"partner", "web/ops", "mobile/partner", "web/ghost", "web/"} {
-		if code, out, _ := run(ref); code == 0 || out != "" {
+		if code, out, _ := run(ref, "cli-x"); code == 0 || out != "" {
 			t.Errorf("%s: exit %d, stdout %q; want a failure and no token", ref, code, out)
 		}
 	}

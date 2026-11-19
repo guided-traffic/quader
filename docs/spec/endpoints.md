@@ -769,13 +769,14 @@ Priority: **MVP** · Covers: TOK-007
 
 ```json
 {
+  "name": "package-downloads",
   "description": "Acme Corp, package downloads",
   "ttlSeconds": 31536000,
   "scope": {"inherit": true, "endpoints": ["customers"]}
 }
 ```
 
-*(example request of `POST /api/v1/projects/web/service-accounts/customer-acme/tokens`)*
+*(example request of `POST /api/v1/projects/web/service-accounts/customer-acme/technical-tokens`, R-AUTH-045)*
 
 Acceptance criteria:
 

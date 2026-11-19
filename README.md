@@ -103,7 +103,7 @@ Built (M1, access core):
 
 - 🔐 **OIDC login with PKCE.** Providers under `auth.oidc.providers`, the authorization-code flow with PKCE, a server-side session per browser login, CSRF protection and logout. See [login](docs/developer/login.md) and [login and sessions](docs/security/login-and-sessions.md).
 - 🆘 **Break-glass administrator.** One local account whose password comes from a file: a plaintext password of at least 20 characters or an Argon2id hash; lockout and a rotation hold. See [login](docs/developer/login.md).
-- 🎟️ **Own tokens.** Personal (`qdr_pat_`) and service-account (`qdr_sat_`) tokens with lifetimes, rotation, revocation, a per-address failed-credential throttle. See [identity](docs/developer/identity.md) and [tokens and credentials](docs/security/tokens-and-credentials.md).
+- 🎟️ **Own tokens.** Personal (`qdr_pat_`) tokens and technical tokens of service accounts on the instance, a project or a repository (`qdr_sat_` secrets, one named token per system) with lifetimes, rotation, revocation, a per-address failed-credential throttle. See [identity](docs/developer/identity.md) and [tokens and credentials](docs/security/tokens-and-credentials.md).
 - 🖼️ **User avatars.** A user uploads a PNG, JPEG or WebP of at most 1 MiB for their own record; the server decodes it, bounds its size before decoding and stores a new 256 x 256 PNG (no metadata, no animation, never SVG) as a blob, served by the `api` role with image headers; users without one get a generated avatar in the UI ([security](docs/security/user-avatars.md), R-API-055).
 - 🛂 **Permission policies.** Deny by default; allow-only policies over repository and package-name patterns, five system roles and role bindings; a grant index per replica that is consistent through an epoch. See [authorization](docs/developer/authorization.md) and [permissions](docs/security/permissions.md).
 - 🪪 **Role bindings from the Helm values.** `authz.role_bindings` makes an IdP group the administrator or the auditor from a GitOps repository: `quader migrate` applies the list, the API and the UI show it read-only. See [sign-in and identity](docs/manual/admin/sign-in-and-identity.md#administrators-from-the-helm-values).
@@ -396,7 +396,9 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | CSRF cookie | `__Host-qdr_csrf`, readable by the UI; its value goes into `X-CSRF-Token` | yes |
 | Login-flow binding cookie | `__Host-qdr_oidc_binding`, `Path=/`, `HttpOnly`, about 10 minutes; it binds a callback to the browser that started the login (Q-AUTH-2) | yes |
 | Personal token prefix | `qdr_pat_` (`internal/auth/token/token.go`, `TypePAT`) | yes |
-| Service-account token prefix | `qdr_sat_` | yes |
+| Service-account token prefix | `qdr_sat_`: each one a secret of a technical token of a service account, named for the system that uses it (R-AUTH-045) | yes |
+| Repository service account | `sa:<projectKey>/<repoKey>/<name>`, its stored principal name; renamed with its repository's move (R-AUTH-046) | yes |
+| Technical token | a name `^[a-z0-9][a-z0-9-]{0,62}$`, unique per account, under `…/service-accounts/{name}/technical-tokens/{tokenName}`; its ID survives rotations and new secrets | yes |
 | CI token prefix | `qdr_cit_` (`TypeCIT`); issued by the GitLab CI exchange `POST /api/v1/auth/oidc/token` only | yes ([GitLab CI OIDC](docs/spec/gitlab-ci-oidc.md)) |
 | Registry token prefix | `qdr_rgt_` (`internal/auth/registrytoken`); issued by the token service `/v2/_token` for a `qdr_pat_`, `qdr_sat_` or `qdr_cit_` token, accepted as `Bearer` below `/v2/` only, not stored anywhere | yes ([OCI registry](docs/security/oci-registry.md)) |
 | Bastion token prefix | `qdr_bst_` (`TypeBST`, 57 characters like every token); issued by `POST /api/v1/bastions/{name}/tokens` or `quader admin bastion token create`; refused as `401 invalid_token` on every route but the Bastion interface | yes ([R-BAS-004](docs/spec/bastion.md), [identity](docs/developer/identity.md#bastion-registrations-and-tokens-r-bas-004-r-bas-005)) |
@@ -1752,8 +1754,9 @@ auth:
       max_ttl: 9480h                    # default; at least 1h: the ceiling of a Bastion token's lifetime (400 invalid_ttl above it)
     max_active_per_principal:
       pat: 50                           # default
-      sat: 20                           # default
+      sat: 20                           # default; technical tokens with a live secret per service account (R-AUTH-045)
       bst: 3                            # default; unrevoked Bastion tokens per registration, so that a renewal's overlap fits (409 token_limit_reached)
+    max_technical_tokens_per_account: 100  # default; technical tokens of one service account, ended ones included (409 technical_token_limit_reached)
   clients:
     basic:
       enabled: true                     # default; off breaks NuGet restore and _auth users
@@ -2293,6 +2296,13 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `POST /api/v1/projects/{projectKey}/service-accounts/{name}/disable` | `disableProjectServiceAccount` | `identities:write` or Owner of the project |
 | `POST /api/v1/service-accounts/{name}/enable` | `enableServiceAccount` | `identities:write` |
 | `POST /api/v1/projects/{projectKey}/service-accounts/{name}/enable` | `enableProjectServiceAccount` | `identities:write` or Owner of the project |
+| `GET`, `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts` | `listRepositoryServiceAccounts`, `createRepositoryServiceAccount` | `identities:read`, `identities:write`, or Owner of the project; a repository's account holds `actions` on its repository (R-AUTHZ-039) |
+| `GET`, `PATCH`, `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `getRepositoryServiceAccount`, `updateRepositoryServiceAccount`, `deleteRepositoryServiceAccount` | as above; `PATCH` changes `description` and `actions` |
+| `POST …/repositories/{repoKey}/service-accounts/{name}/disable`, `…/enable` | `disableRepositoryServiceAccount`, `enableRepositoryServiceAccount` | `identities:write` or Owner of the project |
+| `GET`, `POST /api/v1/service-accounts/{name}/technical-tokens` | `listServiceAccountTechnicalTokens`, `createServiceAccountTechnicalToken` | `GET` `identities:read`; `POST` authenticated: an administrator, or a token of the account itself, decided in the handler · recent sign-in |
+| `GET`, `PATCH`, `DELETE /api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `getServiceAccountTechnicalToken`, `updateServiceAccountTechnicalToken`, `deleteServiceAccountTechnicalToken` | `identities:read`; `PATCH` `identities:write`; `DELETE` `tokens:revoke` |
+| `POST /api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets` | `createServiceAccountTechnicalTokenSecret` | as the `POST` of a technical token; `409 technical_token_active` while a secret is live |
+| the same below `/api/v1/projects/{projectKey}/service-accounts/{name}` and `/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `…ProjectServiceAccountTechnicalToken…`, `…RepositoryServiceAccountTechnicalToken…` | as above, or Owner of the project; an Owner's secret always expires, has `admin: false` and no `system` item, and is not self-rotatable |
 
 **tokens**
 
@@ -2309,9 +2319,7 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `POST /api/v1/tokens/{id}/rotate` | `rotateToken` | authenticated; a token that does not inherit its owner's rights rotates only itself and its derived tokens · recent sign-in |
 | `DELETE /api/v1/users/me/tokens` | `revokeOwnTokens` | authenticated · a session or an inheriting token (`x-quader-owner-rights`) |
 | `DELETE /api/v1/users/{username}/tokens` | `revokeUserTokens` | `tokens:revoke` |
-| `POST /api/v1/service-accounts/{name}/tokens` | `createServiceAccountToken` | authenticated; an administrator, or a token of the account itself, decided in the handler · recent sign-in |
 | `DELETE /api/v1/service-accounts/{name}/tokens` | `revokeServiceAccountTokens` | `tokens:revoke` |
-| `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | `createProjectServiceAccountToken` | authenticated; an administrator, an Owner of the project, or a token of the account itself, decided in the handler; an Owner's token always expires, has `admin: false` and no `system` item, and is not self-rotatable · recent sign-in |
 | `DELETE /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | `revokeProjectServiceAccountTokens` | `tokens:revoke` or Owner of the project |
 
 **auth-settings**

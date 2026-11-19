@@ -75,9 +75,11 @@ func (s *Service) revokeTree(ctx context.Context, tx meta.Tx, qs *q.Queries, c p
 	}
 	refs := make([]principal.TokenRef, 0, len(rows))
 	out := make([]Revoked, 0, len(rows))
+	technical := make(map[string]string, len(rows))
 	for _, r := range rows {
 		refs = append(refs, principal.TokenRef{ID: r.ID, Hash: r.SecretHex})
 		out = append(out, Revoked{ID: r.ID, OwnerID: r.OwnerID, Type: Type(r.Type), Root: r.IsRoot})
+		technical[r.ID] = r.TechnicalTokenID
 	}
 	if err := principal.NotifyTokens(s.o.Notifier, tx, refs...); err != nil {
 		return nil, err
@@ -88,7 +90,7 @@ func (s *Service) revokeTree(ctx context.Context, tx meta.Tx, qs *q.Queries, c p
 		if !r.Root {
 			why = ReasonParentRevoked
 		}
-		toks = append(toks, principal.RevokedToken{ID: r.ID, OwnerID: r.OwnerID, Reason: why, Bastion: r.Type == TypeBST})
+		toks = append(toks, principal.RevokedToken{ID: r.ID, OwnerID: r.OwnerID, Reason: why, Bastion: r.Type == TypeBST, TechnicalTokenID: technical[r.ID]})
 	}
 	if err := principal.RecordTokensRevoked(ctx, tx, s.o.Recorder, c, toks); err != nil {
 		return nil, err

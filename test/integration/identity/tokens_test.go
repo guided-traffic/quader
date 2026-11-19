@@ -289,14 +289,14 @@ func TestR_AUTH_027_CreationRules(t *testing.T) {
 		if c.Record.ExpiresAt != nil {
 			t.Fatal("expiresAt is set")
 		}
-		_, err := a.tokens.Create(context.Background(), token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "x", TTL: token.TTLRequest{Seconds: &zero}, Via: "api"})
+		_, err := issueSAT(context.Background(), a.tokens, sa, token.CreateRequest{Caller: admin, TTL: token.TTLRequest{Seconds: &zero}, Via: "api"})
 		wantCode(t, err, 403, "non_expiring_restricted")
 		// A token derived from the non-expiring SAT gets a finite lifetime.
 		info, err := a.tokens.Validate(context.Background(), c.Secret)
 		if err != nil {
 			t.Fatal(err)
 		}
-		child, err := a.tokens.Create(context.Background(), token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "child", Via: "api", Parent: &info})
+		child, err := issueSAT(context.Background(), a.tokens, sa, token.CreateRequest{Caller: admin, Via: "api", Parent: &info})
 		if err != nil || child.Record.ExpiresAt == nil || child.Record.DerivedFrom != info.ID {
 			t.Fatalf("%+v %v", child.Record, err)
 		}
@@ -333,7 +333,7 @@ func TestR_AUTH_027_CreationRules(t *testing.T) {
 		if !errors.Is(err, principal.ErrBreakGlass) {
 			t.Fatalf("err = %v", err)
 		}
-		_, err = a.tokens.Create(context.Background(), token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: alice.ID, Description: "x", Via: "api"})
+		_, err = issueSAT(context.Background(), a.tokens, principal.ServiceAccount{ID: alice.ID}, token.CreateRequest{Caller: admin, Via: "api"})
 		wantCode(t, err, 400, errs.CodeValidation)
 		_, err = a.tokens.Create(context.Background(), token.CreateRequest{Caller: admin, Type: token.TypeCIT, OwnerID: alice.ID, Description: "x", Via: "api"})
 		wantCode(t, err, 400, errs.CodeValidation)

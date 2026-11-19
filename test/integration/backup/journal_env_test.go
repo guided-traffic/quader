@@ -158,7 +158,7 @@ func newJEnv(t *testing.T) *jenv {
 	tokCfg := config.AuthTokens{
 		CacheTTL: 15 * time.Second, RetentionAfterEnd: 2160 * time.Hour, ExpiryNotice: 168 * time.Hour,
 		PAT: config.AuthTokenPAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour}, SAT: config.AuthTokenSAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour},
-		CIT: config.AuthTokenCIT{MaxTTL: 6 * time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20},
+		CIT: config.AuthTokenCIT{MaxTTL: 6 * time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20}, MaxTechnicalPerAccount: 100,
 	}
 	principals := principal.NewStore(principal.StoreOptions{DB: db, Cache: caches, Gate: gate, SafetyTTL: tokCfg.CacheTTL})
 	settings := token.NewSettingsStore(token.SettingsOptions{DB: db, Notifier: changes, Recorder: rec, Cache: caches, Gate: gate, Tokens: tokCfg})
@@ -209,7 +209,7 @@ func (e *jenv) freshTokens() *token.Service {
 		e.t.Fatal(err)
 	}
 	gate := principal.Gate{Bound: 2 * time.Second, Metrics: metrics}
-	cfg := config.AuthTokens{CacheTTL: 15 * time.Second, PAT: config.AuthTokenPAT{DefaultTTL: time.Hour, MaxTTL: time.Hour}, SAT: config.AuthTokenSAT{DefaultTTL: time.Hour, MaxTTL: time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20}}
+	cfg := config.AuthTokens{CacheTTL: 15 * time.Second, PAT: config.AuthTokenPAT{DefaultTTL: time.Hour, MaxTTL: time.Hour}, SAT: config.AuthTokenSAT{DefaultTTL: time.Hour, MaxTTL: time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20}, MaxTechnicalPerAccount: 100}
 	principals := principal.NewStore(principal.StoreOptions{DB: e.db, Cache: caches, Gate: gate, SafetyTTL: cfg.CacheTTL})
 	settings := token.NewSettingsStore(token.SettingsOptions{DB: e.db, Notifier: e.changes, Recorder: e.rec, Cache: caches, Gate: gate, Tokens: cfg})
 	return token.NewService(token.ServiceOptions{DB: e.db, Notifier: e.changes, Recorder: e.rec, Principals: principals, Settings: settings, Cache: caches, Gate: gate, Tokens: cfg, Metrics: metrics, Log: quietLog})

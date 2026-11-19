@@ -411,7 +411,7 @@ func (s *Stage) accept(r *http.Request, ep EndpointRules, info token.Info, cred 
 		s.o.Uses.NoteUse(info.ID, sourceOf(r, s.clientAddr(r)).ClientAddr)
 	}
 	s.o.Metrics.Attempt(metricMethod(cred.Method), "success", "")
-	cred.TokenID, cred.TokenType, cred.Scope = info.ID, info.Type, &sc
+	cred.TokenID, cred.TokenType, cred.Scope, cred.TechnicalTokenID = info.ID, info.Type, &sc, info.TechnicalTokenID
 	return Result{Principal: info.Owner, Groups: groups, CI: info.CI, Credential: cred}, nil
 }
 

@@ -80,6 +80,9 @@ func (s *Server) toToken(r token.Record, ownerIsAdmin bool) gen.Token {
 		State: gen.TokenState(r.State), RevokedAt: optTime(deref1(r.RevokedAt)), RevokedBy: optString(r.RevokedBy),
 		RevocationReason: optString(r.RevocationReason), SelfRotatable: r.SelfRotatable,
 	}
+	if r.TechnicalTokenID != "" {
+		out.TechnicalToken = &gen.TechnicalTokenRef{Id: uuidOf(r.TechnicalTokenID), Name: r.TechnicalTokenName}
+	}
 	if r.RotatedFrom != "" {
 		u := uuidOf(r.RotatedFrom)
 		out.RotatedFrom = &u
@@ -334,59 +337,6 @@ func refuseOtherOwner(owner *string, p httpserver.Principal) error {
 		return nil
 	}
 	return errs.E(errs.Forbidden, errs.CodeForbidden, "A personal access token can be created for the caller only; there is no impersonation.")
-}
-
-// CreateServiceAccountToken implements POST /api/v1/service-accounts/{name}/tokens
-// (R-AUTH-027): an administrator, or a token of the same account under the
-// derivation rule.
-func (s *Server) CreateServiceAccountToken(w http.ResponseWriter, r *http.Request, name string, _ gen.CreateServiceAccountTokenParams) {
-	if !s.identityReady(w, r) {
-		return
-	}
-	ctx := r.Context()
-	p := httpserver.PrincipalFrom(ctx)
-	body, err := ReadBody(w, r, MediaJSON, s.bodyLimit())
-	var in gen.CreateTokenRequest
-	if err == nil {
-		err = StrictUnmarshal(body, &in)
-	}
-	// The caller is an administrator or the account itself; anyone else gets the same 403 whether the
-	// account exists or not, and before the scope is looked at (R-EP-011). The tokens of a project's service
-	// account are issued through the project's route.
-	derived := p.Kind == httpserver.KindServiceAccount && p.Name == name && tokenAuthenticated(p)
-	admin, aerr := s.holds(ctx, "role:admin")
-	if err == nil {
-		err = aerr
-	}
-	if err == nil && !admin && !derived {
-		err = errs.E(errs.Forbidden, errs.CodeForbidden, "Only an administrator or a token of the account itself creates its tokens.")
-	}
-	var scope []byte
-	if err == nil {
-		scope, err = scopeBytes(in.Scope)
-	}
-	if err == nil {
-		err = s.refuseUpperCasePaths(scope)
-	}
-	var sa principal.ServiceAccount
-	var parent *token.Info
-	if err == nil && derived {
-		parent, err = s.presenting(ctx, p)
-	}
-	if err == nil {
-		sa, err = s.globalAccount(ctx, name)
-	}
-	if err != nil {
-		failIdentity(w, r, err)
-		return
-	}
-	req := token.CreateRequest{
-		Caller: s.caller(r), Type: token.TypeSAT, OwnerID: sa.ID, Description: in.Description, Scope: scope, TTL: requestTTL(in),
-		SelfRotatable: in.SelfRotatable != nil && *in.SelfRotatable, Via: via(p), Admin: admin && !derived, Parent: parent,
-	}
-	s.issue(w, r, body, func(ctx context.Context, tx meta.Tx) (token.Created, error) {
-		return s.o.Auth.Tokens.CreateTx(ctx, tx, req)
-	})
 }
 
 // holdsCapability reports whether the caller holds a capability, as the

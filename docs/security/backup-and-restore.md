@@ -161,7 +161,10 @@ a missing member, an oversized value or a digest that is not the expected shape 
 - **Comparators.** The policy, settings, role and anonymous-switch comparators answer true only when they can prove the after-state
   grants nothing beyond the current one, comparing IDs and patterns exactly as stored
   ([authz](../../internal/authz/journal_replay.go), [project](../../internal/project/journal_replay.go),
-  [token](../../internal/auth/token/journal_replay.go)). Tested in `TestR_AUTHZ_031_PolicyComparator`,
+  [token](../../internal/auth/token/journal_replay.go)). The actions of a repository's service account (`serviceaccount.updated`
+  with `actions`, R-AUTHZ-039) are set to the journaled after-set only when it holds no action the restored set lacks; a narrowing
+  on top of a broadening the restored database does not hold disables the account
+  ([journal_replay_actions.go](../../internal/auth/principal/journal_replay_actions.go)). Tested in `TestR_AUTHZ_031_PolicyComparator`,
   `TestR_AUTHZ_031_SettingsComparator`, `TestR_AUTHZ_031_RoleComparator` and, against PostgreSQL,
   `TestR_HA_054_ForgedEntriesCannotEscalate`.
 - **Removals.** A deleted user, service account or CI owner is disabled, a moved repository is disabled and not moved, a released name

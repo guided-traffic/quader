@@ -11,8 +11,10 @@ import (
 // exchange, the invalidation of a remote cache, the switch itself, and the operations that only evaluate. A new write is refused in
 // maintenance mode until it is added here and in the document on purpose.
 var maintenanceAllowed = []string{
-	"bastionCheck", "bastionDownloads", "checkExposure", "checkPermissions", "createBastionToken", "createProjectServiceAccountToken",
-	"createServiceAccountToken", "createToken", "endOwnSession", "endOwnSessions", "endUserSessions", "evaluateCiMappings",
+	"bastionCheck", "bastionDownloads", "checkExposure", "checkPermissions", "createBastionToken", "createProjectServiceAccountTechnicalToken",
+	"createProjectServiceAccountTechnicalTokenSecret", "createRepositoryServiceAccountTechnicalToken", "createRepositoryServiceAccountTechnicalTokenSecret",
+	"createServiceAccountTechnicalToken", "createServiceAccountTechnicalTokenSecret", "createToken", "deleteProjectServiceAccountTechnicalToken",
+	"deleteRepositoryServiceAccountTechnicalToken", "deleteServiceAccountTechnicalToken", "endOwnSession", "endOwnSessions", "endUserSessions", "evaluateCiMappings",
 	"evaluateProjectCiMappings", "exchangeCiToken", "invalidateRepositoryCache", "putSystemMaintenance", "revokeBastionToken",
 	"revokeCiIssuances", "revokeCurrentToken", "revokeOwnTokens", "revokeProjectServiceAccountTokens", "revokeServiceAccountTokens",
 	"revokeToken", "revokeTokenByValue", "revokeUserTokens", "rotateCurrentToken", "rotateToken", "testRepositoryUpstream", "testUpstream",

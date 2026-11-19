@@ -89,6 +89,23 @@ SELECT COALESCE(pr.key, '')::text AS project
   LEFT JOIN project pr ON pr.id = s.project_id
  WHERE s.principal_id = sqlc.arg(principal_id)::text::uuid;
 
+-- name: AuthzServiceAccountRepository :many
+-- The repository of a repository's service account (R-AUTH-046) by its ID, 0 for any other account; no row for a principal
+-- that is no service account. A repository's account owns packages in its repository only (R-AUTHZ-039).
+SELECT COALESCE(s.repository_id, 0)::bigint AS repository_id
+  FROM service_account s
+ WHERE s.principal_id = sqlc.arg(principal_id)::text::uuid;
+
+-- name: AuthzBuildAccountGrants :many
+-- The actions of the repositories' service accounts on their repositories (R-AUTHZ-039, Q-AUTHZ-296), with the stored name the
+-- explanation names as account:sa:<name>.
+SELECT s.repository_id::bigint AS repository_id, s.principal_id::text AS principal_id, p.name AS principal_name, g.actions
+  FROM service_account_repository_grant g
+  JOIN service_account s ON s.principal_id = g.service_account_id
+  JOIN principal p ON p.id = s.principal_id
+ WHERE s.repository_id IS NOT NULL
+ ORDER BY s.repository_id, p.name;
+
 -- name: AuthzBuildBindings :many
 -- principal_project: see AuthzBuildEntries (Q-AUTHZ-198).
 SELECT b.role, b.principal_id::text AS principal_id, COALESCE(sa.project_id::text, '')::text AS principal_project

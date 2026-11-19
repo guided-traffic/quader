@@ -37,6 +37,9 @@ type Info struct {
 	// the cache entry: the inline grants, caps, groups, mappings and the project identity the
 	// evaluator needs (R-AUTHZ-014, Q-CI-17). Nil for a PAT or SAT.
 	CI *claims.Frozen
+	// TechnicalTokenID is the technical token a service-account token is a secret of (R-AUTH-045), read with the row into
+	// the cache entry; empty for every other type.
+	TechnicalTokenID string
 }
 
 // Rejection reasons the validator reports (R-AUTH-023 step 3); the stage maps

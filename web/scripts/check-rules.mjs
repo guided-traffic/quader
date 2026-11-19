@@ -96,8 +96,8 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
 }
 
 // A row with one action names it, a row with several has a menu (R-UI-163). The token rows keep Rotate and Revoke as words: a
-// credential's Revoke is never in a menu (Q-UI-641).
-const twoWordsAllowed = new Set(['src/app/shared/access/token-table.ts']);
+// credential's Revoke is never in a menu (Q-UI-641); so do the rows of a service account's technical tokens (R-UI-181).
+const twoWordsAllowed = new Set(['src/app/shared/access/token-table.ts', 'src/app/features/service-accounts/technical-token-table.ts']);
 for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts'))) {
   const rel = relative(root, file).split(sep).join('/');
   if (twoWordsAllowed.has(rel)) continue;

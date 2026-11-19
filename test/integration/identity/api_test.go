@@ -23,7 +23,7 @@ var identityOperations = []string{
 	"listServiceAccounts", "createServiceAccount", "getServiceAccount", "updateServiceAccount", "deleteServiceAccount",
 	"disableServiceAccount", "enableServiceAccount",
 	"createToken", "listTokens", "getToken", "getCurrentToken", "revokeToken", "revokeCurrentToken", "rotateToken",
-	"rotateCurrentToken", "revokeTokenByValue", "revokeOwnTokens", "revokeUserTokens", "createServiceAccountToken",
+	"rotateCurrentToken", "revokeTokenByValue", "revokeOwnTokens", "revokeUserTokens", "createServiceAccountTechnicalToken",
 	"revokeServiceAccountTokens", "getAuthSettings", "updateAuthSettings", "getPreferences", "updatePreferences", "getWhoami",
 }
 
@@ -287,11 +287,11 @@ func TestAPIOperations(t *testing.T) {
 			t.Fatalf("%s", rp.Body)
 		}
 		want(t, next().call(patch, "/api/v1/service-accounts/ci-bot", admin, map[string]any{"name": "other"}, "If-Match", "*"), 422, "validation_failed")
-		sat := next().call(post, "/api/v1/service-accounts/ci-bot/tokens", admin, map[string]any{"description": "pipeline", "ttlSeconds": 3600})
+		sat := next().call(post, "/api/v1/service-accounts/ci-bot/technical-tokens", admin, map[string]any{"name": "pipeline", "ttlSeconds": 3600})
 		want(t, sat, 201, "")
 		secret := str(sat.json(t), "token")
 		// A service-account token may be bound to the endpoint that accepts its type (R-EP-011, Q-EP-10).
-		want(t, next().call(post, "/api/v1/service-accounts/ci-bot/tokens", admin, map[string]any{"description": "customer", "scope": map[string]any{"inherit": true, "endpoints": []string{"customers"}}}), 201, "")
+		want(t, next().call(post, "/api/v1/service-accounts/ci-bot/technical-tokens", admin, map[string]any{"name": "customer", "scope": map[string]any{"inherit": true, "endpoints": []string{"customers"}}}), 201, "")
 		want(t, next().call(post, "/api/v1/service-accounts/ci-bot/disable", admin, nil), 204, "")
 		waitFor(t, "the disabled account's token failing", revocationBound, func() bool {
 			return next().call(get, "/api/v1/auth/whoami", secret, nil).code() == "principal_disabled"
@@ -464,11 +464,11 @@ func TestAPIOperations(t *testing.T) {
 		t.Run("R-EP-011 Q-AUTH-182 authorization comes before the scope check: a caller who may not create the token learns nothing about endpoints", func(t *testing.T) {
 			// "internal" accepts personal tokens only. An administrator is told why the binding fails; a user who may not create
 			// tokens for the account gets the same 403 whatever endpoint the body names.
-			bad := map[string]any{"description": "x", "scope": map[string]any{"inherit": true, "endpoints": []string{"internal"}}}
-			good := map[string]any{"description": "x", "scope": map[string]any{"inherit": true, "endpoints": []string{"customers"}}}
-			want(t, next().call(post, "/api/v1/service-accounts/ci-bot/tokens", alicePAT, bad), 403, "forbidden")
-			want(t, next().call(post, "/api/v1/service-accounts/ci-bot/tokens", alicePAT, good), 403, "forbidden")
-			rp := next().call(post, "/api/v1/service-accounts/ci-bot/tokens", admin, bad)
+			bad := map[string]any{"name": "x", "scope": map[string]any{"inherit": true, "endpoints": []string{"internal"}}}
+			good := map[string]any{"name": "x", "scope": map[string]any{"inherit": true, "endpoints": []string{"customers"}}}
+			want(t, next().call(post, "/api/v1/service-accounts/ci-bot/technical-tokens", alicePAT, bad), 403, "forbidden")
+			want(t, next().call(post, "/api/v1/service-accounts/ci-bot/technical-tokens", alicePAT, good), 403, "forbidden")
+			rp := next().call(post, "/api/v1/service-accounts/ci-bot/technical-tokens", admin, bad)
 			want(t, rp, 400, "invalid_scope")
 			if !strings.Contains(string(rp.Body), "internal") {
 				t.Fatalf("the problem does not name the endpoint: %s", rp.Body)
@@ -617,13 +617,13 @@ func TestAPIOperations(t *testing.T) {
 		t.Run("a service account's own token creates under the derivation rule (R-AUTH-027)", func(t *testing.T) {
 			s := a.serviceAccount("deriver")
 			parent := a.sat(s, func(r *token.CreateRequest) { r.TTL = token.TTLRequest{Seconds: new(int64)}; *r.TTL.Seconds = 7200 })
-			want(t, next().call(post, "/api/v1/service-accounts/deriver/tokens", parent.Secret, map[string]any{"description": "child", "ttlSeconds": 3600}), 201, "")
-			want(t, next().call(post, "/api/v1/service-accounts/deriver/tokens", parent.Secret, map[string]any{"description": "longer", "ttlSeconds": 100000}), 403, "derivation_exceeds_parent")
-			want(t, next().call(post, "/api/v1/service-accounts/ci-bot/tokens", parent.Secret, map[string]any{"description": "other"}), 403, "forbidden")
-			want(t, next().call(post, "/api/v1/service-accounts/deriver/tokens", "", map[string]any{"description": "x"}), 401, "")
-			want(t, next().call(post, "/api/v1/service-accounts/nobody/tokens", admin, map[string]any{"description": "x"}), 404, "")
+			want(t, next().call(post, "/api/v1/service-accounts/deriver/technical-tokens", parent.Secret, map[string]any{"name": "child", "ttlSeconds": 3600}), 201, "")
+			want(t, next().call(post, "/api/v1/service-accounts/deriver/technical-tokens", parent.Secret, map[string]any{"name": "longer", "ttlSeconds": 100000}), 403, "derivation_exceeds_parent")
+			want(t, next().call(post, "/api/v1/service-accounts/ci-bot/technical-tokens", parent.Secret, map[string]any{"name": "other"}), 403, "forbidden")
+			want(t, next().call(post, "/api/v1/service-accounts/deriver/technical-tokens", "", map[string]any{"name": "x"}), 401, "")
+			want(t, next().call(post, "/api/v1/service-accounts/nobody/technical-tokens", admin, map[string]any{"name": "x"}), 404, "")
 			// A non-expiring SAT needs the administrator and the switch (off by default).
-			want(t, next().call(post, "/api/v1/service-accounts/deriver/tokens", admin, map[string]any{"description": "forever", "ttlSeconds": 0}), 400, "non_expiring_not_allowed")
+			want(t, next().call(post, "/api/v1/service-accounts/deriver/technical-tokens", admin, map[string]any{"name": "forever", "ttlSeconds": 0}), 400, "non_expiring_not_allowed")
 		})
 	})
 
@@ -811,7 +811,7 @@ func TestAPIOperations(t *testing.T) {
 			AltPatch:    map[string]any{"description": "patched again"},
 			ClearMember: "description", ClearedValue: "",
 			ImmutableMember: "name", ImmutableValue: "someone-else",
-			OtherQuery: "q=zzz",
+			OtherQuery: "q=zzz", RevisionMember: "version",
 		},
 	} {
 		res.Do = contractDo

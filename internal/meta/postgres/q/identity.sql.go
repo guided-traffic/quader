@@ -12,6 +12,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const identityActiveRepository = `-- name: IdentityActiveRepository :many
+SELECT r.id
+  FROM repositories r JOIN project p ON p.id = r.project_id
+ WHERE p.key = $1::text AND r.key = $2::text AND r.lifecycle = 'active'
+`
+
+type IdentityActiveRepositoryParams struct {
+	Project string
+	Key     string
+}
+
+// The ID of an active repository by its project and key, without a lock: the reads of a repository's accounts.
+func (q *Queries) IdentityActiveRepository(ctx context.Context, arg IdentityActiveRepositoryParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, identityActiveRepository, arg.Project, arg.Key)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const identityAddMembership = `-- name: IdentityAddMembership :many
 INSERT INTO group_membership (group_id, member_id, source)
 VALUES ($1::text::uuid, $2::text::uuid, $3::text)
@@ -267,6 +299,21 @@ func (q *Queries) IdentityCountActiveTokens(ctx context.Context, arg IdentityCou
 	return count, err
 }
 
+const identityCountLiveTechnicalTokens = `-- name: IdentityCountLiveTechnicalTokens :one
+SELECT count(DISTINCT a.technical_token_id) FROM api_token a
+ WHERE a.principal_id = $1::text::uuid AND a.type = 'sat'
+   AND a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > now())
+`
+
+// The technical tokens of an account with a live secret (auth.tokens.max_active_per_principal.sat): a rotation's predecessor in
+// its overlap belongs to the same technical token and is not counted again.
+func (q *Queries) IdentityCountLiveTechnicalTokens(ctx context.Context, accountID string) (int64, error) {
+	row := q.db.QueryRow(ctx, identityCountLiveTechnicalTokens, accountID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const identityCountMemberships = `-- name: IdentityCountMemberships :one
 SELECT count(*) FROM group_membership WHERE group_id = $1::text::uuid
 `
@@ -300,12 +347,44 @@ func (q *Queries) IdentityCountSessions(ctx context.Context, id string) (int64, 
 	return count, err
 }
 
+const identityCountTechnicalTokens = `-- name: IdentityCountTechnicalTokens :one
+SELECT count(*) FROM technical_token WHERE service_account_id = $1::text::uuid
+`
+
+// The technical tokens of an account, ended ones included (auth.tokens.max_technical_tokens_per_account).
+func (q *Queries) IdentityCountTechnicalTokens(ctx context.Context, accountID string) (int64, error) {
+	row := q.db.QueryRow(ctx, identityCountTechnicalTokens, accountID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const identityCountTokensOfPrincipal = `-- name: IdentityCountTokensOfPrincipal :one
 SELECT count(*) FROM api_token WHERE principal_id = $1::text::uuid
 `
 
 func (q *Queries) IdentityCountTokensOfPrincipal(ctx context.Context, principalID string) (int64, error) {
 	row := q.db.QueryRow(ctx, identityCountTokensOfPrincipal, principalID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const identityDeleteEndedTechnicalTokens = `-- name: IdentityDeleteEndedTechnicalTokens :one
+WITH d AS (
+    DELETE FROM technical_token t
+     WHERE t.id IN (SELECT x.id FROM technical_token x
+                     WHERE NOT EXISTS (SELECT 1 FROM api_token a WHERE a.technical_token_id = x.id)
+                       FOR UPDATE SKIP LOCKED)
+    RETURNING 1)
+SELECT count(*) FROM d
+`
+
+// A technical token whose last secret row the retention deleted is deleted with it (R-AUTH-045): a technical token is created
+// with its first secret in one transaction, so one without any row has none live and no history. A technical token a new
+// secret holds locked (IdentityLockTechnicalToken) is skipped and looked at by the next run.
+func (q *Queries) IdentityDeleteEndedTechnicalTokens(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, identityDeleteEndedTechnicalTokens)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -429,6 +508,18 @@ func (q *Queries) IdentityDeletePrincipal(ctx context.Context, id string) ([]str
 	return items, nil
 }
 
+const identityDeleteTechnicalToken = `-- name: IdentityDeleteTechnicalToken :execrows
+DELETE FROM technical_token WHERE id = $1::text::uuid
+`
+
+func (q *Queries) IdentityDeleteTechnicalToken(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, identityDeleteTechnicalToken, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const identityEndSessions = `-- name: IdentityEndSessions :many
 UPDATE ui_session SET ended_at = now(), end_reason = $1::text, withdrawn_at = now()
  WHERE principal_id = $2::text::uuid AND ended_at IS NULL
@@ -513,23 +604,33 @@ func (q *Queries) IdentityGetGroup(ctx context.Context, name string) ([]Identity
 
 const identityGetServiceAccount = `-- name: IdentityGetServiceAccount :many
 SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
-       COALESCE(pr.key, '')::text AS project
+       COALESCE(pr.key, '')::text AS project, COALESCE(r.key, '')::text AS repository,
+       COALESCE(s.repository_id, 0)::bigint AS repository_id, COALESCE(g.actions, '{}')::text[] AS actions,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
   FROM principal p JOIN service_account s ON s.principal_id = p.id
   LEFT JOIN project pr ON pr.id = s.project_id
+  LEFT JOIN repositories r ON r.id = s.repository_id
+  LEFT JOIN service_account_repository_grant g ON g.service_account_id = p.id
  WHERE p.kind = 'service_account' AND p.name = $1::text
 `
 
 type IdentityGetServiceAccountRow struct {
-	ID          string
-	Name        string
-	Status      string
-	CreatedAt   pgtype.Timestamptz
-	Revision    int64
-	Description string
-	Project     string
+	ID              string
+	Name            string
+	Status          string
+	CreatedAt       pgtype.Timestamptz
+	Revision        int64
+	Description     string
+	Project         string
+	Repository      string
+	RepositoryID    int64
+	Actions         []string
+	TechnicalTokens int64
 }
 
-// project is the key of the account's project, empty for a global account.
+// project is the key of the account's project, empty for a global account; repository the key of a repository's account
+// within its project (R-AUTH-046), empty otherwise, with repository_id and the actions it holds (R-AUTHZ-039);
+// technical_tokens counts the account's technical tokens (R-AUTH-045).
 func (q *Queries) IdentityGetServiceAccount(ctx context.Context, name string) ([]IdentityGetServiceAccountRow, error) {
 	rows, err := q.db.Query(ctx, identityGetServiceAccount, name)
 	if err != nil {
@@ -547,6 +648,10 @@ func (q *Queries) IdentityGetServiceAccount(ctx context.Context, name string) ([
 			&i.Revision,
 			&i.Description,
 			&i.Project,
+			&i.Repository,
+			&i.RepositoryID,
+			&i.Actions,
+			&i.TechnicalTokens,
 		); err != nil {
 			return nil, err
 		}
@@ -1148,6 +1253,30 @@ func (q *Queries) IdentityInsertProjectServiceAccount(ctx context.Context, arg I
 	return err
 }
 
+const identityInsertRepositoryServiceAccount = `-- name: IdentityInsertRepositoryServiceAccount :exec
+INSERT INTO service_account (principal_id, description, project_id, repository_id)
+VALUES ($1::text::uuid, $2::text, $3::text::uuid, $4::bigint)
+`
+
+type IdentityInsertRepositoryServiceAccountParams struct {
+	ID           string
+	Description  string
+	ProjectID    string
+	RepositoryID int64
+}
+
+// A service account of a repository (R-AUTH-046): its principal's name is <project>/<repository>/<name>, its project the
+// repository's; the row's trigger refuses anything else (AI005).
+func (q *Queries) IdentityInsertRepositoryServiceAccount(ctx context.Context, arg IdentityInsertRepositoryServiceAccountParams) error {
+	_, err := q.db.Exec(ctx, identityInsertRepositoryServiceAccount,
+		arg.ID,
+		arg.Description,
+		arg.ProjectID,
+		arg.RepositoryID,
+	)
+	return err
+}
+
 const identityInsertServiceAccount = `-- name: IdentityInsertServiceAccount :exec
 
 INSERT INTO service_account (principal_id, description) VALUES ($1::text::uuid, $2::text)
@@ -1164,9 +1293,54 @@ func (q *Queries) IdentityInsertServiceAccount(ctx context.Context, arg Identity
 	return err
 }
 
+const identityInsertTechnicalToken = `-- name: IdentityInsertTechnicalToken :many
+
+INSERT INTO technical_token (id, service_account_id, name, description, created_by)
+VALUES ($1::text::uuid, $2::text::uuid, $3::text, $4::text,
+        NULLIF($5::text, '')::uuid)
+ON CONFLICT (service_account_id, name) DO NOTHING
+RETURNING created_at
+`
+
+type IdentityInsertTechnicalTokenParams struct {
+	ID          string
+	AccountID   string
+	Name        string
+	Description string
+	CreatedBy   string
+}
+
+// Technical tokens (R-AUTH-045) ---------------------------------------------------
+// No row: the account holds a technical token of the name (409 already_exists).
+func (q *Queries) IdentityInsertTechnicalToken(ctx context.Context, arg IdentityInsertTechnicalTokenParams) ([]pgtype.Timestamptz, error) {
+	rows, err := q.db.Query(ctx, identityInsertTechnicalToken,
+		arg.ID,
+		arg.AccountID,
+		arg.Name,
+		arg.Description,
+		arg.CreatedBy,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []pgtype.Timestamptz{}
+	for rows.Next() {
+		var created_at pgtype.Timestamptz
+		if err := rows.Scan(&created_at); err != nil {
+			return nil, err
+		}
+		items = append(items, created_at)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const identityInsertToken = `-- name: IdentityInsertToken :one
 INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, self_rotatable, created_by, created_via,
-                       expires_at, rotated_from, derived_from)
+                       expires_at, rotated_from, derived_from, technical_token_id)
 VALUES ($1::text::uuid, $2::text, $3::bytea, $4::text,
         $5::text::uuid, $6::text, $7::text::jsonb, $8::boolean,
         NULLIF($9::text, '')::uuid, $10::text,
@@ -1174,25 +1348,27 @@ VALUES ($1::text::uuid, $2::text, $3::bytea, $4::text,
              WHEN $12::bigint > 0
                   THEN least(now() + make_interval(secs => $11::float8), to_timestamp($12::bigint / 1000000.0))
              ELSE now() + make_interval(secs => $11::float8) END,
-        NULLIF($13::text, '')::uuid, NULLIF($14::text, '')::uuid)
+        NULLIF($13::text, '')::uuid, NULLIF($14::text, '')::uuid,
+        NULLIF($15::text, '')::uuid)
 RETURNING expires_at, created_at
 `
 
 type IdentityInsertTokenParams struct {
-	ID            string
-	Type          string
-	SecretSha256  []byte
-	Hint          string
-	PrincipalID   string
-	Description   string
-	Scope         string
-	SelfRotatable bool
-	CreatedBy     string
-	CreatedVia    string
-	TtlSecs       float64
-	CapMicros     int64
-	RotatedFrom   string
-	DerivedFrom   string
+	ID               string
+	Type             string
+	SecretSha256     []byte
+	Hint             string
+	PrincipalID      string
+	Description      string
+	Scope            string
+	SelfRotatable    bool
+	CreatedBy        string
+	CreatedVia       string
+	TtlSecs          float64
+	CapMicros        int64
+	RotatedFrom      string
+	DerivedFrom      string
+	TechnicalTokenID string
 }
 
 type IdentityInsertTokenRow struct {
@@ -1218,6 +1394,7 @@ func (q *Queries) IdentityInsertToken(ctx context.Context, arg IdentityInsertTok
 		arg.CapMicros,
 		arg.RotatedFrom,
 		arg.DerivedFrom,
+		arg.TechnicalTokenID,
 	)
 	var i IdentityInsertTokenRow
 	err := row.Scan(&i.ExpiresAt, &i.CreatedAt)
@@ -1358,10 +1535,12 @@ func (q *Queries) IdentityListGroups(ctx context.Context, arg IdentityListGroups
 
 const identityListProjectServiceAccounts = `-- name: IdentityListProjectServiceAccounts :many
 SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
-       pr.key::text AS project
+       pr.key::text AS project,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
   FROM principal p JOIN service_account s ON s.principal_id = p.id
   JOIN project pr ON pr.id = s.project_id
- WHERE p.kind = 'service_account' AND pr.key = $1::text AND p.name > $2::text
+ WHERE p.kind = 'service_account' AND pr.key = $1::text AND s.repository_id IS NULL
+   AND p.name > $2::text
    AND ($3::text = '' OR substr(p.name, char_length(pr.key) + 2) ILIKE '%' || $3::text || '%')
  ORDER BY p.name
  LIMIT $4::int
@@ -1375,17 +1554,19 @@ type IdentityListProjectServiceAccountsParams struct {
 }
 
 type IdentityListProjectServiceAccountsRow struct {
-	ID          string
-	Name        string
-	Status      string
-	CreatedAt   pgtype.Timestamptz
-	Revision    int64
-	Description string
-	Project     string
+	ID              string
+	Name            string
+	Status          string
+	CreatedAt       pgtype.Timestamptz
+	Revision        int64
+	Description     string
+	Project         string
+	TechnicalTokens int64
 }
 
 // The accounts of one project by the key of the project, ordered by stored name
-// (<project>/<name>); the text filter matches the name within the project.
+// (<project>/<name>); the text filter matches the name within the project. The accounts of the project's repositories are
+// listed under their repository (IdentityListRepositoryServiceAccounts).
 func (q *Queries) IdentityListProjectServiceAccounts(ctx context.Context, arg IdentityListProjectServiceAccountsParams) ([]IdentityListProjectServiceAccountsRow, error) {
 	rows, err := q.db.Query(ctx, identityListProjectServiceAccounts,
 		arg.Project,
@@ -1408,6 +1589,83 @@ func (q *Queries) IdentityListProjectServiceAccounts(ctx context.Context, arg Id
 			&i.Revision,
 			&i.Description,
 			&i.Project,
+			&i.TechnicalTokens,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const identityListRepositoryServiceAccounts = `-- name: IdentityListRepositoryServiceAccounts :many
+SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
+       pr.key::text AS project, r.key::text AS repository, r.id AS repository_id, COALESCE(g.actions, '{}')::text[] AS actions,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
+  FROM principal p JOIN service_account s ON s.principal_id = p.id
+  JOIN repositories r ON r.id = s.repository_id
+  JOIN project pr ON pr.id = s.project_id
+  LEFT JOIN service_account_repository_grant g ON g.service_account_id = p.id
+ WHERE p.kind = 'service_account' AND s.repository_id = $1::bigint
+   AND p.name > $2::text
+   AND ($3::text = ''
+        OR substr(p.name, char_length(pr.key) + char_length(r.key) + 3) ILIKE '%' || $3::text || '%')
+ ORDER BY p.name
+ LIMIT $4::int
+`
+
+type IdentityListRepositoryServiceAccountsParams struct {
+	RepositoryID int64
+	After        string
+	Query        string
+	MaxRows      int32
+}
+
+type IdentityListRepositoryServiceAccountsRow struct {
+	ID              string
+	Name            string
+	Status          string
+	CreatedAt       pgtype.Timestamptz
+	Revision        int64
+	Description     string
+	Project         string
+	Repository      string
+	RepositoryID    int64
+	Actions         []string
+	TechnicalTokens int64
+}
+
+// The accounts of one repository (R-AUTH-046), ordered by stored name (<project>/<repository>/<name>); the text filter matches the
+// name within the repository.
+func (q *Queries) IdentityListRepositoryServiceAccounts(ctx context.Context, arg IdentityListRepositoryServiceAccountsParams) ([]IdentityListRepositoryServiceAccountsRow, error) {
+	rows, err := q.db.Query(ctx, identityListRepositoryServiceAccounts,
+		arg.RepositoryID,
+		arg.After,
+		arg.Query,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityListRepositoryServiceAccountsRow{}
+	for rows.Next() {
+		var i IdentityListRepositoryServiceAccountsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Status,
+			&i.CreatedAt,
+			&i.Revision,
+			&i.Description,
+			&i.Project,
+			&i.Repository,
+			&i.RepositoryID,
+			&i.Actions,
+			&i.TechnicalTokens,
 		); err != nil {
 			return nil, err
 		}
@@ -1421,9 +1679,13 @@ func (q *Queries) IdentityListProjectServiceAccounts(ctx context.Context, arg Id
 
 const identityListServiceAccounts = `-- name: IdentityListServiceAccounts :many
 SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
-       COALESCE(pr.key, '')::text AS project
+       COALESCE(pr.key, '')::text AS project, COALESCE(r.key, '')::text AS repository,
+       COALESCE(s.repository_id, 0)::bigint AS repository_id, COALESCE(g.actions, '{}')::text[] AS actions,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
   FROM principal p JOIN service_account s ON s.principal_id = p.id
   LEFT JOIN project pr ON pr.id = s.project_id
+  LEFT JOIN repositories r ON r.id = s.repository_id
+  LEFT JOIN service_account_repository_grant g ON g.service_account_id = p.id
  WHERE p.kind = 'service_account' AND p.name > $1::text
    AND ($2::text = '' OR p.name ILIKE '%' || $2::text || '%')
    AND ($3::text = '' OR pr.key = $3::text)
@@ -1439,17 +1701,21 @@ type IdentityListServiceAccountsParams struct {
 }
 
 type IdentityListServiceAccountsRow struct {
-	ID          string
-	Name        string
-	Status      string
-	CreatedAt   pgtype.Timestamptz
-	Revision    int64
-	Description string
-	Project     string
+	ID              string
+	Name            string
+	Status          string
+	CreatedAt       pgtype.Timestamptz
+	Revision        int64
+	Description     string
+	Project         string
+	Repository      string
+	RepositoryID    int64
+	Actions         []string
+	TechnicalTokens int64
 }
 
-// project filters by the key of the project; empty lists every account, global and
-// project ones.
+// project filters by the key of the project; empty lists every account, global, project and repository ones. The accounts of a
+// project's repositories belong to the project's filter (R-AUTH-046).
 func (q *Queries) IdentityListServiceAccounts(ctx context.Context, arg IdentityListServiceAccountsParams) ([]IdentityListServiceAccountsRow, error) {
 	rows, err := q.db.Query(ctx, identityListServiceAccounts,
 		arg.After,
@@ -1472,6 +1738,10 @@ func (q *Queries) IdentityListServiceAccounts(ctx context.Context, arg IdentityL
 			&i.Revision,
 			&i.Description,
 			&i.Project,
+			&i.Repository,
+			&i.RepositoryID,
+			&i.Actions,
+			&i.TechnicalTokens,
 		); err != nil {
 			return nil, err
 		}
@@ -1498,8 +1768,9 @@ SELECT t.id::text AS id, t.type, t.hint, t.principal_id::text AS owner_id, p.kin
        t.created_via, t.expires_at, t.revoked_at, coalesce(t.revoked_by::text, '')::text AS revoked_by,
        coalesce(t.revocation_reason, '')::text AS revocation_reason, coalesce(t.rotated_from::text, '')::text AS rotated_from,
        coalesce(t.derived_from::text, '')::text AS derived_from, t.last_used_at, coalesce(host(t.last_used_addr), '')::text AS last_used_addr,
-       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context
-  FROM api_token t JOIN principal p ON p.id = t.principal_id
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context,
+       coalesce(t.technical_token_id::text, '')::text AS technical_token_id, coalesce(tt.name, '')::text AS technical_token_name
+  FROM api_token t JOIN principal p ON p.id = t.principal_id LEFT JOIN technical_token tt ON tt.id = t.technical_token_id
  WHERE t.type <> 'bst'
    AND ($1::text = '' OR t.id < $1::text::uuid)
    AND ($2::text = '' OR t.principal_id = $2::text::uuid)
@@ -1530,28 +1801,30 @@ type IdentityListTokensParams struct {
 }
 
 type IdentityListTokensRow struct {
-	ID               string
-	Type             string
-	Hint             string
-	OwnerID          string
-	OwnerKind        string
-	OwnerName        string
-	Description      string
-	Scope            json.RawMessage
-	SelfRotatable    bool
-	CreatedAt        pgtype.Timestamptz
-	CreatedBy        string
-	CreatedVia       string
-	ExpiresAt        pgtype.Timestamptz
-	RevokedAt        pgtype.Timestamptz
-	RevokedBy        string
-	RevocationReason string
-	RotatedFrom      string
-	DerivedFrom      string
-	LastUsedAt       pgtype.Timestamptz
-	LastUsedAddr     string
-	Expired          bool
-	CiContext        json.RawMessage
+	ID                 string
+	Type               string
+	Hint               string
+	OwnerID            string
+	OwnerKind          string
+	OwnerName          string
+	Description        string
+	Scope              json.RawMessage
+	SelfRotatable      bool
+	CreatedAt          pgtype.Timestamptz
+	CreatedBy          string
+	CreatedVia         string
+	ExpiresAt          pgtype.Timestamptz
+	RevokedAt          pgtype.Timestamptz
+	RevokedBy          string
+	RevocationReason   string
+	RotatedFrom        string
+	DerivedFrom        string
+	LastUsedAt         pgtype.Timestamptz
+	LastUsedAddr       string
+	Expired            bool
+	CiContext          json.RawMessage
+	TechnicalTokenID   string
+	TechnicalTokenName string
 }
 
 // Keyset order by id descending (a UUIDv7 sorts by creation time). Bastion tokens (type bst) are not listed: they
@@ -1600,6 +1873,8 @@ func (q *Queries) IdentityListTokens(ctx context.Context, arg IdentityListTokens
 			&i.LastUsedAddr,
 			&i.Expired,
 			&i.CiContext,
+			&i.TechnicalTokenID,
+			&i.TechnicalTokenName,
 		); err != nil {
 			return nil, err
 		}
@@ -1710,6 +1985,33 @@ func (q *Queries) IdentityListUsers(ctx context.Context, arg IdentityListUsersPa
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const identityLiveSecretsOf = `-- name: IdentityLiveSecretsOf :many
+SELECT a.id::text AS id FROM api_token a
+ WHERE a.technical_token_id = $1::text::uuid AND a.revoked_at IS NULL
+ ORDER BY a.id
+`
+
+// The unrevoked secrets of a technical token, in id order: its delete revokes each (R-AUTH-045).
+func (q *Queries) IdentityLiveSecretsOf(ctx context.Context, id string) ([]string, error) {
+	rows, err := q.db.Query(ctx, identityLiveSecretsOf, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -1853,6 +2155,52 @@ func (q *Queries) IdentityLockRevision(ctx context.Context, id string) ([]int64,
 			return nil, err
 		}
 		items = append(items, revision)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const identityLockTechnicalToken = `-- name: IdentityLockTechnicalToken :many
+SELECT t.id::text AS id, t.name, t.description, t.revision
+  FROM technical_token t
+ WHERE t.service_account_id = $1::text::uuid AND t.name = $2::text
+   FOR UPDATE
+`
+
+type IdentityLockTechnicalTokenParams struct {
+	AccountID string
+	Name      string
+}
+
+type IdentityLockTechnicalTokenRow struct {
+	ID          string
+	Name        string
+	Description string
+	Revision    int64
+}
+
+// The technical token of the name, locked: a new secret, a description change and a delete of one technical token run one after
+// the other.
+func (q *Queries) IdentityLockTechnicalToken(ctx context.Context, arg IdentityLockTechnicalTokenParams) ([]IdentityLockTechnicalTokenRow, error) {
+	rows, err := q.db.Query(ctx, identityLockTechnicalToken, arg.AccountID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityLockTechnicalTokenRow{}
+	for rows.Next() {
+		var i IdentityLockTechnicalTokenRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Revision,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -2074,6 +2422,25 @@ func (q *Queries) IdentityMemberSources(ctx context.Context, arg IdentityMemberS
 		return nil, err
 	}
 	return items, nil
+}
+
+const identityMoveRepositoryAccounts = `-- name: IdentityMoveRepositoryAccounts :execrows
+UPDATE service_account SET project_id = $1::text::uuid WHERE repository_id = $2::bigint
+`
+
+type IdentityMoveRepositoryAccountsParams struct {
+	ProjectID    string
+	RepositoryID int64
+}
+
+// The project of a repository's accounts follows the repository in the transaction of its move (R-AUTH-046); the names are
+// renamed first, so the row guard sees the new name with the new project.
+func (q *Queries) IdentityMoveRepositoryAccounts(ctx context.Context, arg IdentityMoveRepositoryAccountsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, identityMoveRepositoryAccounts, arg.ProjectID, arg.RepositoryID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const identityOIDCMemberships = `-- name: IdentityOIDCMemberships :many
@@ -2334,6 +2701,45 @@ func (q *Queries) IdentityRenamePrincipal(ctx context.Context, arg IdentityRenam
 	return items, nil
 }
 
+const identityRenameRepositoryAccounts = `-- name: IdentityRenameRepositoryAccounts :many
+UPDATE principal p SET name = $1::text || split_part(p.name, '/', 3)
+  FROM service_account s
+ WHERE s.principal_id = p.id AND s.repository_id = $2::bigint
+RETURNING p.id::text AS id, p.name
+`
+
+type IdentityRenameRepositoryAccountsParams struct {
+	Prefix       string
+	RepositoryID int64
+}
+
+type IdentityRenameRepositoryAccountsRow struct {
+	ID   string
+	Name string
+}
+
+// The new stored names of a repository's accounts whose repository moved (R-AUTH-046, R-REPO-060): prefix is
+// "<new project key>/<repository key>/", the name within the repository stays.
+func (q *Queries) IdentityRenameRepositoryAccounts(ctx context.Context, arg IdentityRenameRepositoryAccountsParams) ([]IdentityRenameRepositoryAccountsRow, error) {
+	rows, err := q.db.Query(ctx, identityRenameRepositoryAccounts, arg.Prefix, arg.RepositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityRenameRepositoryAccountsRow{}
+	for rows.Next() {
+		var i IdentityRenameRepositoryAccountsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const identityReplaceIdentities = `-- name: IdentityReplaceIdentities :many
 DELETE FROM user_identity
  WHERE user_id = $1::text::uuid AND subject IS NULL
@@ -2369,11 +2775,85 @@ func (q *Queries) IdentityReplaceIdentities(ctx context.Context, arg IdentityRep
 	return items, nil
 }
 
+const identityRepositoryAccounts = `-- name: IdentityRepositoryAccounts :many
+SELECT s.principal_id::text AS id, p.name
+  FROM service_account s JOIN principal p ON p.id = s.principal_id
+ WHERE s.repository_id = $1::bigint
+ ORDER BY p.name
+`
+
+type IdentityRepositoryAccountsRow struct {
+	ID   string
+	Name string
+}
+
+// The service accounts of a repository by its ID, with their stored names: the deletion of the repository records their end,
+// and a move renames them (R-AUTH-046).
+func (q *Queries) IdentityRepositoryAccounts(ctx context.Context, repositoryID int64) ([]IdentityRepositoryAccountsRow, error) {
+	rows, err := q.db.Query(ctx, identityRepositoryAccounts, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityRepositoryAccountsRow{}
+	for rows.Next() {
+		var i IdentityRepositoryAccountsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const identityRepositoryShare = `-- name: IdentityRepositoryShare :many
+SELECT r.id, r.project_id::text AS project_id
+  FROM repositories r JOIN project p ON p.id = r.project_id
+ WHERE p.key = $1::text AND r.key = $2::text AND r.lifecycle = 'active'
+   FOR SHARE OF r
+`
+
+type IdentityRepositoryShareParams struct {
+	Project string
+	Key     string
+}
+
+type IdentityRepositoryShareRow struct {
+	ID        int64
+	ProjectID string
+}
+
+// The active repository a service account is created for, locked FOR SHARE: its deletion (which marks it deleting under
+// FOR UPDATE) and its move wait for this transaction, so the account is created in the project the repository is in and is
+// moved with it, or it finds the repository gone (R-AUTH-046).
+func (q *Queries) IdentityRepositoryShare(ctx context.Context, arg IdentityRepositoryShareParams) ([]IdentityRepositoryShareRow, error) {
+	rows, err := q.db.Query(ctx, identityRepositoryShare, arg.Project, arg.Key)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityRepositoryShareRow{}
+	for rows.Next() {
+		var i IdentityRepositoryShareRow
+		if err := rows.Scan(&i.ID, &i.ProjectID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const identityRevokeAllOfPrincipal = `-- name: IdentityRevokeAllOfPrincipal :many
 UPDATE api_token SET revoked_at = now(), revoked_by = NULLIF($1::text, '')::uuid,
                      revocation_reason = $2::text
  WHERE principal_id = $3::text::uuid AND revoked_at IS NULL
-RETURNING id::text AS id
+RETURNING id::text AS id, coalesce(technical_token_id::text, '')::text AS technical_token_id
 `
 
 type IdentityRevokeAllOfPrincipalParams struct {
@@ -2382,19 +2862,24 @@ type IdentityRevokeAllOfPrincipalParams struct {
 	PrincipalID string
 }
 
-func (q *Queries) IdentityRevokeAllOfPrincipal(ctx context.Context, arg IdentityRevokeAllOfPrincipalParams) ([]string, error) {
+type IdentityRevokeAllOfPrincipalRow struct {
+	ID               string
+	TechnicalTokenID string
+}
+
+func (q *Queries) IdentityRevokeAllOfPrincipal(ctx context.Context, arg IdentityRevokeAllOfPrincipalParams) ([]IdentityRevokeAllOfPrincipalRow, error) {
 	rows, err := q.db.Query(ctx, identityRevokeAllOfPrincipal, arg.RevokedBy, arg.Reason, arg.PrincipalID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []string{}
+	items := []IdentityRevokeAllOfPrincipalRow{}
 	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
+		var i IdentityRevokeAllOfPrincipalRow
+		if err := rows.Scan(&i.ID, &i.TechnicalTokenID); err != nil {
 			return nil, err
 		}
-		items = append(items, id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -2415,7 +2900,7 @@ UPDATE api_token a
   FROM tree
  WHERE a.id = tree.id AND a.revoked_at IS NULL
 RETURNING a.id::text AS id, encode(a.secret_sha256, 'hex') AS secret_hex, a.principal_id::text AS owner_id,
-          a.type, (a.id = $2::text::uuid) AS is_root
+          a.type, (a.id = $2::text::uuid) AS is_root, coalesce(a.technical_token_id::text, '')::text AS technical_token_id
 `
 
 type IdentityRevokeCascadeParams struct {
@@ -2426,11 +2911,12 @@ type IdentityRevokeCascadeParams struct {
 }
 
 type IdentityRevokeCascadeRow struct {
-	ID        string
-	SecretHex string
-	OwnerID   string
-	Type      string
-	IsRoot    bool
+	ID               string
+	SecretHex        string
+	OwnerID          string
+	Type             string
+	IsRoot           bool
+	TechnicalTokenID string
 }
 
 // Revokes a token and, in the same statement, every unrevoked token whose
@@ -2457,6 +2943,7 @@ func (q *Queries) IdentityRevokeCascade(ctx context.Context, arg IdentityRevokeC
 			&i.OwnerID,
 			&i.Type,
 			&i.IsRoot,
+			&i.TechnicalTokenID,
 		); err != nil {
 			return nil, err
 		}
@@ -2513,6 +3000,23 @@ func (q *Queries) IdentitySetPrincipalStatus(ctx context.Context, arg IdentitySe
 		return nil, err
 	}
 	return items, nil
+}
+
+const identitySetRepositoryGrant = `-- name: IdentitySetRepositoryGrant :exec
+INSERT INTO service_account_repository_grant (service_account_id, actions)
+VALUES ($1::text::uuid, $2::text[])
+ON CONFLICT (service_account_id) DO UPDATE SET actions = EXCLUDED.actions
+`
+
+type IdentitySetRepositoryGrantParams struct {
+	ID      string
+	Actions []string
+}
+
+// The actions a repository's account holds on its repository (R-AUTHZ-039).
+func (q *Queries) IdentitySetRepositoryGrant(ctx context.Context, arg IdentitySetRepositoryGrantParams) error {
+	_, err := q.db.Exec(ctx, identitySetRepositoryGrant, arg.ID, arg.Actions)
+	return err
 }
 
 const identitySetTokenExpiry = `-- name: IdentitySetTokenExpiry :many
@@ -2600,32 +3104,164 @@ func (q *Queries) IdentitySetUserExternal(ctx context.Context, arg IdentitySetUs
 	return items, nil
 }
 
+const identityTechnicalTokenLive = `-- name: IdentityTechnicalTokenLive :one
+SELECT EXISTS (SELECT 1 FROM api_token a
+                WHERE a.technical_token_id = $1::text::uuid
+                  AND a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > now()))::boolean AS live
+`
+
+// Whether a technical token has a live secret (409 technical_token_active for a new secret).
+func (q *Queries) IdentityTechnicalTokenLive(ctx context.Context, id string) (bool, error) {
+	row := q.db.QueryRow(ctx, identityTechnicalTokenLive, id)
+	var live bool
+	err := row.Scan(&live)
+	return live, err
+}
+
+const identityTechnicalTokenSecrets = `-- name: IdentityTechnicalTokenSecrets :many
+SELECT a.id::text AS id, a.technical_token_id::text AS technical_token_id, a.hint, a.scope, a.created_at, a.expires_at,
+       a.revoked_at, a.last_used_at, coalesce(a.rotated_from::text, '')::text AS rotated_from,
+       (a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > now()))::boolean AS live
+  FROM api_token a
+ WHERE a.principal_id = $1::text::uuid AND a.type = 'sat'
+   AND ($2::text = '' OR a.technical_token_id = NULLIF($2::text, '')::uuid)
+ ORDER BY a.technical_token_id, a.created_at DESC, a.id DESC
+`
+
+type IdentityTechnicalTokenSecretsParams struct {
+	AccountID        string
+	TechnicalTokenID string
+}
+
+type IdentityTechnicalTokenSecretsRow struct {
+	ID               string
+	TechnicalTokenID string
+	Hint             string
+	Scope            json.RawMessage
+	CreatedAt        pgtype.Timestamptz
+	ExpiresAt        pgtype.Timestamptz
+	RevokedAt        pgtype.Timestamptz
+	LastUsedAt       pgtype.Timestamptz
+	RotatedFrom      string
+	Live             bool
+}
+
+// The secret rows of the technical tokens of an account, newest first per technical token: the record shows the live ones, or
+// the last one of a token that has none (R-AUTH-045).
+func (q *Queries) IdentityTechnicalTokenSecrets(ctx context.Context, arg IdentityTechnicalTokenSecretsParams) ([]IdentityTechnicalTokenSecretsRow, error) {
+	rows, err := q.db.Query(ctx, identityTechnicalTokenSecrets, arg.AccountID, arg.TechnicalTokenID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityTechnicalTokenSecretsRow{}
+	for rows.Next() {
+		var i IdentityTechnicalTokenSecretsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TechnicalTokenID,
+			&i.Hint,
+			&i.Scope,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.RevokedAt,
+			&i.LastUsedAt,
+			&i.RotatedFrom,
+			&i.Live,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const identityTechnicalTokens = `-- name: IdentityTechnicalTokens :many
+SELECT t.id::text AS id, t.service_account_id::text AS account_id, t.name, t.description, t.created_at, t.revision,
+       coalesce(c.kind, '')::text AS created_by_kind, coalesce(c.name, '')::text AS created_by_name
+  FROM technical_token t LEFT JOIN principal c ON c.id = t.created_by
+ WHERE t.service_account_id = $1::text::uuid
+   AND ($2::text = '' OR t.name = $2::text)
+ ORDER BY t.name
+`
+
+type IdentityTechnicalTokensParams struct {
+	AccountID string
+	Name      string
+}
+
+type IdentityTechnicalTokensRow struct {
+	ID            string
+	AccountID     string
+	Name          string
+	Description   string
+	CreatedAt     pgtype.Timestamptz
+	Revision      int64
+	CreatedByKind string
+	CreatedByName string
+}
+
+// The technical tokens of an account by name, or the one of the name when name is not empty, with the name of their creator.
+func (q *Queries) IdentityTechnicalTokens(ctx context.Context, arg IdentityTechnicalTokensParams) ([]IdentityTechnicalTokensRow, error) {
+	rows, err := q.db.Query(ctx, identityTechnicalTokens, arg.AccountID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityTechnicalTokensRow{}
+	for rows.Next() {
+		var i IdentityTechnicalTokensRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.Revision,
+			&i.CreatedByKind,
+			&i.CreatedByName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const identityTokenBySecret = `-- name: IdentityTokenBySecret :many
 
 SELECT t.id::text AS id, t.type, t.scope, t.principal_id::text AS owner_id,
        p.kind AS owner_kind, p.name AS owner_name, p.status AS owner_status, coalesce(u.is_break_glass, false) AS owner_break_glass,
        t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
        (t.revoked_at IS NOT NULL)::boolean AS revoked, t.hint, t.ci_context,
+       coalesce(t.technical_token_id::text, '')::text AS technical_token_id,
        coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due
   FROM api_token t JOIN principal p ON p.id = t.principal_id LEFT JOIN app_user u ON u.principal_id = p.id
  WHERE t.secret_sha256 = $1::bytea
 `
 
 type IdentityTokenBySecretRow struct {
-	ID              string
-	Type            string
-	Scope           json.RawMessage
-	OwnerID         string
-	OwnerKind       string
-	OwnerName       string
-	OwnerStatus     string
-	OwnerBreakGlass bool
-	ExpiresAt       pgtype.Timestamptz
-	Expired         bool
-	Revoked         bool
-	Hint            string
-	CiContext       json.RawMessage
-	RejectionDue    bool
+	ID               string
+	Type             string
+	Scope            json.RawMessage
+	OwnerID          string
+	OwnerKind        string
+	OwnerName        string
+	OwnerStatus      string
+	OwnerBreakGlass  bool
+	ExpiresAt        pgtype.Timestamptz
+	Expired          bool
+	Revoked          bool
+	Hint             string
+	CiContext        json.RawMessage
+	TechnicalTokenID string
+	RejectionDue     bool
 }
 
 // Tokens ---------------------------------------------------------------------
@@ -2653,6 +3289,7 @@ func (q *Queries) IdentityTokenBySecret(ctx context.Context, secretSha256 []byte
 			&i.Revoked,
 			&i.Hint,
 			&i.CiContext,
+			&i.TechnicalTokenID,
 			&i.RejectionDue,
 		); err != nil {
 			return nil, err
@@ -2785,34 +3422,37 @@ SELECT t.id::text AS id, t.type, t.hint, t.principal_id::text AS owner_id, p.kin
        t.created_via, t.expires_at, t.revoked_at, coalesce(t.revoked_by::text, '')::text AS revoked_by,
        coalesce(t.revocation_reason, '')::text AS revocation_reason, coalesce(t.rotated_from::text, '')::text AS rotated_from,
        coalesce(t.derived_from::text, '')::text AS derived_from, t.last_used_at, coalesce(host(t.last_used_addr), '')::text AS last_used_addr,
-       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context
-  FROM api_token t JOIN principal p ON p.id = t.principal_id
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context,
+       coalesce(t.technical_token_id::text, '')::text AS technical_token_id, coalesce(tt.name, '')::text AS technical_token_name
+  FROM api_token t JOIN principal p ON p.id = t.principal_id LEFT JOIN technical_token tt ON tt.id = t.technical_token_id
  WHERE t.id = $1::text::uuid AND t.type <> 'bst'
 `
 
 type IdentityTokenRowRow struct {
-	ID               string
-	Type             string
-	Hint             string
-	OwnerID          string
-	OwnerKind        string
-	OwnerName        string
-	Description      string
-	Scope            json.RawMessage
-	SelfRotatable    bool
-	CreatedAt        pgtype.Timestamptz
-	CreatedBy        string
-	CreatedVia       string
-	ExpiresAt        pgtype.Timestamptz
-	RevokedAt        pgtype.Timestamptz
-	RevokedBy        string
-	RevocationReason string
-	RotatedFrom      string
-	DerivedFrom      string
-	LastUsedAt       pgtype.Timestamptz
-	LastUsedAddr     string
-	Expired          bool
-	CiContext        json.RawMessage
+	ID                 string
+	Type               string
+	Hint               string
+	OwnerID            string
+	OwnerKind          string
+	OwnerName          string
+	Description        string
+	Scope              json.RawMessage
+	SelfRotatable      bool
+	CreatedAt          pgtype.Timestamptz
+	CreatedBy          string
+	CreatedVia         string
+	ExpiresAt          pgtype.Timestamptz
+	RevokedAt          pgtype.Timestamptz
+	RevokedBy          string
+	RevocationReason   string
+	RotatedFrom        string
+	DerivedFrom        string
+	LastUsedAt         pgtype.Timestamptz
+	LastUsedAddr       string
+	Expired            bool
+	CiContext          json.RawMessage
+	TechnicalTokenID   string
+	TechnicalTokenName string
 }
 
 // A Bastion token (type bst) is managed through its registration (queries/bastion_registration.sql, R-BAS-004)
@@ -2849,6 +3489,8 @@ func (q *Queries) IdentityTokenRow(ctx context.Context, id string) ([]IdentityTo
 			&i.LastUsedAddr,
 			&i.Expired,
 			&i.CiContext,
+			&i.TechnicalTokenID,
+			&i.TechnicalTokenName,
 		); err != nil {
 			return nil, err
 		}
@@ -3049,6 +3691,20 @@ func (q *Queries) IdentityUpdateSettings(ctx context.Context, arg IdentityUpdate
 		return nil, err
 	}
 	return items, nil
+}
+
+const identityUpdateTechnicalToken = `-- name: IdentityUpdateTechnicalToken :exec
+UPDATE technical_token SET description = $1::text, revision = revision + 1 WHERE id = $2::text::uuid
+`
+
+type IdentityUpdateTechnicalTokenParams struct {
+	Description string
+	ID          string
+}
+
+func (q *Queries) IdentityUpdateTechnicalToken(ctx context.Context, arg IdentityUpdateTechnicalTokenParams) error {
+	_, err := q.db.Exec(ctx, identityUpdateTechnicalToken, arg.Description, arg.ID)
+	return err
 }
 
 const identityUpdateUserFields = `-- name: IdentityUpdateUserFields :exec

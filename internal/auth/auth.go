@@ -44,6 +44,9 @@ type Credential struct {
 	SessionID string
 	TokenID   string
 	TokenType token.Type
+	// TechnicalTokenID is the technical token of a service-account token (R-AUTH-045), from the token cache entry; empty for
+	// every other credential.
+	TechnicalTokenID string
 	// ExpiresAt is the token's expiry, nil when it has none or the credential is no token.
 	ExpiresAt     *time.Time
 	Scope         *scope.Scope // nil: no ceiling (sessions)

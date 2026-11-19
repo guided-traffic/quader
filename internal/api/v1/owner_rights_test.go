@@ -30,11 +30,19 @@ var ownerRightsExempt = map[string]string{
 	"removePackageOwner": "as addPackageOwner",
 	"cancelJob": "settings:write through the decision point, with the scope; the starter's path admits a session and an " +
 		"inheriting token only (mayCancel, Q-API-215)",
-	"checkPermissions":                 "computes the answers for the presenting credential, its scope included; writes nothing",
-	"validatePermissionPolicy":         "validates a policy document for a caller the decision point admits (mayValidate); writes nothing",
-	"createToken":                      "the derivation rule (R-AUTH-027): the new token is derived from the presenting one, within its scope and expiry",
-	"createServiceAccountToken":        "an administrator through the decision point, or a token of the account under the derivation rule (R-AUTH-027)",
-	"createProjectServiceAccountToken": "an administrator or an Owner of the project through the decision point, or a token of the account under the derivation rule",
+	"checkPermissions":                         "computes the answers for the presenting credential, its scope included; writes nothing",
+	"validatePermissionPolicy":                 "validates a policy document for a caller the decision point admits (mayValidate); writes nothing",
+	"createToken":                              "the derivation rule (R-AUTH-027): the new token is derived from the presenting one, within its scope and expiry",
+	"createServiceAccountTechnicalToken":       "an administrator through the decision point, or a token of the account under the derivation rule (R-AUTH-027, R-AUTH-045)",
+	"createServiceAccountTechnicalTokenSecret": "an administrator through the decision point, or a token of the account under the derivation rule (R-AUTH-027, R-AUTH-045)",
+	"createProjectServiceAccountTechnicalToken": "an administrator or an Owner of the project through the decision point, or a token of the account under " +
+		"the derivation rule (R-AUTH-027, R-AUTH-045)",
+	"createProjectServiceAccountTechnicalTokenSecret": "an administrator or an Owner of the project through the decision point, or a token of the " +
+		"account under the derivation rule (R-AUTH-027, R-AUTH-045)",
+	"createRepositoryServiceAccountTechnicalToken": "an administrator or an Owner of the repository's project through the decision point, or a token of " +
+		"the account under the derivation rule (R-AUTH-027, R-AUTH-046)",
+	"createRepositoryServiceAccountTechnicalTokenSecret": "an administrator or an Owner of the repository's project through the decision point, or a " +
+		"token of the account under the derivation rule (R-AUTH-027, R-AUTH-046)",
 	"revokeToken": "the line of a narrowed token (R-AUTH-029, Q-AUTH-199): by ownership it sees and revokes only itself and its " +
 		"line, another token of its owner is a 404 to it; beyond that tokens:revoke through the decision point or an Owner of the " +
 		"account's project",

@@ -101,6 +101,12 @@ export const PROJECT_REPOSITORIES_ROUTES: Routes = [
         loadComponent: () => import('./repository-detail').then((m) => m.RepositoryDetail),
         canDeactivate: [unsavedChangesGuard],
       },
+      {
+        // A service account of the repository (R-AUTH-046, R-UI-181): the page of every service account, with the repository.
+        path: 'service-accounts/:name',
+        title: $localize`:@@route.service-accounts.detail.title:Service account`,
+        loadComponent: () => import('../service-accounts/service-account-detail').then((m) => m.ServiceAccountDetail),
+      },
     ],
   },
 ];

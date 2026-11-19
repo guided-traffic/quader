@@ -245,6 +245,12 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.serviceaccount.disabled:Service account disabled`;
     case 'serviceaccount.updated':
       return $localize`:@@audit.action.serviceaccount.updated:Service account changed`;
+    case 'technicaltoken.created':
+      return $localize`:@@audit.action.technicaltoken.created:Technical token created`;
+    case 'technicaltoken.updated':
+      return $localize`:@@audit.action.technicaltoken.updated:Technical token changed`;
+    case 'technicaltoken.deleted':
+      return $localize`:@@audit.action.technicaltoken.deleted:Technical token deleted`;
     case 'settings.visibility.changed':
       return $localize`:@@audit.action.settings.visibility.changed:Default visibility changed`;
     case 'settings.auth.changed':

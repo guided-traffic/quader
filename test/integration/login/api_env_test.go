@@ -44,7 +44,7 @@ func (e *env) apiHandler(name string, db *postgres.DB, changes *cluster.Changes,
 		PAT:       config.AuthTokenPAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour},
 		SAT:       config.AuthTokenSAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour},
 		CIT:       config.AuthTokenCIT{MaxTTL: 6 * time.Hour},
-		MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20},
+		MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20}, MaxTechnicalPerAccount: 100,
 	}
 	authCfg.Tokens = tokenCfg
 	authCfg.Clients = config.AuthClients{Basic: config.AuthClientBasic{Enabled: true}}

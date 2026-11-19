@@ -41,7 +41,9 @@ func tokenCaller(*http.Request) (httpserver.Principal, error) {
 // those operations do; the CI identity rows are the issuer and mapping writes.
 var recentAuthOperations = []string{
 	"addPackageOwner", "bindRole", "createBastionToken", "createCiIssuer", "createCiMapping", "createProjectCiMapping",
-	"createExposureRule", "createPermissionPolicy", "createProjectPermissionPolicy", "createProjectServiceAccountToken", "createServiceAccountToken", "createToken",
+	"createExposureRule", "createPermissionPolicy", "createProjectPermissionPolicy", "createProjectServiceAccountTechnicalToken",
+	"createProjectServiceAccountTechnicalTokenSecret", "createRepositoryServiceAccountTechnicalToken", "createRepositoryServiceAccountTechnicalTokenSecret",
+	"createServiceAccountTechnicalToken", "createServiceAccountTechnicalTokenSecret", "createToken",
 	"deleteCiIssuer", "deleteCiMapping", "deleteProjectCiMapping", "deleteProjectPermissionPolicy",
 	"deleteExposureRule", "deletePermissionPolicy", "deleteProject", "deleteRepository", "moveRepository", "patchExposureRule", "patchPermissionPolicy", "patchProjectPermissionPolicy",
 	"removePackageOwner", "removeProjectMember", "replaceCiIssuer", "replaceCiMapping", "replaceProjectCiMapping", "replaceExposureRule",

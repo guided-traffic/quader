@@ -304,13 +304,19 @@ func (e *Engine) scopeAdmits(sc *scope.Scope, a Action, r *repoInfo, repoLevel b
 }
 
 // grantedBy returns the sources that give the action on the coordinate to the
-// subject (R-AUTHZ-015 `granted`): the names of the policies whose grants give it to
+// subject (R-AUTHZ-015 `granted`): the actions of a repository's service account on its repository as
+// "account:sa:<name>" (R-AUTHZ-039), the names of the policies whose grants give it to
 // a principal of the set, and the role the subject holds in the repository's project,
 // as "role:<projectKey>:<role>" (R-AUTHZ-026). A role covers every package and path
 // of every repository of its project; on a virtual repository only read and manage
 // have an effect, as for a grant (R-AUTHZ-009).
 func (st *evalState) grantedBy(a Action, r *repoInfo, repoLevel bool, pkg, path string) []string {
 	var out []string
+	if g, ok := st.idx.accountGrantOf(st.sub, r.ID); ok && g.actions.Has(a) {
+		// A repository's service account holds its actions on every coordinate of its repository, without patterns
+		// (R-AUTHZ-039); the explanation names it first, account:sa:<project>/<repository>/<name>.
+		out = append(out, g.source)
+	}
 	for _, p := range st.pset {
 		for _, g := range st.idx.grantsFor(r.ID, p) {
 			if g.actions.Has(a) && g.res.matches(repoLevel, pkg, path) {

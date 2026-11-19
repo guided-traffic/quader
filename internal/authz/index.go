@@ -56,6 +56,9 @@ type Snapshot struct {
 	// active principal (Q-CI-47, ci.go): a CI token keeps a contribution only while
 	// its mapping is one of them.
 	CIMappings []string
+	// AccountGrants are the actions of the repositories' service accounts on their repositories (R-AUTHZ-039), read in the
+	// same snapshot.
+	AccountGrants []q.AuthzBuildAccountGrantsRow
 	// >>> M2 virtual
 
 	// VirtualMembers and DeployTargets are the rows of virtual_members and
@@ -132,6 +135,13 @@ type grant struct {
 	res     resourceSet
 }
 
+// accountGrant is what a repository's service account holds on its repository (R-AUTHZ-039): the actions, narrowed to read and
+// manage on a virtual repository as every grant is (R-AUTHZ-009), and the source a decision names, account:sa:<stored name>.
+type accountGrant struct {
+	actions ActionSet
+	source  string
+}
+
 // Index is the compiled grant index of one replica (R-AUTHZ-028). It is
 // immutable once built: requests read it without locks and a new one replaces it
 // atomically.
@@ -164,6 +174,9 @@ type Index struct {
 	// of a subject are derived from its user ID and group IDs alone, whatever the number of projects
 	// (R-AUTHZ-015 performance target, R-ARCH-033).
 	memberships map[string][]membership
+	// accounts maps a repository ID, then the principal ID of one of its service accounts, to the actions the account holds
+	// on it (R-AUTHZ-039, Q-AUTHZ-296): a grant source beside the policies and the project roles.
+	accounts map[int64]map[string]accountGrant
 	// policies and entries count what went in, for metrics and diagnostics.
 	policies int
 	// publicContent: the artifacts of some repository are public (PublicContent).
@@ -251,6 +264,7 @@ func BuildIndex(s *Snapshot, reg *catalog.Registry, log *slog.Logger) *Index {
 			ciTexts:     map[string][]textGrant{},
 			projects:    map[string]*projectInfo{},
 			memberships: map[string][]membership{},
+			accounts:    map[int64]map[string]accountGrant{},
 		},
 		log: log, reg: catalog.Or(reg), byID: make(map[int64]*repoInfo, len(s.Repositories)),
 		selectors:  map[string][]q.AuthzBuildSelectorsRow{},
@@ -262,6 +276,7 @@ func BuildIndex(s *Snapshot, reg *catalog.Registry, log *slog.Logger) *Index {
 	b.addRepositories(s.Repositories, s.VirtualMembers, s.DeployTargets)
 	b.x.ciActive = activeCIMappings(s.CIMappings)
 	b.x.exposure = buildExposure(s.Exposure, b.byID, b.reg, log)
+	b.addAccountGrants(s.AccountGrants)
 	for _, r := range s.Bindings {
 		if r.PrincipalProject != "" {
 			// A project service account takes no system role (Q-AUTHZ-175); the write
@@ -390,6 +405,45 @@ func (b *builder) addRepositories(rows []q.AuthzBuildRepositoriesRow, members []
 		b.byID[r.ID] = info
 		b.list = append(b.list, info)
 	}
+}
+
+// addAccountGrants reads the actions of the repositories' service accounts (R-AUTHZ-039). A row whose repository the snapshot
+// does not hold (being deleted, not active) grants nothing, and a row whose actions do not parse is skipped and logged:
+// skipping only removes rights.
+func (b *builder) addAccountGrants(rows []q.AuthzBuildAccountGrantsRow) {
+	for _, r := range rows {
+		info := b.byID[r.RepositoryID]
+		if info == nil {
+			continue
+		}
+		acts, err := actionsFromStored(r.Actions)
+		if err != nil {
+			b.log.Error("authz: actions of a repository's service account skipped", "account", r.PrincipalName, "err", err)
+			continue
+		}
+		if info.Class == repository.Virtual {
+			acts &= virtualActions
+		}
+		if acts == 0 {
+			continue
+		}
+		m := b.x.accounts[r.RepositoryID]
+		if m == nil {
+			m = map[string]accountGrant{}
+			b.x.accounts[r.RepositoryID] = m
+		}
+		m[r.PrincipalID] = accountGrant{actions: acts, source: "account:sa:" + r.PrincipalName}
+	}
+}
+
+// accountGrantOf is what the subject holds on the repository as one of the repository's service accounts (R-AUTHZ-039); ok is
+// false for every other subject, a CI token and an anonymous caller included.
+func (x *Index) accountGrantOf(sub Subject, repoID int64) (accountGrant, bool) {
+	if sub.Anonymous || kindOf(sub) != kindServiceAccount || sub.ID == "" {
+		return accountGrant{}, false
+	}
+	g, ok := x.accounts[repoID][sub.ID]
+	return g, ok
 }
 
 // covered lists the repositories a selector covers. A project policy's selector

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -63,7 +64,7 @@ func newIdentity(t *testing.T, s *twinSide) identity {
 	cfg := config.AuthTokens{
 		CacheTTL: 15 * time.Second, RetentionAfterEnd: 2160 * time.Hour, ExpiryNotice: 168 * time.Hour,
 		PAT: config.AuthTokenPAT{DefaultTTL: 24 * time.Hour, MaxTTL: 48 * time.Hour}, SAT: config.AuthTokenSAT{DefaultTTL: 24 * time.Hour, MaxTTL: 48 * time.Hour},
-		BST: config.AuthTokenBST{DefaultTTL: 24 * time.Hour, MaxTTL: 48 * time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20, BST: 3},
+		BST: config.AuthTokenBST{DefaultTTL: 24 * time.Hour, MaxTTL: 48 * time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20, BST: 3}, MaxTechnicalPerAccount: 100,
 	}
 	principals := principal.NewStore(principal.StoreOptions{DB: s.db, Cache: caches, Gate: gate, SafetyTTL: cfg.CacheTTL})
 	settings := token.NewSettingsStore(token.SettingsOptions{DB: s.db, Notifier: s.changes, Recorder: s.rec, Cache: caches, Gate: gate, Tokens: cfg})
@@ -90,11 +91,28 @@ func seedAccount(s *twinSide, name string) string {
 	return id
 }
 
-// mint creates n tokens of the principal through the token service (a PAT for a user, a SAT for a service account) and
-// returns their values.
+// mint creates n tokens of the principal through the token service and returns their values: PATs of a user, or the
+// secrets of n technical tokens of a service account (R-AUTH-045), owner then being the account's name.
 func (id identity) mint(t *testing.T, owner string, typ token.Type, n int) []string {
 	t.Helper()
 	out := make([]string, 0, n)
+	if typ == token.TypeSAT {
+		acct, err := id.manager.GetServiceAccount(context.Background(), owner)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range n {
+			c, err := id.tokens.IssueTechnical(context.Background(), acct, token.TechnicalCreate{
+				Name:    "journal-" + strconv.Itoa(i),
+				Request: token.CreateRequest{Caller: producerAdmin, Description: "journal test", Via: "admin-cli", Admin: true},
+			})
+			if err != nil {
+				t.Fatalf("create a sat of %s: %v", owner, err)
+			}
+			out = append(out, c.Secret)
+		}
+		return out
+	}
 	for range n {
 		c, err := id.tokens.Create(context.Background(), token.CreateRequest{
 			Caller: producerAdmin, Type: typ, OwnerID: owner, Description: "journal test", Via: "admin-cli", Admin: true,
@@ -130,7 +148,7 @@ func TestR_AUTH_016_TokensADisableRevokedStayRevokedAfterARestore(t *testing.T) 
 	deploy, builder := seedAccount(src, "deploy"), seedAccount(src, "builder")
 	values := map[string][]string{
 		"alice": ids.mint(t, alice, token.TypePAT, 3), "bob": ids.mint(t, bob, token.TypePAT, 2), "kept": ids.mint(t, kept, token.TypePAT, 1),
-		"deploy": ids.mint(t, deploy, token.TypeSAT, 2), "builder": ids.mint(t, builder, token.TypeSAT, 2),
+		"deploy": ids.mint(t, "deploy", token.TypeSAT, 2), "builder": ids.mint(t, "builder", token.TypeSAT, 2),
 	}
 	src.close()
 	tw.snapshot() // t

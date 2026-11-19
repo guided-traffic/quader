@@ -3,7 +3,7 @@ import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, QuaderDialog } from '
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../api/client';
-import { IdentityApi, ServiceAccount } from '../../api/identity-api';
+import { IdentityApi, RepositoryAction, ServiceAccount } from '../../api/identity-api';
 import { ApiError } from '../../api/problem';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
@@ -17,20 +17,26 @@ import { ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
+import { AccountRights } from './account-rights';
 
-/** What the dialog is opened with: the project key to create a project service account, named within it (R-AUTHZ-026). */
+/**
+ * What the dialog is opened with: the project key to create a project service account, named within it (R-AUTHZ-026), and with
+ * it a repository key to create an account of that repository (R-AUTH-046).
+ */
 export interface ServiceAccountCreateData {
   readonly project?: string;
+  readonly repository?: string;
 }
 
 /**
- * "New service account" (R-UI-026). The idempotency key lives as long as the dialog (R-UI-042). Opened
+ * "New service account" (R-UI-026, R-UI-181). The idempotency key lives as long as the dialog (R-UI-042). Opened
  * with a project it creates a project service account: the name is unique within the project and the account
- * belongs to the project for good (R-UI-041).
+ * belongs to the project for good (R-UI-041). Opened with a repository too, it creates an account of the repository with its
+ * **Rights on this repository**, Read ticked (R-AUTHZ-039).
  */
 @Component({
   selector: 'quader-service-account-create-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice, TextField],
+  imports: [AccountRights, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@sa-create.title">New service account</h2>
     <form (submit)="submit($event)" novalidate>
@@ -48,7 +54,19 @@ export interface ServiceAccountCreateData {
           [error]="fieldError('/name')"
           [hint]="nameHint"
         />
-        <quader-text-field width="name" i18n-label="@@sa-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
+        @if (repository) {
+          <quader-text-field
+            width="name"
+            i18n-label="@@sa-create.description-optional"
+            label="Description (optional)"
+            name="description"
+            [(value)]="description"
+            [error]="fieldError('/description')"
+          />
+          <quader-account-rights [(actions)]="actions" [error]="fieldError('/actions')" />
+        } @else {
+          <quader-text-field width="name" i18n-label="@@sa-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
+        }
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@sa-create.cancel">Cancel</button>
@@ -66,11 +84,16 @@ export class ServiceAccountCreateDialog {
   private readonly key = newIdempotencyKey();
 
   protected readonly project = this.data?.project;
-  protected readonly nameHint = this.project
-    ? $localize`:@@sa-create.name-hint-project:Unique within the project ${this.project}:project: and cannot be changed later. Lower-case letters, digits and -.`
-    : $localize`:@@sa-create.name-hint:Lower-case letters, digits and -, two to 63 characters`;
+  protected readonly repository = this.data?.repository;
+  protected readonly nameHint = this.repository
+    ? $localize`:@@sa-create.name-hint-repository:Unique within the repository ${this.project}:project:/${this.repository}:repository: and cannot be changed later. Lower-case letters, digits and -.`
+    : this.project
+      ? $localize`:@@sa-create.name-hint-project:Unique within the project ${this.project}:project: and cannot be changed later. Lower-case letters, digits and -.`
+      : $localize`:@@sa-create.name-hint:Lower-case letters, digits and -, two to 63 characters`;
   protected readonly name = signal('');
   protected readonly description = signal('');
+  /** The rights of a repository's account; Read is ticked (R-UI-181). */
+  protected readonly actions = signal<readonly RepositoryAction[]>(['read']);
   protected readonly busy = signal(false);
   protected readonly error = signal<ApiError | null>(null);
 
@@ -83,10 +106,12 @@ export class ServiceAccountCreateDialog {
     this.busy.set(true);
     this.error.set(null);
     try {
+      const body = { name: this.name().trim(), description: this.description().trim() };
       const created = await this.api.createServiceAccount(
         this.project ?? null,
-        { name: this.name().trim(), description: this.description().trim() },
+        this.repository ? { ...body, actions: [...this.actions()] } : body,
         this.key,
+        this.repository ?? null,
       );
       this.notifier.status($localize`:@@sa-create.created:Service account created.`);
       this.ref.close(created);
@@ -99,8 +124,9 @@ export class ServiceAccountCreateDialog {
 }
 
 /**
- * Service accounts (R-UI-026): name, description and status, with the search by name above the list (Q-UI-421) and cursor paging;
- * the list has no other filter, so no drawer. The hint says when to use one.
+ * Service accounts (R-UI-026, R-UI-181): name, description, the level (Instance, Project, Repository) with the project and the
+ * repository of an account that has one, and the status, with the search by name above the list (Q-UI-421) and cursor paging; the
+ * list has no other filter, so no drawer. The hint says when to use one.
  */
 @Component({
   selector: 'quader-service-account-list',
@@ -140,10 +166,14 @@ export class ServiceAccountCreateDialog {
               <quader-no-value />
             }
           </td>
-          <!-- A row names its project by its mark and its name (Q-UI-424). -->
+          <td>{{ levelText(a) }}</td>
+          <!-- A row names its project by its mark and its name (Q-UI-424), and a repository's account its repository beside it. -->
           <td>
             @if (a.project) {
               <quader-project-link [key]="a.project" />
+              @if (a.repository) {
+                <span class="secondary" translate="no">{{ a.project }}/{{ a.repository }}</span>
+              }
             } @else {
               <quader-no-value />
             }
@@ -178,6 +208,7 @@ export class ServiceAccountList {
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@sas.col.name:Name`, sortable: true },
     { id: 'description', label: $localize`:@@sas.col.description:Description` },
+    { id: 'level', label: $localize`:@@sas.col.level:Level` },
     { id: 'project', label: $localize`:@@sas.col.project:Project` },
     { id: 'status', label: $localize`:@@sas.col.status:Status` },
   ];
@@ -186,9 +217,24 @@ export class ServiceAccountList {
     void this.apply();
   }
 
-  /** `/projects/<project>/service-accounts/<name>` for a project's account, `/admin/service-accounts/<name>` otherwise. */
+  /**
+   * `/projects/<project>/repositories/<repository>/service-accounts/<name>` for a repository's account,
+   * `/projects/<project>/service-accounts/<name>` for a project's, `/admin/service-accounts/<name>` otherwise.
+   */
   protected saLink(a: ServiceAccount): string[] {
+    if (a.project && a.repository) return ['/projects', a.project, 'repositories', a.repository, 'service-accounts', a.name];
     return a.project ? ['/projects', a.project, 'service-accounts', a.name] : ['/admin/service-accounts', a.name];
+  }
+
+  protected levelText(a: ServiceAccount): string {
+    switch (a.level) {
+      case 'repository':
+        return $localize`:@@sas.level.repository:Repository`;
+      case 'project':
+        return $localize`:@@sas.level.project:Project`;
+      default:
+        return $localize`:@@sas.level.instance:Instance`;
+    }
   }
 
   protected async apply(): Promise<void> {

@@ -31,6 +31,57 @@ type ServiceAccount struct {
 	// never stored. The read methods fill it ([Manager.GetServiceAccount], [Manager.ListServiceAccounts]); a record
 	// from a write transaction carries false. A project's account holds no system role, so it is false there.
 	IsAdmin bool
+	// Repository is the key, within Project, of the repository a repository's account belongs to (R-AUTH-046), "" for an
+	// account of the instance or a project; RepositoryID is its ID, 0 otherwise. The stored Name of such an account is
+	// <project>/<repository>/<name>.
+	Repository   string
+	RepositoryID int64
+	// Actions are the actions a repository's account holds on its repository (R-AUTHZ-039), in the order of R-AUTHZ-006; nil
+	// for every other account, whose rights come from policies.
+	Actions []string
+	// TechnicalTokens counts the account's technical tokens, ended ones included (R-AUTH-045).
+	TechnicalTokens int64
+}
+
+// The levels of a service account (R-AUTH-020, R-AUTH-046).
+const (
+	LevelInstance   = "instance"
+	LevelProject    = "project"
+	LevelRepository = "repository"
+)
+
+// Level is where the account belongs: the instance, a project or a repository.
+func (sa ServiceAccount) Level() string {
+	switch {
+	case sa.Repository != "":
+		return LevelRepository
+	case sa.Project != "":
+		return LevelProject
+	}
+	return LevelInstance
+}
+
+// LocalName is the account's name within its place: the bare name of every account, without the project and repository
+// keys its stored name carries.
+func (sa ServiceAccount) LocalName() string {
+	if i := strings.LastIndexByte(sa.Name, '/'); i >= 0 {
+		return sa.Name[i+1:]
+	}
+	return sa.Name
+}
+
+// Reference is the account's principal reference: sa:<name>, sa:<project>/<name> or sa:<project>/<repository>/<name>.
+func (sa ServiceAccount) Reference() string { return "sa:" + sa.Name }
+
+// levelDetails adds the account's level and, for a repository's account, its repository to the details of its audit events
+// (R-AUTH-041).
+func levelDetails(d map[string]any, sa ServiceAccount) map[string]any {
+	d = withProject(d, sa.Project)
+	d["level"] = sa.Level()
+	if sa.Repository != "" {
+		d["repository"] = sa.Repository
+	}
+	return d
 }
 
 // AdminHolders returns the IDs among ids that hold the administrator role now: by a binding on the principal itself, by a
@@ -171,11 +222,27 @@ func (m *Manager) createServiceAccount(ctx context.Context, tx meta.Tx, c Caller
 	if err := m.record(ctx, tx, audit.Event{
 		Type: audit.EventSACreated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
 		Subject: audit.Subject{Kind: "service_account", ID: id, Name: stored},
-		Details: details(withProject(map[string]any{"source": sourceOf(c), "admin": in.Admin}, project)),
+		Details: details(levelDetails(map[string]any{"source": sourceOf(c), "admin": in.Admin}, ServiceAccount{Project: project})),
 	}); err != nil {
 		return ServiceAccount{}, err
 	}
 	return loadServiceAccount(ctx, qs, stored)
+}
+
+// accountUpdated is serviceaccount.updated of an account (R-AUTH-041): the details name what changed, and the journal entry
+// carries the actions of a repository's account before and after the change, so that a restore replays a narrowing of them
+// (R-AUTHZ-039, R-AUTHZ-031). An account of no repository journals no actions, and its entry replays as already in effect.
+func accountUpdated(c Caller, sa ServiceAccount, d map[string]any, before, after []string) audit.Event {
+	entry := map[string]any{"principalId": sa.ID, "name": sa.Name}
+	if sa.Repository != "" {
+		entry["actions"] = map[string][]string{"before": before, "after": after}
+	}
+	return audit.Event{
+		Type: audit.EventSAUpdated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
+		Subject: audit.Subject{Kind: "service_account", ID: sa.ID, Name: sa.Name},
+		Details: details(levelDetails(d, sa)),
+		Journal: details(entry),
+	}
 }
 
 // GetServiceAccount returns the instance-wide account, or a 404. The account of a project is stored as
@@ -230,7 +297,18 @@ func loadServiceAccount(ctx context.Context, qs *q.Queries, name string) (Servic
 		return ServiceAccount{}, ErrNotFound
 	}
 	r := rows[0]
-	return ServiceAccount{Revision: r.Revision, ID: r.ID, Name: r.Name, Description: r.Description, Status: Status(r.Status), CreatedAt: r.CreatedAt.Time, Project: r.Project}, nil
+	return ServiceAccount{
+		Revision: r.Revision, ID: r.ID, Name: r.Name, Description: r.Description, Status: Status(r.Status), CreatedAt: r.CreatedAt.Time, Project: r.Project,
+		Repository: r.Repository, RepositoryID: r.RepositoryID, Actions: accountActions(r.Repository, r.Actions), TechnicalTokens: r.TechnicalTokens,
+	}, nil
+}
+
+// accountActions are the stored actions of a repository's account, nil for an account of no repository.
+func accountActions(repository string, actions []string) []string {
+	if repository == "" {
+		return nil
+	}
+	return actions
 }
 
 // ListServiceAccounts lists service accounts ordered by stored name; after is the stored name
@@ -247,7 +325,10 @@ func (m *Manager) ListServiceAccounts(ctx context.Context, query, project, after
 		}
 		out = out[:0]
 		for _, r := range rows {
-			out = append(out, ServiceAccount{Revision: r.Revision, ID: r.ID, Name: r.Name, Description: r.Description, Status: Status(r.Status), CreatedAt: r.CreatedAt.Time, Project: r.Project})
+			out = append(out, ServiceAccount{
+				Revision: r.Revision, ID: r.ID, Name: r.Name, Description: r.Description, Status: Status(r.Status), CreatedAt: r.CreatedAt.Time, Project: r.Project,
+				Repository: r.Repository, RepositoryID: r.RepositoryID, Actions: accountActions(r.Repository, r.Actions), TechnicalTokens: r.TechnicalTokens,
+			})
 		}
 		ids := make([]string, 0, len(out))
 		for _, sa := range out {
@@ -291,16 +372,29 @@ func (m *Manager) updateAccount(ctx context.Context, c Caller, o qname.Object, d
 		if err := qs.IdentityUpdateServiceAccount(ctx, q.IdentityUpdateServiceAccountParams{ID: sa.ID, Description: description}); err != nil {
 			return err
 		}
-		return m.record(ctx, tx, audit.Event{
-			Type: audit.EventSAUpdated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
-			Subject: audit.Subject{Kind: "service_account", ID: sa.ID, Name: sa.Name},
-			Details: details(withProject(map[string]any{"fields": []string{"description"}}, sa.Project)),
-		})
+		return m.record(ctx, tx, accountUpdated(c, sa, map[string]any{"fields": []string{"description"}}, sa.Actions, sa.Actions))
 	})
 	if err != nil {
 		return ServiceAccount{}, DBErr("principal.UpdateServiceAccount", err)
 	}
 	return m.getAccount(ctx, o)
+}
+
+// accountLoader reads the account a write acts on, in its transaction, with the 404 of the API for one that is not there: the
+// lifecycle writes (disable, enable, delete) are shared by the accounts of the instance, a project and a repository, which
+// differ in how they are addressed.
+type accountLoader func(ctx context.Context, qs *q.Queries) (ServiceAccount, error)
+
+// byObject addresses an account of the instance or a project.
+func byObject(o qname.Object) accountLoader {
+	return func(ctx context.Context, qs *q.Queries) (ServiceAccount, error) { return accountOf(ctx, qs, o) }
+}
+
+// byRepository addresses an account of a repository (R-AUTH-046).
+func byRepository(a RepositoryAccount) accountLoader {
+	return func(ctx context.Context, qs *q.Queries) (ServiceAccount, error) {
+		return repositoryAccountOf(ctx, qs, a)
+	}
 }
 
 // accountOf is loadAccountOf with the 404 of the API for a missing account.
@@ -315,13 +409,13 @@ func accountOf(ctx context.Context, qs *q.Queries, o qname.Object) (ServiceAccou
 // DisableServiceAccount disables an instance-wide account: all its tokens fail with
 // principal_disabled (R-AUTH-020). With revokeTokens it also revokes them.
 func (m *Manager) DisableServiceAccount(ctx context.Context, c Caller, name string, revokeTokens bool) error {
-	return m.disableAccount(ctx, c, qname.Object{Name: name}, revokeTokens)
+	return m.disableAccount(ctx, c, byObject(qname.Object{Name: name}), revokeTokens)
 }
 
-func (m *Manager) disableAccount(ctx context.Context, c Caller, o qname.Object, revokeTokens bool) error {
+func (m *Manager) disableAccount(ctx context.Context, c Caller, load accountLoader, revokeTokens bool) error {
 	return DBErr("principal.DisableServiceAccount", m.db.InTx(ctx, func(tx meta.Tx) error {
 		qs := Queries(tx)
-		sa, err := accountOf(ctx, qs, o)
+		sa, err := load(ctx, qs)
 		if err != nil {
 			return err
 		}
@@ -354,7 +448,7 @@ func (m *Manager) disableAccount(ctx context.Context, c Caller, o qname.Object, 
 		return m.record(ctx, tx, audit.Event{
 			Type: audit.EventSADisabled, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
 			Subject: audit.Subject{Kind: "service_account", ID: id, Name: sa.Name},
-			Details: details(withProject(map[string]any{"tokensRevoked": revoked}, sa.Project)),
+			Details: details(levelDetails(map[string]any{"tokensRevoked": revoked}, sa)),
 			Journal: details(map[string]string{"principalId": id, "name": sa.Name}),
 		})
 	}))
@@ -362,13 +456,13 @@ func (m *Manager) disableAccount(ctx context.Context, c Caller, o qname.Object, 
 
 // EnableServiceAccount enables an instance-wide account. Revoked tokens stay revoked.
 func (m *Manager) EnableServiceAccount(ctx context.Context, c Caller, name string) error {
-	return m.enableAccount(ctx, c, qname.Object{Name: name})
+	return m.enableAccount(ctx, c, byObject(qname.Object{Name: name}))
 }
 
-func (m *Manager) enableAccount(ctx context.Context, c Caller, o qname.Object) error {
+func (m *Manager) enableAccount(ctx context.Context, c Caller, load accountLoader) error {
 	return DBErr("principal.EnableServiceAccount", m.db.InTx(ctx, func(tx meta.Tx) error {
 		qs := Queries(tx)
-		sa, err := accountOf(ctx, qs, o)
+		sa, err := load(ctx, qs)
 		if err != nil {
 			return err
 		}
@@ -384,7 +478,7 @@ func (m *Manager) enableAccount(ctx context.Context, c Caller, o qname.Object) e
 
 // DeleteServiceAccount deletes an instance-wide account with its tokens and memberships.
 func (m *Manager) DeleteServiceAccount(ctx context.Context, c Caller, name string) error {
-	return m.deleteAccount(ctx, c, qname.Object{Name: name})
+	return m.deleteAccount(ctx, c, byObject(qname.Object{Name: name}))
 }
 
 // deleteAccount revokes the account's tokens first and removes the principal row after: the token rows
@@ -392,10 +486,10 @@ func (m *Manager) DeleteServiceAccount(ctx context.Context, c Caller, name strin
 // and the caches of the replicas would learn of the account's end only from the change of the
 // principal. The tokens are revoked, each with its token.revoked and journal entry (Q-AUTH-198), and
 // the change notified, in the transaction that deletes the row.
-func (m *Manager) deleteAccount(ctx context.Context, c Caller, o qname.Object) error {
+func (m *Manager) deleteAccount(ctx context.Context, c Caller, load accountLoader) error {
 	return DBErr("principal.DeleteServiceAccount", m.db.InTx(ctx, func(tx meta.Tx) error {
 		qs := Queries(tx)
-		sa, err := accountOf(ctx, qs, o)
+		sa, err := load(ctx, qs)
 		if err != nil {
 			return err
 		}
@@ -433,7 +527,7 @@ func (m *Manager) deleteAccount(ctx context.Context, c Caller, o qname.Object) e
 		return m.record(ctx, tx, audit.Event{
 			Type: audit.EventSADeleted, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
 			Subject: audit.Subject{Kind: "service_account", ID: id, Name: sa.Name},
-			Details: details(withProject(map[string]any{"tokensDeleted": tokens, "membershipsDeleted": memberships}, sa.Project)),
+			Details: details(levelDetails(map[string]any{"tokensDeleted": tokens, "membershipsDeleted": memberships}, sa)),
 			Journal: details(map[string]string{"principalId": id, "name": sa.Name}),
 		})
 	}))

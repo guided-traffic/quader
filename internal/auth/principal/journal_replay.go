@@ -31,6 +31,7 @@ func init() {
 		Domain: "identity",
 		Events: []string{
 			audit.EventUserDisabled, audit.EventUserDeleted, audit.EventUserUpdated, audit.EventUserExternalChanged, audit.EventSADisabled, audit.EventSADeleted,
+			audit.EventSAUpdated,
 			audit.EventBastionDisabled, audit.EventBastionDeleted,
 			audit.EventGroupDeleted, audit.EventGroupMembersChanged, audit.EventUserGroupsSynced, audit.EventGroupUpdated,
 		},
@@ -51,6 +52,8 @@ func replayPrincipal(ctx context.Context, tx meta.Tx, env journal.Env, o journal
 		return replayUserExternal(ctx, tx, env, o)
 	case audit.EventSADisabled, audit.EventSADeleted:
 		return replayDisableAccount(ctx, tx, env, o, KindServiceAccount)
+	case audit.EventSAUpdated:
+		return replayAccountActions(ctx, tx, env, o)
 	case audit.EventBastionDisabled, audit.EventBastionDeleted:
 		return replayDisableAccount(ctx, tx, env, o, KindBastion)
 	case audit.EventGroupUpdated:

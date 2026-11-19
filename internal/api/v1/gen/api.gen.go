@@ -1798,6 +1798,36 @@ func (e MirrorStatusState) Valid() bool {
 	}
 }
 
+// Defines values for NewRepositoryServiceAccountActions.
+const (
+	NewRepositoryServiceAccountActionsAnnotate  NewRepositoryServiceAccountActions = "annotate"
+	NewRepositoryServiceAccountActionsDelete    NewRepositoryServiceAccountActions = "delete"
+	NewRepositoryServiceAccountActionsDeploy    NewRepositoryServiceAccountActions = "deploy"
+	NewRepositoryServiceAccountActionsManage    NewRepositoryServiceAccountActions = "manage"
+	NewRepositoryServiceAccountActionsOverwrite NewRepositoryServiceAccountActions = "overwrite"
+	NewRepositoryServiceAccountActionsRead      NewRepositoryServiceAccountActions = "read"
+)
+
+// Valid indicates whether the value is a known member of the NewRepositoryServiceAccountActions enum.
+func (e NewRepositoryServiceAccountActions) Valid() bool {
+	switch e {
+	case NewRepositoryServiceAccountActionsAnnotate:
+		return true
+	case NewRepositoryServiceAccountActionsDelete:
+		return true
+	case NewRepositoryServiceAccountActionsDeploy:
+		return true
+	case NewRepositoryServiceAccountActionsManage:
+		return true
+	case NewRepositoryServiceAccountActionsOverwrite:
+		return true
+	case NewRepositoryServiceAccountActionsRead:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NpmSettingsAuditMode.
 const (
 	NpmSettingsAuditModeDisabled NpmSettingsAuditMode = "disabled"
@@ -2755,6 +2785,36 @@ func (e RepositoryResolutionMembersDecision) Valid() bool {
 	}
 }
 
+// Defines values for RepositoryServiceAccountPatchActions.
+const (
+	RepositoryServiceAccountPatchActionsAnnotate  RepositoryServiceAccountPatchActions = "annotate"
+	RepositoryServiceAccountPatchActionsDelete    RepositoryServiceAccountPatchActions = "delete"
+	RepositoryServiceAccountPatchActionsDeploy    RepositoryServiceAccountPatchActions = "deploy"
+	RepositoryServiceAccountPatchActionsManage    RepositoryServiceAccountPatchActions = "manage"
+	RepositoryServiceAccountPatchActionsOverwrite RepositoryServiceAccountPatchActions = "overwrite"
+	RepositoryServiceAccountPatchActionsRead      RepositoryServiceAccountPatchActions = "read"
+)
+
+// Valid indicates whether the value is a known member of the RepositoryServiceAccountPatchActions enum.
+func (e RepositoryServiceAccountPatchActions) Valid() bool {
+	switch e {
+	case RepositoryServiceAccountPatchActionsAnnotate:
+		return true
+	case RepositoryServiceAccountPatchActionsDelete:
+		return true
+	case RepositoryServiceAccountPatchActionsDeploy:
+		return true
+	case RepositoryServiceAccountPatchActionsManage:
+		return true
+	case RepositoryServiceAccountPatchActionsOverwrite:
+		return true
+	case RepositoryServiceAccountPatchActionsRead:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RepositorySuggestionClass.
 const (
 	RepositorySuggestionClassLocal   RepositorySuggestionClass = "local"
@@ -2875,6 +2935,57 @@ func (e SecretFieldSet) Valid() bool {
 	}
 }
 
+// Defines values for ServiceAccountActions.
+const (
+	ServiceAccountActionsAnnotate  ServiceAccountActions = "annotate"
+	ServiceAccountActionsDelete    ServiceAccountActions = "delete"
+	ServiceAccountActionsDeploy    ServiceAccountActions = "deploy"
+	ServiceAccountActionsManage    ServiceAccountActions = "manage"
+	ServiceAccountActionsOverwrite ServiceAccountActions = "overwrite"
+	ServiceAccountActionsRead      ServiceAccountActions = "read"
+)
+
+// Valid indicates whether the value is a known member of the ServiceAccountActions enum.
+func (e ServiceAccountActions) Valid() bool {
+	switch e {
+	case ServiceAccountActionsAnnotate:
+		return true
+	case ServiceAccountActionsDelete:
+		return true
+	case ServiceAccountActionsDeploy:
+		return true
+	case ServiceAccountActionsManage:
+		return true
+	case ServiceAccountActionsOverwrite:
+		return true
+	case ServiceAccountActionsRead:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServiceAccountLevel.
+const (
+	ServiceAccountLevelInstance   ServiceAccountLevel = "instance"
+	ServiceAccountLevelProject    ServiceAccountLevel = "project"
+	ServiceAccountLevelRepository ServiceAccountLevel = "repository"
+)
+
+// Valid indicates whether the value is a known member of the ServiceAccountLevel enum.
+func (e ServiceAccountLevel) Valid() bool {
+	switch e {
+	case ServiceAccountLevelInstance:
+		return true
+	case ServiceAccountLevelProject:
+		return true
+	case ServiceAccountLevelRepository:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ServiceAccountStatus.
 const (
 	ServiceAccountStatusActive   ServiceAccountStatus = "active"
@@ -2950,6 +3061,69 @@ func (e SystemInfoBaseUrlSource) Valid() bool {
 	case Config:
 		return true
 	case Request:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TechnicalTokenState.
+const (
+	TechnicalTokenStateActive  TechnicalTokenState = "active"
+	TechnicalTokenStateExpired TechnicalTokenState = "expired"
+	TechnicalTokenStateRevoked TechnicalTokenState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the TechnicalTokenState enum.
+func (e TechnicalTokenState) Valid() bool {
+	switch e {
+	case TechnicalTokenStateActive:
+		return true
+	case TechnicalTokenStateExpired:
+		return true
+	case TechnicalTokenStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TechnicalTokenAccountLevel.
+const (
+	TechnicalTokenAccountLevelInstance   TechnicalTokenAccountLevel = "instance"
+	TechnicalTokenAccountLevelProject    TechnicalTokenAccountLevel = "project"
+	TechnicalTokenAccountLevelRepository TechnicalTokenAccountLevel = "repository"
+)
+
+// Valid indicates whether the value is a known member of the TechnicalTokenAccountLevel enum.
+func (e TechnicalTokenAccountLevel) Valid() bool {
+	switch e {
+	case TechnicalTokenAccountLevelInstance:
+		return true
+	case TechnicalTokenAccountLevelProject:
+		return true
+	case TechnicalTokenAccountLevelRepository:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TechnicalTokenCreatedState.
+const (
+	TechnicalTokenCreatedStateActive  TechnicalTokenCreatedState = "active"
+	TechnicalTokenCreatedStateExpired TechnicalTokenCreatedState = "expired"
+	TechnicalTokenCreatedStateRevoked TechnicalTokenCreatedState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the TechnicalTokenCreatedState enum.
+func (e TechnicalTokenCreatedState) Valid() bool {
+	switch e {
+	case TechnicalTokenCreatedStateActive:
+		return true
+	case TechnicalTokenCreatedStateExpired:
+		return true
+	case TechnicalTokenCreatedStateRevoked:
 		return true
 	default:
 		return false
@@ -4234,6 +4408,21 @@ func (e GetClientSetupParamsCredentials) Valid() bool {
 	case GetClientSetupParamsCredentialsNone:
 		return true
 	case GetClientSetupParamsCredentialsPlaceholder:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListRepositoryServiceAccountsParamsSort.
+const (
+	ListRepositoryServiceAccountsParamsSortName ListRepositoryServiceAccountsParamsSort = "name"
+)
+
+// Valid indicates whether the value is a known member of the ListRepositoryServiceAccountsParamsSort enum.
+func (e ListRepositoryServiceAccountsParamsSort) Valid() bool {
+	switch e {
+	case ListRepositoryServiceAccountsParamsSortName:
 		return true
 	default:
 		return false
@@ -7223,12 +7412,51 @@ type NewGroup struct {
 	Name string `json:"name"`
 }
 
+// NewRepositoryServiceAccount defines model for NewRepositoryServiceAccount.
+type NewRepositoryServiceAccount struct {
+	// Actions The actions the account holds on the repository (R-AUTHZ-039); at least one; `[read]` when absent.
+	Actions     *[]NewRepositoryServiceAccountActions `json:"actions,omitempty"`
+	Description *string                               `json:"description,omitempty"`
+
+	// Name Matches `^[a-z0-9][a-z0-9-]{1,62}$`, unique among the accounts of the repository.
+	Name string `json:"name"`
+}
+
+// NewRepositoryServiceAccountActions defines model for NewRepositoryServiceAccount.Actions.
+type NewRepositoryServiceAccountActions string
+
 // NewServiceAccount defines model for NewServiceAccount.
 type NewServiceAccount struct {
 	Description *string `json:"description,omitempty"`
 
 	// Name Matches `^[a-z0-9][a-z0-9-]{1,62}$`, unique within the project of the route (or among the instance-wide accounts).
 	Name string `json:"name"`
+}
+
+// NewTechnicalToken The technical token and the request of its first secret, with the rules of R-AUTH-026 and R-AUTH-027.
+type NewTechnicalToken struct {
+	Description *string    `json:"description,omitempty"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+
+	// Name The system that uses the token, `^[a-z0-9][a-z0-9-]{0,62}$`; unique among the account's technical tokens and immutable.
+	Name string `json:"name"`
+
+	// Scope The ceiling a token puts on its owner's rights (R-AUTH-024). It never grants anything.
+	Scope         *TokenScope `json:"scope,omitempty"`
+	SelfRotatable *bool       `json:"selfRotatable,omitempty"`
+
+	// TtlSeconds The lifetime of the secret. `0` asks for a non-expiring one (an administrator, with `auth.tokens.sat.allow_non_expiring`). Exclusive with `expiresAt`.
+	TtlSeconds *int `json:"ttlSeconds,omitempty"`
+}
+
+// NewTechnicalTokenSecret The request of a new secret of a technical token without a live one (Q-AUTH-416), as a create without `name` and `description`.
+type NewTechnicalTokenSecret struct {
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+
+	// Scope The ceiling a token puts on its owner's rights (R-AUTH-024). It never grants anything.
+	Scope         *TokenScope `json:"scope,omitempty"`
+	SelfRotatable *bool       `json:"selfRotatable,omitempty"`
+	TtlSeconds    *int        `json:"ttlSeconds,omitempty"`
 }
 
 // NewUser defines model for NewUser.
@@ -8736,6 +8964,16 @@ type RepositoryResolutionMembersClass string
 // RepositoryResolutionMembersDecision defines model for RepositoryResolution.Members.Decision.
 type RepositoryResolutionMembersDecision string
 
+// RepositoryServiceAccountPatch The description and the actions of a repository's account (R-AUTH-046, R-AUTHZ-039). The read-only members of
+// `ServiceAccount` are accepted and ignored.
+type RepositoryServiceAccountPatch struct {
+	Actions     *[]RepositoryServiceAccountPatchActions `json:"actions,omitempty"`
+	Description *string                                 `json:"description,omitempty"`
+}
+
+// RepositoryServiceAccountPatchActions defines model for RepositoryServiceAccountPatch.Actions.
+type RepositoryServiceAccountPatchActions string
+
 // RepositorySuggestion defines model for RepositorySuggestion.
 type RepositorySuggestion struct {
 	Class  RepositorySuggestionClass `json:"class"`
@@ -8931,25 +9169,44 @@ type SecretReference struct {
 	File *string `json:"file,omitempty"`
 }
 
-// ServiceAccount A service account (R-AUTH-020). `name` is the name within its project, unique among the accounts of that project, or among the instance-wide accounts when `project` is `null` (Q-AUTHZ-209).
+// ServiceAccount A service account (R-AUTH-020, R-AUTH-046) of the instance, a project or a repository. `name` is the name within its place:
+// unique among the accounts of the repository, of the project, or among the instance-wide accounts (Q-AUTHZ-209).
 type ServiceAccount struct {
-	CreatedAt   time.Time          `json:"createdAt"`
-	Description string             `json:"description"`
-	Id          openapi_types.UUID `json:"id"`
+	// Actions The actions a repository's account holds on its repository (R-AUTHZ-039), in the order read, annotate, deploy, overwrite, delete, manage; `null` for every other account, whose rights come from policies.
+	Actions     *[]ServiceAccountActions `json:"actions"`
+	CreatedAt   time.Time                `json:"createdAt"`
+	Description string                   `json:"description"`
+	Id          openapi_types.UUID       `json:"id"`
 
-	// IsAdmin Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for a project's account, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024).
-	IsAdmin bool `json:"isAdmin"`
+	// IsAdmin Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for an account of a project or a repository, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024).
+	IsAdmin bool                `json:"isAdmin"`
+	Level   ServiceAccountLevel `json:"level"`
 
-	// Name The name within the project; the stored name is `<project>/<name>` for a project's account.
+	// Name The name within its place; the stored name is `<project>/<name>` for a project's account and `<project>/<repository>/<name>` for a repository's.
 	Name string `json:"name"`
 
-	// Principal The reference, `sa:<name>` or `sa:<project>/<name>`.
-	Principal string `json:"principal"`
+	// Project The key of the project the account belongs to (R-AUTHZ-026), `null` for an instance-wide account. A project's account keeps it; a repository's account follows its repository when it moves (R-REPO-060).
+	Project *string `json:"project"`
 
-	// Project The key of the project the account belongs to (R-AUTHZ-026), `null` for an instance-wide account. Fixed at creation.
-	Project *string              `json:"project"`
-	Status  ServiceAccountStatus `json:"status"`
+	// Reference The principal reference, `sa:<name>`, `sa:<project>/<name>` or `sa:<project>/<repository>/<name>`.
+	Reference string `json:"reference"`
+
+	// Repository The key, within `project`, of the repository a repository's account belongs to (R-AUTH-046); `null` otherwise.
+	Repository *string              `json:"repository"`
+	Status     ServiceAccountStatus `json:"status"`
+
+	// TechnicalTokens The account's technical tokens, ended ones included (R-AUTH-045).
+	TechnicalTokens int `json:"technicalTokens"`
+
+	// Version The revision the `ETag` carries.
+	Version int64 `json:"version"`
 }
+
+// ServiceAccountActions defines model for ServiceAccount.Actions.
+type ServiceAccountActions string
+
+// ServiceAccountLevel defines model for ServiceAccount.Level.
+type ServiceAccountLevel string
 
 // ServiceAccountStatus defines model for ServiceAccount.Status.
 type ServiceAccountStatus string
@@ -9178,6 +9435,107 @@ type TaskName = string
 // TaskRunRequest The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`).
 type TaskRunRequest map[string]interface{}
 
+// TechnicalToken A technical token (R-AUTH-045): a named line of `qdr_sat_` secrets of a service account with a stable ID, the subject of its
+// budget. `state` is `active` while a secret is live, else `expired` or `revoked` by the end of its last secret; `secrets` are
+// the live ones (one, two during a rotation's overlap) or the last one of a token without a live secret. `limit` is the token's
+// own rule at its account's place, `null` when the default applies (usage-and-limits.md R-LIM-038).
+type TechnicalToken struct {
+	Account   TechnicalTokenAccount `json:"account"`
+	CreatedAt time.Time             `json:"createdAt"`
+
+	// CreatedBy The reference of the principal that created it; `null` when it is gone.
+	CreatedBy   *string            `json:"createdBy"`
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+
+	// Limit The token's own download-limit rule at its account's place; `null` while the default of its kind applies.
+	Limit   *TechnicalTokenLimit   `json:"limit"`
+	Name    string                 `json:"name"`
+	Secrets []TechnicalTokenSecret `json:"secrets"`
+	State   TechnicalTokenState    `json:"state"`
+}
+
+// TechnicalTokenState defines model for TechnicalToken.State.
+type TechnicalTokenState string
+
+// TechnicalTokenAccount defines model for TechnicalTokenAccount.
+type TechnicalTokenAccount struct {
+	Level      TechnicalTokenAccountLevel `json:"level"`
+	Project    *string                    `json:"project"`
+	Reference  string                     `json:"reference"`
+	Repository *string                    `json:"repository"`
+}
+
+// TechnicalTokenAccountLevel defines model for TechnicalTokenAccount.Level.
+type TechnicalTokenAccountLevel string
+
+// TechnicalTokenCreated The technical token with the secret a create or a new secret issued: `token` is the value, shown in this answer only (sent
+// with `Cache-Control: no-store`), and `secretId` its token ID.
+type TechnicalTokenCreated struct {
+	Account     TechnicalTokenAccount      `json:"account"`
+	CreatedAt   time.Time                  `json:"createdAt"`
+	CreatedBy   *string                    `json:"createdBy"`
+	Description string                     `json:"description"`
+	Id          openapi_types.UUID         `json:"id"`
+	Limit       *TechnicalTokenLimit       `json:"limit"`
+	Name        string                     `json:"name"`
+	SecretId    openapi_types.UUID         `json:"secretId"`
+	Secrets     []TechnicalTokenSecret     `json:"secrets"`
+	State       TechnicalTokenCreatedState `json:"state"`
+
+	// Token The secret. Shown once.
+	Token string `json:"token"`
+}
+
+// TechnicalTokenCreatedState defines model for TechnicalTokenCreated.State.
+type TechnicalTokenCreatedState string
+
+// TechnicalTokenLimit defines model for TechnicalTokenLimit.
+type TechnicalTokenLimit struct {
+	// Overrides How many figures the rule sets beside its profile.
+	Overrides int                `json:"overrides"`
+	Profile   string             `json:"profile"`
+	Rule      openapi_types.UUID `json:"rule"`
+}
+
+// TechnicalTokenList defines model for TechnicalTokenList.
+type TechnicalTokenList struct {
+	Items []TechnicalToken `json:"items"`
+
+	// NextCursor Always `null`; an account holds at most `auth.tokens.max_technical_tokens_per_account`.
+	NextCursor *string `json:"nextCursor"`
+}
+
+// TechnicalTokenPatch The description; the name is immutable. The read-only members of `TechnicalToken` are accepted and ignored.
+type TechnicalTokenPatch struct {
+	Description *string `json:"description,omitempty"`
+}
+
+// TechnicalTokenRef defines model for TechnicalTokenRef.
+type TechnicalTokenRef struct {
+	// Id The technical token's stable ID, the subject of its budget (usage-and-limits.md R-LIM-001).
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
+}
+
+// TechnicalTokenSecret One `qdr_sat_` secret of a technical token; neither the value nor its hash.
+type TechnicalTokenSecret struct {
+	CreatedAt time.Time  `json:"createdAt"`
+	ExpiresAt *time.Time `json:"expiresAt"`
+	Hint      string     `json:"hint"`
+
+	// Id The token ID of the secret, the one `/api/v1/tokens/{id}` reads, rotates and revokes.
+	Id         openapi_types.UUID `json:"id"`
+	LastUsedAt *time.Time         `json:"lastUsedAt"`
+
+	// RevokedAt When the secret was revoked; `null` for one that was not.
+	RevokedAt   *time.Time          `json:"revokedAt"`
+	RotatedFrom *openapi_types.UUID `json:"rotatedFrom"`
+
+	// Scope The ceiling a token puts on its owner's rights (R-AUTH-024). It never grants anything.
+	Scope TokenScope `json:"scope"`
+}
+
 // Token A token as a list or an inspection shows it (R-AUTH-028). Neither the value nor its hash is part of it.
 type Token struct {
 	CiContext *map[string]interface{} `json:"ciContext"`
@@ -9211,7 +9569,10 @@ type Token struct {
 	Scope         TokenScope `json:"scope"`
 	SelfRotatable bool       `json:"selfRotatable"`
 	State         TokenState `json:"state"`
-	Type          TokenType  `json:"type"`
+
+	// TechnicalToken The technical token a service-account token is a secret of (R-AUTH-045), `null` for every other type.
+	TechnicalToken *TechnicalTokenRef `json:"technicalToken"`
+	Type           TokenType          `json:"type"`
 
 	// UnknownEndpoints The endpoint names in `scope.endpoints` that no configured endpoint carries. An endpoint removed from the
 	// configuration leaves its bound tokens unchanged; they are valid on no endpoint that no longer exists
@@ -11170,6 +11531,66 @@ type GetRepositoryResolutionParams struct {
 	Path string `form:"path" json:"path"`
 }
 
+// ListRepositoryServiceAccountsParams defines parameters for ListRepositoryServiceAccounts.
+type ListRepositoryServiceAccountsParams struct {
+	// Q Case-insensitive substring of the name.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Sort `name` is the default; a leading `-` reverses the order.
+	Sort *ListRepositoryServiceAccountsParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListRepositoryServiceAccountsParamsSort defines parameters for ListRepositoryServiceAccounts.
+type ListRepositoryServiceAccountsParamsSort string
+
+// CreateRepositoryServiceAccountParams defines parameters for CreateRepositoryServiceAccount.
+type CreateRepositoryServiceAccountParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// GetRepositoryServiceAccountParams defines parameters for GetRepositoryServiceAccount.
+type GetRepositoryServiceAccountParams struct {
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// UpdateRepositoryServiceAccountParams defines parameters for UpdateRepositoryServiceAccount.
+type UpdateRepositoryServiceAccountParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// CreateRepositoryServiceAccountTechnicalTokenParams defines parameters for CreateRepositoryServiceAccountTechnicalToken.
+type CreateRepositoryServiceAccountTechnicalTokenParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// GetRepositoryServiceAccountTechnicalTokenParams defines parameters for GetRepositoryServiceAccountTechnicalToken.
+type GetRepositoryServiceAccountTechnicalTokenParams struct {
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// UpdateRepositoryServiceAccountTechnicalTokenParams defines parameters for UpdateRepositoryServiceAccountTechnicalToken.
+type UpdateRepositoryServiceAccountTechnicalTokenParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// CreateRepositoryServiceAccountTechnicalTokenSecretParams defines parameters for CreateRepositoryServiceAccountTechnicalTokenSecret.
+type CreateRepositoryServiceAccountTechnicalTokenSecretParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
 // GetItemStatsParams defines parameters for GetItemStats.
 type GetItemStatsParams struct {
 	Path string `form:"path" json:"path"`
@@ -11227,8 +11648,26 @@ type UpdateProjectServiceAccountParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
-// CreateProjectServiceAccountTokenParams defines parameters for CreateProjectServiceAccountToken.
-type CreateProjectServiceAccountTokenParams struct {
+// CreateProjectServiceAccountTechnicalTokenParams defines parameters for CreateProjectServiceAccountTechnicalToken.
+type CreateProjectServiceAccountTechnicalTokenParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// GetProjectServiceAccountTechnicalTokenParams defines parameters for GetProjectServiceAccountTechnicalToken.
+type GetProjectServiceAccountTechnicalTokenParams struct {
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// UpdateProjectServiceAccountTechnicalTokenParams defines parameters for UpdateProjectServiceAccountTechnicalToken.
+type UpdateProjectServiceAccountTechnicalTokenParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// CreateProjectServiceAccountTechnicalTokenSecretParams defines parameters for CreateProjectServiceAccountTechnicalTokenSecret.
+type CreateProjectServiceAccountTechnicalTokenSecretParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
@@ -11349,8 +11788,26 @@ type UpdateServiceAccountParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
-// CreateServiceAccountTokenParams defines parameters for CreateServiceAccountToken.
-type CreateServiceAccountTokenParams struct {
+// CreateServiceAccountTechnicalTokenParams defines parameters for CreateServiceAccountTechnicalToken.
+type CreateServiceAccountTechnicalTokenParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// GetServiceAccountTechnicalTokenParams defines parameters for GetServiceAccountTechnicalToken.
+type GetServiceAccountTechnicalTokenParams struct {
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// UpdateServiceAccountTechnicalTokenParams defines parameters for UpdateServiceAccountTechnicalToken.
+type UpdateServiceAccountTechnicalTokenParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// CreateServiceAccountTechnicalTokenSecretParams defines parameters for CreateServiceAccountTechnicalTokenSecret.
+type CreateServiceAccountTechnicalTokenSecretParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
@@ -11863,6 +12320,24 @@ type MoveRepositoryJSONRequestBody = MoveRepositoryRequest
 // AddPackageOwnerJSONRequestBody defines body for AddPackageOwner for application/json ContentType.
 type AddPackageOwnerJSONRequestBody = PackageOwnerInput
 
+// CreateRepositoryServiceAccountJSONRequestBody defines body for CreateRepositoryServiceAccount for application/json ContentType.
+type CreateRepositoryServiceAccountJSONRequestBody = NewRepositoryServiceAccount
+
+// UpdateRepositoryServiceAccountApplicationMergePatchPlusJSONRequestBody defines body for UpdateRepositoryServiceAccount for application/merge-patch+json ContentType.
+type UpdateRepositoryServiceAccountApplicationMergePatchPlusJSONRequestBody = RepositoryServiceAccountPatch
+
+// DisableRepositoryServiceAccountJSONRequestBody defines body for DisableRepositoryServiceAccount for application/json ContentType.
+type DisableRepositoryServiceAccountJSONRequestBody = DisableRequest
+
+// CreateRepositoryServiceAccountTechnicalTokenJSONRequestBody defines body for CreateRepositoryServiceAccountTechnicalToken for application/json ContentType.
+type CreateRepositoryServiceAccountTechnicalTokenJSONRequestBody = NewTechnicalToken
+
+// UpdateRepositoryServiceAccountTechnicalTokenApplicationMergePatchPlusJSONRequestBody defines body for UpdateRepositoryServiceAccountTechnicalToken for application/merge-patch+json ContentType.
+type UpdateRepositoryServiceAccountTechnicalTokenApplicationMergePatchPlusJSONRequestBody = TechnicalTokenPatch
+
+// CreateRepositoryServiceAccountTechnicalTokenSecretJSONRequestBody defines body for CreateRepositoryServiceAccountTechnicalTokenSecret for application/json ContentType.
+type CreateRepositoryServiceAccountTechnicalTokenSecretJSONRequestBody = NewTechnicalTokenSecret
+
 // CreateProjectServiceAccountJSONRequestBody defines body for CreateProjectServiceAccount for application/json ContentType.
 type CreateProjectServiceAccountJSONRequestBody = NewServiceAccount
 
@@ -11872,8 +12347,14 @@ type UpdateProjectServiceAccountApplicationMergePatchPlusJSONRequestBody = Servi
 // DisableProjectServiceAccountJSONRequestBody defines body for DisableProjectServiceAccount for application/json ContentType.
 type DisableProjectServiceAccountJSONRequestBody = DisableRequest
 
-// CreateProjectServiceAccountTokenJSONRequestBody defines body for CreateProjectServiceAccountToken for application/json ContentType.
-type CreateProjectServiceAccountTokenJSONRequestBody = CreateTokenRequest
+// CreateProjectServiceAccountTechnicalTokenJSONRequestBody defines body for CreateProjectServiceAccountTechnicalToken for application/json ContentType.
+type CreateProjectServiceAccountTechnicalTokenJSONRequestBody = NewTechnicalToken
+
+// UpdateProjectServiceAccountTechnicalTokenApplicationMergePatchPlusJSONRequestBody defines body for UpdateProjectServiceAccountTechnicalToken for application/merge-patch+json ContentType.
+type UpdateProjectServiceAccountTechnicalTokenApplicationMergePatchPlusJSONRequestBody = TechnicalTokenPatch
+
+// CreateProjectServiceAccountTechnicalTokenSecretJSONRequestBody defines body for CreateProjectServiceAccountTechnicalTokenSecret for application/json ContentType.
+type CreateProjectServiceAccountTechnicalTokenSecretJSONRequestBody = NewTechnicalTokenSecret
 
 // TestUpstreamJSONRequestBody defines body for TestUpstream for application/json ContentType.
 type TestUpstreamJSONRequestBody = UpstreamTestRequest
@@ -11890,8 +12371,14 @@ type UpdateServiceAccountApplicationMergePatchPlusJSONRequestBody = ServiceAccou
 // DisableServiceAccountJSONRequestBody defines body for DisableServiceAccount for application/json ContentType.
 type DisableServiceAccountJSONRequestBody = DisableRequest
 
-// CreateServiceAccountTokenJSONRequestBody defines body for CreateServiceAccountToken for application/json ContentType.
-type CreateServiceAccountTokenJSONRequestBody = CreateTokenRequest
+// CreateServiceAccountTechnicalTokenJSONRequestBody defines body for CreateServiceAccountTechnicalToken for application/json ContentType.
+type CreateServiceAccountTechnicalTokenJSONRequestBody = NewTechnicalToken
+
+// UpdateServiceAccountTechnicalTokenApplicationMergePatchPlusJSONRequestBody defines body for UpdateServiceAccountTechnicalToken for application/merge-patch+json ContentType.
+type UpdateServiceAccountTechnicalTokenApplicationMergePatchPlusJSONRequestBody = TechnicalTokenPatch
+
+// CreateServiceAccountTechnicalTokenSecretJSONRequestBody defines body for CreateServiceAccountTechnicalTokenSecret for application/json ContentType.
+type CreateServiceAccountTechnicalTokenSecretJSONRequestBody = NewTechnicalTokenSecret
 
 // UpdateAuthSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateAuthSettings for application/merge-patch+json ContentType.
 type UpdateAuthSettingsApplicationMergePatchPlusJSONRequestBody = AuthSettingsPatch
@@ -12543,6 +13030,45 @@ type ServerInterface interface {
 	// GetRepositoryResolution Explain how a virtual repository resolves a client path
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/resolution)
 	GetRepositoryResolution(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetRepositoryResolutionParams)
+	// ListRepositoryServiceAccounts List the service accounts of a repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts)
+	ListRepositoryServiceAccounts(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ListRepositoryServiceAccountsParams)
+	// CreateRepositoryServiceAccount Create a service account of a repository
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts)
+	CreateRepositoryServiceAccount(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params CreateRepositoryServiceAccountParams)
+	// DeleteRepositoryServiceAccount Delete a service account of a repository
+	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name})
+	DeleteRepositoryServiceAccount(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string)
+	// GetRepositoryServiceAccount Read a service account of a repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name})
+	GetRepositoryServiceAccount(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, params GetRepositoryServiceAccountParams)
+	// UpdateRepositoryServiceAccount Change a service account of a repository
+	// (PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name})
+	UpdateRepositoryServiceAccount(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, params UpdateRepositoryServiceAccountParams)
+	// DisableRepositoryServiceAccount Disable a service account of a repository
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/disable)
+	DisableRepositoryServiceAccount(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string)
+	// EnableRepositoryServiceAccount Enable a service account of a repository
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/enable)
+	EnableRepositoryServiceAccount(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string)
+	// ListRepositoryServiceAccountTechnicalTokens List the technical tokens of a repository's service account
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens)
+	ListRepositoryServiceAccountTechnicalTokens(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string)
+	// CreateRepositoryServiceAccountTechnicalToken Create a technical token of a repository's service account
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens)
+	CreateRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, params CreateRepositoryServiceAccountTechnicalTokenParams)
+	// DeleteRepositoryServiceAccountTechnicalToken Delete a technical token of a repository's service account
+	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName})
+	DeleteRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, tokenName string)
+	// GetRepositoryServiceAccountTechnicalToken Read a technical token of a repository's service account
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName})
+	GetRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, tokenName string, params GetRepositoryServiceAccountTechnicalTokenParams)
+	// UpdateRepositoryServiceAccountTechnicalToken Change a technical token of a repository's service account
+	// (PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName})
+	UpdateRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, tokenName string, params UpdateRepositoryServiceAccountTechnicalTokenParams)
+	// CreateRepositoryServiceAccountTechnicalTokenSecret Issue a new secret of a technical token of a repository's service account
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets)
+	CreateRepositoryServiceAccountTechnicalTokenSecret(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, tokenName string, params CreateRepositoryServiceAccountTechnicalTokenSecretParams)
 	// GetItemStats Read the download statistics of a file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/stats)
 	GetItemStats(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetItemStatsParams)
@@ -12576,12 +13102,27 @@ type ServerInterface interface {
 	// EnableProjectServiceAccount Enable a service account of a project
 	// (POST /api/v1/projects/{projectKey}/service-accounts/{name}/enable)
 	EnableProjectServiceAccount(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string)
+	// ListProjectServiceAccountTechnicalTokens List the technical tokens of a project's service account
+	// (GET /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens)
+	ListProjectServiceAccountTechnicalTokens(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string)
+	// CreateProjectServiceAccountTechnicalToken Create a technical token of a project's service account
+	// (POST /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens)
+	CreateProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string, params CreateProjectServiceAccountTechnicalTokenParams)
+	// DeleteProjectServiceAccountTechnicalToken Delete a technical token of a project's service account
+	// (DELETE /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName})
+	DeleteProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string, tokenName string)
+	// GetProjectServiceAccountTechnicalToken Read a technical token of a project's service account
+	// (GET /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName})
+	GetProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string, tokenName string, params GetProjectServiceAccountTechnicalTokenParams)
+	// UpdateProjectServiceAccountTechnicalToken Change a technical token of a project's service account
+	// (PATCH /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName})
+	UpdateProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string, tokenName string, params UpdateProjectServiceAccountTechnicalTokenParams)
+	// CreateProjectServiceAccountTechnicalTokenSecret Issue a new secret of a technical token of a project's service account
+	// (POST /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets)
+	CreateProjectServiceAccountTechnicalTokenSecret(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string, tokenName string, params CreateProjectServiceAccountTechnicalTokenSecretParams)
 	// RevokeProjectServiceAccountTokens Revoke all tokens of a project service account
 	// (DELETE /api/v1/projects/{projectKey}/service-accounts/{name}/tokens)
 	RevokeProjectServiceAccountTokens(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string)
-	// CreateProjectServiceAccountToken Create a token of a project service account
-	// (POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens)
-	CreateProjectServiceAccountToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string, params CreateProjectServiceAccountTokenParams)
 	// TestUpstream Test an upstream configuration that is not saved
 	// (POST /api/v1/projects/{projectKey}/upstream-tests)
 	TestUpstream(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
@@ -12627,12 +13168,27 @@ type ServerInterface interface {
 	// EnableServiceAccount Enable a service account
 	// (POST /api/v1/service-accounts/{name}/enable)
 	EnableServiceAccount(w http.ResponseWriter, r *http.Request, name string)
+	// ListServiceAccountTechnicalTokens List the technical tokens of an instance-wide service account
+	// (GET /api/v1/service-accounts/{name}/technical-tokens)
+	ListServiceAccountTechnicalTokens(w http.ResponseWriter, r *http.Request, name string)
+	// CreateServiceAccountTechnicalToken Create a technical token of an instance-wide service account
+	// (POST /api/v1/service-accounts/{name}/technical-tokens)
+	CreateServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, name string, params CreateServiceAccountTechnicalTokenParams)
+	// DeleteServiceAccountTechnicalToken Delete a technical token of an instance-wide service account
+	// (DELETE /api/v1/service-accounts/{name}/technical-tokens/{tokenName})
+	DeleteServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, name string, tokenName string)
+	// GetServiceAccountTechnicalToken Read a technical token of an instance-wide service account
+	// (GET /api/v1/service-accounts/{name}/technical-tokens/{tokenName})
+	GetServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, name string, tokenName string, params GetServiceAccountTechnicalTokenParams)
+	// UpdateServiceAccountTechnicalToken Change a technical token of an instance-wide service account
+	// (PATCH /api/v1/service-accounts/{name}/technical-tokens/{tokenName})
+	UpdateServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request, name string, tokenName string, params UpdateServiceAccountTechnicalTokenParams)
+	// CreateServiceAccountTechnicalTokenSecret Issue a new secret of a technical token of an instance-wide service account
+	// (POST /api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets)
+	CreateServiceAccountTechnicalTokenSecret(w http.ResponseWriter, r *http.Request, name string, tokenName string, params CreateServiceAccountTechnicalTokenSecretParams)
 	// RevokeServiceAccountTokens Revoke all tokens of a service account
 	// (DELETE /api/v1/service-accounts/{name}/tokens)
 	RevokeServiceAccountTokens(w http.ResponseWriter, r *http.Request, name string)
-	// CreateServiceAccountToken Create a service-account token
-	// (POST /api/v1/service-accounts/{name}/tokens)
-	CreateServiceAccountToken(w http.ResponseWriter, r *http.Request, name string, params CreateServiceAccountTokenParams)
 	// GetAuthSettings Read the runtime authentication settings
 	// (GET /api/v1/settings/auth)
 	GetAuthSettings(w http.ResponseWriter, r *http.Request, params GetAuthSettingsParams)
@@ -20047,6 +20603,827 @@ func (siw *ServerInterfaceWrapper) GetRepositoryResolution(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// ListRepositoryServiceAccounts operation middleware
+func (siw *ServerInterfaceWrapper) ListRepositoryServiceAccounts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRepositoryServiceAccountsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRepositoryServiceAccounts(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRepositoryServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) CreateRepositoryServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateRepositoryServiceAccountParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRepositoryServiceAccount(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRepositoryServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRepositoryServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRepositoryServiceAccount(w, r, projectKey, repoKey, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRepositoryServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) GetRepositoryServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRepositoryServiceAccountParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRepositoryServiceAccount(w, r, projectKey, repoKey, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateRepositoryServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRepositoryServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateRepositoryServiceAccountParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateRepositoryServiceAccount(w, r, projectKey, repoKey, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableRepositoryServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) DisableRepositoryServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableRepositoryServiceAccount(w, r, projectKey, repoKey, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableRepositoryServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) EnableRepositoryServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableRepositoryServiceAccount(w, r, projectKey, repoKey, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRepositoryServiceAccountTechnicalTokens operation middleware
+func (siw *ServerInterfaceWrapper) ListRepositoryServiceAccountTechnicalTokens(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRepositoryServiceAccountTechnicalTokens(w, r, projectKey, repoKey, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRepositoryServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) CreateRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateRepositoryServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRepositoryServiceAccountTechnicalToken(w, r, projectKey, repoKey, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRepositoryServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRepositoryServiceAccountTechnicalToken(w, r, projectKey, repoKey, name, tokenName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRepositoryServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) GetRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRepositoryServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRepositoryServiceAccountTechnicalToken(w, r, projectKey, repoKey, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateRepositoryServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRepositoryServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateRepositoryServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateRepositoryServiceAccountTechnicalToken(w, r, projectKey, repoKey, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRepositoryServiceAccountTechnicalTokenSecret operation middleware
+func (siw *ServerInterfaceWrapper) CreateRepositoryServiceAccountTechnicalTokenSecret(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateRepositoryServiceAccountTechnicalTokenSecretParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRepositoryServiceAccountTechnicalTokenSecret(w, r, projectKey, repoKey, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetItemStats operation middleware
 func (siw *ServerInterfaceWrapper) GetItemStats(w http.ResponseWriter, r *http.Request) {
 
@@ -20605,6 +21982,352 @@ func (siw *ServerInterfaceWrapper) EnableProjectServiceAccount(w http.ResponseWr
 	handler.ServeHTTP(w, r)
 }
 
+// ListProjectServiceAccountTechnicalTokens operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectServiceAccountTechnicalTokens(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectServiceAccountTechnicalTokens(w, r, projectKey, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProjectServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateProjectServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProjectServiceAccountTechnicalToken(w, r, projectKey, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProjectServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProjectServiceAccountTechnicalToken(w, r, projectKey, name, tokenName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProjectServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectServiceAccountTechnicalToken(w, r, projectKey, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateProjectServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectServiceAccountTechnicalToken(w, r, projectKey, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProjectServiceAccountTechnicalTokenSecret operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectServiceAccountTechnicalTokenSecret(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateProjectServiceAccountTechnicalTokenSecretParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProjectServiceAccountTechnicalTokenSecret(w, r, projectKey, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RevokeProjectServiceAccountTokens operation middleware
 func (siw *ServerInterfaceWrapper) RevokeProjectServiceAccountTokens(w http.ResponseWriter, r *http.Request) {
 
@@ -20631,65 +22354,6 @@ func (siw *ServerInterfaceWrapper) RevokeProjectServiceAccountTokens(w http.Resp
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RevokeProjectServiceAccountTokens(w, r, projectKey, name)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// CreateProjectServiceAccountToken operation middleware
-func (siw *ServerInterfaceWrapper) CreateProjectServiceAccountToken(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "projectKey" -------------
-	var projectKey ProjectKey
-
-	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params CreateProjectServiceAccountTokenParams
-
-	headers := r.Header
-
-	// ------------- Optional header parameter "Idempotency-Key" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
-			return
-		}
-
-		params.IdempotencyKey = &IdempotencyKey
-
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateProjectServiceAccountToken(w, r, projectKey, name, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -21452,8 +23116,8 @@ func (siw *ServerInterfaceWrapper) EnableServiceAccount(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
-// RevokeServiceAccountTokens operation middleware
-func (siw *ServerInterfaceWrapper) RevokeServiceAccountTokens(w http.ResponseWriter, r *http.Request) {
+// ListServiceAccountTechnicalTokens operation middleware
+func (siw *ServerInterfaceWrapper) ListServiceAccountTechnicalTokens(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -21468,7 +23132,7 @@ func (siw *ServerInterfaceWrapper) RevokeServiceAccountTokens(w http.ResponseWri
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RevokeServiceAccountTokens(w, r, name)
+		siw.Handler.ListServiceAccountTechnicalTokens(w, r, name)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -21478,8 +23142,8 @@ func (siw *ServerInterfaceWrapper) RevokeServiceAccountTokens(w http.ResponseWri
 	handler.ServeHTTP(w, r)
 }
 
-// CreateServiceAccountToken operation middleware
-func (siw *ServerInterfaceWrapper) CreateServiceAccountToken(w http.ResponseWriter, r *http.Request) {
+// CreateServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) CreateServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -21494,7 +23158,7 @@ func (siw *ServerInterfaceWrapper) CreateServiceAccountToken(w http.ResponseWrit
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params CreateServiceAccountTokenParams
+	var params CreateServiceAccountTechnicalTokenParams
 
 	headers := r.Header
 
@@ -21518,7 +23182,249 @@ func (siw *ServerInterfaceWrapper) CreateServiceAccountToken(w http.ResponseWrit
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateServiceAccountToken(w, r, name, params)
+		siw.Handler.CreateServiceAccountTechnicalToken(w, r, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) DeleteServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteServiceAccountTechnicalToken(w, r, name, tokenName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) GetServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServiceAccountTechnicalToken(w, r, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateServiceAccountTechnicalToken operation middleware
+func (siw *ServerInterfaceWrapper) UpdateServiceAccountTechnicalToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateServiceAccountTechnicalTokenParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateServiceAccountTechnicalToken(w, r, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateServiceAccountTechnicalTokenSecret operation middleware
+func (siw *ServerInterfaceWrapper) CreateServiceAccountTechnicalTokenSecret(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenName" -------------
+	var tokenName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenName", r.PathValue("tokenName"), &tokenName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateServiceAccountTechnicalTokenSecretParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateServiceAccountTechnicalTokenSecret(w, r, name, tokenName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeServiceAccountTokens operation middleware
+func (siw *ServerInterfaceWrapper) RevokeServiceAccountTokens(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeServiceAccountTokens(w, r, name)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -24439,9 +26345,32 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/users/me/tokens", wrapper.RevokeOwnTokens)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/users/{username}/tokens", wrapper.RevokeUserTokens)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/service-accounts/{name}/tokens", wrapper.RevokeServiceAccountTokens)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/service-accounts/{name}/tokens", wrapper.CreateServiceAccountToken)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/tokens", wrapper.RevokeProjectServiceAccountTokens)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/tokens", wrapper.CreateProjectServiceAccountToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts", wrapper.ListRepositoryServiceAccounts)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts", wrapper.CreateRepositoryServiceAccount)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}", wrapper.DeleteRepositoryServiceAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}", wrapper.GetRepositoryServiceAccount)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}", wrapper.UpdateRepositoryServiceAccount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/disable", wrapper.DisableRepositoryServiceAccount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/enable", wrapper.EnableRepositoryServiceAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/service-accounts/{name}/technical-tokens", wrapper.ListServiceAccountTechnicalTokens)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/service-accounts/{name}/technical-tokens", wrapper.CreateServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.DeleteServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.GetServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.UpdateServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets", wrapper.CreateServiceAccountTechnicalTokenSecret)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens", wrapper.ListProjectServiceAccountTechnicalTokens)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens", wrapper.CreateProjectServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.DeleteProjectServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.GetProjectServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.UpdateProjectServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets", wrapper.CreateProjectServiceAccountTechnicalTokenSecret)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens", wrapper.ListRepositoryServiceAccountTechnicalTokens)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens", wrapper.CreateRepositoryServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.DeleteRepositoryServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.GetRepositoryServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}", wrapper.UpdateRepositoryServiceAccountTechnicalToken)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets", wrapper.CreateRepositoryServiceAccountTechnicalTokenSecret)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/settings/auth", wrapper.GetAuthSettings)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/settings/auth", wrapper.UpdateAuthSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/settings/visibility", wrapper.GetVisibilitySettings)

@@ -141,6 +141,16 @@ func (f *fixture) seedProjectServiceAccount(project, name string) {
 	f.e.Exec("INSERT INTO service_account (principal_id, project_id) SELECT $1::uuid, id FROM project WHERE key = $2", id, project)
 }
 
+// seedRepositoryServiceAccount inserts a service account of the repository with its actions: its stored name is
+// <project>/<repository>/<name> (R-AUTH-046, the guard of migration 00080).
+func (f *fixture) seedRepositoryServiceAccount(project, repo, name string, actions ...string) {
+	f.t.Helper()
+	id := f.e.Text("INSERT INTO principal (id, kind, name) VALUES (gen_random_uuid(), 'service_account', $1) RETURNING id::text", project+"/"+repo+"/"+name)
+	f.e.Exec(`INSERT INTO service_account (principal_id, project_id, repository_id)
+	          SELECT $1::uuid, p.id, r.id FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = $2 AND r.key = $3`, id, project, repo)
+	f.e.Exec("INSERT INTO service_account_repository_grant (service_account_id, actions) VALUES ($1::uuid, $2::text[])", id, actions)
+}
+
 // seedProjectPolicy inserts a policy of the project without entries, stored as <project>/<name>.
 func (f *fixture) seedProjectPolicy(project, name string) {
 	f.t.Helper()

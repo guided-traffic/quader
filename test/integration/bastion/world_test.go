@@ -279,10 +279,10 @@ func (w *world) newReader(repos ...string) who {
 		"name": "p-" + name, "resources": map[string]any{"repositories": repos},
 		"entries": []any{map[string]any{"principal": "sa:" + name, "actions": []string{"read"}}},
 	})
-	a := w.mustAPI("POST", "/api/v1/service-accounts/"+name+"/tokens", 201, map[string]any{"description": "it", "ttlSeconds": 3600})
+	a := w.mustAPI("POST", "/api/v1/service-accounts/"+name+"/technical-tokens", 201, map[string]any{"name": "it", "ttlSeconds": 3600})
 	m := a.JSON(w.t)
 	tok, _ := m["token"].(string)
-	id, _ := m["id"].(string)
+	id, _ := m["secretId"].(string) // the token ID of the secret (R-AUTH-045)
 	pid := w.st.Text(`SELECT id::text FROM principal WHERE name = $1`, name)
 	w.waitReads(tok, repos[0])
 	return who{name: name, token: tok, id: id, pid: pid}

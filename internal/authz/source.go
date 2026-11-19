@@ -133,6 +133,9 @@ func (s *pgSource) Snapshot(ctx context.Context) (*Snapshot, error) {
 		if snap.CIMappings, err = qs.CiMappingsActive(ctx); err != nil {
 			return err
 		}
+		if snap.AccountGrants, err = qs.AuthzBuildAccountGrants(ctx); err != nil {
+			return err
+		}
 		// >>> M2 virtual
 		if snap.VirtualMembers, err = qs.AuthzBuildVirtualMembers(ctx); err != nil {
 			return err

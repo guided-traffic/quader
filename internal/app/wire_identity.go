@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/netip"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -20,6 +22,8 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TokenScopeOptions are the cross-area checks of token scope validation
@@ -99,6 +103,32 @@ func (a *App) wireIdentity(ctx context.Context, in infra) (identityArea, error) 
 	return identityArea{
 		metrics: metrics, principals: principals, manager: manager, provisioner: provisioner, tokens: tokens, settings: settings,
 	}, nil
+}
+
+// repositoryAccountsHook ends the service accounts of a repository in the transaction that removes the repository's row
+// (R-AUTH-046): their tokens are revoked, serviceaccount.deleted is recorded and every replica's caches learn it before the
+// row's removal deletes the accounts and their principals (ON DELETE CASCADE and the trigger of 00080). The repository area
+// runs it among its delete hooks; it builds on the same stores as the identity area's manager.
+func repositoryAccountsHook(in infra) repository.Hooks {
+	return accountsHook{m: principal.NewManager(principal.ManagerOptions{
+		DB: in.db, Notifier: in.changes, Recorder: in.rec, Authz: authz.NewPrincipalHook(in.changes),
+	})}
+}
+
+type accountsHook struct{ m *principal.Manager }
+
+// OnUpdated implements [repository.Hooks]: an update changes no account.
+func (accountsHook) OnUpdated(context.Context, meta.Tx, repository.Caller, repository.Repository, repository.Repository) error {
+	return nil
+}
+
+// OnDelete implements [repository.Hooks].
+func (h accountsHook) OnDelete(ctx context.Context, tx meta.Tx, c repository.Caller, r repository.Repository) error {
+	id, err := strconv.ParseInt(r.ID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("identity: the repository id %q is no number: %w", r.ID, err)
+	}
+	return h.m.EndRepositoryAccountsTx(ctx, tx, principal.Caller{Actor: c.Actor, Source: c.Source}, id)
 }
 
 // lastUsedComponent owns the flush loop of the token last-used buffer

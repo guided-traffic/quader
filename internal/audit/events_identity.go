@@ -43,7 +43,11 @@ const (
 	EventSAUpdated           = "serviceaccount.updated"
 	EventSADisabled          = "serviceaccount.disabled"
 	EventSADeleted           = "serviceaccount.deleted"
-	EventSettingsAuthChanged = "settings.auth.changed"
+	// The technical tokens of a service account (R-AUTH-045): a named line of secrets with a stable ID.
+	EventTechnicalTokenCreated = "technicaltoken.created"
+	EventTechnicalTokenUpdated = "technicaltoken.updated"
+	EventTechnicalTokenDeleted = "technicaltoken.deleted"
+	EventSettingsAuthChanged   = "settings.auth.changed"
 )
 
 // JSON Schema fragments shared by several events. Every array declares maxItems (R-OPS-014).
@@ -65,11 +69,12 @@ func init() {
 	token(EventTokenCreated, Transactional, NoJournal, `{"type":"object","properties":{`+
 		`"type":{"type":"string","enum":["pat","sat","cit","bst"]},"owner":{"type":"string"},"scope":`+eventSchemaScope+`,`+
 		`"expiresAt":{"type":["string","null"]},"createdVia":{"type":"string"},"description":{"type":"string"},"derivedFrom":{"type":"string"},`+
+		`"technicalToken":{"type":"string"},"rotatedFrom":{"type":"string"},`+
 		`"project":{"type":"string"},"bastion":{"type":"string"},"tokenId":{"type":"string"},"ciIssuer":{"type":"string"},"ciMappings":`+eventSchemaNames+`,"ciClaims":{"type":"object"}}}`)
 	token(EventTokenRotated, Transactional, JournalRevocation, `{"type":"object","properties":{`+
 		`"predecessor":{"type":"string"},"overlapSeconds":{"type":"integer"},"predecessorExpiresAt":{"type":["string","null"]}}}`)
 	token(EventTokenRevoked, Transactional, JournalRevocation, `{"type":"object","properties":{`+
-		`"reason":{"type":"string"},"cascaded":`+eventSchemaNames+`,"owner":{"type":"string"},"project":{"type":"string"},`+
+		`"reason":{"type":"string"},"cascaded":`+eventSchemaNames+`,"owner":{"type":"string"},"project":{"type":"string"},"technicalToken":{"type":"string"},`+
 		`"bastion":{"type":"string"},"tokenId":{"type":"string"}}}`)
 	token(EventTokenExpiring, Transactional, NoJournal, `{"type":"object","properties":{`+
 		`"owner":{"type":"string"},"hint":{"type":"string"},"description":{"type":"string"},"expiresAt":{"type":"string"}}}`)
@@ -122,12 +127,26 @@ func init() {
 	ident(EventGroupMembersChanged, JournalRevocation, `{"type":"object","properties":{`+
 		`"added":`+eventSchemaMemberships+`,"removed":`+eventSchemaMemberships+`}}`)
 
-	// project is the key of the project of a project service account (Q-AUTHZ-169),
-	// absent for a global one.
-	ident(EventSACreated, NoJournal, `{"type":"object","properties":{"source":{"type":"string"},"admin":{"type":"boolean"},"project":{"type":"string"}}}`)
-	ident(EventSAUpdated, NoJournal, `{"type":"object","properties":{"fields":`+eventSchemaNames+`,"project":{"type":"string"}}}`)
-	ident(EventSADisabled, JournalRevocation, `{"type":"object","properties":{"tokensRevoked":{"type":"integer"},"project":{"type":"string"}}}`)
-	ident(EventSADeleted, JournalRevocation, `{"type":"object","properties":{"tokensDeleted":{"type":"integer"},"membershipsDeleted":{"type":"integer"},"project":{"type":"string"}}}`)
+	// project is the key of the project of a project or repository service account (Q-AUTHZ-169), absent for a global one;
+	// level is instance, project or repository, repository the key of a repository's account (R-AUTH-046); actions are the
+	// actions of a repository's account on its repository, on its creation and on a change of them (R-AUTHZ-039).
+	// serviceaccount.updated carries the actions before and after in its journal entry, so a restore replays a narrowing of
+	// them (R-AUTHZ-031); moved names the account's old and new name when its repository moved to another project.
+	saPlace := `"project":{"type":"string"},"level":{"type":"string","enum":["instance","project","repository"]},"repository":{"type":"string"}`
+	ident(EventSACreated, NoJournal, `{"type":"object","properties":{"source":{"type":"string"},"admin":{"type":"boolean"},"actions":`+eventSchemaNames+`,`+saPlace+`}}`)
+	ident(EventSAUpdated, JournalRevocation, `{"type":"object","properties":{"fields":`+eventSchemaNames+`,"actions":`+eventSchemaNames+`,`+
+		`"moved":{"type":"object","properties":{"from":{"type":"string"},"to":{"type":"string"}}},`+saPlace+`}}`)
+	ident(EventSADisabled, JournalRevocation, `{"type":"object","properties":{"tokensRevoked":{"type":"integer"},`+saPlace+`}}`)
+	ident(EventSADeleted, JournalRevocation, `{"type":"object","properties":{"tokensDeleted":{"type":"integer"},"membershipsDeleted":{"type":"integer"},`+
+		`"repositoryDeleted":{"type":"boolean"},`+saPlace+`}}`)
+
+	// The technical tokens of R-AUTH-045: account is the account's reference (sa:…), technicalToken the token's ID, name its
+	// name. Its secrets are recorded by token.created and token.revoked, which carry technicalToken too; those are journaled.
+	technical := `{"type":"object","properties":{"account":{"type":"string"},"technicalToken":{"type":"string"},"name":{"type":"string"},` +
+		`"fields":` + eventSchemaNames + `,"secretsRevoked":{"type":"integer"},` + saPlace + `}}`
+	ident(EventTechnicalTokenCreated, NoJournal, technical)
+	ident(EventTechnicalTokenUpdated, NoJournal, technical)
+	ident(EventTechnicalTokenDeleted, NoJournal, technical)
 
 	// The entry carries the two runtime maxima before and after on every change, not only when the change sets
 	// them: an unchanged value is a no-op for the replay comparator (R-AUTH-041), and a producer that always

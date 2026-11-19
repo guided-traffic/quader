@@ -4,7 +4,9 @@ Perspective: how much one caller can take from Quader and from the upstreams beh
 what the usage overview records about people and addresses, and where the bounds stop. The mechanisms are specified on
 [spec/usage-and-limits.md](../spec/usage-and-limits.md) (walk item W-26, the owner's decisions of 2026-11-19) and
 [identity-and-authentication.md](../spec/identity-and-authentication.md) R-AUTH-045 and R-AUTH-046 (technical tokens, a
-repository's service accounts); **none of them is built yet**. This page states what the specification promises, so that the work
+repository's service accounts). The technical tokens and a repository's service accounts are built (work package 1; the code is
+described on [tokens-and-credentials.md](tokens-and-credentials.md) and [permissions.md](permissions.md#account-grants)); **the
+limits and the usage overview are not built yet**. This page states what the specification promises, so that the work
 packages of [developer/usage-and-limits.md](../developer/usage-and-limits.md) are built against it; it changes to "what the code
 does" as they land. What is built today on the same paths is on [api-edge.md](api-edge.md) (the request classes of R-API-016) and
 [endpoints-and-exposure.md](endpoints-and-exposure.md) (the endpoint's class).
@@ -103,7 +105,11 @@ repository only, is administered by the project's Owners, moves with its reposit
 policy, a group, a role binding or a project membership ([R-AUTHZ-039](../spec/authorization.md#r-authz-039--the-actions-of-a-repositorys-service-account)).
 Its tokens follow the Owner's token bounds (never non-expiring, no administrator scope, no system item). Rotation and a new secret
 keep the token's budget subject, so a leaked secret that is revoked and replaced keeps its system's limit; the leaked secret itself
-is dead.
+is dead. Built: the subject is the technical token's ID, which the authentication stage hands on as `Credential.TechnicalTokenID`
+([principal.go](../../internal/httpserver/principal.go)); a rotation's successor and a new secret carry the same ID
+([rotate.go](../../internal/auth/token/rotate.go), [technical.go](../../internal/auth/token/technical.go)). A repository's account
+being deleted keeps authenticated tokens for as long as the delete job runs, with no right
+([H-1013](permissions.md#h-1013--the-tokens-of-a-repositorys-accounts-authenticate-until-the-repository-row-is-removed)).
 
 ## The precision that remains
 

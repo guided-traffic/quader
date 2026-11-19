@@ -3176,6 +3176,7 @@ to this mechanism. At least these events are flagged:
 | `user.disabled`, `user.deleted` | identity R-AUTH-016, R-AUTH-021, R-AUTH-039 | Disable the user |
 | `user.updated` (the pending identity links it removed) | identity R-AUTH-016, R-AUTH-041 | Remove the pending link of each journaled provider from the user; never a linked identity ([Q-AUTH-205](identity-and-authentication.md#q-auth-205--userupdated-carries-the-pending-identity-links-it-removed-and-the-replay-removes-them)) |
 | `serviceaccount.disabled`, `serviceaccount.deleted` | identity R-AUTH-020 | Disable the service account |
+| `serviceaccount.updated` | identity R-AUTH-020, R-AUTHZ-039 | Narrow the actions of a repository's service account to the journaled after-set; disable it when that is a narrowing on top of a broadening the restored database lacks |
 | `bastion.disabled`, `bastion.deleted` | [bastion.md](bastion.md) R-BAS-004 | Disable the Bastion registration ([Q-BAS-145](bastion.md#q-bas-145--a-disabled-or-deleted-registration-is-journaled-and-replayed-as-disabled)) |
 | `group.deleted` | identity R-AUTH-018 | Delete the group |
 | `group.members.changed`, `user.groups.synced` | identity R-AUTH-018, R-AUTH-008, R-AUTH-039 | Remove each removed membership with its source; added members are ignored |

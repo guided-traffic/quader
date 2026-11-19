@@ -5,7 +5,8 @@ import { ApiError } from '../../api/problem';
 import { ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { SessionApi } from '../../api/session-api';
-import { FakeIdentityApi, FakePolicyApi, FakeTokensApi, samplePolicy } from '../../api/testing/access-fakes';
+import { FakeIdentityApi, FakePolicyApi, FakeTechnicalTokensApi, FakeTokensApi, sampleAccount, samplePolicy } from '../../api/testing/access-fakes';
+import { TechnicalTokensApi } from '../../api/technical-tokens-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeRepositoriesApi, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
 import { FakeProjectsApi, sampleProject } from '../../api/testing/fakes-projects';
@@ -131,20 +132,11 @@ describe('A project service account (R-UI-041, Q-AUTHZ-175, Q-AUTHZ-177)', () =>
   const seed = (get: Get): void => {
     projectOwner()(get);
     (get(IdentityApi) as FakeIdentityApi).accounts = [
-      {
-        id: 'sa-web-ci',
-        name: 'ci',
-        principal: 'sa:web/ci',
-        description: 'CI of the web team',
-        status: 'active',
-        project: 'web',
-        isAdmin: false,
-        createdAt: '2026-11-01T08:00:00Z',
-      },
+      sampleAccount({ id: 'sa-web-ci', name: 'ci', project: 'web', description: 'CI of the web team', createdAt: '2026-11-01T08:00:00Z' }),
     ];
   };
 
-  it('R-UI-041 an Owner issues a token that always expires, with the cap said, and passes axe', async () => {
+  it('R-UI-041 R-UI-181 an Owner issues a technical token that always expires, with the cap said, and passes axe', async () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountDetail, {
       inputs: { name: 'ci', project: 'web' },
       capabilities: [],
@@ -153,15 +145,15 @@ describe('A project service account (R-UI-041, Q-AUTHZ-175, Q-AUTHZ-177)', () =>
     expect(text(root)).toContain('Service account of project web');
     // No role section for a project account, and nothing global is read.
     expect(root.querySelector('quader-principal-roles')).toBeNull();
-    buttonByText(root, 'Create token').click();
+    buttonByText(root, 'New technical token').click();
     await settle(fixture);
     const form = root.querySelector('quader-token-form') as HTMLElement;
     expect(text(form)).not.toContain('Never expires');
     expect(text(form)).toContain('caps the lifetime of service-account tokens');
-    typeInto(form, 'Description', 'nightly');
-    buttonByText(form, 'Create token').click();
+    typeInto(form, 'Name', 'nightly');
+    buttonByText(form, 'Create technical token').click();
     await settle(fixture);
-    expect((get(TokensApi) as FakeTokensApi).calls).toContain('createForServiceAccount ci nightly');
+    expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).calls).toContain('create sa:web/ci nightly');
     expect(root.querySelector('quader-token-secret')).toBeTruthy();
     expect(await seriousViolations(root)).toEqual([]);
   });
@@ -186,14 +178,13 @@ describe('A project service account (R-UI-041, Q-AUTHZ-175, Q-AUTHZ-177)', () =>
     expect(root.textContent).toContain('Service account of project');
   });
 
-  it('R-UI-041 the token list of a project account asks for its qualified principal', async () => {
+  it('R-UI-041 R-UI-181 the technical tokens of a project account are read under the project', async () => {
     const { get } = await renderScreen(ServiceAccountDetail, {
       inputs: { name: 'ci', project: 'web' },
       capabilities: [],
       setup: seed,
     });
-    const tokens = get(TokensApi) as FakeTokensApi;
-    expect(tokens.lastFilters?.owner).toBe('sa:web/ci');
+    expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).lastList).toEqual({ name: 'ci', project: 'web', repository: null });
   });
 
   it('R-AUTHZ-026 the same name may exist in two projects: the account is read inside the project of the route', async () => {
@@ -203,7 +194,7 @@ describe('A project service account (R-UI-041, Q-AUTHZ-175, Q-AUTHZ-177)', () =>
       setup: (g) => {
         seed(g);
         const api = g(IdentityApi) as FakeIdentityApi;
-        api.accounts = [...api.accounts, { ...api.accounts[0]!, id: 'sa-data-ci', principal: 'sa:data/ci', description: 'CI of data', project: 'data' }];
+        api.accounts = [...api.accounts, sampleAccount({ id: 'sa-data-ci', name: 'ci', description: 'CI of data', project: 'data' })];
       },
     });
     expect(text(root)).toContain('Service account of project data');

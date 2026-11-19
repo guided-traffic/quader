@@ -52,7 +52,16 @@ func (s *Service) Cleanup(ctx context.Context) (int64, error) {
 			break
 		}
 	}
-	return total, ctx.Err()
+	if err := ctx.Err(); err != nil {
+		return total, err
+	}
+	// A technical token whose last secret row went is deleted too (R-AUTH-045); its rules go with limits-cleanup and its usage
+	// stays until its own retention (usage-and-limits.md R-LIM-038).
+	err := s.o.DB.Read(ctx, func(db q.DBTX) error {
+		_, err := q.New(db).IdentityDeleteEndedTechnicalTokens(ctx)
+		return err
+	})
+	return total, principal.DBErr("token.cleanup", err)
 }
 
 // NoticeExpiring writes token.expiring for the active PATs and SATs whose expiry

@@ -90,6 +90,11 @@ type Credential struct {
 	// TokenID and TokenType identify the token (MethodBearer, MethodBasic, MethodAPIKey).
 	TokenID   string
 	TokenType TokenType
+	// TechnicalTokenID is the technical token a service-account token is a secret of (R-AUTH-045): the subject of the
+	// request's budget, the same across rotations and new secrets (usage-and-limits.md R-LIM-001). Read from the token
+	// cache entry, so it costs no query; empty for every credential that is no service-account token. For a registry
+	// token it is the one of the quader token the registry token was issued for.
+	TechnicalTokenID string
 	// ExpiresAt is the token's expiry; nil for a token that does not expire and for a credential that is no
 	// token. The marking of a Bastion request reports it (R-BAS-013).
 	ExpiresAt *time.Time

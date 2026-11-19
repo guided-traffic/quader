@@ -24,6 +24,8 @@ type AuthTokens struct {
 	CIT                 AuthTokenCIT  `yaml:"cit"`
 	BST                 AuthTokenBST  `yaml:"bst"`
 	MaxActive           AuthTokenMax  `yaml:"max_active_per_principal"`
+	// MaxTechnicalPerAccount bounds the technical tokens of one service account, ended ones included (R-AUTH-045).
+	MaxTechnicalPerAccount int `yaml:"max_technical_tokens_per_account" default:"100" validate:"min=1" doc:"Technical tokens of one service account, ended ones included (R-AUTH-045); those with a live secret are bounded by max_active_per_principal.sat."`
 }
 
 // MaxTokenLifetime is the longest maximum lifetime of a personal or service-account token: the bound of max_ttl and of the

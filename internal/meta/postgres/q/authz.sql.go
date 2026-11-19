@@ -123,6 +123,49 @@ func (q *Queries) AuthzBindingSource(ctx context.Context, arg AuthzBindingSource
 	return items, nil
 }
 
+const authzBuildAccountGrants = `-- name: AuthzBuildAccountGrants :many
+SELECT s.repository_id::bigint AS repository_id, s.principal_id::text AS principal_id, p.name AS principal_name, g.actions
+  FROM service_account_repository_grant g
+  JOIN service_account s ON s.principal_id = g.service_account_id
+  JOIN principal p ON p.id = s.principal_id
+ WHERE s.repository_id IS NOT NULL
+ ORDER BY s.repository_id, p.name
+`
+
+type AuthzBuildAccountGrantsRow struct {
+	RepositoryID  int64
+	PrincipalID   string
+	PrincipalName string
+	Actions       []string
+}
+
+// The actions of the repositories' service accounts on their repositories (R-AUTHZ-039, Q-AUTHZ-296), with the stored name the
+// explanation names as account:sa:<name>.
+func (q *Queries) AuthzBuildAccountGrants(ctx context.Context) ([]AuthzBuildAccountGrantsRow, error) {
+	rows, err := q.db.Query(ctx, authzBuildAccountGrants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AuthzBuildAccountGrantsRow{}
+	for rows.Next() {
+		var i AuthzBuildAccountGrantsRow
+		if err := rows.Scan(
+			&i.RepositoryID,
+			&i.PrincipalID,
+			&i.PrincipalName,
+			&i.Actions,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const authzBuildBindings = `-- name: AuthzBuildBindings :many
 SELECT b.role, b.principal_id::text AS principal_id, COALESCE(sa.project_id::text, '')::text AS principal_project
   FROM authz_role_binding b
@@ -1227,6 +1270,34 @@ func (q *Queries) AuthzServiceAccountProject(ctx context.Context, principalID st
 			return nil, err
 		}
 		items = append(items, project)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const authzServiceAccountRepository = `-- name: AuthzServiceAccountRepository :many
+SELECT COALESCE(s.repository_id, 0)::bigint AS repository_id
+  FROM service_account s
+ WHERE s.principal_id = $1::text::uuid
+`
+
+// The repository of a repository's service account (R-AUTH-046) by its ID, 0 for any other account; no row for a principal
+// that is no service account. A repository's account owns packages in its repository only (R-AUTHZ-039).
+func (q *Queries) AuthzServiceAccountRepository(ctx context.Context, principalID string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, authzServiceAccountRepository, principalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var repository_id int64
+		if err := rows.Scan(&repository_id); err != nil {
+			return nil, err
+		}
+		items = append(items, repository_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

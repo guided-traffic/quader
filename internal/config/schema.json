@@ -599,6 +599,13 @@
               },
               "type": "object"
             },
+            "max_technical_tokens_per_account": {
+              "default": 100,
+              "description": "Technical tokens of one service account, ended ones included (R-AUTH-045); those with a live secret are bounded by max_active_per_principal.sat.",
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_AUTH_TOKENS_MAX_TECHNICAL_TOKENS_PER_ACCOUNT"
+            },
             "pat": {
               "additionalProperties": false,
               "properties": {

@@ -52,14 +52,16 @@ func principalFromResult(r auth.Result) httpserver.Principal {
 		// The external flag the stage read with the status and the groups (R-AUTH-044).
 		External: r.Principal.External,
 		Credential: httpserver.Credential{
-			Method:        httpserver.AuthMethod(r.Credential.Method),
-			SessionID:     r.Credential.SessionID,
-			TokenID:       r.Credential.TokenID,
-			ExpiresAt:     r.Credential.ExpiresAt,
-			TokenType:     httpserver.TokenType(r.Credential.TokenType),
-			BasicUsername: r.Credential.BasicUsername,
-			Scope:         r.Credential.Scope,
-			Registry:      registryGrant(r.Credential.Registry),
+			Method:    httpserver.AuthMethod(r.Credential.Method),
+			SessionID: r.Credential.SessionID,
+			TokenID:   r.Credential.TokenID,
+			ExpiresAt: r.Credential.ExpiresAt,
+			TokenType: httpserver.TokenType(r.Credential.TokenType),
+			// The subject of the request's budget for a technical token (R-AUTH-045, R-LIM-001).
+			TechnicalTokenID: r.Credential.TechnicalTokenID,
+			BasicUsername:    r.Credential.BasicUsername,
+			Scope:            r.Credential.Scope,
+			Registry:         registryGrant(r.Credential.Registry),
 		},
 	}
 	for _, g := range r.Groups {

@@ -171,9 +171,9 @@ func TestR_AUTH_020_ProjectServiceAccountsOfTheDomain(t *testing.T) {
 			t.Fatal(err)
 		}
 		issue := func(scope string, ttl *int64) (token.Created, error) {
-			req := token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "ci", Scope: []byte(scope), Via: "api", Delegated: true}
+			req := token.CreateRequest{Caller: admin, Scope: []byte(scope), Via: "api", Delegated: true}
 			req.TTL.Seconds = ttl
-			return a.tokens.Create(ctx, req)
+			return issueSAT(ctx, a.tokens, sa, req)
 		}
 		_, err = issue(`{"inherit":true,"system":["identities:read"]}`, nil)
 		wantCode(t, err, 422, errs.CodeInvalidScope)
@@ -203,8 +203,8 @@ func TestR_AUTH_020_ProjectServiceAccountsOfTheDomain(t *testing.T) {
 			t.Errorf("token.created details %v", d)
 		}
 		// The administrator's own request still takes a system item and no lifetime.
-		if _, err := a.tokens.Create(ctx, token.CreateRequest{
-			Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "x", Via: "admin-cli", Admin: true,
+		if _, err := issueSAT(ctx, a.tokens, sa, token.CreateRequest{
+			Caller: admin, Via: "admin-cli", Admin: true,
 			Scope: []byte(`{"inherit":true,"system":["identities:read"]}`),
 		}); err != nil {
 			t.Fatalf("an administrator's token: %v", err)
@@ -349,7 +349,7 @@ func TestR_AUTHZ_026_ProjectServiceAccountsOverHTTP(t *testing.T) {
 		rp := s.call(post, "/api/v1/projects/web/service-accounts", fx.adminToken, map[string]any{"name": "partner"})
 		want(t, rp, 201, "")
 		m := rp.json(t)
-		if str(m, "project") != "web" || str(m, "name") != "partner" || str(m, "principal") != "sa:web/partner" {
+		if str(m, "project") != "web" || str(m, "name") != "partner" || str(m, "reference") != "sa:web/partner" {
 			t.Fatalf("%s", rp.Body)
 		}
 		want(t, s.call(post, "/api/v1/projects/mobile/service-accounts", fx.adminToken, map[string]any{"name": "partner"}), 201, "")
@@ -358,10 +358,10 @@ func TestR_AUTHZ_026_ProjectServiceAccountsOverHTTP(t *testing.T) {
 		want(t, s.call(post, "/api/v1/projects/nope/service-accounts", fx.adminToken, map[string]any{"name": "partner"}), 404, "")
 	})
 	t.Run("R-AUTH-020 the routes address the account of their own place", func(t *testing.T) {
-		if m := s.call(get, "/api/v1/service-accounts/partner", fx.adminToken, nil).json(t); m["project"] != nil || str(m, "principal") != "sa:partner" {
+		if m := s.call(get, "/api/v1/service-accounts/partner", fx.adminToken, nil).json(t); m["project"] != nil || str(m, "reference") != "sa:partner" {
 			t.Fatalf("the instance-wide route reads the instance-wide account: %v", m)
 		}
-		if m := s.call(get, "/api/v1/projects/web/service-accounts/partner", fx.adminToken, nil).json(t); str(m, "project") != "web" || str(m, "principal") != "sa:web/partner" {
+		if m := s.call(get, "/api/v1/projects/web/service-accounts/partner", fx.adminToken, nil).json(t); str(m, "project") != "web" || str(m, "reference") != "sa:web/partner" {
 			t.Fatalf("%v", m)
 		}
 		want(t, s.call(get, "/api/v1/projects/web/service-accounts/ghost", fx.adminToken, nil), 404, "")
@@ -441,38 +441,46 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 		want(t, s.call(patch, "/api/v1/projects/web/service-accounts/ext-bot", wandaTok, map[string]any{"description": "x"}, "If-Match", "*"), 404, "")
 		want(t, s.call(patch, "/api/v1/projects/web/service-accounts/shop-bot", wandaTok, map[string]any{"description": "x"}, "If-Match", "*"), 404, "")
 	})
-	t.Run("Q-AUTHZ-177 R-AUTH-027 a token is capped, carries no capability and may be bound to an endpoint", func(t *testing.T) {
-		path := "/api/v1/projects/web/service-accounts/web-ci/tokens"
-		rp := s.call(post, path, wandaTok, map[string]any{"description": "ci", "ttlSeconds": 3600, "scope": map[string]any{"inherit": true, "endpoints": []string{"customers"}}})
+	t.Run("Q-AUTHZ-177 R-AUTH-027 R-AUTH-045 a technical token is capped, carries no capability and may be bound to an endpoint", func(t *testing.T) {
+		path := "/api/v1/projects/web/service-accounts/web-ci/technical-tokens"
+		rp := s.call(post, path, wandaTok, map[string]any{"name": "ci", "ttlSeconds": 3600, "scope": map[string]any{"inherit": true, "endpoints": []string{"customers"}}})
 		want(t, rp, 201, "")
 		m := rp.json(t)
-		if m["expiresAt"] == nil || str(m, "token") == "" {
+		secrets := asList(m["secrets"])
+		if len(secrets) != 1 || str(m, "token") == "" || str(m, "secretId") == "" || str(m, "state") != "active" {
 			t.Fatalf("%s", rp.Body)
 		}
-		if sc, _ := m["scope"].(map[string]any); sc["admin"] == true || len(asList(sc["system"])) != 0 {
+		first, _ := secrets[0].(map[string]any)
+		if first["expiresAt"] == nil || str(first, "id") != str(m, "secretId") {
+			t.Fatalf("%s", rp.Body)
+		}
+		if sc, _ := first["scope"].(map[string]any); sc["admin"] == true || len(asList(sc["system"])) != 0 {
 			t.Fatalf("scope %v", sc)
 		}
-		if o, _ := m["owner"].(map[string]any); o["name"] != "web/web-ci" {
-			t.Fatalf("the owner is the qualified principal: %s", rp.Body)
+		if acct, _ := m["account"].(map[string]any); acct["reference"] != "sa:web/web-ci" || acct["level"] != "project" {
+			t.Fatalf("the account is the qualified principal: %s", rp.Body)
 		}
-		want(t, s.call(post, path, wandaTok, map[string]any{"description": "ci", "ttlSeconds": 0}), 403, "")
-		want(t, s.call(post, path, wandaTok, map[string]any{"description": "ci", "ttlSeconds": 8760*3600 + 1}), 400, "ttl_exceeds_maximum")
-		want(t, s.call(post, path, wandaTok, map[string]any{"description": "ci", "scope": map[string]any{"inherit": true, "system": []string{"identities:read"}}}), 422, "invalid_scope")
-		want(t, s.call(post, path, wandaTok, map[string]any{"description": "ci", "scope": map[string]any{"inherit": true, "admin": true}}), 422, "invalid_scope")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "ci", "ttlSeconds": 3600}), 409, "already_exists")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "ci-forever", "ttlSeconds": 0}), 403, "")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "ci-long", "ttlSeconds": 8760*3600 + 1}), 400, "ttl_exceeds_maximum")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "ci-system", "scope": map[string]any{"inherit": true, "system": []string{"identities:read"}}}), 422, "invalid_scope")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "ci-admin", "scope": map[string]any{"inherit": true, "admin": true}}), 422, "invalid_scope")
 		// R-AUTH-024: the selectors of a scope are instance selectors; a bare key is 400 invalid_scope.
-		want(t, s.call(post, path, wandaTok, map[string]any{"description": "ci", "scope": map[string]any{"repositories": []any{map[string]any{"repositories": []string{"npm-local"}, "actions": []string{"read"}}}}}), 400, "invalid_scope")
-		want(t, s.call(post, path, wandaTok, map[string]any{"description": "ci", "scope": map[string]any{"repositories": []any{map[string]any{"repositories": []string{"web/*"}, "actions": []string{"read"}}}}}), 201, "")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "ci-bare", "scope": map[string]any{"repositories": []any{map[string]any{"repositories": []string{"npm-local"}, "actions": []string{"read"}}}}}), 400, "invalid_scope")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "ci-web", "scope": map[string]any{"repositories": []any{map[string]any{"repositories": []string{"web/*"}, "actions": []string{"read"}}}}}), 201, "")
+		// A name is the system that uses the token: it follows ^[a-z0-9][a-z0-9-]{0,62}$.
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "Nightly Mirror"}), 422, "validation_failed")
 	})
 	t.Run("Q-AUTH-192 a token an Owner issues is not self-rotatable, so it never outlives the cap", func(t *testing.T) {
-		path := "/api/v1/projects/web/service-accounts/web-ci/tokens"
-		rp := s.call(post, path, wandaTok, map[string]any{"description": "renews itself", "ttlSeconds": 3600, "selfRotatable": true})
+		path := "/api/v1/projects/web/service-accounts/web-ci/technical-tokens"
+		rp := s.call(post, path, wandaTok, map[string]any{"name": "renews-itself", "ttlSeconds": 3600, "selfRotatable": true})
 		want(t, rp, 422, "validation_failed")
 		if errs, _ := rp.json(t)["errors"].([]any); len(errs) != 1 || errs[0].(map[string]any)["pointer"] != "/selfRotatable" {
 			t.Fatalf("%s", rp.Body)
 		}
-		want(t, s.call(post, path, wandaTok, map[string]any{"description": "fixed", "ttlSeconds": 3600, "selfRotatable": false}), 201, "")
+		want(t, s.call(post, path, wandaTok, map[string]any{"name": "fixed", "ttlSeconds": 3600, "selfRotatable": false}), 201, "")
 		// An administrator of quader still issues one (R-AUTH-030).
-		want(t, s.call(post, path, fx.adminToken, map[string]any{"description": "renews itself", "ttlSeconds": 3600, "selfRotatable": true}), 201, "")
+		want(t, s.call(post, path, fx.adminToken, map[string]any{"name": "renews-itself", "ttlSeconds": 3600, "selfRotatable": true}), 201, "")
 	})
 	t.Run("Q-AUTHZ-177 the tokens of the project's accounts are seen and revoked, no others", func(t *testing.T) {
 		toks := list(t, s.call(get, "/api/v1/tokens?owner=sa:web/web-ci", wandaTok, nil))
@@ -513,7 +521,7 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 				t.Fatalf("%s: the administrator does not see the account's token", c.owner)
 			}
 			want(t, s.call(del, c.path+"/tokens", wandaTok, nil), c.revoke, "")
-			want(t, s.call(post, c.path+"/tokens", wandaTok, map[string]any{"description": "x"}), 403, "forbidden")
+			want(t, s.call(post, c.path+"/technical-tokens", wandaTok, map[string]any{"name": "x"}), 403, "forbidden")
 		}
 		want(t, s.call(del, "/api/v1/projects/web/service-accounts/web-ci/tokens", wandaTok, nil), 204, "")
 		if got := list(t, s.call(get, "/api/v1/tokens?owner=sa:web/web-ci", wandaTok, nil)); len(got) != 0 {

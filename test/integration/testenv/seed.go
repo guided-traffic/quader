@@ -76,11 +76,15 @@ func (s *Stack) Token(p Person, sc scope.Scope) string {
 	}
 	h := token.Hash(raw)
 	expires := "now() + interval '1 day'"
+	technical := "NULL"
 	if typ == token.TypeSAT {
 		expires = "NULL"
+		// Every service-account token is a secret of a technical token (R-AUTH-045): each minted one gets its own.
+		technical = "'" + s.Text(`INSERT INTO technical_token (id, service_account_id, name)
+			VALUES (gen_random_uuid(), $1::uuid, 'test-' || substr(md5(random()::text), 1, 12)) RETURNING id::text`, p.ID) + "'::uuid"
 	}
-	s.Exec(`INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at)
-		VALUES (gen_random_uuid(), $1, $2, $3, $4::uuid, 'test', $5::text::jsonb, 'admin-cli', `+expires+`)`,
+	s.Exec(`INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at, technical_token_id)
+		VALUES (gen_random_uuid(), $1, $2, $3, $4::uuid, 'test', $5::text::jsonb, 'admin-cli', `+expires+`, `+technical+`)`,
 		string(typ), h[:], token.Hint(raw), p.ID, string(sc.Marshal()))
 	return raw
 }

@@ -127,17 +127,19 @@ func buildNPMFixture(t testing.TB) (*npmFixture, error) {
 // newSATokenWaiting is newSAToken that waits out the management API's rate limit (R-API-016).
 func newSATokenWaiting(t testing.TB, adm *api, sa string, ttl int, scope map[string]any) createdToken {
 	t.Helper()
-	body := map[string]any{"description": "end-to-end test", "ttlSeconds": ttl, "scope": scope}
+	base := "/api/v1/service-accounts/" + sa
+	pruneTechnical(adm, base)
+	body := map[string]any{"name": technicalName(), "description": "end-to-end test", "ttlSeconds": ttl, "scope": scope}
 	for range 20 {
-		r := adm.do(http.MethodPost, "/api/v1/service-accounts/"+sa+"/tokens", body)
+		r := adm.do(http.MethodPost, base+"/technical-tokens", body)
 		if r.Status == http.StatusTooManyRequests {
 			time.Sleep(2 * time.Second)
 			continue
 		}
 		r.want(t, "token of "+sa, 201)
-		var c createdToken
+		var c technicalCreated
 		r.JSON(t, &c)
-		return c
+		return createdToken{ID: c.SecretID, Token: c.Token}
 	}
 	t.Fatalf("token of %s: still rate limited after 40 s", sa)
 	return createdToken{}

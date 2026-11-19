@@ -22,12 +22,15 @@ project's objects inside it. It does not repeat the model of permissions ([permi
 | Developer | `read`, `annotate`, `deploy` on every repository of the project | `overwrite`, `delete`, `manage`; the administration |
 | Reader | `read` on every repository of the project, reading the project and its members | Every write |
 | Project service account, CI mapping | What the project's policies grant it | Every role: it is never a member |
+| Repository service account | The actions stored with it, on its own repository ([permissions.md](permissions.md#account-grants)) | Every role, every policy, every other repository |
 | `auditor`, `security-admin`, `repository-admin` (`projects:read`) | Reading every project and its members | Changing one |
 
 ```
  administrator of Quader ── creates, names the first Owner ──▶ project ◀── members: users and groups with a role
                                                                │          (reader < developer < maintainer < owner)
                                                                ├── repositories (key unique in the project)
+                                                               │     └── repository service accounts
+                                                               │           (<project>/<repository>/<name>, actions here only)
    global policies ─────────────── union ─────────────────────┤
                                                                ├── project policies (<project>/<name>) ──▶ users, groups,
                                                                │        project service accounts, CI mappings
@@ -133,6 +136,12 @@ caller there reads nothing it could not list before.
   without a policies capability another project's account answers as an unknown one, `AsProjectOwner`). The database refuses a project
   service account in a role binding, a global entry or another project's entry (SQLSTATE `AI005`), and the grants of a project policy
   in the table of global grants (`AI004`).
+- **A repository's service accounts.** An Owner creates, changes, disables and deletes them under the repository's settings
+  (`/projects/{projectKey}/repositories/{key}/service-accounts`, R-AUTH-046) and chooses their actions on that repository
+  (`read`, `annotate`, `deploy`, `overwrite`, `delete`, `manage`). No policy, no role binding and no other repository's owner record
+  takes one (422 `principal_outside_repository`, SQLSTATE `AI005`); the name is stored `<projectKey>/<repositoryKey>/<name>` and the
+  database holds the prefix to the account's repository and its project (`service_account_project_guard`, `AI005`)
+  ([permissions.md](permissions.md#account-grants)).
 
 ## Moving a repository
 
@@ -152,6 +161,13 @@ with the repository's ID and raises its `config_version`, so the old address ans
 version drops what it built, on every replica within the bound of R-AUTHZ-028; it records `repository.moved` in the source project with
 the journal entry of R-AUTHZ-031, and `repository.moved_in` in the target project, so the audit of each project shows the move
 ([Q-REPO-233](../spec/repositories-and-proxy.md#q-repo-233--a-move-is-recorded-in-the-audit-of-both-projects)). What holds the repository by its ID outside the project (a key selector of a global policy, an exposure rule) follows it.
+The repository's own service accounts move with it in the same transaction (`principal.MoveRepositoryAccountsTx`, R-REPO-060): each
+is renamed to `<targetProject>/<repositoryKey>/<name>` and its project set to the target, its actions and technical tokens stay,
+the principals' change area is notified (the account grant is keyed by the repository's ID, which the move's own `authz`
+notification rebuilds), and `serviceaccount.updated` with `moved` is recorded; a deferred
+constraint trigger (`repository_accounts_follow`, `AI005`) refuses a commit in which a repository's project changed and an account
+of it did not follow. An Owner of the source project therefore loses the administration of those accounts with the repository, and
+an Owner of the target gains it; the account never holds a right in the source project.
 Who may move is the API's decision: `repositories:write-config`, or an Owner of both projects (403 for a member with a lower role in
 the target, 404 for a caller that is no member there). The Owner's move is restricted (`checkMoveTarget` in
 [repositories_api.go](../../internal/api/v1/repositories_api.go) passes `restricted`): while a key selector of a global policy names

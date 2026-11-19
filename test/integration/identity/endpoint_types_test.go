@@ -42,9 +42,9 @@ func TestR_EP_011_TheServiceRefusesABindingTheTypeCannotUse(t *testing.T) {
 		if !strings.Contains(err.Error(), "customers") {
 			t.Fatalf("the refusal does not name the endpoint: %v", err)
 		}
-		_, err = a.tokens.Create(ctx, token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "x", Scope: []byte(boundToInternal), Via: "admin-cli", Admin: true})
+		_, err = issueSAT(ctx, a.tokens, sa, token.CreateRequest{Caller: admin, Scope: []byte(boundToInternal), Via: "admin-cli", Admin: true})
 		wantCode(t, err, 400, "invalid_scope")
-		if _, err = a.tokens.Create(ctx, token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "x", Scope: []byte(boundToCustomers), Via: "admin-cli", Admin: true}); err != nil {
+		if _, err = issueSAT(ctx, a.tokens, sa, token.CreateRequest{Caller: admin, Scope: []byte(boundToCustomers), Via: "admin-cli", Admin: true}); err != nil {
 			t.Fatalf("a service-account token on customers: %v", err)
 		}
 	})

@@ -164,16 +164,17 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await expect(bob).toHaveURL(new RegExp(`/projects/${key}/service-accounts/${accountName}$`));
     await expect(bob.getByText('Service account of project')).toBeVisible();
 
-    // The section Tokens of an account without a token is closed; the Owner opens it (Q-UI-333).
-    const tokens = bob.getByRole('button', { name: 'Tokens', exact: true });
+    // The section Technical tokens of an account without a token is closed; the Owner opens it (Q-UI-333).
+    const tokens = bob.getByRole('button', { name: 'Technical tokens', exact: true });
     await expect(tokens).toHaveAttribute('aria-expanded', 'false');
     await tokens.click();
-    await bob.getByRole('button', { name: 'Create token' }).click();
+    await bob.getByRole('button', { name: 'New technical token' }).click();
     const form = bob.locator('quader-token-form');
-    // An Owner's token always expires: no "never", and the cap is said.
+    // An Owner's token always expires: no "never", and the cap is said (R-AUTH-027); the name comes first (R-UI-181).
     await expect(form.getByText('Never expires')).toHaveCount(0);
     await expect(form.getByText(/caps the lifetime of service-account tokens/)).toBeVisible();
-    await form.getByLabel('Description').fill('browser journey');
+    await form.getByLabel('Name', { exact: true }).fill('browser-journey');
+    await form.getByLabel('Description (optional)').fill('the browser journey');
     await form.getByLabel('Lifetime').selectOption({ label: '7 days' });
     await expectAccessible(bob, 'new project token form');
     await form.locator('button[type=submit]').click();
@@ -182,13 +183,16 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await expect(secret).toBeVisible();
     expect(await secret.locator('#secret-value').inputValue()).toMatch(/^qdr_sat_/);
     await secret.getByRole('button', { name: 'I have copied it' }).click();
-    await expect(bob.getByRole('row', { name: /browser journey/ })).toBeVisible();
+    await expect(bob.getByRole('row', { name: /browser-journey/ })).toBeVisible();
     await expectAccessible(bob, 'project service account with a token');
 
-    // The Owner revokes it again; the section stays open with its empty line.
-    await bob.getByRole('row', { name: /browser journey/ }).getByRole('button', { name: 'Revoke' }).click();
+    // The Owner revokes it; the token stays, ended, with Issue new secret (Q-UI-740), and the section stays open.
+    await bob.getByRole('row', { name: /browser-journey/ }).getByRole('button', { name: /^Revoke/ }).click();
     await bob.getByRole('dialog').getByRole('button', { name: 'Revoke' }).click();
-    await expect(bob.getByText(/^No active tokens\./)).toBeVisible();
+    await expect(bob.getByText('No technical token of this account has a live secret.')).toBeVisible();
+    await expect(
+      bob.getByRole('table', { name: 'Expired and revoked technical tokens' }).getByRole('row', { name: /browser-journey/ }).getByRole('button', { name: /^Issue new secret/ }),
+    ).toBeVisible();
     await expect(tokens).toHaveAttribute('aria-expanded', 'true');
   });
 

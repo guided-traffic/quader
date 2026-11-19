@@ -7,7 +7,8 @@ import { Schema } from './types';
 
 /*
  * Tokens (R-AUTH-022 to R-AUTH-032; docs/developer/identity.md). A created or rotated token
- * carries its value once: callers keep it in a component signal and nowhere else (R-UI-043).
+ * carries its value once: callers keep it in a component signal and nowhere else (R-UI-043). A service-account token is a secret
+ * of a technical token, created through `TechnicalTokensApi` (R-AUTH-045) and rotated and revoked here.
  */
 
 export type Token = Schema<'Token'>;
@@ -18,7 +19,7 @@ export type CreateTokenRequest = Schema<'CreateTokenRequest'>;
 export type RevokedToken = Schema<'RevokedToken'>;
 
 export interface TokenFilters {
-  /** `me`, a username or `sa:<name>`. */
+  /** `me`, a username or `sa:<name>` (`sa:<project>/<name>`, `sa:<project>/<repository>/<name>`). */
   readonly owner?: string;
   readonly type?: Token['type'];
   readonly state?: Token['state'] | 'all';
@@ -30,12 +31,6 @@ export abstract class TokensApi {
   abstract list(filters: TokenFilters): PageFetcher<Token>;
   /** For the caller (`POST /tokens`); `ownerName` is only the caller's own name (no impersonation). */
   abstract create(request: CreateTokenRequest, idempotencyKey: string): Promise<TokenCreated>;
-  abstract createForServiceAccount(
-    name: string,
-    project: string | null,
-    request: CreateTokenRequest,
-    idempotencyKey: string,
-  ): Promise<TokenCreated>;
   abstract rotate(id: string, overlapSeconds: number, idempotencyKey: string): Promise<TokenCreated>;
   abstract revoke(id: string): Promise<void>;
   /**
@@ -58,19 +53,6 @@ export class HttpTokensApi extends TokensApi {
 
   override async create(request: CreateTokenRequest, idempotencyKey: string): Promise<TokenCreated> {
     return (await this.client.post<TokenCreated>('/api/v1/tokens', request, { idempotencyKey })).body;
-  }
-
-  override async createForServiceAccount(
-    name: string,
-    project: string | null,
-    request: CreateTokenRequest,
-    idempotencyKey: string,
-  ): Promise<TokenCreated> {
-    return (
-      await this.client.post<TokenCreated>(`${serviceAccountUrl(name, project)}/tokens`, request, {
-        idempotencyKey,
-      })
-    ).body;
   }
 
   override async rotate(id: string, overlapSeconds: number, idempotencyKey: string): Promise<TokenCreated> {

@@ -3212,7 +3212,7 @@ administrator token. The administrator token only creates the project and cleans
 | local, remote and virtual repository `local`, `remote`, `all` of the project | bob | `POST /projects/{key}/repositories` (the virtual one: both as members by their bare keys, the local one as deployment target) |
 | service account `ci`, principal `sa:<key>/ci` | bob | `POST /projects/{key}/service-accounts` |
 | policies `write` (`read`, `deploy` on the local repository) and `read` (`read` on the remote and the virtual repository) | bob | `POST /projects/{key}/policies` |
-| a token, no endpoint, scope `inherit`, one hour | bob | `POST /projects/{key}/service-accounts/ci/tokens` |
+| a technical token with its secret, no endpoint, scope `inherit`, one hour | bob | `POST /projects/{key}/service-accounts/ci/technical-tokens` |
 | publish, install, refusals | the partner, with that token only | the real clients |
 | revoke | bob | `DELETE /tokens/{id}`; the test then waits until the replicas refuse the token |
 | clean up | administrator | the account, the repositories, the project (the project is deleted when the workers have removed the repositories: a repository of any lifecycle counts as a member, `project_not_empty`) |

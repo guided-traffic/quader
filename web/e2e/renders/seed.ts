@@ -343,6 +343,7 @@ export async function seedGrants(admin: Api): Promise<void> {
     [201, 409],
     `service account ${mainProject}/${projectServiceAccount}`,
   );
+  await seedTechnicalTokens(admin);
   // A paused exposure rule, so that the rule editor renders a rule that exists, with its Advanced section; paused, it exposes and
   // hides nothing on the default endpoint.
   await expectStatus(
@@ -356,9 +357,58 @@ export async function seedGrants(admin: Api): Promise<void> {
   );
 }
 
+/**
+ * The technical tokens of the accounts on the three levels and a repository's account with a long name (R-AUTH-045, R-AUTH-046,
+ * R-UI-181): an active token, one with a long name, one whose secret lives a minute (expired by the time the account's page is
+ * rendered; a later run finds it expired) and one revoked. A second run finds them (409) and leaves them.
+ */
+async function seedTechnicalTokens(admin: Api): Promise<void> {
+  const repoAccounts = `/api/v1/projects/${mainProject}/repositories/npm-internal/service-accounts`;
+  await expectStatus(
+    await patient(() =>
+      admin.post(repoAccounts, {
+        name: repositoryServiceAccount,
+        description: 'Publishes the frontend packages from the release pipeline of the customer portal.',
+        actions: ['read', 'deploy'],
+      }),
+    ),
+    [201, 409],
+    `service account ${mainProject}/npm-internal/${repositoryServiceAccount}`,
+  );
+  const accounts = [
+    `/api/v1/service-accounts/${serviceAccount}`,
+    `/api/v1/projects/${mainProject}/service-accounts/${projectServiceAccount}`,
+    `${repoAccounts}/${repositoryServiceAccount}`,
+  ];
+  for (const base of accounts) {
+    // Only what is missing is written: the seed's writes share the administrator's write budget (R-API-016).
+    const listed = await patient(() => admin.get(`${base}/technical-tokens`));
+    await expectStatus(listed, [200], `technical tokens of ${base}`);
+    const have = new Set(((await listed.json()) as { items: { name: string }[] }).items.map((t) => t.name));
+    for (const t of [
+      { name: 'release', description: 'The release job.', ttlSeconds: 90 * 86_400 },
+      { name: longTechnicalToken, description: 'The nightly mirror of the disaster-recovery site.', ttlSeconds: 30 * 86_400 },
+      { name: 'expiry-check', description: '', ttlSeconds: 60 },
+      { name: 'retired-scanner', description: 'The scanner that was replaced.', ttlSeconds: 30 * 86_400 },
+    ]) {
+      if (have.has(t.name)) continue;
+      const res = await patient(() => admin.post(`${base}/technical-tokens`, { ...t, scope: { inherit: true } }));
+      await expectStatus(res, [201, 409], `technical token ${t.name} of ${base}`);
+      if (res.status() === 201 && t.name === 'retired-scanner') {
+        const secret = ((await res.json()) as { secretId: string }).secretId;
+        await expectStatus(await patient(() => admin.delete(`/api/v1/tokens/${secret}`)), [204], `revoke ${t.name} of ${base}`);
+      }
+    }
+  }
+}
+
 export const group = 'web-team';
 export const serviceAccount = 'backup-reader';
 export const projectServiceAccount = 'release-pipeline';
+/** A repository's service account with a long name (R-AUTH-046): the rows and the heading that hold it are looked at. */
+export const repositoryServiceAccount = 'frontend-release-pipeline-of-the-customer-portal-team';
+/** A technical token with a long name (R-AUTH-045, at most 63 characters). */
+export const longTechnicalToken = 'nightly-mirror-of-the-customer-portal-artifacts-for-the-dr-site';
 export const exposureRule = 'customer-releases';
 
 /** One ustar entry: a 512-byte header and the content padded to the block size; a name ending in `/` is a directory. */

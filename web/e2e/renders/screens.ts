@@ -18,6 +18,7 @@ import {
   projectServiceAccount,
   remoteCache,
   remoteImage,
+  repositoryServiceAccount,
   serviceAccount,
 } from './seed';
 import { gradedPackage, manyVersionsPackage } from './advisories';
@@ -415,6 +416,34 @@ async function* allSections(page: Page): AsyncGenerator<string> {
   // The sections; a fold inside one (`inline`, the pattern syntax) stays as the page has it.
   await expect(page.locator('main quader-disclosure:not(.inline) > .disclosure > .collapse-region:not(.open)')).toHaveCount(0);
   yield 'sections';
+}
+
+/**
+ * A service account's page (R-UI-181) as it opens, with its technical tokens (an active one, one with a long name, an expired and a
+ * revoked one in the seed), then the create form of a technical token with its name first, where the caller may create one.
+ */
+async function* technicalTokens(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-technical-token-table tbody tr').first()).toBeVisible();
+  yield '';
+  const create = page.locator('main').getByRole('button', { name: 'New technical token' });
+  if ((await create.count()) === 0) return;
+  await create.click();
+  await expect(page.locator('main quader-token-form input[name="name"]')).toBeVisible();
+  yield 'new-token';
+}
+
+/** A repository's settings with its section Service accounts open, then its create dialog with the rights (R-UI-181). */
+async function* repositoryAccounts(page: Page): AsyncGenerator<string> {
+  const section = page.locator('main quader-disclosure').filter({ hasText: 'Service accounts' }).first();
+  const toggle = section.locator('.toggle').first();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(section.locator('quader-repository-service-accounts tbody tr').first()).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield '';
+  await section.getByRole('button', { name: 'New service account' }).click();
+  await expect(page.locator('quader-service-account-create-dialog .rights')).toBeVisible();
+  yield 'new-account';
 }
 
 /** The closed Visibility section of a project's settings page, opened: where the level of a project is chosen (R-UI-054). */
@@ -882,7 +911,10 @@ export const screens: readonly Screen[] = [
   { id: 'policies', path: `${P}/policies`, kinds: owners },
   { id: 'policy-new', path: `${P}/policies/new`, kinds: owners },
   { id: 'project-service-accounts', path: `${P}/service-accounts`, kinds: owners },
-  { id: 'project-service-account', path: `${P}/service-accounts/${projectServiceAccount}`, kinds: owners },
+  { id: 'project-service-account', path: `${P}/service-accounts/${projectServiceAccount}`, kinds: owners, walk: technicalTokens },
+  // A repository's service account and the section of the repository's settings that lists them (R-UI-181).
+  { id: 'repository-service-account', path: `${P}/repositories/npm-internal/service-accounts/${repositoryServiceAccount}`, kinds: owners, walk: technicalTokens },
+  { id: 'repository-settings-service-accounts', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: repositoryAccounts },
   { id: 'project-ci', path: `${P}/ci`, kinds: owners },
   // A project's mapping editor without an issuer in the address: the issuer select and the policy picker (Q-UI-334).
   { id: 'project-ci-mapping-new', path: `${P}/ci/mappings/new`, kinds: owners },
@@ -910,7 +942,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-groups', path: '/ui/admin/groups', kinds: admins, walk: filtersOpen() },
   { id: 'admin-group', path: `/ui/admin/groups/${group}`, kinds: admins, walk: principalSearch('Add a member', 'ad') },
   { id: 'admin-service-accounts', path: '/ui/admin/service-accounts', kinds: admins, walk: searched('release') },
-  { id: 'admin-service-account', path: `/ui/admin/service-accounts/${serviceAccount}`, kinds: admins },
+  { id: 'admin-service-account', path: `/ui/admin/service-accounts/${serviceAccount}`, kinds: admins, walk: technicalTokens },
   { id: 'admin-permissions', path: '/ui/admin/permissions', kinds: admins, walk: filtersOpen() },
   { id: 'admin-permission-new', path: '/ui/admin/permissions/new', kinds: admins },
   { id: 'admin-roles', path: '/ui/admin/roles', kinds: admins, walk: principalSearch('Bind to', 'sa') },

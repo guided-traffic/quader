@@ -46,7 +46,7 @@ const (
 func feedActions() []string {
 	return []string{
 		audit.EventTokenRevoked, audit.EventCITokenRevoked, audit.EventTokenRotated,
-		audit.EventUserDisabled, audit.EventUserDeleted, audit.EventSADisabled, audit.EventSADeleted,
+		audit.EventUserDisabled, audit.EventUserDeleted, audit.EventSADisabled, audit.EventSADeleted, audit.EventSAUpdated,
 		audit.EventGroupMembersChanged, audit.EventUserGroupsSynced, "authz.role.unbound",
 		audit.EventGroupDeleted, "authz.policy.deleted", "authz.policy.updated", "authz.settings.changed",
 		audit.EventCIIssuerUpdated, audit.EventCIIssuerDisabled, audit.EventCIIssuerDeleted,
@@ -183,7 +183,8 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 		audit.EventVulnFindingReopened:      mapBlock,
 		audit.EventVulnFindingStatusChanged: mapBlock,
 	}
-	for _, a := range []string{audit.EventUserDisabled, audit.EventUserDeleted, audit.EventSADisabled, audit.EventSADeleted} {
+	// serviceaccount.updated narrows the actions of a repository's service account (R-AUTHZ-039): the answers of that account go.
+	for _, a := range []string{audit.EventUserDisabled, audit.EventUserDeleted, audit.EventSADisabled, audit.EventSADeleted, audit.EventSAUpdated} {
 		t[a] = mapPrincipal
 	}
 	// A move takes the repository out of its project's roles and policies and changes its address (R-REPO-060), a disabled or

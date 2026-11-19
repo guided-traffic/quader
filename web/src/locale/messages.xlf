@@ -3012,9 +3012,33 @@
         <source>Service account changed</source>
       </segment>
     </unit>
-    <unit id="audit.action.settings.visibility.changed">
+    <unit id="audit.action.technicaltoken.created">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:249</note>
+      </notes>
+      <segment>
+        <source>Technical token created</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.technicaltoken.updated">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:251</note>
+      </notes>
+      <segment>
+        <source>Technical token changed</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.technicaltoken.deleted">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:253</note>
+      </notes>
+      <segment>
+        <source>Technical token deleted</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.settings.visibility.changed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:255</note>
       </notes>
       <segment>
         <source>Default visibility changed</source>
@@ -3022,7 +3046,7 @@
     </unit>
     <unit id="audit.action.settings.auth.changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:251</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:257</note>
       </notes>
       <segment>
         <source>Authentication settings changed</source>
@@ -3030,7 +3054,7 @@
     </unit>
     <unit id="audit.action.system.backup.completed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:253</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:259</note>
       </notes>
       <segment>
         <source>Backup completed</source>
@@ -3038,7 +3062,7 @@
     </unit>
     <unit id="audit.action.system.backup.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:255</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:261</note>
       </notes>
       <segment>
         <source>Backup deleted</source>
@@ -3046,7 +3070,7 @@
     </unit>
     <unit id="audit.action.system.backup.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:257</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:263</note>
       </notes>
       <segment>
         <source>Backup failed</source>
@@ -3054,7 +3078,7 @@
     </unit>
     <unit id="audit.action.system.backup.target_adopted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:259</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:265</note>
       </notes>
       <segment>
         <source>Backup target taken over</source>
@@ -3062,7 +3086,7 @@
     </unit>
     <unit id="audit.action.system.banner_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:261</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:267</note>
       </notes>
       <segment>
         <source>Banner changed</source>
@@ -3070,7 +3094,7 @@
     </unit>
     <unit id="audit.action.system.deletions_paused">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:263</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:269</note>
       </notes>
       <segment>
         <source>Deletions paused</source>
@@ -3078,7 +3102,7 @@
     </unit>
     <unit id="audit.action.system.deletions_resumed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:265</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:271</note>
       </notes>
       <segment>
         <source>Deletions resumed</source>
@@ -3086,7 +3110,7 @@
     </unit>
     <unit id="audit.action.system.job.cancelled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:267</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:273</note>
       </notes>
       <segment>
         <source>Job cancelled</source>
@@ -3094,7 +3118,7 @@
     </unit>
     <unit id="audit.action.system.maintenance_mode_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:269</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:275</note>
       </notes>
       <segment>
         <source>Maintenance mode changed</source>
@@ -3102,7 +3126,7 @@
     </unit>
     <unit id="audit.action.system.restore.journal_replayed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:271</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:277</note>
       </notes>
       <segment>
         <source>Revocation journal replayed after a restore</source>
@@ -3110,7 +3134,7 @@
     </unit>
     <unit id="audit.action.system.restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:273</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:279</note>
       </notes>
       <segment>
         <source>Installation restored</source>
@@ -3118,7 +3142,7 @@
     </unit>
     <unit id="audit.action.system.storage.versions_restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:275</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:281</note>
       </notes>
       <segment>
         <source>Deleted storage objects restored</source>
@@ -3126,7 +3150,7 @@
     </unit>
     <unit id="audit.action.system.task_triggered">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:277</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:283</note>
       </notes>
       <segment>
         <source>Maintenance task started</source>
@@ -3134,7 +3158,7 @@
     </unit>
     <unit id="audit.action.token.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:279</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:285</note>
       </notes>
       <segment>
         <source>Token created</source>
@@ -3142,7 +3166,7 @@
     </unit>
     <unit id="audit.action.token.expiring">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:281</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:287</note>
       </notes>
       <segment>
         <source>Token about to expire</source>
@@ -3150,7 +3174,7 @@
     </unit>
     <unit id="audit.action.token.rejected">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:283</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:289</note>
       </notes>
       <segment>
         <source>Token rejected</source>
@@ -3158,7 +3182,7 @@
     </unit>
     <unit id="audit.action.token.revoked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:285</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:291</note>
       </notes>
       <segment>
         <source>Token revoked</source>
@@ -3166,7 +3190,7 @@
     </unit>
     <unit id="audit.action.token.rotated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:287</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:293</note>
       </notes>
       <segment>
         <source>Token rotated</source>
@@ -3174,7 +3198,7 @@
     </unit>
     <unit id="audit.action.user.avatar.removed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:289</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:295</note>
       </notes>
       <segment>
         <source>Avatar removed</source>
@@ -3182,7 +3206,7 @@
     </unit>
     <unit id="audit.action.user.avatar.set">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:291</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:297</note>
       </notes>
       <segment>
         <source>Avatar uploaded</source>
@@ -3190,7 +3214,7 @@
     </unit>
     <unit id="audit.action.user.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:293</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:299</note>
       </notes>
       <segment>
         <source>User created</source>
@@ -3198,7 +3222,7 @@
     </unit>
     <unit id="audit.action.user.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:295</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:301</note>
       </notes>
       <segment>
         <source>User deleted</source>
@@ -3206,7 +3230,7 @@
     </unit>
     <unit id="audit.action.user.external_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:297</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:303</note>
       </notes>
       <segment>
         <source>User&apos;s external flag changed</source>
@@ -3214,7 +3238,7 @@
     </unit>
     <unit id="audit.action.user.disabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:299</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:305</note>
       </notes>
       <segment>
         <source>User disabled</source>
@@ -3222,7 +3246,7 @@
     </unit>
     <unit id="audit.action.user.dormancy_warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:301</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
       </notes>
       <segment>
         <source>User close to dormancy</source>
@@ -3230,7 +3254,7 @@
     </unit>
     <unit id="audit.action.user.enabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:303</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
       </notes>
       <segment>
         <source>User enabled</source>
@@ -3238,7 +3262,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_missing">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:305</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
       </notes>
       <segment>
         <source>Group claim missing at sign-in</source>
@@ -3246,7 +3270,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_returned">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
       </notes>
       <segment>
         <source>Group claim back at sign-in</source>
@@ -3254,7 +3278,7 @@
     </unit>
     <unit id="audit.action.user.groups.synced">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
       </notes>
       <segment>
         <source>Group memberships synchronised</source>
@@ -3262,7 +3286,7 @@
     </unit>
     <unit id="audit.action.user.rename_conflict">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
       </notes>
       <segment>
         <source>User rename conflict</source>
@@ -3270,7 +3294,7 @@
     </unit>
     <unit id="audit.action.user.renamed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:319</note>
       </notes>
       <segment>
         <source>User renamed</source>
@@ -3278,7 +3302,7 @@
     </unit>
     <unit id="audit.action.user.updated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:321</note>
       </notes>
       <segment>
         <source>User changed</source>
@@ -3286,7 +3310,7 @@
     </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:323</note>
       </notes>
       <segment>
         <source>Advisory kind changed</source>
@@ -3294,7 +3318,7 @@
     </unit>
     <unit id="audit.action.vulnerability.claimed_name_match">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:319</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:325</note>
       </notes>
       <segment>
         <source>Advisory matches a claimed package name</source>
@@ -3302,7 +3326,7 @@
     </unit>
     <unit id="audit.action.vulnerability.download_blocked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:321</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:327</note>
       </notes>
       <segment>
         <source>Download blocked by a finding</source>
@@ -3310,7 +3334,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.reopened">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:323</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:329</note>
       </notes>
       <segment>
         <source>Finding reopened</source>
@@ -3318,7 +3342,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.status_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:325</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:331</note>
       </notes>
       <segment>
         <source>Finding status changed</source>
@@ -3326,7 +3350,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:327</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:333</note>
       </notes>
       <segment>
         <source>Advisory sync failed</source>
@@ -3334,7 +3358,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.imported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:329</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:335</note>
       </notes>
       <segment>
         <source>Advisory data imported</source>
@@ -3342,7 +3366,7 @@
     </unit>
     <unit id="audit.category.auth">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:361</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -3350,7 +3374,7 @@
     </unit>
     <unit id="audit.category.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:363</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -3358,7 +3382,7 @@
     </unit>
     <unit id="audit.category.identity">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:365</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
       </notes>
       <segment>
         <source>Identities</source>
@@ -3366,7 +3390,7 @@
     </unit>
     <unit id="audit.category.authz">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
       </notes>
       <segment>
         <source>Authorization</source>
@@ -3374,7 +3398,7 @@
     </unit>
     <unit id="audit.category.repository">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -3382,7 +3406,7 @@
     </unit>
     <unit id="audit.category.content">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:377</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -3390,7 +3414,7 @@
     </unit>
     <unit id="audit.category.system">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:379</note>
       </notes>
       <segment>
         <source>System</source>
@@ -3398,7 +3422,7 @@
     </unit>
     <unit id="audit.category.config">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:381</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -3406,7 +3430,7 @@
     </unit>
     <unit id="audit.category.webhook">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:377</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:383</note>
       </notes>
       <segment>
         <source>Webhooks</source>
@@ -3414,7 +3438,7 @@
     </unit>
     <unit id="audit.outcome.success">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:386</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:392</note>
       </notes>
       <segment>
         <source>Success</source>
@@ -3422,7 +3446,7 @@
     </unit>
     <unit id="audit.outcome.failure">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:388</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:394</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -3430,7 +3454,7 @@
     </unit>
     <unit id="audit.outcome.denied">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:390</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:396</note>
       </notes>
       <segment>
         <source>Denied</source>
@@ -3438,7 +3462,7 @@
     </unit>
     <unit id="audit.outcome.warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:392</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:398</note>
       </notes>
       <segment>
         <source>Warning</source>
@@ -9369,7 +9393,7 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:146</note>
         <note category="location">src/app/features/repositories/repository-detail.html:52,53</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:309,310</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:323,324</note>
         <note category="location">src/app/features/repositories/repository-list.html:64,65</note>
         <note category="location">src/app/features/repositories/repository-list.html:68</note>
         <note category="location">src/app/features/repositories/repository-list.ts:156</note>
@@ -13168,7 +13192,7 @@
     <unit id="tokens.create">
       <notes>
         <note category="location">src/app/features/profile/profile-tokens.ts:16,18</note>
-        <note category="location">src/app/features/tokens/token-manager.ts:88,90</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:83,85</note>
       </notes>
       <segment>
         <source>Create token</source>
@@ -15244,7 +15268,7 @@
     <unit id="repo.deleting">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:154,155</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:405,406</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:419,420</note>
         <note category="location">src/app/features/repositories/repository-list.html:216,217</note>
       </notes>
       <segment>
@@ -16921,7 +16945,7 @@
         <note category="location">src/app/features/repositories/mirror-settings.ts:44</note>
         <note category="location">src/app/features/repositories/repository-create.html:190,191</note>
         <note category="location">src/app/features/repositories/repository-detail.html:151</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:325</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:335</note>
       </notes>
       <segment>
         <source>Mirror</source>
@@ -17909,6 +17933,16 @@
         <source>Settings</source>
       </segment>
     </unit>
+    <unit id="route.service-accounts.detail.title">
+      <notes>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:107</note>
+        <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:12</note>
+        <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:29</note>
+      </notes>
+      <segment>
+        <source>Service account</source>
+      </segment>
+    </unit>
     <unit id="repo.class.local.help">
       <notes>
         <note category="location">src/app/features/repositories/repository-class.ts:22</note>
@@ -18007,8 +18041,8 @@
         <note category="location">src/app/features/repositories/repository-create.html:100,102</note>
         <note category="location">src/app/features/repositories/repository-create.ts:609</note>
         <note category="location">src/app/features/repositories/repository-detail.html:85,87</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:321</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:346</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:331</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:356</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -18093,8 +18127,8 @@
         <note category="location">src/app/features/repositories/repository-create.html:180,181</note>
         <note category="location">src/app/features/repositories/repository-create.ts:611</note>
         <note category="location">src/app/features/repositories/repository-detail.html:238,239</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:331</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:348</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:341</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:358</note>
       </notes>
       <segment>
         <source>Administrator notes</source>
@@ -18112,7 +18146,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:186,187</note>
         <note category="location">src/app/features/repositories/repository-detail.html:223,224</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:329</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:339</note>
       </notes>
       <segment>
         <source>Access details</source>
@@ -18260,7 +18294,7 @@
     <unit id="repo.field.include">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:613</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:350</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:360</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:46,48</note>
       </notes>
       <segment>
@@ -18270,7 +18304,7 @@
     <unit id="repo.field.exclude">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:615</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:352</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:362</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:63,65</note>
       </notes>
       <segment>
@@ -18280,7 +18314,7 @@
     <unit id="repo.field.hide">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:617</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:354</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:364</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:105,107</note>
       </notes>
       <segment>
@@ -18340,7 +18374,7 @@
     <unit id="repo.col.format">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:54,55</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:311,312</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:325,326</note>
         <note category="location">src/app/features/repositories/repository-list.html:51,52</note>
         <note category="location">src/app/features/repositories/repository-list.html:55</note>
         <note category="location">src/app/features/repositories/repository-list.ts:154</note>
@@ -18479,9 +18513,25 @@
         <source>Deleted collection versions whose names stay taken.</source>
       </segment>
     </unit>
+    <unit id="repo.settings.service-accounts">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:305,306</note>
+      </notes>
+      <segment>
+        <source>Service accounts</source>
+      </segment>
+    </unit>
+    <unit id="repo.settings.service-accounts-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:307,308</note>
+      </notes>
+      <segment>
+        <source>Accounts that hold their rights on this repository and nowhere else, each with its technical tokens.</source>
+      </segment>
+    </unit>
     <unit id="repo.settings.details">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:305</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:319</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -18489,7 +18539,7 @@
     </unit>
     <unit id="repo.settings.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:306,309</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:320,323</note>
       </notes>
       <segment>
         <source>The class, the format, the layout and the dates of the repository.</source>
@@ -18497,7 +18547,7 @@
     </unit>
     <unit id="repo.detail.layout">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:313,314</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:327,328</note>
       </notes>
       <segment>
         <source>Layout</source>
@@ -18505,7 +18555,7 @@
     </unit>
     <unit id="repo.detail.project">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:316,317</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:330,331</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -18513,7 +18563,7 @@
     </unit>
     <unit id="repo.detail.created">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:320,321</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:334,335</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -18521,7 +18571,7 @@
     </unit>
     <unit id="repo.detail.updated">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:324,325</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:338,339</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -18529,7 +18579,7 @@
     </unit>
     <unit id="repo.col.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:328,329</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:342,343</note>
         <note category="location">src/app/features/repositories/repository-list.ts:224</note>
       </notes>
       <segment>
@@ -18538,7 +18588,7 @@
     </unit>
     <unit id="repo.tab.api">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:337</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:351</note>
       </notes>
       <segment>
         <source>API</source>
@@ -18546,7 +18596,7 @@
     </unit>
     <unit id="repo.settings.api-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:338,340</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:352,354</note>
       </notes>
       <segment>
         <source>The stored document, and each unsaved change as the request that saves it.</source>
@@ -18554,7 +18604,7 @@
     </unit>
     <unit id="repo.detail.api.document">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:340,341</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:354,355</note>
       </notes>
       <segment>
         <source>Stored document</source>
@@ -18562,7 +18612,7 @@
     </unit>
     <unit id="repo.detail.api.patch">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:342,343</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:356,357</note>
       </notes>
       <segment>
         <source>Your change as a request</source>
@@ -18570,7 +18620,7 @@
     </unit>
     <unit id="repo.detail.api.nochange">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:347,349</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:361,363</note>
       </notes>
       <segment>
         <source>Change a setting to see the request that saves it.</source>
@@ -18578,7 +18628,7 @@
     </unit>
     <unit id="repo.detail.advanced">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:356,357</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:370,371</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -18586,7 +18636,7 @@
     </unit>
     <unit id="repo.settings.advanced-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:358,360</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:372,374</note>
       </notes>
       <segment>
         <source>Disable, move or delete this repository.</source>
@@ -18594,7 +18644,7 @@
     </unit>
     <unit id="repo.enable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:365,366</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:379,380</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -18602,7 +18652,7 @@
     </unit>
     <unit id="repo.enable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:366,367</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:380,381</note>
       </notes>
       <segment>
         <source>The repository is disabled: it serves nothing and takes no publish.</source>
@@ -18610,8 +18660,8 @@
     </unit>
     <unit id="repo.enable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:367,369</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:675</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:381,383</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:685</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -18619,7 +18669,7 @@
     </unit>
     <unit id="repo.disable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:369,370</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:383,384</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -18627,7 +18677,7 @@
     </unit>
     <unit id="repo.disable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:370,371</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:384,385</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it; its content stays.</source>
@@ -18635,8 +18685,8 @@
     </unit>
     <unit id="repo.disable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:371,373</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:670</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:385,387</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:680</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -18644,7 +18694,7 @@
     </unit>
     <unit id="repo.move.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:376,377</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:390,391</note>
       </notes>
       <segment>
         <source>Move to another project</source>
@@ -18652,7 +18702,7 @@
     </unit>
     <unit id="repo.move.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:378,379</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:392,393</note>
       </notes>
       <segment>
         <source> The repository keeps its key and its content; its address changes. You must be Owner of the target project too. </source>
@@ -18660,7 +18710,7 @@
     </unit>
     <unit id="repo.move.target">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:383,384</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:397,398</note>
       </notes>
       <segment>
         <source>Target project</source>
@@ -18668,7 +18718,7 @@
     </unit>
     <unit id="repo.move.action">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:389,390</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:403,404</note>
       </notes>
       <segment>
         <source> Move repository </source>
@@ -18676,7 +18726,7 @@
     </unit>
     <unit id="repo.delete.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:395,396</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:409,410</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -18684,7 +18734,7 @@
     </unit>
     <unit id="repo.detail.delete-note">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:396,397</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:410,411</note>
       </notes>
       <segment>
         <source>Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</source>
@@ -18692,7 +18742,7 @@
     </unit>
     <unit id="repo.detail.delete">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:397,399</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:411,413</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -18700,7 +18750,7 @@
     </unit>
     <unit id="repo.settings.unsaved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:245</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:255</note>
       </notes>
       <segment>
         <source>Unsaved changes</source>
@@ -18708,7 +18758,7 @@
     </unit>
     <unit id="upstream.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:323</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:333</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:74</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:90,91</note>
       </notes>
@@ -18718,7 +18768,7 @@
     </unit>
     <unit id="repo.settings.format-heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:336</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:346</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="format" disp="this.formatLabel()"/> settings</source>
@@ -18726,8 +18776,8 @@
     </unit>
     <unit id="repo.edit.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:427</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:453</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:437</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:463</note>
       </notes>
       <segment>
         <source>Repository saved.</source>
@@ -18735,7 +18785,7 @@
     </unit>
     <unit id="repo.visibility.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:515</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:525</note>
       </notes>
       <segment>
         <source>Visibility saved.</source>
@@ -18743,7 +18793,7 @@
     </unit>
     <unit id="repo.members.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:570</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:580</note>
       </notes>
       <segment>
         <source>Members saved.</source>
@@ -18751,7 +18801,7 @@
     </unit>
     <unit id="mirror.paused-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:599</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:609</note>
       </notes>
       <segment>
         <source>Mirror paused.</source>
@@ -18759,7 +18809,7 @@
     </unit>
     <unit id="mirror.resumed-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:599</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:609</note>
       </notes>
       <segment>
         <source>Mirror resumed.</source>
@@ -18767,7 +18817,7 @@
     </unit>
     <unit id="repo.disable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:666</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:676</note>
       </notes>
       <segment>
         <source>Disable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -18775,7 +18825,7 @@
     </unit>
     <unit id="repo.disable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:668</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:678</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it, and virtual repositories skip it, until it is enabled again. Its content stays.</source>
@@ -18783,7 +18833,7 @@
     </unit>
     <unit id="repo.enable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:673</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:683</note>
       </notes>
       <segment>
         <source>Enable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -18791,7 +18841,7 @@
     </unit>
     <unit id="repo.enable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:674</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:684</note>
       </notes>
       <segment>
         <source>Clients can download from it and publish to it again.</source>
@@ -18799,7 +18849,7 @@
     </unit>
     <unit id="repo.disable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:708</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:718</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> disabled.</source>
@@ -18807,7 +18857,7 @@
     </unit>
     <unit id="repo.enable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:709</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:719</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> enabled.</source>
@@ -18815,7 +18865,7 @@
     </unit>
     <unit id="repo.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:715</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:725</note>
         <note category="location">src/app/features/repositories/repository-list.ts:303</note>
       </notes>
       <segment>
@@ -18824,7 +18874,7 @@
     </unit>
     <unit id="repo.delete.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:717</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:727</note>
         <note category="location">src/app/features/repositories/repository-list.ts:305</note>
       </notes>
       <segment>
@@ -18833,7 +18883,7 @@
     </unit>
     <unit id="repo.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:719</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:729</note>
         <note category="location">src/app/features/repositories/repository-list.ts:307</note>
       </notes>
       <segment>
@@ -18842,7 +18892,7 @@
     </unit>
     <unit id="repo.move.choose">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:743</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:753</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -18850,7 +18900,7 @@
     </unit>
     <unit id="repo.move.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:758</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:768</note>
       </notes>
       <segment>
         <source>Move repository <ph id="0" equiv="key" disp="this.ref()"/> to project <ph id="1" equiv="project" disp="target"/>?</source>
@@ -18858,7 +18908,7 @@
     </unit>
     <unit id="repo.move.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:760</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:770</note>
       </notes>
       <segment>
         <source>The repository gets a new address; clients must switch to it. Policies, pins, virtual memberships and CI mappings that name it in this project stop applying, and the move is refused while any of them exists.</source>
@@ -18866,7 +18916,7 @@
     </unit>
     <unit id="repo.move.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:762</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:772</note>
       </notes>
       <segment>
         <source>Move repository</source>
@@ -18874,7 +18924,7 @@
     </unit>
     <unit id="repo.move.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:769</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:779</note>
       </notes>
       <segment>
         <source>Repository moved to project <ph id="0" equiv="project" disp="target"/>.</source>
@@ -18882,7 +18932,7 @@
     </unit>
     <unit id="repo.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:783</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:793</note>
         <note category="location">src/app/features/repositories/repository-list.ts:350</note>
       </notes>
       <segment>
@@ -18891,7 +18941,7 @@
     </unit>
     <unit id="repo.delete.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:788</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:798</note>
         <note category="location">src/app/features/repositories/repository-list.ts:340</note>
       </notes>
       <segment>
@@ -18900,7 +18950,7 @@
     </unit>
     <unit id="repo.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:793</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:803</note>
         <note category="location">src/app/features/repositories/repository-list.ts:255</note>
       </notes>
       <segment>
@@ -20480,17 +20530,153 @@
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
       </segment>
     </unit>
+    <unit id="sa-rights.read">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:13</note>
+      </notes>
+      <segment>
+        <source>Read</source>
+      </segment>
+    </unit>
+    <unit id="sa-rights.annotate">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:15</note>
+      </notes>
+      <segment>
+        <source>Annotate</source>
+      </segment>
+    </unit>
+    <unit id="sa-rights.deploy">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:17</note>
+      </notes>
+      <segment>
+        <source>Deploy</source>
+      </segment>
+    </unit>
+    <unit id="sa-rights.overwrite">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:19</note>
+      </notes>
+      <segment>
+        <source>Overwrite</source>
+      </segment>
+    </unit>
+    <unit id="sa-rights.delete">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:21</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+      </segment>
+    </unit>
+    <unit id="sa-rights.manage">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:23</note>
+      </notes>
+      <segment>
+        <source>Manage</source>
+      </segment>
+    </unit>
+    <unit id="sa-rights.legend">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:37,38</note>
+      </notes>
+      <segment>
+        <source>Rights on this repository</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.add">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:25,27</note>
+      </notes>
+      <segment>
+        <source>New service account</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.empty">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:36,37</note>
+      </notes>
+      <segment>
+        <source>This repository has no service account yet.</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.active">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:52,53</note>
+      </notes>
+      <segment>
+        <source>Active</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.disabled">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:54,55</note>
+      </notes>
+      <segment>
+        <source>Disabled</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.caption">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:81</note>
+      </notes>
+      <segment>
+        <source>Service accounts of the repository</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.name">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:83</note>
+      </notes>
+      <segment>
+        <source>Account</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.rights">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:84</note>
+      </notes>
+      <segment>
+        <source>Rights</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.status">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:85</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.tokens">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:86</note>
+      </notes>
+      <segment>
+        <source>Technical tokens</source>
+      </segment>
+    </unit>
     <unit id="sa.heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:31,32</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:34,35</note>
       </notes>
       <segment>
         <source>Service account</source>
       </segment>
     </unit>
+    <unit id="sa.repository">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:38,39</note>
+      </notes>
+      <segment>
+        <source>Service account of repository</source>
+      </segment>
+    </unit>
     <unit id="sa.project">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:35,36</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:43,44</note>
       </notes>
       <segment>
         <source>Service account of project</source>
@@ -20498,7 +20684,7 @@
     </unit>
     <unit id="sa.description">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:54</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:62</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -20506,7 +20692,7 @@
     </unit>
     <unit id="sa.id">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:55</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:63</note>
       </notes>
       <segment>
         <source>ID</source>
@@ -20514,7 +20700,7 @@
     </unit>
     <unit id="sa.save-changes">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:58,60</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:69,71</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -20522,7 +20708,7 @@
     </unit>
     <unit id="sa.details">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:65</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:76</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -20530,7 +20716,7 @@
     </unit>
     <unit id="sa.details-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:66,68</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:77,79</note>
       </notes>
       <segment>
         <source>Status, administrator role and when the account was created.</source>
@@ -20538,7 +20724,7 @@
     </unit>
     <unit id="sa.status">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:69,71</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:80,82</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -20546,7 +20732,7 @@
     </unit>
     <unit id="sa.active">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:72,73</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:83,84</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -20554,15 +20740,23 @@
     </unit>
     <unit id="sa.disabled">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:74,75</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:85,86</note>
       </notes>
       <segment>
         <source>Disabled</source>
       </segment>
     </unit>
+    <unit id="sa.reference">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:88,89</note>
+      </notes>
+      <segment>
+        <source>Reference</source>
+      </segment>
+    </unit>
     <unit id="sa.admin">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:78,79</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:91,92</note>
       </notes>
       <segment>
         <source>Administrator role</source>
@@ -20570,7 +20764,7 @@
     </unit>
     <unit id="sa.admin.yes">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:81,82</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:94,95</note>
       </notes>
       <segment>
         <source>Held by this account</source>
@@ -20578,7 +20772,7 @@
     </unit>
     <unit id="sa.admin.no">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:83,84</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:96,97</note>
       </notes>
       <segment>
         <source>Not held</source>
@@ -20586,39 +20780,39 @@
     </unit>
     <unit id="sa.created">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:87,88</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:100,101</note>
       </notes>
       <segment>
         <source>Created</source>
       </segment>
     </unit>
-    <unit id="sa.tokens">
+    <unit id="sa.technical-tokens">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:100</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:112,113</note>
       </notes>
       <segment>
-        <source>Tokens</source>
+        <source>Technical tokens</source>
       </segment>
     </unit>
-    <unit id="sa.tokens-hint">
+    <unit id="sa.technical-tokens-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:101,102</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:114,115</note>
       </notes>
       <segment>
-        <source>The tokens of this account: create, rotate and revoke them.</source>
+        <source>One token for each system that uses this account, each with a limit of its own.</source>
       </segment>
     </unit>
     <unit id="sa.tokens-denied">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:107,109</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:120,122</note>
       </notes>
       <segment>
-        <source>You need the permission to read tokens to manage the tokens of this account.</source>
+        <source>You need the permission to read identities to manage the tokens of this account.</source>
       </segment>
     </unit>
     <unit id="sa.advanced">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:114,115</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:127,128</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -20626,8 +20820,8 @@
     </unit>
     <unit id="tokens.revoke-all-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:118,120</note>
-        <note category="location">src/app/features/tokens/token-manager.ts:145,147</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:131,133</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:137,139</note>
         <note category="location">src/app/features/users/user-detail.html:263,265</note>
       </notes>
       <segment>
@@ -20636,8 +20830,8 @@
     </unit>
     <unit id="tokens.revoke-all">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:120,122</note>
-        <note category="location">src/app/features/tokens/token-manager.ts:147,149</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:133,135</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:139,141</note>
         <note category="location">src/app/features/users/user-detail.html:265,268</note>
       </notes>
       <segment>
@@ -20646,7 +20840,7 @@
     </unit>
     <unit id="sa.disable-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:126,127</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:139,140</note>
       </notes>
       <segment>
         <source>A disabled account can no longer authenticate; you can also revoke its tokens.</source>
@@ -20654,7 +20848,7 @@
     </unit>
     <unit id="sa.enable-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:128,129</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:141,142</note>
       </notes>
       <segment>
         <source>The account is disabled and cannot authenticate. Enabling it lets its tokens work again.</source>
@@ -20662,7 +20856,7 @@
     </unit>
     <unit id="sa.disable">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:133,134</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:146,147</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -20670,7 +20864,7 @@
     </unit>
     <unit id="sa.enable">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:135,136</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:148,149</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -20678,7 +20872,7 @@
     </unit>
     <unit id="sa.delete-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:138,139</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:151,152</note>
       </notes>
       <segment>
         <source>Deleting the account removes it and its tokens. This cannot be undone.</source>
@@ -20686,7 +20880,7 @@
     </unit>
     <unit id="sa.delete">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:139,141</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:152,154</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -20694,7 +20888,7 @@
     </unit>
     <unit id="sa.advanced-hint-tokens">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:183</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:210</note>
       </notes>
       <segment>
         <source>Revoke all tokens, disable or delete this account.</source>
@@ -20702,7 +20896,7 @@
     </unit>
     <unit id="sa.advanced-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:184</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:211</note>
       </notes>
       <segment>
         <source>Disable or delete this account.</source>
@@ -20710,7 +20904,7 @@
     </unit>
     <unit id="sa.saved">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:256</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:293</note>
       </notes>
       <segment>
         <source>Service account saved.</source>
@@ -20718,7 +20912,7 @@
     </unit>
     <unit id="sa.disable-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:266</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:303</note>
       </notes>
       <segment>
         <source>Disable this service account?</source>
@@ -20726,7 +20920,7 @@
     </unit>
     <unit id="sa.disable-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:267</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:304</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="account" disp="this.name()"/> can no longer authenticate.</source>
@@ -20734,7 +20928,7 @@
     </unit>
     <unit id="sa.disable-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:268</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:305</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -20742,7 +20936,7 @@
     </unit>
     <unit id="sa.disable-revoke">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:269</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:306</note>
       </notes>
       <segment>
         <source>Also revoke all tokens of this account</source>
@@ -20750,7 +20944,7 @@
     </unit>
     <unit id="sa.disabled-done">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:276</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:313</note>
       </notes>
       <segment>
         <source>Service account disabled.</source>
@@ -20758,7 +20952,7 @@
     </unit>
     <unit id="sa.enabled-done">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:283</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:320</note>
       </notes>
       <segment>
         <source>Service account enabled.</source>
@@ -20766,7 +20960,7 @@
     </unit>
     <unit id="sa.delete-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:288</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:325</note>
       </notes>
       <segment>
         <source>Delete this service account?</source>
@@ -20774,7 +20968,7 @@
     </unit>
     <unit id="sa.delete-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:289</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:326</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="account" disp="this.name()"/> and its tokens are removed. This cannot be undone.</source>
@@ -20782,7 +20976,7 @@
     </unit>
     <unit id="sa.delete-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:290</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:327</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -20790,15 +20984,51 @@
     </unit>
     <unit id="sa.deleted">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:296</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:333</note>
       </notes>
       <segment>
         <source>Service account deleted.</source>
       </segment>
     </unit>
+    <unit id="tokens.revoke-all-title">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:351</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:311</note>
+      </notes>
+      <segment>
+        <source>Revoke all tokens?</source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke-all-text">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:352</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:312</note>
+      </notes>
+      <segment>
+        <source>Every token of this owner stops working at once. This cannot be undone.</source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoke-all-confirm">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:353</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:313</note>
+      </notes>
+      <segment>
+        <source>Revoke all</source>
+      </segment>
+    </unit>
+    <unit id="tokens.revoked-all">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:359</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:320</note>
+      </notes>
+      <segment>
+        <source>All tokens revoked.</source>
+      </segment>
+    </unit>
     <unit id="sa-create.title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:35,36</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:41,42</note>
       </notes>
       <segment>
         <source>New service account</source>
@@ -20806,15 +21036,23 @@
     </unit>
     <unit id="sa-create.name">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:45,46</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:51,52</note>
       </notes>
       <segment>
         <source>Name</source>
       </segment>
     </unit>
+    <unit id="sa-create.description-optional">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:61,63</note>
+      </notes>
+      <segment>
+        <source>Description (optional)</source>
+      </segment>
+    </unit>
     <unit id="sa-create.description">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:51</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:68</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -20822,7 +21060,7 @@
     </unit>
     <unit id="sa-create.cancel">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:54,55</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:72,73</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -20830,15 +21068,23 @@
     </unit>
     <unit id="sa-create.submit">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:55,57</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:73,75</note>
       </notes>
       <segment>
         <source>Create service account</source>
       </segment>
     </unit>
+    <unit id="sa-create.name-hint-repository">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:89</note>
+      </notes>
+      <segment>
+        <source>Unique within the repository <ph id="0" equiv="project" disp="this.project"/>/<ph id="1" equiv="repository" disp="this.repository"/> and cannot be changed later. Lower-case letters, digits and -.</source>
+      </segment>
+    </unit>
     <unit id="sa-create.name-hint-project">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:70</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:91</note>
       </notes>
       <segment>
         <source>Unique within the project <ph id="0" equiv="project" disp="this.project"/> and cannot be changed later. Lower-case letters, digits and -.</source>
@@ -20846,7 +21092,7 @@
     </unit>
     <unit id="sa-create.name-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:71</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:92</note>
       </notes>
       <segment>
         <source>Lower-case letters, digits and -, two to 63 characters</source>
@@ -20854,7 +21100,7 @@
     </unit>
     <unit id="sa-create.created">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:91</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:116</note>
       </notes>
       <segment>
         <source>Service account created.</source>
@@ -20862,7 +21108,7 @@
     </unit>
     <unit id="sas.heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:109</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:135</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -20870,7 +21116,7 @@
     </unit>
     <unit id="sas.add">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:110,111</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:136,137</note>
       </notes>
       <segment>
         <source>New service account</source>
@@ -20878,7 +21124,7 @@
     </unit>
     <unit id="sas.hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:114,117</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:140,143</note>
       </notes>
       <segment>
         <source> Use a service account for CI systems that cannot sign in through OpenID Connect and for long-running automation. Its tokens act as the account, not as a person. </source>
@@ -20886,7 +21132,7 @@
     </unit>
     <unit id="sas.active">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:153,154</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:183,184</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -20894,7 +21140,7 @@
     </unit>
     <unit id="sas.disabled">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:155,156</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:185,186</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -20902,7 +21148,7 @@
     </unit>
     <unit id="sas.caption">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:173</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:203</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -20910,7 +21156,7 @@
     </unit>
     <unit id="sas.search">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:174</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:204</note>
       </notes>
       <segment>
         <source>Filter service accounts</source>
@@ -20918,7 +21164,7 @@
     </unit>
     <unit id="sas.empty-none">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:176</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:206</note>
       </notes>
       <segment>
         <source>There is no service account yet.</source>
@@ -20926,7 +21172,7 @@
     </unit>
     <unit id="sas.empty">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:177</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:207</note>
       </notes>
       <segment>
         <source>No service account matches.</source>
@@ -20934,7 +21180,7 @@
     </unit>
     <unit id="sas.col.name">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:179</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:209</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -20942,15 +21188,23 @@
     </unit>
     <unit id="sas.col.description">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:180</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:210</note>
       </notes>
       <segment>
         <source>Description</source>
       </segment>
     </unit>
+    <unit id="sas.col.level">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:211</note>
+      </notes>
+      <segment>
+        <source>Level</source>
+      </segment>
+    </unit>
     <unit id="sas.col.project">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:181</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:212</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -20958,19 +21212,282 @@
     </unit>
     <unit id="sas.col.status">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:182</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:213</note>
       </notes>
       <segment>
         <source>Status</source>
       </segment>
     </unit>
-    <unit id="route.service-accounts.detail.title">
+    <unit id="sas.level.repository">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:12</note>
-        <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:29</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:232</note>
       </notes>
       <segment>
-        <source>Service account</source>
+        <source>Repository</source>
+      </segment>
+    </unit>
+    <unit id="sas.level.project">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:234</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+      </segment>
+    </unit>
+    <unit id="sas.level.instance">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:236</note>
+      </notes>
+      <segment>
+        <source>Instance</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.expired">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:56,57</note>
+      </notes>
+      <segment>
+        <source>Expired</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.revoked">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:58,59</note>
+      </notes>
+      <segment>
+        <source>Revoked</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.soon">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:65,66</note>
+      </notes>
+      <segment>
+        <source>Expires soon</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.never">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:69,70</note>
+      </notes>
+      <segment>
+        <source>Never</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.not-used">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:76,78</note>
+      </notes>
+      <segment>
+        <source>Not used yet</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.rotate">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:83,84</note>
+      </notes>
+      <segment>
+        <source>Rotate</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.revoke">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:89,90</note>
+      </notes>
+      <segment>
+        <source>Revoke</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.renew">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:96,97</note>
+      </notes>
+      <segment>
+        <source>Issue new secret</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.caption">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:110</note>
+      </notes>
+      <segment>
+        <source>Technical tokens</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.empty">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:111</note>
+      </notes>
+      <segment>
+        <source>This account has no technical token yet.</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.rotate-tip">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:122</note>
+      </notes>
+      <segment>
+        <source>Rotate: a new secret now, the old one ends after the overlap you choose. The token keeps its name and its limit.</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.token">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:125</note>
+      </notes>
+      <segment>
+        <source>Token</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.ended">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:127</note>
+      </notes>
+      <segment>
+        <source>Ended</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.expires">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:128</note>
+      </notes>
+      <segment>
+        <source>Expires</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.last-used">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:131</note>
+      </notes>
+      <segment>
+        <source>Last used</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.help.last-used">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:132</note>
+      </notes>
+      <segment>
+        <source>The last time a secret of the token authenticated a request. Not every use is recorded immediately.</source>
+      </segment>
+    </unit>
+    <unit id="tt-table.actions">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:134</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="tt.create">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:39,41</note>
+      </notes>
+      <segment>
+        <source>New technical token</source>
+      </segment>
+    </unit>
+    <unit id="tt.form-heading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:50,52</note>
+      </notes>
+      <segment>
+        <source>New technical token</source>
+      </segment>
+    </unit>
+    <unit id="tt.secret-heading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:52,54</note>
+      </notes>
+      <segment>
+        <source>New secret for <ph id="0" equiv="INTERPOLATION" disp="{{ f.name }}"/></source>
+      </segment>
+    </unit>
+    <unit id="tt.ended-heading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:88,89</note>
+      </notes>
+      <segment>
+        <source>Expired and revoked</source>
+      </segment>
+    </unit>
+    <unit id="tt.loading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:98,101</note>
+      </notes>
+      <segment>
+        <source>Loading technical tokens.</source>
+      </segment>
+    </unit>
+    <unit id="tt.empty">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:125</note>
+      </notes>
+      <segment>
+        <source>This account has no technical token yet.</source>
+      </segment>
+    </unit>
+    <unit id="tt.empty-active">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:126</note>
+      </notes>
+      <segment>
+        <source>No technical token of this account has a live secret.</source>
+      </segment>
+    </unit>
+    <unit id="tt.ended-caption">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:127</note>
+      </notes>
+      <segment>
+        <source>Expired and revoked technical tokens</source>
+      </segment>
+    </unit>
+    <unit id="tt.create-submit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:136</note>
+      </notes>
+      <segment>
+        <source>Create technical token</source>
+      </segment>
+    </unit>
+    <unit id="tt.renew-submit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:137</note>
+      </notes>
+      <segment>
+        <source>Issue new secret</source>
+      </segment>
+    </unit>
+    <unit id="tt.revoke-title">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:241</note>
+      </notes>
+      <segment>
+        <source>Revoke this technical token?</source>
+      </segment>
+    </unit>
+    <unit id="tt.revoke-text">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:243</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="t.name"/> stops working at once on every replica. It keeps its name and its limit, and can get a new secret later.</source>
+      </segment>
+    </unit>
+    <unit id="tt.revoke-confirm">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:245</note>
+      </notes>
+      <segment>
+        <source>Revoke</source>
+      </segment>
+    </unit>
+    <unit id="tt.revoked">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:250</note>
+      </notes>
+      <segment>
+        <source>Technical token revoked.</source>
       </segment>
     </unit>
     <unit id="auth-settings.heading">
@@ -25221,7 +25738,7 @@
     <unit id="token-table.empty">
       <notes>
         <note category="location">src/app/features/tokens/token-admin.ts:76</note>
-        <note category="location">src/app/shared/access/token-table.ts:159</note>
+        <note category="location">src/app/shared/access/token-table.ts:164</note>
       </notes>
       <segment>
         <source>No token matches.</source>
@@ -25358,7 +25875,7 @@
     </unit>
     <unit id="rotate.title">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:40,41</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:35,36</note>
       </notes>
       <segment>
         <source>Rotate this token?</source>
@@ -25366,7 +25883,7 @@
     </unit>
     <unit id="rotate.text">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:43,45</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:38,40</note>
       </notes>
       <segment>
         <source> A new token with the same scope is created and shown once. Everything that uses the old token must switch to it. </source>
@@ -25374,7 +25891,7 @@
     </unit>
     <unit id="rotate.overlap">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:47,48</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:42,43</note>
       </notes>
       <segment>
         <source>The old token stays valid for</source>
@@ -25382,7 +25899,7 @@
     </unit>
     <unit id="rotate.cancel">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:53,54</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:48,49</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -25390,7 +25907,7 @@
     </unit>
     <unit id="rotate.confirm">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:54,58</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:49,53</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -25398,7 +25915,7 @@
     </unit>
     <unit id="rotate.overlap.none">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:62</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:57</note>
       </notes>
       <segment>
         <source>Not at all (revoked now)</source>
@@ -25406,7 +25923,7 @@
     </unit>
     <unit id="rotate.overlap.hour">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:63</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:58</note>
       </notes>
       <segment>
         <source>One hour</source>
@@ -25414,7 +25931,7 @@
     </unit>
     <unit id="rotate.overlap.day">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:64</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:59</note>
       </notes>
       <segment>
         <source>One day</source>
@@ -25422,7 +25939,7 @@
     </unit>
     <unit id="tokens.show-all">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:91,92</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:86,87</note>
       </notes>
       <segment>
         <source>Show revoked and expired tokens</source>
@@ -25430,7 +25947,7 @@
     </unit>
     <unit id="tokens.form-heading">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:101,102</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:96,97</note>
       </notes>
       <segment>
         <source>New token</source>
@@ -25438,7 +25955,7 @@
     </unit>
     <unit id="tokens.loading">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:140,143</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:132,135</note>
       </notes>
       <segment>
         <source>Loading tokens.</source>
@@ -25446,7 +25963,7 @@
     </unit>
     <unit id="tokens.advanced">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:144</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:136</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -25454,7 +25971,7 @@
     </unit>
     <unit id="tokens.advanced-hint">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:144,145</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:136,137</note>
       </notes>
       <segment>
         <source>Revoke every token at once.</source>
@@ -25462,7 +25979,7 @@
     </unit>
     <unit id="tokens.create-submit">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:182</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:172</note>
       </notes>
       <segment>
         <source>Create token</source>
@@ -25470,7 +25987,7 @@
     </unit>
     <unit id="tokens.empty-all">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:213</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:191</note>
       </notes>
       <segment>
         <source>No tokens yet.</source>
@@ -25478,7 +25995,7 @@
     </unit>
     <unit id="tokens.empty-active">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:214</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:192</note>
       </notes>
       <segment>
         <source>No active tokens. Revoked and expired ones are shown with the switch above.</source>
@@ -25486,7 +26003,7 @@
     </unit>
     <unit id="tokens.draft-restored">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:284</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:238</note>
       </notes>
       <segment>
         <source>Your entries were restored. Create the token again.</source>
@@ -25494,7 +26011,7 @@
     </unit>
     <unit id="tokens.revoke-title">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:348</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:298</note>
       </notes>
       <segment>
         <source>Revoke this token?</source>
@@ -25502,7 +26019,7 @@
     </unit>
     <unit id="tokens.revoke-text">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:349</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:299</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="token.description"/>” stops working at once on every replica. This cannot be undone.</source>
@@ -25510,7 +26027,7 @@
     </unit>
     <unit id="tokens.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:350</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:300</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -25518,42 +26035,10 @@
     </unit>
     <unit id="tokens.revoked">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:355</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:305</note>
       </notes>
       <segment>
         <source>Token revoked.</source>
-      </segment>
-    </unit>
-    <unit id="tokens.revoke-all-title">
-      <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:361</note>
-      </notes>
-      <segment>
-        <source>Revoke all tokens?</source>
-      </segment>
-    </unit>
-    <unit id="tokens.revoke-all-text">
-      <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:362</note>
-      </notes>
-      <segment>
-        <source>Every token of this owner stops working at once. This cannot be undone.</source>
-      </segment>
-    </unit>
-    <unit id="tokens.revoke-all-confirm">
-      <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:363</note>
-      </notes>
-      <segment>
-        <source>Revoke all</source>
-      </segment>
-    </unit>
-    <unit id="tokens.revoked-all">
-      <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:371</note>
-      </notes>
-      <segment>
-        <source>All tokens revoked.</source>
       </segment>
     </unit>
     <unit id="user-create.title">
@@ -28835,9 +29320,33 @@
         <source>Role unbound.</source>
       </segment>
     </unit>
+    <unit id="token-form.name">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:70,71</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="token-form.name-hint">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:75,77</note>
+      </notes>
+      <segment>
+        <source>The system that uses this token, for example nightly-mirror. It cannot be changed.</source>
+      </segment>
+    </unit>
+    <unit id="token-form.description-optional">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:80,82</note>
+      </notes>
+      <segment>
+        <source>Description (optional)</source>
+      </segment>
+    </unit>
     <unit id="token-form.description">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:56,58</note>
+        <note category="location">src/app/shared/access/token-form.ts:89,91</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -28845,7 +29354,7 @@
     </unit>
     <unit id="token-form.description-hint">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:62,65</note>
+        <note category="location">src/app/shared/access/token-form.ts:95,98</note>
       </notes>
       <segment>
         <source>What the token is for, for example the machine or the job.</source>
@@ -28853,7 +29362,7 @@
     </unit>
     <unit id="token-form.lifetime">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:66,68</note>
+        <note category="location">src/app/shared/access/token-form.ts:100,102</note>
       </notes>
       <segment>
         <source>Lifetime</source>
@@ -28861,7 +29370,7 @@
     </unit>
     <unit id="token-form.life.capped">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:74,77</note>
+        <note category="location">src/app/shared/access/token-form.ts:108,111</note>
       </notes>
       <segment>
         <source> The installation caps the lifetime of service-account tokens. A longer lifetime is refused. </source>
@@ -28869,7 +29378,7 @@
     </unit>
     <unit id="token-form.expires">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:81,83</note>
+        <note category="location">src/app/shared/access/token-form.ts:115,117</note>
       </notes>
       <segment>
         <source>Expires on (UTC)</source>
@@ -28877,7 +29386,7 @@
     </unit>
     <unit id="token-form.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:91,92</note>
+        <note category="location">src/app/shared/access/token-form.ts:125,126</note>
       </notes>
       <segment>
         <source>Scope</source>
@@ -28885,7 +29394,7 @@
     </unit>
     <unit id="token-form.scope-admin">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:95,98</note>
+        <note category="location">src/app/shared/access/token-form.ts:129,132</note>
       </notes>
       <segment>
         <source>Administrator: everything on this installation</source>
@@ -28893,7 +29402,7 @@
     </unit>
     <unit id="token-form.scope-all">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:100,102</note>
+        <note category="location">src/app/shared/access/token-form.ts:134,136</note>
       </notes>
       <segment>
         <source>All repository permissions of the owner, without administration</source>
@@ -28901,7 +29410,7 @@
     </unit>
     <unit id="token-form.scope-restricted">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:104,106</note>
+        <note category="location">src/app/shared/access/token-form.ts:138,140</note>
       </notes>
       <segment>
         <source>Only the repositories and actions below</source>
@@ -28909,7 +29418,7 @@
     </unit>
     <unit id="token-form.repositories">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:110,112</note>
+        <note category="location">src/app/shared/access/token-form.ts:144,146</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -28917,7 +29426,7 @@
     </unit>
     <unit id="token-form.repositories-hint">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:117,119</note>
+        <note category="location">src/app/shared/access/token-form.ts:151,153</note>
       </notes>
       <segment>
         <source>One project/key or pattern per line, for example web/npm-internal or web/npm-team-*; or a class such as @any-local.</source>
@@ -28925,7 +29434,7 @@
     </unit>
     <unit id="token-form.packages">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:122,124</note>
+        <note category="location">src/app/shared/access/token-form.ts:156,158</note>
       </notes>
       <segment>
         <source>Package patterns (optional)</source>
@@ -28933,7 +29442,7 @@
     </unit>
     <unit id="token-form.packages-hint">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:127,129</note>
+        <note category="location">src/app/shared/access/token-form.ts:161,163</note>
       </notes>
       <segment>
         <source>One pattern per line, for example @team-a/*. Empty means every package.</source>
@@ -28941,7 +29450,7 @@
     </unit>
     <unit id="token-form.actions">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:130,131</note>
+        <note category="location">src/app/shared/access/token-form.ts:164,165</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -28949,7 +29458,7 @@
     </unit>
     <unit id="token-form.endpoints">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:143,144</note>
+        <note category="location">src/app/shared/access/token-form.ts:177,178</note>
       </notes>
       <segment>
         <source>Endpoints</source>
@@ -28957,7 +29466,7 @@
     </unit>
     <unit id="token-form.endpoints-hint">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:145,148</note>
+        <note category="location">src/app/shared/access/token-form.ts:179,182</note>
       </notes>
       <segment>
         <source> Valid only on the endpoints you tick. Tick none and the token is accepted wherever its type is accepted. A further endpoint accepts only service-account tokens bound to it. </source>
@@ -28965,7 +29474,7 @@
     </unit>
     <unit id="token-form.cancel">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:157,159</note>
+        <note category="location">src/app/shared/access/token-form.ts:191,193</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -28973,7 +29482,7 @@
     </unit>
     <unit id="token-form.life.default">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:259</note>
+        <note category="location">src/app/shared/access/token-form.ts:297</note>
       </notes>
       <segment>
         <source>Server default</source>
@@ -28981,7 +29490,7 @@
     </unit>
     <unit id="token-form.life.d7">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:260</note>
+        <note category="location">src/app/shared/access/token-form.ts:298</note>
       </notes>
       <segment>
         <source>7 days</source>
@@ -28989,7 +29498,7 @@
     </unit>
     <unit id="token-form.life.d30">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:261</note>
+        <note category="location">src/app/shared/access/token-form.ts:299</note>
       </notes>
       <segment>
         <source>30 days</source>
@@ -28997,7 +29506,7 @@
     </unit>
     <unit id="token-form.life.d90">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:262</note>
+        <note category="location">src/app/shared/access/token-form.ts:300</note>
       </notes>
       <segment>
         <source>90 days</source>
@@ -29005,7 +29514,7 @@
     </unit>
     <unit id="token-form.life.d365">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:263</note>
+        <note category="location">src/app/shared/access/token-form.ts:301</note>
       </notes>
       <segment>
         <source>1 year</source>
@@ -29013,7 +29522,7 @@
     </unit>
     <unit id="token-form.life.custom">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:264</note>
+        <note category="location">src/app/shared/access/token-form.ts:302</note>
       </notes>
       <segment>
         <source>Custom date</source>
@@ -29021,7 +29530,7 @@
     </unit>
     <unit id="token-form.life.never">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:266</note>
+        <note category="location">src/app/shared/access/token-form.ts:304</note>
       </notes>
       <segment>
         <source>Never expires</source>
@@ -29029,15 +29538,23 @@
     </unit>
     <unit id="token-form.err.description">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:331</note>
+        <note category="location">src/app/shared/access/token-form.ts:372</note>
       </notes>
       <segment>
         <source>Enter a description.</source>
       </segment>
     </unit>
+    <unit id="token-form.err.name">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:375</note>
+      </notes>
+      <segment>
+        <source>Enter the name of the system: lower-case letters, digits and -, for example nightly-mirror.</source>
+      </segment>
+    </unit>
     <unit id="token-form.err.date">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:335</note>
+        <note category="location">src/app/shared/access/token-form.ts:379</note>
       </notes>
       <segment>
         <source>Pick the expiry date.</source>
@@ -29045,7 +29562,7 @@
     </unit>
     <unit id="token-form.err.repositories">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:340</note>
+        <note category="location">src/app/shared/access/token-form.ts:384</note>
       </notes>
       <segment>
         <source>Name at least one repository.</source>
@@ -29053,7 +29570,7 @@
     </unit>
     <unit id="token-form.err.actions">
       <notes>
-        <note category="location">src/app/shared/access/token-form.ts:343</note>
+        <note category="location">src/app/shared/access/token-form.ts:387</note>
       </notes>
       <segment>
         <source>Choose at least one action.</source>
@@ -29173,7 +29690,7 @@
     </unit>
     <unit id="token-table.admin-inactive">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:86,88</note>
+        <note category="location">src/app/shared/access/token-table.ts:91,93</note>
       </notes>
       <segment>
         <source>Administrator rights inactive: the owner is no administrator now</source>
@@ -29181,7 +29698,7 @@
     </unit>
     <unit id="token-table.unknown-endpoints">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:94,96</note>
+        <note category="location">src/app/shared/access/token-table.ts:99,101</note>
       </notes>
       <segment>
         <source>Bound to an endpoint that is not configured:</source>
@@ -29189,7 +29706,7 @@
     </unit>
     <unit id="token-table.soon">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:107,108</note>
+        <note category="location">src/app/shared/access/token-table.ts:112,113</note>
       </notes>
       <segment>
         <source>Expires soon</source>
@@ -29197,7 +29714,7 @@
     </unit>
     <unit id="token-table.never">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:111,113</note>
+        <note category="location">src/app/shared/access/token-table.ts:116,118</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -29205,7 +29722,7 @@
     </unit>
     <unit id="token-table.not-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:118,120</note>
+        <note category="location">src/app/shared/access/token-table.ts:123,125</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -29213,7 +29730,7 @@
     </unit>
     <unit id="token-table.rotate">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:131,132</note>
+        <note category="location">src/app/shared/access/token-table.ts:136,137</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -29221,7 +29738,7 @@
     </unit>
     <unit id="token-table.revoke">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:137,138</note>
+        <note category="location">src/app/shared/access/token-table.ts:142,143</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -29229,7 +29746,7 @@
     </unit>
     <unit id="token-table.state.expired">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:143,145</note>
+        <note category="location">src/app/shared/access/token-table.ts:148,150</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -29237,7 +29754,7 @@
     </unit>
     <unit id="token-table.state.revoked">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:146,148</note>
+        <note category="location">src/app/shared/access/token-table.ts:151,153</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -29245,7 +29762,7 @@
     </unit>
     <unit id="token-table.caption">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:174</note>
+        <note category="location">src/app/shared/access/token-table.ts:179</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -29253,7 +29770,7 @@
     </unit>
     <unit id="token-table.rotate-tip">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:175</note>
+        <note category="location">src/app/shared/access/token-table.ts:180</note>
       </notes>
       <segment>
         <source>Rotate: a new value now, the old one ends after the overlap you choose</source>
@@ -29261,7 +29778,7 @@
     </unit>
     <unit id="token-table.select">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:185</note>
+        <note category="location">src/app/shared/access/token-table.ts:190</note>
       </notes>
       <segment>
         <source>Select</source>
@@ -29269,7 +29786,7 @@
     </unit>
     <unit id="token-table.token">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:187</note>
+        <note category="location">src/app/shared/access/token-table.ts:192</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -29277,7 +29794,7 @@
     </unit>
     <unit id="token-table.owner">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:188</note>
+        <note category="location">src/app/shared/access/token-table.ts:193</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -29285,7 +29802,7 @@
     </unit>
     <unit id="token-table.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:191</note>
+        <note category="location">src/app/shared/access/token-table.ts:196</note>
       </notes>
       <segment>
         <source>Scope</source>
@@ -29293,7 +29810,7 @@
     </unit>
     <unit id="token-table.help.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:192</note>
+        <note category="location">src/app/shared/access/token-table.ts:197</note>
       </notes>
       <segment>
         <source>What the token may do: all permissions of its owner, or only the listed repository grants.</source>
@@ -29301,7 +29818,7 @@
     </unit>
     <unit id="token-table.expires">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:195</note>
+        <note category="location">src/app/shared/access/token-table.ts:200</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -29309,7 +29826,7 @@
     </unit>
     <unit id="token-table.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:198</note>
+        <note category="location">src/app/shared/access/token-table.ts:203</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -29317,7 +29834,7 @@
     </unit>
     <unit id="token-table.help.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:199</note>
+        <note category="location">src/app/shared/access/token-table.ts:204</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. Not every use is recorded immediately.</source>
@@ -29325,7 +29842,7 @@
     </unit>
     <unit id="token-table.created">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:204</note>
+        <note category="location">src/app/shared/access/token-table.ts:209</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -29333,7 +29850,7 @@
     </unit>
     <unit id="token-table.actions">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:206</note>
+        <note category="location">src/app/shared/access/token-table.ts:211</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -29341,7 +29858,7 @@
     </unit>
     <unit id="token-table.select-one">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:236</note>
+        <note category="location">src/app/shared/access/token-table.ts:241</note>
       </notes>
       <segment>
         <source>Select <ph id="0" equiv="description" disp="t.description"/></source>
@@ -29349,7 +29866,7 @@
     </unit>
     <unit id="address.label">
       <notes>
-        <note category="location">src/app/shared/address-field.ts:111</note>
+        <note category="location">src/app/shared/address-field.ts:113</note>
         <note category="location">src/app/shared/ui/page-header.ts:103</note>
       </notes>
       <segment>
@@ -29358,7 +29875,7 @@
     </unit>
     <unit id="address.copy">
       <notes>
-        <note category="location">src/app/shared/address-field.ts:113</note>
+        <note category="location">src/app/shared/address-field.ts:115</note>
         <note category="location">src/app/shared/ui/page-header.ts:104</note>
       </notes>
       <segment>

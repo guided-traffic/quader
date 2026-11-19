@@ -4742,15 +4742,6 @@
         <target>Kein Repository, das Sie lesen dürfen, enthält diese Version.</target>
       </segment>
     </unit>
-    <unit id="sa.tokens-hint">
-      <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:101,102</note>
-      </notes>
-      <segment>
-        <source>The tokens of this account: create, rotate and revoke them.</source>
-        <target>Die Token dieses Kontos: erstellen, rotieren und widerrufen.</target>
-      </segment>
-    </unit>
     <unit id="users.col.email">
       <notes>
         <note category="location">src/app/features/users/user-list.ts:64</note>
@@ -17032,15 +17023,6 @@
         <target>Keine Plattform</target>
       </segment>
     </unit>
-    <unit id="sa.tokens">
-      <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:100</note>
-      </notes>
-      <segment>
-        <source>Tokens</source>
-        <target>Token</target>
-      </segment>
-    </unit>
     <unit id="projects.heading">
       <notes>
         <note category="location">src/app/features/projects/project-list.ts:30</note>
@@ -18972,8 +18954,8 @@
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:107,109</note>
       </notes>
       <segment>
-        <source>You need the permission to read tokens to manage the tokens of this account.</source>
-        <target>Sie benötigen die Berechtigung, Token zu lesen, um die Token dieses Kontos zu verwalten.</target>
+        <source>You need the permission to read identities to manage the tokens of this account.</source>
+        <target>Sie benötigen die Berechtigung, Identitäten zu lesen, um die Token dieses Kontos zu verwalten.</target>
       </segment>
     </unit>
     <unit id="sa.status">
@@ -34301,6 +34283,600 @@
       <segment>
         <source>Only what clients have fetched through this repository is listed here and, in mirror mode, what a pass has fetched.</source>
         <target>Hier steht nur, was Clients über dieses Repository abgerufen haben, und im Spiegelmodus, was ein Durchlauf geholt hat.</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.technicaltoken.created">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:249</note>
+      </notes>
+      <segment>
+        <source>Technical token created</source>
+        <target>Technisches Token erstellt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.technicaltoken.updated">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:251</note>
+      </notes>
+      <segment>
+        <source>Technical token changed</source>
+        <target>Technisches Token geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.technicaltoken.deleted">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:253</note>
+      </notes>
+      <segment>
+        <source>Technical token deleted</source>
+        <target>Technisches Token gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="repo.settings.service-accounts">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:305,306</note>
+      </notes>
+      <segment>
+        <source>Service accounts</source>
+        <target>Dienstkonten</target>
+      </segment>
+    </unit>
+    <unit id="repo.settings.service-accounts-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:307,308</note>
+      </notes>
+      <segment>
+        <source>Accounts that hold their rights on this repository and nowhere else, each with its technical tokens.</source>
+        <target>Konten, die ihre Rechte an diesem Repository und nirgends sonst haben, jedes mit seinen technischen Token.</target>
+      </segment>
+    </unit>
+    <unit id="sa-rights.read">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:13</note>
+      </notes>
+      <segment>
+        <source>Read</source>
+        <target>Lesen</target>
+      </segment>
+    </unit>
+    <unit id="sa-rights.annotate">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:15</note>
+      </notes>
+      <segment>
+        <source>Annotate</source>
+        <target>Annotieren</target>
+      </segment>
+    </unit>
+    <unit id="sa-rights.deploy">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:17</note>
+      </notes>
+      <segment>
+        <source>Deploy</source>
+        <target>Bereitstellen</target>
+      </segment>
+    </unit>
+    <unit id="sa-rights.overwrite">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:19</note>
+      </notes>
+      <segment>
+        <source>Overwrite</source>
+        <target>Überschreiben</target>
+      </segment>
+    </unit>
+    <unit id="sa-rights.delete">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:21</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="sa-rights.manage">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:23</note>
+      </notes>
+      <segment>
+        <source>Manage</source>
+        <target>Verwalten</target>
+      </segment>
+    </unit>
+    <unit id="sa-rights.legend">
+      <notes>
+        <note category="location">src/app/features/service-accounts/account-rights.ts:37,38</note>
+      </notes>
+      <segment>
+        <source>Rights on this repository</source>
+        <target>Rechte an diesem Repository</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.add">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:28,30</note>
+      </notes>
+      <segment>
+        <source>New service account</source>
+        <target>Neues Dienstkonto</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.empty">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:39,40</note>
+      </notes>
+      <segment>
+        <source>This repository has no service account yet.</source>
+        <target>Dieses Repository hat noch kein Dienstkonto.</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.active">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:55,56</note>
+      </notes>
+      <segment>
+        <source>Active</source>
+        <target>Aktiv</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.disabled">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:57,58</note>
+      </notes>
+      <segment>
+        <source>Disabled</source>
+        <target>Deaktiviert</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.caption">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:90</note>
+      </notes>
+      <segment>
+        <source>Service accounts of the repository</source>
+        <target>Dienstkonten des Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.name">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:92</note>
+      </notes>
+      <segment>
+        <source>Account</source>
+        <target>Konto</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.rights">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:93</note>
+      </notes>
+      <segment>
+        <source>Rights</source>
+        <target>Rechte</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.status">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:94</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="repo-sas.col.tokens">
+      <notes>
+        <note category="location">src/app/features/service-accounts/repository-service-accounts.ts:95</note>
+      </notes>
+      <segment>
+        <source>Technical tokens</source>
+        <target>Technische Token</target>
+      </segment>
+    </unit>
+    <unit id="sa.repository">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:38,39</note>
+      </notes>
+      <segment>
+        <source>Service account of repository</source>
+        <target>Dienstkonto des Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="sa.reference">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:88,89</note>
+      </notes>
+      <segment>
+        <source>Reference</source>
+        <target>Referenz</target>
+      </segment>
+    </unit>
+    <unit id="sa.technical-tokens">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:112,113</note>
+      </notes>
+      <segment>
+        <source>Technical tokens</source>
+        <target>Technische Token</target>
+      </segment>
+    </unit>
+    <unit id="sa.technical-tokens-hint">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:114,115</note>
+      </notes>
+      <segment>
+        <source>One token for each system that uses this account, each with a limit of its own.</source>
+        <target>Ein Token für jedes System, das dieses Konto nutzt, jedes mit einem eigenen Limit.</target>
+      </segment>
+    </unit>
+    <unit id="sa-create.description-optional">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:61,63</note>
+      </notes>
+      <segment>
+        <source>Description (optional)</source>
+        <target>Beschreibung (optional)</target>
+      </segment>
+    </unit>
+    <unit id="sa-create.name-hint-repository">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:89</note>
+      </notes>
+      <segment>
+        <source>Unique within the repository <ph id="0" equiv="project" disp="this.project"/>/<ph id="1" equiv="repository" disp="this.repository"/> and cannot be changed later. Lower-case letters, digits and -.</source>
+        <target>Eindeutig im Repository <ph id="0" equiv="project" disp="this.project"/>/<ph id="1" equiv="repository" disp="this.repository"/>, später nicht änderbar. Kleinbuchstaben, Ziffern und -.</target>
+      </segment>
+    </unit>
+    <unit id="sas.col.level">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:211</note>
+      </notes>
+      <segment>
+        <source>Level</source>
+        <target>Ebene</target>
+      </segment>
+    </unit>
+    <unit id="sas.level.repository">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:232</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="sas.level.project">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:234</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+        <target>Projekt</target>
+      </segment>
+    </unit>
+    <unit id="sas.level.instance">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:236</note>
+      </notes>
+      <segment>
+        <source>Instance</source>
+        <target>Instanz</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.soon">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:53,54</note>
+      </notes>
+      <segment>
+        <source>Expires soon</source>
+        <target>Läuft bald ab</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.never">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:57,58</note>
+      </notes>
+      <segment>
+        <source>Never</source>
+        <target>Nie</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.not-used">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:64,66</note>
+      </notes>
+      <segment>
+        <source>Not used yet</source>
+        <target>Noch nicht genutzt</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.rotate">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:71,72</note>
+      </notes>
+      <segment>
+        <source>Rotate</source>
+        <target>Rotieren</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.revoke">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:77,78</note>
+      </notes>
+      <segment>
+        <source>Revoke</source>
+        <target>Widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.expired">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:83,84</note>
+      </notes>
+      <segment>
+        <source>Expired</source>
+        <target>Abgelaufen</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.revoked">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:85,86</note>
+      </notes>
+      <segment>
+        <source>Revoked</source>
+        <target>Widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.renew">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:89,90</note>
+      </notes>
+      <segment>
+        <source>Issue new secret</source>
+        <target>Neues Geheimnis ausstellen</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.caption">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:111</note>
+      </notes>
+      <segment>
+        <source>Technical tokens</source>
+        <target>Technische Token</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.empty">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:112</note>
+      </notes>
+      <segment>
+        <source>This account has no technical token yet.</source>
+        <target>Dieses Konto hat noch kein technisches Token.</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.rotate-tip">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:113</note>
+      </notes>
+      <segment>
+        <source>Rotate: a new secret now, the old one ends after the overlap you choose. The token keeps its name and its limit.</source>
+        <target>Rotieren: jetzt ein neues Geheimnis, das alte endet nach der gewählten Überlappung. Das Token behält seinen Namen und sein Limit.</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.token">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:116</note>
+      </notes>
+      <segment>
+        <source>Token</source>
+        <target>Token</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.expires">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:117</note>
+      </notes>
+      <segment>
+        <source>Expires</source>
+        <target>Läuft ab</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.last-used">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:120</note>
+      </notes>
+      <segment>
+        <source>Last used</source>
+        <target>Zuletzt genutzt</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.help.last-used">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:121</note>
+      </notes>
+      <segment>
+        <source>The last time a secret of the token authenticated a request. Not every use is recorded immediately.</source>
+        <target>Wann ein Geheimnis des Tokens zuletzt eine Anfrage authentifiziert hat. Nicht jede Nutzung wird sofort erfasst.</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.actions">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:123</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="tt.create">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:39,41</note>
+      </notes>
+      <segment>
+        <source>New technical token</source>
+        <target>Neues technisches Token</target>
+      </segment>
+    </unit>
+    <unit id="tt.form-heading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:50,52</note>
+      </notes>
+      <segment>
+        <source>New technical token</source>
+        <target>Neues technisches Token</target>
+      </segment>
+    </unit>
+    <unit id="tt.secret-heading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:52,54</note>
+      </notes>
+      <segment>
+        <source>New secret for <ph id="0" equiv="INTERPOLATION" disp="{{ f.name }}"/></source>
+        <target>Neues Geheimnis für <ph id="0" equiv="INTERPOLATION" disp="{{ f.name }}"/></target>
+      </segment>
+    </unit>
+    <unit id="tt.loading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:89,92</note>
+      </notes>
+      <segment>
+        <source>Loading technical tokens.</source>
+        <target>Technische Token werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="tt.create-submit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:115</note>
+      </notes>
+      <segment>
+        <source>Create technical token</source>
+        <target>Technisches Token erstellen</target>
+      </segment>
+    </unit>
+    <unit id="tt.renew-submit">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:116</note>
+      </notes>
+      <segment>
+        <source>Issue new secret</source>
+        <target>Neues Geheimnis ausstellen</target>
+      </segment>
+    </unit>
+    <unit id="tt.revoke-title">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:220</note>
+      </notes>
+      <segment>
+        <source>Revoke this technical token?</source>
+        <target>Dieses technische Token widerrufen?</target>
+      </segment>
+    </unit>
+    <unit id="tt.revoke-text">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:222</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="t.name"/> stops working at once on every replica. It keeps its name and its limit, and can get a new secret later.</source>
+        <target><ph id="0" equiv="name" disp="t.name"/> funktioniert sofort auf keinem Replikat mehr. Es behält seinen Namen und sein Limit und kann später ein neues Geheimnis bekommen.</target>
+      </segment>
+    </unit>
+    <unit id="tt.revoke-confirm">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:224</note>
+      </notes>
+      <segment>
+        <source>Revoke</source>
+        <target>Widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="tt.revoked">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:229</note>
+      </notes>
+      <segment>
+        <source>Technical token revoked.</source>
+        <target>Technisches Token widerrufen.</target>
+      </segment>
+    </unit>
+    <unit id="token-form.name">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:70,71</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="token-form.name-hint">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:75,77</note>
+      </notes>
+      <segment>
+        <source>The system that uses this token, for example nightly-mirror. It cannot be changed.</source>
+        <target>Das System, das dieses Token nutzt, zum Beispiel nightly-mirror. Der Name ist nicht änderbar.</target>
+      </segment>
+    </unit>
+    <unit id="token-form.description-optional">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:80,82</note>
+      </notes>
+      <segment>
+        <source>Description (optional)</source>
+        <target>Beschreibung (optional)</target>
+      </segment>
+    </unit>
+    <unit id="token-form.err.name">
+      <notes>
+        <note category="location">src/app/shared/access/token-form.ts:374</note>
+      </notes>
+      <segment>
+        <source>Enter the name of the system: lower-case letters, digits and -, for example nightly-mirror.</source>
+        <target>Geben Sie den Namen des Systems ein: Kleinbuchstaben, Ziffern und -, zum Beispiel nightly-mirror.</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.ended">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:126</note>
+      </notes>
+      <segment>
+        <source>Ended</source>
+        <target>Beendet</target>
+      </segment>
+    </unit>
+    <unit id="tt.ended-heading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:88,89</note>
+      </notes>
+      <segment>
+        <source>Expired and revoked</source>
+        <target>Abgelaufen und widerrufen</target>
+      </segment>
+    </unit>
+    <unit id="tt.empty">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:125</note>
+      </notes>
+      <segment>
+        <source>This account has no technical token yet.</source>
+        <target>Dieses Konto hat noch kein technisches Token.</target>
+      </segment>
+    </unit>
+    <unit id="tt.empty-active">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:126</note>
+      </notes>
+      <segment>
+        <source>No technical token of this account has a live secret.</source>
+        <target>Kein technisches Token dieses Kontos hat ein gültiges Geheimnis.</target>
+      </segment>
+    </unit>
+    <unit id="tt.ended-caption">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:127</note>
+      </notes>
+      <segment>
+        <source>Expired and revoked technical tokens</source>
+        <target>Abgelaufene und widerrufene technische Token</target>
       </segment>
     </unit>
   </file>

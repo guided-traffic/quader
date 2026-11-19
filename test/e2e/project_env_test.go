@@ -135,12 +135,14 @@ func (p *partnerProject) policy(suffix string, repos []string, actions ...string
 // token issues a token of the project service account, bound to no endpoint, that carries the account's grants.
 func (p *partnerProject) token() createdToken {
 	p.t.Helper()
-	r := p.bob.do(http.MethodPost, "/api/v1/projects/"+p.key+"/service-accounts/"+p.sa+"/tokens", map[string]any{
-		"description": "partner token", "ttlSeconds": 3600, "scope": map[string]any{"inherit": true},
-	}).want(p.t, "the Owner issues a token of "+p.principal(), 201)
-	var c createdToken
+	base := "/api/v1/projects/" + p.key + "/service-accounts/" + p.sa
+	pruneTechnical(p.bob.api, base)
+	r := p.bob.do(http.MethodPost, base+"/technical-tokens", map[string]any{
+		"name": technicalName(), "description": "partner token", "ttlSeconds": 3600, "scope": map[string]any{"inherit": true},
+	}).want(p.t, "the Owner issues a technical token of "+p.principal(), 201)
+	var c technicalCreated
 	r.JSON(p.t, &c)
-	return c
+	return createdToken{ID: c.SecretID, Token: c.Token}
 }
 
 // revoke revokes the token with the Owner's session and waits until the replicas refuse it (the bound of

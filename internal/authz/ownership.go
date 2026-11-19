@@ -276,8 +276,14 @@ func (o *Ownership) factsOf(idx *Index, sub Subject, k ownKey, c Coordinate) own
 		}
 		return f
 	}
+	account := false
+	if g, ok := idx.accountGrantOf(sub, k.repo.ID); ok && g.actions.Has(Deploy) {
+		// A repository's service account that holds deploy owns what it claims in its repository (R-AUTHZ-039).
+		f.claimers = append(f.claimers, claimOwner{principalID: sub.ID, ref: refs[sub.ID]})
+		account = true
+	}
 	for _, id := range st.pset {
-		if !f.identities[id] {
+		if !f.identities[id] || account && id == sub.ID {
 			continue
 		}
 		for _, g := range idx.grantsFor(k.repo.ID, id) {
@@ -805,6 +811,23 @@ func ownerRef(ctx context.Context, qs *q.Queries, ref string) (Ref, string, erro
 	return r, rows[0].ID, nil
 }
 
+// refuseOtherRepositoryAccount refuses a repository's service account as the owner of a name in any repository but its own
+// (R-AUTHZ-039): 422 principal_outside_repository. repoID is the repository the name is in.
+func refuseOtherRepositoryAccount(ctx context.Context, qs *q.Queries, r Ref, id string, repoID int64) error {
+	if r.Kind != principal.KindServiceAccount {
+		return nil
+	}
+	rows, err := qs.AuthzServiceAccountRepository(ctx, id)
+	if err != nil {
+		return err
+	}
+	if len(rows) == 0 || rows[0] == 0 || rows[0] == repoID {
+		return nil
+	}
+	return problemError([]ProblemField{field("/owner", errs.CodePrincipalOutsideRepository,
+		fmt.Sprintf("%s belongs to another repository and owns packages in its repository only.", r))})
+}
+
 // refuseForeignAccount refuses a project service account as the owner of a name in
 // a repository outside its project (Q-AUTHZ-175): 422 principal_outside_project.
 // repoProject is the key of the repository's project, "" for none.
@@ -886,6 +909,9 @@ func (o *Ownership) AddOwnerTx(ctx context.Context, tx meta.Tx, idx *Index, sub 
 	}
 	r, pid, err := ownerRef(ctx, qs, ref)
 	if err != nil {
+		return Owner{}, err
+	}
+	if err := refuseOtherRepositoryAccount(ctx, qs, r, pid, k.repo.ID); err != nil {
 		return Owner{}, err
 	}
 	if err := refuseForeignAccount(ctx, qs, r, pid, k.repo.project); err != nil {

@@ -400,20 +400,30 @@ INSERT INTO service_account (principal_id, description, project_id)
 VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(project_id)::text::uuid);
 
 -- name: IdentityGetServiceAccount :many
--- project is the key of the account's project, empty for a global account.
+-- project is the key of the account's project, empty for a global account; repository the key of a repository's account
+-- within its project (R-AUTH-046), empty otherwise, with repository_id and the actions it holds (R-AUTHZ-039);
+-- technical_tokens counts the account's technical tokens (R-AUTH-045).
 SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
-       COALESCE(pr.key, '')::text AS project
+       COALESCE(pr.key, '')::text AS project, COALESCE(r.key, '')::text AS repository,
+       COALESCE(s.repository_id, 0)::bigint AS repository_id, COALESCE(g.actions, '{}')::text[] AS actions,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
   FROM principal p JOIN service_account s ON s.principal_id = p.id
   LEFT JOIN project pr ON pr.id = s.project_id
+  LEFT JOIN repositories r ON r.id = s.repository_id
+  LEFT JOIN service_account_repository_grant g ON g.service_account_id = p.id
  WHERE p.kind = 'service_account' AND p.name = sqlc.arg(name)::text;
 
 -- name: IdentityListServiceAccounts :many
--- project filters by the key of the project; empty lists every account, global and
--- project ones.
+-- project filters by the key of the project; empty lists every account, global, project and repository ones. The accounts of a
+-- project's repositories belong to the project's filter (R-AUTH-046).
 SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
-       COALESCE(pr.key, '')::text AS project
+       COALESCE(pr.key, '')::text AS project, COALESCE(r.key, '')::text AS repository,
+       COALESCE(s.repository_id, 0)::bigint AS repository_id, COALESCE(g.actions, '{}')::text[] AS actions,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
   FROM principal p JOIN service_account s ON s.principal_id = p.id
   LEFT JOIN project pr ON pr.id = s.project_id
+  LEFT JOIN repositories r ON r.id = s.repository_id
+  LEFT JOIN service_account_repository_grant g ON g.service_account_id = p.id
  WHERE p.kind = 'service_account' AND p.name > sqlc.arg(after)::text
    AND (sqlc.arg(query)::text = '' OR p.name ILIKE '%' || sqlc.arg(query)::text || '%')
    AND (sqlc.arg(project)::text = '' OR pr.key = sqlc.arg(project)::text)
@@ -422,15 +432,83 @@ SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.descripti
 
 -- name: IdentityListProjectServiceAccounts :many
 -- The accounts of one project by the key of the project, ordered by stored name
--- (<project>/<name>); the text filter matches the name within the project.
+-- (<project>/<name>); the text filter matches the name within the project. The accounts of the project's repositories are
+-- listed under their repository (IdentityListRepositoryServiceAccounts).
 SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
-       pr.key::text AS project
+       pr.key::text AS project,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
   FROM principal p JOIN service_account s ON s.principal_id = p.id
   JOIN project pr ON pr.id = s.project_id
- WHERE p.kind = 'service_account' AND pr.key = sqlc.arg(project)::text AND p.name > sqlc.arg(after)::text
+ WHERE p.kind = 'service_account' AND pr.key = sqlc.arg(project)::text AND s.repository_id IS NULL
+   AND p.name > sqlc.arg(after)::text
    AND (sqlc.arg(query)::text = '' OR substr(p.name, char_length(pr.key) + 2) ILIKE '%' || sqlc.arg(query)::text || '%')
  ORDER BY p.name
  LIMIT sqlc.arg(max_rows)::int;
+
+-- name: IdentityListRepositoryServiceAccounts :many
+-- The accounts of one repository (R-AUTH-046), ordered by stored name (<project>/<repository>/<name>); the text filter matches the
+-- name within the repository.
+SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision, s.description,
+       pr.key::text AS project, r.key::text AS repository, r.id AS repository_id, COALESCE(g.actions, '{}')::text[] AS actions,
+       (SELECT count(*) FROM technical_token t WHERE t.service_account_id = p.id)::bigint AS technical_tokens
+  FROM principal p JOIN service_account s ON s.principal_id = p.id
+  JOIN repositories r ON r.id = s.repository_id
+  JOIN project pr ON pr.id = s.project_id
+  LEFT JOIN service_account_repository_grant g ON g.service_account_id = p.id
+ WHERE p.kind = 'service_account' AND s.repository_id = sqlc.arg(repository_id)::bigint
+   AND p.name > sqlc.arg(after)::text
+   AND (sqlc.arg(query)::text = ''
+        OR substr(p.name, char_length(pr.key) + char_length(r.key) + 3) ILIKE '%' || sqlc.arg(query)::text || '%')
+ ORDER BY p.name
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: IdentityInsertRepositoryServiceAccount :exec
+-- A service account of a repository (R-AUTH-046): its principal's name is <project>/<repository>/<name>, its project the
+-- repository's; the row's trigger refuses anything else (AI005).
+INSERT INTO service_account (principal_id, description, project_id, repository_id)
+VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(project_id)::text::uuid, sqlc.arg(repository_id)::bigint);
+
+-- name: IdentitySetRepositoryGrant :exec
+-- The actions a repository's account holds on its repository (R-AUTHZ-039).
+INSERT INTO service_account_repository_grant (service_account_id, actions)
+VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(actions)::text[])
+ON CONFLICT (service_account_id) DO UPDATE SET actions = EXCLUDED.actions;
+
+-- name: IdentityRepositoryShare :many
+-- The active repository a service account is created for, locked FOR SHARE: its deletion (which marks it deleting under
+-- FOR UPDATE) and its move wait for this transaction, so the account is created in the project the repository is in and is
+-- moved with it, or it finds the repository gone (R-AUTH-046).
+SELECT r.id, r.project_id::text AS project_id
+  FROM repositories r JOIN project p ON p.id = r.project_id
+ WHERE p.key = sqlc.arg(project)::text AND r.key = sqlc.arg(key)::text AND r.lifecycle = 'active'
+   FOR SHARE OF r;
+
+-- name: IdentityActiveRepository :many
+-- The ID of an active repository by its project and key, without a lock: the reads of a repository's accounts.
+SELECT r.id
+  FROM repositories r JOIN project p ON p.id = r.project_id
+ WHERE p.key = sqlc.arg(project)::text AND r.key = sqlc.arg(key)::text AND r.lifecycle = 'active';
+
+-- name: IdentityRepositoryAccounts :many
+-- The service accounts of a repository by its ID, with their stored names: the deletion of the repository records their end,
+-- and a move renames them (R-AUTH-046).
+SELECT s.principal_id::text AS id, p.name
+  FROM service_account s JOIN principal p ON p.id = s.principal_id
+ WHERE s.repository_id = sqlc.arg(repository_id)::bigint
+ ORDER BY p.name;
+
+-- name: IdentityRenameRepositoryAccounts :many
+-- The new stored names of a repository's accounts whose repository moved (R-AUTH-046, R-REPO-060): prefix is
+-- "<new project key>/<repository key>/", the name within the repository stays.
+UPDATE principal p SET name = sqlc.arg(prefix)::text || split_part(p.name, '/', 3)
+  FROM service_account s
+ WHERE s.principal_id = p.id AND s.repository_id = sqlc.arg(repository_id)::bigint
+RETURNING p.id::text AS id, p.name;
+
+-- name: IdentityMoveRepositoryAccounts :execrows
+-- The project of a repository's accounts follows the repository in the transaction of its move (R-AUTH-046); the names are
+-- renamed first, so the row guard sees the new name with the new project.
+UPDATE service_account SET project_id = sqlc.arg(project_id)::text::uuid WHERE repository_id = sqlc.arg(repository_id)::bigint;
 
 -- name: IdentityUpdateServiceAccount :exec
 UPDATE service_account SET description = sqlc.arg(description)::text WHERE principal_id = sqlc.arg(id)::text::uuid;
@@ -443,6 +521,7 @@ SELECT t.id::text AS id, t.type, t.scope, t.principal_id::text AS owner_id,
        p.kind AS owner_kind, p.name AS owner_name, p.status AS owner_status, coalesce(u.is_break_glass, false) AS owner_break_glass,
        t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
        (t.revoked_at IS NOT NULL)::boolean AS revoked, t.hint, t.ci_context,
+       coalesce(t.technical_token_id::text, '')::text AS technical_token_id,
        coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due
   FROM api_token t JOIN principal p ON p.id = t.principal_id LEFT JOIN app_user u ON u.principal_id = p.id
  WHERE t.secret_sha256 = sqlc.arg(secret_sha256)::bytea;
@@ -461,7 +540,7 @@ SELECT count(*) FROM api_token
 -- ttl_secs is relative to the database clock, negative for no expiry; cap_micros (Unix microseconds, 0 for none)
 -- keeps a derived token from outliving the token that created it, whatever the clocks say (R-AUTH-027).
 INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, self_rotatable, created_by, created_via,
-                       expires_at, rotated_from, derived_from)
+                       expires_at, rotated_from, derived_from, technical_token_id)
 VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(type)::text, sqlc.arg(secret_sha256)::bytea, sqlc.arg(hint)::text,
         sqlc.arg(principal_id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(scope)::text::jsonb, sqlc.arg(self_rotatable)::boolean,
         NULLIF(sqlc.arg(created_by)::text, '')::uuid, sqlc.arg(created_via)::text,
@@ -469,7 +548,8 @@ VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(type)::text, sqlc.arg(secret_sha256):
              WHEN sqlc.arg(cap_micros)::bigint > 0
                   THEN least(now() + make_interval(secs => sqlc.arg(ttl_secs)::float8), to_timestamp(sqlc.arg(cap_micros)::bigint / 1000000.0))
              ELSE now() + make_interval(secs => sqlc.arg(ttl_secs)::float8) END,
-        NULLIF(sqlc.arg(rotated_from)::text, '')::uuid, NULLIF(sqlc.arg(derived_from)::text, '')::uuid)
+        NULLIF(sqlc.arg(rotated_from)::text, '')::uuid, NULLIF(sqlc.arg(derived_from)::text, '')::uuid,
+        NULLIF(sqlc.arg(technical_token_id)::text, '')::uuid)
 RETURNING expires_at, created_at;
 
 -- name: IdentityTokenRow :many
@@ -480,8 +560,9 @@ SELECT t.id::text AS id, t.type, t.hint, t.principal_id::text AS owner_id, p.kin
        t.created_via, t.expires_at, t.revoked_at, coalesce(t.revoked_by::text, '')::text AS revoked_by,
        coalesce(t.revocation_reason, '')::text AS revocation_reason, coalesce(t.rotated_from::text, '')::text AS rotated_from,
        coalesce(t.derived_from::text, '')::text AS derived_from, t.last_used_at, coalesce(host(t.last_used_addr), '')::text AS last_used_addr,
-       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context
-  FROM api_token t JOIN principal p ON p.id = t.principal_id
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context,
+       coalesce(t.technical_token_id::text, '')::text AS technical_token_id, coalesce(tt.name, '')::text AS technical_token_name
+  FROM api_token t JOIN principal p ON p.id = t.principal_id LEFT JOIN technical_token tt ON tt.id = t.technical_token_id
  WHERE t.id = sqlc.arg(id)::text::uuid AND t.type <> 'bst';
 
 -- name: IdentityListTokens :many
@@ -503,8 +584,9 @@ SELECT t.id::text AS id, t.type, t.hint, t.principal_id::text AS owner_id, p.kin
        t.created_via, t.expires_at, t.revoked_at, coalesce(t.revoked_by::text, '')::text AS revoked_by,
        coalesce(t.revocation_reason, '')::text AS revocation_reason, coalesce(t.rotated_from::text, '')::text AS rotated_from,
        coalesce(t.derived_from::text, '')::text AS derived_from, t.last_used_at, coalesce(host(t.last_used_addr), '')::text AS last_used_addr,
-       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context
-  FROM api_token t JOIN principal p ON p.id = t.principal_id
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, t.ci_context,
+       coalesce(t.technical_token_id::text, '')::text AS technical_token_id, coalesce(tt.name, '')::text AS technical_token_name
+  FROM api_token t JOIN principal p ON p.id = t.principal_id LEFT JOIN technical_token tt ON tt.id = t.technical_token_id
  WHERE t.type <> 'bst'
    AND (sqlc.arg(after)::text = '' OR t.id < sqlc.arg(after)::text::uuid)
    AND (sqlc.arg(owner_id)::text = '' OR t.principal_id = sqlc.arg(owner_id)::text::uuid)
@@ -561,7 +643,7 @@ UPDATE api_token a
   FROM tree
  WHERE a.id = tree.id AND a.revoked_at IS NULL
 RETURNING a.id::text AS id, encode(a.secret_sha256, 'hex') AS secret_hex, a.principal_id::text AS owner_id,
-          a.type, (a.id = sqlc.arg(id)::text::uuid) AS is_root;
+          a.type, (a.id = sqlc.arg(id)::text::uuid) AS is_root, coalesce(a.technical_token_id::text, '')::text AS technical_token_id;
 
 -- name: IdentityLockTokenTree :many
 -- The first statement of a revocation (R-AUTH-029): it locks the token and the
@@ -626,7 +708,7 @@ SELECT t.id::text AS id, t.principal_id::text AS owner_id, p.name AS owner_name,
 UPDATE api_token SET revoked_at = now(), revoked_by = NULLIF(sqlc.arg(revoked_by)::text, '')::uuid,
                      revocation_reason = sqlc.arg(reason)::text
  WHERE principal_id = sqlc.arg(principal_id)::text::uuid AND revoked_at IS NULL
-RETURNING id::text AS id;
+RETURNING id::text AS id, coalesce(technical_token_id::text, '')::text AS technical_token_id;
 
 -- name: IdentityCountTokensOfPrincipal :one
 SELECT count(*) FROM api_token WHERE principal_id = sqlc.arg(principal_id)::text::uuid;
@@ -646,6 +728,85 @@ WITH d AS (
          ORDER BY id LIMIT sqlc.arg(max_rows)::int)
     RETURNING 1)
 SELECT count(*) FROM d;
+
+-- name: IdentityDeleteEndedTechnicalTokens :one
+-- A technical token whose last secret row the retention deleted is deleted with it (R-AUTH-045): a technical token is created
+-- with its first secret in one transaction, so one without any row has none live and no history. A technical token a new
+-- secret holds locked (IdentityLockTechnicalToken) is skipped and looked at by the next run.
+WITH d AS (
+    DELETE FROM technical_token t
+     WHERE t.id IN (SELECT x.id FROM technical_token x
+                     WHERE NOT EXISTS (SELECT 1 FROM api_token a WHERE a.technical_token_id = x.id)
+                       FOR UPDATE SKIP LOCKED)
+    RETURNING 1)
+SELECT count(*) FROM d;
+
+-- Technical tokens (R-AUTH-045) ---------------------------------------------------
+
+-- name: IdentityInsertTechnicalToken :many
+-- No row: the account holds a technical token of the name (409 already_exists).
+INSERT INTO technical_token (id, service_account_id, name, description, created_by)
+VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(account_id)::text::uuid, sqlc.arg(name)::text, sqlc.arg(description)::text,
+        NULLIF(sqlc.arg(created_by)::text, '')::uuid)
+ON CONFLICT (service_account_id, name) DO NOTHING
+RETURNING created_at;
+
+-- name: IdentityCountTechnicalTokens :one
+-- The technical tokens of an account, ended ones included (auth.tokens.max_technical_tokens_per_account).
+SELECT count(*) FROM technical_token WHERE service_account_id = sqlc.arg(account_id)::text::uuid;
+
+-- name: IdentityCountLiveTechnicalTokens :one
+-- The technical tokens of an account with a live secret (auth.tokens.max_active_per_principal.sat): a rotation's predecessor in
+-- its overlap belongs to the same technical token and is not counted again.
+SELECT count(DISTINCT a.technical_token_id) FROM api_token a
+ WHERE a.principal_id = sqlc.arg(account_id)::text::uuid AND a.type = 'sat'
+   AND a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > now());
+
+-- name: IdentityTechnicalTokens :many
+-- The technical tokens of an account by name, or the one of the name when name is not empty, with the name of their creator.
+SELECT t.id::text AS id, t.service_account_id::text AS account_id, t.name, t.description, t.created_at, t.revision,
+       coalesce(c.kind, '')::text AS created_by_kind, coalesce(c.name, '')::text AS created_by_name
+  FROM technical_token t LEFT JOIN principal c ON c.id = t.created_by
+ WHERE t.service_account_id = sqlc.arg(account_id)::text::uuid
+   AND (sqlc.arg(name)::text = '' OR t.name = sqlc.arg(name)::text)
+ ORDER BY t.name;
+
+-- name: IdentityTechnicalTokenSecrets :many
+-- The secret rows of the technical tokens of an account, newest first per technical token: the record shows the live ones, or
+-- the last one of a token that has none (R-AUTH-045).
+SELECT a.id::text AS id, a.technical_token_id::text AS technical_token_id, a.hint, a.scope, a.created_at, a.expires_at,
+       a.revoked_at, a.last_used_at, coalesce(a.rotated_from::text, '')::text AS rotated_from,
+       (a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > now()))::boolean AS live
+  FROM api_token a
+ WHERE a.principal_id = sqlc.arg(account_id)::text::uuid AND a.type = 'sat'
+   AND (sqlc.arg(technical_token_id)::text = '' OR a.technical_token_id = NULLIF(sqlc.arg(technical_token_id)::text, '')::uuid)
+ ORDER BY a.technical_token_id, a.created_at DESC, a.id DESC;
+
+-- name: IdentityLockTechnicalToken :many
+-- The technical token of the name, locked: a new secret, a description change and a delete of one technical token run one after
+-- the other.
+SELECT t.id::text AS id, t.name, t.description, t.revision
+  FROM technical_token t
+ WHERE t.service_account_id = sqlc.arg(account_id)::text::uuid AND t.name = sqlc.arg(name)::text
+   FOR UPDATE;
+
+-- name: IdentityTechnicalTokenLive :one
+-- Whether a technical token has a live secret (409 technical_token_active for a new secret).
+SELECT EXISTS (SELECT 1 FROM api_token a
+                WHERE a.technical_token_id = sqlc.arg(id)::text::uuid
+                  AND a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > now()))::boolean AS live;
+
+-- name: IdentityUpdateTechnicalToken :exec
+UPDATE technical_token SET description = sqlc.arg(description)::text, revision = revision + 1 WHERE id = sqlc.arg(id)::text::uuid;
+
+-- name: IdentityLiveSecretsOf :many
+-- The unrevoked secrets of a technical token, in id order: its delete revokes each (R-AUTH-045).
+SELECT a.id::text AS id FROM api_token a
+ WHERE a.technical_token_id = sqlc.arg(id)::text::uuid AND a.revoked_at IS NULL
+ ORDER BY a.id;
+
+-- name: IdentityDeleteTechnicalToken :execrows
+DELETE FROM technical_token WHERE id = sqlc.arg(id)::text::uuid;
 
 -- name: IdentityTokensEnteringNotice :many
 SELECT t.id::text AS id, t.type, t.hint, t.description, t.expires_at, p.kind AS owner_kind, p.name AS owner_name, p.id::text AS owner_id

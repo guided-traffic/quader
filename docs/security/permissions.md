@@ -413,6 +413,24 @@ nothing else; what keeps that from widening is a property of the grant index and
 Removing a member, lowering a role or moving a repository out of a project takes effect on every replica within the bound of
 R-AUTHZ-028 (`TestR_AUTHZ_028_AMemberChangeReachesAnotherReplica`, `TestR_REPO_060_AMoveTakesTheRepositoryOutOfItsProjectsRoles`).
 
+## Account grants
+
+A service account of a repository (R-AUTH-046, `sa:<projectKey>/<repositoryKey>/<name>`) holds its rights in one place: the
+actions stored with it in `service_account_repository_grant`, on its own repository and nowhere else (R-AUTHZ-039). They are one more
+source of the union, `account:sa:<stored name>` in the explanation, and the token's scope narrows them like any grant. What keeps
+the account inside its repository is held four times:
+
+| Line | What holds | Where |
+|---|---|---|
+| The index | the build loads the actions keyed by the account's repository ID (`AuthzBuildAccountGrants`); a decision asks them only for the repository of the coordinate, so no other repository, no other project and no instance capability is reached; the actions of a virtual repository's account are narrowed to `read` and `manage`, the ones that mean something there | `addAccountGrants`, `accountGrantOf` in [index.go](../../internal/authz/index.go), `grantedBy` in [decide.go](../../internal/authz/decide.go), `TestR_AUTHZ_039_ARepositoryAccountHoldsItsActionsOnItsRepositoryAndNothingElse` in [repository_account_test.go](../../internal/authz/repository_account_test.go) |
+| The writes | a policy entry, global or of a project, that names a repository's account is `422 principal_outside_repository` (an Owner without a policies capability gets `unknown_principal` for an account outside its project, as for a name that does not exist); a role binding `role_not_allowed`; a group membership `project_account_not_groupable`, as for every account of a project; an owner record of a package in another repository `422 principal_outside_repository` | `Service.projectRule` in [validate.go](../../internal/authz/validate.go), `refuseOtherRepositoryAccount` in [ownership.go](../../internal/authz/ownership.go) |
+| The database | the guard of the two policy-entry tables and of the role bindings refuses a repository's account (`AI005`, `project_account_principal_guard`), the group membership's guard every project's account (`AI002`); `service_account.repository_id` is deleted with the repository (`ON DELETE CASCADE`), and the trigger `service_account_repository_gone` deletes the principal with it, so its tokens end | [00080_technical_tokens.sql](../../internal/meta/postgres/migrations/00080_technical_tokens.sql) |
+| The life of the repository | a repository that is being deleted is not in the index, so its accounts' actions grant nothing from the moment it is marked; its accounts end in the transaction that removes the repository row, at once for an empty repository and at the end of the delete job otherwise (`EndRepositoryAccountsTx`: tokens revoked, the account deleted, `serviceaccount.deleted` with `repositoryDeleted`, [H-1013](#h-1013--the-tokens-of-a-repositorys-accounts-authenticate-until-the-repository-row-is-removed)); a move to another project renames the accounts to `<newProject>/<repositoryKey>/<name>` and moves them in the move's transaction, so the account keeps its actions on the same repository and never holds a right in the old project | the repository hook of [wire_identity.go](../../internal/app/wire_identity.go), `MoveRepositoryAccountsTx` called from [move.go](../../internal/project/move.go) |
+
+A change of the actions is journaled (`serviceaccount.updated` with `actions` before and after) and replayed after a restore only
+when it narrows ([backup-and-restore.md](backup-and-restore.md)), and it reaches every replica within the bound of R-AUTHZ-028 as
+any grant does (the principal hook notifies the authorization area).
+
 ## A Bastion registration holds nothing
 
 A Bastion registration ([R-BAS-004](../spec/bastion.md#r-bas-004--bastion-registrations-and-the-bastion-token-on-the-main-installation)) is a
@@ -439,7 +457,8 @@ and writes the five `authz_*` tables and `authz_project_policy_entry` and, throu
 and writes `package_ownership` and `package_owner` and reads `packages` and `package_versions` (whether an unclaimed name holds
 a version); it locks the claim row of a name `FOR UPDATE` in the writer's transaction and takes no advisory lock. The build runs
 as a read-only transaction on the request pool, never on the control connection, so a slow build cannot delay the poll or the
-heartbeats. See [privilege-footprint.md](privilege-footprint.md) for the grants of the runtime role.
+heartbeats. The build also reads `service_account_repository_grant` and `service_account` for the account grants, and ownership
+`service_account` for the repository of an account. See [privilege-footprint.md](privilege-footprint.md) for the grants of the runtime role.
 
 ## What this does not cover
 
@@ -448,6 +467,16 @@ The gaps of the spec pages whose mechanism this page describes:
 - [H-21](../spec/authorization.md#h-21--no-reservation-of-name-prefixes): no reservation of name prefixes.
 - [H-22](../spec/authorization.md#h-22--no-two-person-rule-for-permission-changes): no two-person rule for permission changes.
 - [H-45](../spec/api-and-ui.md#h-45--hiding-unauthorized-resources-is-not-timing-safe): hiding unauthorized resources is not timing-safe.
+
+### H-1013 · The tokens of a repository's accounts authenticate until the repository row is removed
+
+Component: the repository hook `EndRepositoryAccountsTx` ([wire_identity.go](../../internal/app/wire_identity.go)) and the delete
+job of a repository with content. Subject: the technical tokens of the accounts of a repository whose deletion runs as a job.
+Live for every such deletion, for the time the job runs. From the moment the repository is marked `deleting` the index holds
+neither the repository nor its account grants, so a token of such an account reaches nothing a decision grants; it still passes
+the authentication stage and is answered what an authenticated principal without rights is answered, until the job removes the
+row and revokes the tokens. What makes it real: a deletion job that runs for long or fails and is retried; a reviewer who reads
+"repository deleted" as "its credentials ended". Revoking the account's tokens before deleting the repository closes it.
 
 ### H-102 · A caller that decides several coordinates without `Begin` can straddle an index swap
 

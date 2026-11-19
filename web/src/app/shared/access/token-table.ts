@@ -71,7 +71,12 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
             </td>
           }
           <th scope="row" class="wrap-name">
-            {{ t.description }}
+            <!-- A service-account token is a secret of a technical token: its name, and below it the secret's hint (R-UI-181). -->
+            @if (t.technicalToken; as tt) {
+              <span translate="no">{{ tt.name }}</span>
+            } @else {
+              {{ t.description }}
+            }
             <code translate="no" class="secondary">{{ t.hint }}</code>
           </th>
           @if (showOwner()) {

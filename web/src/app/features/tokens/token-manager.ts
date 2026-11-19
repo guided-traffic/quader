@@ -17,16 +17,11 @@ import { TokenTable } from '../../shared/access/token-table';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
 
-/** Whose tokens the manager shows and what it may do with them. */
-export type TokenOwnerScope =
-  | { readonly kind: 'own' }
-  | { readonly kind: 'user'; readonly name: string }
-  | {
-      readonly kind: 'service-account';
-      readonly name: string;
-      /** The key of the account's project (R-AUTHZ-026): its Owners issue and revoke the tokens. */
-      readonly project?: string | null;
-    };
+/**
+ * Whose tokens the manager shows and what it may do with them: the caller's own or a user's. A service account's tokens are its
+ * technical tokens, which the account's page manages (`<quader-technical-tokens>`, R-AUTH-045, R-UI-181).
+ */
+export type TokenOwnerScope = { readonly kind: 'own' } | { readonly kind: 'user'; readonly name: string };
 
 interface RotateChoice {
   readonly overlapSeconds: number;
@@ -104,9 +99,6 @@ export class RotateDialog {
         }
         <quader-token-form
           [submitLabel]="createLabel"
-          [allowNonExpiring]="allowNonExpiring()"
-          [lifetimeCapped]="projectIssues() && !allowNonExpiring()"
-          [tokenType]="scope().kind === 'service-account' ? 'sat' : 'pat'"
           [offerAdmin]="offerAdmin()"
           [busy]="busy()"
           [failure]="formError()"
@@ -155,8 +147,6 @@ export class TokenManager {
   readonly scope = input.required<TokenOwnerScope>();
   /** False when the page's header holds **Create token** (`offersCreate`, `openForm`). */
   readonly createInToolbar = input(true);
-  /** For a service account: whether it holds the administrator role now (`ServiceAccount.isAdmin`, Q-AUTH-209). */
-  readonly accountIsAdmin = input(false);
   /**
    * True: **Revoke all tokens** is in the manager's own closed section Advanced at its end (the profile). False: the page puts it
    * into its own section Advanced, last on the page, with `offersRevokeAll` and `revokeAllTokens` (a user, a service account).
@@ -184,25 +174,13 @@ export class TokenManager {
 
   private idempotencyKey = newIdempotencyKey();
 
-  /**
-   * Administrator rights are offered to a caller who holds the role, for their own token and for the token of an instance-wide
-   * service account that holds the role itself: for any other account the choice would take effect nowhere (Q-UI-220).
-   */
-  protected readonly offerAdmin = computed(() => {
-    if (!this.session.hasRole('admin')) return false;
-    const s = this.scope();
-    return s.kind === 'own' || (s.kind === 'service-account' && !s.project && this.accountIsAdmin());
-  });
+  /** Administrator rights are offered to a caller who holds the role, for their own token (Q-UI-220). */
+  protected readonly offerAdmin = computed(() => this.session.hasRole('admin') && this.scope().kind === 'own');
 
   protected readonly owner = computed(() => {
     const s = this.scope();
-    return s.kind === 'own' ? 'me' : s.kind === 'user' ? s.name : s.project ? `sa:${s.project}/${s.name}` : `sa:${s.name}`;
+    return s.kind === 'own' ? 'me' : s.name;
   });
-  /**
-   * The server lets the administrator role create and rotate the tokens of a service account (or a
-   * token of the account itself, which is no screen); `identities:write` is not enough (R-AUTH-027,
-   * R-AUTH-030), so a security administrator would get 403.
-   */
   /** Whether **Create token** is offered now: the caller may create and the form is closed. */
   protected readonly offersCreate = computed(() => this.canCreate() && !this.formOpen());
   /** Whether the form is open; a page whose header holds **Create token** hides it meanwhile. */
@@ -213,35 +191,11 @@ export class TokenManager {
       ? $localize`:@@tokens.empty-all:No tokens yet.`
       : $localize`:@@tokens.empty-active:No active tokens. Revoked and expired ones are shown with the switch above.`,
   );
-  protected readonly canCreate = computed(() => {
-    const s = this.scope();
-    return s.kind === 'own' || (s.kind === 'service-account' && (this.session.hasRole('admin') || this.projectIssues()));
-  });
-  /**
-   * An Owner of the account's project issues its tokens (R-AUTHZ-026, Q-AUTHZ-177); the server caps the lifetime,
-   * forbids "never expires" and any `system` scope for them.
-   */
-  protected readonly projectIssues = computed(() => {
-    const s = this.scope();
-    return s.kind === 'service-account' && this.session.isOwnerOf(s.project);
-  });
-  /** A non-expiring token is for the administrator role only; an Owner's tokens always expire. */
-  protected readonly allowNonExpiring = computed(
-    () => this.scope().kind === 'service-account' && this.session.hasRole('admin'),
-  );
-  protected readonly canRotate = computed(() => {
-    const s = this.scope();
-    return s.kind === 'own' || (s.kind === 'service-account' && this.session.hasRole('admin'));
-  });
-  /** `tokens:revoke`, or the Owner role in the account's project (Q-AUTHZ-177). */
-  protected readonly canRevoke = computed(() => {
-    const s = this.scope();
-    return (
-      s.kind === 'own' ||
-      this.session.has('tokens:revoke') ||
-      (s.kind === 'service-account' && this.session.isOwnerOf(s.project))
-    );
-  });
+  /** A personal token is created by its owner only; there is no impersonation (R-AUTH-027). */
+  protected readonly canCreate = computed(() => this.scope().kind === 'own');
+  protected readonly canRotate = computed(() => this.scope().kind === 'own');
+  /** The owner, or `tokens:revoke`. */
+  protected readonly canRevoke = computed(() => this.scope().kind === 'own' || this.session.has('tokens:revoke'));
   protected readonly canRevokeAll = computed(() => this.canRevoke());
   private readonly held = signal(false);
   /**
@@ -325,11 +279,7 @@ export class TokenManager {
   }
 
   private async createOnce(request: CreateTokenRequest): Promise<TokenCreated> {
-    const s = this.scope();
-    const send = (key: string): Promise<TokenCreated> =>
-      s.kind === 'service-account'
-        ? this.api.createForServiceAccount(s.name, s.project ?? null, request, key)
-        : this.api.create(request, key);
+    const send = (key: string): Promise<TokenCreated> => this.api.create(request, key);
     try {
       return await send(this.idempotencyKey);
     } catch (e) {
@@ -366,8 +316,7 @@ export class TokenManager {
     const s = this.scope();
     await this.act(async () => {
       if (s.kind === 'own') await this.api.revokeAllOwn();
-      else if (s.kind === 'user') await this.api.revokeAllOfUser(s.name);
-      else await this.api.revokeAllOfServiceAccount(s.name, s.project ?? null);
+      else await this.api.revokeAllOfUser(s.name);
       this.notifier.status($localize`:@@tokens.revoked-all:All tokens revoked.`);
     });
   }

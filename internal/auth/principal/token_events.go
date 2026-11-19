@@ -18,6 +18,9 @@ type RevokedToken struct {
 	// Bastion marks a Bastion token: its event has the resource type bastion and names the registration in its data
 	// (R-BAS-004, Q-BAS-61).
 	Bastion bool
+	// TechnicalTokenID is the technical token of a service-account token (R-AUTH-045), empty for every other token; the event
+	// names it, so the history of a technical token holds the end of each of its secrets.
+	TechnicalTokenID string
 }
 
 // RecordTokensRevoked records token.revoked for every token, in order, each with the journal entry of R-HA-054
@@ -49,13 +52,15 @@ func RecordTokensRevoked(ctx context.Context, tx meta.Tx, rec audit.Recorder, c 
 // with its journal entry for each (RecordTokensRevoked). bastion says the principal is a Bastion registration. It
 // returns the IDs; the caller records the change of the principal for the replicas' caches.
 func RevokeAllTokensTx(ctx context.Context, tx meta.Tx, rec audit.Recorder, c Caller, principalID, reason string, bastion bool) ([]string, error) {
-	ids, err := Queries(tx).IdentityRevokeAllOfPrincipal(ctx, q.IdentityRevokeAllOfPrincipalParams{PrincipalID: principalID, RevokedBy: c.Actor.ID, Reason: reason})
-	if err != nil || len(ids) == 0 {
+	rows, err := Queries(tx).IdentityRevokeAllOfPrincipal(ctx, q.IdentityRevokeAllOfPrincipalParams{PrincipalID: principalID, RevokedBy: c.Actor.ID, Reason: reason})
+	if err != nil || len(rows) == 0 {
 		return nil, err
 	}
-	toks := make([]RevokedToken, len(ids))
-	for i, id := range ids {
-		toks[i] = RevokedToken{ID: id, OwnerID: principalID, Reason: reason, Bastion: bastion}
+	ids := make([]string, len(rows))
+	toks := make([]RevokedToken, len(rows))
+	for i, r := range rows {
+		ids[i] = r.ID
+		toks[i] = RevokedToken{ID: r.ID, OwnerID: principalID, Reason: reason, Bastion: bastion, TechnicalTokenID: r.TechnicalTokenID}
 	}
 	return ids, RecordTokensRevoked(ctx, tx, rec, c, toks)
 }
@@ -101,6 +106,9 @@ func tokenRevokedEvent(c Caller, t RevokedToken, o tokenOwner) audit.Event {
 	}
 	if o.project != "" {
 		d["project"] = o.project
+	}
+	if t.TechnicalTokenID != "" {
+		d["technicalToken"] = t.TechnicalTokenID
 	}
 	return audit.Event{
 		Type: audit.EventTokenRevoked, Outcome: audit.Success, Reason: t.Reason, Actor: c.Actor, Source: c.Source,

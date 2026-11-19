@@ -58,7 +58,7 @@ func TestR_AUTH_027_E1_2_TokenEndToEndOverHTTP(t *testing.T) {
 
 			// A service-account token through the API, by an administrator, on the other replica.
 			want(t, sa.call(post, "/api/v1/service-accounts", fx.adminToken, map[string]any{"name": "deploy-bot"}), 201, "")
-			rp = sb.call(post, "/api/v1/service-accounts/deploy-bot/tokens", fx.adminToken, map[string]any{"description": "deploy", "ttlSeconds": 7200}, idemHd, "sat-1")
+			rp = sb.call(post, "/api/v1/service-accounts/deploy-bot/technical-tokens", fx.adminToken, map[string]any{"name": "deploy", "ttlSeconds": 7200}, idemHd, "sat-1")
 			want(t, rp, 201, "")
 			sat := rp.json(t)
 			satSecret := str(sat, "token")
@@ -66,7 +66,7 @@ func TestR_AUTH_027_E1_2_TokenEndToEndOverHTTP(t *testing.T) {
 				t.Fatalf("Cache-Control %q", rp.Header.Get("Cache-Control"))
 			}
 			// The same key again: the value is not shown a second time.
-			again := sa.call(post, "/api/v1/service-accounts/deploy-bot/tokens", fx.adminToken, map[string]any{"description": "deploy", "ttlSeconds": 7200}, idemHd, "sat-1")
+			again := sa.call(post, "/api/v1/service-accounts/deploy-bot/technical-tokens", fx.adminToken, map[string]any{"name": "deploy", "ttlSeconds": 7200}, idemHd, "sat-1")
 			want(t, again, 409, "token_already_issued")
 			if strings.Contains(string(again.Body), satSecret) {
 				t.Fatal("the replay shows the value")
@@ -80,7 +80,7 @@ func TestR_AUTH_027_E1_2_TokenEndToEndOverHTTP(t *testing.T) {
 			}
 
 			// Revoke through A (the SAT by an administrator, the PAT by its owner); B rejects within the bound.
-			want(t, sa.call(del, "/api/v1/tokens/"+str(sat, "id"), fx.adminToken, nil), 204, "")
+			want(t, sa.call(del, "/api/v1/tokens/"+str(sat, "secretId"), fx.adminToken, nil), 204, "")
 			want(t, sa.call(del, "/api/v1/tokens/"+str(pat, "id"), patSecret, nil), 204, "")
 			for _, secret := range []string{satSecret, patSecret} {
 				took := waitFor(t, "replica B rejecting the revoked token", revocationBound, func() bool {

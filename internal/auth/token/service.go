@@ -111,6 +111,10 @@ type Record struct {
 	CIContext        json.RawMessage
 	// State is active, expired or revoked.
 	State string
+	// TechnicalTokenID and TechnicalTokenName name the technical token a service-account token is a secret of (R-AUTH-045);
+	// empty for every other type.
+	TechnicalTokenID   string
+	TechnicalTokenName string
 }
 
 // Owner names the principal that owns a token.
@@ -167,6 +171,9 @@ type CreateRequest struct {
 	// token of a project service account (Q-AUTHZ-177). The token then names no system item, has admin false and
 	// is never non-expiring, whatever else the request says (422 invalid_scope).
 	Delegated bool
+	// TechnicalTokenID is the technical token a new service-account secret belongs to (R-AUTH-045): every SAT names one.
+	// [Service.CreateTechnicalTx] creates the technical token and sets it; [Service.NewSecretTx] sets an existing one.
+	TechnicalTokenID string
 }
 
 func forbidden(code, detail string) error { return errs.E(errs.Forbidden, code, detail) }
@@ -175,6 +182,9 @@ func forbidden(code, detail string) error { return errs.E(errs.Forbidden, code, 
 // owner's principal row before it counts the owner's active tokens, so
 // concurrent creates on different replicas cannot exceed the limit.
 func (s *Service) Create(ctx context.Context, r CreateRequest) (Created, error) {
+	if err := notTechnical(r); err != nil {
+		return Created{}, err
+	}
 	sp, err := s.prepareCreate(ctx, r)
 	if err != nil {
 		return Created{}, err
@@ -191,12 +201,24 @@ func (s *Service) Create(ctx context.Context, r CreateRequest) (Created, error) 
 // the lineage run on tx. The caller owns the transaction; a retry of it runs the
 // call again from the start with a new secret.
 func (s *Service) CreateTx(ctx context.Context, tx meta.Tx, r CreateRequest) (Created, error) {
+	if err := notTechnical(r); err != nil {
+		return Created{}, err
+	}
 	sp, err := s.prepareCreate(ctx, r)
 	if err != nil {
 		return Created{}, err
 	}
 	created, err := s.insertTx(ctx, tx, sp)
 	return created, principal.DBErr("token.create", err)
+}
+
+// notTechnical refuses a service-account token through Create: every one is a secret of a technical token, which
+// [Service.CreateTechnicalTx] and [Service.NewSecretTx] issue (R-AUTH-045).
+func notTechnical(r CreateRequest) error {
+	if r.Type == TypeSAT {
+		return errs.E(errs.Invalid, errs.CodeValidation, "A service-account token is a secret of a technical token: create the technical token, or a new secret of it (R-AUTH-045).")
+	}
+	return nil
 }
 
 // prepareCreate validates a creation and resolves its scope and lifetime; it
@@ -344,6 +366,10 @@ type insertSpec struct {
 	// presented is the ID of the presenting token, "" for none.
 	presented   string
 	rotatedFrom string
+	// beforeInsert runs in the creating transaction after the owner is locked and the active tokens counted, before the row
+	// is written, and returns the technical token the secret belongs to: the technical token of a create is inserted there,
+	// and the one of a new secret is locked and checked, under the owner's lock (R-AUTH-045).
+	beforeInsert func(ctx context.Context, tx meta.Tx, qs *q.Queries) (string, error)
 	// afterInsert runs in the creating transaction (rotation ends the predecessor).
 	afterInsert func(ctx context.Context, tx meta.Tx, qs *q.Queries, created Record) error
 }
@@ -444,7 +470,14 @@ func (s *Service) insertTx(ctx context.Context, tx meta.Tx, sp insertSpec) (Crea
 	if err != nil {
 		return Created{}, err
 	}
-	n, err := qs.IdentityCountActiveTokens(ctx, q.IdentityCountActiveTokensParams{PrincipalID: r.OwnerID, Type: string(r.Type)})
+	var n int64
+	if r.Type == TypeSAT {
+		// A service account's limit counts its technical tokens with a live secret (R-AUTH-045): a rotation's predecessor
+		// in its overlap is a secret of the same technical token.
+		n, err = qs.IdentityCountLiveTechnicalTokens(ctx, r.OwnerID)
+	} else {
+		n, err = qs.IdentityCountActiveTokens(ctx, q.IdentityCountActiveTokensParams{PrincipalID: r.OwnerID, Type: string(r.Type)})
+	}
 	if err != nil {
 		return Created{}, err
 	}
@@ -457,10 +490,19 @@ func (s *Service) insertTx(ctx context.Context, tx meta.Tx, sp insertSpec) (Crea
 	if int(n) >= sp.maxActive {
 		return Created{}, errs.E(errs.Conflict, errs.CodeTokenLimitReached, "The principal holds the maximum number of active tokens.")
 	}
+	if sp.beforeInsert != nil {
+		if r.TechnicalTokenID, err = sp.beforeInsert(ctx, tx, qs); err != nil {
+			return Created{}, err
+		}
+	}
+	if r.Type == TypeSAT && r.TechnicalTokenID == "" {
+		return Created{}, errs.E(errs.Internal, errs.CodeInternal, "", errs.WithOp("token.insert: a service-account token without its technical token"))
+	}
 	row, err := qs.IdentityInsertToken(ctx, q.IdentityInsertTokenParams{
 		ID: id, Type: string(r.Type), SecretSha256: hash[:], Hint: Hint(secret), PrincipalID: r.OwnerID,
 		Description: r.Description, Scope: string(sp.scope.Marshal()), SelfRotatable: r.SelfRotatable,
 		CreatedBy: r.Caller.Actor.ID, CreatedVia: sp.via, TtlSecs: ttl, CapMicros: capAt, RotatedFrom: sp.rotatedFrom, DerivedFrom: sp.derivedFrom,
+		TechnicalTokenID: r.TechnicalTokenID,
 	})
 	if err != nil {
 		return Created{}, err
@@ -468,7 +510,7 @@ func (s *Service) insertTx(ctx context.Context, tx meta.Tx, sp insertSpec) (Crea
 	rec := Record{
 		ID: id, Type: r.Type, Hint: Hint(secret), Owner: owner, Description: r.Description, Scope: sp.scope,
 		SelfRotatable: r.SelfRotatable, CreatedAt: row.CreatedAt.Time, CreatedBy: r.Caller.Actor.ID, CreatedVia: sp.via,
-		RotatedFrom: sp.rotatedFrom, DerivedFrom: sp.derivedFrom, State: "active",
+		RotatedFrom: sp.rotatedFrom, DerivedFrom: sp.derivedFrom, State: "active", TechnicalTokenID: r.TechnicalTokenID,
 	}
 	if row.ExpiresAt.Valid {
 		t := row.ExpiresAt.Time
@@ -497,6 +539,9 @@ func (s *Service) insertTx(ctx context.Context, tx meta.Tx, sp insertSpec) (Crea
 	}
 	if sp.rotatedFrom != "" {
 		d["rotatedFrom"] = sp.rotatedFrom
+	}
+	if r.TechnicalTokenID != "" {
+		d["technicalToken"] = r.TechnicalTokenID
 	}
 	subject := audit.Subject{Kind: "token", ID: id, Name: rec.Hint}
 	if r.Type == TypeBST {
@@ -625,9 +670,11 @@ func getOn(ctx context.Context, qs *q.Queries, id string) (Record, bool, error) 
 		return Record{}, false, err
 	}
 	r := rows[0]
-	return recordFrom(r.ID, r.Type, r.Hint, r.OwnerID, r.OwnerKind, r.OwnerName, r.Description, r.Scope, r.SelfRotatable,
+	rec := recordFrom(r.ID, r.Type, r.Hint, r.OwnerID, r.OwnerKind, r.OwnerName, r.Description, r.Scope, r.SelfRotatable,
 		r.CreatedAt.Time, r.CreatedBy, r.CreatedVia, r.ExpiresAt.Time, r.RevokedAt.Time, r.ExpiresAt.Valid, r.RevokedAt.Valid,
-		r.RevokedBy, r.RevocationReason, r.RotatedFrom, r.DerivedFrom, r.LastUsedAt.Time, r.LastUsedAt.Valid, r.LastUsedAddr, r.Expired, r.CiContext), true, nil
+		r.RevokedBy, r.RevocationReason, r.RotatedFrom, r.DerivedFrom, r.LastUsedAt.Time, r.LastUsedAt.Valid, r.LastUsedAddr, r.Expired, r.CiContext)
+	rec.TechnicalTokenID, rec.TechnicalTokenName = r.TechnicalTokenID, r.TechnicalTokenName
+	return rec, true, nil
 }
 
 // ListFilter filters List (R-AUTH-028).
@@ -681,9 +728,11 @@ func (s *Service) List(ctx context.Context, f ListFilter) ([]Record, error) {
 		}
 		out = out[:0]
 		for _, r := range rows {
-			out = append(out, recordFrom(r.ID, r.Type, r.Hint, r.OwnerID, r.OwnerKind, r.OwnerName, r.Description, r.Scope, r.SelfRotatable,
+			rec := recordFrom(r.ID, r.Type, r.Hint, r.OwnerID, r.OwnerKind, r.OwnerName, r.Description, r.Scope, r.SelfRotatable,
 				r.CreatedAt.Time, r.CreatedBy, r.CreatedVia, r.ExpiresAt.Time, r.RevokedAt.Time, r.ExpiresAt.Valid, r.RevokedAt.Valid,
-				r.RevokedBy, r.RevocationReason, r.RotatedFrom, r.DerivedFrom, r.LastUsedAt.Time, r.LastUsedAt.Valid, r.LastUsedAddr, r.Expired, r.CiContext))
+				r.RevokedBy, r.RevocationReason, r.RotatedFrom, r.DerivedFrom, r.LastUsedAt.Time, r.LastUsedAt.Valid, r.LastUsedAddr, r.Expired, r.CiContext)
+			rec.TechnicalTokenID, rec.TechnicalTokenName = r.TechnicalTokenID, r.TechnicalTokenName
+			out = append(out, rec)
 		}
 		return nil
 	})

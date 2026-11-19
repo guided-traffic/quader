@@ -90,6 +90,21 @@ development agent merges them in the order **1, 2, 3**.
   create dialog with the name field, the token row of an expired token.
 - **Must not touch:** `internal/proxy`, `internal/limits`, `internal/api/edge`, `internal/api/v1/ratelimit.go`, the limits and usage
   screens.
+- **Built.** What the next packages build on:
+  - Package 2 reads the budget subject from `httpserver.Credential.TechnicalTokenID` (empty for every credential but a SAT; for a
+    registry token the underlying token's), set by the stage from the token cache entry (`token.Info.TechnicalTokenID`). The row is
+    `technical_token` (stable ID across rotations and new secrets); `TechnicalToken.limit` of the API is always `null` until the limits
+    area fills it ([technical_tokens_api.go](../../internal/api/v1/technical_tokens_api.go), `toTechnicalToken`).
+  - Package 3 adds the columns **Limit** and **Last 24 hours** and the action **Set limit** in
+    [technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts): the two columns between
+    **Token** and **Expires** (`columns`, and the row's cells between its `th` and the time `td`, where a comment marks the place),
+    **Set limit** before **Revoke** in the action cell. The table is used twice in
+    [technical-tokens.ts](../../web/src/app/features/service-accounts/technical-tokens.ts), for the active and for the ended tokens
+    (Q-UI-740), and serves the three levels.
+  - The repository settings' section is `RepositoryServiceAccounts`
+    ([repository-service-accounts.ts](../../web/src/app/features/service-accounts/repository-service-accounts.ts)), opened by
+    `repository-detail.ts` as the lazy section `service-accounts`; an account's page at a repository is the repository's child route
+    `service-accounts/:name` ([repositories.routes.ts](../../web/src/app/features/repositories/repositories.routes.ts)).
 
 ### Work package 2 · Accounting and enforcement
 

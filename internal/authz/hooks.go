@@ -40,7 +40,13 @@ func (h *PrincipalHook) OnPrincipalChanged(ctx context.Context, tx meta.Tx, prin
 	if err != nil {
 		return err
 	}
-	if len(touched) == 0 && !bound {
+	// A repository's service account holds actions at the account (R-AUTHZ-039): its creation, a change of its actions and
+	// its deletion change the grant index although no policy names it.
+	repo, err := qs.AuthzServiceAccountRepository(ctx, principalID)
+	if err != nil {
+		return err
+	}
+	if len(touched) == 0 && !bound && (len(repo) == 0 || repo[0] == 0) {
 		return nil
 	}
 	return h.changes.Notify(tx, AreaAuthz, payloadVersion, changePayload{Type: "principal", ID: principalID})

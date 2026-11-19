@@ -511,6 +511,18 @@ func (s *Service) projectRule(ctx context.Context, ptr string, ref Ref, id strin
 	if ref.Kind != principal.KindServiceAccount {
 		return nil, nil
 	}
+	if strings.Count(ref.Name, "/") == 2 {
+		// A repository's service account holds its rights at the account, and no policy, global or of a project, names it
+		// (R-AUTHZ-039); its stored name is <project>/<repository>/<name>, which the principal table holds for no other
+		// account. An Owner without a policies capability learns nothing about another project's repositories.
+		if rp.o.owner != "" && rp.in.Project != nil && !strings.HasPrefix(ref.Name, *rp.in.Project+"/") {
+			p := field(ptr+"/principal", errs.CodeUnknownPrincipal, fmt.Sprintf("No principal %s exists.", ref))
+			return &p, nil
+		}
+		p := field(ptr+"/principal", errs.CodePrincipalOutsideRepository,
+			fmt.Sprintf("%s belongs to a repository and holds its rights there at the account; no policy grants to it.", ref))
+		return &p, nil
+	}
 	project, err := pl.AccountProject(ctx, id)
 	if err != nil {
 		return nil, err

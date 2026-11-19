@@ -12,6 +12,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -33,6 +34,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/auth/scope"
 	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
@@ -321,7 +323,7 @@ func defaultAuthTokens() config.AuthTokens {
 		PAT:       config.AuthTokenPAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour},
 		SAT:       config.AuthTokenSAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour},
 		CIT:       config.AuthTokenCIT{MaxTTL: 6 * time.Hour},
-		MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20},
+		MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20}, MaxTechnicalPerAccount: 100,
 	}
 }
 
@@ -406,7 +408,11 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 		Tokens: r.tokenCfg, Recent: recent, Metrics: metrics, Log: quiet, Now: o.now,
 		Scope: endpointRules(scope.Options{Action: func(string) bool { return true }, SystemItem: func(s string) bool { return s == "identities:read" }}),
 	})
-	r.manager = principal.NewManager(principal.ManagerOptions{DB: r.db, Notifier: r.changes, Recorder: r.recorder, BreakGlassName: "breakglass"})
+	// The authorization area learns the changes of principals that carry grants (a repository account's actions, R-AUTHZ-039), as
+	// the composition root wires it.
+	r.manager = principal.NewManager(principal.ManagerOptions{
+		DB: r.db, Notifier: r.changes, Recorder: r.recorder, BreakGlassName: "breakglass", Authz: authz.NewPrincipalHook(r.changes),
+	})
 	r.provisioner = principal.NewProvisioner(principal.ProvisionerOptions{
 		DB: r.db, Notifier: r.changes, Recorder: r.recorder, BreakGlassName: "breakglass", Metrics: metrics,
 	})
@@ -534,15 +540,25 @@ func (r *replica) pat(u principal.User, mutate ...func(*token.CreateRequest)) to
 	return c
 }
 
+// satSeq names the technical tokens the tests issue, one per call of sat.
+var satSeq atomic.Int64
+
 func (r *replica) sat(sa principal.ServiceAccount, mutate ...func(*token.CreateRequest)) token.Created {
 	r.t.Helper()
-	req := token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "test", Via: "admin-cli", Admin: true}
+	req := token.CreateRequest{Caller: admin, Via: "admin-cli", Admin: true}
 	for _, m := range mutate {
 		m(&req)
 	}
-	c, err := r.tokens.Create(context.Background(), req)
+	// Every service-account token is a secret of a technical token (R-AUTH-045); each call makes one of its own.
+	c, err := r.tokens.IssueTechnical(context.Background(), sa, token.TechnicalCreate{Request: req, Name: fmt.Sprintf("test-%d", satSeq.Add(1))})
 	if err != nil {
 		r.t.Fatalf("Create SAT: %v", err)
 	}
 	return c
+}
+
+// issueSAT issues a service-account token the way every one is issued now: as the first secret of a technical token of its own
+// (R-AUTH-045), named test-<n>.
+func issueSAT(ctx context.Context, tokens *token.Service, sa principal.ServiceAccount, req token.CreateRequest) (token.Created, error) {
+	return tokens.IssueTechnical(ctx, sa, token.TechnicalCreate{Request: req, Name: fmt.Sprintf("test-%d", satSeq.Add(1))})
 }

@@ -799,14 +799,61 @@ type createdToken struct {
 	Token string `json:"token"`
 }
 
-// newSAToken mints a token of a service account through the management API. scope is the token scope document.
+// technicalCreated is the answer of a technical token's create or new secret (R-AUTH-045): secretId is the token ID of the
+// secret, the one /api/v1/tokens/{id} revokes.
+type technicalCreated struct {
+	SecretID string `json:"secretId"`
+	Token    string `json:"token"`
+}
+
+// technicalSeq makes the names of the technical tokens a run creates unique beside the clock.
+var technicalSeq struct {
+	sync.Mutex
+	n int
+}
+
+// technicalName is a name for a technical token no other run on the cluster has taken: e2e-<clock>-<n>.
+func technicalName() string {
+	technicalSeq.Lock()
+	defer technicalSeq.Unlock()
+	technicalSeq.n++
+	return fmt.Sprintf("e2e-%x-%d", time.Now().UnixNano(), technicalSeq.n)
+}
+
+// pruneTechnical deletes the ended technical tokens of an account (base is its route), so that an account the suites use
+// run after run stays below auth.tokens.max_technical_tokens_per_account, which counts ended ones until their retention.
+func pruneTechnical(adm *api, base string) {
+	r := adm.get(base + "/technical-tokens")
+	if r.Status != http.StatusOK {
+		return
+	}
+	var l struct {
+		Items []struct {
+			Name  string `json:"name"`
+			State string `json:"state"`
+		} `json:"items"`
+	}
+	if json.Unmarshal(r.Body, &l) != nil {
+		return
+	}
+	for _, it := range l.Items {
+		if it.State != "active" {
+			adm.do(http.MethodDelete, base+"/technical-tokens/"+it.Name, nil)
+		}
+	}
+}
+
+// newSAToken mints a token of a service account through the management API: the first secret of a technical token of its own
+// (R-AUTH-045). scope is the token scope document.
 func newSAToken(t testing.TB, adm *api, sa string, ttl int, scope map[string]any) createdToken {
 	t.Helper()
-	r := adm.do(http.MethodPost, "/api/v1/service-accounts/"+sa+"/tokens", map[string]any{"description": "end-to-end test", "ttlSeconds": ttl, "scope": scope})
+	base := "/api/v1/service-accounts/" + sa
+	pruneTechnical(adm, base)
+	r := adm.do(http.MethodPost, base+"/technical-tokens", map[string]any{"name": technicalName(), "description": "end-to-end test", "ttlSeconds": ttl, "scope": scope})
 	r.want(t, "token of "+sa, 201)
-	var c createdToken
+	var c technicalCreated
 	r.JSON(t, &c)
-	return c
+	return createdToken{ID: c.SecretID, Token: c.Token}
 }
 
 // ── secrets, pods, metrics ───────────────────────────────────────────────────

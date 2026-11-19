@@ -1,40 +1,70 @@
 import { IdentityApi } from '../../api/identity-api';
+import { TechnicalTokensApi } from '../../api/technical-tokens-api';
 import { TokensApi } from '../../api/tokens-api';
-import { FakeIdentityApi, FakeTokensApi, SECRET_VALUE, problem, sampleToken } from '../../api/testing/access-fakes';
+import {
+  FakeIdentityApi,
+  FakeTechnicalTokensApi,
+  FakeTokensApi,
+  SECRET_VALUE,
+  problem,
+  sampleAccount,
+  sampleTechnicalToken,
+} from '../../api/testing/access-fakes';
 import { AuthzMe, SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { buttonByText, renderScreen, settle, storedText, text, typeInto, sleep } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { ServiceAccountDetail } from './service-account-detail';
 import { ServiceAccountList } from './service-account-list';
+import { RepositoryServiceAccounts } from './repository-service-accounts';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
+type Get = <A>(t: abstract new (...a: never[]) => A) => A;
 
-describe('Service accounts (R-UI-026)', () => {
-  it('R-UI-026 lists name, description and status with the hint when to use one, and passes axe', async () => {
+/** The section **Technical tokens** of the page (R-UI-181). */
+const technicalSection = (root: HTMLElement): HTMLElement =>
+  [...root.querySelectorAll<HTMLElement>('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Technical tokens'))!;
+
+const asRole = (roles: AuthzMe['roles'], capabilities: string[]) => ({
+  inputs: { name: 'ci-bot' },
+  capabilities,
+  setup: (api: Get) => {
+    const me = api(SessionApi) as FakeSessionApi;
+    me.meResult = { roles, capabilities };
+    (api(IdentityApi) as FakeIdentityApi).accounts = [sampleAccount({ technicalTokens: 1 })];
+  },
+});
+
+describe('Service accounts (R-UI-026, R-UI-181)', () => {
+  it('R-UI-026 lists name, description, level and status with the hint when to use one, and passes axe', async () => {
     const { root } = await renderScreen(ServiceAccountList);
     expect(text(root)).toContain('CI systems that cannot sign in through OpenID Connect');
     const rows = root.querySelectorAll('tbody tr');
     expect(rows).toHaveLength(1);
     expect(text(rows[0]!)).toContain('ci-bot');
+    expect(text(rows[0]!)).toContain('Instance');
     expect(text(rows[0]!)).toContain('Active');
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-424 Q-UI-561 a project\'s account names its project by its mark and its name; an account of no project has the dash', async () => {
+  it('Q-UI-424 R-UI-181 a project\'s account names its project, a repository\'s account its repository and its level; an instance account has the dash', async () => {
     const { root } = await renderScreen(ServiceAccountList, {
       setup: (get) => {
         const identity = get(IdentityApi) as FakeIdentityApi;
         identity.accounts = [
-          { ...identity.accounts[0]!, project: 'web-frontend', description: '' },
-          { ...identity.accounts[0]!, id: 'sa-2', name: 'ops', principal: 'sa:ops', project: null },
+          sampleAccount({ project: 'web-frontend', description: '' }),
+          sampleAccount({ id: 'sa-2', name: 'ops' }),
+          sampleAccount({ id: 'sa-3', name: 'release', project: 'web', repository: 'npm-local' }),
         ];
       },
     });
-    const [first, second] = [...root.querySelectorAll('tbody tr')];
+    const [first, second, third] = [...root.querySelectorAll('tbody tr')];
     expect(first!.querySelector('td quader-project-link quader-project-mark')).toBeTruthy();
-    expect(first!.querySelectorAll('td quader-no-value')).toHaveLength(1);
+    expect(text(first!)).toContain('Project');
     expect(second!.querySelectorAll('td quader-no-value')).toHaveLength(1);
+    expect(text(third!)).toContain('Repository');
+    expect(text(third!)).toContain('web/npm-local');
+    expect(third!.querySelector('a')?.getAttribute('href')).toContain('/projects/web/repositories/npm-local/service-accounts/release');
   });
 
   it('R-UI-026 creates a service account with an idempotency key', async () => {
@@ -77,20 +107,25 @@ describe('Service accounts (R-UI-026)', () => {
     expect(overlay().querySelector('quader-conflict-dialog')).toBeTruthy();
   });
 
-  it('R-UI-026 issues a token on the Tokens section, shows it once and never stores it', async () => {
-    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
-    buttonByText(root, 'Create token').click();
+  it('R-UI-181 issues a technical token with its name first, shows the secret once and never stores it', async () => {
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read', 'identities:write']));
+    buttonByText(root, 'New technical token').click();
     await settle(fixture);
-    typeInto(root.querySelector('quader-token-form')!, 'Description', 'nightly deploy');
-    // A service-account token may be non-expiring.
-    expect(text(root)).toContain('Never expires');
-    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
+    const form = root.querySelector('quader-token-form') as HTMLElement;
+    const labels = [...form.querySelectorAll('label')].map((l) => text(l));
+    expect(labels[0]).toContain('Name');
+    expect(text(form)).toContain('The system that uses this token, for example nightly-mirror. It cannot be changed.');
+    typeInto(form, 'Name', 'release');
+    typeInto(form, 'Description (optional)', 'the release pipeline');
+    // A service-account token may be non-expiring for the administrator role.
+    expect(text(form)).toContain('Never expires');
+    buttonByText(form, 'Create technical token').click();
     await settle(fixture);
-    const tokens = get(TokensApi) as FakeTokensApi;
-    expect(tokens.calls).toContain('createForServiceAccount ci-bot nightly deploy');
+    const tt = get(TechnicalTokensApi) as FakeTechnicalTokensApi;
+    expect(tt.calls).toContain('create sa:ci-bot release');
+    expect(tt.lastRequest?.description).toBe('the release pipeline');
     const secret = root.querySelector('quader-token-secret') as HTMLElement;
-    expect(secret).toBeTruthy();
-    expect((secret.querySelector('input') as HTMLInputElement).value).toBe(SECRET_VALUE);
+    expect((secret.querySelector('input') as HTMLInputElement).value).toBe(SECRET_VALUE.replace('qdr_pat_', 'qdr_sat_'));
     expect(text(secret)).toContain('shown only once');
     // R-UI-043: the value is in the component only.
     expect(storedText()).not.toContain('qdr_');
@@ -98,109 +133,126 @@ describe('Service accounts (R-UI-026)', () => {
     buttonByText(secret, 'I have copied it').click();
     await settle(fixture);
     expect(root.querySelector('quader-token-secret')).toBeNull();
-    expect(root.innerHTML).not.toContain(SECRET_VALUE);
+    expect(root.innerHTML).not.toContain('qdr_sat_ABCD');
+    expect(text(technicalSection(root))).toContain('release');
+  });
+
+  it('R-UI-181 a name that is no system name is refused before the request', async () => {
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read']));
+    buttonByText(root, 'New technical token').click();
+    await settle(fixture);
+    const form = root.querySelector('quader-token-form') as HTMLElement;
+    typeInto(form, 'Name', 'Nightly Mirror');
+    buttonByText(form, 'Create technical token').click();
+    await settle(fixture);
+    expect(text(form)).toContain('Enter the name of the system');
+    expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).calls).toEqual([]);
   });
 
   it('R-UI-042 a refused create keeps the form and shows the error', async () => {
-    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
-    buttonByText(root, 'Create token').click();
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read']));
+    buttonByText(root, 'New technical token').click();
     await settle(fixture);
-    typeInto(root.querySelector('quader-token-form')!, 'Description', 'x');
-    (get(TokensApi) as FakeTokensApi).failure = problem(422, 'ttl_exceeds_maximum');
-    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
+    typeInto(root.querySelector('quader-token-form')!, 'Name', 'x');
+    (get(TechnicalTokensApi) as FakeTechnicalTokensApi).failure = problem(422, 'ttl_exceeds_maximum');
+    buttonByText(root.querySelector('quader-token-form')!, 'Create technical token').click();
     await settle(fixture);
     expect(text(root)).toContain('longer than the maximum');
     expect(root.querySelector('quader-token-form')).toBeTruthy();
     expect(root.querySelector('quader-token-secret')).toBeNull();
   });
 
-  const asRole = (roles: AuthzMe['roles'], capabilities: string[]) => ({
-    inputs: { name: 'ci-bot' },
-    capabilities,
-    setup: (api: <A>(t: abstract new (...a: never[]) => A) => A) => {
-      const me = api(SessionApi) as FakeSessionApi;
-      me.meResult = { roles, capabilities };
-      (api(TokensApi) as FakeTokensApi).tokenList = [
-        sampleToken({ id: 'sat-1', description: 'nightly', type: 'sat', owner: { kind: 'service_account', name: 'ci-bot' } }),
-      ];
-    },
-  });
-
-  it('R-AUTH-027 a security administrator (identities:write, no admin role) sees no Create token or Rotate for a service account', async () => {
+  it('R-AUTH-027 a security administrator (identities:write, no admin role) sees the tokens, no New technical token and no Rotate', async () => {
     const { root } = await renderScreen(
       ServiceAccountDetail,
       asRole(['security-admin'], ['identities:read', 'identities:write', 'tokens:read', 'tokens:revoke', 'endpoints:read']),
     );
-    expect(root.textContent).not.toContain('Create token');
+    expect(root.textContent).not.toContain('New technical token');
     expect(root.textContent).not.toContain('Rotate');
-    // Revoking is a capability (tokens:revoke) the server checks as well.
-    expect(root.querySelector('quader-token-table')).toBeTruthy();
+    expect(root.querySelector('quader-technical-token-table')).toBeTruthy();
+    expect(text(technicalSection(root))).toContain('Revoke');
   });
 
-  it('R-AUTH-027 the admin role sees Create token and Rotate', async () => {
-    const { root } = await renderScreen(
-      ServiceAccountDetail,
-      asRole(['admin'], ['identities:read', 'identities:write', 'tokens:read', 'tokens:revoke']),
-    );
-    expect(root.textContent).toContain('Create token');
+  it('R-AUTH-027 the admin role sees New technical token and Rotate', async () => {
+    const { root } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read', 'identities:write', 'tokens:revoke']));
+    expect(root.textContent).toContain('New technical token');
     expect(root.textContent).toContain('Rotate');
   });
 
-  it('R-UI-026 Q-UI-333 the tokens are a quiet section like the page\'s other sections, with the token list inside', async () => {
-    const { root } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
-    expect(root.querySelector('section.tokens, h2#sa-tokens')).toBeNull();
-    const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
-    expect(tokens.querySelector('quader-token-manager')).toBeTruthy();
+  it('R-UI-181 a row names the token, the hint of its secret and its description', async () => {
+    const { root } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read']));
+    const row = technicalSection(root).querySelector('tbody tr') as HTMLElement;
+    expect(text(row.querySelector('th')!)).toContain('nightly-mirror');
+    expect(text(row.querySelector('th')!)).toContain('qdr_sat_7Hq2');
+    expect(text(row.querySelector('th')!)).toContain('The nightly mirror job');
   });
 
-  it('R-UI-026 Q-UI-333 the section Tokens of an account without one is closed; opened, it stays open after its new token is revoked', async () => {
-    const { fixture, root } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
+  it('R-UI-181 Q-AUTH-416 an expired token says Expired and gets a new secret through the form without its name', async () => {
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, {
+      ...asRole(['admin'], ['identities:read']),
+      setup: (api: Get) => {
+        asRole(['admin'], ['identities:read']).setup(api);
+        (api(TechnicalTokensApi) as FakeTechnicalTokensApi).tokens['sa:ci-bot'] = [
+          sampleTechnicalToken({ state: 'expired', secrets: [{ ...sampleTechnicalToken().secrets[0]!, expiresAt: '2026-01-01T00:00:00Z' }] }),
+        ];
+      },
+    });
+    const section = technicalSection(root);
+    expect(text(section)).toContain('Expired');
+    expect(section.textContent).not.toContain('Rotate');
+    buttonByText(section, 'Issue new secret').click();
     await settle(fixture);
-    const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
-    const toggle = tokens.querySelector<HTMLButtonElement>('.toggle')!;
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    toggle.click();
+    const form = root.querySelector('quader-token-form') as HTMLElement;
+    expect(text(root)).toContain('New secret for nightly-mirror');
+    expect(form.querySelector('input[name="name"]')).toBeNull();
+    expect(form.querySelector('input[name="description"]')).toBeNull();
+    buttonByText(form, 'Issue new secret').click();
     await settle(fixture);
-    buttonByText(tokens, 'Create token').click();
-    await settle(fixture);
-    typeInto(tokens.querySelector('quader-token-form')!, 'Description', 'browser journey');
-    buttonByText(tokens.querySelector('quader-token-form')!, 'Create token').click();
-    await settle(fixture);
-    buttonByText(tokens, 'I have copied it').click();
-    await settle(fixture);
-    buttonByText(tokens, 'Revoke').click();
+    expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).calls).toContain('newSecret sa:ci-bot nightly-mirror');
+    expect(root.querySelector('quader-token-secret')).toBeTruthy();
+  });
+
+  it('R-UI-181 revoking a technical token revokes its live secrets', async () => {
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read', 'tokens:revoke']));
+    buttonByText(technicalSection(root), 'Revoke').click();
     await settle(fixture);
     buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Revoke').click();
     await sleep(fixture, 300);
-    expect(text(tokens)).toContain('No active tokens.');
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect((get(TokensApi) as FakeTokensApi).calls).toContain('revoke 00000000-0000-7000-8000-0000000000c2');
+  });
+
+  it('R-UI-181 Q-UI-333 the technical tokens are a quiet section, open while the account holds one', async () => {
+    const closed = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
+    expect(technicalSection(closed.root).querySelector('.toggle')!.getAttribute('aria-expanded')).toBe('false');
+    const open = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read']));
+    expect(technicalSection(open.root).querySelector('.toggle')!.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('R-EP-011 the token form binds a token to the endpoints chosen, and leaves it unbound otherwise', async () => {
-    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
-    buttonByText(root, 'Create token').click();
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read', 'endpoints:read']));
+    buttonByText(root, 'New technical token').click();
     await settle(fixture);
     const form = root.querySelector('quader-token-form') as HTMLElement;
     expect(text(form)).toContain('Endpoints');
-    typeInto(form, 'Description', 'customer acme');
+    typeInto(form, 'Name', 'customer-acme');
     const boxes = Array.from(form.querySelectorAll<HTMLInputElement>('.endpoints input[type="checkbox"]'));
     expect(boxes.map((b) => b.closest('quader-checkbox')?.textContent?.trim())).toEqual(['default', 'customers']);
     boxes[1]!.click();
     await settle(fixture);
-    buttonByText(form, 'Create token').click();
+    buttonByText(form, 'Create technical token').click();
     await settle(fixture);
-    expect((get(TokensApi) as FakeTokensApi).lastRequest?.scope).toEqual({ inherit: true, endpoints: ['customers'] });
+    expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).lastRequest?.scope).toEqual({ inherit: true, endpoints: ['customers'] });
   });
 
-  describe('Q-UI-220 administrator rights in the token form of a service account', () => {
+  describe('Q-UI-220 administrator rights in the form of a technical token', () => {
     const withAccount = (isAdmin: boolean, roles: AuthzMe['roles'], project: string | null = null) => ({
       inputs: project ? { name: 'ci-bot', project } : { name: 'ci-bot' },
-      capabilities: ['identities:write', 'tokens:read'],
-      setup: (api: <A>(t: abstract new (...a: never[]) => A) => A) => {
+      capabilities: ['identities:read', 'identities:write'],
+      setup: (api: Get) => {
         const me = api(SessionApi) as FakeSessionApi;
-        me.meResult = { roles, capabilities: ['identities:write', 'tokens:read'] };
+        me.meResult = { roles, capabilities: ['identities:read', 'identities:write'] };
         const ids = api(IdentityApi) as FakeIdentityApi;
-        ids.accounts = ids.accounts.map((a) => ({ ...a, isAdmin, project }));
+        ids.accounts = [sampleAccount({ isAdmin, project })];
       },
     });
     const radios = (root: HTMLElement): string[] =>
@@ -209,21 +261,21 @@ describe('Service accounts (R-UI-026)', () => {
     it('an administrator is offered the Administrator choice for an account that holds the role, and it sends admin with inherit', async () => {
       const { fixture, root, get } = await renderScreen(ServiceAccountDetail, withAccount(true, ['admin']));
       expect(text(root.querySelector('[data-testid="sa-admin"]')!)).toBe('Held by this account');
-      buttonByText(root, 'Create token').click();
+      buttonByText(root, 'New technical token').click();
       await settle(fixture);
       expect(radios(root)[0]).toContain('Administrator: everything on this installation');
-      typeInto(root.querySelector('quader-token-form')!, 'Description', 'ops');
+      typeInto(root.querySelector('quader-token-form')!, 'Name', 'ops');
       root.querySelector<HTMLInputElement>('quader-token-form input[type="radio"]')!.click();
       await settle(fixture);
-      buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
+      buttonByText(root.querySelector('quader-token-form')!, 'Create technical token').click();
       await settle(fixture);
-      expect((get(TokensApi) as FakeTokensApi).lastRequest?.scope).toEqual({ inherit: true, admin: true });
+      expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).lastRequest?.scope).toEqual({ inherit: true, admin: true });
     });
 
     it('an account without the role is offered no Administrator choice: it would take effect nowhere', async () => {
       const { fixture, root } = await renderScreen(ServiceAccountDetail, withAccount(false, ['admin']));
       expect(text(root.querySelector('[data-testid="sa-admin"]')!)).toBe('Not held');
-      buttonByText(root, 'Create token').click();
+      buttonByText(root, 'New technical token').click();
       await settle(fixture);
       expect(radios(root).join('|')).not.toContain('Administrator');
     });
@@ -248,12 +300,63 @@ describe('Service accounts (R-UI-026)', () => {
   });
 
   it('R-EP-011 without endpoints:read the form has no endpoint field', async () => {
-    const { fixture, root } = await renderScreen(
-      ServiceAccountDetail,
-      asRole(['admin'], ['identities:write', 'tokens:read']),
-    );
-    buttonByText(root, 'Create token').click();
+    const { fixture, root } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read', 'identities:write']));
+    buttonByText(root, 'New technical token').click();
     await settle(fixture);
     expect(text(root.querySelector('quader-token-form')!)).not.toContain('Endpoints');
+  });
+});
+
+describe('A repository\'s service accounts (R-UI-181, R-AUTH-046, R-AUTHZ-039)', () => {
+  const seedRepository = (get: Get): void => {
+    (get(IdentityApi) as FakeIdentityApi).accounts = [
+      sampleAccount({ id: 'sa-r', name: 'ci', project: 'web', repository: 'npm-local', actions: ['read', 'deploy'], technicalTokens: 1 }),
+    ];
+  };
+
+  it('R-UI-181 the section lists the accounts with their reference, rights, state and technical tokens, and creates one with its rights', async () => {
+    const { fixture, root, get } = await renderScreen(RepositoryServiceAccounts, {
+      inputs: { project: 'web', repository: 'npm-local' },
+      capabilities: ['identities:write', 'identities:read'],
+      setup: seedRepository,
+    });
+    const row = root.querySelector('tbody tr') as HTMLElement;
+    expect(text(row)).toContain('sa:web/npm-local/ci');
+    expect(text(row)).toContain('Read, Deploy');
+    expect(text(row)).toContain('Active');
+    buttonByText(root, 'New service account').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-service-account-create-dialog') as HTMLElement;
+    expect(text(dialog)).toContain('Rights on this repository');
+    const boxes = [...dialog.querySelectorAll<HTMLInputElement>('.rights input[type="checkbox"]')];
+    expect(boxes.map((b) => b.checked)).toEqual([true, false, false, false, false, false]);
+    expect(text(dialog)).toContain('Publish new files and versions.');
+    typeInto(dialog, 'Name', 'release');
+    boxes[2]!.click();
+    await settle(fixture);
+    buttonByText(dialog, 'Create service account').click();
+    await settle(fixture);
+    expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('createServiceAccount web/npm-local/release read,deploy');
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-181 the page of a repository\'s account names its repository and holds its rights with Save changes', async () => {
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, {
+      inputs: { name: 'ci', project: 'web', key: 'npm-local' },
+      capabilities: ['identities:write', 'identities:read'],
+      setup: seedRepository,
+    });
+    expect(text(root)).toContain('Service account of repository web/npm-local');
+    const boxes = [...root.querySelectorAll<HTMLInputElement>('.rights input[type="checkbox"]')];
+    expect(boxes.map((b) => b.checked)).toEqual([true, false, true, false, false, false]);
+    const save = buttonByText(root, 'Save changes') as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    boxes[2]!.click();
+    await settle(fixture);
+    expect(save.disabled).toBe(false);
+    save.click();
+    await settle(fixture);
+    expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('updateServiceAccount ci read');
+    expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).lastList).toEqual({ name: 'ci', project: 'web', repository: 'npm-local' });
   });
 });

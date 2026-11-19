@@ -72,26 +72,30 @@ const (
 //
 // >>> M1 identity
 const (
-	CodeInvalidToken            = "invalid_token"
-	CodeCredentialsRequired     = "credentials_required"
-	CodeInvalidCredentials      = "invalid_credentials" //nolint:gosec // G101: an error code, not a credential
-	CodePrincipalDisabled       = "principal_disabled"
-	CodeInvalidScope            = "invalid_scope"
-	CodeInvalidTTL              = "invalid_ttl"
-	CodeTTLExceedsMaximum       = "ttl_exceeds_maximum"
-	CodeDefaultAboveMaximum     = "default_above_maximum"
-	CodeExceedsCeiling          = "exceeds_ceiling"
-	CodeNonExpiringNotAllowed   = "non_expiring_not_allowed"
-	CodeNonExpiringRestricted   = "non_expiring_restricted"
-	CodePATNotAllowed           = "pat_not_allowed"
-	CodeCITokenRestricted       = "ci_token_restricted" //nolint:gosec // G101: an error code, not a credential
-	CodeTokenAlreadyIssued      = "token_already_issued"
-	CodeTokenLimitReached       = "token_limit_reached" //nolint:gosec // G101: an error code, not a credential
-	CodeDerivationExceedsParent = "derivation_exceeds_parent"
-	CodeDescriptionRequired     = "description_required"
-	CodeNotAToken               = "not_a_token"
-	CodeManagedBySCIM           = "managed_by_scim"
-	CodeLastAdmin               = "last_admin"
+	CodeInvalidToken          = "invalid_token"
+	CodeCredentialsRequired   = "credentials_required"
+	CodeInvalidCredentials    = "invalid_credentials" //nolint:gosec // G101: an error code, not a credential
+	CodePrincipalDisabled     = "principal_disabled"
+	CodeInvalidScope          = "invalid_scope"
+	CodeInvalidTTL            = "invalid_ttl"
+	CodeTTLExceedsMaximum     = "ttl_exceeds_maximum"
+	CodeDefaultAboveMaximum   = "default_above_maximum"
+	CodeExceedsCeiling        = "exceeds_ceiling"
+	CodeNonExpiringNotAllowed = "non_expiring_not_allowed"
+	CodeNonExpiringRestricted = "non_expiring_restricted"
+	CodePATNotAllowed         = "pat_not_allowed"
+	CodeCITokenRestricted     = "ci_token_restricted" //nolint:gosec // G101: an error code, not a credential
+	CodeTokenAlreadyIssued    = "token_already_issued"
+	CodeTokenLimitReached     = "token_limit_reached" //nolint:gosec // G101: an error code, not a credential
+	// CodeTechnicalTokenActive: a new secret for a technical token that has a live one (R-AUTH-045); rotation renews it.
+	CodeTechnicalTokenActive = "technical_token_active" //nolint:gosec // G101: an error code, not a credential
+	// CodeTechnicalTokenLimitReached: the account holds auth.tokens.max_technical_tokens_per_account technical tokens.
+	CodeTechnicalTokenLimitReached = "technical_token_limit_reached" //nolint:gosec // G101: an error code, not a credential
+	CodeDerivationExceedsParent    = "derivation_exceeds_parent"
+	CodeDescriptionRequired        = "description_required"
+	CodeNotAToken                  = "not_a_token"
+	CodeManagedBySCIM              = "managed_by_scim"
+	CodeLastAdmin                  = "last_admin"
 	// CodePublicNotAllowed: a write sets a visibility level to public while the default endpoint admits no request without a
 	// credential (409, R-AUTHZ-033 rule 5).
 	CodePublicNotAllowed = "public_not_allowed"
@@ -170,6 +174,9 @@ const (
 	CodePrincipalOutsideProject = "principal_outside_project"
 	// CodeProjectAccountNotGroupable: a project service account as a group member.
 	CodeProjectAccountNotGroupable = "project_account_not_groupable"
+	// CodePrincipalOutsideRepository: a repository's service account named in a policy, global or of a project, or as a package
+	// owner outside its repository (R-AUTHZ-039): its rights are the actions at the account.
+	CodePrincipalOutsideRepository = "principal_outside_repository"
 	// CodeProjectNotEmpty: a delete of a project that still has repositories (also
 	// those being deleted), service accounts or CI mappings.
 	CodeProjectNotEmpty = "project_not_empty"
@@ -725,6 +732,8 @@ var registry = []CodeInfo{
 	{CodeCITokenRestricted, Forbidden, "CI token restricted", "A CI token cannot create or rotate tokens."},
 	{CodeTokenAlreadyIssued, Conflict, "Token already issued", "The secret of this request was issued by an earlier identical request and is not shown again."},
 	{CodeTokenLimitReached, Conflict, "Token limit reached", "The principal holds the maximum number of active tokens; revoke one first."},
+	{CodeTechnicalTokenActive, Conflict, "Technical token active", "The technical token has a live secret; rotate it instead of issuing a new one."},
+	{CodeTechnicalTokenLimitReached, Conflict, "Technical token limit reached", "The service account holds the maximum number of technical tokens, ended ones included; delete one first."},
 	{CodeDerivationExceedsParent, Forbidden, "Derivation exceeds the presenting token", "A token created with a token must not outlive or outrank it."},
 	{CodeDescriptionRequired, Invalid, "Description required", "A token needs a description of 1 to 1024 characters."},
 	{CodeNotAToken, NotFound, "Not a token", "The request is not authenticated by a token."},
@@ -773,6 +782,7 @@ var registry = []CodeInfo{
 	{CodeRepositoryOutsideProject, Invalid, "Repository outside the project", "A project policy, a CI mapping of a project or a virtual repository of a project names a repository that is not in the project; a key that does not exist answers the same."},
 	{CodePrincipalOutsideProject, Invalid, "Principal outside the project", "A service account of a project is granted only through the policies of its project and owns packages only in its project's repositories."},
 	{CodeProjectAccountNotGroupable, Invalid, "Project service account cannot join a group", "A service account of a project is no group member: a group's grants would reach the project's account."},
+	{CodePrincipalOutsideRepository, Invalid, "Principal outside the repository", "A service account of a repository holds its rights on its repository at the account: no policy names it, and it owns packages only in its repository."},
 	{CodeProjectNotEmpty, Conflict, "Project not empty", "The project still has repositories (also ones being deleted), service accounts or CI mappings; unassign the repositories and delete the accounts and the CI mappings first."},
 	{CodeRepositoryInUse, Conflict, "Repository in use", "An object of the project still references the repository: a virtual repository's members, pin rules or deployment target, a project policy, or a CI mapping. Remove the references, then move it."},
 	{CodeUnknownProject, Invalid, "Unknown project", "The project does not exist, or the caller does not administer it; the answer does not tell which."},

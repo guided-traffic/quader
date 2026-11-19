@@ -277,11 +277,12 @@ func pacedSATokens(t testing.TB, adm *api, sa string, n, ttl int) []string {
 	for _, it := range l.Items {
 		send(http.MethodDelete, "/api/v1/tokens/"+it.ID, nil, 200, 204, 404)
 	}
+	pruneTechnical(adm, "/api/v1/service-accounts/"+sa)
 	var out []string
 	for len(out) < n {
-		var c createdToken
-		body := map[string]any{"description": "end-to-end test", "ttlSeconds": ttl, "scope": map[string]any{"inherit": true}}
-		send(http.MethodPost, "/api/v1/service-accounts/"+sa+"/tokens", body, 201).JSON(t, &c)
+		var c technicalCreated
+		body := map[string]any{"name": technicalName(), "description": "end-to-end test", "ttlSeconds": ttl, "scope": map[string]any{"inherit": true}}
+		send(http.MethodPost, "/api/v1/service-accounts/"+sa+"/technical-tokens", body, 201).JSON(t, &c)
 		out = append(out, c.Token)
 	}
 	return out

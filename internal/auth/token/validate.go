@@ -197,7 +197,7 @@ func (s *Service) load(ctx context.Context, hash [32]byte, typ Type) (cachedToke
 		if err != nil {
 			return fmt.Errorf("token %s: stored scope: %w", r.ID, err)
 		}
-		ct.info = Info{ID: r.ID, Type: typ, Scope: scope, Owner: owner}
+		ct.info = Info{ID: r.ID, Type: typ, Scope: scope, Owner: owner, TechnicalTokenID: r.TechnicalTokenID}
 		if typ == TypeCIT {
 			// A CI token without its bundle would hold only the grants of its mappings' policies; a
 			// bundle that does not decode is a storage fault, never an acceptance without it (Q-CI-17).

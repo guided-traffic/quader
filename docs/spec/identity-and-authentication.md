@@ -1284,7 +1284,7 @@ a revocation, a disable or a session end commits through the change log
 | Command | Effect |
 |---|---|
 | `quader admin service-account create <name> [--description …] [--admin]` | Creates a service account. `--admin` binds the system role `admin` ([authorization.md](authorization.md) R-AUTHZ-010) in the transaction that creates the account, and that transaction calls `cluster.Notify("authz", …)` exactly as the role-binding API does (R-AUTHZ-022, R-AUTHZ-028), so every replica rebuilds its grant index. The command is one of the writes of R-AUTHZ-028's completeness test. |
-| `quader admin token create --service-account <name\|project/name> [--ttl 15m] [--scope-file scope.json]` | Creates a SAT and prints it once to stdout. A bare name is an instance-wide account, `<project>/<name>` (also `sa:<project>/<name>`) the account of a project (R-AUTHZ-026). The TTL defaults to 15 min; the maximum is the SAT maximum (R-AUTH-026). |
+| `quader admin token create --service-account <name\|project/name\|project/repository/name> [--name admin-cli] [--ttl 15m] [--scope-file scope.json]` | Creates a secret of the account's technical token `--name` (R-AUTH-045) and prints it once to stdout: a new technical token, or a new secret of the one of that name while it has no live secret (`409 technical_token_active` otherwise, [Q-AUTH-418](#q-auth-418--the-command-issues-a-secret-of-a-named-technical-token-and-the-migration-deletes-the-stored-sats)). A bare name is an instance-wide account, `<project>/<name>` (also `sa:<project>/<name>`) the account of a project (R-AUTHZ-026), `<project>/<repository>/<name>` the account of a repository (R-AUTH-046). The TTL defaults to 15 min; the maximum is the SAT maximum (R-AUTH-026). |
 | `quader admin token revoke --id <uuid>` or `--value-stdin` | Revokes a token (R-AUTH-029). |
 | `quader admin break-glass status` or `unlock` or `end-sessions` | Shows the lockout state, the rotation hold (R-AUTH-014) and the sessions, clears a lockout, or ends every break-glass session (reason `revoked`). |
 | `quader admin user disable <username> [--keep-tokens]` | Disables a user (R-AUTH-016). |
@@ -2032,8 +2032,10 @@ the owner's word and the name in the UI and the API; the principal kind stays `s
 - **Retention**: when `token-cleanup` (R-AUTH-043) deletes the last secret row of a technical token that has no live secret, it
   deletes the technical token too.
 - **What changes for the existing accounts**: the project and instance accounts keep their rights; their token operations become the
-  technical-token operations below and `…/tokens` of a service account goes. The migration does not convert stored SATs (pre-alpha,
-  [CLAUDE.md](../../CLAUDE.md)): an installation that holds SATs needs a fresh database.
+  technical-token operations below and `POST …/tokens` of a service account goes (`DELETE …/tokens`, which revokes every token of
+  an account of the instance or a project, stays, R-AUTH-029). The migration deletes the stored SATs, which name no technical token;
+  their accounts stay and get technical tokens anew (pre-alpha, [CLAUDE.md](../../CLAUDE.md),
+  [Q-AUTH-418](#q-auth-418--the-command-issues-a-secret-of-a-named-technical-token-and-the-migration-deletes-the-stored-sats)).
 
 Data model (migration of work package 1):
 
@@ -2045,6 +2047,7 @@ CREATE TABLE technical_token (
   description         text NOT NULL DEFAULT '' CHECK (length(description) <= 1024),
   created_at          timestamptz NOT NULL DEFAULT now(),
   created_by          uuid NULL REFERENCES principal (id) ON DELETE SET NULL,
+  revision            bigint NOT NULL DEFAULT 1,                          -- the ETag of the record (R-API-012)
   UNIQUE (service_account_id, name)
 );
 ALTER TABLE api_token ADD COLUMN technical_token_id uuid NULL REFERENCES technical_token (id) ON DELETE CASCADE;
@@ -2060,10 +2063,10 @@ API, below each account's base path (`/api/v1/service-accounts/{name}`, `/api/v1
 | Method and path | Request | Status codes | Permission |
 |---|---|---|---|
 | `GET …/technical-tokens` | — | 200, 404 | `identities:read`, or an Owner below a project |
-| `POST …/technical-tokens` | `{"name": "nightly-mirror", "description": "…", "ttlSeconds": 2592000, "scope": {"inherit": true}, "selfRotatable": false, "endpoints": []}` | 201 with the secret, 400, 403, 404, 409, 422 | the creators of R-AUTH-027 |
-| `GET …/technical-tokens/{tokenName}` | — | 200, 404 | as the list |
-| `PATCH …/technical-tokens/{tokenName}` | `description` | 200, 404, 412, 428 | `identities:write`, or an Owner below a project |
-| `DELETE …/technical-tokens/{tokenName}` | — | 204, 404 | `identities:write` or `tokens:revoke`, or an Owner below a project |
+| `POST …/technical-tokens` | `{"name": "nightly-mirror", "description": "…", "ttlSeconds": 2592000, "scope": {"inherit": true, "endpoints": []}, "selfRotatable": false}` | 201 with the secret, 400, 403, 404, 409, 422 | the creators of R-AUTH-027 |
+| `GET …/technical-tokens/{tokenName}` | — | 200 with its `ETag`, 304, 404 | as the list |
+| `PATCH …/technical-tokens/{tokenName}` | `description`, with `If-Match` | 200, 404, 412, 428 | `identities:write`, or an Owner below a project |
+| `DELETE …/technical-tokens/{tokenName}` | — | 204, 404 | `tokens:revoke`, which every role that holds `identities:write` holds, or an Owner below a project ([Q-AUTH-420](#q-auth-420--the-delete-of-a-technical-token-is-declared-with-tokensrevoke)) |
 | `POST …/technical-tokens/{tokenName}/secrets` | as the create, without `name` and `description` | 201 with the secret, 403, 404, 409 `technical_token_active` | as the create |
 
 A technical token:
@@ -2076,7 +2079,7 @@ A technical token:
   "account": {"reference": "sa:web/partner", "level": "project", "project": "web", "repository": null},
   "state": "active",
   "secrets": [
-    {"id": "0193f2a5-2b3c-7d4e-8f50-6a7b8c9d0e1f", "hint": "qdr_sat_7Hq2", "scope": {"inherit": true, "admin": false, "repositories": [], "system": []}, "createdAt": "2026-11-20T09:00:00Z", "expiresAt": "2026-12-20T09:00:00Z", "lastUsedAt": "2026-11-21T02:00:11Z", "rotatedFrom": null}
+    {"id": "0193f2a5-2b3c-7d4e-8f50-6a7b8c9d0e1f", "hint": "qdr_sat_7Hq2", "scope": {"inherit": true, "admin": false, "repositories": [], "system": []}, "createdAt": "2026-11-20T09:00:00Z", "expiresAt": "2026-12-20T09:00:00Z", "revokedAt": null, "lastUsedAt": "2026-11-21T02:00:11Z", "rotatedFrom": null}
   ],
   "limit": {"rule": "0193f2a6-0000-7000-8000-000000000001", "profile": "technical", "overrides": 1},
   "createdAt": "2026-11-20T09:00:00Z",
@@ -2084,8 +2087,9 @@ A technical token:
 }
 ```
 
-*(example)* `state` is `active` (a live secret), `expired` or `revoked` (none live, by the last secret's end); `limit` is the token's
-own rule at its account's place, `null` when the default applies. The answer of a create and of a new secret adds `token` (the
+*(example)* `state` is `active` (a live secret), `expired` or `revoked` (none live, by the last secret's end); `secrets` are the live
+secrets, newest first, or the last one of a token without a live secret; `limit` is the token's own rule at its account's place,
+`null` when the default applies (the limits area fills it, R-LIM-038). The answer of a create and of a new secret adds `token` (the
 secret, shown once) and its `secretId`. A token record of `GET /api/v1/tokens` of type `sat` carries `technicalToken: {"id", "name"}`.
 
 Acceptance criteria:
@@ -3702,7 +3706,7 @@ or authorization codes.
 | `user.groups.claim_returned` | R-AUTH-008, with provider, the reason the claim was missing for, `missingSince` and `onMissingClaim`; outcome `success` | yes, once when a login of an identity whose claim was missing delivers it again (Q-AUTH-401) |
 | `group.created`, `group.updated`, `group.deleted`, `group.members.changed` | R-AUTH-018, R-AUTH-039 | yes |
 | `serviceaccount.created`, `serviceaccount.updated`, `serviceaccount.disabled`, `serviceaccount.deleted` | R-AUTH-020, R-AUTH-046; `details.level` (`instance`, `project`, `repository`), `details.repository` for a repository's account, `details.actions` on a change of its rights, `details.moved` with the old and new name when its repository moved | yes |
-| `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | R-AUTH-045: the account, the token's ID and name; `token.created` and `token.revoked` of its secrets carry `technical_token` | yes |
+| `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | R-AUTH-045: the account, the token's ID and name; `token.created` and `token.revoked` of its secrets carry `technicalToken` | yes |
 | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted` | R-BAS-004 ([bastion.md](bastion.md)); the token events of a Bastion token (`token.created`, `token.revoked`) carry `resource_type` `bastion` | yes; `bastion.disabled` and `bastion.deleted` carry a journal entry (Q-BAS-145) |
 | `cli_login.approved`, `cli_login.denied` | R-AUTH-034, R-AUTH-036 | yes |
 | `cli_login.poll_refused` | R-AUTH-034 address binding, with the refused and the requesting address | yes, once per change of the refused address within a login, decided under the row's lock (R-AUTH-034) |
@@ -3726,6 +3730,7 @@ is MVP. `quader admin post-restore` re-applies it after a platform restore (Q-HA
 | `user.disabled`, `user.deleted` | Principal ID and username; for `user.disabled` also `disabled_reason` | Disable the user, with the journaled reason for `user.disabled` and reason `admin` for `user.deleted` |
 | `user.updated` | Principal ID and username; `pendingLinksRemoved`, the providers whose pending link the update removed, on every update (an empty list when it removed none) | Remove the pending link of each provider from the user of the ID; a linked identity is never removed ([Q-AUTH-205](#q-auth-205--userupdated-carries-the-pending-identity-links-it-removed-and-the-replay-removes-them)) |
 | `serviceaccount.disabled`, `serviceaccount.deleted` | Principal ID and name | Disable the service account |
+| `serviceaccount.updated` | Principal ID and name on every update; for a repository's account `actions` before and after (R-AUTHZ-039) | Update rule with the comparator below: set the actions of the account of the journaled ID to the after-set, never add one; a narrowing on top of a broadening the restored database lacks disables the account. An entry without `actions` is already in effect |
 | `group.deleted` | Principal ID and name | Delete the group |
 | `group.updated` | Principal ID and name; `autoJoin` before and after, on every update; `renamedFrom`, the name before, when the update renamed the group | Update rule with the comparator below: clear the flag, never set it. A rename is not replayed as a rename: the group keeps its restored name and is detached from group synchronization ([Q-AUTH-206](#q-auth-206--a-group-renamed-after-the-restore-point-is-detached-from-group-synchronization-not-renamed)) |
 | `bastion.disabled`, `bastion.deleted` | The registration's principal ID and name ([bastion.md](bastion.md) R-BAS-004, Q-BAS-145) | Disable the registration |
@@ -3746,6 +3751,8 @@ is MVP. `quader admin post-restore` re-applies it after a platform restore (Q-HA
   (external narrows internal) or equals the current flag of the user of the journaled ID, and false when `after` is `false`
   while the current flag is `true`. Replay can therefore set the flag but never clear it; an entry that cleared it is skipped
   under case 2 of R-HA-054.
+- **Comparator for the actions of a repository's account** (R-AUTHZ-039). `narrows(current, after)` is true when every action of
+  `after` is in `current`.
 - **Comparator for the auto-join flag** (R-AUTH-019). The same order: `narrows(current, after)` is
   true when `after.autoJoin` is `false` or equals the current flag. Replay clears the flag of the
   group of the journaled ID and never sets it; the group's name and description are not replayed.
@@ -6472,6 +6479,56 @@ the project's credentials. The development agent would revisit this if teams ask
 whole project.
 
 **Applied in the spec:** R-AUTH-046; [authorization.md](authorization.md) R-AUTHZ-026, R-AUTHZ-039.
+
+### Q-AUTH-418 · The command issues a secret of a named technical token, and the migration deletes the stored SATs
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: every SAT is a secret of a technical token (R-AUTH-045), so `quader admin token create` needs one, and the SATs stored before
+technical tokens existed name none.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `--name` (default `admin-cli`): a new technical token of that name, or a new secret of it while it has no live secret; the migration deletes the stored SATs (chosen) | The bootstrap gets a named token like every system | One rule for every secret; a database with SATs migrates | A second run within the secret's lifetime answers `409 technical_token_active`; stored SATs stop working |
+| (b) A technical token per run, named after the time | No conflict | Rerunnable | Names that say nothing; the account's 100 fill up |
+| (c) The migration fails on stored SATs | A fresh database | Nothing is deleted | An installation cannot start before someone deletes the database |
+
+**Choice:** (a). **Rationale:** pre-alpha has no installation to keep (CLAUDE.md); a migration that stops would take the owner's
+playground down, a deleted SAT is replaced through the account's page in a minute. The development agent would revisit this when an
+installation must keep its service-account tokens across the change.
+
+**Applied in the spec:** R-AUTH-015, R-AUTH-045. Code: `cmd/quader/admin_identity.go`, migration 00080.
+
+### Q-AUTH-419 · An Owner of the project does not rotate the secret of a technical token; it issues a new one
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-181 shows an Owner the rotate action, while rotation of a SAT is an administrator's or the account's own (R-AUTH-030,
+Q-AUTHZ-177: a rotation copies the scope and the lifetime of a secret an administrator may have issued, non-expiring included).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An Owner revokes and issues a new secret (Q-AUTH-416) with a scope it chooses; **Rotate** is offered to the administrator role (chosen) | The rule of R-AUTH-030 stays | An Owner never holds a secret it could not have issued | An Owner renews with a short gap instead of an overlap |
+| (b) An Owner rotates | As R-UI-181 reads | An overlap for an Owner too | A non-expiring or longer-lived secret of an administrator would be copied by an Owner |
+
+**Choice:** (a). **Rationale:** the bounds of an Owner's credentials (R-AUTH-027) hold for every secret it obtains. The development
+agent would revisit this if rotation capped the successor at an Owner's bounds.
+
+**Applied in the spec:** R-UI-181. Code: `web/src/app/features/service-accounts/technical-tokens.ts`.
+
+### Q-AUTH-420 · The delete of a technical token is declared with tokens:revoke
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `permission: tokens:revoke` (and an Owner below a project) in the declaration (chosen) | The shared authorization step decides | One declared capability, as `DELETE …/tokens` has; every role that holds `identities:write` holds `tokens:revoke` (R-AUTHZ-010) | A token scoped to `identities:write` alone deletes no technical token |
+| (b) `authenticated` and the handler decides `identities:write` or `tokens:revoke` | As R-AUTH-045 first read | Both capabilities | The decision leaves the declaration (R-API-008), and the 404 of a project the caller is no member of must be rebuilt in the handler |
+
+**Choice:** (a). **Rationale:** the delete revokes the token's secrets, which is what `tokens:revoke` names. The development agent
+would revisit this if a role held `identities:write` without `tokens:revoke`.
+
+**Applied in the spec:** R-AUTH-045, [api-and-ui.md](api-and-ui.md) R-API-082.
 
 ## What this does not cover
 

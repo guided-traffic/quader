@@ -290,7 +290,7 @@ need are `v1.AuthServices` ([auth_services.go](../../internal/api/v1/auth_servic
 
 ### The routes of a project's service accounts (R-AUTHZ-026, Q-AUTHZ-209)
 
-The accounts of a project live under `/api/v1/projects/{projectKey}/service-accounts[/{name}[/disable|/enable|/tokens]]`, which admit an Owner of
+The accounts of a project live under `/api/v1/projects/{projectKey}/service-accounts[/{name}[/disable|/enable|/tokens|/technical-tokens]]`, which admit an Owner of
 the project ([projects.md](projects.md)) besides the holders of `identities:read` and `identities:write`; the routes under `/api/v1/service-accounts/{name}`
 address instance-wide accounts only. A project the caller is no member of answers 404 as a missing one does; a member that is not an Owner gets 403.
 The handlers pass `qname.Object{Project, Name}` to the `…Project…` methods of the manager and the token service:
@@ -300,9 +300,41 @@ The handlers pass `qname.Object{Project, Name}` to the `…Project…` methods o
 | `createProjectServiceAccount` | `Manager.CreateProjectServiceAccountTx(ctx, tx, caller, project, NewServiceAccount{Name, Description})` |
 | `listProjectServiceAccounts`, `getProjectServiceAccount` | `ListProjectServiceAccounts(ctx, project, q, after, limit)`, `GetProjectServiceAccount(ctx, obj)` |
 | `updateProjectServiceAccount`, `disableProjectServiceAccount`, `enableProjectServiceAccount`, `deleteProjectServiceAccount` | `UpdateProjectServiceAccount`, `DisableProjectServiceAccount`, `EnableProjectServiceAccount`, `DeleteProjectServiceAccount`, each with the `qname.Object` |
-| `createProjectServiceAccountToken` | the account from `GetProjectServiceAccount`, then `token.Service.CreateTx` with `Type: TypeSAT`, `OwnerID: account.ID`, `Delegated: true` for an Owner who holds no `identities:write`, `Admin: false` then |
 | `revokeProjectServiceAccountTokens` | `token.Service.RevokeAll(ctx, caller, account.ID, reason)` |
-| `listTokens` with `owner=sa:<project>/<name>` | `Manager.ServiceAccountByRef` for the owner filter |
+| `listTokens` with `owner=sa:<project>/<name>` or `sa:<project>/<repository>/<name>` | `Manager.ServiceAccountByRef` for the owner filter |
+
+### A repository's service accounts and the technical tokens (R-AUTH-045, R-AUTH-046, R-AUTHZ-039)
+
+A repository's accounts live under `/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts[/{name}[/disable|/enable]]`
+([repository_accounts_api.go](../../internal/api/v1/repository_accounts_api.go)); the principal name is
+`<projectKey>/<repoKey>/<name>` (`principal.RepositoryAccount`, `ParseRepositoryAccount`), the actions on the repository are stored in
+`service_account_repository_grant` and read by the grant index ([permissions.md](../security/permissions.md#account-grants)). The
+manager's calls are `CreateRepositoryServiceAccountTx`, `ListRepositoryServiceAccounts`, `GetRepositoryServiceAccount`,
+`UpdateRepositoryServiceAccount` (a `RepositoryAccountChange` of description and actions, journaled as `serviceaccount.updated` with
+`actions`), `Disable…`, `Enable…` and `DeleteRepositoryServiceAccount`; each answers 404 for a repository that is not active. Two hooks
+keep the accounts with their repository: the repository hook `repositoryAccountsHook` ([wire_identity.go](../../internal/app/wire_identity.go))
+calls `EndRepositoryAccountsTx` in the transaction that removes the repository row, and the project move calls
+`principal.MoveRepositoryAccountsTx` in its transaction ([move.go](../../internal/project/move.go)).
+
+Every SAT is a secret of a technical token ([technical.go](../../internal/auth/token/technical.go)). The routes
+`…/service-accounts/{name}/technical-tokens[/{tokenName}[/secrets]]` exist at the instance, a project and a repository; one set of
+handlers serves the three ([technical_tokens_api.go](../../internal/api/v1/technical_tokens_api.go), `accountRoute` names the level):
+
+| Operation (`…ServiceAccountTechnicalToken…` at the instance, `…Project…`, `…Repository…`) | Token service call |
+|---|---|
+| `list…TechnicalTokens`, `get…TechnicalToken` (ETag, `If-None-Match`) | `ListTechnical(ctx, accountID)`, `GetTechnical(ctx, accountID, name)` |
+| `create…TechnicalToken` | `CreateTechnicalTx(ctx, tx, account, TechnicalCreate{Request, Name, Description})`: the row and its first secret in the idempotency transaction; `409 already_exists`, `409 technical_token_limit_reached` |
+| `create…TechnicalTokenSecret` | `NewSecretTx(ctx, tx, account, name, request)`: `409 technical_token_active` while a secret is live |
+| `update…TechnicalToken` (`If-Match` required) | `UpdateTechnical(ctx, caller, account, name, description, expected)`: 412 on a stale revision |
+| `delete…TechnicalToken` (`tokens:revoke`, or an Owner) | `DeleteTechnical(ctx, caller, account, name)`: revokes every live secret, deletes the row |
+
+The command `quader admin token create --name` calls `IssueTechnical`: a new technical token of that name, or a new secret of it.
+
+`technicalIssuer` decides who may issue: an administrator, an Owner of the account's project (the request is then `Delegated`, never
+non-expiring, `admin: false`), or a token of the account itself under the derivation rule; anyone else 403. `token.Service.Create`
+and `CreateTx` refuse a SAT without a technical token (`notTechnical`), so a secret is never issued outside these calls. The
+stage hands the technical token's ID on as `Credential.TechnicalTokenID` ([principal.go](../../internal/httpserver/principal.go)),
+the subject of the download budgets of package 2 ([usage-and-limits.md](usage-and-limits.md)).
 
 | `createToken` | `POST /api/v1/tokens` | authenticated (handler: a user with a recent session, or a PAT under the derivation rule), idempotent |
 | `listTokens` | `GET /api/v1/tokens` | authenticated (own tokens, through a narrowed token only its line, `ListFilter.Line`; all with `tokens:read`) |
@@ -313,7 +345,7 @@ The handlers pass `qname.Object{Project, Name}` to the `…Project…` methods o
 | `revokeTokenByValue` | `POST /api/v1/tokens/revoke` | public, counted in `auth.flow_starts` |
 | `revokeOwnTokens` | `DELETE /api/v1/users/me/tokens` | authenticated (a user), `x-quader-owner-rights` (a session or an inheriting token) |
 | `revokeUserTokens`, `revokeServiceAccountTokens` | `DELETE /api/v1/users/{username}/tokens`, `/service-accounts/{name}/tokens` | `tokens:revoke` |
-| `createServiceAccountToken` | `POST /api/v1/service-accounts/{name}/tokens` | authenticated (an administrator, or a token of the account), idempotent |
+| `createServiceAccountTechnicalToken`, `createServiceAccountTechnicalTokenSecret` | `POST /api/v1/service-accounts/{name}/technical-tokens`, `…/technical-tokens/{tokenName}/secrets` | authenticated (an administrator, or a token of the account), recent authentication for a session, idempotent |
 | `getAuthSettings`, `updateAuthSettings` | `GET`, `PATCH /api/v1/settings/auth` | `settings:read`, `settings:write` |
 
 How the pieces fit:

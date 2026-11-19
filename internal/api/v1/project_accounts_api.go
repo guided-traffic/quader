@@ -7,7 +7,6 @@ import (
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/auth/token"
-	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/qname"
@@ -199,63 +198,4 @@ func (s *Server) RevokeProjectServiceAccountTokens(w http.ResponseWriter, r *htt
 		return
 	}
 	noContent(w)
-}
-
-// CreateProjectServiceAccountToken implements POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens
-// (R-AUTH-027, Q-AUTHZ-177): an administrator of quader, an Owner of the project, or a token of the same account
-// under the derivation rule. An Owner who is no administrator creates a delegated token: never non-expiring,
-// admin false, no system item. The operation decides in the handler; anyone else gets the same 403 whether the
-// account exists or not.
-func (s *Server) CreateProjectServiceAccountToken(w http.ResponseWriter, r *http.Request, projectKey, name string, _ gen.CreateProjectServiceAccountTokenParams) {
-	if !s.identityReady(w, r) {
-		return
-	}
-	ctx := r.Context()
-	p := httpserver.PrincipalFrom(ctx)
-	body, err := ReadBody(w, r, MediaJSON, s.bodyLimit())
-	var in gen.CreateTokenRequest
-	if err == nil {
-		err = StrictUnmarshal(body, &in)
-	}
-	derived := p.Kind == httpserver.KindServiceAccount && p.Name == projectKey+"/"+name && tokenAuthenticated(p)
-	admin, aerr := s.holds(ctx, "role:admin")
-	if err == nil {
-		err = aerr
-	}
-	owns := false
-	if err == nil && !admin && !derived {
-		if pa, ok := s.o.Access.(ProjectAccess); ok {
-			owns, err = pa.Owns(ctx, projectKey)
-		}
-	}
-	if err == nil && !admin && !derived && !owns {
-		err = errs.E(errs.Forbidden, errs.CodeForbidden, "Only an administrator, an Owner of the account's project, or a token of the account itself creates its tokens.")
-	}
-	var scope []byte
-	if err == nil {
-		scope, err = scopeBytes(in.Scope)
-	}
-	if err == nil {
-		err = s.refuseUpperCasePaths(scope)
-	}
-	var parent *token.Info
-	if err == nil && derived {
-		parent, err = s.presenting(ctx, p)
-	}
-	var sa principal.ServiceAccount
-	if err == nil {
-		sa, err = s.o.Auth.Manager.GetProjectServiceAccount(ctx, projectAccountName(projectKey, name))
-	}
-	if err != nil {
-		failIdentity(w, r, err)
-		return
-	}
-	req := token.CreateRequest{
-		Caller: s.caller(r), Type: token.TypeSAT, OwnerID: sa.ID, Description: in.Description, Scope: scope, TTL: requestTTL(in),
-		SelfRotatable: in.SelfRotatable != nil && *in.SelfRotatable, Via: via(p), Admin: admin && !derived, Parent: parent,
-		Delegated: owns && !admin && !derived,
-	}
-	s.issue(w, r, body, func(ctx context.Context, tx meta.Tx) (token.Created, error) {
-		return s.o.Auth.Tokens.CreateTx(ctx, tx, req)
-	})
 }

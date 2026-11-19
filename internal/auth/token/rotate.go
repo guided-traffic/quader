@@ -151,6 +151,9 @@ func (s *Service) prepareRotate(ctx context.Context, r RotateRequest, old Record
 	return insertSpec{
 		req: CreateRequest{
 			Caller: r.Caller, Type: old.Type, OwnerID: old.Owner.ID, Description: old.Description, SelfRotatable: old.SelfRotatable,
+			// A rotated secret stays a secret of its technical token: its ID, name, budget and history go on (R-AUTH-030,
+			// R-AUTH-045).
+			TechnicalTokenID: old.TechnicalTokenID,
 		},
 		scope: old.Scope, life: life, maxActive: s.maxActive(old.Type), via: "rotation", rotatedFrom: old.ID, capMicros: capMicros(parentExpiry(r.Parent)),
 		derivedFrom: lineage, presented: derivedID(r.Parent),

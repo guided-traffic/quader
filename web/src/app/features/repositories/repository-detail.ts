@@ -58,9 +58,10 @@ import { SettingSchema, errorTarget, settingNodes } from './settings-schema';
 import { upstreamDefaultsOf } from './upstream-model';
 import { UpstreamSettings, upstreamPointerLabel, upstreamTarget } from './upstream-settings';
 import { MemberChange, VirtualMembers } from './virtual-members';
+import { RepositoryServiceAccounts } from '../service-accounts/repository-service-accounts';
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
-type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones';
+type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
 
 /**
  * The settings page of a repository (R-UI-087, Q-UI-351, Q-UI-352): one column of sections, as the style guide's settings pages.
@@ -90,6 +91,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     NgTemplateOutlet,
     PageHeader,
     RepositoryFields,
+    RepositoryServiceAccounts,
     RepositoryVisibilityBlock,
     RouterLink,
     SelectField,
@@ -198,6 +200,14 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly ansibleTombstonesSection = computed(() => {
     const repo = this.stored();
     return repo?.format === 'ansible' && repo.class === 'local';
+  });
+  /**
+   * The repository's service accounts (R-UI-181, R-AUTH-046): for a holder of `identities:read` and an Owner of the project, on an
+   * active repository.
+   */
+  protected readonly serviceAccountsSection = computed(() => {
+    const repo = this.stored();
+    return repo !== null && repo.lifecycle !== 'deleting' && (this.session.has('identities:read') || this.session.isOwnerOf(repo.project));
   });
   /** The fingerprints of a remote Debian repository's upstream keys, read back beside `upstreamKeys` (R-DEB-020). */
   protected readonly debUpstreamFingerprints = computed<readonly string[]>(() => {

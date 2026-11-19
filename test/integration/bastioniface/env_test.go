@@ -14,6 +14,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -450,7 +452,7 @@ func (e *env) newSite(o siteOpts) *site {
 	tokenCfg := config.AuthTokens{
 		CacheTTL: 15 * time.Second, RetentionAfterEnd: 2160 * time.Hour, ExpiryNotice: 168 * time.Hour,
 		PAT: config.AuthTokenPAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour}, SAT: config.AuthTokenSAT{DefaultTTL: 2160 * time.Hour, MaxTTL: 8760 * time.Hour},
-		CIT: config.AuthTokenCIT{MaxTTL: 6 * time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20},
+		CIT: config.AuthTokenCIT{MaxTTL: 6 * time.Hour}, MaxActive: config.AuthTokenMax{PAT: 50, SAT: 20}, MaxTechnicalPerAccount: 100,
 	}
 	pm, err := principal.NewMetrics(s.reg)
 	if err != nil {
@@ -749,13 +751,17 @@ func (s *site) serviceAccount(name string) principal.ServiceAccount {
 	return sa
 }
 
+// satSeq names the technical tokens the tests issue, one per call of sat.
+var satSeq atomic.Int64
+
 func (s *site) sat(sa principal.ServiceAccount, mutate ...func(*token.CreateRequest)) token.Created {
 	s.t.Helper()
-	req := token.CreateRequest{Caller: admin, Type: token.TypeSAT, OwnerID: sa.ID, Description: "test", Via: "admin-cli", Admin: true}
+	req := token.CreateRequest{Caller: admin, Via: "admin-cli", Admin: true}
 	for _, m := range mutate {
 		m(&req)
 	}
-	c, err := s.tokens.Create(context.Background(), req)
+	// Every service-account token is a secret of a technical token (R-AUTH-045); each call makes one of its own.
+	c, err := s.tokens.IssueTechnical(context.Background(), sa, token.TechnicalCreate{Request: req, Name: fmt.Sprintf("test-%d", satSeq.Add(1))})
 	if err != nil {
 		s.t.Fatalf("Create SAT: %v", err)
 	}

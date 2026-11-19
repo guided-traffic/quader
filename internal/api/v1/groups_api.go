@@ -248,13 +248,22 @@ func (s *Server) PatchGroupMembers(w http.ResponseWriter, r *http.Request, name 
 
 // ---- service accounts -------------------------------------------------------------------------------------
 
+// toServiceAccount renders an account of any level (R-AUTH-020, R-AUTH-046): the name within its place, its reference and
+// level, and for a repository's account the repository and its actions (R-AUTHZ-039).
 func toServiceAccount(a principal.ServiceAccount) gen.ServiceAccount {
-	name, ref := a.Name, "sa:"+a.Name
-	if a.Project != "" {
-		// A project's account is stored as <project>/<name>; the API shows the name within the project.
-		name = strings.TrimPrefix(a.Name, a.Project+"/")
+	out := gen.ServiceAccount{
+		Id: uuidOf(a.ID), Name: a.LocalName(), Reference: a.Reference(), Level: gen.ServiceAccountLevel(a.Level()), Description: a.Description,
+		Status: gen.ServiceAccountStatus(a.Status), CreatedAt: utc(a.CreatedAt), Project: optString(a.Project), Repository: optString(a.Repository),
+		IsAdmin: a.IsAdmin, TechnicalTokens: int(a.TechnicalTokens), Version: a.Revision,
 	}
-	return gen.ServiceAccount{Id: uuidOf(a.ID), Name: name, Principal: ref, Description: a.Description, Status: gen.ServiceAccountStatus(a.Status), CreatedAt: utc(a.CreatedAt), Project: optString(a.Project), IsAdmin: a.IsAdmin}
+	if a.Repository != "" {
+		acts := make([]gen.ServiceAccountActions, 0, len(a.Actions))
+		for _, x := range a.Actions {
+			acts = append(acts, gen.ServiceAccountActions(x))
+		}
+		out.Actions = &acts
+	}
+	return out
 }
 
 // globalAccount reads the instance-wide service account a request addresses: the item routes of
@@ -345,10 +354,19 @@ func (s *Server) GetServiceAccount(w http.ResponseWriter, r *http.Request, name 
 type serviceAccountPatchBody struct {
 	Description json.RawMessage `json:"description"`
 
-	ID        json.RawMessage `json:"id"`
-	Name      json.RawMessage `json:"name"`
-	Status    json.RawMessage `json:"status"`
-	CreatedAt json.RawMessage `json:"createdAt"`
+	ID              json.RawMessage `json:"id"`
+	Name            json.RawMessage `json:"name"`
+	Status          json.RawMessage `json:"status"`
+	CreatedAt       json.RawMessage `json:"createdAt"`
+	Reference       json.RawMessage `json:"reference"`
+	Level           json.RawMessage `json:"level"`
+	Project         json.RawMessage `json:"project"`
+	Repository      json.RawMessage `json:"repository"`
+	IsAdmin         json.RawMessage `json:"isAdmin"`
+	TechnicalTokens json.RawMessage `json:"technicalTokens"`
+	Version         json.RawMessage `json:"version"`
+	// Actions are the actions of a repository's account (R-AUTHZ-039): read-only here, writable on its own route.
+	Actions json.RawMessage `json:"actions"`
 }
 
 // UpdateServiceAccount implements PATCH /api/v1/service-accounts/{name}.

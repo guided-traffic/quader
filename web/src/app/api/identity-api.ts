@@ -23,6 +23,9 @@ export type GroupPatch = Schema<'GroupPatch'>;
 export type GroupMember = Schema<'GroupMember'>;
 export type ServiceAccount = Schema<'ServiceAccount'>;
 export type NewServiceAccount = Schema<'NewServiceAccount'>;
+export type NewRepositoryServiceAccount = Schema<'NewRepositoryServiceAccount'>;
+/** The actions a repository's service account holds on its repository (R-AUTHZ-039). */
+export type RepositoryAction = NonNullable<NewRepositoryServiceAccount['actions']>[number];
 export type MembershipChange = Schema<'MembershipChange'>;
 export type UserGroupMembership = Schema<'UserGroupMembership'>;
 
@@ -47,8 +50,15 @@ export interface GroupFilters {
 
 export interface ServiceAccountFilters {
   readonly q?: string;
-  /** A project key: the service accounts of that project (R-AUTHZ-026). */
+  /**
+   * A project key: the service accounts of that project (R-AUTHZ-026). In the administration's list it keeps the accounts of the
+   * project's repositories too (R-UI-181).
+   */
   readonly project?: string;
+  /** With `project`: the service accounts of that repository of the project (R-AUTH-046). */
+  readonly repository?: string;
+  /** The administration's list of every account (`/api/v1/service-accounts`), filtered by `project` there. */
+  readonly everywhere?: boolean;
   /** `name` (default) or `-name`. */
   readonly sort?: 'name' | '-name';
 }
@@ -96,24 +106,31 @@ export abstract class IdentityApi {
 
   abstract serviceAccounts(filters: ServiceAccountFilters): PageFetcher<ServiceAccount>;
   /**
-   * A service account is addressed by its bare name and its project, `null` for an instance-wide account
-   * (R-AUTHZ-026); so it is in every method below.
+   * A service account is addressed by its bare name, its project, `null` for an instance-wide account (R-AUTHZ-026), and the
+   * key of its repository for an account of a repository (R-AUTH-046); so it is in every method below.
    */
-  abstract serviceAccount(name: string, project: string | null): Promise<Versioned<ServiceAccount>>;
+  abstract serviceAccount(name: string, project: string | null, repository?: string | null): Promise<Versioned<ServiceAccount>>;
   abstract createServiceAccount(
     project: string | null,
-    body: NewServiceAccount,
+    body: NewServiceAccount | NewRepositoryServiceAccount,
     idempotencyKey: string,
+    repository?: string | null,
   ): Promise<ServiceAccount>;
   abstract updateServiceAccount(
     name: string,
     project: string | null,
-    patch: { description?: string },
+    patch: { description?: string; actions?: RepositoryAction[] },
     etag: string,
+    repository?: string | null,
   ): Promise<Versioned<ServiceAccount>>;
-  abstract deleteServiceAccount(name: string, project: string | null): Promise<void>;
-  abstract disableServiceAccount(name: string, project: string | null, options: DisableOptions): Promise<void>;
-  abstract enableServiceAccount(name: string, project: string | null): Promise<void>;
+  abstract deleteServiceAccount(name: string, project: string | null, repository?: string | null): Promise<void>;
+  abstract disableServiceAccount(
+    name: string,
+    project: string | null,
+    options: DisableOptions,
+    repository?: string | null,
+  ): Promise<void>;
+  abstract enableServiceAccount(name: string, project: string | null, repository?: string | null): Promise<void>;
 }
 
 function versioned<T>(r: { readonly body: T; readonly etag: string | null }): Versioned<T> {
@@ -223,50 +240,66 @@ export class HttpIdentityApi extends IdentityApi {
    * Owner of the project may call; the instance-wide list needs `identities:read` (R-AUTHZ-026, UI-A-41). As the policies.
    */
   override serviceAccounts(filters: ServiceAccountFilters): PageFetcher<ServiceAccount> {
-    const { project, ...rest } = filters;
-    return project
-      ? this.client.page<ServiceAccount>(`/api/v1/projects/${seg(project)}/service-accounts`, cleanQuery(rest))
-      : this.client.page<ServiceAccount>('/api/v1/service-accounts', cleanQuery(rest));
+    const { project, repository, everywhere, ...rest } = filters;
+    if (project && !everywhere) {
+      return this.client.page<ServiceAccount>(serviceAccountsUrl(project, repository ?? null), cleanQuery(rest));
+    }
+    return this.client.page<ServiceAccount>('/api/v1/service-accounts', cleanQuery({ ...rest, project }));
   }
 
-  override async serviceAccount(name: string, project: string | null): Promise<Versioned<ServiceAccount>> {
-    return versioned(await this.client.getJson<ServiceAccount>(serviceAccountUrl(name, project)));
+  override async serviceAccount(name: string, project: string | null, repository: string | null = null): Promise<Versioned<ServiceAccount>> {
+    return versioned(await this.client.getJson<ServiceAccount>(serviceAccountUrl(name, project, repository)));
   }
 
   override async createServiceAccount(
     project: string | null,
-    body: NewServiceAccount,
+    body: NewServiceAccount | NewRepositoryServiceAccount,
     idempotencyKey: string,
+    repository: string | null = null,
   ): Promise<ServiceAccount> {
-    const url = project ? `/api/v1/projects/${seg(project)}/service-accounts` : '/api/v1/service-accounts';
+    const url = project ? serviceAccountsUrl(project, repository) : '/api/v1/service-accounts';
     return (await this.client.post<ServiceAccount>(url, body, { idempotencyKey })).body;
   }
 
   override async updateServiceAccount(
     name: string,
     project: string | null,
-    patch: { description?: string },
+    patch: { description?: string; actions?: RepositoryAction[] },
     etag: string,
+    repository: string | null = null,
   ): Promise<Versioned<ServiceAccount>> {
-    return versioned(await this.client.patch<ServiceAccount>(serviceAccountUrl(name, project), patch, etag));
+    return versioned(await this.client.patch<ServiceAccount>(serviceAccountUrl(name, project, repository), patch, etag));
   }
 
-  override async deleteServiceAccount(name: string, project: string | null): Promise<void> {
-    await this.client.delete(serviceAccountUrl(name, project));
+  override async deleteServiceAccount(name: string, project: string | null, repository: string | null = null): Promise<void> {
+    await this.client.delete(serviceAccountUrl(name, project, repository));
   }
 
-  override async disableServiceAccount(name: string, project: string | null, options: DisableOptions): Promise<void> {
-    await this.client.post(`${serviceAccountUrl(name, project)}/disable`, options);
+  override async disableServiceAccount(
+    name: string,
+    project: string | null,
+    options: DisableOptions,
+    repository: string | null = null,
+  ): Promise<void> {
+    await this.client.post(`${serviceAccountUrl(name, project, repository)}/disable`, options);
   }
 
-  override async enableServiceAccount(name: string, project: string | null): Promise<void> {
-    await this.client.post(`${serviceAccountUrl(name, project)}/enable`);
+  override async enableServiceAccount(name: string, project: string | null, repository: string | null = null): Promise<void> {
+    await this.client.post(`${serviceAccountUrl(name, project, repository)}/enable`);
   }
 }
 
-/** `/api/v1/service-accounts/{name}` or, for a project's account, `/api/v1/projects/{project}/service-accounts/{name}`. */
-export function serviceAccountUrl(name: string, project: string | null): string {
-  return project
-    ? `/api/v1/projects/${seg(project)}/service-accounts/${seg(name)}`
-    : `/api/v1/service-accounts/${seg(name)}`;
+/** The accounts of a project, `/api/v1/projects/{project}/service-accounts`, or of one of its repositories (R-AUTH-046). */
+function serviceAccountsUrl(project: string, repository: string | null): string {
+  return repository
+    ? `/api/v1/projects/${seg(project)}/repositories/${seg(repository)}/service-accounts`
+    : `/api/v1/projects/${seg(project)}/service-accounts`;
+}
+
+/**
+ * `/api/v1/service-accounts/{name}`, for a project's account `/api/v1/projects/{project}/service-accounts/{name}`, and for a
+ * repository's account `/api/v1/projects/{project}/repositories/{repository}/service-accounts/{name}` (R-AUTH-046).
+ */
+export function serviceAccountUrl(name: string, project: string | null, repository: string | null = null): string {
+  return project ? `${serviceAccountsUrl(project, repository)}/${seg(name)}` : `/api/v1/service-accounts/${seg(name)}`;
 }

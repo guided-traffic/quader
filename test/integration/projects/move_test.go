@@ -84,6 +84,7 @@ func TestR_REPO_060_MoveARepository(t *testing.T) {
 		}
 	})
 	t.Run("R-REPO-060 an Owner of both projects moves it: the document at the new address, the epochs, the event", func(t *testing.T) {
+		f.seedRepositoryServiceAccount("web", "npm-libs", "release", "read", "deploy")
 		version, authzEpoch, repoEpoch := f.configVersion(id), f.epoch(), f.repoEpoch()
 		r := f.cl.Do(f.alice.Name, "POST", base+"/web/repositories/npm-libs/move", map[string]any{"project": "mobile"}, authz.HeaderMinEpoch, epoch)
 		wantStatus(t, r, 200, "")
@@ -119,6 +120,21 @@ func TestR_REPO_060_MoveARepository(t *testing.T) {
 			t.Error("the arrival is journaled as well")
 		}
 		wantStatus(t, f.do(f.admin, "POST", base+"/web/repositories/npm-libs/move", map[string]any{"project": "mobile"}), 404, "")
+		// R-AUTH-046: the repository's account moved with it in the move's transaction, renamed, with its actions.
+		if n := f.e.Number(`SELECT count(*) FROM principal p JOIN service_account s ON s.principal_id = p.id
+		                     JOIN project pr ON pr.id = s.project_id
+		                     JOIN service_account_repository_grant g ON g.service_account_id = p.id
+		                    WHERE p.name = 'mobile/npm-libs/release' AND pr.key = 'mobile' AND s.repository_id = $1
+		                      AND g.actions = ARRAY['read','deploy']`, id); n != 1 {
+			t.Errorf("the repository's account did not follow: %d", n)
+		}
+		if n := f.e.Number(`SELECT count(*) FROM principal WHERE name LIKE 'web/npm-libs/%'`); n != 0 {
+			t.Errorf("%d accounts keep the old name", n)
+		}
+		if n := f.e.Number(`SELECT count(*) FROM audit_event WHERE action = 'serviceaccount.updated'
+		                      AND details->'moved'->>'from' = 'web/npm-libs/release' AND details->'moved'->>'to' = 'mobile/npm-libs/release'`); n != 1 {
+			t.Errorf("%d events of the account's move", n)
+		}
 	})
 	t.Run("R-REPO-060 the holder of repositories:write-config moves without a membership", func(t *testing.T) {
 		wantStatus(t, f.do(f.admin, "POST", base+"/mobile/repositories/npm-libs/move", map[string]any{"project": "web"}), 200, "")

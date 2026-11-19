@@ -55,6 +55,15 @@ accepts only bound tokens, is `invalid_token`. The response never says whether a
 - A token carries a scope (a ceiling on the owner's rights, evaluated by authorization), an expiry (a SAT only may be
   non-expiring, by an administrator, only while `auth.tokens.sat.allow_non_expiring`) and no group list. A token created
   with a token must not outlive or outrank it and is revoked with it (`derived_from`).
+- Every SAT is a secret of a technical token (R-AUTH-045, [technical.go](../../internal/auth/token/technical.go)): the row
+  `technical_token` holds the account, a name unique in the account and a stable ID; `api_token.technical_token_id` names it, a
+  `CHECK` holds that a SAT and only a SAT names one, and a trigger holds that the token and the secret belong to the same account.
+  A rotation and **Issue new secret** keep the ID, so the stage's `Credential.TechnicalTokenID` names the same token across
+  secrets ([principal.go](../../internal/httpserver/principal.go)). An account holds at most
+  `auth.tokens.max_technical_tokens_per_account` technical tokens and at most `auth.tokens.max_active_per_principal.sat` of them
+  with a live secret; a second live secret of one token comes only from a rotation's overlap (`409 technical_token_active`).
+  Deleting a technical token revokes its secrets and deletes the row; the cleanup task deletes a token once the retention has
+  deleted the rows of all its secrets (`IdentityDeleteEndedTechnicalTokens`).
 - The break-glass account and the built-in principals hold no token; a service account has no session.
 
 ## Validation, caches and revocation
@@ -146,7 +155,8 @@ shorter value (Q-AUTH-207); [backup-and-restore.md](backup-and-restore.md) holds
 The operations are in [tokens_api.go](../../internal/api/v1/tokens_api.go) and [users_api.go](../../internal/api/v1/users_api.go);
 the declarations are in `api/openapi.yaml` (Q-AUTH-43).
 
-- **A token value leaves the server once.** `POST /api/v1/tokens`, `POST /api/v1/service-accounts/{name}/tokens`, `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` and the two rotations
+- **A token value leaves the server once.** `POST /api/v1/tokens`, `POST …/service-accounts/{name}/technical-tokens` and
+  `POST …/technical-tokens/{tokenName}/secrets` at the instance, a project and a repository, and the two rotations
   answer `201` with `Cache-Control: no-store`. The outcome of such a create carries `Outcome.SecretID`, so the idempotency row stores the
   status and the token ID but no body, and a retry with the same key answers `409 token_already_issued`. No read operation returns the value
   or its hash. [api_flows_test.go](../../test/integration/identity/api_flows_test.go) scans every table and the audit trail for the value
@@ -263,11 +273,14 @@ token value it did not just receive from the creating call.
   plain relative path of letters, digits, `/`, `_` and `-` with an optional fragment, and opens it with the router. READMEs and guides go
   through `Render` and are bound without `pageLinks`, so their relative links are still removed (`TestR_API_054_LinkedRenderingResolvesRelativeLinks`).
 
-## Tokens of project service accounts
+## Tokens of project and repository service accounts
 
-An Owner of a project issues, sees and revokes the tokens of the service accounts of its project, which are addressed `sa:<projectKey>/<name>` (the principal name is stored qualified, so two projects and the instance may each hold a `partner`; [R-AUTHZ-026](../spec/authorization.md#r-authz-026--projects-for-delegated-administration),
-[Q-AUTHZ-177](../spec/authorization.md#q-authz-177--what-a-project-administrator-may-do-with-service-accounts-and-their-tokens)).
-The credential it uses is a session or a token with `admin: true`; the token it issues is bounded by the token service itself, so the API,
+An Owner of a project issues, sees and revokes the technical tokens of the service accounts of its project, addressed
+`sa:<projectKey>/<name>`, and of its repositories, addressed `sa:<projectKey>/<repositoryKey>/<name>` (the principal name is stored
+qualified, so two projects, two repositories and the instance may each hold a `partner`; [R-AUTHZ-026](../spec/authorization.md#r-authz-026--projects-for-delegated-administration),
+[Q-AUTHZ-177](../spec/authorization.md#q-authz-177--what-a-project-administrator-may-do-with-service-accounts-and-their-tokens),
+[R-AUTH-046](../spec/identity-and-authentication.md)).
+The credential it uses is a session or a token with `admin: true`; the secret it issues is bounded by the token service itself, so the API,
 the command and a test have the same rule (Q-AUTH-190):
 
 | Property | Rule | Where |
@@ -275,9 +288,10 @@ the command and a test have the same rule (Q-AUTH-190):
 | lifetime | never non-expiring (`Admin` stays false), at most the SAT maximum | `resolveLifetime` |
 | scope | no `system` item and `admin: false`, else 422 `invalid_scope`; repository grants, `inherit` and an `endpoints` binding are allowed | `checkDelegated` in `prepareCreate` |
 | rotation by itself | never: `selfRotatable: true` is 422 at `/selfRotatable`, because each self-rotation gives the successor the original lifetime and the partner would renew the token for good (Q-AUTH-192) | `checkDelegated` |
-| owner | an account of a project the caller owns; a project the caller is no member of answers 404, a member who is no Owner 403, and an account of another project or an instance-wide one the plain 403 whether it exists or not | the project route; `principal.GetProjectServiceAccount` |
-| visibility | `GET /tokens`, `GET /tokens/{id}`, `DELETE /tokens/{id}` and `DELETE /projects/{projectKey}/service-accounts/{name}/tokens` reach the tokens of the project's accounts and no others; a token elsewhere answers 404; a rotation is not delegated | the token handlers; `Manager.ServiceAccountByRef` for the owner filter |
-| audit | `token.created` and `token.revoked` carry `project` | `insertTx`, `recordRevoked` |
+| renewal | an Owner does not rotate; it revokes and issues a new secret with a scope and a lifetime it chooses, so it never holds a copy of a secret an administrator issued (Q-AUTH-419) | `technicalIssuer` in [technical_tokens_api.go](../../internal/api/v1/technical_tokens_api.go) |
+| owner | an account of a project the caller owns, or of an active repository of it; a project the caller is no member of answers 404, a member who is no Owner 403, and an account of another project or an instance-wide one the plain 403 whether it exists or not; under a repository's route the name is the account's within that repository, so an account of another repository is not found (404), and a repository that is not active (being deleted) answers 404 | the project and repository routes; `principal.GetProjectServiceAccount`, `principal.GetRepositoryServiceAccount` |
+| visibility | `GET /tokens`, `GET /tokens/{id}`, `DELETE /tokens/{id}`, the technical-token routes and `DELETE /projects/{projectKey}/service-accounts/{name}/tokens` reach the tokens of the project's and its repositories' accounts and no others; a token elsewhere answers 404; a rotation is not delegated | the token handlers; `Manager.ServiceAccountByRef` for the owner filter |
+| audit | `token.created` and `token.revoked` carry `project` and the `technicalToken` of the secret; `technicaltoken.*` carry `project`, the account's `level` and, for a repository's account, `repository` | `insertTx`, `recordRevoked`, `technicalEvent` in [technical.go](../../internal/auth/token/technical.go) |
 
 **Owner filter of the token list (verified, no leak).** `GET /tokens?owner=sa:<name>` or `sa:<projectKey>/<name>` by a caller without `tokens:read` is answered with the
 caller's own tokens, never the named account's, unless the caller owns the account's project (`listOwner`). A user whose list for an
@@ -291,6 +305,9 @@ list is the account's alone, and another account's token answers 404 to the proj
 
 A project service account has no group, no role and only its project's policies, so what its token can reach is what the project's policies grant it
 ([Q-AUTHZ-175](../spec/authorization.md#q-authz-175--a-project-service-account-is-granted-by-its-projects-policies-only)).
+A repository's service account has no group, no role and no policy: its rights are the actions stored with it on its own
+repository (R-AUTHZ-039), so its token reaches that repository and nothing else, whatever the token's scope names; the scope
+narrows those actions as it narrows every grant. [permissions.md](permissions.md#account-grants) holds the source.
 
 ## CI tokens
 
@@ -399,19 +416,23 @@ to push with an API key shows it; one credential per client avoids it.
 
 ### H-400 · A project Owner issues tokens up to the installation's limits
 
-Component: `createServiceAccountToken` for a project service account. Subject: the active-token limit and the lifetime of the tokens of one
-project. Live for every project that has an Owner. A token issued by a project Owner is bounded by the installation's
-`auth.tokens.sat` maximum lifetime and `max_active` count for the account, as every service-account token is; there is no limit per
-project, no approval and no notice to an administrator of Quader beyond the `token.created` event (which carries `project`). A project
-Owner can therefore keep an account's credentials alive for the full maximum by issuing a new token before the old one ends, as
-long as it is an Owner. What makes it real: a project whose Owner is not trusted to renew credentials. Taking the Owner role away stops the issue; a
-project service account is deleted or disabled by an Owner or by an administrator of Quader.
+Component: `createProjectServiceAccountTechnicalToken`, `createRepositoryServiceAccountTechnicalToken` and their `…Secret` forms for an account of a
+project or of one of its repositories. Subject: the token limits and the lifetime of the tokens of one project. Live for every
+project that has an Owner. A secret issued by a project Owner is bounded by the installation's `auth.tokens.sat` maximum lifetime,
+by `max_active_per_principal.sat` technical tokens with a live secret and by `max_technical_tokens_per_account` technical tokens per
+account, as every service account's is; there is no limit per project, no approval and no notice to an administrator of Quader
+beyond the `technicaltoken.created` and `token.created` events (which carry `project`). A project Owner can therefore keep an
+account's credentials alive for the full maximum by issuing a new secret when the old one ends, and can create a repository's
+account and its tokens without an administrator, as long as it is an Owner. What makes it real: a project whose Owner is not trusted
+to renew credentials. Taking the Owner role away stops the issue; an account of a project or a repository is deleted or disabled by
+an Owner or by an administrator of Quader.
 
 ### H-401 · The repository grants of a delegated token are not checked against the project
 
 Component: `checkDelegated` and the scope of a token a project Owner issues. Subject: the repository part of such a scope. Live for
 every such token. The scope names repositories as an instance context does (`<project>/<key>`, `<projectGlob>/<keyGlob>`, [R-AUTH-024](../spec/identity-and-authentication.md)), and the scope validation does not know the project; a grant that names
 a repository outside the project is accepted and does nothing, because the service account holds rights only through its project's
-policies, whose selectors never reach outside it ([Q-AUTHZ-179](../spec/authorization.md#q-authz-179--a-repository-that-leaves-a-project-leaves-its-policies-inert)).
+policies, whose selectors never reach outside it ([Q-AUTHZ-179](../spec/authorization.md#q-authz-179--a-repository-that-leaves-a-project-leaves-its-policies-inert)),
+or, for a repository's account, through its actions on its own repository ([permissions.md](permissions.md#account-grants)).
 The effect is a scope that reads wider than the rights behind it, in the token list and in the audit event. What makes it real: a reviewer
 who reads the scope of such a token as the access it has; the access is the intersection with the project's policies.

@@ -299,6 +299,20 @@
           </quader-disclosure>
         }
 
+        @if (serviceAccountsSection()) {
+          <quader-disclosure
+            i18n-heading="@@repo.settings.service-accounts"
+            heading="Service accounts"
+            i18n-hint="@@repo.settings.service-accounts-hint"
+            hint="Accounts that hold their rights on this repository and nowhere else, each with its technical tokens."
+            (expandedChange)="open('service-accounts', $event)"
+          >
+            @if (isOpened('service-accounts')) {
+              <quader-repository-service-accounts [project]="project()" [repository]="key()" />
+            }
+          </quader-disclosure>
+        }
+
         <quader-disclosure
           i18n-heading="@@repo.settings.details"
           heading="Details"

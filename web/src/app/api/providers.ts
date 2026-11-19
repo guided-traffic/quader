@@ -19,6 +19,7 @@ import { HttpVisibilityApi, VisibilityApi } from './visibility-api';
 import { DraftPolicyExplainer, PolicyExplainer } from './policy-explainer';
 import { HttpSessionsApi, SessionsApi } from './sessions-api';
 import { HttpTokensApi, TokensApi } from './tokens-api';
+import { HttpTechnicalTokensApi, TechnicalTokensApi } from './technical-tokens-api';
 // <<< M1 ui-b
 // >>> M2 ui-packages
 import { ClientSetupApi, HttpClientSetupApi, HttpPackagesApi, PackagesApi } from './packages-api';
@@ -61,6 +62,7 @@ export function provideApiServices(): Provider[] {
     // >>> M1 ui-b
     { provide: IdentityApi, useClass: HttpIdentityApi },
     { provide: TokensApi, useClass: HttpTokensApi },
+    { provide: TechnicalTokensApi, useClass: HttpTechnicalTokensApi },
     { provide: SessionsApi, useClass: HttpSessionsApi },
     { provide: AuthSettingsApi, useClass: HttpAuthSettingsApi },
     { provide: PolicyApi, useClass: HttpPolicyApi },

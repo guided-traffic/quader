@@ -2358,7 +2358,7 @@ says so, and a project the caller is no member of answers 404.
 | GET | `/api/v1/users/me/usage` | every signed-in user (`authenticated`) | R-LIM-034 |
 | GET | `/api/v1/users/me/limits` | every signed-in user, for a repository it can read | R-LIM-035 |
 | GET, POST | `/api/v1/service-accounts/{name}/technical-tokens` | `identities:read`; POST: an administrator, as R-AUTH-027 | R-AUTH-045 |
-| GET, PATCH, DELETE | `/api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `identities:read`; PATCH `identities:write`; DELETE `identities:write` or `tokens:revoke` | R-AUTH-045 |
+| GET, PATCH, DELETE | `/api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `identities:read`; PATCH `identities:write`; DELETE `tokens:revoke` ([Q-AUTH-420](identity-and-authentication.md#q-auth-420--the-delete-of-a-technical-token-is-declared-with-tokensrevoke)) | R-AUTH-045 |
 | POST | `/api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets` | as the POST of a technical token | R-AUTH-045 |
 | GET, POST, … | `/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens[/{tokenName}[/secrets]]` | the same, or an Owner | R-AUTH-045 |
 | GET, POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts` | `identities:read`, `identities:write`, or an Owner | R-AUTH-046 |
@@ -2633,8 +2633,7 @@ grammar, lifetimes, revocation):
 | Method | Path | Purpose | Permission |
 |---|---|---|---|
 | POST | `/api/v1/tokens` | Create a personal token for the caller | user with session (recent authentication) or a PAT under the derivation rule |
-| POST | `/api/v1/service-accounts/{name}/tokens` | Create a token of a service account of no project | `admin`; owners from P1; recent authentication for sessions |
-| POST | `/api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | Create a token of a project's service account; for an Owner without `identities:write` never non-expiring, `admin: false`, no `system` item ([authorization.md](authorization.md) R-AUTHZ-026, Q-AUTHZ-177) | `admin`, or Owner of the project; recent authentication for sessions |
+| POST | `…/service-accounts/{name}/technical-tokens`, `…/technical-tokens/{tokenName}/secrets` at the instance, a project or a repository | Create a technical token of a service account with its first secret, or a new secret of one ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-045, R-API-082); for an Owner without `identities:write` never non-expiring, `admin: false`, no `system` item ([authorization.md](authorization.md) R-AUTHZ-026, Q-AUTHZ-177) | `admin`, or Owner of the project of a project's or a repository's account; recent authentication for sessions |
 | GET | `/api/v1/tokens` | List own tokens; all with `tokens:read`; an Owner also the tokens of its project's service accounts (`project=<key>`) | `self`, `tokens:read`, Owner |
 | GET | `/api/v1/tokens/{id}`, `/api/v1/tokens/current` | Read one token | `{id}`: owner, `tokens:read`; `current`: the presenting token itself, CI tokens included ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-013) |
 | DELETE | `/api/v1/tokens/{id}`, `/api/v1/tokens/current` | Revoke | `{id}`: owner, owners of the service account (P1), an Owner of the project of the service account, `tokens:revoke`, `admin`; `current`: the presenting token itself, of every type, CI tokens (`qdr_cit_`) included (R-AUTH-029; [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-013) |
@@ -7777,6 +7776,12 @@ it is named for the system that uses it and has a budget of its own
   today. The secret is shown once, as today.
 - **Set limit** opens the rule dialog of R-UI-179 with the "who" fixed to this token and the place of its account (the instance,
   the project, the repository); a token with a rule shows **Change limit** and **Remove limit**.
+- The tokens with a live secret and the ended ones are two tables of the section, the ended ones under **Expired and revoked** with
+  the column **Ended** (when and how the last secret ended) in place of **Expires**, so that the action cells of a table are built one
+  way (R-UI-163, [Q-UI-740](#q-ui-740--the-ended-technical-tokens-are-a-table-of-their-own)).
+- **Rotate** is offered to the administrator role; an Owner revokes and issues a new secret
+  ([Q-AUTH-419](identity-and-authentication.md#q-auth-419--an-owner-of-the-project-does-not-rotate-the-secret-of-a-technical-token-it-issues-a-new-one)).
+  **Revoke** revokes the token's live secrets; the token stays, ended.
 - **Issue new secret** opens the create dialog without the name; the result is shown once.
 - **A repository's service accounts**: the repository's settings section **Service accounts** (R-UI-180) lists the repository's
   accounts (name as `sa:<project>/<repo>/<name>`, description, the actions it holds, state, technical tokens) with **New service
@@ -7786,7 +7791,7 @@ it is named for the system that uses it and has a budget of its own
 - **The admin area's Service accounts** list gains the column **Level** (Instance, Project, Repository) and shows the repository of a
   repository's account beside its project; the filter by project includes its repositories' accounts.
 - **The admin area's Tokens** (R-UI-030) shows a technical token's secret as "<token name> · <hint>" with the account as its owner.
-- An Owner sees the create, rotate and limit actions on the accounts of its project and of its repositories; a holder of
+- An Owner sees the create, renew, revoke and limit actions on the accounts of its project and of its repositories; a holder of
   `identities:write` alone does not see **New technical token** (R-UI-026's rule stays).
 
 Acceptance criteria:
@@ -18265,6 +18270,22 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) Limits only in the rule tables | — | One way | The token's page does not say what it may download |
 
 **Choice:** (a). **Applied in the spec:** R-UI-181.
+
+### Q-UI-740 · The ended technical tokens are a table of their own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: an active token's row offers **Rotate** and **Revoke**, an ended token's **Issue new secret**; R-UI-163 and the renders'
+check of R-UI-176 hold the action cells of one table to one construction, and a credential's **Revoke** is never in a menu (Q-UI-641).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two tables in the section: the active tokens, and **Expired and revoked** with the column **Ended** (chosen) | Each table's rows offer the same actions | The rule holds; an ended token says when it ended, not a date of a secret that no longer counts | Two lists in one section |
+| (b) One table, each row's actions in a menu | One list | — | **Revoke** of a credential in a menu (Q-UI-641) |
+| (c) One table, an ended row's state and **Issue new secret** beside each other | As R-UI-181 first read | One list | The rows of one table built two ways; at 390 px the badge and the button squeeze the token's name |
+
+**Choice:** (a). **Rationale:** the owner's screens are built one way per table, and the ended tokens are what an operator renews or
+leaves. The development agent would revisit this if an ended token got the actions of an active one. **Applied in the spec:** R-UI-181.
 
 ### Q-UI-735 · A user's own usage is a tab of the profile
 

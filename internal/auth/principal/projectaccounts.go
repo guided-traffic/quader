@@ -34,6 +34,9 @@ func projectOnly(o qname.Object) (qname.Object, error) {
 // name of an instance-wide account or "<project>/<name>" of a project's. 404 when there is none, and for a
 // text that is no name.
 func (m *Manager) ServiceAccountByRef(ctx context.Context, ref string) (ServiceAccount, error) {
+	if ra, ok := ParseRepositoryAccount(ref); ok {
+		return m.GetRepositoryServiceAccount(ctx, ra)
+	}
 	o, err := qname.ParseObject(ref)
 	if err != nil {
 		return ServiceAccount{}, NotFound("The service account")
@@ -83,7 +86,10 @@ func (m *Manager) ListProjectServiceAccounts(ctx context.Context, project, query
 			return err
 		}
 		for _, r := range rows {
-			out = append(out, ServiceAccount{Revision: r.Revision, ID: r.ID, Name: r.Name, Description: r.Description, Status: Status(r.Status), CreatedAt: r.CreatedAt.Time, Project: r.Project})
+			out = append(out, ServiceAccount{
+				Revision: r.Revision, ID: r.ID, Name: r.Name, Description: r.Description, Status: Status(r.Status), CreatedAt: r.CreatedAt.Time,
+				Project: r.Project, TechnicalTokens: r.TechnicalTokens,
+			})
 		}
 		return nil
 	})
@@ -106,7 +112,7 @@ func (m *Manager) DisableProjectServiceAccount(ctx context.Context, c Caller, o 
 	if err != nil {
 		return err
 	}
-	return m.disableAccount(ctx, c, o, revokeTokens)
+	return m.disableAccount(ctx, c, byObject(o), revokeTokens)
 }
 
 // EnableProjectServiceAccount enables the account.
@@ -115,7 +121,7 @@ func (m *Manager) EnableProjectServiceAccount(ctx context.Context, c Caller, o q
 	if err != nil {
 		return err
 	}
-	return m.enableAccount(ctx, c, o)
+	return m.enableAccount(ctx, c, byObject(o))
 }
 
 // DeleteProjectServiceAccount deletes the account with its tokens: they are revoked in the transaction
@@ -125,5 +131,5 @@ func (m *Manager) DeleteProjectServiceAccount(ctx context.Context, c Caller, o q
 	if err != nil {
 		return err
 	}
-	return m.deleteAccount(ctx, c, o)
+	return m.deleteAccount(ctx, c, byObject(o))
 }
