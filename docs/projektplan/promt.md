@@ -1249,6 +1249,29 @@ agent** is not decided until the owner has said so.
   true cells / everything the upstream knows, which Docker Hub's registry API cannot answer for the images of a
   namespace): a remote repository lists what was fetched through it; **Last fetched** is the last fetch of the version by
   a client and the downloads count those; a size that is not known is shown as not known, not as 0 B.
+  - **Built for every format** (on `main` the same day; R-API-079 to R-API-081, Q-API-295 rewritten, Q-API-340 to
+    Q-API-343, Q-OCI-221, Q-OCI-222, Q-REPO-330, Q-REPO-331, ADR-205, migration 00079; 929 requirements, 257 of them P1).
+    The format contract is at version 5: a format with package screens must say what a fetch of one of its versions is
+    (`Descriptor.VersionFetch`), and registration refuses one that does not, so a later format cannot land without the
+    rule. What the builder found per format, each a hole of its own:
+    - **OCI remote:** a tag was listed as soon as its document was cached, also after a `HEAD`; the size of an index was
+      the one written when the index was stored (0 B) and never grew; downloads were always 0 and the last one always
+      empty. Now a tag is listed once a client downloaded its manifest or a mirror pass stored it, a `GET` by tag or by
+      digest is its download, and the size of an index is the sum of the platforms held, marked as partial ("≥ …") while
+      some are missing and not known while none is; the tag's page lists each platform with its size or **Not fetched**.
+    - **OCI local:** only a `GET` by tag counted, so a pull that asks `HEAD` by tag and `GET` by digest counted nothing.
+    - **npm, NuGet, Ansible remote:** the first download of a file over 64 KiB is streamed to the client while it fills
+      the cache and was never counted, so a version fetched once showed 0 and "Never".
+    - **Debian local:** only the first-uploaded architecture's file counted. **Debian remote:** listed nothing at all,
+      under a sentence that said otherwise; it lists the packages apt fetched now (new code: a fill hook and the removal).
+    - **Generic:** no package screens and no remote class; unchanged.
+    Not a download anywhere: `HEAD`, `304`, a range that does not start at 0, metadata documents, the platform manifests
+    below an index, blobs. The integration sets `ociremote`, `oci`, `debremote`, `proxy`, `files` and `packages` ran green
+    before the builder's rebase onto W-23, the unit run after it; the renders of its screens had no finding.
+    **For the owner, decided by the builder or left open:** the column is named **Last download** now, where his word was
+    "Last fetched" (the builder's reason: a version a mirror pass stored was fetched by Quader and by no client, and the
+    cell said both); **Published** of a version that exists in a remote only is still the time it was cached, not the
+    upstream's date; a row filled by a mirror pass is not in the render set.
 - **W-25 · A probe starts the download** (owner, 2026-11-19, with W-24): "wenn jemand wie du nur einen Probe auf ein Image
   macht, auch wenn er den Download nie anstößt, sollte Quader pro-aktiv den Download im Hintergrund schon starten." Open
   before it is built, and the owner's to decide one at a time: which platforms of an index, what counts as a probe in each
@@ -1298,6 +1321,22 @@ agent** is not decided until the owner has said so.
   question exists in OCI alone: in the other formats a version is one file, and a probe of a Debian file names its
   architecture. Still to decide: the bound for the work a request can start, and with it whether a repository can turn the
   behaviour off.
+  **The third decision became a subject of its own.** To the proposal of one budget per repository the owner asked
+  (2026-11-19): "Macht es nicht Sinn hier eine Unterscheidung zwischen Known und Unknown User zu machen und dafür
+  Konfigurationsoptionen in einem Public-Repo zu bieten?", and then: "Ich erwarte von dir bei dieser Frage bitte eine
+  Ausarbeitung als Claude-Artifact im Browser, ich will hier deutlich detailliertere Settings. Ich muss für einzelne User,
+  technische Tokens und Gruppen (anonyme User gehören der Gruppe Anonym), bei anonymen Usern aber ggf. auch IPs, diese
+  Grenzen einstellen können: Request-Anzahl pro Sekunde / pro Stunde? Cached-Downloads-Size pro Sekunde / pro Stunde?
+  Uncached-Downloads-Size pro Sekunde / pro Stunde? und bitte überlege was ich vergessen haben könnte […] Ein PAT gehört zu
+  einem konkreten User und geht direkt gegen das Budget des Users. Ein technischer Projekttoken oder Repo-Token gehört
+  nicht zum User und wird separat berechnet, hat ein eigenes Budget. Ein Projekt-Admin oder Instanz-Admin muss Übersichten
+  bekommen und schnell das Download-Verhalten aller Entitäten in einer Übersicht erfassen können." The working paper is
+  an artifact of his account (private, "Quader Download-Limits"): the model (a request must fit the caller's budget and
+  the repository's), what is counted (his three, and upstream requests, parallel downloads, a day's volume, background
+  downloads, refused requests, uploads, storage growth as additions), limit profiles instead of single numbers, a sketch of
+  the settings and of the administrators' overview, and ten decisions with options and a favourite each, which he
+  answers in the page. Nothing of it is specified or built; the budget of W-25's background download is the upstream
+  budget of a class of callers in the repository there, so W-25 is built after these decisions.
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
