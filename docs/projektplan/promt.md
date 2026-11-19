@@ -1457,6 +1457,46 @@ agent** is not decided until the owner has said so.
   at about 50 kB/s without stalling (gaps of 80 to 190 s per package); both legs ran into the bound at the browser's
   download and no test ran. The bound is 25 minutes now; it is against a hang, not against a slow night. What it shows: a
   bound needs the bad case measured, or a margin an order above the good one, where the job has the time.
+- **The nightly of the night of 2026-11-18** (HA and Performance 44414813006, dispatched at 22:46 UTC on 5c802652, alone on the
+  runners, nothing pushed to `main` while it ran; ended 03:20 UTC): **29 of 31 legs green**. Red: `e2e (vuln-long)` and
+  `e2e (upgrade)`, both at the bound of the browser's install before any test (F-150; they are dispatched again after the
+  landing of the fix). Green, and each the first result on `main` for something that was open: `drain-load-b` (F-137: the
+  waiting `gc-full` job is handed over at the drain), `drain-load-c`, `drain-load-e`, `Latency` and the vulnerability
+  scanning performance (no result since the night of 11-17), `ha-faults`, `ha-pooler`, `ha-suite`, `edge`, `failover`,
+  `drain-roles` with the day's change of the registry and the shutdown, `upgrade-release` skipped by design.
+  - **The recorder on the new runner layout** (first legs on `large` with it): every leg on `large` names its daemon's parent
+    inside its pod with `memory.max` 28.0 GiB and `cpu_weight` 800 on `daemon:parent`; 9 of 10 own containers have `cgd:`
+    rows in the leg read row by row (the tenth a k6 container of a few seconds).
+  - **Whether 28 GiB hold every leg** (the open question of the runner change): they held every leg of that night. Nine legs
+    reached the limit (`memory.peak` 28.0 GiB; at the limit in 35 to 42 % of the samples in the three `drain-load` legs and
+    `drain-load-pooler`, 22 % in `ha-faults`, 24 % in `nuget-ha`), with at most 1.1 s of full memory stall of the pod over a
+    whole leg (`edge`), 0.5 s or less elsewhere, and no OOM at the pod's limit or below it in any leg: the pod fills with
+    page cache and gives it back without waiting. Not known: how near the legs are to the point where it is anonymous
+    memory that fills the pod; the recorder does not split `memory.current` yet (`memory.stat` `anon` and `file` are the
+    next columns).
+  - **The CPUs of the nodes** (F-133's question): full CPU stall of the daemon's cgroup between 10.8 s in 14.6 min
+    (`drain-load-pooler`) and 31 s in 29 to 34 min (`ha-suite`, `npm-ha-soak`), that is 1 to 2 % of a leg, on a pool with
+    nothing else running. F-133 stays open by its own condition: it asks for a green nightly **with a Test and Release run
+    beside it**, and that night had none on purpose.
+  - Also seen: `Platform matrix` legs take a minute (they render and validate, they start no cluster); the four of them and
+    `upgrade-release` are what a dispatch gets back first, and they showed within a minute that the changed leg selection
+    of F-130 works.
+- **W-5 is built** (owner's requirement of the walk: the renders find what a person kept finding): the render run measures
+  the layout of every picture in the page and fails on a finding (R-UI-170 to R-UI-174, Q-UI-680 to Q-UI-686): an icon off
+  its label's line, a short thing broken across lines, a cell off its row's line, action cells of one table built
+  differently, text cut beside free room, a stacked table whose columns would fit, sideways scroll, scroll into nothing.
+  The first full run with the checks failed 75 of 330 screens with 260 findings; all fixed, three allow-listed with their
+  reason. A list now stacks only where its own columns do not fit (it measures its least width; the fixed 48 rem is gone)
+  and a stacked row puts its facts side by side. Found on the way and fixed: the labels of the stacked versions table were
+  shifted by one column at 390 px, and the 900 px of nothing under a long package page was the page's defect, not the
+  render's. The anonymous screens' 429 is fixed in the UI development profile, the product default untouched.
+  **Checked by the development agent** on the merged night's batch: a full run, 330 of 330 passed, 0 layout findings, 19.9
+  min; looked at: a package's 33 versions at 1,024 px (a table) and at 390 px (stacked, two to three lines a version), the
+  admin area's repositories at 1,100 px, the audit log at 1,024 px. **Still only for the eye** (the builder's list): a
+  wrapping column cramped beside a roomy neighbour ("3 findings · / 0 fixable" at 1,024 px is one), text cut at the start
+  of a wrapped line, a stacked label off its control, two words for one thing across screens. **For the owner:** the upload
+  dialog's states in lower case, the start page's empty **Your role** cell, whether the policy editor's selector button
+  may wrap at 390 px.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
@@ -1623,7 +1663,7 @@ v0.56.1 to v0.56.4).
   F-133 named the cause. A push to `main` or a dispatch beside a running kind leg makes that leg worthless as evidence.
 - Open for the next run, in this order:
   1. ~~F-137~~ — closed in the night of 2026-11-18 (a race of the test, and the settle wait now ends at the drain; see F-146).
-  2. `drain-load-c`, `drain-load-e`, `Latency` and the vulnerability scanning performance have no result on `main` after this night's
+  2. (Read in the nightly 44414813006 of the night of 2026-11-18: all four green, and the `cgd:` rows on the new layout.) `drain-load-c`, `drain-load-e`, `Latency` and the vulnerability scanning performance have no result on `main` after this night's
      changes (`drain-load-e` was green on its branch only): read them in the next scheduled nightly. Not read yet in the artifacts of
      44233617621: the `cg:` rows of the stall evidence after 2a161226, `TestHAPooler_Switchover` on `main`, `vuln-long` and `alerts`
      with the changed drain helpers (all four legs were green).
