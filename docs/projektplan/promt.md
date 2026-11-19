@@ -1568,9 +1568,12 @@ agent** is not decided until the owner has said so.
   arm64 on the development machine (2.0 GB against 1.3 GB upstream); in it, without a network, every package step of the
   workflows ended at "already installed" and `docker compose version` answered. **Not done:** the amd64 build (the archive
   was still silent), the commit and the first publication (the owner's), the visibility of the new Docker Hub repository,
-  and the switch of the four `image:` lines of the runner scale sets with a tag rule: the build workflow of that repository
+  and the switch of the four `image:` lines of the runner scale sets. **The tag rule, decided by the owner on 2026-11-19**
+  ("Option A"): the runners name the tag that does not move, `<runner version>-<build time>`, and a change of it is a commit
+  in the runner's repository; not the version tag with a pull at every start, because the build workflow of that repository
   runs on these runners, so a tag that moves with the weekly rebuild could take away the runners that would build its
-  repair. In this repository the browser steps no longer need the archive on such an image: they call
+  repair. The price is that a security update of a package reaches the runners with the next change of the tag, not by
+  itself. In this repository the browser steps no longer need the archive on such an image: they call
   `.github/scripts/playwright-install.sh`, which fetches the browser alone when Playwright's own dry run finds every
   library (18 s and no index read in the new image; the old path, unchanged, in the upstream image).
 - **The second full nightly** (HA and Performance 44453781574, "HA and Performance (all legs)", dispatched at 03:46 UTC on
