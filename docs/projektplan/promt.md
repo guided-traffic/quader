@@ -1511,6 +1511,18 @@ agent** is not decided until the owner has said so.
   page. Not chosen: building the analyser from source with Quader's toolchain (it would replace a checked upstream archive
   by a build of our own for one finding), and leaving the gate red until upstream releases (no release of anything for an
   unknown time, for a finding that does not apply). The entry goes with the next raise of the analyser's pin.
+- **The late schedule of the nightly** (measured in the night of 2026-11-18: the cron is `17 2 * * *` UTC, and on each of
+  the twelve days before GitHub created the run between 08:44 and 10:41 UTC, 6.5 to 8.5 hours late, in the owner's working
+  day; he cancelled it on 11-18). Decided by the development agent, for the owner to review: the cron line stays (a moved
+  one might fire on time and land in the evening); a scheduled run skips its legs when a **full** dispatched run of the
+  workflow ended less than 12 hours before and was not cancelled, and says in each leg's summary which run it defers to;
+  when the question cannot be answered it runs. A run's name says what it is: "HA and Performance (all legs)" or "(sets:
+  …)". The check lives in `select-leg` (`.github/actions/select-leg/select-leg.sh`), a dispatch never calls the API and
+  decides as before; tested through 20 cases with a stubbed answer. **Not verified on GitHub:** that the run's title
+  carries the new name and that a completed run's `updated_at` is its end. The first scheduled run that can defer is the
+  one after a full dispatch made from a commit that has the name; the dispatch of that morning (below) is that run.
+  The recorder's `pod-memory.csv` gained `mem_anon`, `mem_file`, `mem_kernel`, `mem_shmem`, `mem_slab_reclaimable` and
+  `mem_sock`, and the README's line the peak of what cannot be given back; read them in the first leg on `large`.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
