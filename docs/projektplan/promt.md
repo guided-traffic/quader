@@ -1962,6 +1962,18 @@ agent** is not decided until the owner has said so.
     the kind node image, the dev profile's images and k6 (the remedy would be a registry or a mirror inside the runners'
     cluster, which is the owner's to decide), the upgrade leg's second image, the stub and driver images. **For the
     owner:** `zstd` in the runners' image would make the entries smaller and faster.
+    **The first run** (Test and Release 44531328598, read on 2026-11-19; the integration shards and `e2e (access-long)`
+    were still running): the gating jobs and Semantic Release green; `image` built the Quader image in 4.5 minutes and
+    every kind leg that ran loaded it in 7 to 15 s (`linux/amd64`, the dev profile came up); the module cache was a hit in
+    the kind legs (restored in 16 s, "nothing fetched" in 8 s) after `chart` had filled it (477 files in 50 s); the tool
+    caches hit; the npm and NuGet clients images missed as expected, were built (24 s and about 3 minutes) and saved.
+    `e2e (oci)`, `(deb)`, `(ansible)`, `(vuln)` and `(bastion)` skipped by their path filter, so their clients images are
+    not in the cache yet. **Not yet seen:** a clients image loaded instead of built (the next run that touches npm or
+    NuGet). **Seen in the cache's listing:** 5.6 GB of 10 are in use, 2.6 GB of them the entries of `actions/setup-go`
+    that nothing reads any more (they age out after seven days or are evicted first); and every new entry exists
+    **twice**, once from a GitHub-hosted job (zstd) and once from a self-hosted one (gzip, no `zstd` in the runners'
+    image), 165 and 161 MB for the modules, 136 and 121 MB for the npm clients. With all five clients images that is
+    nearer 6 GB than the estimated 4; `zstd` in the runners' image would halve it.
 - **F-159 · A unit test with a date in it turned the gating job `web (Angular)` red on its seventh day** (2026-11-19 from
   12:31:51 UTC, Test and Release 44525198691): two tests of the grade card held a fixture time of 2026-11-12 12:31:51 UTC
   and expected its relative time to read "now", minutes, hours, "yesterday" or days ago; from the seventh day on it reads
@@ -2005,9 +2017,8 @@ pushed). The newest first, because this is where the next run starts.
   **Your role** cell; the policy editor's selector button wrapping at 390 px; the stale worktrees and branches under
   `.claude/worktrees` (`stab/*`, `night/*`, every finished builder's), which are deleted only on his word.
 - **To check, not yet seen:**
-  - The first run with the CI caches (Test and Release 44531328598) to its end: the job `image` and the kind legs that load
-    its image; then a **second** run, which must show "nothing fetched" in the module step and loaded, not built, clients
-    images (the builder's list is at F-158).
+  - Of the CI caches (the first run is read, see its record at F-158): a run that touches npm or NuGet must show their
+    clients images loaded, not built; the integration shards and `e2e (access-long)` of 44531328598 to their end.
   - The seven legs of the second nightly that did not run (`nuget-ha`, `cold-crash`, `drain-load-b`, `-c`, `-e`, `Latency`,
     the vulnerability scanning performance): again in the night, on a quiet `main`; the first legs on the runners' new image
     and with the caches.
