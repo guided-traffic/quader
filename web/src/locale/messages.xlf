@@ -17842,20 +17842,20 @@
         <source>Vulnerabilities</source>
       </segment>
     </unit>
-    <unit id="repo.content.oci-remote-note2">
+    <unit id="repo.content.oci-remote-note3">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:49,51</note>
       </notes>
       <segment>
-        <source>Only the tags clients have pulled through this repository are listed here and, in mirror mode, those a pass has fetched.</source>
+        <source>Only the tags clients have pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass has fetched.</source>
       </segment>
     </unit>
-    <unit id="repo.content.remote-note2">
+    <unit id="repo.content.remote-note3">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:51,54</note>
       </notes>
       <segment>
-        <source>Only what clients have fetched through this repository is listed here and, in mirror mode, what a pass has fetched.</source>
+        <source>Only what clients have fetched through this repository is listed here, what it downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched.</source>
       </segment>
     </unit>
     <unit id="files.virtual-note">
@@ -20910,8 +20910,8 @@
     <unit id="upstream.url">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:395</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:62</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:114,116</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:63</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:118,120</note>
       </notes>
       <segment>
         <source>Upstream URL</source>
@@ -20974,7 +20974,7 @@
     <unit id="upstream.url.required">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:693</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:138,140</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:142,144</note>
       </notes>
       <segment>
         <source>Enter the address of the registry, such as https://registry.example.com/.</source>
@@ -21401,8 +21401,8 @@
     <unit id="upstream.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:337</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:74</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:90,91</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:78</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:94,95</note>
       </notes>
       <segment>
         <source>Upstream</source>
@@ -21949,8 +21949,8 @@
     </unit>
     <unit id="upstream.auth">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:63</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:146,148</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:64</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:150,152</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -21958,8 +21958,8 @@
     </unit>
     <unit id="upstream.username">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:64</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:164,166</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:65</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:168,170</note>
       </notes>
       <segment>
         <source>Username</source>
@@ -21967,8 +21967,8 @@
     </unit>
     <unit id="upstream.password">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:65</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:183,185</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:66</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:187,189</note>
       </notes>
       <segment>
         <source>Password or token</source>
@@ -21976,8 +21976,8 @@
     </unit>
     <unit id="upstream.hosts">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:66</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:309,310</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:67</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:313,314</note>
       </notes>
       <segment>
         <source>Further hosts</source>
@@ -21985,8 +21985,8 @@
     </unit>
     <unit id="upstream.metadata-ttl">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:68</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:358,360</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:69</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:362,364</note>
       </notes>
       <segment>
         <source>Metadata cache period in seconds</source>
@@ -21994,8 +21994,8 @@
     </unit>
     <unit id="upstream.notfound-ttl">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:71</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:384,386</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:72</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:388,390</note>
       </notes>
       <segment>
         <source>Negative cache period in seconds</source>
@@ -22003,16 +22003,25 @@
     </unit>
     <unit id="upstream.offline">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:73</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:419,421</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:74</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:444,446</note>
       </notes>
       <segment>
         <source>Offline</source>
       </segment>
     </unit>
+    <unit id="upstream.download-on-probe">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:76</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:422,424</note>
+      </notes>
+      <segment>
+        <source>Start the download when a version is asked for</source>
+      </segment>
+    </unit>
     <unit id="upstream.intro.registry">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:91,93</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:95,97</note>
       </notes>
       <segment>
         <source>The registry this repository fetches from.</source>
@@ -22020,7 +22029,7 @@
     </unit>
     <unit id="upstream.presets">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:96,97</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:100,101</note>
       </notes>
       <segment>
         <source>Well-known registries</source>
@@ -22028,7 +22037,7 @@
     </unit>
     <unit id="upstream.url.hint-presets">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:130,132</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:134,136</note>
       </notes>
       <segment>
         <source>Choose a well-known registry or enter the address of another.</source>
@@ -22036,7 +22045,7 @@
     </unit>
     <unit id="upstream.url.hint-required">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:133,135</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:137,139</note>
       </notes>
       <segment>
         <source>This format has no well-known upstream: enter the address of the registry.</source>
@@ -22044,7 +22053,7 @@
     </unit>
     <unit id="upstream.password.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:199,201</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:203,205</note>
       </notes>
       <segment>
         <source>A password is stored and is not shown. Leave the field empty to keep it; type one to replace it.</source>
@@ -22052,7 +22061,7 @@
     </unit>
     <unit id="upstream.password.reference">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:204,206</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:208,210</note>
       </notes>
       <segment>
         <source>A reference to a secret file or variable is stored. Leave the field empty to keep it; type a password to replace it.</source>
@@ -22060,7 +22069,7 @@
     </unit>
     <unit id="upstream.password.hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:209,211</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:213,215</note>
       </notes>
       <segment>
         <source>Sealed when you save, then never shown again. With bearer authentication this is the token.</source>
@@ -22068,7 +22077,7 @@
     </unit>
     <unit id="upstream.password.clear">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:223,225</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:227,229</note>
       </notes>
       <segment>
         <source>Remove the stored password</source>
@@ -22076,7 +22085,7 @@
     </unit>
     <unit id="upstream.test">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:235,236</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:239,240</note>
       </notes>
       <segment>
         <source>Test connection</source>
@@ -22084,7 +22093,7 @@
     </unit>
     <unit id="upstream.test.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:239,242</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:243,246</note>
       </notes>
       <segment>
         <source>The test does not use the stored password; type it to test with it.</source>
@@ -22092,7 +22101,7 @@
     </unit>
     <unit id="upstream.test.running">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:245,247</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:249,251</note>
       </notes>
       <segment>
         <source>Testing the connection.</source>
@@ -22100,7 +22109,7 @@
     </unit>
     <unit id="upstream.test.foreign">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:258,260</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:262,264</note>
       </notes>
       <segment>
         <source> The registry asks for a login at <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ host }}"/></pc>, which this repository may not reach. Allow it as a further host if it is the registry&apos;s own token service. </source>
@@ -22108,7 +22117,7 @@
     </unit>
     <unit id="upstream.test.allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:262</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:266</note>
       </notes>
       <segment>
         <source>Allow</source>
@@ -22116,7 +22125,7 @@
     </unit>
     <unit id="upstream.test.status">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:268,269</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:272,273</note>
       </notes>
       <segment>
         <source>HTTP status</source>
@@ -22124,7 +22133,7 @@
     </unit>
     <unit id="upstream.test.credentials">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:272,273</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:276,277</note>
       </notes>
       <segment>
         <source>Credentials</source>
@@ -22132,7 +22141,7 @@
     </unit>
     <unit id="upstream.test.token-service">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:276,278</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:280,282</note>
       </notes>
       <segment>
         <source>Token service</source>
@@ -22140,7 +22149,7 @@
     </unit>
     <unit id="upstream.test.duration">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:281,282</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:285,286</note>
       </notes>
       <segment>
         <source>Duration</source>
@@ -22148,7 +22157,7 @@
     </unit>
     <unit id="upstream.test.tls">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:284,286</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:288,290</note>
       </notes>
       <segment>
         <source>Certificate</source>
@@ -22156,7 +22165,7 @@
     </unit>
     <unit id="upstream.test.valid-until">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:286</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:290</note>
       </notes>
       <segment>
         <source>valid until</source>
@@ -22164,7 +22173,7 @@
     </unit>
     <unit id="upstream.test.error">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:290,292</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:294,296</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -22172,7 +22181,7 @@
     </unit>
     <unit id="upstream.details">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:303,304</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:307,308</note>
       </notes>
       <segment>
         <source>Upstream details</source>
@@ -22180,7 +22189,7 @@
     </unit>
     <unit id="upstream.hosts.hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:311,313</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:315,317</note>
       </notes>
       <segment>
         <source> Hosts the upstream&apos;s documents and its token service may lead to. Only a host that receives the credential gets it. </source>
@@ -22188,7 +22197,7 @@
     </unit>
     <unit id="upstream.hosts.pattern">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:315,317</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:319,321</note>
       </notes>
       <segment>
         <source>Host pattern</source>
@@ -22196,7 +22205,7 @@
     </unit>
     <unit id="upstream.hosts.send">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:334,336</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:338,340</note>
       </notes>
       <segment>
         <source>Receives the credential</source>
@@ -22204,7 +22213,7 @@
     </unit>
     <unit id="upstream.hosts.remove">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:337</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:341</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -22212,7 +22221,7 @@
     </unit>
     <unit id="upstream.hosts.none">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:344,346</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:348,350</note>
       </notes>
       <segment>
         <source>No further host.</source>
@@ -22220,7 +22229,7 @@
     </unit>
     <unit id="upstream.hosts.add">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:348,349</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:352,353</note>
       </notes>
       <segment>
         <source>Add host</source>
@@ -22228,7 +22237,7 @@
     </unit>
     <unit id="upstream.metadata-ttl.hint-value">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:375,377</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:379,381</note>
       </notes>
       <segment>
         <source> How long fetched metadata is served without asking the upstream again. </source>
@@ -22236,15 +22245,23 @@
     </unit>
     <unit id="upstream.notfound-ttl.hint-value">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:401,403</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:405,407</note>
       </notes>
       <segment>
         <source> How long a &quot;not found&quot; answer of the upstream is remembered. </source>
       </segment>
     </unit>
+    <unit id="upstream.download-on-probe.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:425,428</note>
+      </notes>
+      <segment>
+        <source> A client that asks for one version without downloading it, such as for an image&apos;s manifest, starts its download in the background, charged to that client&apos;s limits. </source>
+      </segment>
+    </unit>
     <unit id="upstream.offline.hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:422,424</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:447,449</note>
       </notes>
       <segment>
         <source> The upstream is not contacted: clients get what is already stored. </source>
@@ -22252,7 +22269,7 @@
     </unit>
     <unit id="upstream.test.accepted">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:531</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:556</note>
       </notes>
       <segment>
         <source>accepted</source>
@@ -22260,7 +22277,7 @@
     </unit>
     <unit id="upstream.test.refused">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:532</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:557</note>
       </notes>
       <segment>
         <source>refused</source>
@@ -22268,7 +22285,7 @@
     </unit>
     <unit id="upstream.credential-hosts">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:571</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:596</note>
       </notes>
       <segment>
         <source>The credential is sent to <ph id="0" equiv="hosts" disp="list"/>.</source>
@@ -22276,7 +22293,7 @@
     </unit>
     <unit id="upstream.test.unreachable">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:585</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:610</note>
       </notes>
       <segment>
         <source>The upstream could not be reached.</source>
@@ -22284,7 +22301,7 @@
     </unit>
     <unit id="upstream.test.token-foreign">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:587</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:612</note>
       </notes>
       <segment>
         <source>The upstream answered, and its login is on a host this repository may not reach.</source>
@@ -22292,7 +22309,7 @@
     </unit>
     <unit id="upstream.test.denied">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:589</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:614</note>
       </notes>
       <segment>
         <source>The upstream answered and refused the credentials.</source>
@@ -22300,7 +22317,7 @@
     </unit>
     <unit id="upstream.test.ok-credentials">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:591</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:616</note>
       </notes>
       <segment>
         <source>The upstream answered and accepted the credentials.</source>
@@ -22308,7 +22325,7 @@
     </unit>
     <unit id="upstream.test.ok">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:593</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:618</note>
       </notes>
       <segment>
         <source>The upstream answered.</source>
@@ -22316,7 +22333,7 @@
     </unit>
     <unit id="upstream.test.answered-error">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:595</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:620</note>
       </notes>
       <segment>
         <source>The upstream answered with an error.</source>
@@ -22324,7 +22341,7 @@
     </unit>
     <unit id="upstream.test.token-not-allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:624</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:649</note>
       </notes>
       <segment>
         <source>not allowed for this repository</source>
@@ -22332,7 +22349,7 @@
     </unit>
     <unit id="upstream.test.token-credential">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:626</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:651</note>
       </notes>
       <segment>
         <source>allowed, receives the credential</source>
@@ -22340,7 +22357,7 @@
     </unit>
     <unit id="upstream.test.token-no-credential">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:627</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:652</note>
       </notes>
       <segment>
         <source>allowed, receives no credential</source>
@@ -22348,7 +22365,7 @@
     </unit>
     <unit id="upstream.auth.basic">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:633</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:658</note>
       </notes>
       <segment>
         <source>Username and password</source>
@@ -22356,7 +22373,7 @@
     </unit>
     <unit id="upstream.auth.bearer">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:635</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:660</note>
       </notes>
       <segment>
         <source>Bearer token</source>
@@ -22364,7 +22381,7 @@
     </unit>
     <unit id="upstream.auth.none">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:637</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:662</note>
       </notes>
       <segment>
         <source>None</source>

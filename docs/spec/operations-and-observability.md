@@ -1126,6 +1126,7 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_mirror_interval_seconds` (6b) | gauge | `repo` | The configured `remote.mirror.intervalSeconds`; read from the repository snapshot (R-REPO-057) |
 | `quader_mirror_consecutive_failures` (6b) | gauge | `repo` | Failed pass attempts in a row; read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
 | `quader_mirror_next_pass_timestamp_seconds` (6b) | gauge | `repo` | When the mirror next acts (a due pass, or the last write of the pass in progress); read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
+| `quader_remote_background_downloads_total` | counter | `format`, `outcome` (the decisions `started`, `off`, `stored`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`; the jobs' `completed`, `bounded`, `failed_download`) | The decisions on probes of remote repositories and the ends of the background downloads they started; no repository, no subject ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065, Q-REPO-366) |
 
 </details>
 

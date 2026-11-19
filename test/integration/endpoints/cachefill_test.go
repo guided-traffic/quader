@@ -18,6 +18,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 	"github.com/guided-traffic/quader/internal/proxy/proxytest"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/test/integration/testenv"
@@ -44,6 +45,7 @@ func (relayFormat) Descriptor() formats.Descriptor {
 			DefaultMetadataTTLSeconds: &ttl,
 		},
 		ContractVersion: formats.ContractVersion, Names: foldedNames{}, PropertyPrefix: "relay.", MaxDocumentBytes: 1 << 20,
+		NoProbe: "a format of the endpoint tests, whose routes fetch what they name",
 	}
 }
 
@@ -90,6 +92,11 @@ func (relayFormat) WriteError(w http.ResponseWriter, r *http.Request, err error)
 
 // relayRemote fetches a path below the upstream URL.
 type relayRemote struct{ formats.RemoteBase }
+
+// ProbeContent implements formats.RemoteAdapter: the files of the probe.
+func (relayRemote) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
+	return formats.ProbeFiles(p), nil
+}
 
 func (relayRemote) UpstreamRequest(ctx context.Context, rc formats.RemoteContext, p formats.Path, _ string) (*http.Request, error) {
 	return http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimSuffix(rc.Upstream.String(), "/")+"/"+p.Path, nil)

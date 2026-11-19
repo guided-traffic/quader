@@ -16,6 +16,7 @@
 package npm
 
 import (
+	"net/http"
 	"reflect"
 	"strings"
 
@@ -86,8 +87,15 @@ func (f *Format) Descriptor() formats.Descriptor {
 			// npm always compares the announced digest (R-REPO-041, R-NPM-025).
 			ChecksumAlwaysVerified: true,
 		},
-		ContractVersion:  formats.ContractVersion,
-		VersionFetch:     formats.FetchLeadFile, // the tarball; the provenance bundle beside it is none (R-API-079)
+		ContractVersion: formats.ContractVersion,
+		VersionFetch:    formats.FetchLeadFile, // the tarball; the provenance bundle beside it is none (R-API-079)
+		// The requests that name one version without fetching its tarball (R-REPO-065, Q-NPM-89). The package document lists every
+		// version and is none; the clients read it and then fetch the tarball themselves.
+		Probes: []formats.ProbeRoute{
+			{Route: "npm.version.get", Method: http.MethodGet, What: "the version document of a package, by its number or a dist-tag"},
+			{Route: "npm.version.get", Method: http.MethodHead, What: "a HEAD of the version document"},
+			{Route: "npm.tarball.get", Method: http.MethodHead, What: "a HEAD of the tarball"},
+		},
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "npm.",

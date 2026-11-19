@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
@@ -882,8 +883,25 @@ type MemRemote struct {
 	Exchanges func(ctx context.Context, rq *formats.Request, x formats.Exchange) (*http.Response, error)
 	// Queries answers Query; nil answers it with [formats.ErrOffline].
 	Queries func(ctx context.Context, rq *formats.Request, q formats.Query) (*formats.QueryResult, error)
+	// Probes are the probes the format told the fake of (Probed), in order (R-REPO-065).
+	Probes []formats.Probe
 
 	note func([]byte)
+	mu   sync.Mutex
+}
+
+// Probed records the probe (R-REPO-065): the fake starts no background download.
+func (m *MemRemote) Probed(_ context.Context, _ *formats.Request, p formats.Probe) {
+	m.mu.Lock()
+	m.Probes = append(m.Probes, p)
+	m.mu.Unlock()
+}
+
+// ProbesSeen returns a copy of the probes recorded so far.
+func (m *MemRemote) ProbesSeen() []formats.Probe {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]formats.Probe(nil), m.Probes...)
 }
 
 var _ formats.RemoteFetcher = (*MemRemote)(nil)

@@ -1707,9 +1707,12 @@ plays no part):
 ### R-REPO-024 · Remote repository settings
 Priority: **MVP** · Covers: RMT-001, RMT-002, RMT-004, RMT-015
 
-A remote repository proxies exactly one upstream and caches what clients ask for. In the default mode `pullThrough`
-nothing is fetched ahead of time (INV-11); in the mode `mirror` background passes also store what the upstream offers
-within the remote's patterns and bounds, before a client asks (R-REPO-050 to R-REPO-059). Clients cannot deploy into it. Every setting below is a member of the
+A remote repository proxies exactly one upstream and caches what clients ask for. In the default mode `pullThrough` it
+fetches the content of a version when a client fetches it, or, when a client only probes the version (names exactly that version
+or file without fetching it), in the background right after the probe, charged to that client's upstream budget (R-REPO-065,
+[usage-and-limits.md](usage-and-limits.md) R-LIM-037, INV-11); `downloadOnProbe: false` turns the second off, and nothing else is
+fetched ahead. In the mode `mirror` background passes also store what the upstream offers within the remote's patterns and bounds,
+before a client asks (R-REPO-050 to R-REPO-059). Clients cannot deploy into it. Every setting below is a member of the
 `remote` section; omitted members take the default, format defaults come from the format catalog
 (R-REPO-003).
 
@@ -1755,6 +1758,7 @@ within the remote's patterns and bounds, before a client asks (R-REPO-050 to R-R
 | `mirror.maxVersionsPerPackage` | Newest versions per package the pass stores, `0` = all | `0` | 0–10000 | — | R-REPO-051 |
 | `mirror.includePrereleases` | Whether the pass stores prerelease versions | `true` | | — | R-REPO-051 |
 | `mirror.maxBytes` | Byte bound of the repository's stored content for the pass, `null` = none of its own | `null` | 1048576–2^62 | — | R-REPO-052 |
+| `downloadOnProbe` | A request that names exactly one version or file without fetching its content starts the background download of that version | `true` | | — | R-REPO-065 |
 
 </details>
 
@@ -3374,10 +3378,103 @@ Acceptance criteria:
   removed by a cleanup run and fetched from the upstream again on the next install; a tarball
   installed ten minutes ago stays.
 
+## A probe starts the download
+
+A client that asks a remote repository about exactly one version or one file and does not fetch its content - the manifest of an
+OCI tag, an npm version document, a HEAD of a file - is likely to fetch that content next, or to tell a person that it can. The
+owner's wish of 2026-11-19 (walk item W-25 of the project plan): "wenn jemand wie du nur einen Probe auf ein Image macht, auch wenn
+er den Download nie anstößt, sollte Quader pro-aktiv den Download im Hintergrund schon starten." Such a request is a **probe**; the
+remote then downloads the content of that version in the background, through the same gate and engine as a mirror pass, charged to
+the probe's caller ([usage-and-limits.md](usage-and-limits.md) R-LIM-037).
+
+### R-REPO-065 · A probe starts the background download of its version
+Priority: **P1** · Covers: quader-only
+
+The owner's decisions of 2026-11-19 (W-25), not reopened here:
+
+- **The trigger** ("Option A", from three): a request that names exactly one version or file without fetching its content starts
+  the background download of that version's content, in every format. A request that names a package with all its versions, or no
+  package, starts nothing.
+- **The platforms of an OCI index** ("Option A", from three): a list of platforms per repository, in the advanced settings, with
+  `linux/amd64, linux/arm64` as the value in the field; the same list the mirror reads, so the mirror's default changes from every
+  platform to these two ([formats/oci.md](formats/oci.md) Q-OCI-223). In the other formats a version is one file.
+- **The bound** is the download limits: R-LIM-037 says how the background download is admitted and charged.
+- **Every format**: the format contract holds the rule (contract version 7, ADR-207), so that a future format cannot land without
+  declaring its probes.
+
+**What a probe is.** Each format declares its probes (`formats.Descriptor.Probes`: a route, GET or HEAD, and what it names); a format
+with the class remote declares at least one or says why its protocol has none, and `TestR_REPO_065_EveryFormatDeclaresItsProbes`
+(`internal/formats/all`) pins the table. The handler of a probe tells the host of it once it answered the request with success
+(`formats.RemoteFetcher.Probed`), whether the answer came from the cache or from the upstream; the content of the version is what
+the format's `RemoteAdapter.ProbeContent` names.
+
+| Format | Probes (the route's request) | What is downloaded | What the protocol leaves out |
+|---|---|---|---|
+| OCI | `GET` and `HEAD` of the manifest of a tag; `HEAD` of a manifest by digest; `HEAD` of a blob | the manifest; of an index the manifests of the platforms of `oci.platforms` with their attestations; of each image its config and its layers ([Q-OCI-224](formats/oci.md#q-oci-224--the-probes-of-the-registry-and-the-content-of-an-image)) | A pull by digest fetches its own content. A layer with foreign `urls` is fetched by the client from there and not downloaded |
+| npm | `GET` and `HEAD` of the version document, by its number or a dist-tag; `HEAD` of the tarball | the tarball ([Q-NPM-89](formats/npm.md#q-npm-89--the-version-document-and-a-head-of-the-tarball-are-probes)) | `npm install` reads the package document with every version and fetches the tarball itself: the rule fires for `npm view <pkg>@<v>` and tools that ask one version |
+| NuGet | `GET` and `HEAD` of the registration leaf; `GET` and `HEAD` of the `.nuspec`; `HEAD` of the `.nupkg` | the `.nupkg` ([Q-NUGET-124](formats/nuget.md#q-nuget-124--the-registration-leaf-the-nuspec-and-a-head-of-the-package-are-probes)) | `dotnet restore` reads the flat container's version list and the registration index, which name every version |
+| Ansible Galaxy | `GET` and `HEAD` of a collection's version document; `HEAD` of a collection's or a role's archive | the archive ([Q-ANS-80](formats/ansible.md#q-ans-80--the-version-document-and-a-head-of-an-archive-are-probes)) | `ansible-galaxy` reads the version document and then fetches the archive itself: the download overlaps the client's own fetch |
+| Debian | `HEAD` of a package file in the pool or of a flat repository | the package file ([Q-DEB-122](formats/debian.md#q-deb-122--a-head-of-a-package-file-is-the-one-probe-of-apt)) | APT reads the indexes of whole components and fetches the files itself; a HEAD of a package file is the only request that names one |
+| generic | none: no class remote | — | — |
+
+**The decision**, taken on the probe's request when it was answered, in this order; the first that refuses starts nothing and the
+probe's answer is the one it would have been ([Q-REPO-362](#q-repo-362--the-decision-on-a-probe-runs-after-the-answer-on-the-probes-replica)):
+
+1. The repository is a remote, not disabled, its `remote.downloadOnProbe` is on (R-REPO-024, [Q-REPO-360](#q-repo-360--a-remote-repository-can-turn-the-background-download-off)),
+   it may contact its upstream (not offline, not `proxy.global_offline`), and the request may (not the cache view, not
+   `Cache-Control: only-if-cached`).
+2. The repository's include and exclude patterns admit the files, and no global claim refuses the name at the remote (R-REPO-005,
+   R-REPO-023), as `Host.Authorize` decides a client's read of them.
+3. The probe's caller may fill the repository (R-AUTHZ-008, asked as a question and audited nowhere): a caller who may read but not
+   populate starts nothing.
+4. The content is not stored already: a probe whose files are all stored starts nothing ([Q-REPO-364](#q-repo-364--stored-already-is-read-from-the-files-the-answer-names)).
+5. No background download of the version is queued or running, and the repository has fewer than `limits.maxConcurrentFetches`
+   (64 by default) of them queued or running ([Q-REPO-363](#q-repo-363--what-bounds-one-background-download)).
+6. Step 9a of R-REPO-025 admits an upstream request for the probe's caller at this moment, which counts it for the caller's budget
+   key and the remote's ceiling (R-LIM-037). In `audit` a background download that 9a would have refused starts and is recorded as
+   `would_limit`.
+
+**The background download** is the job `remote-background-download` of the worker ([Q-REPO-361](#q-repo-361--the-background-download-is-a-job-of-the-worker)):
+queue `default`, exclusive per version of a repository (one at a time across replicas), five attempts, 30 minutes per attempt. It runs
+through the same gate and engine as a mirror pass: every request takes a background slot within the repository's background share
+and yields to client fetches (R-REPO-055), reads the upstream's circuit without moving it and waits out a rate limit (R-REPO-054);
+every file goes through the format's gate, the repository's include and exclude patterns ([Q-REPO-365](#q-repo-365--the-include-and-exclude-patterns-hold-for-every-background-fill)),
+the vulnerability scanning's rule for a miss and the integrity checks of a client's fill. A file another fetch stored meanwhile costs
+nothing; a refused file is counted and the rest goes on. One background download stores at most 1,000 files and at most the
+repository's `limits.maxArtifactBytes` (the system value `proxy.max_artifact_bytes`, 10 GiB by default) in sum; what goes beyond is
+not fetched and the job ends `bounded`. Its upstream exchanges and uncached bytes are charged to the probe's budget key and the
+remote's ceiling at the flushes after they were read (R-LIM-037, [Q-LIM-54](usage-and-limits.md#q-lim-54--a-background-download-carries-the-probes-charge-to-the-worker-as-a-ticket)).
+
+**What a user sees.** The job on the Jobs tab with its result (files, stored, present, refused, bytes, outcome). The versions it
+stored are listed by R-API-081 like a client's fetch: in npm, NuGet, Ansible Galaxy and Debian once the file is stored, in OCI once
+the background download stored the whole content of the tag's document ([api-and-ui.md](api-and-ui.md) R-API-081, migration 00083).
+Their sizes are true by R-API-080: an OCI index counts the platforms held, marked partial while the index names more than the
+repository's list holds. **Last download** and the downloads stay the clients' (R-API-079): a background download is none. The
+usage overview counts it in `background_fetches` of the probe's caller (R-LIM-027).
+
+**Audit and metrics** ([Q-REPO-366](#q-repo-366--a-background-download-is-audited-by-its-fills-and-counted-by-one-metric-family)): no
+audit event of its own; each file it stores records the populate event of a fill (R-AUTHZ-029) with the actor
+`system:background-download` and the reason `background-download`. `quader_remote_background_downloads_total{format,outcome}` counts
+the decisions (`started`, `off`, `stored`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`) and the ends of the
+jobs (`completed`, `bounded`, `failed_download` per failed attempt); it carries no repository and no subject (R-OPS-007).
+
+Acceptance criteria:
+
+- Integration (`ociremote`, `TestR_REPO_065_*`): a `GET` of the manifest of a tag whose index names three platforms stores, without
+  a further client request, the manifests of `linux/amd64` and `linux/arm64`, their configs and layers, and nothing of the third; the
+  tag is listed with the size of the two and `sizePartial`; **Last download** is the probe's.
+- Integration: a `HEAD` of the tag alone lists the tag once the background download stored its content, with downloads 0.
+- Integration: the probe's caller is charged one background download, one upstream request at the decision, every further exchange
+  and the uncached bytes; in `enforce` with the caller's `upstreamRequestsPerHour` used up the probe is answered and nothing is
+  downloaded; in `audit` it is downloaded and the overview records `would_limit`.
+- Integration: with `downloadOnProbe: false`, and for a tag whose image the exclude patterns refuse, a probe stores nothing.
+- Unit, per format: the requests of the table call `Probed` with the files named there, and the package documents, the version lists
+  and a GET of a version's file do not.
+
 ## Mirror mode
 
 A remote repository runs in one of two modes. `pullThrough`, the default, is everything above: the remote fetches what
-clients ask for and nothing else. `mirror` keeps all of that and adds background passes, jobs of the job framework
+clients ask for, and the content of a version a client probed (R-REPO-065), and nothing else. `mirror` keeps all of that and adds background passes, jobs of the job framework
 ([architecture.md](architecture.md) R-ARCH-016) on their own queue `mirror`, that discover the packages the upstream offers
 within the remote's bounds and store them before a client asks (owner, 2026-11-02;
 [ADR-151](../decisions.md#adr-151--a-remote-repository-can-mirror-its-upstream-in-the-background)). Clients are served by
@@ -4282,6 +4379,7 @@ MVP and P1 entries of the covered catalog pages that this page does not specify:
 | Pull replication lists the source instance's storage | Discovery through the format's protocol: a feed, a listing or exact names (R-REPO-051) | Works against public registries, not only against another instance of the same system |
 | Replication status is derived from properties written on items, per path (API-084) | One status document per repository from the mirror's state (R-REPO-056) | One read; stored items carry no bookkeeping |
 | Deletes at the source can be synchronized | The mirror deletes nothing; a takedown reaches clients through the refreshed document (R-REPO-029, Q-REPO-144) | A deletion upstream must not destroy what builds pinned; an operator deletes on purpose |
+| A remote fetches nothing ahead of time; an item enters the cache when a client first asks for it (RMT-001) | A request that names exactly one version or file without fetching it starts the download of that version in the background, charged to its caller, unless `downloadOnProbe` is off (R-REPO-065) | The owner's decision of 2026-11-19 (W-25): the content a client asked about is there when it is pulled |
 
 ## Security notes
 
@@ -8544,6 +8642,136 @@ the first client of every remote artifact larger than 64 KiB was not counted: a 
 `artifactAnswer` in [artifact.go](../../internal/proxy/artifact.go), `Artifact` in [remote.go](../../internal/formathost/remote.go). Tests:
 `TestQ_REPO_331_TheStreamedFirstAnswerOfAMissIsADownload` in [test/integration/proxy](../../test/integration/proxy).
 
+### Q-REPO-360 · A remote repository can turn the background download off
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a probe
+starts the download is the owner's (2026-11-19, W-25).
+
+Context: the owner wants a probe to start the download. Some upstreams count every request they answer against an allowance: Docker
+Hub counts a `GET` of a manifest as a pull, and the background download of an index asks one manifest per platform of the list. An
+operator whose upstream allowance is tight, or who pays per request, needs a way out that is not the download limits of every caller.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One switch per remote repository, `remote.downloadOnProbe`, on by default, in the advanced part of the upstream (chosen) | The owner's wish holds by default; one checkbox turns it off for that remote | A remote whose upstream counts requests is excluded without touching anybody's limits; no step of the creation flow | A further member of the remote section |
+| (b) No switch | Always on | Nothing to configure | The only brake is the upstream budget of each caller, which an operator sets per caller, not per upstream |
+| (c) A switch of the instance | One setting | Simple | Turns it off for every upstream, also those that count nothing |
+
+**Choice:** (a). The checkbox **Start the download when a version is asked for** stands in **Upstream details** of the upstream
+group, on the creation form and the settings page, checked by default (R-UI-082, Q-UI-766). **Rationale:** the switch belongs where the
+reason lives, at the upstream; the default is the owner's wish. Revisit if operators turn it off for every Docker Hub remote: then the
+default of a Docker Hub preset should be off.
+
+**Applied in the spec:** R-REPO-024, R-REPO-065, [api-and-ui.md](api-and-ui.md) R-UI-082. Code: `RemoteSettings.DownloadOnProbe` in
+[remote.go](../../internal/repository/remote.go), `precheck` in [probe.go](../../internal/formathost/probe.go).
+
+### Q-REPO-361 · The background download is a job of the worker
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the decision is taken on the probe's request, on the replica that answered it (R-LIM-037). The download itself can take
+minutes for an image of several GiB; the replica that answered may be draining.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A job `remote-background-download` of the job framework, exclusive per version, on the queue `default` (chosen) | The decision queues it; a worker runs it through the mirror host | Visible on the Jobs tab with its result; retried after a rate limit, an open circuit or a drain; one per version across replicas by the job's dedup key; runs on the role that runs background work | The charge must travel to the worker (Q-LIM-54); a queue write per started download |
+| (b) A detached fetch on the probe's replica | A goroutine after the answer | The probe's charge is at hand | Lost on a drain, never retried, invisible, on the `web` role that serves clients, one per replica at best |
+| (c) Mark the version for the next mirror pass | No new path | Reuses passes | Only for remotes in mode mirror, which the owner's wish is not limited to |
+
+**Choice:** (a), on the queue `default` (four workers per replica by default): the queue `mirror` holds passes that run for hours.
+**Rationale:** what the user should see of a background download is a job with its outcome, and what the cluster should do with it is
+what it does with every background work. Revisit if background downloads crowd out the other jobs of `default`: then they get a queue
+of their own.
+
+**Applied in the spec:** R-REPO-065. Code: [background_download.go](../../internal/formathost/background_download.go),
+[wire_background_download.go](../../internal/app/wire_background_download.go).
+
+### Q-REPO-362 · The decision on a probe runs after the answer, on the probe's replica
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the decision reads whether the content is stored (one item lookup per file until the first that is not), asks the queue and
+runs step 9a, a round trip to Valkey. A `docker pull` asks the manifest of a tag first; its answer must not wait for that.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The handler hands the probe over after it answered; the host decides at once in the background of the replica, at most 16 decisions at once, each within 10 s (chosen) | `RemoteFetcher.Probed` returns at once | The probe's answer is not delayed; the decision still sees the probe's request, subject and charge | A probe beyond 16 decisions in flight starts nothing (counted as `busy`) |
+| (b) Decide in the request, before the answer is written | Synchronous | Simple to test | Every probe waits for up to a dozen statements and a Valkey round trip |
+| (c) Queue every probe and decide in the job | No work on the replica | Cheapest request | The charge of R-LIM-037 is taken when the probe is answered, which a job taken later cannot do |
+
+**Choice:** (a). The values are 16 decisions and 10 s per decision. **Rationale:** a probe's answer is a client's critical path; the
+decision is the probe's but not its answer's. Revisit if `busy` is counted under normal load.
+
+**Applied in the spec:** R-REPO-065. Code: `Probed` and `decide` in [probe.go](../../internal/formathost/probe.go).
+
+### Q-REPO-363 · What bounds one background download
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the
+download limits bound it is the owner's (R-LIM-037).
+
+Context: the caller's budget admits a download while it has room, whatever the size (Q-LIM-8); an anonymous caller with one upstream
+request left could start the download of a 20 GiB image. Outside a mirror pass nothing bounded background bytes (`mirror.maxBytes` is
+a pass's).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Per version at most 1,000 files and the repository's `limits.maxArtifactBytes` (10 GiB by default) in sum; per repository at most `limits.maxConcurrentFetches` (64) background downloads queued or running; each request within the background share and yielding to clients (chosen) | Values the code has: the plan's bound of an index's children, the per-artifact bound and the repository's fetch budget | No new setting; a probe cannot start more than one artifact's worth of bytes per version, nor more downloads than the repository may fetch at once | The size bound is the per-artifact one, which is generous for a whole version |
+| (b) New settings for each bound | Exact | An operator tunes each | Settings nobody understands before they hurt; against "simple by default" |
+| (c) Only the caller's budget | One rule | The owner's model alone | A used-up budget stops the next download, not the large one already admitted |
+
+**Choice:** (a). **Rationale:** the bounds are values the operator already set for the repository and mean the same thing here: what
+one artifact may weigh, how much a repository may fetch at once. Revisit when the storage quota of R-STOR-029 is built, which bounds the
+growth of a repository as a whole.
+
+**Applied in the spec:** R-REPO-065. Code: `decide` in [probe.go](../../internal/formathost/probe.go), `RunBackgroundDownload` in
+[background_download.go](../../internal/formathost/background_download.go), `formats.MaxProbeFiles`.
+
+### Q-REPO-364 · Stored already is read from the files the answer names
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a probe answered from a fresh cache whose content is stored already starts nothing. Which files are "the content" is known in
+full only after the manifests of an OCI index were read, which costs an item read per manifest and their bodies.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The files the probe's answer names: the version's file; of an OCI image its manifest, config and layers; of an index its manifest and the manifests of the listed platforms (chosen) | One item lookup per file, until the first that is not stored | No body is read on the probe's replica; a repeated probe of a stored version costs a few lookups | An index whose platform manifests are stored and some of whose layers are not starts nothing |
+| (b) The whole content, the layers of every platform included | Exact | Never misses a layer | Reads every platform manifest on every probe |
+| (c) Always start and let the job find what is stored | Simplest | Exact | Every probe of a stored version counts an upstream request at step 9a and queues a job |
+
+**Choice:** (a). **Rationale:** a platform manifest is stored by a pull of that platform, which fetches its layers too; the case (a)
+misses is an interrupted pull, which the client's next pull completes. Recorded as H-1018.
+
+**Applied in the spec:** R-REPO-065. Code: `allStored` in [probe.go](../../internal/formathost/probe.go), `probeTag` in
+[probe.go](../../internal/formats/oci/probe.go).
+
+### Q-REPO-365 · The include and exclude patterns hold for every background fill
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the repository's patterns were the dispatcher's and `Host.Authorize`'s check of a client's request. A mirror pass checks the
+names it discovers, but a fill of a path the patterns refuse (a blob of an excluded image that a probe or a plan names) went through.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The mirror host's fill refuses a file the patterns do not admit, by name or by path as the format matches and in either spelling of a name (an official image of Docker Hub is stored as `library/nginx`, typed and patterned as `nginx`, Q-OCI-129), before the engine is asked (chosen) | One check where every background fill passes: passes, background downloads, the jobs of a format | The rule a client meets holds for what Quader fetches by itself | A refused file is a refused item of a pass (`not_admitted`) |
+| (b) Check in the decision on a probe only | Narrow | Nothing else changes | Passes keep the gap |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-065. Code: `admitted` and `fillPath` in
+[mirror_host.go](../../internal/formathost/mirror_host.go), `mirror.RefusedPatterns`.
+
+### Q-REPO-366 · A background download is audited by its fills and counted by one metric family
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No event of its own; each fill records the populate event as a pass's does, for `system:background-download` with the reason `background-download`; one counter family by format and outcome (chosen) | The existing rule of a fill (R-AUTHZ-029) | The audit trail says who filled the cache and why, as for a pass; no event per probe, which a pull of every image would multiply | The probe's caller is not named in the fill's event; the usage store names it |
+| (b) An event per started download | Explicit | Who started what | One event per probe of every client |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-065, [authorization.md](authorization.md) R-AUTHZ-029. Code: `BackgroundDownloadActor` in
+[populate.go](../../internal/authz/populate.go), `ProbeMetrics` in [probe.go](../../internal/formathost/probe.go).
+
 ## What this does not cover
 
 ### H-4 · Malicious content from a legitimate upstream
@@ -8702,3 +8930,27 @@ prefix: an upstream that lists millions of names below `@acme/` makes each pass 
 that upstream only, under the window of R-REPO-054. Live since R-REPO-053 is built (phase 6b). What makes it real: a mirror of an upstream
 that an attacker controls or has compromised, with a broad admitted prefix.
 
+### H-1016 · A probe through a virtual repository starts nothing
+
+Component: the trigger of R-REPO-065. Subject: the remote members of a virtual repository. The format's handler of a remote repository
+tells the host of a probe; a request addressed to a virtual repository is answered by the virtual engine from its members' documents
+and artifacts and reaches no remote handler, so the probe of a version a remote member would serve downloads nothing ahead. Live since
+R-REPO-065 is built. What makes it real: clients that address a virtual repository, the common setup. For the owner to decide:
+(a) as built; (b) the virtual engine tells the remote member that served the probe's answer, with the member's switch and the caller's
+budget at the member (Q-LIM-2 decides at the addressed repository, so the charge would need its own rule); (c) only for a member that is
+the first to serve the name.
+
+### H-1017 · An upstream that counts manifest requests counts the background download's
+
+Component: R-REPO-065 for OCI. Subject: the pull allowance a registry gives the repository's account or address. Docker Hub counts a
+`GET` of a manifest as a pull; the background download of an index asks one manifest per platform of `oci.platforms` that is not stored,
+so a probe of a two-platform tag can cost two pulls besides the probe's own. `upstreamRequestsPerHour` counts every exchange
+(usage-and-limits.md Gap 2), and the remote's ceilings bound all callers of a class together. Live since R-REPO-065 is built. What makes
+it real: an anonymous Docker Hub remote with many probing clients; `downloadOnProbe: false` (Q-REPO-360) or a ceiling stops it.
+
+### H-1018 · A probe of an index whose platform manifests are stored and some of whose layers are not starts nothing
+
+Component: the decision of R-REPO-065 (Q-REPO-364). Subject: the completeness of a cached multi-platform image. The decision reads the
+files the answer names, which for an index are the manifests of the listed platforms and not their layers; an interrupted pull that
+stored a platform manifest without all its layers is not completed in the background. Live since R-REPO-065 is built. What makes it
+real: an interrupted pull and no client pulling again; the client's next pull fetches what is missing.

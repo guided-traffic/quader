@@ -330,7 +330,7 @@ func (f *Format) remoteVersion(ctx context.Context, rq *formats.Request, w http.
 	if found {
 		recorded = hexSum(rec.SHA256)
 	}
-	return remoteReply(rq, w, etag(rq, "version", hexSum(doc.Digest), recorded), doc.Status.Header, func() ([]byte, error) {
+	err = remoteReply(rq, w, etag(rq, "version", hexSum(doc.Digest), recorded), doc.Status.Header, func() ([]byte, error) {
 		raw, err := doc.Bytes(ctx)
 		if err != nil {
 			return nil, err
@@ -345,6 +345,12 @@ func (f *Format) remoteVersion(ctx context.Context, rq *formats.Request, w http.
 		}
 		return galaxydoc.RenderVersion(v, remoteAddr(rq)), nil
 	})
+	if err == nil {
+		// The version document names exactly one version, whose archive it announces, and fetches none of it (R-REPO-065,
+		// Q-ANS-80).
+		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: ns + "." + name, Version: ver, Files: []formats.Path{{Path: ArtifactPath(ns, name, ver)}}})
+	}
+	return err
 }
 
 // remoteArtifact serves the archive of a version: the cached item, or one fetch under the collapsing protocol, verified against the
@@ -359,7 +365,14 @@ func (f *Format) remoteArtifact(ctx context.Context, rq *formats.Request, w http
 	if err := rq.Host.Authorize(ctx, rq, readTarget(ns+"."+name, ver, path)); err != nil {
 		return err
 	}
-	return rq.Host.Remote().Artifact(ctx, rq, formats.Path{Path: path}, formats.Digests{}, w)
+	if err := rq.Host.Remote().Artifact(ctx, rq, formats.Path{Path: path}, formats.Digests{}, w); err != nil {
+		return err
+	}
+	if rq.Method == http.MethodHead {
+		// A HEAD of the archive names the version's one file and fetches none of it (R-REPO-065, Q-ANS-80).
+		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: ns + "." + name, Version: ver, Files: []formats.Path{{Path: path}}})
+	}
+	return nil
 }
 
 // remoteRoleFind answers the lookup of a role by owner and name (R-ANS-020): only these two parameters pass to the upstream.
@@ -464,7 +477,14 @@ func (f *Format) remoteRoleArchive(ctx context.Context, rq *formats.Request, w h
 	if err := rq.Host.Authorize(ctx, rq, readTarget(RolePackage(id), "", path)); err != nil {
 		return err
 	}
-	return rq.Host.Remote().Artifact(ctx, rq, formats.Path{Path: path}, formats.Digests{}, w)
+	if err := rq.Host.Remote().Artifact(ctx, rq, formats.Path{Path: path}, formats.Digests{}, w); err != nil {
+		return err
+	}
+	if rq.Method == http.MethodHead {
+		// A HEAD of a role's archive names the role version's one file and fetches none of it (R-REPO-065, Q-ANS-80).
+		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: RolePackage(id), Version: ref, Files: []formats.Path{{Path: path}}})
+	}
+	return nil
 }
 
 // pageOffsetOf is the offset of a stored version-list page, read from its links: a page without a previous link starts at 0, the last

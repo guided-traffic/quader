@@ -34,6 +34,9 @@ const (
 	// ReasonMirror is the reason of the populate event of a fill that a mirror's pass made: the system filled the cache and
 	// no request asked for it (R-REPO-057, Q-REPO-145).
 	ReasonMirror = "mirror"
+	// ReasonBackgroundDownload is the reason of the populate event of a fill that the background download of a probe made: the
+	// system filled the cache for the version a client named without fetching it (repositories-and-proxy.md R-REPO-065).
+	ReasonBackgroundDownload = "background-download"
 )
 
 // codeEndpointReadOnly is registered by the endpoints area (R-EP-013); authz

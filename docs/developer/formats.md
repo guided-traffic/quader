@@ -105,6 +105,9 @@ for `Lookup` and `List`. It panics on:
 - a package view (`View()` not nil) without `Descriptor.VersionFetch`: which downloads are fetches of a version (`FetchLeadFile`, `FetchAnyFile`,
   `FetchDocument`; R-API-079, ADR-205), the rule the package view counts a version's downloads and its last download by;
 - a class without its adapter (`Remote` listed and `Remote()` nil) or an adapter without its class;
+- the class `remote` without `Descriptor.Probes` (the requests that name exactly one version or file without fetching it, whose handlers call
+  `Host.Remote().Probed`, R-REPO-065, ADR-207) or a `NoProbe` reason, and a probe on a route the format does not have, that does not serve the
+  class `remote`, whose method is not GET or HEAD or that says nothing of what it names;
 - a `DataPort` that is no interface type;
 - a route set that is not servable: a route without name, method, template, handler, kind, action or example; a name used twice; a route
   that does not match its own example; an example that another route of the same method (and an overlapping class set) also matches; routes under a protocol base
@@ -516,6 +519,10 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    `Names` if it has package names, `PropertyPrefix`, `DataPort` if it has side tables, `VersionFetch` if it has package screens: what a client
    fetches to install a version, and add the format with its rule to the test of [all_test.go](../../internal/formats/all/all_test.go)), `Routes`, `Match` (one call of `formats.MatchRoutes`), `Classify` and
    `PackageDocumentPath`, then what it needs of the hooks, the adapters (`Remote()` exactly when `Classes` lists `Remote`, `Virtual()` likewise), `Exposure()` and `WriteError`.
+   A format with the class `remote` declares its probes in `Descriptor.Probes`, calls `rq.Host.Remote().Probed` in each probe's handler once
+   it answered (with the files the answer names), implements `RemoteAdapter.ProbeContent` (`formats.ProbeFiles(p)` when a version is one
+   file), adds its row to `TestR_REPO_065_EveryFormatDeclaresItsProbes` in [all_test.go](../../internal/formats/all/all_test.go) and a unit
+   test of its probes with `formattest.MemRemote`, whose `ProbesSeen` lists what the handlers told it ([proxy.md](proxy.md#a-probe-starts-the-download)).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.
    If it has settings: embed the schema, set `Facts.SettingsSchema`, add the member to `repository.Settings` and to `formatMembers`, the schema to `api/openapi.yaml`
    (`<Format>Settings`, referenced from `Repository`) and read the member with defaults ([Format settings](#format-settings)).

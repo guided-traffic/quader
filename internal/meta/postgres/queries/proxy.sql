@@ -125,6 +125,17 @@ UPDATE remote_cache_entries
    AND kind = 'metadata'
    AND upstream_gone_at IS NULL;
 
+-- name: ProxyMarkBackgroundDownloaded :execrows
+-- The background download a probe started stored the content of the document at path (R-REPO-065): the entry records the digest it
+-- held, while it still holds it, so that a remote OCI repository lists the tag (R-API-081, migration 00083).
+UPDATE remote_cache_entries
+   SET background_sha256 = sqlc.arg(digest)::bytea
+ WHERE repo_id = sqlc.arg(repo_id)::bigint
+   AND path = sqlc.arg(path)::text COLLATE "C"
+   AND variant = ''
+   AND kind = 'metadata'
+   AND blob_sha256 = sqlc.arg(digest)::bytea;
+
 -- name: ProxyArtifactInsert :execrows
 -- The entry of a fetched artifact, written in the transaction of the item commit
 -- after the caller locked the row and found none (an existing entry is never

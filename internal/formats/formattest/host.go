@@ -577,6 +577,9 @@ func (unsupportedRemote) GateWith(context.Context, *formats.Request, formats.Pat
 	return formats.ServeFacts{}, notSupported()
 }
 
+// Probed starts nothing: there is no remote engine.
+func (unsupportedRemote) Probed(context.Context, *formats.Request, formats.Probe) {}
+
 type unsupportedUploads struct{}
 
 var _ formats.UploadSessions = unsupportedUploads{}

@@ -237,7 +237,20 @@ func (f *Format) remoteFile(ctx context.Context, rq *formats.Request, w http.Res
 	if view := viewOf(rq); view != nil && (!view.Package(lowerID) || !view.Version(lowerID, ver)) {
 		return errNoSuchResource()
 	}
-	return rq.Host.Remote().Artifact(ctx, rq, formats.Path{Path: path}, formats.Digests{}, mediaTypeWriter{ResponseWriter: w, mediaType: mediaType})
+	if err := rq.Host.Remote().Artifact(ctx, rq, formats.Path{Path: path}, formats.Digests{}, mediaTypeWriter{ResponseWriter: w, mediaType: mediaType}); err != nil {
+		return err
+	}
+	// The .nuspec names a version and is not its content, and a HEAD of the package fetches none of it: both are probes of the
+	// version, whose content is the .nupkg (R-REPO-065, Q-NUGET-124).
+	if path == NuspecPath(lowerID, ver) || (path == NupkgPath(lowerID, ver) && rq.Method == http.MethodHead) {
+		probeVersion(ctx, rq, lowerID, ver)
+	}
+	return nil
+}
+
+// probeVersion tells the host of a probe of a version of a remote repository (R-REPO-065, Q-NUGET-124): its content is the .nupkg.
+func probeVersion(ctx context.Context, rq *formats.Request, lowerID, ver string) {
+	rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: lowerID, Version: ver, Files: []formats.Path{{Path: NupkgPath(lowerID, ver)}}})
 }
 
 // pageBound is a registration page the index does not inline, by its bounds in URL form.
@@ -271,7 +284,7 @@ func (f *Format) remoteRegistration(ctx context.Context, rq *formats.Request, w 
 	case kindLeaf:
 		variant += "/leaf/" + ver
 	}
-	return f.serveRemote(ctx, rq, w, lowerID, remoteSpec{
+	err := f.serveRemote(ctx, rq, w, lowerID, remoteSpec{
 		path:     RegistrationIndexPath(lowerID),
 		variant:  variant,
 		gzip:     hive.Gzipped(),
@@ -309,6 +322,11 @@ func (f *Format) remoteRegistration(ctx context.Context, rq *formats.Request, w 
 			}, nil
 		},
 	})
+	if err == nil && kind == kindLeaf {
+		// The registration leaf names exactly one version and fetches none of its content (R-REPO-065, Q-NUGET-124).
+		probeVersion(ctx, rq, lowerID, ver)
+	}
+	return err
 }
 
 // pageBounds lists the pages of the stored index that it does not inline, in its order. The

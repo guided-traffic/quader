@@ -8,7 +8,7 @@
   "properties": {
     "mirror": {
       "title": "Mirror",
-      "description": "What a mirror of the registry keeps: which tags and which platforms.",
+      "description": "What a mirror of the registry keeps: which tags. The platforms are the repository's list.",
       "type": "object",
       "additionalProperties": false,
       "x-quader-classes": ["remote"],
@@ -31,17 +31,18 @@
           "uniqueItems": true,
           "default": [],
           "items": { "type": "string", "pattern": "^[a-zA-Z0-9_.*?-]{1,128}$" }
-        },
-        "platforms": {
-          "title": "Platforms",
-          "description": "The platforms to keep of a multi-platform image, such as linux/amd64 or linux/arm64/v8. Leave it empty to keep every platform.",
-          "type": "array",
-          "maxItems": 32,
-          "uniqueItems": true,
-          "default": [],
-          "items": { "type": "string", "pattern": "^[a-z0-9]+/[a-z0-9]+(?:/[a-z0-9]+)?$" }
         }
       }
+    },
+    "platforms": {
+      "title": "Platforms",
+      "description": "The platforms of a multi-platform image this repository downloads ahead, such as linux/amd64 or linux/arm64/v8: when a client asks for a tag without pulling it, and in a mirror's passes. Leave it empty for every platform.",
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "default": ["linux/amd64", "linux/arm64"],
+      "x-quader-classes": ["remote"],
+      "items": { "type": "string", "pattern": "^[a-z0-9]+/[a-z0-9]+(?:/[a-z0-9]+)?$" }
     }
   }
 }

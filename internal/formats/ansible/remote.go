@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
 	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The remote class (R-ANS-016 to R-ANS-018, R-ANS-020). The remote engine owns the request path, the freshness, the collapsing of
@@ -409,3 +410,9 @@ func (a remoteAdapter) Rewrite(_ context.Context, rc formats.RemoteContext, p fo
 
 // ArtifactFile is the file name of the archive of a version as the repository serves it.
 func ArtifactFile(ns, name, ver string) string { return collection.FileName(ns, name, ver) }
+
+// ProbeContent implements [formats.RemoteAdapter]: the content of a collection version is its archive, of a role version its
+// archive, which the probe names (R-REPO-065, Q-ANS-80).
+func (remoteAdapter) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
+	return formats.ProbeFiles(p), nil
+}

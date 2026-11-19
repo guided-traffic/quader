@@ -83,6 +83,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
         extraHosts: [],
         cache: {},
         availability: {},
+        downloadOnProbe: true,
       });
     });
 
@@ -139,6 +140,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
         metadataTtl: 60,
         notFoundTtl: 1800,
         offline: true,
+        downloadOnProbe: true,
       });
       const reference = { ...repo, remote: { ...repo.remote, password: { secretRef: { file: 'npm-token' } } } } as unknown as Repository;
       expect(formOf(reference).upstream.passwordStored).toBe('reference');
@@ -559,6 +561,23 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
 
       const page = await section(OCI_FORMAT, { edit: true });
       expect(page.root.querySelector('.upstream-details #f-remote-availability-mode')).not.toBeNull();
+    });
+
+    it('R-UI-082 R-REPO-065 Q-UI-766 Upstream details holds the background download, checked; unchecked it is written as off, a stored off reads back', async () => {
+      const r = await section(OCI_FORMAT);
+      const box = r.root.querySelector<HTMLInputElement>('.upstream-details #f-remote-downloadOnProbe')!;
+      expect(box).not.toBeNull();
+      expect(box.checked).toBe(true);
+      expect(text(r.root.querySelector('label[for="f-remote-downloadOnProbe"]')!)).toBe('Start the download when a version is asked for');
+      expect(created(r, OCI_FORMAT)).not.toHaveProperty('downloadOnProbe');
+      r.root.querySelector<HTMLButtonElement>('.upstream-details .inline-toggle')!.click();
+      await settle(r.fixture);
+      box.click();
+      await settle(r.fixture);
+      expect(created(r, OCI_FORMAT)['downloadOnProbe']).toBe(false);
+      await expectAccessible(r.root);
+      const stored = { key: 'hub', class: 'remote', format: 'oci', remote: { url: 'https://registry-1.docker.io/', downloadOnProbe: false } };
+      expect(formOf(stored as unknown as Repository).upstream.downloadOnProbe).toBe(false);
     });
 
     it('R-UI-083 a server error at a further host opens Upstream details and sits at the host', async () => {

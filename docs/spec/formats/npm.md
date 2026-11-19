@@ -5160,6 +5160,25 @@ tag, version and abbreviated documents it never reaches. A local or remote repos
 
 **Applied in the spec:** R-NPM-010, R-NPM-013.
 
+### Q-NPM-89 · The version document and a HEAD of the tarball are probes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a request
+naming exactly one version without fetching it starts its download is the owner's (2026-11-19, W-25,
+[repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065).
+
+Context: npm's protocol names one version in two requests that fetch none of the tarball: the version document `GET /<name>/<ref>`,
+by number or dist-tag (`npm view lodash@4.17.21`, tools that check a version), and a `HEAD` of the tarball. `npm install` reads the
+package document, which lists every version, and then fetches the tarball itself.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The version document (`GET` and `HEAD`, by number or by a dist-tag resolved in the stored document) and a `HEAD` of the tarball; the content is the tarball (chosen) | The owner's rule applied to npm's requests | A version a tool looked at is there when it is installed | The rule fires seldom: `npm install` is no probe |
+| (b) Also the package document, for its `latest` | More downloads | Covers `npm install` of the latest version | Names every version; the owner chose "a request that names a package with all its versions starts nothing" |
+
+**Choice:** (a). A version the endpoint hides is no probe. **Applied in the spec:** R-REPO-065. Code: `probeVersion` and `remoteTarball`
+in [handlers_remote.go](../../../internal/formats/npm/handlers_remote.go). Tests: `TestR_REPO_065_WhatAProbeOfNpmIs` in
+[probe_test.go](../../../internal/formats/npm/probe_test.go).
+
 ## What this does not cover
 
 

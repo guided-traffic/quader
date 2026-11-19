@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/servefacts"
@@ -185,6 +186,10 @@ type Request struct {
 	// JobID is the id of the job that runs the pass a background request belongs to: the upstream log record names it
 	// (R-REPO-057).
 	JobID string
+	// Charge is what a background request is charged to: the charge a background download that a probe started carries
+	// (limits.Engine.Resume, R-LIM-037), whose exchanges and uncached bytes count for the probe's budget key. Nil, and every
+	// client request, which carries its charge in its context: a background request's exchanges are the system's (Q-LIM-19).
+	Charge *limits.Charge
 	// slot is the background slot the request holds before it enters the flights (holdBackground): a background request
 	// never holds a flight while it may not run.
 	slot *bgSlot

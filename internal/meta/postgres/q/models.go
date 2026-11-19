@@ -1077,6 +1077,7 @@ type RemoteCacheEntry struct {
 	UpstreamGoneAt       pgtype.Timestamptz
 	LastUsedAt           pgtype.Timestamptz
 	MediaType            pgtype.Text
+	BackgroundSha256     []byte
 }
 
 type RemoteCacheInvalidation struct {

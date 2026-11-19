@@ -1249,9 +1249,11 @@ package formats
 // replaces DefaultUpstreamURL, DefaultExtraHosts and DefaultCredentialHosts. Version 5 is the fetch of a version's (ADR-205):
 // Descriptor.VersionFetch is required of a format with a package view, ViewSizer reports a ViewSize that may be partial or not known,
 // and ItemStore.RecordDownload counts a document a format answers itself. Version 6 is the download limits' (ADR-206): Host.Serve
-// may refuse a download with 429 before its status line, and a route's Kind decides what the limits count it as. A format declares
-// the literal it was written against.
-const ContractVersion = 6
+// may refuse a download with 429 before its status line, and a route's Kind decides what the limits count it as. Version 7 is the
+// probes' (ADR-207, repositories-and-proxy.md R-REPO-065): a format with the class remote declares its probes (Descriptor.Probes, or
+// NoProbe with the reason), its RemoteAdapter names a probed version's content (ProbeContent), and its handler tells the host of a
+// probe it answered (RemoteFetcher.Probed). A format declares the literal it was written against.
+const ContractVersion = 7
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -1340,6 +1342,20 @@ type Descriptor struct {
 	// VersionFetch says what a fetch of one of the format's versions is: the downloads the package screens count as its downloads
 	// and its last download (api-and-ui.md R-API-079). Required of a format with a package view; Register refuses one without it.
 	VersionFetch VersionFetch
+	// Probes are the requests of the class remote that name exactly one version or one file without fetching its content
+	// (repositories-and-proxy.md R-REPO-065): their handlers call RemoteFetcher.Probed. A format with the class remote declares at
+	// least one, or says in NoProbe why its protocol has none; Register refuses one that does neither, and a probe on a route the
+	// format does not have, that does not serve the class remote, or whose method is not GET or HEAD.
+	Probes  []ProbeRoute
+	NoProbe string
+}
+
+// ProbeRoute names one probe (R-REPO-065): a route of Routes() that serves the class remote, the method of the request (GET or
+// HEAD; a HEAD reaches the GET route of its path), and what it names in words ("the manifest of a tag").
+type ProbeRoute struct {
+	Route  string
+	Method string
+	What   string
 }
 
 // VersionFetch is what a format declares a fetch of one of its versions to be (R-API-079, ADR-205). A download is what storage.md
@@ -1498,6 +1514,11 @@ type RemoteAdapter interface {
 	// body, whose method and URL are the key of the cached answer. The default in RemoteBase refuses, for a format
 	// with no Volatile route that is passed through.
 	UpstreamQuery(ctx context.Context, rc RemoteContext, q Query) (*http.Request, error)
+	// ProbeContent returns the files the background download of a probed version stores (R-REPO-065): the files of p and what they
+	// name (an OCI index the manifests of the platforms of oci.platforms, an image manifest its config and layers), read through u as
+	// a mirror's plan reads (u.Artifact stores what it reads), at most MaxProbeFiles (1,000), each once. A format whose version is one
+	// file returns ProbeFiles(p). A method of the contract, so that a format with the class remote cannot leave it out (version 7).
+	ProbeContent(ctx context.Context, u discover.Upstream, p Probe) ([]discover.Item, error)
 }
 
 // Three optional interfaces of a RemoteAdapter, read off the adapter once, when the format registers (Q-ARCH-267,
@@ -1926,6 +1947,12 @@ The request types of the pass-through and of the fan-out over the members of a v
 `Query` (the repository path of a `Volatile` request, its already normalised parameters and the period its answer is kept) and
 returns a `QueryResult` (the upstream's answer as received, shared with the cache); `RemoteFetcher.Gate` runs
 `RemoteAdapter.BeforeArtifact` without fetching, for the cached tier of a remote member of a virtual repository.
+`RemoteFetcher.Probed` takes a `Probe` (the package name, the version, the files of the content the answer names and, for a probe
+answered from a metadata entry, that entry and its digest) once a format answered one of the probes its `Descriptor.Probes` declares;
+it never fails or delays the answer, and the host decides afterwards whether the background download starts
+([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065, ADR-207). `ProbeFiles` is the content of a probe whose files are
+all of it, which `ProbeContent` returns for the formats whose version is one file, and `MaxProbeFiles` (1,000) bounds the files of one
+background download.
 `Resolver.Plan` returns a `VirtualPlan` of `PlannedMember`s (member, tier, position, whether the caller may fill it);
 `Resolver.KeepsAway` answers whether a claim, pin rule or exclude pattern keeps a search term away from a member;
 `Resolver.ReadScope` returns the caller's `ReadScope` for the rows of a listing, whose `ReadShape` says per repository whether
@@ -2283,9 +2310,11 @@ Priority: **MVP** · Covers: FMT-001, FMT-002, FMT-003
   - an external process would add a network hop to every package request.
 - At start-up, `Register` panics, and the process exits, on any of these:
   - a duplicate or reserved ID;
-  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 6 since the download limits,
-    ADR-206, after 5 of the fetch of a version, ADR-205, 4 of the upstream presets, ADR-198, 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every
+  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 7 since the probes, ADR-207,
+    after 6 of the download limits, ADR-206, 5 of the fetch of a version, ADR-205, 4 of the upstream presets, ADR-198, 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every
     format in the same change, R-ARCH-025);
+  - a format with the class `remote` that declares neither `Probes` nor a `NoProbe` reason, or a probe on a route it does not have,
+    that does not serve the class `remote`, whose method is not GET or HEAD, or that says nothing of what it names (R-REPO-065);
   - a route set that fails the kit's ambiguity check, which `Register` runs itself: every route has
     a name, a method, a template, a handler, a kind, an action and at least one example, and every
     entry of `Route.Examples` is matched by its own route and by no other route of the same method;
@@ -4617,7 +4646,7 @@ describe the policy from the first stable release on.
 | Token formats | `qdr_*_` prefixes (INV-8) | A prefix never changes meaning. New token types get new prefixes. |
 | Metrics, log and audit fields | Names and labels | Stable within a major. A renamed metric is emitted under both names for at least 2 minors ([operations-and-observability.md](operations-and-observability.md)). |
 | Bastion interface | `bastion.InterfaceVersion`, an integer of its own, carried in `Quader-Bastion-Interface` ([bastion.md](bastion.md) R-BAS-009) | Main installation and Bastion talk only at the same version; every change of the interface raises it, guarded by its surface file; a release that raises it says so in its notes |
-| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 6 since the download limits ([ADR-206](../decisions.md#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce), [usage-and-limits.md](usage-and-limits.md) R-LIM-036), at 5 since the fetch of a version ([ADR-205](../decisions.md#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
+| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 7 since the probes ([ADR-207](../decisions.md#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7), [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065), at 6 since the download limits ([ADR-206](../decisions.md#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce), [usage-and-limits.md](usage-and-limits.md) R-LIM-036), at 5 since the fetch of a version ([ADR-205](../decisions.md#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
 
 **Major version 0.** Quader releases stay on major version 0 until the owner decides otherwise
 ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)); Semantic Release sets each version from the

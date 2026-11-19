@@ -26,8 +26,8 @@ type Charge struct {
 	Mode Mode
 	// Addressed is the repository the request named; zero for none.
 	Addressed qname.Repo
-	// Background marks the charge of a background download for a probe (R-LIM-037): not paced, no lease, counted in
-	// background_fetches.
+	// bg marks the charge of a background download for a probe (R-LIM-037): not paced, no lease; the one Background makes
+	// counts one in background_fetches, the one Resume makes on the worker none.
 	bg bool
 
 	id      uint64
@@ -54,6 +54,9 @@ type Charge struct {
 	pendBg       atomic.Int64
 	// upstreamCounted are the upstream requests step 9a counted in Valkey, which the usage store still has to learn.
 	upstreamCounted atomic.Int64
+	// prepaid is 1 on a resumed background download whose first upstream exchange step 9a counted when the probe was answered
+	// (Engine.Resume, Q-LIM-54).
+	prepaid atomic.Int32
 	// The totals of the request, for the request log.
 	totCached   atomic.Int64
 	totUncached atomic.Int64

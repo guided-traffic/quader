@@ -495,10 +495,43 @@ A cached item whose object is gone from the store, or failed verification, is a 
 - **The log.** `noteDamaged`: repository, path, digest and status, once a minute per item and replica. The blob store logs the digest and counts
   `quader_storage_blobs_damaged_total{status="missing"}`, which `QuaderBlobMissing` reads.
 
+### A probe starts the download
+
+A request that names exactly one version or file of a remote without fetching its content (R-REPO-065, W-25) runs this path:
+
+```text
+format handler (a declared probe, answered with success)
+  └─ rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name, Version, Files, Document, Digest})      returns at once
+       formathost/probe.go  precheck: remote, not disabled, downloadOnProbe, may contact the upstream, request mode normal
+       └─ goroutine (at most 16 per replica, 10 s each)                                               decide
+            patterns and claims per file ─ MayPopulateOn (question) ─ Cached per file until one is missing
+            ─ BackgroundDownloads.Busy (the job's dedup key, the repository's count < maxConcurrentFetches)
+            ─ limits.Charge.StartBackground (step 9a for the probe's caller) ─ BackgroundDownloads.Enqueue
+job remote-background-download (queue default, exclusive per version)          app/wire_background_download.go
+  └─ MirrorHost.RunBackgroundDownload                                             formathost/background_download.go
+       limits.Engine.Resume(ticket) ─ the pass upstream with the charge and the background-download populate
+       ─ RemoteAdapter.ProbeContent (OCI reads the manifests through u.Artifact) ─ fillPath per file, in the window,
+         at most 1,000 files and limits.maxArtifactBytes in sum ─ MarkBackgroundDownloaded on the probe's document
+```
+
+- **The charge.** `proxy.Request.Charge` carries the resumed charge into `fetcher.run`, which calls `Charge.Exchange` instead of step 9a: the
+  first exchange was counted at the decision, every further one at the flush ([usage-and-limits.md](usage-and-limits.md), Q-LIM-54).
+- **The patterns.** `MirrorHost.fillPath` refuses a file the repository's patterns do not admit (`mirror.RefusedPatterns`), for passes and
+  background downloads alike (Q-REPO-365).
+- **The listing.** A completed download whose probe was answered from a metadata entry sets `remote_cache_entries.background_sha256` to the
+  digest the entry held (`ProxyMarkBackgroundDownloaded`); the view `oci_remote_tags` lists such a tag (migration 00083, R-API-081).
+- **Metrics.** `quader_remote_background_downloads_total{format,outcome}` (`ProbeMetrics`, one family per process).
+- **Tests.** The format's probes: `TestR_REPO_065_*` in each format's `probe_test.go`, with `formattest.MemRemote.ProbesSeen`; the table of every
+  format in [all_test.go](../../internal/formats/all/all_test.go); the charge in [background_test.go](../../internal/limits/background_test.go);
+  the whole path against the OCI stub in [probe_test.go](../../test/integration/ociremote/probe_test.go) (a replica of the role `all`, which runs
+  the job).
+
 ### Wiring
 
 [wire_proxy_engine.go](../../internal/app/wire_proxy_engine.go) is the area `proxy-engine` (a component with `Drain` and `Quiesce`); its
 inputs are the upstream clients, the invalidation set, the item store and the replica count. The format host takes it as `Options.Engine`.
+The format host of a client listener also takes `Options.Downloads` (the job queue of the background downloads) and `Options.ProbeMetrics`
+([wire_background_download.go](../../internal/app/wire_background_download.go)).
 
 ### Binding to the virtual engine
 

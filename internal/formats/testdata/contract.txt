@@ -1,4 +1,4 @@
-contract version 6
+contract version 7
 formats.Action: alias authz.Action
 formats.Authenticator: method ReadToken(context.Context, RemoteContext, int, []byte) (string, time.Duration, error)
 formats.Authenticator: method TokenRequest(context.Context, RemoteContext, *http.Request, Path, int, http.Header) (*http.Request, string, bool, error)
@@ -79,7 +79,9 @@ formats.Descriptor: field DataPort reflect.Type
 formats.Descriptor: field Limits Limits
 formats.Descriptor: field MaxDocumentBytes int64
 formats.Descriptor: field Names catalog.Names
+formats.Descriptor: field NoProbe string
 formats.Descriptor: field NotifyAreas []string
+formats.Descriptor: field Probes []ProbeRoute
 formats.Descriptor: field PropertyPrefix string
 formats.Descriptor: field VerifyAnnouncedDigests bool
 formats.Descriptor: field VersionFetch VersionFetch
@@ -298,6 +300,14 @@ formats.PlannedMember: field Tier Tier
 formats.Prepared: field Aliases []Path
 formats.Prepared: field Data any
 formats.Prepared: field Mappings []URLMapping
+formats.Probe: field Digest [32]byte
+formats.Probe: field Document Path
+formats.Probe: field Files []Path
+formats.Probe: field Name string
+formats.Probe: field Version string
+formats.ProbeRoute: field Method string
+formats.ProbeRoute: field Route string
+formats.ProbeRoute: field What string
 formats.Query: field Params url.Values
 formats.Query: field Path Path
 formats.Query: field TTL time.Duration
@@ -320,6 +330,7 @@ formats.RemoteAdapter: method BeforeArtifact(context.Context, Host, *Request, Pa
 formats.RemoteAdapter: method ExpectsType(Path, string) bool
 formats.RemoteAdapter: method OnFill(context.Context, Tx, FillEvent) (FillDecision, error)
 formats.RemoteAdapter: method PrepareFill(context.Context, RemoteContext, Path, string, io.ReaderAt, int64) (Prepared, error)
+formats.RemoteAdapter: method ProbeContent(context.Context, discover.Upstream, Probe) ([]discover.Item, error)
 formats.RemoteAdapter: method Rewrite(context.Context, RemoteContext, Path, []byte, LinkBuilder) ([]byte, error)
 formats.RemoteAdapter: method TracksVersionRemoval() bool
 formats.RemoteAdapter: method UpstreamQuery(context.Context, RemoteContext, Query) (*http.Request, error)
@@ -358,6 +369,7 @@ formats.RemoteFetcher: method Exchange(context.Context, *Request, Exchange) (*ht
 formats.RemoteFetcher: method Gate(context.Context, *Request, Path) error
 formats.RemoteFetcher: method GateWith(context.Context, *Request, Path, ServeFacts) (ServeFacts, error)
 formats.RemoteFetcher: method Metadata(context.Context, *Request, Path, string) (*RemoteDocument, error)
+formats.RemoteFetcher: method Probed(context.Context, *Request, Probe)
 formats.RemoteFetcher: method Query(context.Context, *Request, Query) (*QueryResult, error)
 formats.RemovalLocker: method LockRemoval(context.Context, Tx, PackageWriter, RepoRef, []string) error
 formats.RemovedItem: field Item ItemRef
@@ -569,6 +581,7 @@ formats.Lookup: func(string) (Format, bool)
 formats.MatchRoutes: func([]Route, string, string) (*Route, Params, error)
 formats.NoMarkup: func() Markup
 formats.NoVulnerabilityData: func() VulnerabilityData
+formats.ProbeFiles: func(Probe) []discover.Item
 formats.RefusalFrom: func(*http.Request) (Refusal, bool)
 formats.Register: func(Format)
 formats.RemoteCapabilities: func(ID) RemoteCaps
@@ -588,7 +601,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 6
+formats.ContractVersion: value = 7
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
@@ -619,6 +632,7 @@ formats.KindOther: value = catalog.KindOther
 formats.KindSearch: value = catalog.KindSearch
 formats.KindWrite: value = catalog.KindWrite
 formats.Local: value = catalog.Local
+formats.MaxProbeFiles: value = 1000
 formats.Merge: value = (repeated, place 1 of its group)
 formats.Metadata: value = (repeated, place 1 of its group)
 formats.OriginFill: value = (repeated, place 1 of its group)

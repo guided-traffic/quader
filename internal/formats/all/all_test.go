@@ -1,6 +1,7 @@
 package all
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -38,6 +39,48 @@ func TestR_API_079_EveryFormatWithPackageScreensCountsTheFetchesOfItsVersionsByI
 	for id := range want {
 		if !seen[id] {
 			t.Errorf("%s is listed and has no package screens", id)
+		}
+	}
+}
+
+// TestR_REPO_065_EveryFormatDeclaresItsProbes pins, per format, the requests that name exactly one version or file of a remote
+// repository without fetching its content and so may start its background download (W-25). A new format with the class remote, and a
+// route that becomes a probe or stops being one, fails here until the table says so; a format without the class remote declares none.
+func TestR_REPO_065_EveryFormatDeclaresItsProbes(t *testing.T) {
+	want := map[formats.ID][]string{
+		"npm":     {"GET npm.version.get", "HEAD npm.version.get", "HEAD npm.tarball.get"},
+		"nuget":   {"GET nuget.registration.leaf", "HEAD nuget.registration.leaf", "GET nuget.flatcontainer.nuspec", "HEAD nuget.flatcontainer.nuspec", "HEAD nuget.flatcontainer.nupkg"},
+		"ansible": {"GET ansible.version.get", "HEAD ansible.version.get", "HEAD ansible.artifact.get", "HEAD ansible.role.archive"},
+		"deb":     {"HEAD deb.pool.get", "HEAD deb.flat.file"},
+		"oci":     {"GET oci.manifest.get.tag", "HEAD oci.manifest.get.tag", "HEAD oci.manifest.get.digest", "HEAD oci.blob.get"},
+		"generic": nil, // no class remote (R-GENERIC-001)
+	}
+	seen := map[formats.ID]bool{}
+	for _, f := range formats.List() {
+		d := f.Descriptor()
+		seen[d.ID] = true
+		rule, ok := want[d.ID]
+		if !ok {
+			t.Errorf("%s is not in this list: declare its probes (R-REPO-065)", d.ID)
+			continue
+		}
+		var got []string
+		for _, p := range d.Probes {
+			got = append(got, p.Method+" "+p.Route)
+		}
+		if strings.Join(got, ", ") != strings.Join(rule, ", ") {
+			t.Errorf("%s declares the probes %v, want %v", d.ID, got, rule)
+		}
+		if !d.Supports(formats.Remote) && len(d.Probes) > 0 {
+			t.Errorf("%s has no class remote and declares probes", d.ID)
+		}
+		if d.Supports(formats.Remote) && len(d.Probes) == 0 {
+			t.Errorf("%s has the class remote and declares no probe; the owner's rule holds every format (R-REPO-065)", d.ID)
+		}
+	}
+	for id := range want {
+		if !seen[id] {
+			t.Errorf("%s is listed and not registered", id)
 		}
 	}
 }

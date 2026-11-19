@@ -8725,7 +8725,7 @@ export interface components {
          */
         OciSettings: {
             /**
-             * @description Remote repositories (R-OCI-026, Q-OCI-16). What a mirror of a registry keeps; present in both modes and effective in mode
+             * @description Remote repositories (R-OCI-026, Q-OCI-16). Which tags a mirror of a registry keeps; present in both modes and effective in mode
              *     `mirror`. A caller without `repositories:write-config` on the project cannot change it on a mirror (R-REPO-050, Q-OCI-22).
              */
             mirror?: {
@@ -8741,12 +8741,17 @@ export interface components {
                  * @default []
                  */
                 excludeTags: string[];
-                /**
-                 * @description Platforms (`os/arch` or `os/arch/variant`) of an index whose manifests are mirrored; empty is every platform.
-                 * @default []
-                 */
-                platforms: string[];
             };
+            /**
+             * @description Remote repositories (Q-OCI-223). The platforms (`os/arch` or `os/arch/variant`) of an index whose manifests the repository
+             *     downloads ahead: the background download a probe of a tag starts (R-REPO-065) and a mirror's passes (R-OCI-026). Empty is
+             *     every platform; left out, `linux/amd64` and `linux/arm64` (the owner, 2026-11-19).
+             * @default [
+             *       "linux/amd64",
+             *       "linux/arm64"
+             *     ]
+             */
+            platforms: string[];
         };
         /** @description What a caller sees who may read a repository but not its configuration (R-REPO-010). */
         RepositoryConsumerView: {
@@ -9676,6 +9681,13 @@ export interface components {
              */
             mode: "pullThrough" | "mirror";
             mirror?: components["schemas"]["MirrorSettings"];
+            /**
+             * @description A request that names exactly one version or file without fetching its content (the manifest of an OCI tag, an npm version
+             *     document, a HEAD of a file) starts the download of that version's content in the background, charged to the caller's
+             *     upstream budget (R-REPO-065, usage-and-limits.md R-LIM-037). `false` for an upstream that counts every request it answers.
+             * @default true
+             */
+            downloadOnProbe: boolean;
         };
         RemoteExtraHost: {
             /** @description A host name pattern in lower case with the wildcards `*` and `?`, for example `*.nuget.org`. No port, no path. */

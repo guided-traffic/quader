@@ -156,7 +156,7 @@ func TestOCIClosingPublic(t *testing.T) {
 				"mirror":     map[string]any{"concurrency": 1, "maxVersionsPerPackage": 1},
 			},
 			// one platform: the index of busybox lists some twenty, and every platform manifest is a manifest GET that Docker Hub counts (Q-OCI-203)
-			"oci": map[string]any{"mirror": map[string]any{"tags": []string{"latest"}, "platforms": []string{"linux/" + ociArch(t)}}},
+			"oci": map[string]any{"mirror": map[string]any{"tags": []string{"latest"}}, "platforms": []string{"linux/" + ociArch(t)}},
 		}).want(t, "create "+mirror, 201)
 		t.Cleanup(func() { deleteRepository(t, fx.adm, mirror) })
 		ensurePolicy(t, fx.adm, "e2e-oci-hub-mirror-"+fx.run, []string{mirror}, [2]any{"sa:" + ociPublisher, []string{"read"}})

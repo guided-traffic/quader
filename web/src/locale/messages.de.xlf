@@ -5979,6 +5979,25 @@
         <target>Der Upstream wird nicht kontaktiert: Clients erhalten, was bereits gespeichert ist.</target>
       </segment>
     </unit>
+    <unit id="upstream.download-on-probe">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:76</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:422,424</note>
+      </notes>
+      <segment>
+        <source>Start the download when a version is asked for</source>
+        <target>Download starten, wenn nach einer Version gefragt wird</target>
+      </segment>
+    </unit>
+    <unit id="upstream.download-on-probe.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:425,428</note>
+      </notes>
+      <segment>
+        <source> A client that asks for one version without downloading it, such as for an image&apos;s manifest, starts its download in the background, charged to that client&apos;s limits. </source>
+        <target>Ein Client, der nach einer Version fragt, ohne sie herunterzuladen, etwa nach dem Manifest eines Images, startet ihren Download im Hintergrund, angerechnet auf die Limits dieses Clients.</target>
+      </segment>
+    </unit>
     <unit id="ci.editor.cross.read-only">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.ts:146</note>
@@ -34339,22 +34358,22 @@
         <target>Noch nicht bekannt: Keine Plattform dieses Images wurde bisher abgerufen, und die Größe einer Plattform ist erst danach bekannt.</target>
       </segment>
     </unit>
-    <unit id="repo.content.oci-remote-note2">
+    <unit id="repo.content.oci-remote-note3">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:49,51</note>
       </notes>
       <segment>
-        <source>Only the tags clients have pulled through this repository are listed here and, in mirror mode, those a pass has fetched.</source>
-        <target>Hier stehen nur die Tags, die Clients über dieses Repository abgerufen haben, und im Spiegelmodus die, die ein Durchlauf geholt hat.</target>
+        <source>Only the tags clients have pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass has fetched.</source>
+        <target>Hier stehen nur die Tags, die Clients über dieses Repository abgerufen haben, die, die es heruntergeladen hat, nachdem ein Client nach ihnen gefragt hat, und im Spiegelmodus die, die ein Durchlauf geholt hat.</target>
       </segment>
     </unit>
-    <unit id="repo.content.remote-note2">
+    <unit id="repo.content.remote-note3">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:51,54</note>
       </notes>
       <segment>
-        <source>Only what clients have fetched through this repository is listed here and, in mirror mode, what a pass has fetched.</source>
-        <target>Hier steht nur, was Clients über dieses Repository abgerufen haben, und im Spiegelmodus, was ein Durchlauf geholt hat.</target>
+        <source>Only what clients have fetched through this repository is listed here, what it downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched.</source>
+        <target>Hier steht nur, was Clients über dieses Repository abgerufen haben, was es heruntergeladen hat, nachdem ein Client nach einer Version gefragt hat, und im Spiegelmodus, was ein Durchlauf geholt hat.</target>
       </segment>
     </unit>
     <unit id="audit.action.technicaltoken.created">

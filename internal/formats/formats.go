@@ -29,9 +29,12 @@ import (
 // package view, ViewSizer reports a ViewSize that may be partial or not known, and ItemStore records the download of a document a
 // format answers itself. Version 6 is the download limits' (usage-and-limits.md R-LIM-036, Q-LIM-24): Host.Serve may refuse a
 // download with the 429 of the limits before its status line, and a route's kind declares what the limits count (Download: admitted,
-// paced, a parallel lease; Metadata, Computed, Volatile: documents; Upload, Delete, Admin: writes). A format declares the literal it
-// was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
-const ContractVersion = 6
+// paced, a parallel lease; Metadata, Computed, Volatile: documents; Upload, Delete, Admin: writes). Version 7 is the probes'
+// (repositories-and-proxy.md R-REPO-065, ADR-207): a format with the class remote declares its probes in [Descriptor.Probes] (or why its
+// protocol has none), its RemoteAdapter names a probed version's content (ProbeContent), and a handler tells the host of a probe it
+// answered (RemoteFetcher.Probed). A format declares the literal it was written against in [Descriptor.ContractVersion], and Register
+// panics on a mismatch.
+const ContractVersion = 7
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -201,6 +204,22 @@ type Descriptor struct {
 	// VersionFetch says what a fetch of one of the format's versions is: the downloads the package screens count as its
 	// downloads and its last download (R-API-079). Required of a format with a package view; Register refuses one without it.
 	VersionFetch VersionFetch
+	// Probes are the requests of the format's remote class that name exactly one version or one file without fetching its content
+	// (repositories-and-proxy.md R-REPO-065): their handlers call RemoteFetcher.Probed, which may start the background download of
+	// the version. A format with the class remote declares at least one, or says in NoProbe why its protocol has none; Register
+	// refuses one that does neither, so that a format cannot land without the rule (W-25).
+	Probes []ProbeRoute
+	// NoProbe is the reason a format with the class remote has no probe; empty for a format that declares Probes.
+	NoProbe string
+}
+
+// ProbeRoute names one probe of a format (R-REPO-065): a route of [Format.Routes] that serves the class remote and the method of
+// the request, GET or HEAD (a HEAD reaches the GET route of its path), with what the request names in words.
+type ProbeRoute struct {
+	Route  string
+	Method string
+	// What is the request in words: "the manifest of a tag", "a HEAD of the tarball".
+	What string
 }
 
 // ItemsRestorer is the optional hook of a format that keeps state of its own for
@@ -446,6 +465,9 @@ func Validate(f Format) error {
 	if err := checkView(f, d); err != nil {
 		return err
 	}
+	if err := checkProbes(f, d); err != nil {
+		return err
+	}
 	switch {
 	case repository.IsReservedMember(string(id)):
 		return fmt.Errorf("%q is named like a member of the repository document, whose member for the format's settings it must be", id)
@@ -466,6 +488,47 @@ func checkView(f Format, d Descriptor) error {
 	}
 	if d.VersionFetch == FetchUndeclared || d.VersionFetch > FetchDocument {
 		return fmt.Errorf("%q has a package view and declares no VersionFetch", d.ID)
+	}
+	return nil
+}
+
+// checkProbes holds a format with the class remote to a declaration of its probes (R-REPO-065): each names a route that serves the
+// class remote with GET or HEAD, once; a format without any says why. A format without the class declares no probe.
+func checkProbes(f Format, d Descriptor) error {
+	if !d.Supports(Remote) {
+		if len(d.Probes) > 0 {
+			return fmt.Errorf("%q declares probes and has no class remote", d.ID)
+		}
+		return nil
+	}
+	switch {
+	case len(d.Probes) == 0 && d.NoProbe == "":
+		return fmt.Errorf("%q has the class remote and declares neither its probes nor why it has none (NoProbe)", d.ID)
+	case len(d.Probes) > 0 && d.NoProbe != "":
+		return fmt.Errorf("%q declares probes and a reason it has none", d.ID)
+	}
+	routes := map[string]Route{}
+	for _, r := range f.Routes() {
+		routes[r.Name] = r
+	}
+	seen := map[string]bool{}
+	for _, p := range d.Probes {
+		r, ok := routes[p.Route]
+		switch {
+		case !ok:
+			return fmt.Errorf("%q declares a probe on route %q, which it does not have", d.ID, p.Route)
+		case p.Method != http.MethodGet && p.Method != http.MethodHead:
+			return fmt.Errorf("%q declares a probe on route %q with method %q, not GET or HEAD", d.ID, p.Route, p.Method)
+		case r.Method != http.MethodGet:
+			return fmt.Errorf("%q declares a probe on route %q, whose method is %s", d.ID, p.Route, r.Method)
+		case len(r.Classes) > 0 && !slices.Contains(r.Classes, Remote):
+			return fmt.Errorf("%q declares a probe on route %q, which does not serve the class remote", d.ID, p.Route)
+		case p.What == "":
+			return fmt.Errorf("%q declares a probe on route %q without saying what it names", d.ID, p.Route)
+		case seen[p.Route+" "+p.Method]:
+			return fmt.Errorf("%q declares the probe %s %s twice", d.ID, p.Method, p.Route)
+		}
+		seen[p.Route+" "+p.Method] = true
 	}
 	return nil
 }

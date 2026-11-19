@@ -120,8 +120,8 @@ func TestMirrorSettingsSchema(t *testing.T) {
 	valid := []string{
 		`{}`,
 		`{"mirror":{}}`,
-		`{"mirror":{"tags":["latest"],"excludeTags":[],"platforms":[]}}`,
-		`{"mirror":{"tags":["1.*","stable","v?"],"excludeTags":["*-rc*"],"platforms":["linux/amd64","linux/arm64/v8"]}}`,
+		`{"mirror":{"tags":["latest"],"excludeTags":[]},"platforms":[]}`,
+		`{"mirror":{"tags":["1.*","stable","v?"],"excludeTags":["*-rc*"]},"platforms":["linux/amd64","linux/arm64/v8"]}`,
 	}
 	for _, doc := range valid {
 		if v := e.ValidateSettings(formats.Remote, []byte(doc)); len(v) != 0 {
@@ -129,8 +129,9 @@ func TestMirrorSettingsSchema(t *testing.T) {
 		}
 	}
 	for doc, pointer := range map[string]string{
-		`{"mirror":{"platforms":["linux"]}}`:                       "/mirror/platforms/0",
-		`{"mirror":{"platforms":["Linux/amd64"]}}`:                 "/mirror/platforms/0",
+		`{"platforms":["linux"]}`:                                  "/platforms/0",
+		`{"platforms":["Linux/amd64"]}`:                            "/platforms/0",
+		`{"mirror":{"platforms":["linux/amd64"]}}`:                 "/mirror",
 		`{"mirror":{"tags":[]}}`:                                   "/mirror/tags",
 		`{"mirror":{"tags":["a b"]}}`:                              "/mirror/tags/0",
 		`{"mirror":{"tags":["a","a"]}}`:                            "/mirror/tags",
@@ -169,18 +170,23 @@ func TestMirrorSettingsSchema(t *testing.T) {
 			if len(v) != 1 || v[0].Code != catalog.SettingNotApplicable || v[0].Pointer != "/mirror" {
 				t.Errorf("%s: %+v", class, v)
 			}
+			v = e.ValidateSettings(class, []byte(`{"platforms":["linux/amd64"]}`))
+			if len(v) != 1 || v[0].Code != catalog.SettingNotApplicable || v[0].Pointer != "/platforms" {
+				t.Errorf("%s platforms: %+v", class, v)
+			}
 		}
 	})
 }
 
 func TestMirrorSettingsDefaults(t *testing.T) {
-	want := MirrorSettings{Tags: []string{"latest"}, ExcludeTags: []string{}, Platforms: []string{}}
+	// Q-OCI-223: a repository without oci.platforms downloads linux/amd64 and linux/arm64 ahead (the owner, 2026-11-19, W-25).
+	want := MirrorSettings{Tags: []string{"latest"}, ExcludeTags: []string{}, Platforms: []string{"linux/amd64", "linux/arm64"}}
 	for _, cfg := range []string{``, `{}`, `{"oci":{}}`, `{"oci":{"mirror":{}}}`, `not json`} {
 		if got := mirrorSettingsOf([]byte(cfg)); !reflect.DeepEqual(got, want) {
 			t.Errorf("%q: %+v", cfg, got)
 		}
 	}
-	got := mirrorSettingsOf([]byte(`{"oci":{"mirror":{"tags":["1.*"],"excludeTags":["*-rc"],"platforms":["linux/amd64"]}}}`))
+	got := mirrorSettingsOf([]byte(`{"oci":{"mirror":{"tags":["1.*"],"excludeTags":["*-rc"]},"platforms":["linux/amd64"]}}`))
 	if !reflect.DeepEqual(got, MirrorSettings{Tags: []string{"1.*"}, ExcludeTags: []string{"*-rc"}, Platforms: []string{"linux/amd64"}}) {
 		t.Errorf("set: %+v", got)
 	}

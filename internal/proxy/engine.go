@@ -22,6 +22,7 @@ import (
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 	"github.com/guided-traffic/quader/internal/proxy/upstream"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -320,6 +321,26 @@ func (e *Engine) validate(rq Request, kind Kind) error {
 // (R-REPO-030, R-REPO-031).
 func (e *Engine) offline(rem Remote) bool {
 	return rem.Settings.Availability.Mode == repository.AvailabilityOffline || e.o.GlobalOffline()
+}
+
+// Offline reports whether the remote repository may not contact its upstream now: its offline mode or the global switch
+// (R-REPO-030, R-REPO-031). The decision on a probe asks it before it counts anything (R-REPO-065).
+func (e *Engine) Offline(rem Remote) bool { return e.offline(rem) }
+
+// MarkBackgroundDownloaded records on the metadata entry at path of the repository that a probe's background download stored the
+// content of the document with the digest (R-REPO-065, R-API-081). An entry that holds another digest now (a tag that moved) is
+// left alone; ok is false then.
+func (e *Engine) MarkBackgroundDownloaded(ctx context.Context, repoID int64, path string, digest [32]byte) (ok bool, err error) {
+	err = e.o.Runner.InTx(ctx, func(tx meta.Tx) error {
+		qs, err := queries(tx)
+		if err != nil {
+			return err
+		}
+		n, err := qs.ProxyMarkBackgroundDownloaded(ctx, q.ProxyMarkBackgroundDownloadedParams{RepoID: repoID, Path: path, Digest: digest[:]})
+		ok = n > 0
+		return err
+	})
+	return ok, err
 }
 
 // mayFill asks the populate check at step 9 (R-AUTHZ-008). A refusal on an endpoint

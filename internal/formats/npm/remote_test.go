@@ -29,6 +29,12 @@ type scriptedRemote struct {
 	ensured  []string
 	metadata func(path string) (*formats.RemoteDocument, error)
 	artifact func(p formats.Path, expected formats.Digests, w http.ResponseWriter) error
+	// probes are the probes the handlers told the fake of (R-REPO-065).
+	probes []formats.Probe
+}
+
+func (s *scriptedRemote) Probed(_ context.Context, _ *formats.Request, p formats.Probe) {
+	s.probes = append(s.probes, p)
 }
 
 func (s *scriptedRemote) EnsureCurrent(_ context.Context, _ *formats.Request, p formats.Path, variant string) (*formats.RemoteDocument, formats.Currency, error) {

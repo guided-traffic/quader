@@ -950,13 +950,18 @@ Priority: **P1** · Covers: quader-only
 
 A remote repository of the format runs in either mode of R-REPO-050. What a mirror of a registry discovers and keeps is in the
 section [Mirror discovery](#mirror-discovery) (Q-OCI-16); its own settings are the member `oci.mirror` of the repository's
-format settings (R-REPO-004), present in both modes and effective in mode `mirror`:
+format settings (R-REPO-004), present in both modes and effective in mode `mirror`, and the member `oci.platforms`, which a pass and
+the background download of a probed tag read ([repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065,
+[Q-OCI-223](#q-oci-223--the-platforms-of-an-index-are-one-list-per-remote-repository-linuxamd64-and-linuxarm64-by-default)):
 
 | Member (`oci.mirror.…`) | Meaning | Default (proposed) | Range |
 |---|---|---|---|
 | `tags` | Tag patterns (`*` and `?`, R-AUTHZ-005 syntax) a tag must match to be mirrored; a pattern without a wildcard names a tag that is always kept | `["latest"]` | 1–64 patterns |
 | `excludeTags` | Tag patterns that are never mirrored | `[]` | 0–64 |
-| `platforms` | Platforms (`os/arch` or `os/arch/variant`) of an index whose manifests are mirrored; empty is every platform | `[]` | 0–32 |
+
+| Member (`oci.…`) | Meaning | Default | Range |
+|---|---|---|---|
+| `platforms` | Platforms (`os/arch` or `os/arch/variant`) of an index whose manifests the repository downloads ahead: a mirror's passes and the background download of a probed tag; empty is every platform | `["linux/amd64", "linux/arm64"]` (the owner, 2026-11-19) | 0–32 |
 
 - The generic members keep their meaning: `maxVersionsPerPackage` is the number of newest tags kept per image among the tags
   matched by a wildcard pattern, by the tag order of Q-OCI-17 (a tag an exact pattern names is kept besides them, Q-OCI-180); `includePrereleases` decides about tags the tag order marks as
@@ -969,9 +974,9 @@ format settings (R-REPO-004), present in both modes and effective in mode `mirro
 
 Acceptance criteria:
 
-- A remote created without `oci` mirrors with `{"tags": ["latest"], "excludeTags": [], "platforms": []}`: the format reads the defaults of a member the
-  document leaves out (the stored document stays without it, Q-OCI-184).
-- `"platforms": ["linux"]` answers 422 `invalid_value` at `/oci/mirror/platforms/0`.
+- A remote created without `oci` mirrors with `{"tags": ["latest"], "excludeTags": []}` and the platforms `["linux/amd64", "linux/arm64"]`:
+  the format reads the defaults of a member the document leaves out (the stored document stays without it, Q-OCI-184).
+- `"platforms": ["linux"]` answers 422 `invalid_value` at `/oci/platforms/0`; `oci.mirror.platforms` is no member (422 at `/oci/mirror`).
 - An Owner of project `web` without `repositories:write-config` patching `oci.mirror.tags` of the mirror `docker-hub-mirror`
   gets 422 `mirror_restricted`.
 
@@ -1309,7 +1314,7 @@ named (Q-OCI-16).
   1. the tag document `<name>/_tags/<tag>` through `discover.Upstream.Document` (stored before the attempt: revalidated by `HEAD`,
      R-OCI-022, so an unchanged tag costs no manifest `GET`); a manifest the registry does not accept (Docker schema 1, a document
      the reader refuses) gives the tag no items and does not fail the name (Q-OCI-182);
-  2. for an index, the child manifests whose platform is in `oci.mirror.platforms` (all when empty), plus each attestation entry
+  2. for an index, the child manifests whose platform is in `oci.platforms` (all when empty), plus each attestation entry
      whose `vnd.docker.reference.digest` names a kept child, each read through `discover.Upstream.Artifact` (filled and
      verified like any artifact, then read back within 4 MiB; a stored one costs no request). `os/arch` matches every variant of
      the architecture, `os/arch/variant` that variant, and an entry without a variant is the architecture's default (arm64 is
@@ -1342,7 +1347,7 @@ Acceptance criteria (integration, the OCI stub of R-OCI-035):
   `latest`: the pass stores `1.2`, `1.1` and `latest` of `acme/a` with their manifests and blobs; the stub records no request for
   `other/c` and no manifest request for `1.0` or `2.0`.
 - A stub without `_catalog` and `includePatterns: ["acme/a"]`: the pass takes `names` and stores the same.
-- `oci.mirror.platforms: ["linux/arm64"]` on an index with `linux/amd64`, `linux/arm64` and two attestation entries: the pass
+- `oci.platforms: ["linux/arm64"]` on an index with `linux/amd64`, `linux/arm64` and two attestation entries: the pass
   stores the index, the arm64 manifest, its attestation manifest and their blobs, and no amd64 layer.
 - A second pass with nothing changed upstream records one `HEAD` per kept tag, the tags lists, and no manifest `GET`; after the
   stub moves `latest`, the next pass records one manifest `GET` for it and stores its new blobs.
@@ -2244,6 +2249,45 @@ metadata entry and was counted nowhere, while a `HEAD` stored the entry and list
 `<name>/_manifests/<digest>` has a download, or whose repository has a mirror state. **Applied in the spec:** R-OCI-036, R-API-079, R-API-081.
 Code: `recordTagFetch` in [remote_handlers.go](../../../internal/formats/oci/remote_handlers.go), the migration, `package_view.sql`. Tests:
 `TestQ_OCI_222_AGetOfARemoteTagIsADownloadOfItsManifest`, `TestR_API_081_ARemoteListsATagOnceAClientFetchedItAndEveryCellIsTrue`.
+
+### Q-OCI-223 · The platforms of an index are one list per remote repository, linux/amd64 and linux/arm64 by default
+
+Status: **Decided by the owner on 2026-11-19** (W-25, "Option A", from three: a list of platforms per repository with
+`linux/amd64, linux/arm64` as the value in the field / every platform / none ahead, as today). Where the list lives in the document,
+decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's list is the one the mirror reads, so the mirror's default changes from every platform to these two. The mirror's
+list was `oci.mirror.platforms`, a member of the mirror's object, which the settings show in mode mirror only; the background download
+of a probed tag runs in mode pull-through.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `oci.platforms`, a member of the format's settings for the class remote, default `["linux/amd64", "linux/arm64"]`; `oci.mirror.platforms` is gone (chosen) | One list, read by a pass and by a background download | Shown in both modes under the format's settings; the name says what it is | A document that named `oci.mirror.platforms` is refused (pre-alpha: no alias) |
+| (b) Keep `oci.mirror.platforms` and read it in both modes | No move | No changed key | A mirror's member that is in effect without a mirror; hidden in the settings of a pull-through remote |
+
+**Choice:** (a). An empty list is every platform, as before; a single-platform image is downloaded whatever the list says. **Applied
+in the spec:** R-OCI-026, Mirror discovery, [repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065. Code:
+[settings.go](../../../internal/formats/oci/settings.go), [settings.schema.json](../../../internal/formats/oci/settings.schema.json).
+
+### Q-OCI-224 · The probes of the registry and the content of an image
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the
+manifest of a tag and a HEAD by digest are probes is the owner's first decision of W-25.
+
+Context: which requests of the distribution specification name exactly one image or file without fetching its content, and what
+"that version's content" is.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Probes: `GET` and `HEAD` of the manifest of a tag, `HEAD` of a manifest by digest, `HEAD` of a blob; content: the manifest, of an index the manifests of `oci.platforms` with their attestations (Q-OCI-181), of each image its config and its layers, without layers that name foreign `urls` (chosen) | `probes()` and `ProbeContent` in [probe.go](../../../internal/formats/oci/probe.go) | The `HEAD` of a file is a probe in every format (npm's tarball, APT's package file); a pull by digest and a `GET` of a blob fetch their own content; a foreign layer is fetched by the client from its `urls` | A `docker pull` asks the tag first and starts its own pull at once: the background download overlaps it and the flights collapse the two |
+| (b) Only the `GET` of a tag's manifest | Narrowest | The case of the owner's wish | A `HEAD` by tag (`crane digest`, containerd's resolve) starts nothing |
+
+**Choice:** (a). The probe of a tag names the manifest under its digest and what the stored manifest names, so that the decision reads
+what is stored without a request (Q-REPO-364); the probe of a `HEAD` by digest names the manifest, which `ProbeContent` reads. A remote OCI
+tag is listed once its background download stored the whole content (R-API-081). **Applied in the spec:** [repositories-and-proxy.md](../repositories-and-proxy.md)
+R-REPO-065, [api-and-ui.md](../api-and-ui.md) R-API-081. Tests: `TestR_REPO_065_WhatAProbeOfTheRegistryIs`,
+`TestQ_OCI_223_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList`, `TestR_REPO_065_TheContentOfAProbedVersion` in
+[probe_test.go](../../../internal/formats/oci/probe_test.go).
 
 ### Q-OCI-220 · The refusal of a registry token names the scope, and tells a token without administrator rights why an administrator is refused
 

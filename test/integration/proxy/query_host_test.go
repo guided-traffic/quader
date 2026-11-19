@@ -52,6 +52,7 @@ func (queryFormat) Descriptor() formats.Descriptor {
 			PatternSubject: formats.SubjectName, PackageNames: true,
 		},
 		ContractVersion: formats.ContractVersion, MaxDocumentBytes: 1 << 20,
+		NoProbe: "a format of the query tests, which has no routes",
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/mirror"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
@@ -27,6 +28,8 @@ type MirrorEngine interface {
 	RemoteEngine
 	Fill(ctx context.Context, rq proxy.Request) (proxy.FillOutcome, error)
 	Get(ctx context.Context, g proxy.Get) (*proxy.GetResult, error)
+	// MarkBackgroundDownloaded records that a probe's background download stored the content of a document (R-REPO-065).
+	MarkBackgroundDownloaded(ctx context.Context, repoID int64, path string, digest [32]byte) (bool, error)
 }
 
 var _ MirrorEngine = (*proxy.Engine)(nil)
@@ -61,6 +64,10 @@ func NewMirrorHost(h *Host, e MirrorEngine) (*MirrorHost, error) {
 var (
 	mirrorActor   = authz.MirrorActor()
 	mirrorSubject = authz.MirrorSubject()
+	// backgroundActor and backgroundSubject are the system as the audit trail records it for what a probe's background download
+	// stores (R-REPO-065).
+	backgroundActor   = authz.BackgroundDownloadActor()
+	backgroundSubject = authz.BackgroundDownloadSubject()
 )
 
 // Lister implements [mirror.Host]: the discovery of the format's remote adapter, found through the capabilities Register read.
@@ -172,9 +179,19 @@ type filled struct {
 // fillPath stores the artifact at a path of the repository through the format's gate and the remote engine as a background request of
 // the pass. An error is as mirror.Host documents it: mapFill's and mapGate's.
 func (m *MirrorHost) fillPath(ctx context.Context, repo repository.Repository, pass mirror.Pass, p formats.Path) (filled, error) {
-	ctx = withBackground(ctx, &backgroundFacts{h: m.h, jobID: pass.JobID, ceiling: pass.Ceiling})
+	bf, ok := backgroundFrom(ctx)
+	if !ok || bf.h != m.h {
+		bf = &backgroundFacts{h: m.h, jobID: pass.JobID, ceiling: pass.Ceiling}
+		ctx = withBackground(ctx, bf)
+	}
 	fetch := &remote{h: m.h, e: m.e}
 	rq := m.request(ctx, repo, p)
+	if !m.admitted(repo, p) {
+		// The repository's include and exclude patterns hold for a background fill as for a client's fetch, which the dispatcher
+		// and Host.Authorize refuse before the engine is asked (R-REPO-005, R-REPO-065).
+		return filled{}, refused(mirror.RefusedPatterns, errs.E(errs.NotFound, errs.CodeNotFound,
+			"The include and exclude patterns of the repository do not admit "+p.Path+"."))
+	}
 	preq, err := fetch.request(ctx, rq, p, "", proxy.Artifact)
 	if err != nil {
 		return filled{}, err
@@ -200,6 +217,39 @@ func (m *MirrorHost) fillPath(ctx context.Context, repo repository.Repository, p
 	return out, nil
 }
 
+// admitted reports whether the repository's include and exclude patterns admit the artifact at p: its package name for a format whose
+// patterns match names, else its path (R-REPO-005).
+// A format whose items have a second spelling (an official image of Docker Hub, `library/nginx` stored, `nginx` typed and written in the
+// patterns, Q-OCI-129) is admitted when either spelling is, as the names a pass discovers are.
+func (m *MirrorHost) admitted(repo repository.Repository, p formats.Path) bool {
+	f, ok := m.h.o.Formats(repo.Format)
+	return ok && patternsAdmit(repo, f, p)
+}
+
+// patternsAdmit reports whether the repository's include and exclude patterns admit the item at p, in either of its spellings.
+func patternsAdmit(repo repository.Repository, f formats.Format, p formats.Path) bool {
+	one := func(p formats.Path) bool {
+		if f.Descriptor().PatternSubject == formats.SubjectName {
+			name := f.Classify(p).Package
+			return name == "" || repo.Admits(name, false)
+		}
+		return repo.Admits(p.Path, false)
+	}
+	if one(p) {
+		return true
+	}
+	if sp := formats.CapabilitiesFor(formats.ID(repo.Format)).SourceSpeller; sp != nil {
+		if st, ok := repo.Remote(); ok {
+			for _, other := range sp.SourceSpellings(st.URL, p) {
+				if one(other) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // request is the request a format's gate is handed for a path of a pass: no client behind it, no route, the system as subject. Its
 // Host is the format host itself, so that the format finds its per-replica state; the requests the gate makes through
 // Host.Remote() are background requests because the context carries the pass ([withBackground]).
@@ -211,11 +261,14 @@ func (m *MirrorHost) request(ctx context.Context, repo repository.Repository, p 
 	}
 }
 
-// backgroundFacts are what makes a request of the client path's wrapper a background request of a pass.
+// backgroundFacts are what makes a request of the client path's wrapper a background request of a pass, or of a probe's background
+// download (R-REPO-065): then charge is the probe's (limits.Engine.Resume) and the fills are recorded for system:background-download.
 type backgroundFacts struct {
 	h       *Host
 	jobID   string
 	ceiling int
+	charge  *limits.Charge
+	probe   bool
 }
 
 type backgroundKey struct{}
@@ -236,8 +289,13 @@ func backgroundFrom(ctx context.Context) (*backgroundFacts, bool) {
 // system as actor and mirror as reason (R-REPO-057, Q-REPO-145).
 func (b *backgroundFacts) apply(preq *proxy.Request, rq *formats.Request, info formats.PathInfo, p formats.Path) {
 	preq.Priority, preq.Ceiling, preq.JobID, preq.Mode = proxy.PriorityBackground, b.ceiling, b.jobID, proxy.Normal
-	preq.Caller = proxy.CallerFacts{Actor: mirrorActor}
-	preq.Populate = &mirrorPopulate{h: b.h, coord: authz.Coordinate{
+	preq.Charge = b.charge
+	actor, subject, reason := mirrorActor, mirrorSubject, authz.ReasonMirror
+	if b.probe {
+		actor, subject, reason = backgroundActor, backgroundSubject, authz.ReasonBackgroundDownload
+	}
+	preq.Caller = proxy.CallerFacts{Actor: actor}
+	preq.Populate = &mirrorPopulate{h: b.h, subject: subject, reason: reason, coord: authz.Coordinate{
 		Repository: rq.Repo.Name, Class: rq.Repo.Class, Format: rq.Repo.Format, Kind: authz.KindWrite,
 		Path: p.Path, Package: info.Package, Version: info.Version, Actions: []formats.Action{formats.ActionRead},
 		Addressed: rq.Addressed(),
@@ -245,10 +303,14 @@ func (b *backgroundFacts) apply(preq *proxy.Request, rq *formats.Request, info f
 }
 
 // mirrorPopulate is the populate check of a pass's request: the system fills the cache, whatever the repository's cacheFillAction
-// says of clients, and the fill transaction records the populate event with the system as actor and mirror as reason.
+// says of clients, and the fill transaction records the populate event with the system as actor and mirror as reason. A probe's
+// background download records system:background-download and its reason: the populate check was the probe caller's, asked when
+// the probe was answered (R-REPO-065).
 type mirrorPopulate struct {
-	h     *Host
-	coord authz.Coordinate
+	h       *Host
+	subject authz.Subject
+	reason  string
+	coord   authz.Coordinate
 }
 
 var _ proxy.Populate = (*mirrorPopulate)(nil)
@@ -261,7 +323,7 @@ func (*mirrorPopulate) Deny(context.Context) error { return nil }
 
 // Record implements [proxy.Populate]: authz.write.allowed, as a client's fill writes it (R-AUTHZ-008, R-AUTHZ-029).
 func (p *mirrorPopulate) Record(ctx context.Context, tx meta.Tx) error {
-	return p.h.o.Decider.RecordAllowed(ctx, tx, mirrorSubject, p.coord, authz.Decision{Outcome: authz.Allow, Reason: authz.ReasonMirror})
+	return p.h.o.Decider.RecordAllowed(ctx, tx, p.subject, p.coord, authz.Decision{Outcome: authz.Allow, Reason: p.reason})
 }
 
 // Endpoint implements [proxy.Populate]: no endpoint, and one that fills.
@@ -279,6 +341,15 @@ type passUpstream struct {
 	// since is when this attempt of the pass began: a stored document that was validated before it is not current for the
 	// pass's discovery, whatever its period says (see Document).
 	since time.Time
+	// charge and probe make the requests those of a probe's background download (R-REPO-065): charged to the probe's budget key
+	// and recorded for system:background-download.
+	charge *limits.Charge
+	probe  bool
+}
+
+// facts are the background facts of the upstream's requests.
+func (u *passUpstream) facts() *backgroundFacts {
+	return &backgroundFacts{h: u.m.h, jobID: u.pass.JobID, ceiling: u.pass.Ceiling, charge: u.charge, probe: u.probe}
 }
 
 var _ discover.Upstream = (*passUpstream)(nil)
@@ -323,7 +394,7 @@ func (u *passUpstream) Get(ctx context.Context, target *url.URL, accept string, 
 // change (a client may have pulled the document minutes before). Such a document is revalidated once per attempt, one conditional
 // request; an artifact that is stored costs none (R-REPO-051).
 func (u *passUpstream) Document(ctx context.Context, path, variant string) ([]byte, bool, error) {
-	ctx = withBackground(ctx, &backgroundFacts{h: u.m.h, jobID: u.pass.JobID, ceiling: u.pass.Ceiling})
+	ctx = withBackground(ctx, u.facts())
 	p := formats.Path{Path: path}
 	rq := u.m.request(ctx, u.repo, p)
 	doc, err := (&remote{h: u.m.h, e: u.m.e}).metadataSince(ctx, rq, p, variant, u.since)
@@ -373,7 +444,7 @@ func (u *passUpstream) stored(ctx context.Context, path, variant string) ([]byte
 // the call stored is reported to the package's tally (mirror.ReportStored), so that the pass counts it as an item it stored. Any other
 // error is the one Fill would return, and the engine treats it as it treats the error of a plan (mirror.Host).
 func (u *passUpstream) Artifact(ctx context.Context, path string, max int64) ([]byte, bool, error) {
-	f, err := u.m.fillPath(ctx, u.repo, u.pass, formats.Path{Path: path})
+	f, err := u.m.fillPath(withBackground(ctx, u.facts()), u.repo, u.pass, formats.Path{Path: path})
 	if err != nil {
 		var refusal *mirror.RefusedError
 		if errors.As(err, &refusal) && refusal.Reason == mirror.RefusedNotFound {

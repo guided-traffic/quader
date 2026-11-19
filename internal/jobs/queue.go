@@ -196,6 +196,19 @@ func (qu *Queue) Running(ctx context.Context, tx meta.Tx, key string) (j Job, ok
 	return fromRow(rows[0]), true, nil
 }
 
+// Active reports whether a job with the dedup key is queued or running (R-ARCH-016): a caller that would pay for an enqueue that
+// finds one asks first (a probe's background download, R-REPO-065).
+func (qu *Queue) Active(ctx context.Context, key string) (bool, error) {
+	rows, err := q.New(qu.db).FindActiveJobByKey(ctx, key)
+	return len(rows) > 0, err
+}
+
+// CountActive counts the jobs of a kind for a target that are queued or running.
+func (qu *Queue) CountActive(ctx context.Context, kind, targetKey string) (int, error) {
+	n, err := q.New(qu.db).CountActiveJobsOfKindForTarget(ctx, q.CountActiveJobsOfKindForTargetParams{Kind: kind, TargetKey: targetKey})
+	return int(n), err
+}
+
 // EnqueueNow inserts a job in a transaction of its own, for callers that have no
 // change to commit with it.
 func (qu *Queue) EnqueueNow(ctx context.Context, e EnqueueSpec) (Result, error) {

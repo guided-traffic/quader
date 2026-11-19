@@ -356,6 +356,9 @@ remote settings and rules of [repositories-and-proxy.md](../repositories-and-pro
   the format has no package document (`PackageDocumentPath` reports `ok = false`).
 - `Range` works on cached files exactly as on local ones (R-GENERIC-005); a fill streams to its own
   client under the rules of R-REPO-041.
+- A `HEAD` of a file names that file without fetching it: when the remote class is built it is the format's probe, which starts the
+  background download of the file ([repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065). Until then the format has no
+  class remote and declares no probe; the contract's table pins that (`TestR_REPO_065_EveryFormatDeclaresItsProbes`).
 
 Acceptance criteria:
 

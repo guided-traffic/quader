@@ -1887,28 +1887,32 @@ Priority: **P1** · Covers: quader-only
 The owner's decision of 2026-11-19 (W-24, "Option A"): a remote repository lists what was fetched through it, and every cell of such
 a row is true ([Q-API-343](#q-api-343--a-remote-lists-a-version-once-a-client-fetched-it-or-a-mirror-pass-stored-it)).
 
-- A remote repository lists a version once a client fetched it through the repository or, in mirror mode, a pass stored it; nothing
-  the upstream merely knows, and nothing a client only checked. Per format:
+- A remote repository lists a version once a client fetched it through the repository, the background download a probe started
+  stored it ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065) or, in mirror mode, a pass stored it; nothing the upstream
+  merely knows. A client that only checked a version lists it once its background download stored the content. Per format:
 
   | Format | A version is listed once | The upstream's metadata alone lists nothing |
   |---|---|---|
-  | npm | its tarball is stored (a client's download or a pass) | the packument |
+  | npm | its tarball is stored (a client's download, a background download or a pass) | the packument |
   | NuGet | its `.nupkg` is stored | the registration and flat-container documents |
   | Ansible Galaxy | its collection archive is stored | the collection and version documents |
   | Debian | a package file of it is stored; the version is named by the parsed index row of the file's path (Q-REPO-330) | `Release` and the indexes |
-  | OCI | its tag's manifest was downloaded by a client (R-API-079) or the repository is in mirror mode and holds the tag | a `HEAD` of the tag, which stores its document but downloads nothing |
+  | OCI | its tag's manifest was downloaded by a client (R-API-079), a background download stored the whole content of the tag's document (`remote_cache_entries.background_sha256`, migration 00083), or the repository is in mirror mode and holds the tag | a `HEAD` of the tag, which stores its document and downloads nothing until its background download ended |
   | generic | (the files view: every cached file) | |
 
 - The content fill of npm, NuGet, Ansible Galaxy and Debian is a client's download in mode pull-through, so a listed row has one; the
-  download is in the statistics within a flush interval (R-STOR-015). A row in mirror mode that no client fetched says **Never** and 0
-  downloads, which is true: the pass fetched it, no client did.
-- The note above a remote repository's table says it: "Only what clients have fetched through this repository is listed here and, in
-  mirror mode, what a pass has fetched."; for OCI "Only the tags clients have pulled through this repository are listed here and, in
-  mirror mode, those a pass has fetched." (Q-UI-217).
+  download is in the statistics within a flush interval (R-STOR-015). A row in mirror mode, or one a background download stored, that no
+  client fetched says **Never** and 0 downloads, which is true: Quader fetched it, no client did.
+- The note above a remote repository's table says it: "Only what clients have fetched through this repository is listed here, what it
+  downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched."; for OCI "Only the tags clients have
+  pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass
+  has fetched." (Q-UI-217, R-REPO-065).
 
 Acceptance criteria:
 
-- Integration (`ociremote`, `TestR_API_081_…`): a `HEAD` of a tag lists nothing; the `GET` of the tag lists it.
+- Integration (`ociremote`, `TestR_API_081_…`): a `HEAD` of a tag lists nothing on a remote whose `downloadOnProbe` is off; the `GET`
+  of the tag lists it. With `downloadOnProbe` on, the `HEAD` lists the tag once its background download stored the content
+  (`TestR_REPO_065_…`).
 - Integration (`debremote`, `TestR_API_081_…`): a Debian remote that holds only indexes lists nothing; the package file a client fetched
   lists its package and version with the file's size; its removal takes the version with it.
 
@@ -6034,8 +6038,11 @@ Priority: **MVP** · Covers: UI-031, RMT-004
   when Authentication is not None) and runs the test again ([Q-UI-346](#q-ui-346--test-connection-names-a-token-service-that-is-not-allowed-and-offers-to-allow-it)).
 - Inside the group, the region **Upstream details** (a toggle with `aria-expanded`, closed by default) holds **Further hosts** (one
   row per host pattern with a checkbox **Receives the credential**, **Add host**, **Remove**; it starts with the preset's hosts and
-  follows the preset until it is edited), **Metadata cache period in seconds** and **Negative cache period in seconds**, and, on the
-  settings page only, **Offline**.
+  follows the preset until it is edited), **Metadata cache period in seconds** and **Negative cache period in seconds**, the checkbox
+  **Start the download when a version is asked for** (`remote.downloadOnProbe`, checked by default, R-REPO-065,
+  [Q-UI-766](#q-ui-766--the-switch-of-the-background-download-is-a-checkbox-of-the-upstream-details)) with the hint "A client that asks
+  for one version without downloading it, such as for an image's manifest, starts its download in the background, charged to that
+  client's limits.", and, on the settings page only, **Offline**.
 - A create writes what Q-UI-122 says, and `extraHosts` only when the list differs from the hosts the server stores for that URL
   without it (R-REPO-062). The settings page writes the section as Q-UI-122 says, with `extraHosts` always present.
 
@@ -6067,8 +6074,9 @@ Acceptance criteria:
 
 - The form of a local npm repository shows **Advanced settings** closed; opened, it shows Administrator notes, Paths, Access details
   and npm settings with **latestGuard**, and no Disabled.
-- An OCI remote in mode mirror shows the tags and the platforms of `oci.mirror` in the Mirror group, and no group "OCI (Docker)
-  settings".
+- An OCI remote in mode mirror shows the tags of `oci.mirror` in the Mirror group; every OCI remote shows **Platforms** (`oci.platforms`)
+  under "OCI (Docker) settings" with `linux/amd64` and `linux/arm64` in the field, one per line
+  ([Q-UI-767](#q-ui-767--the-platforms-of-an-oci-remote-stand-in-its-format-settings-for-both-modes)).
 - A create refused with a field error at `/includePatterns/0` opens Advanced settings and puts the error at the include patterns.
 
 ### R-UI-084 · A default is the value of its field
@@ -18734,6 +18742,46 @@ title names the thing (the product rule of 2026-11-12).
 
 **Choice:** (a). **Applied in the spec:** R-UI-184. Code: [callers.ts](../../web/src/app/features/limits/callers.ts),
 [usage-detail.ts](../../web/src/app/features/usage/usage-detail.ts), [usage.routes.ts](../../web/src/app/features/usage/usage.routes.ts).
+
+### Q-UI-766 · The switch of the background download is a checkbox of the upstream details
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a
+repository can turn the background download off is Q-REPO-360.
+
+Context: the product rule of 2026-11-12: a setting that only an expert needs stays out of the creation flow and behind a disclosure. The
+switch is a member of the remote section and concerns the upstream.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A checkbox **Start the download when a version is asked for** in **Upstream details**, checked by default, on the creation form and the settings page, with a one-sentence hint (chosen) | The region already holds the upstream's tuning (cache periods, further hosts, Offline) | Behind the closed disclosure; saved with the upstream section; the default is a value in the field (checked) | A plain user who opens the details sees one more line |
+| (b) A group of its own in Advanced settings | Separate | Easy to find for an expert | The upstream's setting away from the upstream; a group of one checkbox |
+
+**Choice:** (a). **Applied in the spec:** R-UI-082. Code: [upstream-settings.ts](../../web/src/app/features/repositories/upstream-settings.ts),
+[upstream-model.ts](../../web/src/app/features/repositories/upstream-model.ts).
+
+### Q-UI-767 · The platforms of an OCI remote stand in its format settings, for both modes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the list
+stands in the advanced settings with `linux/amd64, linux/arm64` as the value in the field is the owner's (2026-11-19, W-25).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `oci.platforms` is a member of the format's settings for the class remote: the field **Platforms** under "OCI (Docker) settings" in Advanced settings of the creation form and in the settings page's section of the format, one platform per line, the two defaults in the field (chosen) | The schema-driven form shows it in both modes; the mirror reads it too (Q-OCI-223) | One list, where the owner put it; no new component | The Mirror group no longer shows the platforms beside the tags |
+| (b) Keep it under Mirror | No move | Next to the tags | Hidden in mode pull-through, which is where the background download runs |
+
+**Choice:** (a). **Applied in the spec:** R-UI-083. Code: [settings.schema.json](../../internal/formats/oci/settings.schema.json).
+
+### Q-UI-768 · The help texts of the background download name what it costs
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The hint of the checkbox says what starts the download, with an image's manifest as the example, and that it is charged to the client's limits; the description of **Platforms** says when the list is read (chosen) | Two sentences at most (R-UI-088) | A person who turns it off knows what they turn off and why it is safe to leave on | Docker Hub's counting of pulls is not named in the hint; the manual says it |
+| (b) Name Docker Hub's pull counting in the hint | Explicit | The cost of one upstream in the field | One upstream's rule in a field of every format |
+
+**Choice:** (a). **Applied in the spec:** R-UI-082, R-UI-083; the manual ([repositories.md](../manual/admin/repositories.md),
+[container-repositories.md](../manual/admin/container-repositories.md)) names Docker Hub's counting.
 
 ### Q-UI-240 · An Ansible package has a Documentation tab and a Contents tab; the README tab is its first page
 

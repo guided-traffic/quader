@@ -133,6 +133,7 @@ function upstreamFormOf(repo: Repository): UpstreamForm {
     metadataTtl: r.cache?.metadataTtlSeconds ?? null,
     notFoundTtl: r.cache?.notFoundTtlSeconds ?? null,
     offline: r.availability?.mode === 'offline',
+    downloadOnProbe: r.downloadOnProbe ?? true,
   };
 }
 

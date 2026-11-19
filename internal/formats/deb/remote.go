@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/deb/release"
 	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
@@ -416,4 +417,10 @@ func (a remoteAdapter) RevalidationRequest(ctx context.Context, rc formats.Remot
 // Unchanged says the document moved whenever this adapter asked: a release no key verifies is fetched again (see RevalidationRequest).
 func (remoteAdapter) Unchanged(formats.Path, formats.RemoteDocument, *http.Response) bool {
 	return false
+}
+
+// ProbeContent implements [formats.RemoteAdapter]: a package file is the whole of its version for its architecture, and the probe
+// names it (R-REPO-065, Q-DEB-122).
+func (remoteAdapter) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
+	return formats.ProbeFiles(p), nil
 }

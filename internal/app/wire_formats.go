@@ -154,6 +154,7 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	r.RegisterTask(ocidata.SweepJobKind, spec)
 	debdata.RegisterJobs(r, a.debHandlers())
 	ansibledata.RegisterJobs(r, ansibledata.Handlers{Reindex: a.ansibleReindexHandler(), DocsFill: a.ansibleDocsFillHandler(), ImportTaskKeep: a.cfg.Ansible.ImportTaskKeep})
+	a.registerBackgroundDownloadJobs(r)
 }
 
 // formatsArea is what the hooks and the seam are made of. The seam reads the Host
@@ -356,6 +357,8 @@ func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo r
 		Vuln:     vz.hostPorts(),
 		Enforce:  vz.enforcer, Repos: repo.reader,
 		DownloadBuffer: int(a.cfg.Storage.Download.BufferSize), Log: a.log.With("component", "formats"),
+		// A probe starts the background download of its version (R-REPO-065).
+		Downloads: backgroundDownloads{a}, ProbeMetrics: a.probeMetrics(),
 	}
 	// A nil pointer in an interface would not be nil: the session service is set only where it was built.
 	if a.uploads != nil {

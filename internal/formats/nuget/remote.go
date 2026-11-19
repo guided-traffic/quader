@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
 	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
 	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The remote class (R-NUGET-014, R-NUGET-015). The remote engine owns the request path, the
@@ -468,4 +469,10 @@ func sortedURLForms(list []string) []string {
 		out[i] = e.url
 	}
 	return out
+}
+
+// ProbeContent implements [formats.RemoteAdapter]: the content of a version is its .nupkg, which the probe names (R-REPO-065,
+// Q-NUGET-124).
+func (remoteAdapter) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
+	return formats.ProbeFiles(p), nil
 }

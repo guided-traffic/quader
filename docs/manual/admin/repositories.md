@@ -100,7 +100,8 @@ The settings of a format are drawn from the schema the format publishes, so the 
 | npm, every class | **Security audit** › **Timeout**, **Largest audit request** (`audit.timeout`, `audit.maxBodySize`) | `30s`, `1MiB` | Limits of one audit request: the wait for the provider, 1 to 300 seconds, when forwarding; the size of the request, 1 KiB to 10 MiB, in every mode |
 | npm virtual | **Latest tag strategy** (`latestStrategy`) | **Highest version** | Which `latest` the virtual repository offers when its members differ: the highest version (`highest-member-latest`) or the most recently published (`newest-published`) |
 | npm virtual | **Dist-tag strategy** (`distTagStrategy`) | **First member in order** | Which value the other dist-tags take when the members differ: the first member in order (`member-order`), the highest version (`highest-semver`) or the most recently published (`newest-published`) |
-| OCI remote | **Tags to mirror**, **Tags never mirrored**, **Platforms** (`mirror.tags`, `mirror.excludeTags`, `mirror.platforms`) | `latest`, none, every platform | Which tags and platforms a mirror copies; read in mode **Mirror** only ([The mirror mode](container-repositories.md#the-mirror-mode)). OCI local and virtual repositories have no settings of the format |
+| OCI remote | **Platforms** (`platforms`) | `linux/amd64`, `linux/arm64` | The platforms of a multi-platform image the repository downloads ahead, one per line: what a background download stores of a tag a client asked about, and what a mirror copies. Empty is every platform ([Downloads a client only asked about](#downloads-a-client-only-asked-about)) |
+| OCI remote | **Tags to mirror**, **Tags never mirrored** (`mirror.tags`, `mirror.excludeTags`) | `latest`, none | Which tags a mirror copies; read in mode **Mirror** only ([The mirror mode](container-repositories.md#the-mirror-mode)). OCI local and virtual repositories have no settings of the format |
 | Debian local | **Architectures**, **Compression**, **Origin**, **Label** (`architectures`, `compression`, `origin`, `label`) | `amd64` and `arm64`, none, `quader`, the repository key | The architectures every suite's indexes are built for, `xz` beside gzip, and the `Origin` and `Label` of every `Release` ([A local repository](apt-repositories.md#a-local-repository)) |
 | Debian virtual | **Suites**, **Components** (`suites`, `components`), and the four settings of a local repository | none, `main` | The suites served besides those of the local members and the components merged ([A virtual repository](apt-repositories.md#a-virtual-repository)) |
 | Debian remote | **Upstream keys** (`upstreamKeys`) | none | The archive's ASCII-armored public keys; with them Quader checks every release before it stores it, and a mirror needs them ([Upstream keys](apt-repositories.md#upstream-keys)). The fingerprints are shown read-only below the settings |
@@ -124,7 +125,7 @@ A remote repository has an **Upstream** group in the creation form and an open s
 
 - **Upstream URL**, **Authentication**, **Username** and **Password or token**, described in the table below. Under the password one line names every host the credential is sent to: the registry's host and each further host that receives it ("The credential is sent to registry.gitlab.com and gitlab.com.").
 - **Test connection**, described below.
-- **Upstream details**, closed at first: the further hosts, the two cache periods and, on the repository's page, **Offline**.
+- **Upstream details**, closed at first: the further hosts, the two cache periods, **Start the download when a version is asked for** and, on the repository's page, **Offline**.
 
 | UI label | Document key | Default | Meaning |
 |---|---|---|---|
@@ -135,6 +136,7 @@ A remote repository has an **Upstream** group in the creation form and an open s
 | **Further hosts** | `remote.extraHosts` | the hosts of the pressed registry (Docker Hub: `auth.docker.io`, GitLab: `gitlab.com`, both receiving the credential; nuget.org: `*.nuget.org`; Ansible Galaxy: `github.com` and `codeload.github.com`), none for another address | Hosts that the upstream's documents and its token service may lead to, each with **Receives the credential**; **Add host** and **Remove** change the list. The list follows the pressed registry until you change it |
 | **Metadata cache period in seconds** | `remote.cache.metadataTtlSeconds` | the format's, shown in the field (npm `7200`, NuGet `300`, OCI `300`, Debian `600`) | How long fetched metadata is served without asking the upstream again; emptied and left, the field shows the default again |
 | **Negative cache period in seconds** | `remote.cache.notFoundTtlSeconds` | the format's, shown in the field (npm and NuGet `1800`, OCI and Debian `300`) | How long an upstream "not found" is remembered |
+| **Start the download when a version is asked for** | `remote.downloadOnProbe` | on (`true`) | A client that asks for one version without downloading it starts the download of that version in the background, so that it is stored when it is pulled; see [Downloads a client only asked about](#downloads-a-client-only-asked-about) |
 | **Offline** | `remote.availability.mode` | off (`online`) | On the repository's page only: the upstream is not contacted; clients get what is already stored |
 
 A member at its default is not written: a new repository of a pressed registry stores that registry's further hosts without the form sending them, because the server takes the hosts of a well-known registry for its address. The other members of `remote` (limits, integrity, the source network, the remaining cache members) are not in the form; the [API](#npm-remote-the-upstream) sets them, and a save from the form leaves them as they are.
@@ -144,6 +146,39 @@ A member at its default is not written: a new repository of a pressed registry s
 **Test connection** sends the section as it stands in the form, saved or not, to `POST /api/v1/projects/<projectKey>/upstream-tests` and shows the answer under the button, in words: **The upstream answered.**, **The upstream answered and accepted the credentials.**, **The upstream answered and refused the credentials.**, **The upstream answered, and its login is on a host this repository may not reach.**, **The upstream answered with an error.** or **The upstream could not be reached.**, then the HTTP status, whether the credentials were **accepted** or **refused**, the token service, the duration, the certificate (subject and expiry) and the reason with its code (`dns_error`, `tls_untrusted`, `egress_denied`, `foreign_host_denied`, `offline`, ...). The result goes when you change a setting. The test uses a password you typed; it does not use the stored one, and the page says so. With **Offline** on the answer is `offline`, because the upstream is not contacted. The permission is the one of saving the repository.
 
 For a container registry the test logs in as a client does: the registry answers with a challenge that names its token service, and with **Username and password** the test asks that token service once, so a wrong password shows as **refused** before you save. When the token service is on a host the repository does not list (a self-managed GitLab hands out its tokens on its own host), the test says so, does not ask it, and offers **Allow** with the host's name: it adds the host to **Further hosts**, receiving the credential when the repository has one, and tests again. Allow a host only when it is the registry's own token service.
+
+### Downloads a client only asked about
+
+A client that asks a remote repository about exactly one version, or one file, without downloading it is likely to download it next. The
+remote then downloads that version in the background, so that it is stored when the pull comes. What counts as such a request, per format:
+
+| Format | The request | What is downloaded |
+|---|---|---|
+| OCI (Docker) | The manifest of a tag (`GET` or `HEAD`, as `docker manifest inspect`, `crane digest` or `skopeo inspect` send it), a `HEAD` of a manifest by digest, a `HEAD` of a blob | The image: of a multi-platform image the platforms of **Platforms** (`linux/amd64` and `linux/arm64` unless you change them), with their configurations and layers |
+| npm | The document of one version (`npm view lodash@4.17.21`), a `HEAD` of a tarball | The tarball |
+| NuGet | The registration leaf of a version, its `.nuspec`, a `HEAD` of the `.nupkg` | The `.nupkg` |
+| Ansible Galaxy | The version document of a collection, a `HEAD` of a collection's or a role's archive | The archive |
+| Debian | A `HEAD` of a package file | The package file |
+
+A request for a whole package (the npm package document, a NuGet version list, the indexes of APT) starts nothing; nor does a request for
+a version that is stored already. `npm install`, `dotnet restore` and `apt-get` read whole packages and download what they need themselves,
+so for them the rule seldom changes anything; for a container image it does.
+
+- **Who pays.** The download is charged to the client that asked, as if it had downloaded the version itself: one upstream request when
+  it starts, every further request and every byte read from the upstream (its **Usage** tab counts it under background downloads). A client
+  whose upstream budget is used up starts nothing in **Enforce**; in **Audit** the download starts and the overview records that it would
+  have been limited ([Download limits](download-limits.md)). The client must be allowed to fill the repository's cache.
+- **What bounds it.** One background download per version at a time, at most as many of a repository at once as its upstream fetches
+  (`remote.limits.maxConcurrentFetches`, 64), at most 1,000 files and the repository's largest artifact size in sum
+  (`remote.limits.maxArtifactBytes`, 10 GiB unless set). It runs as a job (**Administration**, **System**, **Jobs**, kind
+  `remote-background-download`), gives way to the downloads of clients, waits while the upstream is down or asks to slow down, and keeps
+  the repository's include and exclude patterns.
+- **What you see.** The version is listed on the repository's page once its content is stored, with its size; **Last download** and the
+  downloads stay those of clients, so a tag only asked about reads **Never**. Of a multi-platform image the size counts the platforms
+  stored and is marked partial while the image has more.
+- **When to turn it off.** Untick **Start the download when a version is asked for** in **Upstream details** for an upstream that counts
+  every request it answers against an allowance. Docker Hub counts every download of a manifest as a pull, so the background download of a
+  two-platform image costs up to two pulls besides the client's own. Turned off, the remote fetches only what clients download.
 
 ## Mirror
 

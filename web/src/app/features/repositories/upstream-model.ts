@@ -47,6 +47,8 @@ export interface UpstreamForm {
   readonly notFoundTtl: number | string | null;
   /** `remote.availability.mode: offline` (INV-11, R-REPO-030). */
   readonly offline: boolean;
+  /** `remote.downloadOnProbe`: a request for one version without its content starts the download in the background (R-REPO-065). */
+  readonly downloadOnProbe: boolean;
 }
 
 export const EMPTY_UPSTREAM: UpstreamForm = {
@@ -60,6 +62,7 @@ export const EMPTY_UPSTREAM: UpstreamForm = {
   metadataTtl: null,
   notFoundTtl: null,
   offline: false,
+  downloadOnProbe: true,
 };
 
 /** What a format proposes for its remote repositories (`FormatDescriptor`): the values a form leaves unwritten. */
@@ -207,6 +210,9 @@ export function upstreamOf(
   if (write === 'structural' || Object.keys(cache).length > 0) out['cache'] = cache;
   if (form.offline) out['availability'] = { mode: 'offline' };
   else if (write === 'structural') out['availability'] = {};
+  // On by default (R-REPO-065): a create writes the switch only when it is off, the settings page always, so that turning it back on
+  // is a patch of its own.
+  if (!form.downloadOnProbe || write === 'structural') out['downloadOnProbe'] = form.downloadOnProbe;
   return out;
 }
 
@@ -224,6 +230,8 @@ export function upstreamTestBody(
   const url = effectiveUrl(form, defaults);
   if (url !== null) remote['url'] = url;
   if (remote['password'] === null) delete remote['password'];
+  // What a probe starts is no part of the connection the test checks.
+  delete remote['downloadOnProbe'];
   for (const name of ['cache', 'availability']) {
     const member = remote[name] as JsonObject | undefined;
     if (member && Object.keys(member).length === 0) delete remote[name];

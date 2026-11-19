@@ -16,6 +16,7 @@
 package ansible
 
 import (
+	"net/http"
 	"reflect"
 	"slices"
 	"sync"
@@ -130,8 +131,16 @@ func (f *Format) Descriptor() formats.Descriptor {
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
 		},
-		ContractVersion:        formats.ContractVersion,
-		VersionFetch:           formats.FetchLeadFile, // the collection archive (R-API-079)
+		ContractVersion: formats.ContractVersion,
+		VersionFetch:    formats.FetchLeadFile, // the collection archive (R-API-079)
+		// The requests that name one version without fetching its archive (R-REPO-065, Q-ANS-80). The collection document and the
+		// version lists name every version, a role's version list every version of the role, and are none.
+		Probes: []formats.ProbeRoute{
+			{Route: routeVersion, Method: http.MethodGet, What: "the version document of a collection"},
+			{Route: routeVersion, Method: http.MethodHead, What: "a HEAD of the version document"},
+			{Route: routeArtifact, Method: http.MethodHead, What: "a HEAD of a collection's archive"},
+			{Route: routeRoleArchive, Method: http.MethodHead, What: "a HEAD of a role's archive"},
+		},
 		Names:                  names{},
 		Clients:                clients(),
 		PropertyPrefix:         "ansible.",

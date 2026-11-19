@@ -69,6 +69,8 @@ func TestRemoteDefaults(t *testing.T) {
 			Limits:       RemoteLimits{MaxConcurrentFetches: 64},
 			Mode:         "pullThrough",
 			Mirror:       MirrorSettings{IntervalSeconds: 3600, FullPassIntervalSeconds: 604800, Discovery: "auto", Concurrency: 4, IncludePrereleases: true},
+			// R-REPO-065: a probe starts the background download unless the repository turns it off.
+			DownloadOnProbe: true,
 		}
 		if got := settingsOf(t, d); !reflect.DeepEqual(got, want) {
 			t.Fatalf("settings =\n%+v\nwant\n%+v", got, want)
@@ -558,4 +560,24 @@ func TestRepositoryRemote(t *testing.T) {
 			t.Fatalf("err = %v, disabled = %v", err, repo.Disabled)
 		}
 	})
+}
+
+func TestR_REPO_065_DownloadOnProbeIsOnByDefaultAndCanBeTurnedOff(t *testing.T) {
+	d, v := validateRemoteDoc(t, `{"url":"https://registry.example.com/","downloadOnProbe":false}`)
+	if err := v.err(); err != nil {
+		t.Fatal(err)
+	}
+	if settingsOf(t, d).DownloadOnProbe {
+		t.Fatal("downloadOnProbe false reads back true")
+	}
+	if !strings.Contains(string(d.Remote), `"downloadOnProbe":false`) {
+		t.Fatalf("the canonical section does not hold the member: %s", d.Remote)
+	}
+	s, err := parseStoredRemote([]byte(`{"url":"https://registry.example.com/"}`))
+	if err != nil || !s.DownloadOnProbe {
+		t.Fatalf("a stored section without the member reads %+v (%v), want downloadOnProbe true", s, err)
+	}
+	if _, err := DecodeDocument([]byte(`{"format":"npm","class":"remote","remote":{"url":"https://registry.example.com/","downloadOnProbe":"yes"}}`)); err == nil {
+		t.Fatal("a string for downloadOnProbe is accepted")
+	}
 }

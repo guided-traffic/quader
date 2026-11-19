@@ -26,6 +26,12 @@ SELECT * FROM job
  ORDER BY (state = 'queued') DESC, created_at
  LIMIT 1;
 
+-- name: CountActiveJobsOfKindForTarget :one
+-- The jobs of one kind for one target that are queued or running: the bound of the background downloads one remote repository has at
+-- once (repositories-and-proxy.md R-REPO-065).
+SELECT count(*)::int AS active FROM job
+ WHERE kind = sqlc.arg(kind)::text AND target_key = sqlc.arg(target_key)::text AND state IN ('queued', 'running', 'cancelling');
+
 -- name: FindRunningJobByKey :many
 SELECT * FROM job
  WHERE dedup_key = sqlc.arg(dedup_key)::text AND state IN ('running', 'cancelling')

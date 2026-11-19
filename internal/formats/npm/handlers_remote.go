@@ -252,7 +252,37 @@ func (f *Format) remoteDocument(ctx context.Context, rq *formats.Request, w http
 	if err != nil {
 		return err
 	}
-	return f.serveFull(ctx, rq, w, n, src)
+	if err := f.serveFull(ctx, rq, w, n, src); err != nil {
+		return err
+	}
+	if fm == formVersion {
+		f.probeVersion(ctx, rq, n, ref, src)
+	}
+	return nil
+}
+
+// probeVersion tells the host of a probe (repositories-and-proxy.md R-REPO-065, Q-NPM-89): the version document of a remote names
+// exactly one version, by its number or a dist-tag, and fetches none of its content, the tarball. A dist-tag is read from the stored
+// document the answer was cut from; a version the endpoint hides is no probe.
+func (f *Format) probeVersion(ctx context.Context, rq *formats.Request, n name.Name, ref string, src fullSource) {
+	version, ok := canonicalVersion(ref)
+	if !ok {
+		full, err := src.bytes(ctx)
+		if err != nil {
+			return
+		}
+		tags, err := remote.TagsOf(full)
+		if err != nil {
+			return
+		}
+		if version, ok = canonicalVersion(tags[ref]); !ok {
+			return
+		}
+	}
+	if hiddenVersion(rq, n, version) != nil {
+		return
+	}
+	rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: n.String(), Version: version, Files: []formats.Path{{Path: TarballPath(n, version)}}})
 }
 
 // remoteTarball serves a tarball of a remote repository: the cached item, or one fetch
@@ -266,7 +296,15 @@ func (f *Format) remoteTarball(ctx context.Context, rq *formats.Request, w http.
 	if err := hiddenVersion(rq, n, version); err != nil {
 		return err
 	}
-	return rq.Host.Remote().Artifact(ctx, rq, formats.Path{Path: TarballPath(n, version)}, formats.Digests{}, immutableWriter{w})
+	path := formats.Path{Path: TarballPath(n, version)}
+	if err := rq.Host.Remote().Artifact(ctx, rq, path, formats.Digests{}, immutableWriter{w}); err != nil {
+		return err
+	}
+	if rq.Method == http.MethodHead {
+		// A HEAD of the tarball names the version's one file and fetches none of it: a probe (R-REPO-065, Q-NPM-89).
+		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: n.String(), Version: version, Files: []formats.Path{path}})
+	}
+	return nil
 }
 
 // nonLocalDocument serves the package document of a remote or virtual repository in the

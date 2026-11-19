@@ -155,7 +155,11 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 			}
 		}
 		vw := validatorWriter{ResponseWriter: w, digest: ref}
-		return missing(rq.Host.Remote().Artifact(ctx, storedValidators(rq), formats.Path{Path: path}, formats.Digests{}, vw), errManifestUnknown)
+		if err := rq.Host.Remote().Artifact(ctx, storedValidators(rq), formats.Path{Path: path}, formats.Digests{}, vw); err != nil {
+			return missing(err, errManifestUnknown)
+		}
+		probeFile(ctx, rq, name, ref, path)
+		return nil
 	}
 	if !ValidTag(ref) {
 		return errManifestUnknown()
@@ -189,6 +193,7 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 		return err
 	}
 	recordTagFetch(ctx, rq, name, doc.Digest)
+	f.probeTag(ctx, rq, name, ref, doc.Digest, body)
 	return nil
 }
 
@@ -264,7 +269,11 @@ func (f *Format) remoteBlobGet(ctx context.Context, rq *formats.Request, w http.
 		return err
 	}
 	vw := validatorWriter{ResponseWriter: w, digest: digest, contentType: blobContentType}
-	return missing(rq.Host.Remote().Artifact(ctx, storedValidators(rq), formats.Path{Path: path}, formats.Digests{}, vw), errBlobUnknown)
+	if err := rq.Host.Remote().Artifact(ctx, storedValidators(rq), formats.Path{Path: path}, formats.Digests{}, vw); err != nil {
+		return missing(err, errBlobUnknown)
+	}
+	probeFile(ctx, rq, name, "", path)
+	return nil
 }
 
 // storedTaglist is the tags list document the engine stores: the upstream's answer and, when the upstream cut it, the member the

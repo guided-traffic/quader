@@ -5543,6 +5543,25 @@ answers 501 to a caller who may read the wiki.
 
 **Applied in the spec:** R-NUGET-024.
 
+### Q-NUGET-124 · The registration leaf, the .nuspec and a HEAD of the package are probes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a request
+naming exactly one version without fetching it starts its download is the owner's (2026-11-19, W-25,
+[repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065).
+
+Context: of NuGet's requests the registration leaf of a version and the `.nuspec` name one version and fetch none of the `.nupkg`; a
+`HEAD` of the `.nupkg` names it and fetches nothing. `dotnet restore` reads the flat container's version list and the registration
+index, which name every version, and then fetches the `.nupkg` itself.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The registration leaf (`GET` and `HEAD`), the `.nuspec` (`GET` and `HEAD`) and a `HEAD` of the `.nupkg`; the content is the `.nupkg` (chosen) | The owner's rule applied to NuGet's requests | A tool that reads a version's `.nuspec` before it installs finds the package stored | The rule fires seldom: a restore is no probe |
+| (b) Also the icon and the license of a version | More probes | — | They are files of the package; a client that reads them reads the package next anyway |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-065. Code: `remoteFile`, `remoteRegistration` and `probeVersion` in
+[handlers_remote.go](../../../internal/formats/nuget/handlers_remote.go). Tests: `TestR_REPO_065_WhatAProbeOfNuGetIs` in
+[probe_test.go](../../../internal/formats/nuget/probe_test.go).
+
 ## What this does not cover
 
 ### H-35 · Cached NuGet packages are not checked against an upstream digest

@@ -38,10 +38,11 @@ const MEMBER_POINTERS = [
   '/remote/cache/metadataTtlSeconds',
   '/remote/cache/notFoundTtlSeconds',
   '/remote/availability/mode',
+  '/remote/downloadOnProbe',
 ];
 
 /** The pointers whose controls sit in the region Upstream details: an error at one of them opens it (R-UI-083). */
-const DETAIL_POINTERS = ['/remote/extraHosts', '/remote/cache', '/remote/availability'];
+const DETAIL_POINTERS = ['/remote/extraHosts', '/remote/cache', '/remote/availability', '/remote/downloadOnProbe'];
 
 /**
  * The control a field error of the upstream settings belongs to (`/remote/url`, `/remote/password/value`),
@@ -71,6 +72,9 @@ export function upstreamPointerLabel(pointer: string): string | null {
     return $localize`:@@upstream.notfound-ttl:Negative cache period in seconds`;
   }
   if (pointer.startsWith('/remote/availability')) return $localize`:@@upstream.offline:Offline`;
+  if (pointer.startsWith('/remote/downloadOnProbe')) {
+    return $localize`:@@upstream.download-on-probe:Start the download when a version is asked for`;
+  }
   return $localize`:@@upstream.heading:Upstream`;
 }
 
@@ -401,6 +405,27 @@ export function upstreamPointerLabel(pointer: string): string | null {
               How long a "not found" answer of the upstream is remembered.
             </p>
             @for (e of problems('/remote/cache/notFoundTtlSeconds'); track $index) {
+              <p class="field-error">{{ message(e) }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label class="check-row" for="f-remote-downloadOnProbe">
+              <input
+                id="f-remote-downloadOnProbe"
+                type="checkbox"
+                [checked]="upstream().downloadOnProbe"
+                [attr.aria-invalid]="invalid('/remote/downloadOnProbe')"
+                aria-describedby="d-remote-downloadOnProbe"
+                (change)="set({ downloadOnProbe: $any($event.target).checked })"
+              />
+              <span i18n="@@upstream.download-on-probe">Start the download when a version is asked for</span>
+            </label>
+            <p id="d-remote-downloadOnProbe" class="hint" i18n="@@upstream.download-on-probe.hint">
+              A client that asks for one version without downloading it, such as for an image's manifest, starts its download in the
+              background, charged to that client's limits.
+            </p>
+            @for (e of problems('/remote/downloadOnProbe'); track $index) {
               <p class="field-error">{{ message(e) }}</p>
             }
           </div>

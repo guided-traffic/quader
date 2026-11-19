@@ -241,9 +241,13 @@ may be templated from claims (e.g. a package-name pattern derived from `project_
 a raw `CI_JOB_TOKEN` against the GitLab API is an optional fallback mode, off by default;
 specified as P2 in [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-022.
 
-**INV-11 · Pull-through proxy.** A remote repository fetches from its upstream on a cache miss,
-stores the binary in the blob store, caches metadata for a configurable period, caches misses
-(negative cache), and serves stale metadata when the upstream is unreachable. Concurrent misses
+**INV-11 · Pull-through proxy.** A remote repository fetches from its upstream on a cache miss, and
+fetches ahead only for a reason: the content of a version a client probed (named exactly that
+version or file without fetching it), in the background right after the probe and charged to that
+client's upstream budget, unless the repository turns it off ([repositories-and-proxy.md](repositories-and-proxy.md)
+R-REPO-065, [usage-and-limits.md](usage-and-limits.md) R-LIM-037), and, in the mode `mirror`, what its
+passes discover (R-REPO-050). It stores the binary in the blob store, caches metadata for a configurable
+period, caches misses (negative cache), and serves stale metadata when the upstream is unreachable. Concurrent misses
 for the same object are collapsed: in-process single-flight plus a Valkey lock across replicas. A
 lock lost in a Valkey failover only causes a duplicate upstream fetch, which content addressing
 makes harmless. URLs in upstream metadata are rewritten to point at Quader.

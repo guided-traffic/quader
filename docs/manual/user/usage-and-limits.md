@@ -19,6 +19,11 @@ Open the user menu, then **Profile**, then the tab **Usage**. The page shows:
 
 If you downloaded nothing in the last 24 hours, the page says so.
 
+**Downloads in the background count as yours.** When you ask a remote repository about one version without downloading it, the manifest of
+an image tag for example, the repository downloads that version in the background ([Downloads a client only asked about](../admin/repositories.md#downloads-a-client-only-asked-about)).
+That download is charged to you: its requests to the upstream and the bytes read from it appear in your usage as if you had pulled the
+version, and when your upstream budget is used up nothing is downloaded.
+
 ## When a download is refused
 
 A client that meets a limit gets the answer `429 Too Many Requests` with the time to wait. npm, Docker and curl show the reason; the NuGet clients and APT show only the status.

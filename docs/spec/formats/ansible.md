@@ -2987,6 +2987,24 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Applied in the spec:** H-900.
 
+### Q-ANS-80 · The version document and a HEAD of an archive are probes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a request
+naming exactly one version without fetching it starts its download is the owner's (2026-11-19, W-25,
+[repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065).
+
+Context: the version document of a collection names one version and announces its archive's digest and size; `ansible-galaxy` reads it
+and then fetches the archive itself. A role's archive has no version document; a `HEAD` of an archive names one file.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The version document (`GET` and `HEAD`) and a `HEAD` of a collection's or a role's archive; the content is the archive (chosen) | The owner's rule applied to the Galaxy's requests | A version a client resolved is fetched once, by whichever comes first; the flights collapse the client's own fetch with the background one | For `ansible-galaxy collection install` the background download overlaps the client's fetch and saves nothing |
+| (b) Only a `HEAD` of an archive | Narrow | No overlap with an install | The version document is the Galaxy's request that names one version |
+
+**Choice:** (a). The collection document and the version lists name every version and are none. **Applied in the spec:** R-REPO-065.
+Code: `remoteVersion`, `remoteArtifact`, `remoteRoleArchive` in [handlers_remote.go](../../../internal/formats/ansible/handlers_remote.go).
+Tests: `TestR_REPO_065_WhatAProbeOfTheGalaxyIs` in [probe_test.go](../../../internal/formats/ansible/probe_test.go).
+
 ## What this does not cover
 
 ### H-839 · A remote's signatures are passed through and not verified by Quader

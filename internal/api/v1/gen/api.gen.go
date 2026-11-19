@@ -9151,18 +9151,20 @@ type ObjectStoreFacts struct {
 // fails on any difference between the two. Local and virtual repositories have no settings of the format: a setting that
 // does not apply to the class of the repository answers 422 `not_applicable`. An omitted setting takes its default.
 type OciSettings struct {
-	// Mirror Remote repositories (R-OCI-026, Q-OCI-16). What a mirror of a registry keeps; present in both modes and effective in mode
+	// Mirror Remote repositories (R-OCI-026, Q-OCI-16). Which tags a mirror of a registry keeps; present in both modes and effective in mode
 	// `mirror`. A caller without `repositories:write-config` on the project cannot change it on a mirror (R-REPO-050, Q-OCI-22).
 	Mirror *struct {
 		// ExcludeTags Tag patterns that are never mirrored.
 		ExcludeTags *[]string `json:"excludeTags,omitempty"`
 
-		// Platforms Platforms (`os/arch` or `os/arch/variant`) of an index whose manifests are mirrored; empty is every platform.
-		Platforms *[]string `json:"platforms,omitempty"`
-
 		// Tags Tag patterns (`*` and `?`) a tag must match to be mirrored; a pattern without a wildcard names a tag that is always kept.
 		Tags *[]string `json:"tags,omitempty"`
 	} `json:"mirror,omitempty"`
+
+	// Platforms Remote repositories (Q-OCI-223). The platforms (`os/arch` or `os/arch/variant`) of an index whose manifests the repository
+	// downloads ahead: the background download a probe of a tag starts (R-REPO-065) and a mirror's passes (R-OCI-026). Empty is
+	// every platform; left out, `linux/amd64` and `linux/arm64` (the owner, 2026-11-19).
+	Platforms *[]string `json:"platforms,omitempty"`
 }
 
 // OwnedPackage One name an identity owns.
@@ -10107,6 +10109,11 @@ type RemoteSettings struct {
 	// ClientCertificate A named client certificate (R-REPO-034, P1). A value is refused with `not_applicable` until it is built.
 	ClientCertificate *string `json:"clientCertificate,omitempty"`
 	ConnectTimeoutMs  *int    `json:"connectTimeoutMs,omitempty"`
+
+	// DownloadOnProbe A request that names exactly one version or file without fetching its content (the manifest of an OCI tag, an npm version
+	// document, a HEAD of a file) starts the download of that version's content in the background, charged to the caller's
+	// upstream budget (R-REPO-065, usage-and-limits.md R-LIM-037). `false` for an upstream that counts every request it answers.
+	DownloadOnProbe *bool `json:"downloadOnProbe,omitempty"`
 
 	// ExtraHosts Further hosts that upstream metadata or redirects may point to (R-REPO-043). The format
 	// proposes entries for its well-known upstream only.

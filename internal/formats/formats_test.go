@@ -50,6 +50,7 @@ func valid(id string) Descriptor {
 	return Descriptor{
 		Facts:           catalog.Facts{ID: ID(id), Classes: []Class{Local}, Layout: id, PatternSubject: SubjectPath},
 		ContractVersion: ContractVersion,
+		NoProbe:         "a format of the contract's tests",
 	}
 }
 

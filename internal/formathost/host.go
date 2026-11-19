@@ -102,11 +102,18 @@ type Options struct {
 	// read in. A host without either reads no block and refuses nothing (a replica that has not wired the scanning).
 	Enforce *enforce.Enforcer
 	Repos   repository.Reader
-	Log     *slog.Logger
+	// Downloads is the queue of the background downloads a probe starts (R-REPO-065); nil starts none. ProbeMetrics counts the
+	// decisions; nil counts nothing.
+	Downloads    BackgroundDownloads
+	ProbeMetrics *ProbeMetrics
+	Log          *slog.Logger
 }
 
 // Host implements formats.Host.
-type Host struct{ o Options }
+type Host struct {
+	o  Options
+	pr *probes
+}
 
 var _ formats.Host = (*Host)(nil)
 
@@ -128,7 +135,7 @@ func New(o Options) (*Host, error) {
 	if o.Renditions == nil {
 		o.Renditions = missCache{}
 	}
-	h := &Host{}
+	h := &Host{pr: newProbes()}
 	if o.Remote == nil && o.Engine != nil {
 		o.Remote = &remote{h: h, e: o.Engine}
 	}

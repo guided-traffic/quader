@@ -44,6 +44,8 @@ export interface RepoSeed {
   readonly includePatterns?: readonly string[];
   /** The member `vulnerabilities` of the repository document (R-VULN-002). */
   readonly vulnerabilities?: { readonly matchPublicAdvisories: 'auto' | 'always' | 'never' };
+  /** `remote.downloadOnProbe` of a remote (R-REPO-065); absent is the default, on. Set on an existing repository too. */
+  readonly downloadOnProbe?: boolean;
   /** The levels of the artifacts and of the wiki (R-AUTHZ-033); absent takes the lower of the installation's default and the project's level. */
   readonly visibility?: { readonly artifacts: 'private' | 'internal' | 'public'; readonly wiki: 'private' | 'internal' | 'public' };
 }
@@ -65,6 +67,12 @@ export const projects = [
 /** The local repository a remote of the renders caches from, and the remote (W-24). */
 export const remoteSource = { key: 'image-source', prefix: 'vendor' } as const;
 export const remoteCache = { key: 'image-cache' } as const;
+/**
+ * A remote over the same upstream whose tag arrived by a background download (W-25, R-REPO-065): the seed asks only `HEAD` of the
+ * tag `3.0`, an index of three platforms, and the remote downloads in the background the two of its list (`linux/amd64`,
+ * `linux/arm64`), so that the tag is listed with the size of those two, marked partial, and no client download.
+ */
+export const probedCache = { key: 'image-probed', tag: '3.0' } as const;
 /**
  * The image of two platforms in image-source and what the seed pulls of it through image-cache: `1.9` is one platform's image
  * (its size is known from its manifest), `2.0` the index with one platform pulled (a partial size), `2.1` the index alone (a
@@ -133,6 +141,16 @@ export const repositories: readonly RepoSeed[] = [
     description: 'The images of image-source, cached through its registry address.',
     // The upstream's namespace prefix: image-cache's tools/agent is image-source's vendor/tools/agent, so that the package page of
     // tools/agent shows the remote's versions alone.
+    url: `https://localhost:4200/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
+    // Its pulls give the rows of W-24 one platform and none of an index: a probe would download the rest (R-REPO-065).
+    downloadOnProbe: false,
+  },
+  {
+    project: otherProject,
+    key: probedCache.key,
+    format: 'oci',
+    class: 'remote',
+    description: 'The images of image-source; a tag a client only asks about is downloaded in the background.',
     url: `https://localhost:4200/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
   },
   { project: otherProject, key: longDebKey, format: 'deb', class: 'local', description: 'Packages of the platform team for Debian 12 and 13.' },
@@ -305,6 +323,7 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
     if (r.visibility) body['visibility'] = r.visibility;
     if (r.includePatterns) body['includePatterns'] = r.includePatterns;
     if (r.class === 'remote' && r.url) body['remote'] = { url: r.url };
+    if (r.class === 'remote' && r.downloadOnProbe !== undefined) body['remote'] = { ...(body['remote'] as object), downloadOnProbe: r.downloadOnProbe };
     if (r.vulnerabilities) body['vulnerabilities'] = r.vulnerabilities;
     if (r.class === 'virtual') {
       const target = r.members?.find((m) => repositories.find((x) => x.key === m)?.class === 'local');
@@ -312,6 +331,11 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
     }
     const res = await admin.post(`/api/v1/projects/${r.project}/repositories`, body);
     await expectStatus(res, [201, 409], `create repository ${r.project}/${r.key}`);
+    if (res.status() === 409 && r.downloadOnProbe !== undefined) {
+      // A database of an earlier run holds the repository without the setting: it is set, as the seed's pictures need it.
+      const set = await admin.patch(`/api/v1/projects/${r.project}/repositories/${r.key}`, { remote: { downloadOnProbe: r.downloadOnProbe } }, { 'If-Match': '*' });
+      await expectStatus(set, [200], `downloadOnProbe of ${r.project}/${r.key}`);
+    }
   }
 }
 
@@ -821,8 +845,9 @@ export async function seedRemoteImages(ctx: APIRequestContext, edge: string, pat
     await putManifest(digest, manifest, 'application/vnd.oci.image.manifest.v1+json');
     return { digest, size: manifest.length, body: manifest };
   };
-  const index = async (tag: string): Promise<string[]> => {
-    const children = [await image('amd64', tag), await image('arm64', tag)];
+  const index = async (tag: string, arches: readonly string[] = ['amd64', 'arm64']): Promise<string[]> => {
+    const children = [];
+    for (const arch of arches) children.push(await image(arch, tag));
     const body = Buffer.from(
       JSON.stringify({
         schemaVersion: 2,
@@ -831,7 +856,7 @@ export async function seedRemoteImages(ctx: APIRequestContext, edge: string, pat
           mediaType: 'application/vnd.oci.image.manifest.v1+json',
           digest: c.digest,
           size: c.size,
-          platform: { os: 'linux', architecture: i === 0 ? 'amd64' : 'arm64' },
+          platform: { os: 'linux', architecture: arches[i] },
         })),
       }),
     );
@@ -842,6 +867,7 @@ export async function seedRemoteImages(ctx: APIRequestContext, edge: string, pat
   await putManifest(remoteImage.single, single.body, 'application/vnd.oci.image.manifest.v1+json');
   const partial = await index(remoteImage.partial);
   await index(remoteImage.unknown);
+  await index(probedCache.tag, ['amd64', 'arm64', 's390x']);
 
   // The pulls of a client through the remote, as the power user (a developer of the project reads it).
   const cached = `${otherProject}/${remoteCache.key}/${remoteImage.name}`;
@@ -849,6 +875,31 @@ export async function seedRemoteImages(ctx: APIRequestContext, edge: string, pat
   for (const ref of [remoteImage.single, remoteImage.partial, partial[0]!, remoteImage.unknown]) {
     const res = await patient(() => ctx.get(`/v2/${cached}/manifests/${ref}`, { headers: pull }));
     await expectStatus(res, [200], `pull ${cached}:${ref} through the remote`);
+  }
+
+  // A client that only asks about a tag (W-25): the HEAD of the manifest of 3.0 through image-probed starts its background download,
+  // which a worker of the instance runs; the seed waits until the remote lists the tag, which it does once the download stored the
+  // content (R-API-081). A database of an earlier run lists it already.
+  const probed = `${otherProject}/${probedCache.key}/${remoteImage.name}`;
+  const ask = { Authorization: `Bearer ${await registryToken(ctx, edge, pat, probed, 'pull')}`, Accept: pull.Accept };
+  const head = await patient(() => ctx.head(`/v2/${probed}/manifests/${probedCache.tag}`, { headers: ask }));
+  await expectStatus(head, [200], `HEAD ${probed}:${probedCache.tag} through the remote`);
+  const auth = { Authorization: `Bearer ${pat}` };
+  const deadline = Date.now() + 120_000;
+  // On a new database the package exists only once a pull through a remote has recorded it, which is a moment after the pull
+  // was answered: the lookup is asked until it finds the package, within the same deadline as the tag.
+  let lookup = await patient(() => ctx.get(`/api/v1/packages/lookup?format=oci&name=${encodeURIComponent(remoteImage.name)}`, { headers: auth }));
+  while (lookup.status() === 404 && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 1000));
+    lookup = await patient(() => ctx.get(`/api/v1/packages/lookup?format=oci&name=${encodeURIComponent(remoteImage.name)}`, { headers: auth }));
+  }
+  await expectStatus(lookup, [200], `look up ${remoteImage.name}`);
+  const id = ((await lookup.json()) as { id: string }).id;
+  for (;;) {
+    const res = await ctx.get(`/api/v1/packages/${id}/versions/${probedCache.tag}`, { headers: auth });
+    if (res.status() === 200) break;
+    if (Date.now() > deadline) throw new Error(`${probed}:${probedCache.tag} is not listed 120 s after its probe: ${res.status()} ${(await res.text()).slice(0, 300)}`);
+    await new Promise((r) => setTimeout(r, 1000));
   }
 }
 

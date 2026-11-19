@@ -37,8 +37,9 @@ const (
 type ociOptions struct {
 	include []string
 	mirror  settings
-	// oci is the member oci.mirror of the repository document.
-	oci map[string]any
+	// oci is the member oci.mirror of the repository document, platforms its oci.platforms (nil: the default, Q-OCI-223).
+	oci       map[string]any
+	platforms []string
 	// mode is the stub's switches.
 	mode ocistub.Mode
 	// hub makes the stub answer under the names of Docker Hub and the repository point at registry-1.docker.io.
@@ -89,8 +90,15 @@ func newOCIRig(t *testing.T, o ociOptions) *ociRig {
 	if err := json.Unmarshal([]byte(remoteDocAt(upstream, "mirror", o.include, o.mirror, map[string]any{"extraHosts": extra})), &doc); err != nil {
 		t.Fatal(err)
 	}
-	if o.oci != nil {
-		doc["oci"] = map[string]any{"mirror": o.oci}
+	if o.oci != nil || o.platforms != nil {
+		member := map[string]any{}
+		if o.oci != nil {
+			member["mirror"] = o.oci
+		}
+		if o.platforms != nil {
+			member["platforms"] = o.platforms
+		}
+		doc["oci"] = member
 	}
 	raw, _ := json.Marshal(doc)
 
@@ -314,11 +322,11 @@ func TestR_OCI_026_AnExactNamePassStoresTheSameWithoutACatalog(t *testing.T) {
 	}
 }
 
-// R-OCI-026: oci.mirror.platforms keeps the index, the selected manifest, its attestation and their blobs, and nothing of the platforms
+// R-OCI-026, Q-OCI-223: oci.platforms keeps the index, the selected manifest, its attestation and their blobs, and nothing of the platforms
 // left out; linux/arm64 matches the variant v8 of the stub's index.
 func TestR_OCI_026_APlatformFilterKeepsTheArm64ManifestWithItsAttestationOnly(t *testing.T) {
 	r := newOCIRig(t, ociOptions{
-		include: []string{"acme/b"}, oci: map[string]any{"tags": []string{"1.0"}, "platforms": []string{"linux/arm64"}},
+		include: []string{"acme/b"}, oci: map[string]any{"tags": []string{"1.0"}}, platforms: []string{"linux/arm64"},
 	})
 	one, _, web := r.workers()
 	t0 := r.pass(one)

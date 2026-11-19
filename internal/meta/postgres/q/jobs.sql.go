@@ -265,6 +265,25 @@ func (q *Queries) CompleteJob(ctx context.Context, arg CompleteJobParams) (int64
 	return result.RowsAffected(), nil
 }
 
+const countActiveJobsOfKindForTarget = `-- name: CountActiveJobsOfKindForTarget :one
+SELECT count(*)::int AS active FROM job
+ WHERE kind = $1::text AND target_key = $2::text AND state IN ('queued', 'running', 'cancelling')
+`
+
+type CountActiveJobsOfKindForTargetParams struct {
+	Kind      string
+	TargetKey string
+}
+
+// The jobs of one kind for one target that are queued or running: the bound of the background downloads one remote repository has at
+// once (repositories-and-proxy.md R-REPO-065).
+func (q *Queries) CountActiveJobsOfKindForTarget(ctx context.Context, arg CountActiveJobsOfKindForTargetParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countActiveJobsOfKindForTarget, arg.Kind, arg.TargetKey)
+	var active int32
+	err := row.Scan(&active)
+	return active, err
+}
+
 const databaseNow = `-- name: DatabaseNow :one
 SELECT now()::timestamptz AS now
 `

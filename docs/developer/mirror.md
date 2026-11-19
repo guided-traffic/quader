@@ -464,6 +464,7 @@ behind it. Specified in R-REPO-054, R-REPO-055 and R-REPO-057; the decisions are
 | `vulnerability_blocked`, `vulnerability_data_missing` | `*mirror.RefusedError{blocked}` | counts it, next item |
 | `populate_not_permitted` | `*mirror.RefusedError{populate_denied}` | counts it, next item |
 | a not-found or forbidden answer of the format's `BeforeArtifact` | `*mirror.RefusedError{gate_refused}` | counts it, next item |
+| (before the engine) the repository's include and exclude patterns do not admit the item's name or path (`MirrorHost.admitted`, Q-REPO-365) | `*mirror.RefusedError{not_admitted}` | counts it, next item |
 | `not_cached_offline` (the repository is offline) | the error as it is: a failure of the item with its own code | stops the pass as offline |
 | `shutting_down` (the shutdown cancelled the request) | wraps `mirror.ErrShuttingDown` | stops, writes nothing |
 | a pre-emption | wraps `mirror.ErrPreempted` | fetches the item later |

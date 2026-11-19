@@ -142,8 +142,18 @@ const (
 	RefusedGate = "gate_refused"
 	// RefusedPopulate: the populate check refuses the fill (R-AUTHZ-008).
 	RefusedPopulate = "populate_denied"
+	// RefusedPatterns: the repository's include and exclude patterns do not admit the artifact's package or path (R-REPO-005): a
+	// background fill keeps them as a client's fetch does (R-REPO-065).
+	RefusedPatterns = "not_admitted"
 )
 
 // ErrShuttingDown is wrapped by the error of a background request that the process's shutdown cancelled: the pass stops
 // and writes nothing, so that the job is released with its attempt unchanged (R-REPO-053, R-ARCH-024).
 var ErrShuttingDown = errors.New("mirror: the process is shutting down")
+
+// WithStoredTally gives a context the function that counts an artifact a format's reading of a version stored through
+// Upstream.Artifact (ReportStored): the background download of a probe counts the manifests it read to find the content
+// (repositories-and-proxy.md R-REPO-065) as a pass counts what its plan stored.
+func WithStoredTally(ctx context.Context, f func(FillResult)) context.Context {
+	return withStoredTally(ctx, f)
+}

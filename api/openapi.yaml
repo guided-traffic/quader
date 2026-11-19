@@ -20313,7 +20313,7 @@ components:
           type: object
           additionalProperties: false
           description: |
-            Remote repositories (R-OCI-026, Q-OCI-16). What a mirror of a registry keeps; present in both modes and effective in mode
+            Remote repositories (R-OCI-026, Q-OCI-16). Which tags a mirror of a registry keeps; present in both modes and effective in mode
             `mirror`. A caller without `repositories:write-config` on the project cannot change it on a mirror (R-REPO-050, Q-OCI-22).
           properties:
             tags:
@@ -20335,15 +20335,18 @@ components:
               items:
                 type: string
                 pattern: "^[a-zA-Z0-9_.*?-]{1,128}$"
-            platforms:
-              type: array
-              maxItems: 32
-              uniqueItems: true
-              default: []
-              description: Platforms (`os/arch` or `os/arch/variant`) of an index whose manifests are mirrored; empty is every platform.
-              items:
-                type: string
-                pattern: "^[a-z0-9]+/[a-z0-9]+(?:/[a-z0-9]+)?$"
+        platforms:
+          type: array
+          maxItems: 32
+          uniqueItems: true
+          default: [linux/amd64, linux/arm64]
+          description: |
+            Remote repositories (Q-OCI-223). The platforms (`os/arch` or `os/arch/variant`) of an index whose manifests the repository
+            downloads ahead: the background download a probe of a tag starts (R-REPO-065) and a mirror's passes (R-OCI-026). Empty is
+            every platform; left out, `linux/amd64` and `linux/arm64` (the owner, 2026-11-19).
+          items:
+            type: string
+            pattern: "^[a-z0-9]+/[a-z0-9]+(?:/[a-z0-9]+)?$"
     RepositoryConsumerView:
       type: object
       description: What a caller sees who may read a repository but not its configuration (R-REPO-010).
@@ -21889,6 +21892,13 @@ components:
             another upstream the warning `mirror_unbounded`; an Owner without `repositories:write-config` `422 mirror_restricted` (Q-REPO-142).
         mirror:
           $ref: "#/components/schemas/MirrorSettings"
+        downloadOnProbe:
+          type: boolean
+          default: true
+          description: |
+            A request that names exactly one version or file without fetching its content (the manifest of an OCI tag, an npm version
+            document, a HEAD of a file) starts the download of that version's content in the background, charged to the caller's
+            upstream budget (R-REPO-065, usage-and-limits.md R-LIM-037). `false` for an upstream that counts every request it answers.
     RemoteExtraHost:
       type: object
       additionalProperties: false

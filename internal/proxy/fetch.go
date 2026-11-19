@@ -123,14 +123,21 @@ func (f *fetcher) run(ctx context.Context) flightResult {
 	}
 	// Step 9a (R-LIM-022): the fetch is an upstream request of the request that leads it, checked against its budget key and
 	// the remote's ceiling before anything is sent. A refusal is the leader's own: a request that waited for the flight
-	// fetches for itself under its own budget. A background request passes no 9a; its exchanges are the system's (Q-LIM-19).
+	// fetches for itself under its own budget. A background request passes no 9a; its exchanges are the system's (Q-LIM-19),
+	// or those of the probe whose background download it belongs to, decided when the probe was answered (R-LIM-037).
 	f.charge = limits.FromContext(ctx)
-	if rq.background() {
+	switch {
+	case rq.background() && rq.Charge != nil:
+		f.charge = rq.Charge
+		f.charge.Exchange()
+	case rq.background():
 		f.charge = e.o.Limits.System(rem.id)
 		defer f.charge.Done()
-	} else if err := f.charge.MayFetch(ctx, rem.id, rq.Kind == Artifact && f.st.get); err != nil {
-		f.st.budget = err
-		return flightResult{own: err}
+	default:
+		if err := f.charge.MayFetch(ctx, rem.id, rq.Kind == Artifact && f.st.get); err != nil {
+			f.st.budget = err
+			return flightResult{own: err}
+		}
 	}
 	// The fetch charges its leader's budget key also after the leader's client left (a detached fetch, Q-LIM-5).
 	f.charge.Hold()

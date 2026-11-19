@@ -16,6 +16,7 @@
 package deb
 
 import (
+	"net/http"
 	"reflect"
 	"slices"
 	"sync"
@@ -131,8 +132,14 @@ func (f *Format) Descriptor() formats.Descriptor {
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
 		},
-		ContractVersion:  formats.ContractVersion,
-		VersionFetch:     formats.FetchAnyFile, // the package file of each architecture is the whole version (R-API-079)
+		ContractVersion: formats.ContractVersion,
+		VersionFetch:    formats.FetchAnyFile, // the package file of each architecture is the whole version (R-API-079)
+		// A HEAD of a package file is the one request of APT's protocol that names one version's file and fetches none of it (R-REPO-065,
+		// Q-DEB-122): apt reads the indexes of whole components and then fetches the files itself.
+		Probes: []formats.ProbeRoute{
+			{Route: routePoolGet, Method: http.MethodHead, What: "a HEAD of a package file in the pool"},
+			{Route: routeFlatFile, Method: http.MethodHead, What: "a HEAD of a package file of a flat repository"},
+		},
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "deb.",

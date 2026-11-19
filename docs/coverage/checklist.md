@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 619 of 983 spec requirements are implemented: a passing test names them and no
+**Status.** 619 of 984 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (512 of them implemented), 1,451 open.
-983 spec requirements: 700 cover catalog features, 283 cover none (`quader-only`, [listed at the
+984 spec requirements: 700 cover catalog features, 284 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>283 requirements</summary>
+<summary>284 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3226,6 +3226,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-REPO-038 (implemented) | Egress address rules for remote repositories | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-040 (implemented) | Size and concurrency limits | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-043 (implemented) | Metadata URL rewriting | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
+| R-REPO-065 | A probe starts the background download of its version | P1 | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-051 (implemented) | What a mirror discovers, and what bounds it | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-052 (implemented) | Storage bounds of a mirror | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-053 (implemented) | Mirror passes as jobs on the queue `mirror` | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |

@@ -17,6 +17,7 @@ import {
   ociPackage,
   otherProject,
   projectServiceAccount,
+  probedCache,
   remoteCache,
   remoteImage,
   repositoryServiceAccount,
@@ -420,6 +421,23 @@ async function* allSections(page: Page): AsyncGenerator<string> {
   // The sections; a fold inside one (`inline`, the pattern syntax) stays as the page has it.
   await expect(page.locator('main quader-disclosure:not(.inline) > .disclosure > .collapse-region:not(.open)')).toHaveCount(0);
   yield 'sections';
+}
+
+/**
+ * A remote repository's settings page with every section open and the upstream's details too (R-UI-082, R-UI-083): the switch of the
+ * background download (R-REPO-065, Q-UI-766) and, for OCI, the platforms in the format's settings (Q-UI-767). A caller who sees the
+ * reduced view has nothing to open.
+ */
+async function* remoteSections(page: Page): AsyncGenerator<string> {
+  for await (const step of allSections(page)) {
+    if (step === 'sections') {
+      const details = page.locator('main quader-upstream-settings').getByRole('button', { name: 'Upstream details' });
+      await details.click();
+      await expect(page.locator('main #f-remote-downloadOnProbe')).toBeVisible();
+      await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+    }
+    yield step;
+  }
 }
 
 /**
@@ -942,6 +960,9 @@ export const screens: readonly Screen[] = [
   { id: 'repository-oci-public-remote', path: `${O}/repositories/guidedtraffic`, kinds: ['anonymous', 'plain'], expected: noSession },
   // A remote that cached tags of an image of two platforms (W-24): a known size, a partial one and one that is not known.
   { id: 'repository-oci-cache', path: `${O}/repositories/${remoteCache.key}`, kinds: all, walk: rowOpened },
+  // A remote whose tag arrived by a background download after a HEAD of its manifest (W-25, R-REPO-065): listed, the size of the two
+  // platforms of its list, partial, and no client download.
+  { id: 'repository-oci-probed', path: `${O}/repositories/${probedCache.key}`, kinds: all, walk: rowOpened },
   { id: 'repository-deb', path: `${O}/repositories/${longDebKey}`, kinds: all },
   { id: 'repository-nuget-virtual', path: `${O}/repositories/nuget`, kinds: all },
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
@@ -968,6 +989,8 @@ export const screens: readonly Screen[] = [
   { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
   { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },
   { id: 'package-version-oci-cache-unknown', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.unknown)}?tab=details`, kinds: ['plain'] },
+  // The tag a background download stored (W-25): its platforms, two stored and one not fetched.
+  { id: 'package-version-oci-probed', path: `${ver(O, { format: 'oci', name: remoteImage.name }, probedCache.tag)}?tab=details`, kinds: all },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
   { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all },
   { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all },
@@ -1028,7 +1051,7 @@ export const screens: readonly Screen[] = [
   // What an Owner of the project maintains, and the settings a reader is offered in the list.
   // The settings page of each class, standard sections open and every detail opened in a second picture (R-UI-087).
   { id: 'repository-settings-npm-local', path: `${P}/repositories/npm-internal/settings`, kinds: all, walk: allSections },
-  { id: 'repository-settings-npm-remote', path: `${P}/repositories/npmjs/settings`, kinds: all, walk: allSections },
+  { id: 'repository-settings-npm-remote', path: `${P}/repositories/npmjs/settings`, kinds: all, walk: remoteSections },
   { id: 'repository-settings-npm-virtual', path: `${P}/repositories/npm/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-generic', path: `${P}/repositories/assets/settings`, kinds: owners, walk: allSections },
   { id: 'repository-settings-generic-advanced', path: `${P}/repositories/assets/settings`, kinds: admins, walk: advancedOpen },
@@ -1055,12 +1078,13 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
 
   // The administrator's area (Q-UI-127).
-  { id: 'repository-settings-oci-remote', path: `${O}/repositories/docker-hub-remote/settings`, kinds: all, walk: allSections },
+  { id: 'repository-settings-oci-remote', path: `${O}/repositories/docker-hub-remote/settings`, kinds: all, walk: remoteSections },
   { id: 'repository-settings-oci-virtual', path: `${O}/repositories/containers/settings`, kinds: admins, walk: allSections },
   { id: 'repository-settings-deb', path: `${O}/repositories/${longDebKey}/settings`, kinds: admins, walk: allSections },
-  { id: 'repository-settings-nuget-remote', path: `${O}/repositories/nuget-org/settings`, kinds: admins, walk: allSections },
+  { id: 'repository-settings-nuget-remote', path: `${O}/repositories/nuget-org/settings`, kinds: admins, walk: remoteSections },
+  { id: 'repository-settings-deb-remote', path: `${O}/repositories/debian/settings`, kinds: admins, walk: remoteSections },
   { id: 'repository-settings-ansible', path: `${O}/repositories/collections/settings`, kinds: all, walk: allSections },
-  { id: 'repository-settings-ansible-remote', path: `${O}/repositories/galaxy/settings`, kinds: admins, walk: allSections },
+  { id: 'repository-settings-ansible-remote', path: `${O}/repositories/galaxy/settings`, kinds: admins, walk: remoteSections },
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },
   { id: 'help-admin-page', path: '/ui/help/admin/repositories', kinds: admins },
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins },

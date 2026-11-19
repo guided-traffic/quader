@@ -62,6 +62,9 @@ func (unsupportedRemote) GateWith(context.Context, *formats.Request, formats.Pat
 	return formats.ServeFacts{}, errNoRemote()
 }
 
+// Probed starts nothing: there is no remote engine.
+func (unsupportedRemote) Probed(context.Context, *formats.Request, formats.Probe) {}
+
 type unsupportedResolver struct{}
 
 func (unsupportedResolver) Plan(context.Context, *formats.Request, formats.Path, formats.PathInfo) (*formats.VirtualPlan, error) {

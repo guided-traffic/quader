@@ -158,6 +158,7 @@ func (r *remoteResolver) resolve(in remoteInput) RemoteSettings {
 		ConnectTimeoutMs:      intOr(in.ConnectTimeoutMs, 10000),
 		ReadTimeoutMs:         intOr(in.ReadTimeoutMs, 15000),
 		CacheFillAction:       stringOr(in.CacheFillAction, FillRead),
+		DownloadOnProbe:       boolOr(in.DownloadOnProbe, true),
 	}
 	if s.Headers == nil {
 		s.Headers = []Header{}

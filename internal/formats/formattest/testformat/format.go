@@ -35,6 +35,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // ID is the format name.
@@ -272,6 +273,7 @@ func (f Format) Descriptor() formats.Descriptor {
 			DefaultMetadataTTLSeconds: &ttl, OwnershipDefault: catalog.OwnershipEnforce, Wiki: f.has(string(WithWiki)),
 		},
 		ContractVersion:  formats.ContractVersion,
+		NoProbe:          "the kit's test format answers no request of its remote class without fetching it; the formats hold their probes in their own tests",
 		Names:            names{caseSensitive: f.has(string(NamesCaseSensitive))},
 		Clients:          []formats.Client{{ID: "tf", DisplayName: "tf", Versions: []string{"1"}}},
 		PropertyPrefix:   "tf.",
@@ -1007,6 +1009,11 @@ func (f Format) all(ctx context.Context, rq *formats.Request, w http.ResponseWri
 type remoteAdapter struct {
 	formats.RemoteBase
 	f Format
+}
+
+// ProbeContent implements formats.RemoteAdapter: a version is the files the probe names.
+func (remoteAdapter) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
+	return formats.ProbeFiles(p), nil
 }
 
 func (remoteAdapter) UpstreamRequest(ctx context.Context, rc formats.RemoteContext, p formats.Path, _ string) (*http.Request, error) {

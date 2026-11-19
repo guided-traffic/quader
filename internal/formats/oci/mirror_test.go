@@ -301,7 +301,7 @@ func TestTheMirrorMapsAOneComponentNameOnDockerHubOnly(t *testing.T) {
 	}
 }
 
-// R-OCI-026 (Mirror discovery): oci.mirror.platforms selects the manifests of an index by platform; an attestation entry follows the
+// R-OCI-026 (Mirror discovery), Q-OCI-223: oci.platforms selects the manifests of an index by platform; an attestation entry follows the
 // manifest it names; a platform without a variant matches every variant; a single-platform image is kept whatever the platforms say.
 //
 // Mechanism of R-OCI-026, not a proof of its criteria: it checks the mirror plan against fixtures; the criteria are the defaults,
@@ -319,7 +319,7 @@ func TestAPlatformFilterKeepsTheSelectedManifestsAndTheirAttestations(t *testing
 	)
 	single, _ := imageManifest("single", "only")
 	setup := func(platforms string) *fakeUpstream {
-		f := newFake(t, "https://registry.example.com/", `{"mirror":{"tags":["1.0","single"],"platforms":`+platforms+`}}`)
+		f := newFake(t, "https://registry.example.com/", `{"mirror":{"tags":["1.0","single"]},"platforms":`+platforms+`}`)
 		f.get = func(*url.URL) *discover.Response { return tagsAnswer("1.0", "single") }
 		f.docs[TagPath("acme/b", "1.0")] = index
 		f.docs[TagPath("acme/b", "single")] = single
@@ -613,7 +613,7 @@ func TestR_REPO_051_ThePlanOfAnImageReadsOnlyTheTagsTheEngineKeeps(t *testing.T)
 }
 
 func TestMirrorSettingsMember(t *testing.T) {
-	got := mirrorMemberOf(json.RawMessage(`{"mirror":{"tags":["1.*"],"platforms":["linux/amd64"]}}`))
+	got := mirrorMemberOf(json.RawMessage(`{"mirror":{"tags":["1.*"]},"platforms":["linux/amd64"]}`))
 	want := MirrorSettings{Tags: []string{"1.*"}, ExcludeTags: []string{}, Platforms: []string{"linux/amd64"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("%+v, want %+v", got, want)

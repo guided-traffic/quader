@@ -128,6 +128,52 @@ type RemoteAdapter interface {
 	// or HEAD without a body, whose method and URL are the key of the cached answer. A format
 	// whose routes are not Volatile embeds [RemoteBase], whose default refuses.
 	UpstreamQuery(ctx context.Context, rc RemoteContext, q Query) (*http.Request, error)
+	// ProbeContent returns the files the background download of a probed version stores (repositories-and-proxy.md R-REPO-065):
+	// the files of p and, for a format whose files name further content, that content (an OCI index the manifests of the platforms
+	// the repository's list selects, an image manifest its config and layers). It reads the documents and manifests it needs through
+	// u, as a mirror's plan does (u.Artifact stores what it reads), and returns at most MaxProbeFiles files, each once. A format whose
+	// version is one file returns p.Files. It is a method of the contract, not an optional interface, so that a format with the class
+	// remote cannot leave it out unnoticed (contract version 7).
+	ProbeContent(ctx context.Context, u discover.Upstream, p Probe) ([]discover.Item, error)
+}
+
+// ProbeFiles is the content of a probe whose files are all of it, as [RemoteAdapter.ProbeContent] returns it: one item per file, in
+// order, each once, at most MaxProbeFiles. The formats whose version is one file (npm's tarball, NuGet's package, an Ansible
+// collection's archive, a Debian package file) return it.
+func ProbeFiles(p Probe) []discover.Item {
+	out := make([]discover.Item, 0, min(len(p.Files), MaxProbeFiles))
+	seen := map[string]bool{}
+	for _, f := range p.Files {
+		if f.Path == "" || seen[f.Path] || len(out) == MaxProbeFiles {
+			continue
+		}
+		seen[f.Path] = true
+		out = append(out, discover.Item{Version: p.Version, Path: f.Path})
+	}
+	return out
+}
+
+// MaxProbeFiles bounds the files of one background download (R-REPO-065): the bound of the children of an OCI index a mirror's plan
+// reads (oci.md, Mirror discovery). A probe with more files, and content of more, is cut at this many.
+const MaxProbeFiles = 1000
+
+// Probe is a request that named exactly one version or one file of a remote repository without fetching its content
+// (repositories-and-proxy.md R-REPO-065): the manifest of an OCI tag, the version document of npm, a HEAD of a file. The format's
+// handler hands it to [RemoteFetcher.Probed] once it answered the request.
+type Probe struct {
+	// Name is the normalized package name the request named.
+	Name string
+	// Version is the version, as the format stores it; for a HEAD of a file, the version the file belongs to ("" when the
+	// format cannot tell, an OCI blob).
+	Version string
+	// Files are the repository paths of the content the answer names: the version's file, or the manifests and blobs an OCI
+	// manifest names. At least one; the host reads whether each is stored, and a probe whose files are all stored starts nothing.
+	Files []Path
+	// Document is the metadata entry the request was answered from and Digest the digest of what it held then: an OCI tag's
+	// document. A background download that stored the content marks the entry, so that a remote lists the tag (R-API-081).
+	// The zero Path for a probe answered from an artifact (a HEAD).
+	Document Path
+	Digest   [32]byte
 }
 
 // FactsGate is an optional interface of a [RemoteAdapter]: [RemoteAdapter.BeforeArtifact] for a caller that already holds the
@@ -405,6 +451,12 @@ type RemoteFetcher interface {
 	// adapter that implements [FactsGate] decides on them without a query. The facts returned are those the serve check of
 	// the artifact is to use ([ItemRef.Facts]); an adapter without the interface returns have.
 	GateWith(ctx context.Context, rq *Request, p Path, have ServeFacts) (ServeFacts, error)
+	// Probed tells the host of a probe the format answered (repositories-and-proxy.md R-REPO-065): one of the requests its
+	// [Descriptor.Probes] declares, which succeeded. The host decides, on the request, whether the background download of the
+	// version starts: the repository's switch, its patterns, the caller's populate permission, what is stored, the limits of
+	// the caller (usage-and-limits.md R-LIM-037). It never fails, delays or changes the answer: the decision runs after the
+	// call returns. A format calls it once per probe, after the answer was decided.
+	Probed(ctx context.Context, rq *Request, p Probe)
 }
 
 // Query is one Volatile request a format passes through to an upstream: a package search.

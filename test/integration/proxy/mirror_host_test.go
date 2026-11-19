@@ -47,6 +47,11 @@ func (hostFormat) PackageDocumentPath(name string) (formats.Path, bool) {
 
 type hostRemote struct{ formats.RemoteBase }
 
+// ProbeContent implements formats.RemoteAdapter: the files of the probe.
+func (hostRemote) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
+	return formats.ProbeFiles(p), nil
+}
+
 func (hostRemote) UpstreamRequest(ctx context.Context, rc formats.RemoteContext, p formats.Path, _ string) (*http.Request, error) {
 	u, err := proxy.UpstreamBase{URL: rc.Upstream}.Path(p.Path)
 	if err != nil {

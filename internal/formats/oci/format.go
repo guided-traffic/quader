@@ -98,7 +98,10 @@ func (f *Format) Descriptor() formats.Descriptor {
 		},
 		ContractVersion: formats.ContractVersion,
 		// A pull fetches a tag's manifest by the tag or, after a HEAD, by its digest (R-API-079, Q-OCI-222).
-		VersionFetch:     formats.FetchDocument,
+		VersionFetch: formats.FetchDocument,
+		// The manifest of a tag, a HEAD by digest and a HEAD of a blob name one image or file without fetching it (R-REPO-065,
+		// Q-OCI-224); probe.go.
+		Probes:           probes(),
 		Names:            names{},
 		PropertyPrefix:   "oci.",
 		Clients:          clients(),

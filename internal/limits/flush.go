@@ -109,8 +109,9 @@ func (e *Engine) Flush(ctx context.Context) {
 				At: now, Subject: subj, Place: res.Place, RepoID: c.served.Load(), Requests: requests, Refused: refused,
 				Cached: cached, Uncached: uncached, Upstream: upstream, Background: bg, Limits: res.Figures,
 			}
-			if subj.Kind != KindSystem && !c.bg {
-				// The upstream request step 9a counted is the request's first; the store counts every exchange.
+			if subj.Kind != KindSystem {
+				// The upstream request step 9a counted is the request's first, also the one a background download's decision
+				// counted for the probe (R-LIM-037); the store counts every exchange.
 				d.Upstream += upstreamOf(c)
 			}
 			for _, ev := range events {

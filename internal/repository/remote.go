@@ -88,6 +88,10 @@ type RemoteSettings struct {
 	Mode string `json:"mode"`
 	// Mirror holds the settings of the mirror mode; present in both modes, in effect in mode mirror only.
 	Mirror MirrorSettings `json:"mirror"`
+	// DownloadOnProbe: a request that names exactly one version or file without fetching its content starts the background
+	// download of that version (R-REPO-065); true by default. A stored section written before the member existed reads as true
+	// (parseStoredRemote).
+	DownloadOnProbe bool `json:"downloadOnProbe"`
 }
 
 // MirrorSettings is remote.mirror (R-REPO-050 to R-REPO-055). The members are present in the canonical section of every
@@ -294,6 +298,7 @@ type remoteInput struct {
 	Limits                *remoteLimitsInput    `json:"limits"`
 	Mode                  *string               `json:"mode"`
 	Mirror                *mirrorInput          `json:"mirror"`
+	DownloadOnProbe       *bool                 `json:"downloadOnProbe"`
 }
 
 type mirrorInput struct {
@@ -372,11 +377,11 @@ func (r Repository) Remote() (RemoteSettings, bool) {
 	return *r.remote, true
 }
 
-// parseStoredRemote reads the canonical section of a stored document. The members of the mirror mode take their
-// defaults first, so that a section stored before they existed reads back with them (R-REPO-050, Q-REPO-130); a
+// parseStoredRemote reads the canonical section of a stored document. The members of the mirror mode and downloadOnProbe take
+// their defaults first, so that a section stored before they existed reads back with them (R-REPO-050, Q-REPO-130, R-REPO-065); a
 // member the stored section holds overwrites its default.
 func parseStoredRemote(raw json.RawMessage) (*RemoteSettings, error) {
-	s := RemoteSettings{Mode: ModePullThrough, Mirror: DefaultMirrorSettings()}
+	s := RemoteSettings{Mode: ModePullThrough, Mirror: DefaultMirrorSettings(), DownloadOnProbe: true}
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return nil, err
 	}

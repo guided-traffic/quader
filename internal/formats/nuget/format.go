@@ -20,6 +20,7 @@ package nuget
 
 import (
 	"context"
+	"net/http"
 	"reflect"
 
 	"github.com/guided-traffic/quader/internal/errs"
@@ -102,8 +103,17 @@ func (f *Format) Descriptor() formats.Descriptor {
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
 		},
-		ContractVersion:  formats.ContractVersion,
-		VersionFetch:     formats.FetchLeadFile, // the .nupkg; the .nuspec and the symbol package beside it are none (R-API-079)
+		ContractVersion: formats.ContractVersion,
+		VersionFetch:    formats.FetchLeadFile, // the .nupkg; the .nuspec and the symbol package beside it are none (R-API-079)
+		// The requests that name one version without fetching its .nupkg (R-REPO-065, Q-NUGET-124). The registration index and its
+		// pages and the flat container's version list name every version and are none.
+		Probes: []formats.ProbeRoute{
+			{Route: routeRegistrationLeaf, Method: http.MethodGet, What: "the registration leaf of a version"},
+			{Route: routeRegistrationLeaf, Method: http.MethodHead, What: "a HEAD of the registration leaf"},
+			{Route: routeNuspec, Method: http.MethodGet, What: "the .nuspec of a version"},
+			{Route: routeNuspec, Method: http.MethodHead, What: "a HEAD of the .nuspec"},
+			{Route: routeNupkg, Method: http.MethodHead, What: "a HEAD of the .nupkg"},
+		},
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "nuget.",

@@ -147,3 +147,13 @@ func MirrorActor() audit.Actor { return audit.Actor{Kind: "system", Name: "mirro
 // MirrorSubject is the subject of the populate event of a pass's fill: the same system:mirror as [MirrorActor]. It asks no
 // question of the decision point; it names who the allowed fill is recorded for. Only this package builds a Subject (R-EP-013).
 func MirrorSubject() Subject { return Subject{Kind: "system", Name: "mirror"} }
+
+// BackgroundDownloadActor is the actor of what the background download of a probe stores: system:background-download (R-REPO-065).
+func BackgroundDownloadActor() audit.Actor {
+	return audit.Actor{Kind: "system", Name: "background-download"}
+}
+
+// BackgroundDownloadSubject is the subject of the populate event of a background download's fill, the same system:background-download as
+// [BackgroundDownloadActor]. Like [MirrorSubject] it asks no question; the populate check was asked for the probe's caller when the
+// probe was answered.
+func BackgroundDownloadSubject() Subject { return Subject{Kind: "system", Name: "background-download"} }

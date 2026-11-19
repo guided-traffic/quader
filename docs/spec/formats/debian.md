@@ -3767,6 +3767,24 @@ came to build two indexers (one per queue, say), which would then be two fields 
 `TestR_DEB_010_AnIndexJobOfARegistryWithoutABuilderFailsPermanently` ([indexer_binding_test.go](../../../internal/formatdata/deb/indexer_binding_test.go)),
 `TestR_DEB_010_EveryReplicaHasItsOwnIndexBuilder` ([replicas_test.go](../../../test/integration/deblocal/replicas_test.go)).
 
+### Q-DEB-122 · A HEAD of a package file is the one probe of APT
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a request
+naming exactly one version without fetching it starts its download is the owner's (2026-11-19, W-25,
+[repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065).
+
+Context: APT reads `InRelease` and the indexes of whole components, which name every package of a suite, and then fetches the package
+files it needs. The one request that names exactly one version's file of one architecture without fetching it is a `HEAD` of that file.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A `HEAD` of a package file, in the pool or of a flat repository; the content is that file, the whole of its version for its architecture (chosen) | The owner's rule where the protocol has a request for it | Holds the rule for every format; a tool that checks a file finds it stored | APT itself never sends it: the rule fires for tools, not for `apt-get` |
+| (b) The indexes too | Downloads what an index names | — | An index names a whole component, which the owner's rule excludes |
+
+**Choice:** (a). A by-hash file names no package and is none. **Applied in the spec:** R-REPO-065. Code: `serveContent` in
+[handlers_remote.go](../../../internal/formats/deb/handlers_remote.go). Tests: `TestR_REPO_065_WhatAProbeOfAnAPTArchiveIs` in
+[probe_test.go](../../../internal/formats/deb/probe_test.go).
+
 ## What this does not cover
 
 ### H-620 · A holder of the stored-secret key ring and a database copy can sign for every Debian repository

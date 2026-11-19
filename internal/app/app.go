@@ -180,6 +180,8 @@ type App struct {
 	checkBucket     late[platform.Bucket]
 	// registryMetrics are the counters of the registry token service, shared by every endpoint (wire_registry.go).
 	registryMetrics *registrytoken.Metrics
+	// probeState holds the counters of the background downloads a probe starts (wire_background_download.go).
+	probeState
 }
 
 // Run runs one replica of a role until ctx ends, then shuts down in the order of

@@ -42,6 +42,10 @@ The **Upstream** of a remote OCI repository offers the buttons **Docker Hub**, *
 - **Official images.** A one-component name is an official image: `nginx` and `library/nginx` are the same image and one stored copy. No other upstream gets this mapping.
 - **Authenticate it.** Docker Hub limits the pulls of an address, and anonymous callers have the smallest allowance; every client behind Quader shares the one address Quader pulls from. Set **Authentication** to **Username and password** with a Docker Hub user and an access token of that user whenever more than a few pulls per hour go through the repository, and always for a mirror. A manifest `GET` counts as a pull at Docker Hub; Quader asks a stale tag with a `HEAD` first and downloads the manifest again only when the tag moved, so an unchanged tag costs nothing of the allowance.
 - **When Docker Hub refuses.** An exhausted allowance answers clients `503 TOOMANYREQUESTS` with `Retry-After` while Quader has no stored copy; a stored copy is served.
+- **Downloads ahead.** A client that asks only for the manifest of a tag makes the remote download the image in the background, of a
+  multi-platform image the platforms of **Platforms** (`linux/amd64` and `linux/arm64`). Each platform manifest it downloads is a pull at
+  Docker Hub. Untick **Start the download when a version is asked for** in **Upstream details** when the allowance is tight
+  ([Downloads a client only asked about](repositories.md#downloads-a-client-only-asked-about)).
 
 The cache periods of an OCI remote are 300 seconds for metadata (how long a tag is served before it is asked again) and 300 seconds for a remembered "not found". **Test connection** requests `/v2/` of the registry, which answers with its token challenge, and then logs in at the token service the challenge names, once and without asking for an image, with the username and password you typed: the answer says whether the registry accepts them. Without a credential the token service is named and not asked.
 
@@ -82,13 +86,13 @@ curl -X PATCH https://quader.example.com/api/v1/projects/web/repositories/docker
 
 ## The mirror mode
 
-A remote OCI repository in mode **Mirror** copies, in background passes, the images its settings select, so they stay pullable when the registry is slow, rate limited or gone. Set the mode in the **Mirror** section of the wizard or on the **Mirror** tab ([Mirror](repositories.md#mirror)); the selection is the format's own setting `oci.mirror`, in the format settings of the remote (**OCI (Docker) settings**, one entry per line):
+A remote OCI repository in mode **Mirror** copies, in background passes, the images its settings select, so they stay pullable when the registry is slow, rate limited or gone. Set the mode in the **Mirror** section of the wizard or on the **Mirror** tab ([Mirror](repositories.md#mirror)); the selection is the format's own settings `oci.mirror` and `oci.platforms`, in the format settings of the remote (**OCI (Docker) settings**, one entry per line):
 
 | Setting | Document key | Default | Meaning |
 |---|---|---|---|
 | **tags** | `oci.mirror.tags` | `latest` | Tag patterns with `*` and `?` a tag must match to be copied, 1 to 64; a pattern without a wildcard names a tag that is always kept |
 | **excludeTags** | `oci.mirror.excludeTags` | none | Tag patterns that are never copied, at most 64 |
-| **platforms** | `oci.mirror.platforms` | every platform | `os/arch` or `os/arch/variant` of the manifests of an index to copy, at most 32; `linux/arm64` includes `linux/arm64/v8`, and an entry without a variant counts as the default variant of its architecture |
+| **Platforms** | `oci.platforms` | `linux/amd64`, `linux/arm64` | `os/arch` or `os/arch/variant` of the manifests of an index to copy, at most 32; `linux/arm64` includes `linux/arm64/v8`, and an entry without a variant counts as the default variant of its architecture; empty is every platform. The same list decides what a remote in mode pull-through downloads of a tag a client only asked about ([Downloads a client only asked about](repositories.md#downloads-a-client-only-asked-about)) |
 
 Which names a pass mirrors:
 

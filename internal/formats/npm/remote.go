@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/npm/name"
 	"github.com/guided-traffic/quader/internal/formats/npm/remote"
 	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The remote class (R-NPM-023 to R-NPM-027). The remote engine owns the request path,
@@ -36,6 +37,11 @@ type remoteAdapter struct {
 }
 
 var _ formats.RemoteAdapter = remoteAdapter{}
+
+// ProbeContent implements [formats.RemoteAdapter]: a version of npm is its tarball, which the probe names (R-REPO-065, Q-NPM-89).
+func (remoteAdapter) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
+	return formats.ProbeFiles(p), nil
+}
 
 // TracksVersionRemoval is true: npm's removal marks (npm_remote_versions.listed)
 // replace the generic gone-package rule (R-REPO-029, R-NPM-026).

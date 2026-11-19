@@ -97,7 +97,7 @@ Every number of the built-in profiles is the development agent's estimate, which
 | Document | A response body of a route of the kind `Metadata`, `Computed` or `Volatile` (an npm package document, a NuGet registration, an APT index, an OCI manifest of a tag). |
 | Refused request | A request the decision point refused, whose credential failed, or whose repository does not exist (R-LIM-008). |
 | Block | The state of a budget key whose refused requests passed their limit: every request charged to it is answered 429 for the block's time (R-LIM-025). |
-| Probe | A request that names exactly one version without fetching its content; it starts a background download under W-25, built later. This page fixes only how that download is charged (R-LIM-037). |
+| Probe | A request that names exactly one version or file without fetching its content; it starts the background download of that version ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065). This page fixes how that download is charged (R-LIM-037). |
 | Protocol path | A path of a repository protocol: `/api/<format>/<projectKey>/<repoKey>/…`, `/files/<projectKey>/<repoKey>/…`, and everything below `/v2/` (R-LIM-005). |
 
 ## The model
@@ -1574,7 +1574,8 @@ The rule that holds every format, built and future, to these figures is part of 
   counted by the dispatcher's writer but neither admitted nor paced.
 - **Upstream exchanges** of a format for a client's request go through the remote engine or the upstream client `Host.Remote()`
   gives it, which counts them (R-LIM-006); a format opens no other outbound connection.
-- `formats.ContractVersion` is 6 (a method changed meaning: `Host.Serve`), and every format moves in the same change.
+- `formats.ContractVersion` rose to 6 with this page (a method changed meaning: `Host.Serve`), and every format moved in the same change; it
+  is at 7 since the probes of W-25 ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065, ADR-207).
 - **The contract test**: the format kit ([internal/formats/formattest](../../internal/formats/formattest)) gains a check that runs
   each example of each `Download` route of a format with a `GET` against a host whose admission refuses, and fails unless the
   answer is 429 in the format's shape with nothing of the body written; and `formats/all` pins, per format, the kind of each route
@@ -1584,8 +1585,9 @@ The rule that holds every format, built and future, to these figures is part of 
 ### R-LIM-037 · The hook for background downloads
 Priority: **MVP** · Covers: BEYOND-030
 
-W-25 (a probe starts the download in the background) is built after this page; its trigger and platforms are its own
-([promt.md](../projektplan/promt.md), W-25). This page fixes how such a download is charged, so W-25 changes nothing here:
+W-25 (a probe starts the download in the background) is built after this page; its trigger, its platforms and its bounds are
+[repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065. This page fixes how such a download is charged, and W-25 changed
+nothing of it:
 
 - The decision is taken **when the probe is answered**, on the probe's request: its subject, its place and budget key, and the
   remote's ceiling for its class. A background download starts only if step 9a (R-LIM-022) would admit an upstream request for the
@@ -1597,8 +1599,11 @@ W-25 (a probe starts the download in the background) is built after this page; i
   bounds W-25 gives it.
 - The usage store counts it in `background_fetches` of the probe's row (R-LIM-027); in `audit`, a background download that 9a would
   have refused starts, and is recorded as `would_limit`.
-- The seam is `limits.Charge.Background(repo)`, which returns the charge a background request carries (`proxy.Request.Charge`) and
-  is called by W-25's trigger in the handler of the probe.
+- The seam is `limits.Charge.Background(repo)`, which returns the charge a background request carries (`proxy.Request.Charge`).
+  The host's decision on the probe calls it through `Charge.StartBackground`, which runs step 9a on it; the download is a job of the
+  worker, so the charge travels with the job as a `limits.Ticket` and the worker resumes it with `Engine.Resume`; the upstream request
+  9a counted is the download's first exchange, every further one is counted at the flush
+  ([Q-LIM-54](#q-lim-54--a-background-download-carries-the-probes-charge-to-the-worker-as-a-ticket)).
 
 ### R-LIM-038 · Technical tokens in this model
 Priority: **MVP** · Covers: BEYOND-030
@@ -2305,6 +2310,31 @@ Context: the detail and the explanation name a rule's profile by its key; the pr
 
 **Choice:** (a). **Applied in the spec:** R-LIM-034, R-LIM-035. Code: `ruleRef` in [limits_api.go](../../internal/api/v1/limits_api.go).
 
+
+### Q-LIM-54 · A background download carries the probe's charge to the worker as a ticket
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. How a
+background download is charged is R-LIM-037, decided before W-25 was built.
+
+Context: R-LIM-037 takes the decision on the probe's request and charges the download's uncached bytes to the probe's budget key at the
+flushes after they were read. The download is a job of the worker ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-361),
+which may run on another replica, minutes later; a `*limits.Charge` lives in one replica's buffer. R-LIM-006 counts every exchange with
+the upstream as an upstream request; R-LIM-037 says that 9a counts the first when the probe is answered.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The decision's charge becomes a ticket (subject, place, budget key, mode, ceiling key, the key's figures) in the job's arguments; the worker resumes a background charge from it; the exchange 9a counted is the first, every further one counts at the flush, and the resumed charge counts no second background download (chosen) | `Charge.StartBackground`, `Ticket`, `Engine.Resume`, `Charge.Exchange` | The usage rows of the probe's caller hold the download, wherever it runs; the ceiling learns its bytes; nothing of the model changes | A ticket in the job's arguments names the subject's reference (a principal ID, a token's ID, an address prefix), as the usage store does |
+| (b) Count the whole download as the one upstream request of the decision | Simpler | One counter | An image of twelve files is twelve exchanges with the upstream; the figure would undercount what an upstream sees |
+| (c) Run the download on the probe's replica | The charge is at hand | No ticket | Q-REPO-361 (a) |
+
+**Choice:** (a). The flush also records the upstream request 9a counted for a background charge in the usage store, as it does for a
+request's. **Rationale:** the budget key is what the owner's model charges; a ticket is the charge in a form a job can carry. The job's
+arguments are kept with finished jobs for `jobs.retention` (30 days by default), the same span as the usage store's hourly rows.
+Revisit if a subject's reference must not be stored in job arguments.
+
+**Applied in the spec:** R-LIM-037. Code: [background.go](../../internal/limits/background.go), `fetcher.run` in
+[fetch.go](../../internal/proxy/fetch.go). Tests: `TestR_LIM_037_ABackgroundDownloadIsChargedToTheProbe` in
+[background_test.go](../../internal/limits/background_test.go).
 
 ## What this does not cover
 

@@ -1049,6 +1049,11 @@ the remote request path (R-REPO-025, step 9) is this setting.
   ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-053): the decision to mirror is the populate decision, so
   setting the mode needs `repositories:write-config` (Q-REPO-142), and each fill writes the populate event with the system
   as actor and `reason: mirror` (Q-REPO-145). `cacheFillAction` keeps applying to clients.
+- **A probe's background download populates for its caller, recorded as the system.** A request that names exactly one version or
+  file without fetching it may start the download of that version in the background
+  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065): only when the probe's caller may populate the repository
+  (this check, asked as a question and audited nowhere). The download's fills write the populate event with
+  `system:background-download` as actor and `reason: background-download` (Q-REPO-366); the caller is named in the usage store.
 - Remote repositories never accept uploads, whatever the grants
   ([repositories-and-proxy.md](repositories-and-proxy.md)).
 - **No populating through the session cookie.** A request authenticated by the session cookie

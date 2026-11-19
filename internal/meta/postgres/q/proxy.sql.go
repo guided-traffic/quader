@@ -514,6 +514,32 @@ func (q *Queries) ProxyGoneListAll(ctx context.Context) ([]ProxyGoneListAllRow, 
 	return items, nil
 }
 
+const proxyMarkBackgroundDownloaded = `-- name: ProxyMarkBackgroundDownloaded :execrows
+UPDATE remote_cache_entries
+   SET background_sha256 = $1::bytea
+ WHERE repo_id = $2::bigint
+   AND path = $3::text COLLATE "C"
+   AND variant = ''
+   AND kind = 'metadata'
+   AND blob_sha256 = $1::bytea
+`
+
+type ProxyMarkBackgroundDownloadedParams struct {
+	Digest []byte
+	RepoID int64
+	Path   string
+}
+
+// The background download a probe started stored the content of the document at path (R-REPO-065): the entry records the digest it
+// held, while it still holds it, so that a remote OCI repository lists the tag (R-API-081, migration 00083).
+func (q *Queries) ProxyMarkBackgroundDownloaded(ctx context.Context, arg ProxyMarkBackgroundDownloadedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, proxyMarkBackgroundDownloaded, arg.Digest, arg.RepoID, arg.Path)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const proxyMetadataMarkGone = `-- name: ProxyMetadataMarkGone :execrows
 UPDATE remote_cache_entries
    SET upstream_gone_at = clock_timestamp()

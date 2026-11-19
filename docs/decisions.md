@@ -204,6 +204,7 @@ checked every earlier decision against them:
 | [ADR-204](#adr-204--an-administrator-restricts-visibility-levels-to-administrators) | An administrator restricts visibility levels to administrators | Accepted (owner requirement of 2026-11-18); the rules decided by the development agent — owner review at the walkthrough |
 | [ADR-205](#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5) | The format contract declares what a fetch of a version is, and a size may be partial or not known; the contract is at version 5 | Accepted (owner decision of 2026-11-19); the contract change decided by the development agent — owner review at the walkthrough |
 | [ADR-206](#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce) | Download limits: budgets per caller and repository, technical tokens on three levels, Audit and Enforce | Accepted (owner decisions of 2026-11-19); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) | A probe starts the download of its version in the background; the format contract is at version 7 | Accepted (owner decisions of 2026-11-19); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1147,6 +1148,52 @@ installation switched to Audit is abused through a public remote (H-1015 of [sec
 [authorization.md](spec/authorization.md) R-AUTHZ-039, R-AUTHZ-040, Q-AUTHZ-296 to Q-AUTHZ-298;
 [repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-025 step 9a; [architecture.md](spec/architecture.md) R-ARCH-031,
 R-ARCH-034.
+
+### ADR-207 · A probe starts the download of its version in the background; the format contract is at version 7
+
+**Status:** Accepted (owner decisions of 2026-11-19, walk item W-25: the trigger, the platforms of an index, the bound by the download
+limits, every format); the mechanisms decided by the development agent — owner review at the walkthrough
+
+**Context.** The owner asked that a request which only probes an image, without starting its download, make Quader start the download
+in the background. INV-11 and R-REPO-024 said a remote fetches nothing ahead of time in mode `pullThrough`. The owner decided that a
+request naming exactly one version or file without fetching its content starts the download of that version's content in every format,
+that an OCI index downloads the platforms of a list per repository (`linux/amd64, linux/arm64` by default, the list the mirror reads),
+and that the download limits bound it; the charge was fixed beforehand in R-LIM-037.
+
+**Decision.**
+- INV-11 and R-REPO-024 are rewritten: a remote fetches ahead only the content of a version a client probed, charged to that client,
+  unless `remote.downloadOnProbe` is off, and in mode `mirror` what its passes discover
+  ([repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-065, Q-REPO-360).
+- The decision is taken on the probe's request after its answer, in a fixed order: the switch and the repository's state, the patterns
+  and claims, the caller's populate permission, what is stored, the queue, step 9a for the caller (Q-REPO-362, Q-REPO-364).
+- The download is the job `remote-background-download` of the worker, exclusive per version, through the gate and engine of a mirror
+  pass; bounded by 1,000 files and `limits.maxArtifactBytes` per version and `limits.maxConcurrentFetches` per repository (Q-REPO-361,
+  Q-REPO-363). The charge travels with the job as a ticket and is resumed on the worker ([usage-and-limits.md](spec/usage-and-limits.md)
+  Q-LIM-54). The repository's patterns now hold for every background fill (Q-REPO-365).
+- `oci.mirror.platforms` becomes `oci.platforms` with the default `["linux/amd64", "linux/arm64"]`
+  ([formats/oci.md](spec/formats/oci.md) Q-OCI-223).
+- The format contract is at version 7: `Descriptor.Probes` (or `NoProbe` with the reason) is required of a format with the class remote,
+  `RemoteAdapter.ProbeContent` names a probed version's content, and `RemoteFetcher.Probed` is how a handler tells the host of a probe it
+  answered; `formats/all` pins every format's probes ([architecture.md](spec/architecture.md) R-ARCH-008, R-ARCH-025).
+- A remote OCI tag is listed once a background download stored its content (R-API-081, migration 00083).
+
+**Consequences.** A `docker pull` that asks the tag's manifest first races its own background download; the flights of R-REPO-026
+collapse the two and the client's fetch pre-empts a background request. An upstream that counts manifest requests counts the background
+download's (H-1017). A probe through a virtual repository starts nothing (H-1016). No new table: the job and the usage store carry what a
+user sees.
+
+**Alternatives considered.** A detached fetch on the probe's replica (lost on a drain, invisible); marking the version for the next mirror
+pass (mirror mode only); deciding before the answer (delays every probe); a switch of the instance instead of the repository; every
+platform of an index, or none (the owner's options b and c).
+
+**Revisit condition:** probes counted as `busy` or `queue_full` under normal load; operators turning the switch off for every Docker Hub
+remote; the storage quota of R-STOR-029.
+
+**Spec:** [repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-024, R-REPO-065, Q-REPO-360 to Q-REPO-366, H-1016 to H-1018;
+[spec/README.md](spec/README.md) INV-11; [usage-and-limits.md](spec/usage-and-limits.md) R-LIM-037, Q-LIM-54; [architecture.md](spec/architecture.md)
+R-ARCH-008, R-ARCH-025; [api-and-ui.md](spec/api-and-ui.md) R-API-081, R-UI-082, Q-UI-766 to Q-UI-768; [formats/oci.md](spec/formats/oci.md)
+Q-OCI-223, Q-OCI-224; [formats/npm.md](spec/formats/npm.md) Q-NPM-89; [formats/nuget.md](spec/formats/nuget.md) Q-NUGET-124;
+[formats/ansible.md](spec/formats/ansible.md) Q-ANS-80; [formats/debian.md](spec/formats/debian.md) Q-DEB-122.
 
 ## Design invariants
 
@@ -6266,7 +6313,8 @@ block and checksum replication stay P2 (Q-REPO-143).
 **Consequences.** A remote in mode `mirror` serves clients as before and holds what its bounds admit before anyone asks; a
 restore keeps the last complete pass and continues from it (R-REPO-058). Who may switch the mode is the installation's decision
 (`repositories:write-config`); a project administrator pauses or turns off (Q-REPO-142). INV-11's "nothing is fetched ahead of
-time" holds for mode `pullThrough`.
+time" held for mode `pullThrough` until a probe started the download of its version
+([ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7)).
 
 **Alternatives considered.** A replication document per repository in the catalog's shape (Q-REPO-130 (b)); a repository class
 `mirror` (against INV-5); a long-running job per mirror (Q-REPO-131 (c)); shrinking the client shares for the background
