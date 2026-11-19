@@ -23,6 +23,7 @@ type step struct {
 }
 
 type job struct {
+	If             string            `yaml:"if"`
 	Needs          yaml.Node         `yaml:"needs"`
 	Permissions    map[string]string `yaml:"permissions"`
 	TimeoutMinutes yaml.Node         `yaml:"timeout-minutes"`
@@ -188,5 +189,45 @@ func TestTheGatingJobsBoundTheirDownloads(t *testing.T) {
 				t.Errorf("%s: timeout-minutes %d is not below the job's %d", where, limit, jobLimit)
 			}
 		}
+	}
+}
+
+// The layout checks of the UI run in Test and Release on every push (owner, 2026-11-19; R-UI-176, Q-ARCH-510): their fixtures, then
+// every screen of the render set, without a grep or a shard that would leave screens out, and with no condition that skips the job.
+// Until the first stable release they hold no release back: Semantic Release does not need them (Q-ARCH-457). With the first
+// stable release this test changes with the gate.
+func TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease(t *testing.T) {
+	w := loadWorkflows(t)["release.yml"]
+	j, ok := w.Jobs["ui-layout"]
+	if !ok {
+		t.Fatal("release.yml has no job ui-layout")
+	}
+	if j.If != "" {
+		t.Errorf("job ui-layout runs only if %q; it runs on every push", j.If)
+	}
+	var fixtures, renders bool
+	for _, s := range j.Steps {
+		if strings.Contains(s.Run, "make ui-layout-test") {
+			fixtures = true
+		}
+		if strings.Contains(s.Run, "make ui-renders") {
+			renders = true
+			for _, narrow := range []string{"GREP", "--grep", "--shard", "UI_RENDERS_WIDTHS"} {
+				if strings.Contains(s.Run, narrow) {
+					t.Errorf("job ui-layout step %q narrows the render set with %s: %s", s.Name, narrow, s.Run)
+				}
+			}
+		}
+	}
+	if !fixtures || !renders {
+		t.Errorf("job ui-layout runs the fixtures: %v, every screen: %v; want both", fixtures, renders)
+	}
+	release := w.Jobs["semantic-release"]
+	var needs []string
+	if err := release.Needs.Decode(&needs); err != nil {
+		t.Fatalf("the needs of semantic-release: %v", err)
+	}
+	if slices.Contains(needs, "ui-layout") {
+		t.Error("semantic-release needs ui-layout; until the first stable release it gates no release (Q-ARCH-457)")
 	}
 }

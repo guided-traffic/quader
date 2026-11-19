@@ -127,7 +127,13 @@ fieldset.form-grid {
 
 .material-icons {
   font-size: 1.125rem;
-  vertical-align: middle;
+}
+
+// An icon beside a text stands on the middle of its line and makes it no taller (R-UI-175, the line rule of _controls.scss); a
+// glyph inside a badge or a button is centred by its box.
+:not(.badge, .btn, span:is(.ok, .warn, .bad)) > .material-icons {
+  vertical-align: top;
+  margin-block: calc((var(--quader-line) - 1em) / 2);
 }
 
 // Status colours always come with an icon and a text; they only reinforce (R-UI-044).
@@ -177,14 +183,21 @@ fieldset.form-grid {
   }
 }
 
-// The avatar of a user on the administrator's detail screen: the round image of the top bar at 48 px.
+// The avatar of a user on the administrator's detail screen: the round image of the top bar at 48 px. It is the fact's content, and
+// its word or its button beside it stands on its middle (R-UI-175: the picture is the row's content).
 .user-avatar {
+  flex: none;
   inline-size: 3rem;
   block-size: 3rem;
-  margin-inline-end: var(--quader-space-3);
   border-radius: 50%;
   background: var(--quader-surface-variant);
-  vertical-align: middle;
+}
+
+dd:has(> .user-avatar) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-3);
 }
 
 // A person in a list (UI-A-27): the avatar, the name and the @username under it, as on the members screen. In a table whose

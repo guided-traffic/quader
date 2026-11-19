@@ -6,7 +6,7 @@
 # reproduce it: docs/developer/releasing.md#ci.
 #
 # What runs per change: every check above, the e2e legs push and access-long, the npm acceptance leg
-# (e2e-npm, set npm), the NuGet acceptance leg (e2e-nuget, set nuget), the OCI acceptance leg (e2e-oci, set oci, when the change touches the registry) and the GitLab CI OIDC leg (e2e-ci, set ci). The long legs failover and npm-ha are not here: they run nightly and on dispatch in
+# (e2e-npm, set npm), the NuGet acceptance leg (e2e-nuget, set nuget), the OCI acceptance leg (e2e-oci, set oci, when the change touches the registry), the GitLab CI OIDC leg (e2e-ci, set ci) and the layout checks of every screen of the UI (ui-layout). The long legs failover and npm-ha are not here: they run nightly and on dispatch in
 # performance.yml ("HA and Performance (nightly)"), outside the release path (owner, 2026-11-01); npm-ha-crash runs by
 # hand (make e2e SET=npm-ha-crash).
 # A red long leg is recorded as an open finding and does not hold the release.
@@ -481,6 +481,131 @@ jobs:
       # the unit job runs the same test on the placeholder, where it is skipped.
       - name: go test of the embedded notices
         run: QUADER_UI_BUILT=1 go test -count=1 -run 'TestR_UI_001_ThirdPartyNotices' ./internal/webui/
+
+  # The layout checks of the renders (R-UI-170 to R-UI-176; owner, 2026-11-19: "Ja, die Renderprüfung soll auch in der CI
+  # laufen."): first on their own fixture pages, then every screen of the render set as every kind of user, at three widths;
+  # a finding fails the job. The UI development profile is the job's own (deploy/ui-dev: three service containers in the
+  # runner's Docker, Quader with the sign-in provider, the Angular dev server). Not among the needs of Semantic Release until
+  # the first stable release (Q-ARCH-457, Q-ARCH-510): a red run is a finding to fix, not a held release. One leg: a full run
+  # took 22 minutes on the development machine (Q-ARCH-511). Runner, legs and evidence: docs/developer/releasing.md#ci.
+  ui-layout:
+    name: UI layout checks
+    runs-on: self-hosted
+    timeout-minutes: 75
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the shared library the pinned Node.js loads
+        timeout-minutes: 9
+        run: |
+          set -euo pipefail
+          # Node.js 26 links libatomic.so.1, which the runner image does not ship (Q-ARCH-218).
+          .github/scripts/apt-install.sh libatomic1
+
+      - name: Set up Node.js
+        timeout-minutes: 5
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Set up Go
+        timeout-minutes: 5
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install build tools
+        timeout-minutes: 9
+        uses: ./.github/actions/build-tools
+        with:
+          commands: curl
+
+      - name: Install the Docker Compose plugin (the UI development services)
+        timeout-minutes: 9
+        run: |
+          set -euo pipefail
+          docker compose version >/dev/null 2>&1 || .github/scripts/apt-install.sh docker-compose-v2
+          docker compose version
+
+      - name: Log in to Docker Hub (service image pulls)
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Install the web workspace and the browser
+        timeout-minutes: 25
+        working-directory: web
+        run: |
+          set -euo pipefail
+          npm ci
+          # The browser build is the one the locked @playwright/test version names (one version per tool), through the
+          # script that installs its system libraries only where they are missing.
+          ../.github/scripts/playwright-install.sh chromium
+
+      - name: Check the layout checks on their fixture pages
+        run: make ui-layout-test
+
+      - name: Render every screen and check its layout
+        run: make ui-renders
+
+      # The evidence of a red run: the findings, the report and the pictures of the screens that failed, as an artifact of a
+      # short life; the renders are never committed. A green run keeps the report alone.
+      - name: Collect the pictures of the failed screens
+        if: failure()
+        run: |
+          set -euo pipefail
+          out=.out/ui-layout-evidence
+          mkdir -p "$out"
+          cp .out/ui-renders/failures.txt .out/ui-renders/report.json "$out/" 2>/dev/null || true
+          node -e '
+            const fs = require("fs"), path = require("path");
+            const dir = ".out/ui-renders/.manifest";
+            if (!fs.existsSync(dir)) process.exit(0);
+            for (const f of fs.readdirSync(dir)) {
+              const m = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+              if (m.failures.length > 0) for (const s of m.shots) console.log(s.file);
+            }' | while read -r file; do
+            mkdir -p "$out/$(dirname "$file")"
+            cp ".out/ui-renders/$file" "$out/$file" 2>/dev/null || true
+          done
+
+      - name: Upload the findings and the pictures of the failed screens
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-layout-findings
+          path: .out/ui-layout-evidence
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload the render report
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-layout-report
+          path: .out/ui-renders/report.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Logs of Quader, the dev server and the services (failure only)
+        if: failure()
+        run: |
+          tail -n 200 .out/ui-renders.backend.log .out/ui-renders.web.log 2>/dev/null || true
+          for c in $(docker ps -a --filter "name=quader-ui-dev-" --format '{{.Names}}'); do
+            echo "::group::logs of $c"
+            docker logs --timestamps "$c" 2>&1 | tail -n 200 || true
+            echo "::endgroup::"
+          done
+
+      - name: Stop the UI development services and remove their data
+        if: always()
+        run: make ui-dev-down PURGE=1
 
   malware-scan:
     name: Malware Scan (source code)

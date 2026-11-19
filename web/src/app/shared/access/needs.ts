@@ -27,9 +27,11 @@ import { SessionStore } from '../../core/session-store';
     }
   `,
   styles: `
+    /* The lock on the first line of the sentence (R-UI-175: the line rule of a paragraph's icon); centred on a sentence of two
+       lines at 390 px it stood 10 px under it. */
     .needs {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: var(--quader-space-2);
       margin-block: var(--quader-space-2);
       color: var(--quader-text-muted);

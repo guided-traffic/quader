@@ -43,18 +43,13 @@ export function layoutFindings(): LayoutFinding[] {
   }
 
   const ICON = '.material-icons, quader-format-icon, quader-visibility-icon, quader-project-mark, quader-avatar';
-  /**
-   * The element that is one icon: a component's host, or the glyph itself. A copy button is the icon of the value before it (a
-   * hash and its button went to two lines at 1,024 px).
-   */
-  const iconUnit = (el: Element): Element =>
-    el.closest('quader-format-icon, quader-visibility-icon, quader-project-mark, quader-avatar, quader-copy-button') ?? el;
   const inIcon = (el: Element | null): boolean => !!el?.closest(ICON);
 
   /** Shown: has a box, is not hidden, and is not text for assistive technology only. */
   function shown(el: Element): boolean {
     const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) return false;
+    // A box of a pixel is clipped to nothing (a stacked list's header that sorts nothing, kept for assistive technology).
+    if (r.width <= 1 || r.height <= 1) return false;
     if (el.closest('.visually-hidden, .cdk-visually-hidden, [hidden]')) return false;
     return getComputedStyle(el).visibility !== 'hidden';
   }
@@ -78,23 +73,6 @@ export function layoutFindings(): LayoutFinding[] {
     return rects;
   }
 
-  /** The first visible text node of an element, without the glyphs of icons. */
-  function firstText(el: Element): { rect: DOMRect; font: string } | null {
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    const range = document.createRange();
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      if (!/\S/.test(n.nodeValue ?? '')) continue;
-      const parent = n.parentElement;
-      if (!parent || inIcon(parent) || !shown(parent)) continue;
-      range.selectNodeContents(n);
-      const rect = Array.from(range.getClientRects()).find((r) => r.width > 0.5 && r.height > 0);
-      if (!rect) continue;
-      const s = getComputedStyle(parent);
-      return { rect, font: `${s.fontSize} ${s.fontFamily}` };
-    }
-    return null;
-  }
-
   /** How many lines boxes hold: two boxes share a line when they overlap by half the lower one's height. */
   function lineCount(rects: readonly DOMRect[]): number {
     const lines: { top: number; bottom: number }[] = [];
@@ -113,54 +91,252 @@ export function layoutFindings(): LayoutFinding[] {
       .map((n) => (n.nodeType === Node.ELEMENT_NODE && inIcon(n as Element) ? '' : (n.textContent ?? '')))
       .join(' ');
 
-  // ---- icon-apart: an icon on another line than its label (R-UI-170) ------------------------------------------------------
-  // The label is the icon's next sibling with visible text, else its previous one (a sort arrow, a "new window" mark after a
-  // link). An icon its parent lays out above its text (a column, a block of its own, a grid of one column) is meant so.
-  const units = new Set<Element>();
-  for (const el of Array.from(document.querySelectorAll(ICON))) units.add(iconUnit(el));
-  for (const unit of units) {
-    if (!shown(unit)) continue;
-    const parent = unit.parentElement;
-    if (!parent) continue;
-    const ps = getComputedStyle(parent);
-    const us = getComputedStyle(unit);
-    if (/flex/.test(ps.display) && ps.flexDirection.startsWith('column')) continue;
-    if (/^(block|flex|grid|table|list-item|flow-root)$/.test(us.display) && /^(block|flow-root|list-item|table-cell)$/.test(ps.display)) continue;
-    if (/grid/.test(ps.display) && ps.gridTemplateColumns.trim().split(/\s+/).length < 2) continue;
-    const label = (nodes: ChildNode[], last: boolean): { rect: DOMRect; node: Node } | null => {
-      for (const n of nodes) {
-        let rects: DOMRect[] = [];
-        if (n.nodeType === Node.TEXT_NODE) {
-          if (!/\S/.test(n.nodeValue ?? '')) continue;
-          const range = document.createRange();
-          range.selectNodeContents(n);
-          rects = Array.from(range.getClientRects()).filter((r) => r.width > 0.5 && r.height > 0);
-        } else if (n.nodeType === Node.ELEMENT_NODE) {
-          const e = n as Element;
-          if (units.has(e) || inIcon(e) || !shown(e)) continue;
-          rects = textRects(e);
-        }
-        if (rects.length === 0) continue;
-        // Beside its label in a row of a flex or grid box, the icon stands on the line of the label's block (a copy button beside a
-        // hash of three lines); in running text, on the label's first line, or its last for an icon after it.
-        if (/flex|grid/.test(ps.display) && !(/flex/.test(ps.display) && ps.flexWrap === 'wrap')) {
-          const top = Math.min(...rects.map((r) => r.top));
-          const bottom = Math.max(...rects.map((r) => r.bottom));
-          return { rect: new DOMRect(rects[0]?.left ?? 0, top, 1, bottom - top), node: n };
-        }
-        const rect = last ? rects[rects.length - 1] : rects[0];
-        if (rect) return { rect, node: n };
-      }
-      return null;
+  // ---- icon-apart and off-line: a control or an icon off the line of its text (R-UI-170, R-UI-175) ---------------------------
+  // A unit is a control or an icon: what a person sees as one thing beside a text (UNIT below). A unit inside a unit is a part of
+  // the outer one: the glyph of a button is the button, so the button's box is measured, not its glyph. Its text is the nearest
+  // text in its row: the next sibling with visible text outside every unit, else the previous one, else the same among the
+  // siblings of its parent, and so on up to the row's box (Q-UI-721). How a box lays its children out decides what a row is:
+  //   - a flex row: one row, unless a wrapping row put them on two of its lines;
+  //   - a flex column, a grid's other row, a block above or below: the unit is laid out above or below its text on purpose, and
+  //     the search stops there;
+  //   - running text (inline boxes in a block): one row, unless the line broke between them;
+  //   - a table's cell bounds the search: the row of a table is the check `row-offset`'s.
+  // Its middle must be the middle of the text's first line within LINE_TOLERANCE px; a unit after its text may instead stand on
+  // the text's last line (it continues the text: a "new window" mark after a link of two lines); a picture (an avatar, a project's
+  // mark, a grade's shield) at least 1.5 lines high beside a text of two lines or more is centred on the first two lines or on the
+  // whole text (a card's figure); a control beside a framed box (a code block, a list of members) stands on the box, not on the
+  // text inside it, and is not measured (Q-UI-724). A unit that shares no height with the line is `icon-apart`; one that shares some but stands off its middle is
+  // `off-line`. A control that a wrapping row moved to its next line (a toolbar at 390 px) is not a finding; an icon, a mark, a
+  // status or a copy button moved away from its text is.
+  const LINE_TOLERANCE = 1;
+  const UNIT = [
+    'button:not(.link)',
+    'a.btn',
+    '[role="button"]:not(.link)',
+    '[role="switch"]',
+    '[role="checkbox"]',
+    '[role="radio"]',
+    'input[type="checkbox"]',
+    'input[type="radio"]',
+    'select',
+    'input.text-input',
+    '.badge',
+    'span:is(.ok, .warn, .bad):has(> .material-icons)',
+    '.chip',
+    'quader-avatar',
+    'quader-project-mark',
+    'quader-format-icon',
+    'quader-visibility-icon',
+    'quader-copy-button',
+    'quader-grade-shield',
+    '.picture',
+    '.material-icons',
+  ].join(', ');
+  /**
+   * The units that belong to their text: moved to another line than it, they are a defect wherever they stand. A unit with a word
+   * of its own (a badge, a status, a chip) says what it is wherever it stands, and may wrap to a line of its own like a word.
+   */
+  const ATTACHED =
+    '.material-icons, quader-format-icon, quader-visibility-icon, quader-project-mark, quader-avatar, quader-copy-button, quader-grade-shield, .picture, input[type="checkbox"], input[type="radio"]';
+  const PICTURE = 'quader-avatar, quader-project-mark, quader-grade-shield, .picture';
+  const range = document.createRange();
+
+  /** Shown for the search of a text: a box of `display: contents` has no box of its own, but its children do. */
+  const visibleBox = (el: Element): boolean => {
+    const s = getComputedStyle(el);
+    if (s.display === 'contents') return s.visibility !== 'hidden' && !el.closest('.visually-hidden, .cdk-visually-hidden, [hidden]');
+    return shown(el);
+  };
+  const positioned = (el: Element): boolean => /^(absolute|fixed)$/.test(getComputedStyle(el).position);
+  /** The box of a unit: a host of `display: inline` around a box (a copy button's host) is measured by what it holds. */
+  const boxOf = (unit: Element): DOMRect => {
+    if (getComputedStyle(unit).display !== 'inline' || unit.children.length === 0) return unit.getBoundingClientRect();
+    const rects = Array.from(unit.children).filter(shown).map((c) => c.getBoundingClientRect());
+    if (rects.length === 0) return unit.getBoundingClientRect();
+    const top = Math.min(...rects.map((r) => r.top));
+    const bottom = Math.max(...rects.map((r) => r.bottom));
+    const left = Math.min(...rects.map((r) => r.left));
+    const right = Math.max(...rects.map((r) => r.right));
+    return new DOMRect(left, top, right - left, bottom - top);
+  };
+  /** The visible text of a node outside every unit and every positioned box, as its lines (top to bottom), each a list of boxes. */
+  function lines(node: Node): DOMRect[][] {
+    const rects: DOMRect[] = [];
+    const take = (t: Node): void => {
+      if (!/\S/.test(t.nodeValue ?? '')) return;
+      const p = t.parentElement;
+      if (!p || p.closest(UNIT) || !shown(p)) return;
+      for (let e: Element | null = p; e && e !== node; e = e.parentElement) if (positioned(e)) return;
+      range.selectNodeContents(t);
+      for (const r of Array.from(range.getClientRects())) if (r.width > 0.5 && r.height > 0) rects.push(r);
     };
-    const siblings = Array.from(parent.childNodes);
-    const at = siblings.indexOf(unit as ChildNode);
-    const found = label(siblings.slice(at + 1), false) ?? label(siblings.slice(0, at).reverse(), true);
-    if (!found) continue;
-    const ir = unit.getBoundingClientRect();
-    const overlap = Math.min(ir.bottom, found.rect.bottom) - Math.max(ir.top, found.rect.top);
-    if (overlap <= 0) {
-      add('icon-apart', parent, found.node.textContent ?? '', `the icon "${(unit.textContent ?? '').trim() || unit.tagName.toLowerCase()}" stands at y ${Math.round(ir.top)}, its label's line at y ${Math.round(found.rect.top)}`);
+    if (node.nodeType === Node.TEXT_NODE) take(node);
+    else if (node.nodeType === Node.ELEMENT_NODE) {
+      const e = node as Element;
+      if (e.matches(UNIT) || !visibleBox(e) || positioned(e)) return [];
+      const walker = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) take(n);
+    }
+    const out: { top: number; bottom: number; rects: DOMRect[] }[] = [];
+    for (const r of rects) {
+      const line = out.find((l) => Math.min(l.bottom, r.bottom) - Math.max(l.top, r.top) >= Math.min(l.bottom - l.top, r.height) / 2);
+      if (line) {
+        line.top = Math.min(line.top, r.top);
+        line.bottom = Math.max(line.bottom, r.bottom);
+        line.rects.push(r);
+      } else out.push({ top: r.top, bottom: r.bottom, rects: [r] });
+    }
+    return out.sort((a, b) => a.top - b.top).map((l) => l.rects);
+  }
+  const middle = (r: DOMRect): number => (r.top + r.bottom) / 2;
+  const overlaps = (a: DOMRect, b: DOMRect): boolean => Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0;
+  /** On one line: they share at least half the height of the lower of the two (a badge that wrapped touches the line above). */
+  const sameLine = (a: DOMRect, b: DOMRect): boolean => Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) >= Math.min(a.height, b.height) / 2;
+  /**
+   * A framed box: a block with a border or a filled background of its own and padding (a code block, a list of members, a field).
+   * A control beside one stands on the box, as two boxes side by side do, not on the first line of the text inside it.
+   */
+  const framed = (el: Element): boolean => {
+    const s = getComputedStyle(el);
+    if (/^inline/.test(s.display) || s.display === 'contents') return false;
+    const fill = s.backgroundColor !== 'rgba(0, 0, 0, 0)' && s.backgroundColor !== 'transparent' && parseFloat(s.paddingTop) >= 4;
+    return parseFloat(s.borderTopWidth) > 0 || fill;
+  };
+  /**
+   * Whether the unit stands beside a framed box of the sibling: the sibling is one, or holds one at the unit's height (a list of
+   * members under its heading, with Add and Remove beside the list). The first 200 boxes of the sibling are looked at.
+   */
+  const inFrame = (n: Node, box: DOMRect): boolean => {
+    if (n.nodeType !== Node.ELEMENT_NODE) return false;
+    const walker = document.createTreeWalker(n, NodeFilter.SHOW_ELEMENT);
+    let seen = 0;
+    for (let e: Node | null = n; e && seen < 200; e = walker.nextNode(), seen++) {
+      const el = e as Element;
+      if (!el.matches(UNIT) && framed(el) && overlaps(el.getBoundingClientRect(), box)) return true;
+    }
+    return false;
+  };
+  const inline = (n: Node): boolean =>
+    n.nodeType === Node.TEXT_NODE || (n.nodeType === Node.ELEMENT_NODE && /^inline/.test(getComputedStyle(n as Element).display));
+  /** The box that lays out a box's children: a box of `display: contents` hands them to its parent. */
+  const layoutBox = (el: Element): Element => {
+    let e: Element = el;
+    while (e.parentElement && getComputedStyle(e).display === 'contents') e = e.parentElement;
+    return e;
+  };
+  const nodeBox = (n: Node): DOMRect | null => {
+    if (n.nodeType === Node.ELEMENT_NODE) return (n as Element).getBoundingClientRect();
+    range.selectNodeContents(n);
+    return range.getBoundingClientRect();
+  };
+
+  /** Where a unit's text is, or why there is none to measure it against. */
+  type Text = { node: Node; side: 'after' | 'before'; lines: DOMRect[][]; wrapped: boolean; framed: boolean };
+  function textOfUnit(unit: Element, box: DOMRect): Text | 'stacked' | null {
+    let branch: Element = unit;
+    for (let depth = 0; depth < 8; depth++) {
+      const parent = branch.parentElement;
+      if (!parent || parent === document.body || parent.matches('main, [role="dialog"], tr, tbody, thead, table')) return null;
+      const lay = layoutBox(parent);
+      const ls = getComputedStyle(lay);
+      const kids = Array.from(parent.childNodes);
+      const at = kids.indexOf(branch);
+      const order: [ChildNode, 'after' | 'before'][] = [
+        ...kids.slice(at + 1).map((n) => [n, 'after'] as [ChildNode, 'after']),
+        ...kids.slice(0, at).reverse().map((n) => [n, 'before'] as [ChildNode, 'before']),
+      ];
+      let stacked = false;
+      for (const [n, side] of order) {
+        // Whether the sibling holds text at all, cheaply (no layout): a sibling with text decides where the search ends.
+        if (!/\S/.test(n.textContent ?? '')) continue;
+        // How the box lays the unit's branch and the sibling out, decided before the sibling's text is measured: a block of a
+        // whole page beside a header's button is not walked.
+        let arrangement: 'row' | 'text' | 'stack';
+        if (/flex/.test(ls.display)) arrangement = ls.flexDirection.startsWith('column') ? 'stack' : 'row';
+        else if (/grid/.test(ls.display)) {
+          const nb = nodeBox(n);
+          arrangement = ls.gridTemplateColumns.trim().split(/\s+/).length < 2 || !nb || !overlaps(nb, box) ? 'stack' : 'row';
+        } else arrangement = inline(branch) && inline(n) ? 'text' : 'stack';
+        if (arrangement === 'stack') {
+          // A block above or below the unit, a column, a grid's other row: laid out so on purpose.
+          if (n.nodeType === Node.TEXT_NODE || (n.nodeType === Node.ELEMENT_NODE && !(n as Element).matches(UNIT) && visibleBox(n as Element))) stacked = true;
+          continue;
+        }
+        const ls2 = lines(n);
+        if (ls2.length === 0) continue;
+        const lineBox = (side === 'after' ? ls2[0] : ls2[ls2.length - 1])?.[0];
+        if (!lineBox) continue;
+        // Two lines of a wrapping row (a toolbar that wrapped, or an icon that left its text), or a line of running text that
+        // broke between the unit and its text.
+        const wrapped =
+          arrangement === 'row'
+            ? /flex/.test(ls.display) && ls.flexWrap !== 'nowrap' && !ls2.some((l) => l.some((r) => overlaps(r, box)))
+            : !sameLine(lineBox, box);
+        return { node: n, side, lines: ls2, wrapped, framed: arrangement === 'row' && inFrame(n, box) };
+      }
+      if (stacked) return 'stacked';
+      // A column of controls without a text (Add, Remove and Move between two lists): the controls stand above and below each other
+      // beside the boxes they act on, as a toolbar of their own, and are not paired with a text further away.
+      if (depth === 0 && /flex/.test(ls.display) && ls.flexDirection.startsWith('column') && Array.from(parent.children).filter((c) => c.matches(UNIT)).length > 1) {
+        return 'stacked';
+      }
+      // A table's cell is the end of the search: the row is the check row-offset's.
+      if (parent.matches('td, th')) return null;
+      branch = parent;
+    }
+    return null;
+  }
+
+  const outermost = (el: Element): boolean => !el.parentElement?.closest(UNIT);
+  const unitsSeen = new Set<Element>();
+  const nameOf = (unit: Element): string =>
+    unit.getAttribute('aria-label') ?? ((unit.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 30) || unit.tagName.toLowerCase());
+  for (const unit of Array.from(document.querySelectorAll(UNIT))) {
+    if (!outermost(unit) || !shown(unit) || positioned(unit)) continue;
+    const box = boxOf(unit);
+    const found = textOfUnit(unit, box);
+    if (found === null || found === 'stacked') continue;
+    unitsSeen.add(unit);
+    const textName = (found.node.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const first = found.lines[0] ?? [];
+    const last = found.lines[found.lines.length - 1] ?? [];
+    const firstBox = first[0];
+    if (!firstBox) continue;
+    if (found.framed) continue;
+    if (found.wrapped) {
+      if (unit.matches(ATTACHED)) {
+        const near = found.side === 'after' ? firstBox : (last[last.length - 1] ?? firstBox);
+        add('icon-apart', unit, textName, `"${nameOf(unit)}" stands at y ${Math.round(box.top)}, its text's line at y ${Math.round(near.top)}`);
+      }
+      continue;
+    }
+    const m = middle(box);
+    const targets = [middle(firstBox)];
+    if (found.side === 'before') {
+      const lastBox = last[last.length - 1];
+      if (lastBox) targets.push(middle(lastBox));
+    }
+    // A picture of two lines and more: centred on the first two lines (a name and its key), or on its whole text (a card's figure).
+    // Its text is every text beside it on that side: a name and its key may be two boxes of one grid (the project switcher).
+    if (unit.matches(PICTURE) && box.height >= 1.5 * firstBox.height) {
+      const kids = Array.from(found.node.parentNode?.childNodes ?? []);
+      const at = kids.indexOf(found.node as ChildNode);
+      const beside = found.side === 'after' ? kids.slice(at) : kids.slice(0, at + 1);
+      const all = beside.flatMap((n) => lines(n)).sort((a, b) => a[0]!.top - b[0]!.top);
+      const line2 = all.find((l) => l[0]!.top >= firstBox.bottom - 1)?.[0];
+      if (line2) targets.push((firstBox.top + line2.bottom) / 2);
+      // The whole text is the boxes beside it, its buttons included (a profile's picture beside a sentence and its buttons).
+      const boxes = beside.map(nodeBox).filter((r): r is DOMRect => !!r && r.height > 0);
+      if (boxes.length > 0 && (line2 || boxes.some((r) => r.height > 1.5 * firstBox.height))) {
+        targets.push((Math.min(...boxes.map((r) => r.top)) + Math.max(...boxes.map((r) => r.bottom))) / 2);
+      }
+    }
+    const off = targets.map((t) => m - t).reduce((a, b) => (Math.abs(b) < Math.abs(a) ? b : a));
+    if (Math.abs(off) <= LINE_TOLERANCE) continue;
+    if (!overlaps(box, firstBox) && !(found.side === 'before' && last[0] && overlaps(box, last[0]))) {
+      add('icon-apart', unit, textName, `"${nameOf(unit)}" stands at y ${Math.round(box.top)}, its text's line at y ${Math.round(firstBox.top)}`);
+    } else {
+      add('off-line', unit, textName, `the middle of "${nameOf(unit)}" (${Math.round(box.height)} px high) is ${Math.abs(off).toFixed(1)} px ${off > 0 ? 'below' : 'above'} the middle of its text's first line`);
     }
   }
 
@@ -227,52 +403,60 @@ export function layoutFindings(): LayoutFinding[] {
     }
   }
 
-  // ---- row-offset and row-actions: a row laid out differently from its neighbours (R-UI-172) -------------------------------
-  // The first line of every cell of a list's row stands on one line with the row's name: the same baseline within a pixel where
-  // the fonts are the same; else the same middle within 1.5 px, because a smaller text centred in a badge lands on a half pixel
-  // (the walk's defects were 2 and 5 px). A cell without text is measured by its first icon. Then the action cells of one table:
-  // the same construction in every row that has one (a menu, a word, an icon), as R-UI-163 asks. A list is `table.data`.
-  for (const table of Array.from(document.querySelectorAll<HTMLTableElement>('table.data'))) {
-    if (!shown(table) || getComputedStyle(table).display !== 'table') continue;
+  // ---- row-offset and row-actions: a row laid out differently from its neighbours (R-UI-172, R-UI-176) ---------------------
+  // In a table's row the first line of every cell's text and every control of a cell without text (an action cell, a check box's
+  // cell) have one middle, the row's name's, within LINE_TOLERANCE px: the baseline is not compared, because a smaller text centred
+  // in a badge has the same middle and another baseline. A control in a cell with text is measured against that text above
+  // (`off-line`), so a defect is named once. A row that stands as a block (R-UI-174) is measured on its first line: the name and the
+  // actions. Every table is measured but a document's (the manual, a guide, a README: `.readme`); its head as well as its body.
+  // Then the action cells of one list (`table.data`): the same construction in every row that has one (a menu, a word, an icon),
+  // as R-UI-163 asks.
+  for (const table of Array.from(document.querySelectorAll<HTMLTableElement>('table'))) {
+    if (!shown(table) || table.closest('.readme')) continue;
     const signatures = new Map<string, number>();
     let example: Element | null = null;
-    for (const body of Array.from(table.tBodies)) {
-      for (const row of Array.from(body.rows)) {
-        if (getComputedStyle(row).display !== 'table-row') continue;
-        const anchors: { cell: Element; rect: DOMRect; font: string | null }[] = [];
-        for (const cell of Array.from(row.cells)) {
-          if (!shown(cell)) continue;
-          const text = firstText(cell);
-          if (text) anchors.push({ cell, rect: text.rect, font: text.font });
-          else {
-            const icon = Array.from(cell.querySelectorAll(ICON)).map(iconUnit).find(shown);
-            if (icon) anchors.push({ cell, rect: icon.getBoundingClientRect(), font: null });
-          }
+    for (const row of Array.from(table.rows)) {
+      if (row.closest('table') !== table || !shown(row)) continue;
+      const anchors: { cell: Element; rect: DOMRect; what: string }[] = [];
+      for (const cell of Array.from(row.cells)) {
+        if (!shown(cell)) continue;
+        const text = lines(cell)[0]?.[0];
+        if (text) {
+          anchors.push({ cell, rect: text, what: '' });
+          continue;
         }
-        const ref = anchors.find((a) => a.font !== null);
-        if (ref && anchors.length > 1) {
-          for (const a of anchors) {
-            if (a === ref) continue;
-            const off = a.font === ref.font ? a.rect.bottom - ref.rect.bottom : (a.rect.top + a.rect.bottom) / 2 - (ref.rect.top + ref.rect.bottom) / 2;
-            if (Math.abs(off) > (a.font === ref.font ? 1 : 1.5)) {
-              add('row-offset', a.cell, a.cell.textContent ?? '', `${Math.abs(off).toFixed(1)} px ${off > 0 ? 'lower' : 'higher'} than "${(ref.cell.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 30)}" of its row`);
-            }
-          }
+        for (const unit of Array.from(cell.querySelectorAll(UNIT))) {
+          if (!outermost(unit) || unitsSeen.has(unit) || !shown(unit) || positioned(unit) || unit.closest('table') !== table) continue;
+          anchors.push({ cell, rect: boxOf(unit), what: nameOf(unit) });
         }
-        const actions = row.querySelector(':scope > td.actions');
-        if (!actions) continue;
-        const kinds = Array.from(actions.querySelectorAll('button, a.btn'))
-          .filter(shown)
-          .map((b) => {
-            if (b.getAttribute('aria-haspopup')) return 'menu';
-            return textRects(b).length > 0 ? 'word' : 'icon';
-          })
-          .sort()
-          .join('+');
-        if (!kinds) continue;
-        signatures.set(kinds, (signatures.get(kinds) ?? 0) + 1);
-        example ??= actions;
       }
+      const ref = anchors.find((a) => a.what === '' && a.cell.matches('th[scope="row"]')) ?? anchors.find((a) => a.what === '') ?? anchors[0];
+      if (ref && anchors.length > 1) {
+        const refText = (ref.cell.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 30);
+        const stackedRow = getComputedStyle(row).display !== 'table-row';
+        for (const a of anchors) {
+          // A stacked row's later lines: each cell there is a fact with its column's name, not a part of the first line.
+          if (a === ref || (stackedRow && a.rect.top >= ref.rect.bottom)) continue;
+          const off = middle(a.rect) - middle(ref.rect);
+          if (Math.abs(off) > LINE_TOLERANCE) {
+            add('row-offset', a.cell, a.what || (a.cell.textContent ?? ''), `${a.what ? `the middle of "${a.what}"` : "the middle of the cell's first line"} is ${Math.abs(off).toFixed(1)} px ${off > 0 ? 'below' : 'above'} that of "${refText}" of its row`);
+          }
+        }
+      }
+      if (!table.matches('table.data') || row.parentElement?.tagName !== 'TBODY') continue;
+      const actions = row.querySelector(':scope > td.actions');
+      if (!actions) continue;
+      const kinds = Array.from(actions.querySelectorAll('button, a.btn'))
+        .filter(shown)
+        .map((b) => {
+          if (b.getAttribute('aria-haspopup')) return 'menu';
+          return textRects(b).length > 0 ? 'word' : 'icon';
+        })
+        .sort()
+        .join('+');
+      if (!kinds) continue;
+      signatures.set(kinds, (signatures.get(kinds) ?? 0) + 1);
+      example ??= actions;
     }
     if (signatures.size > 1 && example) {
       add('row-actions', example, '', `the action cells of one table are built ${signatures.size} ways: ${[...signatures].map(([k, n]) => `${k} (${n})`).join(', ')}`);

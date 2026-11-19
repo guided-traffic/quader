@@ -259,6 +259,8 @@
   // Centred on the line it stands on, whatever that line's height: 16 px in a table's cell, the text line in a filter's row.
   // `1lh` is the line of the text around it, so the mark keeps that text's size and line height and the letter has its own.
   margin-block: calc((1lh - 1.25rem) / 2);
+  // In running text its margin box is the line, at the line's top; on the baseline its letter's baseline set it 2 px low.
+  vertical-align: top;
   border-radius: var(--quader-radius-s);
   background: var(--quader-mark-stone);
   color: var(--quader-mark-letter);
@@ -392,20 +394,16 @@ td.class-cell .material-icons {
       line-height: 1rem;
     }
 
-    // A badge (20 px) in a cell is centred on the first line too and adds nothing to its height: without this a cell with a
-    // badge had a line of 20 px, and its text stood 2 px lower than the text of the cells beside it (owner, 2026-11-18). A status
-    // is drawn as a badge without the class (`span.ok` with its icon, _controls.scss): the same rule, or **Active**, **Denied**,
-    // **Succeeded** stood 2 px low in every list (found by the renders' check, R-UI-172).
-    tbody :is(th, td) :is(.badge, span:is(.ok, .warn, .bad):has(> .material-icons)) {
-      margin-block: calc((1rem - 20px) / 2);
-    }
+    // A badge (20 px) in a cell is centred on the first line and adds nothing to its height by the line rule of every badge
+    // (_controls.scss, R-UI-175): a cell with a badge had a line of 20 px, and its text stood 2 px lower than the text of the cells
+    // beside it (owner, 2026-11-18).
 
     // A copy button beside a value in a cell (a hash) is a box of its own on the line's top, as a row's copy button is; a switch
     // (an inline check box with its word) is centred on the line. Each stood 2 to 4 px under the row's line.
     tbody :is(th, td) quader-copy-button {
       display: inline-flex;
       vertical-align: top;
-      margin-block: calc((1rem - var(--quader-control-height)) / 2);
+      margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2);
     }
 
     tbody :is(th, td) > label.switch {
@@ -423,7 +421,7 @@ td.class-cell .material-icons {
     // Each control's box of margins is the line's 16 px, and it stands at the line's top: on the baseline, a word button beside
     // an icon button stood on the icon glyph's baseline, 3 px under the row's line (**Set up client** beside the menu, R-UI-172).
     tbody :is(th, td) > :is(.btn, quader-address-field, select, .select-input, .text-input, quader-copy-button, .row-actions) {
-      margin-block: calc((1rem - var(--quader-control-height)) / 2);
+      margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2);
       vertical-align: top;
     }
 
@@ -780,8 +778,10 @@ td.class-cell .material-icons {
       text-align: start;
     }
 
-    // In a block a control stands on the line of its column's name, on their common baseline.
-    tbody :is(th, td) > :is(.btn, quader-address-field, select, .select-input, .text-input, quader-copy-button, .row-actions) {
+    // In a block a field stands on the line of its column's name, on their common baseline, and keeps its height: its frame would
+    // reach into the line above. A button, a copy button and the row's actions stay centred on their line as in a row (R-UI-175):
+    // on the baseline a copy button stood 8 px under its hash, at the block's top the menu 8 px under the name.
+    tbody :is(th, td) > :is(quader-address-field, select, .select-input, .text-input) {
       margin-block: 0;
       vertical-align: baseline;
     }

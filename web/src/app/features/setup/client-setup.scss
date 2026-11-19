@@ -4,11 +4,12 @@
   max-inline-size: var(--quader-settings-measure);
 }
 
-// The repository of the header before the badges of its format and class.
+// The repository of the header before the badges of its format and class. Its visibility icon stands on the key's first line
+// where a long key wraps (R-UI-175); centred on its two lines at 390 px it stood 10 px under it.
 .context {
   .repo {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--quader-space-1);
     overflow-wrap: anywhere;
   }

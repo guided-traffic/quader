@@ -10528,6 +10528,71 @@ development agent would revisit the choice if a loop's statement were seen to ho
 ([loop_stop_test.go](../../internal/cluster/loop_stop_test.go)), `TestR_HA_011_CloseContextEndsAProbeStatementThatIsStillRunning`
 ([close_held_test.go](../../test/integration/postgres/close_held_test.go)).
 
+### Q-ARCH-510 · The layout checks of the UI run on every push in Test and Release and gate no release until the first stable release
+
+Status: **Decided by the owner** (2026-11-19) that they run in CI: "Ja, die Renderprüfung soll auch in der CI laufen." That they
+gate nothing until the first stable release follows from the owner's rule of 2026-11-10
+([Q-ARCH-457](#q-arch-457--until-the-first-stable-release-a-minimal-set-of-jobs-gates-semantic-release)); the place in the
+workflow is **decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `make ui-renders` with its layout checks ([R-UI-170 to R-UI-176](api-and-ui.md#r-ui-176--the-checks-of-a-controls-line-are-proven-on-their-own-pages-and-the-render-set-shows-every-row-with-a-control))
+ran on the development machine only; a defect the owner objected to more than once (W-23) landed between two local runs.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A job `ui-layout` ("UI layout checks") of Test and Release on every push and pull request, without a path filter, that runs `make ui-layout-test` and then the full `make ui-renders`; not among the `needs` of `semantic-release` (chosen) | One job, the make targets a developer runs | Every push is judged on every screen; a red run names the screen, the element and the distance; no release waits on it | A red run lands as a finding after the push, not before it |
+| (b) The same job, and Semantic Release needs it | A gate | A layout defect is never released | Against Q-ARCH-457 until the first stable release: a run of 30 to 40 minutes on a shared runner would hold every release |
+| (c) Nightly only | `performance.yml` | No load per push | Against the owner's "in der CI": a defect stands a day in `main` |
+
+**Choice:** (a). The workflow's own filter (a change of documentation alone starts no run) applies as to every job; the job has no
+filter of its own, because a leg that skips by path is green without having looked (F-148). A red run is worked on until its cause
+is fixed, as every red leg is (Q-ARCH-457). **Rationale:** the owner wants the checks in CI, and the stage rule keeps releases free
+of a long leg. With the first stable release the job joins the `needs` of Semantic Release with the full gate; the test
+`TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease` ([workflows_test.go](../../internal/tools/ciworkflows/workflows_test.go))
+changes with it.
+
+**Applied:** [release.yml](../../.github/workflows/release.yml) (`ui-layout`); [releasing.md](../developer/releasing.md),
+[web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+
+### Q-ARCH-511 · The layout checks run in one leg on the standard runners
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a full run renders 331 screens and kinds (3 widths, 2 schemes, every tab and walk) with three browsers at a time against the
+job's own UI development profile: three service containers (PostgreSQL, Valkey, SeaweedFS), one Quader process with the sign-in
+provider, and the Angular dev server. Measured on the development machine (20 cores, 2026-11-19): 22.4 minutes for the first
+full run, the stack's start and the seed included; the fixtures of `make ui-layout-test` take 3 s. The kind legs of Test and Release
+take about 58 minutes ([releasing.md](../developer/releasing.md#ci)). Not measured: the run on a runner.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One leg on `self-hosted` (request 1 CPU, no CPU limit, 4 to 10 GiB for the runner and its Docker) (chosen) | The class of the other non-kind jobs | Up to 24 pods: a push does not wait for a large pod; the service containers run in the Docker sidecar as the integration shards do; the run is shorter than a kind leg | The browsers and the dev server share a node with other jobs: the run is slower than on the development machine, how much is not measured |
+| (b) `runs-on: large` | 10 CPUs requested, 28 GiB | Faster | Six pods for the kind legs, which already compete for them on every push; no leg of this job needs kind |
+| (c) Two or more legs by Playwright's `--shard` | Shards of the screens | Shorter wall time | Each leg starts the stack, builds Quader, compiles the dev server and seeds (about 3 minutes each); the report is cut into pieces |
+
+**Choice:** (a), one leg, `timeout-minutes: 75`. The development agent splits the screens with `--shard` (each leg's report named by
+its shard, every screen in exactly one) if a run on the runner takes longer than the longest kind leg, and moves the job to `large`
+if a run is evicted or killed for memory.
+
+**Applied:** [release.yml](../../.github/workflows/release.yml); [releasing.md](../developer/releasing.md#ci).
+
+### Q-ARCH-512 · A red run of the layout checks keeps its findings and the pictures of its failed screens for a week
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the renders are never committed. A red job must say what failed and show it, or the finding is reproduced locally first.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) On failure an artifact `ui-layout-findings` with `failures.txt`, `report.json` and the pictures of the screens that failed (their manifest lists a failure), 7 days; on success `ui-layout-report` with `report.json` alone, 7 days (chosen) | `actions/upload-artifact` | The finding and its picture in one download; a green run keeps the measurements, not 2,000 pictures | A defect of a green run's picture is not kept |
+| (b) Every picture of every run | | Everything | About 2,000 pictures per push |
+| (c) No artifact | | | Every red run is rendered again locally to be seen |
+
+**Choice:** (a). **Rationale:** what a person looks at after a red run is the failed screen; the report holds every measurement of
+every picture. The development agent revisits the retention if a red run is looked at later than a week.
+
+**Applied:** [release.yml](../../.github/workflows/release.yml).
+
 ## What this does not cover
 
 

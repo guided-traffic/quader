@@ -137,15 +137,11 @@
     vertical-align: -0.2em;
   }
 
+  // The copy button and the menu of the folders in between stand on the path's line (R-UI-175: `on-line` in the template);
+  // at `vertical-align: middle` they stood 1.5 px under it.
   .here quader-copy-button {
-    display: inline-flex;
     margin-inline-start: var(--quader-space-1);
-    vertical-align: middle;
     font-size: var(--quader-text-size);
-  }
-
-  .trail-more {
-    vertical-align: middle;
   }
 
   // A link of the path is underlined under the pointer and on focus, as the breadcrumb's; it is not running text.
@@ -182,7 +178,8 @@
 }
 
 // The name of an item of a package format: the chevron keeps its size and the name wraps beside it, so a long name never moves
-// the row's start (the defect of the long package name, W-3).
+// the row's start (the defect of the long package name, W-3). The chevron stands on the name's first line (`on-line`, R-UI-175):
+// at the row's top it stood 8 px under the name and made the row 65 px high where its text needs 49 (owner, 2026-11-19).
 .name-cell {
   display: flex;
   align-items: flex-start;
@@ -265,10 +262,15 @@ tr.expansion td {
 }
 
 // A file's actions at the end of its path's row (Q-UI-514).
+// A file's actions stand on the middle of the path's line (R-UI-175): the box's line is the path's (its size at 1.4), and the
+// buttons are centred on it (`on-line`) without making it taller; at the row's top they stood 1.5 px under it.
 .file-actions {
+  --quader-line: calc(var(--quader-heading-3) * 1.4);
+
   display: flex;
   flex: none;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--quader-space-2);
 
   .btn .material-icons {
@@ -287,7 +289,7 @@ tr.expansion td {
 
 .digest {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-2);
 
   code {

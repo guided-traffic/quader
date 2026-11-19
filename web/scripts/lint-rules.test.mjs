@@ -8,6 +8,7 @@ import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
 import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
+import { offTheLine } from './line-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -143,4 +144,21 @@ test('R-UI-163 two word actions in one row fail the check, one word, a menu with
   ];
   for (const t of good) assert.deepEqual(wordActionsSideBySide(t), [], t);
   assert.equal(wordActionsSideBySide('<table>\n<tr><td>\n<a class="btn">A</a>\n<a class="btn">B</a></td>')[0].line, 4);
+});
+
+test('R-UI-175 vertical-align: middle and align-items: last baseline fail the check, the line rule and a table cell\'s alignment pass', () => {
+  const bad = [
+    '.material-icons.inline {\n  font-size: 1.125rem;\n  vertical-align: middle;\n}',
+    ':host {\n  display: inline-block;\n  vertical-align: middle;\n}',
+    '.external-link {\n  display: inline-flex;\n  align-items: last baseline;\n}',
+    '.table td .chip {\n  vertical-align: middle;\n}',
+  ];
+  for (const css of bad) assert.equal(offTheLine(css).length, 1, css);
+  const good = [
+    '.material-icons.inline {\n  vertical-align: top;\n  margin-block: calc((var(--quader-line) - 1em) / 2);\n}',
+    'table.data {\n  thead th {\n    vertical-align: middle;\n  }\n}',
+    'td.num,\nth.num {\n  vertical-align: middle;\n}',
+    '// at `vertical-align: middle` they stood 1.5 px under it.\n.x { vertical-align: top; }',
+  ];
+  for (const css of good) assert.deepEqual(offTheLine(css), [], css);
 });

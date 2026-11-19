@@ -82,13 +82,14 @@
 
 // A fact with a copy button (an image's digest) keeps its value on the line of its label, and the button beside the value: a
 // value that wraps breaks inside itself. Wrapping as flex items, the button went to a line of its own under a digest at 1,024 px
-// (R-UI-170).
+// (R-UI-170). The button stands on the middle of the value's first line (`on-line`, R-UI-175): on the baseline its glyph's
+// baseline put it 3 px above it.
 .tab dl.facts {
   align-items: baseline;
 
   dd:has(> quader-copy-button) {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     gap: var(--quader-space-1);
 
     > code {

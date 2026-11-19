@@ -97,7 +97,7 @@ let nextId = 1;
             <ul class="chips" [attr.aria-label]="chosenLabel()">
               @for (c of chosen(); track c.ref) {
                 <li class="chip">
-                  <span class="mark" aria-hidden="true">
+                  <span class="mark picture" aria-hidden="true">
                     @if (c.kind === 'user') {
                       <quader-avatar class="chip-avatar" [seed]="c.id || c.ref" [imageUrl]="c.avatarUrl" />
                     } @else {
@@ -156,7 +156,7 @@ let nextId = 1;
                   (keydown.enter)="pick(m)"
                   (mousemove)="active.pointer(i, $event)"
                 >
-                  <span class="mark" aria-hidden="true">
+                  <span class="mark picture" aria-hidden="true">
                     @if (m.kind === 'user') {
                       <quader-avatar class="option-avatar" [seed]="m.id || m.ref" [imageUrl]="m.avatarUrl" />
                     } @else {

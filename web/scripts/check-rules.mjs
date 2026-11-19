@@ -9,6 +9,8 @@
 //  - Q-UI-552: no bare <details> in a template: every fold is <quader-disclosure>, with the app's one chevron.
 //  - Q-UI-560: no icon stands directly in a table cell: it is one element with its word (status-rule.mjs).
 //  - R-UI-163: no row shows two word actions at once: several actions are the row's menu (row-actions-rule.mjs).
+//  - R-UI-175: no `vertical-align: middle` and no `align-items: last baseline` in a style: a box beside a text stands on the
+//    line's middle by the line rule of _controls.scss (line-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +18,7 @@ import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
 import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
+import { offTheLine } from './line-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -101,6 +104,14 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
   for (const { line, tag } of wordActionsSideBySide(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`R-UI-163: ${rel}:${line}: two word actions in one row; put the row's actions into its menu: ${tag.split('\n')[0].trim()}`);
+  }
+}
+
+// A control or an icon beside a text stands on the middle of its line, not on the lower-case letters' (R-UI-175, Q-UI-725).
+for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  for (const { line, text } of offTheLine(readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(`R-UI-175: ${relative(root, file)}:${line}: a box placed off the line of its text; use the line rule of _controls.scss (vertical-align: top and margins from --quader-line): ${text}`);
   }
 }
 

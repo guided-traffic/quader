@@ -5,6 +5,65 @@
 // field in semibold, a primary ("confirm") button in the accent, a neutral default button, a text-only
 // tertiary button, and a solid focus outline that does not rely on colour alone (WCAG 2.4.7, 2.4.11).
 
+// ---- The line a control stands on (R-UI-175, Q-UI-720) ------------------------------------------
+//
+// A control or an icon beside a text stands on the middle of that text's first line and makes the line no taller. Each box
+// hands the height of its own line to what it holds (`--quader-line`, computed to px where it is set, so it inherits as a
+// length); a control or an icon takes its parent's instead of setting its own, so it knows the line of the text it stands
+// beside: 16 px in a table's cell, 21 px in a paragraph, 28 px in a folder's path. A control is then centred on that line by
+// margins of half the difference, which the box's top-aligned row or `vertical-align: top` puts at the line's top:
+//
+//   margin-block: calc((var(--quader-line) - <the control's height>) / 2);
+//
+// The icons of running text (`.material-icons.inline`), the badges and statuses, the project's mark and the check boxes carry it
+// themselves; a 32 px control carries it where it stands beside a text: in a table's cell (_list-screens.scss,
+// _catalog-screens.scss) and wherever it has the class `on-line`.
+@property --quader-line {
+  syntax: '<length>';
+  inherits: true;
+  // A registered property's first value must not depend on anything (a `rem` does): the text's line, 14 px at 1.5.
+  initial-value: 21px;
+}
+
+* {
+  --quader-line: 1lh;
+}
+
+:where(
+    .material-icons,
+    .btn,
+    .on-line,
+    .badge,
+    span:is(.ok, .warn, .bad):has(> .material-icons),
+    .chip,
+    .picture,
+    quader-copy-button,
+    quader-visibility-icon,
+    quader-format-icon,
+    quader-project-mark,
+    quader-avatar,
+    quader-grade-shield,
+    input[type='checkbox'],
+    input[type='radio']
+  ) {
+  --quader-line: inherit;
+}
+
+// A 32 px control (a button, a copy button, a menu's trigger) beside a text in a row whose items stand at its top: the button that
+// opens a list's row beside the name, a copy button after a hash, a path's menu. A small button (`btn-sm`) is 24 px.
+.on-line {
+  margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2);
+  vertical-align: top;
+}
+
+quader-copy-button.on-line {
+  display: inline-flex;
+}
+
+.btn-sm.on-line {
+  margin-block: calc((var(--quader-line) - 24px) / 2);
+}
+
 // ---- Buttons -------------------------------------------------------------------------------------
 //
 //   <button class="btn btn-confirm" type="submit">Save</button>      the primary action of a screen or dialog
@@ -194,7 +253,8 @@ span:is(.ok, .warn, .bad):has(> .material-icons) {
   display: inline-flex;
   align-items: center;
   gap: var(--quader-space-1);
-  min-block-size: 20px;
+  // 20 px, whatever it holds: the line rule below centres a box of this height (a glyph of another size made one 22 px high).
+  block-size: 20px;
   padding: 2px 6px;
   border: 0;
   border-radius: 999px;
@@ -204,7 +264,10 @@ span:is(.ok, .warn, .bad):has(> .material-icons) {
   font-weight: 400;
   line-height: 1rem;
   white-space: nowrap;
-  vertical-align: middle;
+  // On the line it stands in, centred on it, and no taller than it (R-UI-175): `vertical-align: middle` is the middle of the
+  // lower-case letters, 1.7 px under the line's (a list's visibility, a heading's count).
+  vertical-align: top;
+  margin-block: calc((var(--quader-line) - 20px) / 2);
 
   .material-icons {
     margin: 0;
@@ -345,7 +408,9 @@ input[type='checkbox'],
 input[type='radio'] {
   inline-size: 1rem;
   block-size: 1rem;
-  margin: 0.125rem 0 0;
+  // Centred on the line of its label (R-UI-175): 2.5 px above and below on a line of 21 px, none on a table's 16 px.
+  margin: calc((var(--quader-line) - 1rem) / 2) 0;
+  vertical-align: top;
   accent-color: var(--quader-accent-fill);
 
   &:focus-visible {
@@ -581,10 +646,11 @@ details {
 }
 
 // A link to another site and its mark (`open_in_new`), one unit: the mark stands on the link's last line. As siblings in running
-// text the mark went to a line of its own where a long address wrapped (a package's Links at 390 px, R-UI-170).
+// text the mark went to a line of its own where a long address wrapped (a package's Links at 390 px, R-UI-170). It is centred on
+// that line (R-UI-175): on the last baseline the glyph's box stood on the baseline, 3.5 px above the line's middle.
 .external-link {
   display: inline-flex;
-  align-items: last baseline;
+  align-items: flex-end;
   gap: var(--quader-space-1);
   max-inline-size: 100%;
 
@@ -596,6 +662,7 @@ details {
   > .material-icons {
     flex: none;
     font-size: 1.125rem;
+    margin-block: calc((var(--quader-line) - 1em) / 2);
   }
 }
 

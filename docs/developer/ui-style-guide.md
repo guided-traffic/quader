@@ -137,7 +137,7 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   list's width is the table's own (the container `table`); the table keeps no room for a scrollbar its rows do not need, so it
   ends where the lines above it end ([Q-UI-427](../spec/api-and-ui.md#q-ui-427--a-table-keeps-no-room-for-a-scrollbar-its-rows-do-not-need)).
 - **One alignment.** Every cell starts at the top of its row; a control in a cell (a button, a select, the address field) is
-  centred on the first line of text. A list does not set its own vertical alignment.
+  centred on the first line of text by [the line rule](#a-control-beside-a-text). A list does not set its own vertical alignment.
 - **Where the columns do not fit, the rows stack.** A data table measures its columns at their least widths (a wrapping column's
   `width`, a column that never breaks at its longest value) against its room and shows each row as a block where they do not fit,
   and only there ([Q-UI-680](../spec/api-and-ui.md#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)):
@@ -377,6 +377,37 @@ screen draws its own, and no screen shows a version's highest severity instead.
 - **Sorting.** A list column of grades sorts by `gradeRank` (the grade, then the count that decides it, N/A lowest); a paged list
   loads up to 1,000 entries first ([Q-UI-373](../spec/api-and-ui.md#q-ui-373--the-list-sorts-by-grade-in-the-browser-over-the-whole-list-up-to-1000-entries)).
 
+## A control beside a text
+
+Wherever a control or an icon stands beside a text it belongs to (a button, a copy button, a menu's trigger, a check box, a badge,
+a status, a chip, an avatar, a project's mark, a format's or a visibility level's icon, a glyph), its middle is the middle of the
+text's first line within 1 px, and it makes the line no taller
+([R-UI-175](../spec/api-and-ui.md#r-ui-175--a-control-or-an-icon-beside-a-text-stands-on-the-middle-of-that-texts-first-line)).
+The row's items stand at its top (`align-items: flex-start`, a cell's `vertical-align: top`), and the line rule of
+[_controls.scss](../../web/src/styles/_controls.scss) centres the control on the line it stands in:
+
+```scss
+margin-block: calc((var(--quader-line) - <the control's height>) / 2);  // --quader-line: the line of the box it stands in
+vertical-align: top;                                                     // in running text
+```
+
+- The icons of running text (`.material-icons.inline`, a paragraph's icon), every badge and status, the project's mark and every
+  check box carry it already. A 32 px button or copy button beside a text gets the class `on-line`
+  (`<button class="btn btn-icon on-line">`, `<quader-copy-button class="on-line">`); in a table's cell the rule of the data table
+  does it for the cell's direct children.
+- A box of controls beside a heading (a page's actions, a file's actions) is as high as the heading's line, with its controls
+  centred in it.
+- Never `vertical-align: middle` (the middle of the lower-case letters, 1.5 to 1.7 px under the line's) and never
+  `align-items: last baseline` for a mark: `make web-lint` refuses both (R-UI-175, except a table cell's own alignment).
+- The exceptions are layouts, not places
+  ([Q-UI-724](../spec/api-and-ui.md#q-ui-724--the-exceptions-are-layouts-not-places-above-or-below-a-field-under-its-label-a-picture-a-mark-after-its-text-a-framed-box-a-word-that-wraps)):
+  a control above or below its text (a tile, an empty state), a field under its label, a picture (an avatar, the medium mark, a
+  grade's shield, `.picture`) beside a name and its second line or beside a card's text, centred on them, a mark after its text on
+  the text's last line, a control beside a framed box (a code block) on the box.
+
+`make ui-layout-test` proves the rule on the shared patterns in seconds; `make ui-renders` measures every screen
+([the checks](web-ui.md#renders-of-every-screen)).
+
 ## Text
 
 - A link to another site carries the mark `open_in_new` and a visually hidden "(opens another site)", all three in
@@ -408,7 +439,7 @@ Before a screen is committed:
       both schemes and at 390 px, as each kind of user that reaches it; the contact sheet lists no failure, no page that scrolls
       sideways at any width and no region that does at 1024 px and wider, that the change brought; no layout finding (an icon apart
       from its label, a short thing broken, a row off its line or with other actions, a cut text with room, a table stacked though
-      it fits, a page that scrolls into nothing: [the checks](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-174); and in
+      it fits, a page that scrolls into nothing, a control or an icon off its text's line: [the checks](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-176); and in
       each picture what the checks do not see: a table that ends before the lines above it, a field far wider than its input, two
       words or two styles for one thing, an element that takes the room without being the screen's job.
 - [ ] Compared side by side with the reference's screen for the same job, in a real browser, not only in a unit test.
@@ -446,6 +477,6 @@ written earlier were not reviewed against it, so this list is what is known, not
 
 - The settings rules and the 56 rem column are read from one screenshot of the reference, not measured from its rendered page; the
   values of Q-UI-128 come from its admin dashboard and user list.
-- Nothing enforces this page except the lint rules of R-UI-046, the layout checks of the renders (R-UI-170 to R-UI-174) and the
+- Nothing enforces this page except the lint rules of R-UI-046 and R-UI-175, the layout checks of the renders and their fixtures (R-UI-170 to R-UI-176) and the
   review before a commit. Whether a screen matches the reference
   cannot be tested automatically.

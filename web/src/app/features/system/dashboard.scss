@@ -170,9 +170,10 @@ h2 {
   gap: var(--quader-space-2);
 }
 
+// On the line of the state's words (R-UI-175, the line rule of _controls.scss).
 p.state .material-icons {
   font-size: 1.125rem;
-  vertical-align: middle;
+  margin-block: calc((var(--quader-line) - 1em) / 2);
 }
 
 .muted {

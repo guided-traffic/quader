@@ -83,7 +83,7 @@
                       @if (m.kind === 'user') {
                         <quader-avatar class="avatar" aria-hidden="true" [seed]="m.id ?? m.principal" [imageUrl]="m.avatarUrl" />
                       } @else {
-                        <span class="avatar account" aria-hidden="true"><span class="material-icons">smart_toy</span></span>
+                        <span class="avatar account picture" aria-hidden="true"><span class="material-icons">smart_toy</span></span>
                       }
                       <span class="who">
                         <a [routerLink]="memberLink(m)" translate="no">{{ memberName(m) }}</a>

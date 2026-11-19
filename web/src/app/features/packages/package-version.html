@@ -144,7 +144,7 @@
                   <dt i18n="@@pkg.image.digest">Digest</dt>
                   <dd>
                     <code translate="no">{{ img.digest }}</code>
-                    <quader-copy-button [value]="img.digest" [label]="copyImageDigest" />
+                    <quader-copy-button class="on-line" [value]="img.digest" [label]="copyImageDigest" />
                   </dd>
                   @if (img.mediaType !== '') {
                     <dt i18n="@@pkg.image.media-type">Media type</dt>

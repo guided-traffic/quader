@@ -69,7 +69,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           <dt translate="no">SHA-256</dt>
           <dd class="digest">
             <code translate="no" [attr.title]="sha">{{ sha.slice(0, 16) }}…</code>
-            <quader-copy-button [value]="sha" [label]="copyDigestLabel('SHA-256')" [quiet]="true" />
+            <quader-copy-button class="on-line" [value]="sha" [label]="copyDigestLabel('SHA-256')" [quiet]="true" />
           </dd>
         }
       </dl>
@@ -89,7 +89,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
               <dt translate="no">{{ d[1] }}</dt>
               <dd class="digest">
                 <code translate="no">{{ value }}</code>
-                <quader-copy-button [value]="value" [label]="copyDigestLabel(d[1])" [quiet]="true" />
+                <quader-copy-button class="on-line" [value]="value" [label]="copyDigestLabel(d[1])" [quiet]="true" />
               </dd>
             }
           }

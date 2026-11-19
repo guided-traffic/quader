@@ -2,6 +2,7 @@
 // the structure a rule selects (a status's badge, a format's `.format-name`) but not the rule; this test holds the rules, so that
 // a change of a selector that would bring a defect of the admin area's walk back (2026-11-18) fails here.
 import catalogScss from './_catalog-screens.scss' with { loader: 'text' };
+import controlsScss from './_controls.scss' with { loader: 'text' };
 import listScss from './_list-screens.scss' with { loader: 'text' };
 import policyEditorScss from '../app/features/permissions/policy-editor.scss' with { loader: 'text' };
 
@@ -19,9 +20,17 @@ describe('Shared layout rules (R-UI-145)', () => {
     expect(rule).toContain('margin-block: calc((1rem - 1.25rem) / 2)');
   });
 
-  it('Q-UI-562 a control in a cell of every other table is centred on the cell\'s first line of text', () => {
+  it('Q-UI-562, R-UI-175 a control in a cell of every other table is centred on the cell\'s first line of text by the line rule', () => {
     const rule = block(catalogScss, /tbody :is\(th, td\) > :is\(\.btn, quader-copy-button, \.row-actions\) \{/);
-    expect(rule).toContain('margin-block: calc((var(--quader-text-line) * var(--quader-text-size) - var(--quader-control-height)) / 2)');
+    expect(rule).toContain('margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2)');
+    expect(rule).toContain('vertical-align: top');
+  });
+
+  it('R-UI-175 a control reads the line of the box it stands in: every box sets --quader-line, a control inherits it', () => {
+    expect(controlsScss).toMatch(/@property --quader-line \{[^}]*syntax: '<length>';[^}]*inherits: true;[^}]*initial-value: 21px;/);
+    expect(block(controlsScss, /^\* \{/m)).toContain('--quader-line: 1lh');
+    expect(block(controlsScss, /^:where\(/m)).toContain('--quader-line: inherit');
+    expect(block(controlsScss, /^\.on-line \{/m)).toContain('margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2)');
   });
 
   it('Q-UI-563 a row\'s header that is an identifier stays on one line, as a cell of one does', () => {

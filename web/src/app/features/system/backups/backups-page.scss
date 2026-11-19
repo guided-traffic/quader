@@ -100,5 +100,11 @@ td {
 
 .material-icons {
   font-size: 1.125rem;
-  vertical-align: middle;
+}
+
+// An icon beside a text stands on the middle of its line and makes it no taller (R-UI-175, the line rule of _controls.scss); a
+// glyph inside a badge or a button is centred by its box.
+:not(.badge, .btn, span:is(.ok, .warn, .bad)) > .material-icons {
+  vertical-align: top;
+  margin-block: calc((var(--quader-line) - 1em) / 2);
 }

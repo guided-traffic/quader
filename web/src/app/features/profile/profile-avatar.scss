@@ -10,11 +10,12 @@
 
 .avatar-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--quader-space-6);
 }
 
-// The preview is the avatar of the top bar at 96 px; the same round shape and the same fill behind the robot.
+// The preview is the avatar of the top bar at 96 px; the same round shape and the same fill behind the robot. A picture of the
+// whole text beside it (R-UI-175): centred on the sentence and the buttons, as a card's figure is.
 .avatar-preview {
   flex: none;
   inline-size: 6rem;

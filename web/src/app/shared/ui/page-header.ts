@@ -74,11 +74,14 @@ import { AddressField } from '../address-field';
       align-self: flex-start;
     }
 
+    /* The actions stand on the middle of the heading's first line (R-UI-175): a box as high as that line (main.scss: the heading's
+       size at a line of 1.25) centres them on it; at the row's top they stood 2 px above it, a small button 6 px. */
     quader-page-header .page-header-actions {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--quader-space-2);
+      min-block-size: calc(var(--quader-heading-1) * 1.25);
     }
 
     quader-page-header .page-header-actions:empty {

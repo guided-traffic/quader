@@ -7283,9 +7283,13 @@ passed. The same defect was the jobs' state ("check_circle" above "Succeeded") b
 
 - Wherever an icon stands before or after its label (a status, a button, a link, a format, a project's mark, a row's name), the
   icon and the first line of the label share a line ([Q-UI-425](#q-ui-425--an-icon-before-a-name-has-a-column-of-its-own-in-the-cell-and-a-long-name-breaks-inside-itself-beside-it),
-  Q-UI-560). An icon its parent lays out above its text (a tile, an empty state, a column) is meant so.
+  Q-UI-560). An icon its parent lays out above its text (a tile, an empty state, a column) is meant so. Sharing a line is not
+  enough: where on that line it stands is R-UI-175.
 - `make ui-renders` measures it in every picture and fails the screen on a finding (the check `icon-apart` of
-  [layout.ts](../../web/e2e/renders/layout.ts), [Q-UI-682](#q-ui-682--the-render-run-measures-the-layout-in-the-page-and-a-finding-fails-the-screen)).
+  [layout.ts](../../web/e2e/renders/layout.ts), [Q-UI-682](#q-ui-682--the-render-run-measures-the-layout-in-the-page-and-a-finding-fails-the-screen)),
+  for every control as for every icon since R-UI-175: a check box under its label, a copy button under its hash. A control that a
+  wrapping row of controls moved to its next line (a toolbar at 390 px) is not a finding; an icon, a mark, a status, a check box
+  or a copy button moved away from its text is.
 
 Acceptance criteria:
 
@@ -7310,12 +7314,15 @@ Acceptance criteria:
 ### R-UI-172 · A row reads along one line, and its actions are built like its neighbours'
 Priority: **MVP** · Covers: quader-only
 
-The first line of every cell of a table's row stands on the line of the row's name: the same baseline where the fonts are the same,
-else the same middle, within a pixel (the walk measured 2 px for **Format** and **Class**, 5 px for a group's **Remove**;
-Q-UI-308, Q-UI-562). A control in a cell stands at the line's top with margins that make it the line's height, not on its
-baseline: **Set up client** beside the row's menu stood on the menu glyph's baseline, 3 px under the row's name (found by the check,
-2026-11-18). The action cells of one table are built one way in every row that has one: a menu, a word or an icon, as R-UI-163
-asks.
+The first line of every cell of a table's row and every control of a cell without text (an action cell, a check box's cell) have
+the middle of the row's name's first line, within the tolerance of R-UI-175 (the walk measured 2 px for **Format** and
+**Class**, 5 px for a group's **Remove**; Q-UI-308, Q-UI-562). Middles, not baselines: a 12 px word in a badge has the middle of
+the 14 px name beside it and another baseline. A control in a cell stands at the line's top with margins that make it the line's
+height, not on its baseline: **Set up client** beside the row's menu stood on the menu glyph's baseline, 3 px under the row's name
+(found by the check, 2026-11-18). This holds for every table of the app, its head as well as its body, and for the first line of a
+row that stands as a block (R-UI-174); a document's table (the manual, a guide, a README) is prose and not measured. A control in a
+cell with text is measured against that text (R-UI-175). The action cells of one table are built one way in every row that has
+one: a menu, a word or an icon, as R-UI-163 asks.
 
 Acceptance criteria:
 
@@ -7359,6 +7366,68 @@ Acceptance criteria:
 - Unit test: the table stacks where its least width exceeds its region's and not where it fits, measured again when its rows
   change (`data-table.spec.ts`).
 - The render run's report names no `stacked-fits` finding: a stacked table whose columns would fit is a finding.
+
+### R-UI-175 · A control or an icon beside a text stands on the middle of that text's first line
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-19 (W-23), with a picture of the images of a public remote: "Wieso ist denn wieder nur das Icon am
+Anfang mittig und die Schrift ist wieder nicht richtig ausgerichtet." The button that opens a row stood 8 px below the line of the
+image's name beside it and made the row 65 px high where its text needed 49; the check `icon-apart` passed it, because the
+button and the name shared some height. The owner had objected to this class of defect before (R-UI-170, R-UI-172).
+
+- Wherever a control or an icon stands beside a text it belongs to (in a table's row, in a row of a flex or grid box, in running
+  text) its vertical middle is the middle of that text's first line, within 1 px
+  ([Q-UI-722](#q-ui-722--the-tolerance-of-a-middle-is-1-px-what-the-rounding-of-a-centred-unit-leaves)). It does not make the
+  line or the row taller than its text alone makes it, unless the control is the row's content (a toolbar, a row of buttons).
+- A control is: a button, an icon button and a disclosure toggle; a link in the form of a button; a check box, a radio button, a
+  switch; a select; an input of one line beside its label or value; a chip, a badge, a status (an icon and its word); an avatar,
+  a project's mark, a format's or a visibility level's icon, a grade's shield; a copy button; a menu's trigger. An icon is a
+  glyph of the icon font. A control that holds an icon is one control: the glyph of a button is the button.
+- Its text is the nearest text in its row: beside it, or beside a box it stands in, up to the cell of a table or the box that lays
+  out the row ([Q-UI-721](#q-ui-721--a-controls-text-is-the-nearest-text-of-its-row-found-through-the-boxes-that-lay-out-the-row)).
+- The exceptions ([Q-UI-724](#q-ui-724--the-exceptions-are-layouts-not-places-above-or-below-a-field-under-its-label-a-picture-a-mark-after-its-text-a-framed-box-a-word-that-wraps)):
+  a control laid out above or below its text on purpose (a tile, an empty state, a column of a form); a field with its label
+  above it, and a control of several lines (a text area); a picture (an avatar, a project's mark, a grade's shield, `.picture`) at
+  least 1.5 lines high beside a name with a second line under it (a person's user name, a project's key), centred on the two
+  lines, or beside a card's text, centred on all of it; a mark after its text (a "new window" mark after a link), which may stand
+  on the text's last line instead of its first; a control beside a framed box (a code block, a list box), which stands on the box;
+  a control with a word of its own (a badge, a status, a chip), which may wrap to a line of its own as a word does.
+- The shared rule that does it is one of the global styles
+  ([Q-UI-720](#q-ui-720--a-control-is-centred-on-the-line-by-margins-of-half-the-difference-read-from-the-lines-height));
+  a screen does not centre a control by hand.
+
+Acceptance criteria:
+
+- The render run's report names no `off-line`, `icon-apart` and `row-offset` finding (R-UI-176).
+- The owner's row (`repository-oci` as the power user, the images of a repository) is 49 px high, its button's middle and its
+  name's middle within 1 px.
+
+### R-UI-176 · The checks of a control's line are proven on their own pages, and the render set shows every row with a control
+Priority: **MVP** · Covers: quader-only
+
+A check that cannot fail on the defect it names guards nothing: the run after W-5 had no finding while the owner's row stood in
+its pictures.
+
+- The render checks measure R-UI-175 in every picture: `off-line` (a control or an icon beside its text, off its middle),
+  `icon-apart` (one that shares no height with its line), `row-offset` (a table's row; R-UI-172); each names the element, its
+  text and the distance in px ([web-ui.md](../developer/web-ui.md#renders-of-every-screen)).
+- The checks are tested on fixture pages of their own in Chromium with the app's fonts, without the UI stack (`make ui-layout-test`,
+  [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner)): the
+  owner's row must fail with the 8 px he saw, each exception of R-UI-175 must pass, and an offset of 1.5 px must fail. `make
+  ui-renders` runs them before the screens.
+- The shared patterns of the style guide are rendered with the app's own global stylesheet on the same pages and must pass, so the
+  shared rule holds without a running UI
+  ([Q-UI-725](#q-ui-725--the-guard-without-a-stack-renders-the-shared-patterns-with-the-global-stylesheet-and-a-lint-rule-refuses-the-off-line-declarations)). `make web-lint` refuses `vertical-align: middle` and `align-items: last baseline` in a style (the
+  declarations that put every icon, badge and mark of the first run off its line), except a table cell's own alignment.
+- Every kind of table or list row with a control is in the render set with at least one row (an expandable row, a row with a check
+  box, a menu, a copy button, an avatar, a project's mark, a chip or a badge beside a name), so the checks see it
+  ([Q-UI-726](#q-ui-726--the-render-set-opens-an-items-row-and-shows-the-public-remote-as-the-visitor-sees-it)).
+
+Acceptance criteria:
+
+- `make ui-layout-test` passes (`web/e2e/renders/layout-checks.spec.ts`), its test names carry R-UI-175 and R-UI-176.
+- `make web-lint` passes; the rule's own test fails on both declarations (`web/scripts/lint-rules.test.mjs`).
+- A full render run names no layout finding.
 
 ## Deferred
 
@@ -17371,6 +17440,182 @@ The development agent records no revisit condition.
 
 **Applied in the spec:** R-UI-004. Code: [session-store.ts](../../web/src/app/core/session-store.ts) (`doLoad`, `markEnded`).
 Tests: [auth-guard.spec.ts](../../web/src/app/core/auth-guard.spec.ts), [session-store.spec.ts](../../web/src/app/core/session-store.spec.ts).
+
+### Q-UI-720 · A control is centred on the line by margins of half the difference, read from the line's height
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows
+the owner's W-23 of 2026-11-19 ("ein für alle mal absichern").
+
+Context: the first full run with the checks of Q-UI-721 (331 screens, 2,876 findings) grouped into seven causes of defects: an
+icon of a line of text placed by `vertical-align: middle` or at a top-aligned row's top (1,482: a visibility level's icon, a
+notice's, a status's; the middle of `vertical-align: middle` is the lower-case letters', 1.5 to 1.7 px under the line's); the
+actions beside a heading (394: a page's and a file's actions, 2 px above the heading's line); a 32 px control at a row's top
+beside a name (303: the owner's row, a path's copy button and menu, a digest's copy button); a badge or a status at
+`vertical-align: middle` (79); a stacked row's actions at the block's top (62); a mark on the last baseline (57); a picture of the
+wrong size or alignment (20). Each place that had centred a control did it with a constant of its own line (`1rem` in a list's
+cell, `1.5 × 14 px` in a settings table, `1lh` of the project's mark), so the owner's row, whose button stood one box deeper than
+the cell's rule reached, had none.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One line rule: every box hands the height of its line to what it holds (`--quader-line`, a registered length set to `1lh` on every element), a control or an icon takes its parent's instead of its own, and is centred by `margin-block: calc((var(--quader-line) - <its height>) / 2)` at the line's top; the icons of running text, the badges and statuses, the mark and the check boxes carry it, a 32 px control carries it as `on-line` and in a cell (chosen) | [_controls.scss](../../web/src/styles/_controls.scss) | One formula for every line (16 px in a cell, 21 px in a paragraph, 28 px in a path); the control makes the line no taller; a long text keeps the control on its first line | A registered property on every element; a 32 px control beside a text needs the class |
+| (b) `align-items: center` in every row | Flex | Simple | Centres on the whole text: the control leaves the first line as soon as the text wraps, and a 32 px control makes a line of 21 px 32 px high |
+| (c) Keep a constant per place | As before | Nothing to change | The defect of the owner's row: the next place without its constant |
+
+**Choice:** (a). A box of controls beside a heading takes the heading's line as its height (a page's actions) or as its line (a
+file's actions). `vertical-align: middle` and `align-items: last baseline` are refused by a lint rule (Q-UI-725). A badge is 20 px
+whatever it holds, so the rule centres a box of known height. A picture beside a name and its second line uses its own size: the
+project switcher shows the medium mark, as Q-UI-424 says. **Rationale:** what was wrong in every cause was the line a control was
+centred on, and only the box around it knows that line; a registered length computes `1lh` where it is set and inherits the
+pixels (its first value must not depend on anything: with `1.3125rem` the browser dropped the property, which the guard of
+Q-UI-725 found). The development agent revisits the class `on-line` if a 32 px control beside a text is found without it more
+than once.
+
+**Applied in the spec:** R-UI-175; R-UI-172 (the table's controls read the same line). Code:
+[_controls.scss](../../web/src/styles/_controls.scss), [_list-screens.scss](../../web/src/styles/_list-screens.scss),
+[_catalog-screens.scss](../../web/src/styles/_catalog-screens.scss), [page-header.ts](../../web/src/app/shared/ui/page-header.ts),
+and the screens of each cause. Tests: [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) (the shared patterns).
+
+### Q-UI-721 · A control's text is the nearest text of its row, found through the boxes that lay out the row
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows
+the owner's W-23 of 2026-11-19: "Kannst du das bitte einmal für das gesamte Frontend überprüfen und ein für alle mal absichern".
+
+Context: `icon-apart` looked for an icon's label among the icon's own siblings, so the glyph inside the button that opens a row
+was compared with nothing (its only sibling was itself), and the button with nothing either: the name beside it was the sibling of
+the button, not of the glyph. `row-offset` compared the texts of a row's cells with each other, and they stood on one line.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The outermost control or icon is the unit (the glyph of a button is the button); its text is the next sibling with visible text outside every unit, else the previous one, else the same among its parent's siblings, and so on up to the table's cell or eight boxes; the box that lays out the two decides whether they are a row: a flex row (one of its lines unless it wraps), a grid's row (they share height), running text (inline boxes; the line may break); a flex column, a grid's other row or a block above or below ends the search as "laid out so on purpose" (chosen) | `textOfUnit` in [layout.ts](../../web/e2e/renders/layout.ts) | Finds the owner's row (the name's box is the button's next sibling), a copy button after a hash in a box of its own, a status in a cell beside its word; decides "row" by the layout the browser applied, not by a list of classes | A text that stands beside a control without belonging to it (a page's title beside its buttons) is compared too |
+| (b) A list of row classes (`.name-cell`, `.icon-name`, `.check-row`, …) whose children are compared | Selectors | Exact for the listed rows | The next screen's row has a class nobody listed; the owner's row was the case nobody listed |
+| (c) Every control against every text it shares height with | Geometry only | No structure needed | Compares a toolbar's button with the paragraph whose last line it touches; columns of a grid side by side are "beside" each other |
+
+**Choice:** (a). The table's row is the check `row-offset`'s (R-UI-172): the search ends at the cell, a control in a cell with text
+is measured against that text, and a cell with no text (an action cell, a check box's cell) by its controls against the row's name.
+Hidden content is not measured: a box without size, `visibility: hidden` (a closed collapse region), `[hidden]`, a text for
+assistive technology only, and what is positioned out of the flow (a field's magnifier). **Rationale:** what is a row is decided by
+the layout the browser applied, which is exactly what the person sees; a list of classes is what failed. A text that stands in the
+same row as a control without belonging to it stands on the same line by the same rule, so (a)'s "against" is no defect. The
+development agent revisits (a) if a finding pairs a control with a text of another row.
+
+**Applied in the spec:** R-UI-170, R-UI-175, R-UI-176. Code: [layout.ts](../../web/e2e/renders/layout.ts). Tests:
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts).
+
+### Q-UI-722 · The tolerance of a middle is 1 px, what the rounding of a centred unit leaves
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the middle of a text is the middle of its glyphs' box (the font's ascent and descent), which is the middle of its line when
+the line is centred on it. Chromium rounds the ascent and the descent of a font to whole pixels and lays boxes out in 1/64 px: the
+name of the owner's row stands 0.5 px above its line's middle (Inter at 14 px on a line of 16 px). Measured in
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) on 60 units centred by the rule (the text sizes 12, 13, 14
+and 16 px, the lines 1rem, 1.25rem and 1.5, units of 16 to 32 px): the largest distance of a centred unit's middle from its text's
+middle is 0.75 px. Measured on defects: a badge or an icon at `vertical-align: middle` stands 1.7 px low (the middle of the
+lower-case letters, not of the line), a mark on the last baseline 3.5 px high, the owner's button 8.5 px low.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 1 px (chosen) | `LINE_TOLERANCE` | Above every centred unit measured (0.75 px), below every defect measured (1.7 px) | A defect of exactly 1 px is not found |
+| (b) 1.5 px, the old tolerance of `row-offset` between fonts | | Fewer findings | Passes nothing that (a) does not, but brings no unit closer; the 1.7 px of `vertical-align: middle` is only 0.2 px away |
+| (c) 0.5 px | | Strictest | The rounding alone reaches 0.75 px: correct rows would fail |
+
+**Choice:** (a), for the middles of every check (`off-line`, `icon-apart` measures no middle, `row-offset`); the baselines of
+`row-offset` are no longer compared (R-UI-172). **Rationale:** the tolerance is the measured rounding, rounded up; every defect of
+this kind the owner or the checks found is larger. The development agent revisits the value if the fonts or their sizes change (the
+test logs the largest distance on every run).
+
+**Applied in the spec:** R-UI-172, R-UI-175. Code: [layout.ts](../../web/e2e/renders/layout.ts) (`LINE_TOLERANCE`). Tests:
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) (the sweep, and 1.5 px found, 0.5 px not).
+
+### Q-UI-723 · The checks are tested on fixture pages in the Playwright Chromium, not in the Angular test runner
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: [layout.ts](../../web/e2e/renders/layout.ts) had no test of its own; a check was proven only by a full render run, which
+needs the stack and takes about 20 minutes, and the run that passed the owner's row proved nothing about it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A Playwright project of its own (`web/e2e/playwright.layout.config.ts`, `make ui-layout-test`): each test sets a page's content (a few elements, the app's fonts from `node_modules`), runs `layoutFindings` and names the findings it must have; `make ui-renders` runs it first (chosen) | The Chromium the renders use | Real layout, real fonts; two seconds; no stack, no seed; the same function the renders run | A browser to install (`npx playwright install chromium`), as for the renders |
+| (b) The Angular test runner (Vitest) | `ng test` | Runs with `make web-test` | jsdom lays nothing out: every box is 0×0, a check measures nothing; Vitest's browser mode is not installed |
+| (c) A render screen of fixtures in the app | A route of the app | In the run | Ships test pages in the product; proves the check only inside a full run |
+
+**Choice:** (a). The owner's row as he measured it (65 px, the button's middle 32 px, the name's 24 px) is the first fixture and
+must fail; each exception of R-UI-175 is a fixture that must pass. **Rationale:** a check is code with a failure mode of its own; it
+needs a test that fails without it, and only a browser lays out. The development agent revisits a CI step for it with the
+owner's decision on the renders in CI.
+
+**Applied in the spec:** R-UI-176. Code: [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts),
+[playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts), the `Makefile` target `ui-layout-test`,
+[renders.sh](../../deploy/ui-dev/renders.sh).
+
+### Q-UI-724 · The exceptions are layouts, not places: above or below, a field under its label, a picture, a mark after its text, a framed box, a word that wraps
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner
+asked for few exceptions, stated exactly (W-23).
+
+Context: the first full run with the checks of Q-UI-721 named 2,876 findings; 479 of them were layouts the style guide asks for,
+not defects: a copy button beside a code block or Add and Remove beside a list box (346; the control stands at the box's frame),
+a grade's shield as a card's figure (66), a badge that wrapped under a date like a word (67).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Six, each decided by the layout, none by a screen: a control laid out above or below its text (a flex column, a grid's other row, a block of its own: a tile, an empty state), or in a column of controls without a text (Add, Remove and the moves between two lists, a toolbar of its own); a field with its label above it, and a control of several lines (a text area is no unit); a picture (an avatar, a project's mark, a grade's shield, a `.picture`) at least 1.5 lines high, centred on the first two lines of its text (Q-UI-424: the medium mark beside a name and its key) or on all of it, its buttons included (a card's figure); a mark after its text, which may stand on the text's last line (a "new window" mark after a link of two lines); a control beside a framed box (a block with a border, or a fill and padding, at the control's height: a code block, a list of members), which stands on the box and is not measured; a control with a word of its own (a badge, a status, a chip), which may wrap to a line of its own (chosen) | `textOfUnit`, `PICTURE`, `framed`, `ATTACHED` in [layout.ts](../../web/e2e/renders/layout.ts) | Each is a layout the style guide asks for; none lets a button beside a name through: a button is never a picture, and a name is no framed box | A control beside a box with a border is not measured at all, also where it stands off the box |
+| (b) The same and a list of allowed screens | `allowed` | | Hides the next defect of its kind on that screen |
+| (c) No exceptions | | | An empty state's large icon above its sentence, every field under its label, every copy button of a snippet would be findings |
+
+**Choice:** (a). A control that a wrapping row moved to its next line (a toolbar at 390 px) is not a finding either: wrapping is how a
+row of controls fits; an icon, a mark, a check box or a copy button that a wrapping row moved away from its text is (`icon-apart`).
+**Rationale:** the exceptions are layouts, not places, so a new screen gets the same rule without an entry, and `allowed` stays
+without an entry for these checks. The development agent revisits the picture exception if a 32 px button is ever drawn as a
+picture, and the framed box if a control beside a box is found off it by eye.
+
+**Applied in the spec:** R-UI-175. Code: [layout.ts](../../web/e2e/renders/layout.ts). Tests:
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) (the exceptions' fixtures).
+
+### Q-UI-725 · The guard without a stack renders the shared patterns with the global stylesheet, and a lint rule refuses the off-line declarations
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the renders find a control off its line on a screen they show, after 20 minutes and with the stack; a change of a shared
+rule should fail before that. The causes of the first run had two forms a static rule can see: the declarations
+`vertical-align: middle` and `align-items: last baseline`; and a control at a row's top without the line rule, which depends on the
+row's layout.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two guards: the shared patterns of the style guide (a list's row, a settings table, an icon of a line, a badge in a heading, a check box, a link's mark, a project's mark) built from the global classes and rendered with `web/src/styles` compiled, on the fixture pages of Q-UI-723, must have no finding; and a lint rule refuses `vertical-align: middle` and `align-items: last baseline` in every style of `web/src`, except `vertical-align` on a table's cell, which aligns the cell's content (chosen) | `make ui-layout-test`, `make web-lint`; seconds | The patterns guard the shared rule in a browser (they found its first version void: a `rem` as a registered property's first value drops the property); the lint rule catches the commonest cause where no screen shows it (nine places after the screens' fixes, all changed) | A component's own rows are not in the patterns; a top-aligned row without the line rule is not seen statically |
+| (b) A template rule: a `.btn` in a flex row with a text, without `on-line` | Static | No browser | Whether a row is a row and its items stand at its top is a property of the styles, often of another file: false alarms or misses |
+| (c) Only the renders | | | 20 minutes and the stack per check |
+
+**Choice:** (a). **Rationale:** each guard is honest about what it sees: the lint rule refuses two declarations that are never the
+line's middle, the patterns prove the shared rule in a browser. The development agent revisits (b) if a defect of a top-aligned row
+recurs in a component.
+
+**Applied in the spec:** R-UI-176. Code: [line-rule.mjs](../../web/scripts/line-rule.mjs), [check-rules.mjs](../../web/scripts/check-rules.mjs),
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts). Tests: [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs).
+
+### Q-UI-726 · The render set opens an item's row and shows the public remote as the visitor sees it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's picture was a public remote seen by a visitor (`platform/guidedtraffic`). A remote lists only what was pulled
+through it, and the seed cannot reach Docker Hub for certain; in a fresh database its list is empty. The item rows of the format
+lists were rendered, but never opened: the versions table of an opened row (a digest with its copy button, badges, grades) was in
+no picture.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A walk `opened` on `repository-oci` and `repository-npm-vendor` (the first item opened), and the screen `repository-oci-public-remote` for the visitor and the reader, which shows the empty state in a fresh database and the pulled images where some were pulled (chosen) | [screens.ts](../../web/e2e/renders/screens.ts) | The same component and rows as the owner's picture, with data from the seed; the visitor's page in the set | The visitor's table has rows only in a database that pulled through the remote |
+| (b) The seed pulls through the public remote | Docker Hub | The owner's exact rows | A render run that fails when Docker Hub does not answer or limits the rate |
+| (c) A second remote whose upstream is Quader itself | A local upstream | Rows without the network | A seed repository that exists only for the renders, and a remote that fetches from its own installation |
+
+**Choice:** (a). **Rationale:** the rows the owner saw are the rows of `repository-oci`, which the seed fills; the visitor's page adds
+what differs for a visitor (no session, the public remote's header). The development agent revisits (c) if a row differs between a
+local and a remote repository.
+
+**Applied in the spec:** R-UI-176. Code: [screens.ts](../../web/e2e/renders/screens.ts).
 
 ## What this does not cover
 

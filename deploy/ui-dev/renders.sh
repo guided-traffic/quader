@@ -5,7 +5,7 @@
 # Starts what is not running and stops again only what it started: the services of the UI development profile
 # (up.sh, always: it is idempotent), quader with the profile's sign-in provider (serve.sh) and the Angular dev server.
 # The seed and the pictures are web/e2e/playwright.renders.config.ts; arguments go to Playwright (--grep <screen>).
-# Local only: no CI job runs it.
+# Locally, and in the job ui-layout of Test and Release on every push (Q-ARCH-510), where the profile is the job's own.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -13,6 +13,9 @@ cd "$root"
 mkdir -p .out
 backend_log="$root/.out/ui-renders.backend.log"
 web_log="$root/.out/ui-renders.web.log"
+
+# The layout checks first, on their fixtures (seconds, no stack): a check that cannot find the defects it names judges nothing.
+(cd web && npx playwright test -c e2e/playwright.layout.config.ts)
 
 deploy/ui-dev/up.sh
 

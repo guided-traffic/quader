@@ -68,7 +68,7 @@ export const GRADE_SORT_MAX = 1000;
             <div class="name-cell">
               <button
                 type="button"
-                class="btn btn-tertiary btn-icon"
+                class="btn btn-tertiary btn-icon on-line"
                 [attr.aria-expanded]="isOpen(p.id)"
                 [attr.aria-controls]="'versions-' + p.id"
                 [attr.aria-label]="openLabel(p)"

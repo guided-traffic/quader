@@ -70,7 +70,9 @@ export function formatIcon(name: string): FormatIcon {
       inline-size: 1em;
       block-size: 1em;
       line-height: 1;
-      vertical-align: middle;
+      /* Where it stands in running text, at the line's top (R-UI-175); its places (a format's name, a badge, a tile) are flex
+         boxes that centre it. */
+      vertical-align: top;
     }
     .material-icons {
       font-size: 1em;

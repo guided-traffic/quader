@@ -163,11 +163,15 @@ can then issue certificates your machine trusts for any host. Remove the trust e
 `make ui-renders` renders every screen of the UI into pictures to look at: a UI change is rendered and the pictures of every
 changed screen are looked at, in both schemes and at 390 px, before it is committed (rule 11 of
 [promt.md](../projektplan/promt.md); the [checklist](ui-style-guide.md#checklist) of the style guide). A unit test or a browser
-journey that checks a value is not a look at the screen. It runs locally only; no CI job runs it. Decision:
+journey that checks a value is not a look at the screen. It runs locally, and the job `ui-layout` ("UI layout checks") of Test
+and Release runs it on every push with its layout checks: a finding fails that job, which gates no release until the first stable
+release ([Q-ARCH-510](../spec/architecture.md#q-arch-510--the-layout-checks-of-the-ui-run-on-every-push-in-test-and-release-and-gate-no-release-until-the-first-stable-release),
+[releasing.md](releasing.md#ci)); a red run uploads its findings and the pictures of its failed screens. Decision:
 [Q-UI-304](../spec/api-and-ui.md#q-ui-304--make-ui-renders-renders-the-working-tree-through-the-dev-server-signs-the-three-kinds-of-user-in-through-a-provider-of-the-profile-and-seeds-through-the-api).
 
 ```shell
 make web-ci                       # once, and after a change of web/package-lock.json
+make ui-layout-test               # the layout checks on their own fixture pages: seconds, no stack (also the first step of ui-renders)
 make ui-renders                   # every screen, into an empty .out/ui-renders
 make ui-renders GREP=repositories # the screens whose test title matches; the other pictures stay
 make ui-dev-down                  # when done (keeps the data)
@@ -241,7 +245,7 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    pictures it took so far), or when a layout check finds a defect (below); the pictures are taken first. Playwright lists the
    failures and exits non-zero; `failures.txt` has one line per failure, the contact sheet marks the rows and lists the layout
    findings at its top. A screen whose normal state includes such an answer lists it in `expected` of `screens.ts` with its reason.
-5. **The layout checks** ([renders/layout.ts](../../web/e2e/renders/layout.ts), R-UI-170 to R-UI-174,
+5. **The layout checks** ([renders/layout.ts](../../web/e2e/renders/layout.ts), R-UI-170 to R-UI-176,
    [Q-UI-682](../spec/api-and-ui.md#q-ui-682--the-render-run-measures-the-layout-in-the-page-and-a-finding-fails-the-screen)) measure each
    picture's page once (one `page.evaluate`, in the light scheme: the dark one has the same layout). A finding is a line
    `layout <check> (<width> px, light[, <state>]): <element path> "<its text>": <what was measured> (and N more like it)` in
@@ -253,9 +257,10 @@ running and stops only what it started: Quader with the sign-in provider (`serve
 
    | Check | Catches | Blind spots |
    |---|---|---|
-   | `icon-apart` | An icon (`.material-icons`, `quader-format-icon`, `quader-visibility-icon`, `quader-project-mark`, `quader-avatar`, and a `quader-copy-button` as the icon of the value before it) whose label, its next sibling with visible text (else its previous one), starts on a line the icon does not touch (in a row of a flex or grid box: the label's whole block): W-3's key under its visibility icon, the jobs' state, a hash's copy button under the hash | An icon whose parent lays it out above its text (a flex column, a block in a block, a grid of one column) is skipped as meant; an icon whose label is not its sibling (a label two levels away) is not paired |
+   | `off-line` | A control or an icon (a button, a link in the form of a button, a check box, a radio button, a switch, a select, a text field, a badge, a status, a chip, an avatar, a project's mark, a format's or a visibility level's icon, a grade's shield, a copy button, a `.picture`, a glyph of the icon font; a unit inside a unit is the outer one: the glyph of a button is the button) whose middle is more than 1 px off the middle of its text's first line (R-UI-175, Q-UI-722). Its text is the nearest text of its row: the next sibling with visible text outside every unit, else the previous one, else the same among the siblings of its parent and so on, up to a table's cell; what is a row is read from the layout (a flex row, a grid's row, running text), Q-UI-721. The owner's row of 2026-11-19 (the button that opens an image's row 8 px under its name) | The exceptions of Q-UI-724: a unit laid out above or below its text (a flex column, a grid's other row, a block of its own); a unit after its text may stand on its last line; a picture (avatar, mark, shield, `.picture`) 1.5 lines high and more may be centred on the first two lines or on its whole text; a unit beside a framed box (a code block, a list box) stands on the box and is not measured. Not measured: an image (`img`, `svg`) that is not one of the units, a unit positioned out of the flow, a text drawn by CSS (`::before` content, a stacked cell's column name) |
+   | `icon-apart` | An icon, a mark, an avatar, a shield, a check box or a copy button that shares no height with the line of its text (the same search as `off-line`; in a wrapping row or in running text, one that the row moved to another line than its text): W-3's key under its visibility icon, the jobs' state, a hash's copy button under the hash. Since R-UI-175 every control is measured too, against its text's middle by `off-line` | A control that a wrapping row moved to its next line (a toolbar at 390 px) and a unit with a word of its own (a badge, a status, a chip) that wrapped like a word |
    | `broken` | More than one line box in what stays on one line: a status or badge (`.badge`, `span.ok`, `span.warn`, `span.bad`), a chip, a button's label, a tab, a list's header, a `time`, a cell or row header marked `translate="no"` (its `.secondary` line left out), `td.num`, a format, a class, a level; and a word of at most 16 letters and digits in a list's cell broken inside itself (the audit log's "Platfor" / "m enginee" / "ring") | A name that may break beside its icon (`.icon-name`, Q-UI-425), a key a list lets break (`wrap`, `wrap-name`), a row header of a stacked table, a `button.link` (a row's name in the look of a link), a relative time and its date in brackets on two lines (Q-UI-431), a sentence (`p.warn`), the tables of a document (the manual, a guide); a longer token broken where it must (Q-UI-425), the text of `code` |
-   | `row-offset` | A cell of a list's row (`table.data`) whose first text line is off the row's name: by more than 1 px on the baseline where the fonts are the same, by more than 1.5 px on the middle where they differ (a 12 px word centred in a badge lands on a half pixel); a cell without text by its first icon | Stacked tables; the second and later lines of a cell; a row without text in its first cells; the tables of a document |
+   | `row-offset` | A cell of any table's row, head and body (R-UI-172, R-UI-176), whose first text line has its middle more than 1 px off the middle of the row's name; a cell without text by each of its controls (an action cell, a check box's cell); a row that stands as a block on its first line (the name and the actions) | The second and later lines of a cell; a stacked row's later lines (each a fact with its column's name); a control in a cell with text, which `off-line` measures against that text; the tables of a document (`.readme`) |
    | `row-actions` | The `td.actions` cells of one table built different ways (a menu, a word, an icon, counted per row) | Action cells without the class `actions`; two rows that differ by permission show as a finding and are allowed by reason |
    | `clipped` | A text cut with an ellipsis, or a read-only field's value cut (an address, a command; the field and its joined button measured as one), where the box that holds it has the room for the rest beside it | A text cut by `overflow: hidden` without an ellipsis; a cut where the room is in a neighbouring column rather than the cell (a file's hash at 24 characters); a field the user types into, which is as wide as its expected input (R-UI-085) and scrolls a longer value |
    | `stacked-fits` | A data table that stands as blocks although its columns at their least widths fit its region (measured as the table measures itself, Q-UI-680) | Raw tables that stack by their own rules |
@@ -263,6 +268,15 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    | `empty-scroll` | In the window's first height, the window scrolls at all, or the panel scrolls more than 24 px past its last visible content: a positioned element (a text for assistive technology only) standing in rows a region hides | Empty room inside the content (a gap between sections) |
 
    </details>
+
+   The checks are tested on fixture pages of their own (`make ui-layout-test`,
+   [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), [playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts),
+   [Q-UI-723](../spec/api-and-ui.md#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner)):
+   Chromium sets a page's content with the app's fonts and runs `layoutFindings`; the owner's row of 2026-11-19 must fail with the
+   8 px he saw, each exception must pass, an offset of 1.5 px must fail and one of 0.5 px must not, and the shared patterns of the
+   style guide, built from the global classes and rendered with `web/src/styles` compiled, must have no finding (the guard of the
+   line rule without a stack, [Q-UI-725](../spec/api-and-ui.md#q-ui-725--the-guard-without-a-stack-renders-the-shared-patterns-with-the-global-stylesheet-and-a-lint-rule-refuses-the-off-line-declarations)).
+   A new check, or a change of one, gets a fixture that fails without it. `make ui-renders` runs them before the screens.
 
    A screen can add widths of its own (`widths` in `screens.ts`) where a list changes its form between the run's three: the
    start page's projects and a project's repositories at 1,100 px, the admin area's repositories at 1,100 and 1,280 px.

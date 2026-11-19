@@ -64,7 +64,7 @@ const SHOWN = 20;
             @for (p of recent(); track p.key) {
               <li>
                 <a class="switcher-item" [routerLink]="['/projects', p.key]" (click)="close(false)">
-                  <quader-project-mark [key]="p.key" [name]="p.displayName" />
+                  <quader-project-mark size="medium" [key]="p.key" [name]="p.displayName" />
                   <span class="switcher-name" translate="no">{{ p.displayName }}</span>
                   <span class="switcher-key" translate="no">{{ p.key }}</span>
                 </a>
@@ -85,7 +85,7 @@ const SHOWN = 20;
                   [attr.aria-current]="p.key === current() ? 'true' : null"
                   (click)="close(false)"
                 >
-                  <quader-project-mark [key]="p.key" [name]="p.displayName" />
+                  <quader-project-mark size="medium" [key]="p.key" [name]="p.displayName" />
                   <span class="switcher-name" translate="no">{{ p.displayName }}</span>
                   <span class="switcher-key" translate="no">{{ p.key }}</span>
                 </a>

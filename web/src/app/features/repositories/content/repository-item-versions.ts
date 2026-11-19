@@ -62,7 +62,8 @@ const VERSIONS_PAGE = 20;
             }
           </th>
           @if (shape().digest) {
-            <td>
+            <!-- The digest and its copy button on one line: at 1,024 px the button went under the digest (R-UI-175). -->
+            <td class="digest-cell">
               @if (v.digest; as d) {
                 <code class="ellipsis" translate="no" [attr.title]="d">{{ shortDigest(d) }}</code>
                 <quader-copy-button [value]="d" [label]="copyDigestLabel" />
@@ -115,12 +116,16 @@ const VERSIONS_PAGE = 20;
     .command-title code {
       font-weight: 400;
     }
+    .digest-cell {
+      white-space: nowrap;
+    }
     code.ellipsis {
       display: inline-block;
       max-inline-size: 24ch;
       overflow: hidden;
       text-overflow: ellipsis;
-      vertical-align: middle;
+      /* On the line's top, as tall as the line, so its middle is the line's (R-UI-175). */
+      vertical-align: top;
       white-space: nowrap;
     }
     .num {

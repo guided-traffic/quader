@@ -130,13 +130,16 @@
 
 .vuln-count-label {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-1);
   color: var(--quader-text-muted);
   font-size: var(--quader-text-muted-size);
 
+  // On the first line of a label that wraps at 390 px (R-UI-175); centred on its two lines it stood 9.5 px under the first.
   .material-icons {
+    flex: none;
     font-size: 1.125rem;
+    margin-block: calc((var(--quader-line) - 1em) / 2);
   }
 }
 

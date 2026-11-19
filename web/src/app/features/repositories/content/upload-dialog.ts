@@ -197,6 +197,7 @@ interface Entry {
     .state .material-icons {
       flex: none;
       font-size: 1.125rem;
+      margin-block: calc((var(--quader-line) - 1em) / 2);
     }
     .state.failed {
       white-space: normal;

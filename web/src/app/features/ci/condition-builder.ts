@@ -234,10 +234,13 @@ const OPERATOR_LABELS: Record<Operator, string> = {
       color: var(--quader-on-surface);
       font: inherit;
     }
+    /* As high as a field: its check box and word stand on the middle of the fields' line and of the Remove button beside it
+       (R-UI-175), not 6 px under the button's middle at the row's foot. */
     .fold {
       display: flex;
       align-items: center;
       gap: var(--quader-space-1);
+      min-block-size: var(--quader-control-height);
     }
     .field-error {
       margin: var(--quader-space-1) 0 0;
@@ -249,7 +252,12 @@ const OPERATOR_LABELS: Record<Operator, string> = {
     }
     .material-icons {
       font-size: 1.125rem;
-      vertical-align: middle;
+    }
+    /* An icon beside a text stands on the middle of its line and makes it no taller (R-UI-175, the line rule of _controls.scss);
+           a glyph inside a badge or a button is centred by its box. */
+    :not(.badge, .btn, span:is(.ok, .warn, .bad)) > .material-icons {
+      vertical-align: top;
+      margin-block: calc((var(--quader-line) - 1em) / 2);
     }
   `,
 })

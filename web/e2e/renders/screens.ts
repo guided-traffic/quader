@@ -91,6 +91,18 @@ function searched(text: string): Screen['walk'] {
   };
 }
 
+/**
+ * A repository's items as they open, then with the first item opened (R-UI-176): the opened row's versions table, its copy
+ * buttons, badges and grades stand on their lines as every other row's controls do. The row's button is the one the owner's
+ * picture of 2026-11-19 showed off its line.
+ */
+async function* rowOpened(page: Page): AsyncGenerator<string> {
+  yield '';
+  await page.locator('main .name-cell button[aria-expanded="false"]').first().click();
+  await expect(page.locator('main .collapse-region.open quader-repository-item-versions table.data tbody tr').first()).toBeVisible();
+  yield 'opened';
+}
+
 /** The repository list of the main project with two filters set: a format and a class. */
 const repositoryChips = async (drawer: Locator): Promise<void> => {
   await drawer.getByRole('combobox', { name: 'Format' }).selectOption('npm');
@@ -756,12 +768,16 @@ export const screens: readonly Screen[] = [
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
   { id: 'repository-generic', path: `${P}/repositories/assets`, kinds: all },
-  { id: 'repository-oci', path: `${P}/repositories/images`, kinds: all },
+  { id: 'repository-oci', path: `${P}/repositories/images`, kinds: all, walk: rowOpened },
   // The grades of R-VULN-038: S to E in the vendored packages, N/A in the internal ones and the images (advisories.ts).
-  { id: 'repository-npm-vendor', path: `${P}/repositories/npm-vendor`, kinds: all },
+  { id: 'repository-npm-vendor', path: `${P}/repositories/npm-vendor`, kinds: all, walk: rowOpened },
   { id: 'repository-npm-vendor-by-grade', path: `${P}/repositories/npm-vendor?sort=-grade`, kinds: ['plain'] },
   { id: 'repository-empty', path: `${P}/repositories/scratch`, kinds: all },
   { id: 'repository-oci-remote', path: `${O}/repositories/docker-hub-remote`, kinds: all },
+  // The owner's screen of W-23 (2026-11-19): the public remote of the guidedtraffic images, seen by a visitor. It lists only what
+  // was pulled through it, which the seed cannot do (Docker Hub is not reachable for certain): in a fresh database it is the empty
+  // state, and the opened rows of `repository-oci` show the same rows with data.
+  { id: 'repository-oci-public-remote', path: `${O}/repositories/guidedtraffic`, kinds: ['anonymous', 'plain'], expected: noSession },
   { id: 'repository-deb', path: `${O}/repositories/${longDebKey}`, kinds: all },
   { id: 'repository-nuget-virtual', path: `${O}/repositories/nuget`, kinds: all },
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },

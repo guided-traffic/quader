@@ -113,7 +113,12 @@ ui-dev-web: ## Angular dev server with hot reload on https://localhost:4200/ui/,
 ui-dev-down: ## Stop the UI development services; PURGE=1 also removes their data and .dev/ui-dev (deploy/ui-dev/down.sh)
 	deploy/ui-dev/down.sh $(if $(PURGE),--purge)
 
-# Rule 11 of docs/projektplan/promt.md: a UI change is rendered and looked at before it lands. Local only, no CI job.
+# Rule 11 of docs/projektplan/promt.md: a UI change is rendered and looked at before it lands. The job ui-layout of Test and
+# Release runs the same two targets on every push (Q-ARCH-510).
+.PHONY: ui-layout-test
+ui-layout-test: ## The layout checks of the renders on fixture pages in Chromium: no stack, seconds (after web-ci; web/e2e/playwright.layout.config.ts)
+	cd web && npx playwright test -c e2e/playwright.layout.config.ts
+
 .PHONY: ui-renders
 ui-renders: ## Render every screen as the three kinds of user, light and dark, at 1440, 1024 and 390 px into .out/ui-renders (after web-ci; GREP=<regex> limits the screens; deploy/ui-dev/renders.sh)
 	deploy/ui-dev/renders.sh $(if $(GREP),--grep '$(GREP)')

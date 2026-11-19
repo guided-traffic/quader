@@ -18,10 +18,11 @@
   font-weight: 600;
 }
 
-// One statement of the header: its icon beside its words. What only informs is in the body's weight (Q-UI-600).
+// One statement of the header: its icon beside its words, on their first line where they wrap (R-UI-175). What only informs is
+// in the body's weight (Q-UI-600).
 .condition {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-2);
 
   &.note {
@@ -103,8 +104,14 @@ td {
 
 .material-icons {
   font-size: 1.125rem;
-  vertical-align: middle;
   margin-inline-end: var(--quader-space-1);
+}
+
+// An icon beside a text stands on the middle of its line and makes it no taller (R-UI-175, the line rule of _controls.scss); a
+// glyph inside a badge or a button is centred by its box.
+:not(.badge, .btn, span:is(.ok, .warn, .bad)) > .material-icons {
+  vertical-align: top;
+  margin-block: calc((var(--quader-line) - 1em) / 2);
 }
 
 // Status colours always come with an icon and a text (R-UI-044); they only reinforce.

@@ -3,7 +3,7 @@ import { authFile, edge } from './renders/paths';
 
 /**
  * `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): every screen of the UI as pictures to judge, against
- * the UI development profile with the seed of renders/seed.ts. Local only, no CI job. `deploy/ui-dev/renders.sh` starts
+ * the UI development profile with the seed of renders/seed.ts. Locally, and in the job ui-layout of Test and Release (Q-ARCH-510). `deploy/ui-dev/renders.sh` starts
  * what is not running (the services, Quader with the profile's sign-in provider, the dev server) and runs this
  * configuration; by hand: `npx playwright test -c e2e/playwright.renders.config.ts [--grep <screen>]` in web/.
  *
@@ -12,6 +12,8 @@ import { authFile, edge } from './renders/paths';
  */
 export default defineConfig({
   testDir: './renders',
+  // The checks' own fixtures run in `make ui-layout-test` (playwright.layout.config.ts), without the stack and the seed.
+  testIgnore: 'layout-checks.spec.ts',
   outputDir: '../../.out/ui-renders/.results',
   workers: Number(process.env['UI_RENDERS_WORKERS'] ?? 3),
   fullyParallel: true,
