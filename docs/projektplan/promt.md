@@ -1206,7 +1206,9 @@ agent** is not decided until the owner has said so.
   which here all stand at the same height. To a builder on 2026-11-19 (R-UI-175 to R-UI-178, Q-UI-720 to Q-UI-729): the
   check becomes one of middles within a tolerance, for icons and for controls, in a row of a table and in any row of
   boxes; every finding of a full run is fixed at its shared cause. The owner's stack is given to the builder for its
-  render runs.
+  render runs. **The checks also run in CI, decided by the owner on 2026-11-19** ("Ja, die Renderprüfung soll auch
+  in der CI laufen."): a job of Test and Release on every push, without a path filter, outside the needs of Semantic
+  Release until the first stable release (Q-ARCH-457); given to the same builder (Q-ARCH-510 to Q-ARCH-512).
 - **Seen by the development agent, not decided:**
   - **Three tiles of Guides carry the same placeholder mark** (2026-11-19, as a visitor): Ansible Galaxy, Generic and npm show
     the outlined box, Debian, NuGet and OCI a mark of their own.
