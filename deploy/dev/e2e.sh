@@ -159,7 +159,7 @@ case "$set_name" in
   # The npm acceptance matrix and the criteria E2.1 to E2.12 (test/e2e/npm_*_test.go), and the npm mirror of R-REPO-059 (TestNPMMirror..., a pool of two
   # processes that claim the queue `mirror` beside the scatter profile, added by the tests, Q-REPO-306): the counting test upstream,
   # three client pods (one per packages replica), the scatter profile. CI runs it as the job e2e-npm on every change.
-  npm) run='^TestNPM(Clients|Matrix|Replicas|Collapse|Upstream|Endpoint|Project|Mirror|Visibility|ExternalUser)'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 ;;
+  npm) run='^TestNPM(Clients|Matrix|Replicas|Collapse|Upstream|Endpoint|Project|Mirror|Visibility|ExternalUser|Limits)'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 ;;
   # The additions of the run that closes the phase: the matrix again with Valkey stopped, the read-only subset against
   # the public registry. Started by the workflow only when it is dispatched with closing=true (Q-NPM-46).
   npm-closing) run='^TestNPMClosing'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 QUADER_E2E_NPM_CLOSING=1 ;;

@@ -26,7 +26,7 @@ version, and when your upstream budget is used up nothing is downloaded.
 
 ## When a download is refused
 
-A client that meets a limit gets the answer `429 Too Many Requests` with the time to wait. npm, Docker and curl show the reason; the NuGet clients and APT show only the status.
+A client that meets a limit gets the answer `429 Too Many Requests` with the time to wait. npm, Docker, Podman and curl show the reason; the NuGet clients, APT and ansible-galaxy show only the status.
 
 | Limit | What happens |
 |---|---|
@@ -36,6 +36,25 @@ A client that meets a limit gets the answer `429 Too Many Requests` with the tim
 | From the upstream | What is in the cache is still served; only what Quader would have to fetch first is refused |
 | Downloads at once | A further download waits up to 10 seconds, then is refused |
 | Refused requests | After too many refused requests in an hour (for example names you may not read), every request is refused for the block time, 15 minutes by default |
+
+### What your client shows
+
+What each client does when it meets a limit, as the tests of each format see it (2026-11-20, with the client's defaults unless a
+step says otherwise). A request limit answers with a short wait (one or two seconds); a byte limit per hour or day answers with the
+time until the hour or day has room again, up to an hour or a day.
+
+| Client (version tested) | At a request limit | At a byte limit |
+|---|---|---|
+| `npm install` (npm 11) | Retries twice with its own pause (10 s, then up to 60 s; it does not read the time to wait) and succeeds once a retry is admitted | Retries twice, then prints `npm error code E429` and `npm error 429 Too Many Requests - GET <tarball> - The download limit of … is used up. Try again in 60 minutes. Your limits: …`; exit 1, after about 70 s |
+| `dotnet restore` (.NET SDK 10.0.403) | Retries about once a second without reading the time to wait (`Retrying 'FindPackagesByIdAsync' …`); when each retry is refused too, it fails after six attempts with `error NU1301: … Response status code does not indicate success: 429 (Too Many Requests).`; exit 1 | Retries, then `error : Failed to download package '…' … 429 (Too Many Requests).`; exit 1, after about 6 s; the reason is not shown |
+| `docker pull` (Docker 29.9) | Does not retry: `error from registry: The request limit of … is used up. Try again in 2 seconds. Your limits: …`; exit 1 at once | Does not retry: `error from registry: The download limit of … is used up. Try again in 60 minutes. …`; exit 1. A refused `HEAD` has no message: `unexpected status from HEAD request to …: 429 Too Many Requests` |
+| `docker push` (Docker 29.9) | Does not retry: `error from registry: Too many requests; retry after the period in the Retry-After header.`; exit 1 | — |
+| `podman pull` (Podman 5.8) | Waits the time it is told and retries; succeeds | Waits at most 60 s per try, five tries per request and the whole pull three more times (`failed, retrying in 1s ... (1/3)`), then `Error: … toomanyrequests: The download limit of … is used up …`; it fails after about 16 minutes |
+| `apt-get update`, `apt-get download` (APT 3.0) | Retries the refused file (an `Ign:` line, then `Get:`) and succeeds | Retries three times (`Ign:1`), waiting longer each time, then `E: Failed to fetch <file>  TooManyRequests 429  Too Many Requests`; exit 100, after about 90 s; the reason is not shown |
+| `ansible-galaxy collection install` (ansible-core 2.21) | Retries the refused version list, then fails on its own response cache: `[ERROR]: Missing expected 'results' in ansible-galaxy cache …`; exit 1. The message is the client's and does not name the limit | Does not retry: `[ERROR]: Failed to download collection tar from '<server>': HTTP Error 429: Too Many Requests`; exit 1; the reason is not shown |
+
+Where a client shows only the status, the reason is on your **Usage** page and in the answer's body, for example with
+`curl -sS <address>`, which prints it.
 
 A download in the UI that a limit refuses shows a notice at the bottom of the page instead ("Your download limit of 300 GB per hour is used up. Try again in 14 minutes."), with **See your usage**, which opens this page. The page you were on stays as it was. A slowed download is not announced: your browser shows its speed.
 

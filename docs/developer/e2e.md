@@ -146,6 +146,10 @@ test/e2e/                   the Go tests, build tag `e2e`, package e2e
   edge_test.go              E5.5: R-HA-039 and R-HA-038 through the Ingress and through an HTTPRoute on a Gateway (set edge, profile edge)
   alerts_test.go            E5.5: the alerts of R-HA-045 in their R-HA-052 scenarios and "Maintenance stays quiet" against a Prometheus (set alerts, profile alerts)
   backup_ci_test.go         E5.12's CI bullets: the issuer, the mappings and the exchange against the source and the restored installation
+  limits_clients_env_test.go  what each format's case of the download limits shares: limitRule (a rule at the case's repository),
+                            noteRefusal (a row of .out/e2e/limits-clients.json); the cases are npm_limits_test.go, nuget_limits_test.go,
+                            oci_limits_test.go (with the registry's handshake from one address, the push of 40 tiny layers and W-25's probe
+                            through a virtual repository), deb_limits_test.go and ansible_limits_test.go, each in its format's set
   clients/                  the npm client matrix image (below): package.json + package-lock.json, bin/ wrappers, shim/npm, fwd/ forwarder,
                             Dockerfile, build.sh, check-pins.mjs
 web/e2e/                    the Playwright journeys of R-UI-047 (TypeScript, in the web workspace's lockfile)
@@ -270,6 +274,42 @@ Locally `make e2e` builds what a set needs. A CI leg builds none of the images t
 
 The same path runs locally, without the GitHub cache: `.github/scripts/client-images.sh key npm` prints the key and its inputs,
 `.github/scripts/client-images.sh load-or-build npm .out/client-images/npm.tar` loads that tar or builds the image and writes it.
+
+## What a new format adds to the tests
+
+Quader will have many more formats; the suites have to stay runnable on the runners as they come (the owner, 2026-11-20: "Es kann nicht
+einfach alles immer fetter werden und mehr und mehr Daten schieben"). The rule, for a builder of the next format and of every feature
+that touches every format:
+
+- **A behaviour is tested once, at the cheapest tier that can show it.** What the core decides alike for every format (the download
+  limits, authorization, the remote engine's collapsing, the member search of a virtual repository) is tested once, in a unit or an
+  integration test without a format's client. The integration set `limits` ([test/integration/limits](../../test/integration/limits))
+  holds every figure, subject, block, ceiling and the switch of the mode, in seconds ([Q-LIM-55](../spec/usage-and-limits.md#q-lim-55--the-limits-are-tested-once-in-the-integration-set-a-format-adds-one-case-of-its-client)).
+- **A format contributes only what its client does differently**, as one small case in its own set, with the client image its leg has
+  loaded already. No set of a cross-cutting feature starts the clients of every format.
+- **Adding a format adds a constant, small amount of test time to its own leg, and nothing to any other leg.** A case finishes in well
+  under a minute; the cases a feature adds to one leg stay under two minutes together.
+- **No test moves more data than its assertion needs.** Payloads are bytes to kilobytes, unless size is what is tested (the 6 GiB of
+  the set `edge`). A measurement (how many requests a push sends) is taken once and written into the decision it informs; it stays as a
+  test only if it runs in seconds and asserts something that can regress.
+
+What a new format adds, in its own set (`e2e (<format>)`):
+
+| Topic | The format's case | Not in the format's set |
+|---|---|---|
+| Download limits | `Test<Format>Limits_R_LIM_020_…`: its client against a repository of the case whose rule (`limitRule` in [limits_clients_env_test.go](../../test/e2e/limits_clients_env_test.go)) refuses the client's next request (`requestsPerSecond` 1, burst 1) and, where it downloads, its next download (`cachedBytesPerHour` 1 after a document); in Enforce; what it prints, whether it retries, its exit status (`noteRefusal`, the artifact `limits-clients.json`), which is a row of the manual's table | the figures, Audit, the subjects, the block, the ceiling: the integration set |
+| A probe starts the download (W-25) | only if a command of its real client sends a probe without fetching the content itself; one case with the smallest artifact | the path through a virtual repository (once, in the OCI set), the charge, the switch, the budget |
+
+The cases of the download limits today, all in Enforce, measured locally on `linux/arm64` on 2026-11-20, each set run with only its
+new cases (`QUADER_E2E_RUN`), so the seconds include the fixture the full set builds anyway:
+
+| Set | Case | Client | Seconds the leg gains | Bytes moved |
+|---|---|---|---|---|
+| `npm` | `TestNPMLimits_R_LIM_020_WhatNpmShowsAtARefusal` | npm 11 | 33 | one tarball of a few hundred bytes |
+| `nuget` | `TestNuGetLimits_R_LIM_020_WhatDotnetShowsAtARefusal` | dotnet restore | 59 | one package of about a kilobyte |
+| `oci` | `TestOCILimits_R_LIM_020_WhatDockerAndPodmanShowAtARefusal`, `TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget`, `TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass`, `TestOCIProbe_R_REPO_065_ManifestInspectThroughAVirtualRepositoryDownloadsTheImage` | docker, podman | 63 (37, 12, 13 and 1) | images of a few hundred bytes; the push 40 layers of a few bytes |
+| `deb` | `TestDebLimits_R_LIM_020_WhatAptShowsAtARefusal` | APT 3.0 (Debian 13) | 40 | one package of about a kilobyte |
+| `ansible` | `TestAnsibleLimits_R_LIM_020_WhatAnsibleGalaxyShowsAtARefusal` | ansible-galaxy 2.21 | 36 | one collection of a few KB |
 
 ## Reading a stall
 

@@ -894,9 +894,9 @@ codes:
 
 Acceptance criteria:
 
-- With `cachedBytesPerHour` used up, `npm install` reports `429 Too Many Requests` and the problem's `detail` is in the npm debug
-  log; `docker pull` reports `toomanyrequests` with the detail; `curl` of a raw file shows the problem with `figure:
-  "cachedBytesPerHour"`.
+- With `cachedBytesPerHour` used up, `npm install` reports `npm error code E429` and `429 Too Many Requests` with the tarball's
+  address; `docker pull` prints `error from registry: ` and the `detail` and exits 1; a raw file answers the problem with `figure:
+  "cachedBytesPerHour"` (the cases of R-LIM-039; what each client prints is the manual's table).
 - In `audit` no answer carries a `RateLimit` member named after a figure of this page.
 
 ### R-LIM-021 · The check before a download starts
@@ -1626,12 +1626,20 @@ Priority: **MVP** · Covers: BEYOND-030
 - **Unit** (`internal/limits`): resolution and clamp with the worked examples of R-LIM-013 and R-LIM-016; subject derivation for
   every principal kind of R-LIM-001; the sliding-window arithmetic of hour and day windows; pacing shares and the floor; the buffer's
   merge, overflow and flush order.
-- **Integration set `limits`** (against the stack, three `web` replicas through `testenv`): the acceptance criteria of R-LIM-005,
-  R-LIM-006, R-LIM-017, R-LIM-021 to R-LIM-026; with Valkey stopped, the fallback of R-LIM-019; a crashed replica's leases.
+- **Integration set `limits`** (against the stack through `testenv`, without a format's client): what is the same for every format,
+  each once ([Q-LIM-55](#q-lim-55--the-limits-are-tested-once-in-the-integration-set-a-format-adds-one-case-of-its-client)): every
+  figure's refusal with its code and `Retry-After`, the download that crosses a byte figure and the next refused before its first
+  byte, the slowed download and the refused parallel one, the block of refused requests and its lift, a reader's misses that block
+  nothing, the subjects of R-LIM-001 (a user's personal tokens, two technical tokens of one account at each level, an address and an
+  IPv6 `/64`, an administrator), what is cached served with the upstream budget used up, the anonymous ceiling against a second
+  address, Audit beside Enforce, the switch reaching a second replica; with Valkey stopped, the fallback of R-LIM-019; the cost of
+  R-LIM-017. Not held yet: a crashed replica's leases, a CI token on the request path (its subject is unit-tested).
 - **Format contract**: R-LIM-036's kit check and table for the six formats.
-- **e2e**: a set `limits` with `npm install`, `dotnet restore`, `docker pull`, `apt-get update && apt-get download`,
-  `ansible-galaxy collection install` and `curl` against a profile small enough to hit each figure once, in both modes, reading the
-  client's message.
+- **e2e**: no set of the limits' own (Q-LIM-55). Each format's own set holds one case of its client against a repository of the case
+  whose rule refuses the client's next request (`requestsPerSecond` 1 with a burst of 1: a `429` with `Retry-After` 1) and, where it
+  downloads, its next download (`cachedBytesPerHour` 1 after a document), in Enforce, with payloads of bytes; the case asserts what the
+  client prints, whether it retries and how it exits, and its rows are the manual's table of the clients. The registry's handshake from
+  one address with a small anonymous budget is the OCI set's (F-161).
 
 ## Gaps of the protocols
 
@@ -1643,6 +1651,14 @@ wie wir vorgehen"). Until he decides, nothing beyond the rest of this page is bu
 The NuGet clients print the status and the reason phrase and no body (R-NUGET-002); APT prints the status line and reads no body
 of an error (R-DEB-005). Over HTTP/2 there is no reason phrase at all, and Go's server writes the standard one. A user of either sees
 "429 Too Many Requests" and not which limit or for how long.
+
+As the clients show it (the cases of R-LIM-039, 2026-11-20): `dotnet restore` prints `Response status code does not indicate success:
+429 (Too Many Requests).`; APT 3.0 prints `E: Failed to fetch <file>  TooManyRequests 429  Too Many Requests`. Two more clients show
+no reason, not named here before: `ansible-galaxy` 2.21 at a refused archive prints `HTTP Error 429: Too Many Requests`, and at a
+refused version list a message of its own response cache (`Missing expected 'results' in ansible-galaxy cache`); docker at a refused
+`HEAD`, which has no body, prints `unexpected status from HEAD request to …: 429 Too Many Requests`. npm, docker at a `GET` and
+podman print the `detail`. The manual's table of the clients ([usage-and-limits.md](../manual/user/usage-and-limits.md#what-your-client-shows))
+holds every client's line.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -2340,6 +2356,32 @@ Revisit if a subject's reference must not be stored in job arguments.
 **Applied in the spec:** R-LIM-037. Code: [background.go](../../internal/limits/background.go), `fetcher.run` in
 [fetch.go](../../internal/proxy/fetch.go). Tests: `TestR_LIM_037_ABackgroundDownloadIsChargedToTheProbe` in
 [background_test.go](../../internal/limits/background_test.go).
+
+### Q-LIM-55 · The limits are tested once in the integration set; a format adds one case of its client
+
+Status: **Decided by the development agent** on the owner's rule of 2026-11-20 — selected from the options below; the owner reviews it
+at the walkthrough.
+
+Context: R-LIM-039 asked for an end-to-end set `limits` with six clients against a profile small enough to hit each figure once, in
+both modes. Built that way it is a leg that loads the client images of every format (the NuGet image alone is 730 MB in the cache)
+for behaviour that is the same for every format, and it grows with every format. The owner, 2026-11-20: "Unsere Tests dauern im
+Moment schon sehr sehr lange. Und es kommen noch bestimmt 20 weitere Registry Arten dazu. Du musst die Tests so strukturieren, dass es
+auch ausführbar bleibt. Es kann nicht einfach alles immer fetter werden und mehr und mehr Daten schieben. Wir schaffen das einfach von
+unserer Infrastruktur irgendwann nicht mehr." What only a real client shows is how it reacts to a refusal: whether it reads
+`Retry-After`, retries, prints the reason, and with which exit status.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One cross-format e2e set `limits` | Every client, every figure, both modes, every subject, on the kind cluster, in a leg of its own | Every figure seen through a real client | Loads every client image for what the core decides alike for all formats; minutes per format; a new format makes every run of it longer |
+| (b) The model in the integration set, one client case per format's own set (chosen) | Each figure, the subjects, the block, the ceiling, Audit and the switch once in `test/integration/limits`, in seconds; each format's set gets one case of its client in Enforce: one refused request with `Retry-After` 1 and, where it downloads, one refused download, with payloads of bytes | A format adds a constant, small amount of time to its own leg and nothing to another's; the clients' rows of the manual come from what the cases assert | A figure is not seen through every client; a client's reaction to a figure other than the two is inferred from the same 429 |
+
+**Choice:** (b). **Rationale:** the refusal is rendered by the core and each format's `WriteError`; what differs per client is its
+reaction to a `429`, which two refusals show (one it may retry within a second, one that stays for the hour). Revisit if a client is
+found to treat one figure's refusal differently from another's.
+
+**Applied in the spec:** R-LIM-039. Tests: [figures_test.go](../../test/integration/limits/figures_test.go); the cases
+`Test<Format>Limits_R_LIM_020_…` of the sets `npm`, `nuget`, `oci`, `deb` and `ansible`
+([e2e.md](../developer/e2e.md#what-a-new-format-adds-to-the-tests)).
 
 ### Q-LIM-56 · The burst of package_write holds the push of the largest image
 
