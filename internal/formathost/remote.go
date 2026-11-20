@@ -108,6 +108,12 @@ func (r *remote) Artifact(ctx context.Context, rq *formats.Request, p formats.Pa
 		}
 	}
 	preq.Expected = proxy.Digests{SHA256: expected.SHA256, SHA512: expected.SHA512, SHA1: expected.SHA1}
+	// Where the malware gate is strict, the fill is held and its body reaches no client before its verdict (R-MAL-015); a body
+	// the object store cannot take passes only as the gate decides on its digest's row (R-MAL-013).
+	if preq.HoldFill, err = r.h.holdFill(ctx, rq); err != nil {
+		return err
+	}
+	preq.Unstored = r.h.unstored(rq, p.Path, preq.HoldFill)
 	preq.Serve = func(ctx context.Context, w http.ResponseWriter, it items.Item) error {
 		fi := itemOf(rq.RepoRef(), it)
 		return r.h.Items().Serve(ctx, rq, w, fi, formats.ServeStored)

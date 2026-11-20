@@ -120,7 +120,13 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 		{"R-AUTHZ-005 a document rendered otherwise on the path that filters it fails check 13", testformat.FiltersDifferently, formattest.CheckAuthzPaths, "when only an unrelated path is refused", nil},
 		{
 			"R-LIM-036 a format that writes a download's body itself instead of through Host.Serve fails check 16", testformat.WritesOwnDownload,
-			formattest.CheckAdmission, "without the admission of Host.Serve", nil,
+			formattest.CheckAdmission, "without the admission of Host.Serve",
+			[]formattest.Check{formattest.CheckMalware},
+		},
+		{
+			"R-MAL-016 R-MAL-029 a format whose errors lose the headers of the core error fails check 17", testformat.RendersBareErrors,
+			formattest.CheckMalware, "without Cache-Control: no-store",
+			[]formattest.Check{formattest.CheckAdmission},
 		},
 	}
 	for _, c := range cases {

@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/malware/gate"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
@@ -75,6 +76,18 @@ func (s *Service) Stat(ctx context.Context, c Caller, repoKey qname.Repo, p repo
 	// "Serve-time check"): npm's tombstoned tarball is a 404 here as on its route.
 	if s.formats != nil {
 		if err := s.formats.ServeCheck(ctx, repo, it); err != nil {
+			return Resolved{}, err
+		}
+	}
+	// The malware gate, after the format's own check and before the vulnerability block (R-MAL-013): every file of /files/ is a
+	// download. An infected blob is refused, and where only checked artifacts are served one without a verdict waits (R-MAL-014).
+	if s.malware.Enabled() {
+		err := s.malware.Check(ctx, gate.Download{
+			Addressed: repoKey, HolderID: repo.NumericID(), Path: it.Path, Digest: it.Digest, Size: it.Size, Generated: it.Generated,
+			Verdict: it.Malware, Strict: s.malware.Strict(repo.MalwareOnlyChecked()), Arrived: c.Received,
+			Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
+		})
+		if err != nil {
 			return Resolved{}, err
 		}
 	}

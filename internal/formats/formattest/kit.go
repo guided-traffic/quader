@@ -40,10 +40,15 @@ const CheckWiki Check = 15
 // downloads through Host.Serve or the remote engine, the two paths that admit and pace.
 const CheckAdmission Check = 16
 
+// CheckMalware is check 17 (malware-scanning.md R-MAL-029): a GET of every Download route the fixture serves, against a host whose Serve
+// answers each answer of the malware gate, renders 403 for malware_found and malware_not_checked and 503 with Retry-After for
+// malware_check_pending, each with Cache-Control: no-store, in the format's shape and before any byte of the item.
+const CheckMalware Check = 17
+
 // kitChecks are the checks the kit runs, in order.
 var kitChecks = [...]Check{
 	CheckAmbiguity, CheckTraversal, CheckClassify, CheckRewrite, CheckMerge, CheckInspect, CheckHeaders, CheckSetup,
-	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission,
+	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission, CheckMalware,
 }
 
 // name is the short name of the check.
@@ -79,9 +84,14 @@ func (c Check) name() string {
 		return "wiki content"
 	case CheckAdmission:
 		return "download admission"
+	case CheckMalware:
+		return "malware answers"
 	}
 	return "unknown"
 }
+
+// servesDownloads reports whether the check serves the fixture's Download routes, so that a format with one cannot skip it.
+func (c Check) servesDownloads() bool { return c == CheckAdmission || c == CheckMalware }
 
 // String is the name of the subtest: "R-ARCH-010 check 7 content headers".
 func (c Check) String() string {
@@ -409,6 +419,8 @@ func runCheck(c Check, f formats.Format, fx Fixture) (res Result) {
 		r.wiki()
 	case CheckAdmission:
 		r.admission()
+	case CheckMalware:
+		r.malware()
 	}
 	return res
 }
@@ -467,7 +479,7 @@ func (r *run) skipProblem(c Check, reason string) string {
 		return fmt.Sprintf("%s is skipped (%s) and the format has a view adapter", c, reason)
 	case c == CheckWiki && r.hasWiki():
 		return fmt.Sprintf("%s is skipped (%s) and the format has wiki content", c, reason)
-	case c == CheckAdmission && r.hasRoute(formats.Download):
+	case c.servesDownloads() && r.hasRoute(formats.Download):
 		return fmt.Sprintf("%s is skipped (%s) and the format has a Download route", c, reason)
 	}
 	return ""

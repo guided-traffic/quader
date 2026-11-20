@@ -3844,7 +3844,8 @@ on 2026-11-20 that a refusal ends resolution in every virtual repository ([malwa
 Context, verified in [virtual_read.go](../../../internal/formats/oci/virtual_read.go): `isMemberMiss` counts every `Forbidden` as a miss, so a
 manifest blocked in one member was served from the next member that holds the name, or answered `404 MANIFEST_UNKNOWN`. R-VULN-015 says a
 block ends resolution, and the generic engine of the other formats ends it ([virtual/artifact.go](../../../internal/virtual/artifact.go)).
-The walk has no test with a blocked member.
+The walk had no test with a blocked member; since the correction `TestR_OCI_027_ABlockOfAMemberEndsTheWalk` (unit) and
+`TestR_OCI_027_AMalwareRefusalOfAMemberEndsTheWalk` (area `ocivirtual`) hold it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|

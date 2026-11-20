@@ -328,7 +328,7 @@ var _ formathost.SourceRouter = (*repository.Routing)(nil)
 
 // wireFormatHost builds the Host and the dispatcher on the item store and the
 // decision point.
-func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo repositoryArea, ex exposureArea, fa filesArea, eng proxyEngineArea, ve virtualEngineArea, vz vulnArea) (formatHostArea, error) {
+func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo repositoryArea, ex exposureArea, fa filesArea, eng proxyEngineArea, ve virtualEngineArea, vz vulnArea, mw malwareArea) (formatHostArea, error) {
 	if err := requireInputs(AreaFormatHost, given("item store", fa.items), given("decision point", fa.decider),
 		given("repository reader", repo.reader), given("exposure ceiling", ex.ceiling), given("virtual engine", ve.engine)); err != nil {
 		return formatHostArea{}, err
@@ -355,7 +355,7 @@ func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo r
 		Runner: in.db, Decider: fa.decider, Items: fa.items, Packages: pkgs, Deps: fm.deps, Renditions: rend, Engine: eng.remote(),
 		Resolver: resolver,
 		Vuln:     vz.hostPorts(),
-		Enforce:  vz.enforcer, Repos: repo.reader,
+		Enforce:  vz.enforcer, Repos: repo.reader, Malware: mw.gate,
 		DownloadBuffer: int(a.cfg.Storage.Download.BufferSize), Log: a.log.With("component", "formats"),
 		// A probe starts the background download of its version (R-REPO-065).
 		Downloads: backgroundDownloads{a}, ProbeMetrics: a.probeMetrics(),

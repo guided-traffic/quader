@@ -411,6 +411,13 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 			func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) },
 			edge.ServeOptions{Buffer: s.h.o.DownloadBuffer})
 	}
+	// The malware gate, after the format's own check and before the vulnerability block (R-MAL-013): an infected blob is
+	// refused, and where only checked artifacts are served one without a verdict waits for its scan (R-MAL-014). The system
+	// read above asks no gate.
+	if err := s.h.refuseMalware(ctx, rq, it.Ref.Repo, row); err != nil {
+		bastionmain.NoteUnknown(ctx) // a refusal is never a negative entry (R-BAS-013)
+		return err
+	}
 	if err := s.h.refuseBlocked(ctx, rq, it.Ref.Repo, row); err != nil {
 		bastionmain.NoteUnknown(ctx) // a block is never a negative entry (R-BAS-013)
 		return err

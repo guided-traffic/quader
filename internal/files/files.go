@@ -27,6 +27,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/malware/gate"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
@@ -92,7 +94,10 @@ type Options struct {
 	Enforce *enforce.Enforcer
 	// Writes refuses a deploy and a delete while the installation is in read-only maintenance mode (R-OPS-024); nil allows both.
 	Writes WriteGate
-	Log    *slog.Logger
+	// Malware is the download gate of the malware scanning (R-MAL-013, Q-MAL-24): every file of /files/ passes it after the
+	// format's serve-time check and before the vulnerability block. nil refuses nothing.
+	Malware *gate.Gate
+	Log     *slog.Logger
 }
 
 // WriteGate is the question the read-only maintenance mode puts to every write: nil while writes are allowed, the 503 otherwise.
@@ -108,6 +113,7 @@ type Service struct {
 	formats Formats
 	enforce *enforce.Enforcer
 	writes  WriteGate
+	malware *gate.Gate
 	log     *slog.Logger
 }
 
@@ -130,7 +136,7 @@ func New(o Options) (*Service, error) {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	return &Service{items: o.Items, repos: o.Repos, formats: o.Formats, enforce: o.Enforce, writes: o.Writes, log: o.Log}, nil
+	return &Service{items: o.Items, repos: o.Repos, formats: o.Formats, enforce: o.Enforce, writes: o.Writes, malware: o.Malware, log: o.Log}, nil
 }
 
 // Caller is who acts: the request's decision holder, the subject behind it (whose
@@ -142,6 +148,9 @@ type Caller struct {
 	Subject authz.Subject
 	Actor   audit.Actor
 	Source  audit.Source
+	// Received is when the request arrived; a download that waits for its malware verdict waits until malware.download_wait
+	// after it (R-MAL-014, Q-MAL-29). The zero time is the moment the gate asks.
+	Received time.Time
 	// Recheck begins a holder on the index the replica holds now, with the key
 	// made known. A deploy decides again after its body arrived, and that
 	// decision must see a grant removed while the body was on the wire: it is

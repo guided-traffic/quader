@@ -128,7 +128,7 @@ func TestR_ARCH_024_AMissingPrerequisiteIsAStartupError(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-024 the files step refuses a missing decision point and identity store by name", func(t *testing.T) {
-		_, err := (&App{}).wireFiles(t.Context(), infra{}, repositoryArea{}, identityArea{}, authzArea{}, formatsArea{}, vulnArea{})
+		_, err := (&App{}).wireFiles(t.Context(), infra{}, repositoryArea{}, identityArea{}, authzArea{}, formatsArea{}, vulnArea{}, malwareArea{})
 		if err == nil || !strings.HasPrefix(err.Error(), "files: no repository reader, no principal store, no token service, no authorizer, no format hooks, no format seam") {
 			t.Fatalf("err = %v", err)
 		}
@@ -139,7 +139,7 @@ func TestR_ARCH_024_AMissingPrerequisiteIsAStartupError(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), "no item store") || !strings.HasPrefix(err.Error(), "virtual-engine: ") {
 			t.Fatalf("virtual engine without its inputs: %v", err)
 		}
-		_, err = (&App{}).wireFormatHost(t.Context(), infra{}, formatsArea{}, repositoryArea{}, exposureArea{}, filesArea{}, proxyEngineArea{}, virtualEngineArea{}, vulnArea{})
+		_, err = (&App{}).wireFormatHost(t.Context(), infra{}, formatsArea{}, repositoryArea{}, exposureArea{}, filesArea{}, proxyEngineArea{}, virtualEngineArea{}, vulnArea{}, malwareArea{})
 		if err == nil || !strings.Contains(err.Error(), "no virtual engine") {
 			t.Fatalf("format host without the virtual engine: %v", err)
 		}
@@ -271,7 +271,7 @@ func TestR_ARCH_024_AStepRefusesANilInput(t *testing.T) {
 			"ownership":    {second(a.wireOwnership(ctx, infra{}, authzArea{})), "ownership: no decision point"},
 			"ci":           {second(a.wireCI(ctx, infra{})), "ci: no database, no change log, no cache registry, no outbound factory, no audit recorder"},
 			"vuln":         {second(a.wireVuln(ctx, infra{}, repositoryArea{}, virtualArea{})), "vuln: no database, no change log, no cache registry, no audit recorder, no repository reader, no claim routing"},
-			"formathost":   {second(a.wireFormatHost(ctx, infra{}, formatsArea{}, repositoryArea{}, exposureArea{}, filesArea{}, proxyEngineArea{}, virtualEngineArea{}, vulnArea{})), "formathost: no item store, no decision point, no repository reader, no exposure ceiling"},
+			"formathost":   {second(a.wireFormatHost(ctx, infra{}, formatsArea{}, repositoryArea{}, exposureArea{}, filesArea{}, proxyEngineArea{}, virtualEngineArea{}, vulnArea{}, malwareArea{})), "formathost: no item store, no decision point, no repository reader, no exposure ceiling"},
 			"proxy-engine": {second(a.wireProxyEngine(ctx, infra{}, proxyArea{}, invalidationArea{}, filesArea{}, vulnArea{}, downloadLimitsArea{})), "proxy-engine: no upstream clients, no invalidation set, no item store"},
 			"virtual":      {second(a.wireVirtual(ctx, infra{}, repositoryArea{})), "virtual: no repository snapshot"},
 			"proxy":        {second(a.wireProxy(ctx, infra{}, repositoryArea{}, invalidationArea{})), "proxy: no repository service, no invalidation service"},

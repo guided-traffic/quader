@@ -414,7 +414,10 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 	// Nor does a body that fits in the withheld tail: no byte of it would leave before the
 	// commit, so streaming it gains nothing, and the stored entry answers it with every
 	// header of a stored answer, the validators included (Q-NUGET-86).
-	held := rq.Adapter.InspectsFill(rq.Path) || resp.ContentLength <= withheldTail
+	//
+	// Nor does a fill the host holds because the malware gate is strict: the stored item is
+	// scanned before its first byte leaves, through the gate of the host's Serve (R-MAL-015).
+	held := rq.Adapter.InspectsFill(rq.Path) || resp.ContentLength <= withheldTail || rq.HoldFill
 	var tee *stream
 	if f.st.stream != nil && resp.ContentLength >= 0 && !held {
 		tee = f.begin(resp)
@@ -456,6 +459,13 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 		return f.digestChanged(ctx, sp, changed)
 	case err != nil:
 		if ee, ok := errs.As(err); ok && ee.Code == errs.CodeObjectStoreUnavail {
+			// The body has no verdict of its own: the row of its digest decides whether it may pass (R-MAL-013). A refused body
+			// that already streamed is cut, which the answer of the flight does with a started stream.
+			if rq.Unstored != nil {
+				if refused := rq.Unstored(ctx, sp.SHA256); refused != nil {
+					return flightResult{err: refused, status: resp.StatusCode}
+				}
+			}
 			if held && f.st.stream != nil && resp.ContentLength >= 0 {
 				tee = f.replay(sp, resp) // verified, and inspected where the format inspects, so the leader's client may have it now
 			}

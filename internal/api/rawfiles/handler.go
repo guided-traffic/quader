@@ -245,6 +245,7 @@ func (h *Handler) caller(r *http.Request, key qname.Repo) (files.Caller, error) 
 	return files.Caller{
 		Access: acc, Subject: acc.Subject,
 		Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
+		Received: httpserver.InfoFrom(ctx).Received,
 		// A write that waited for its body decides again on a new index (R-AUTHZ-015).
 		Recheck: func(ctx context.Context, key qname.Repo) (files.Access, error) {
 			fresh, err := edge.Begin(ctx, acc.D, acc.Subject, key)

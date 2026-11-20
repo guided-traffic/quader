@@ -24,6 +24,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/malware/gate"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/packages"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -102,6 +103,10 @@ type Options struct {
 	// read in. A host without either reads no block and refuses nothing (a replica that has not wired the scanning).
 	Enforce *enforce.Enforcer
 	Repos   repository.Reader
+	// Malware is the download gate of the malware scanning (malware-scanning.md R-MAL-013): every stored item of a route of the
+	// kind Download passes it after the format's serve-time check and before the vulnerability block. nil refuses nothing (a
+	// replica that has not wired the scanning). Repos gives it the repositories' settings (R-MAL-020).
+	Malware *gate.Gate
 	// Downloads is the queue of the background downloads a probe starts (R-REPO-065); nil starts none. ProbeMetrics counts the
 	// decisions; nil counts nothing.
 	Downloads    BackgroundDownloads

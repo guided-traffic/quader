@@ -103,9 +103,21 @@ func (w *resolvedWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter 
 
 // isMemberMiss reports whether an error of a member says "this member does not have it" for the caller: the item is not there, the caller
 // may not read it there, or may not bring it into the cache of a remote member (R-AUTHZ-008, which a virtual repository counts as a miss).
+// A refusal of a block is no miss: the member holds the item and decides, so the walk ends with it (R-OCI-027, Q-OCI-240).
 func isMemberMiss(err error) bool {
 	e, ok := errs.As(err)
-	return ok && (e.Kind == errs.NotFound || e.Kind == errs.Forbidden)
+	return ok && (e.Kind == errs.NotFound || (e.Kind == errs.Forbidden && !isBlock(e)))
+}
+
+// isBlock reports whether a refusal is a block of the item a member holds: the vulnerability scanning's (R-VULN-015) or the malware
+// gate's (R-MAL-013), and the gate's pending answer (R-MAL-014). The walk ends with it in every tier (Q-OCI-240).
+func isBlock(e *errs.Error) bool {
+	switch e.Code {
+	case errs.CodeVulnerabilityBlocked, errs.CodeVulnerabilityDataMissing, errs.CodeMalwareFound, errs.CodeMalwareNotChecked,
+		errs.CodeMalwareCheckPending:
+		return true
+	}
+	return false
 }
 
 // isMemberFailure reports whether an error says the member could not be asked or did not answer, or that its stored object is lost: the
@@ -116,7 +128,7 @@ func isMemberFailure(err error) bool {
 		return true
 	}
 	e, ok := errs.As(err)
-	if !ok {
+	if !ok || isBlock(e) {
 		return false
 	}
 	switch e.Kind {

@@ -9,7 +9,7 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 632 of 1,047 spec requirements are implemented: a passing test names them and no
+**Status.** 638 of 1,047 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
@@ -1303,7 +1303,7 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-040 | Curation policy sharing across sites | Later | open | – |
 | SEC-041 | Redirect endpoint for intercepted public registry traffic | P2 | open | – |
 | SEC-042 | Indexing scope | MVP | specified | [R-MAL-001](../spec/malware-scanning.md), [R-VULN-001](../spec/vulnerability-scanning.md) (implemented), [R-VULN-002](../spec/vulnerability-scanning.md) (implemented), [R-VULN-033](../spec/vulnerability-scanning.md) |
-| SEC-043 | Scanning on upload and on cache | MVP | specified | [R-MAL-001](../spec/malware-scanning.md), [R-MAL-004](../spec/malware-scanning.md), [R-MAL-015](../spec/malware-scanning.md), [R-VULN-001](../spec/vulnerability-scanning.md) (implemented), [R-VULN-009](../spec/vulnerability-scanning.md) (implemented), [R-VULN-011](../spec/vulnerability-scanning.md) (implemented), [R-VULN-033](../spec/vulnerability-scanning.md) |
+| SEC-043 | Scanning on upload and on cache | MVP | specified | [R-MAL-001](../spec/malware-scanning.md), [R-MAL-004](../spec/malware-scanning.md), [R-MAL-015](../spec/malware-scanning.md) (implemented), [R-VULN-001](../spec/vulnerability-scanning.md) (implemented), [R-VULN-009](../spec/vulnerability-scanning.md) (implemented), [R-VULN-011](../spec/vulnerability-scanning.md) (implemented), [R-VULN-033](../spec/vulnerability-scanning.md) |
 | SEC-044 | On-demand indexing and reindexing | MVP | implemented | [R-VULN-011](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-045 | Scan data retention | Later | open | – |
 | SEC-046 | File-name exclusion from indexing | Later | open | – |
@@ -1322,8 +1322,8 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-059 | Violation notifications and webhooks | Later | open | – |
 | SEC-060 | Issue tracker integration | Later | open | – |
 | SEC-097 | Export of findings to external security dashboards | Later | open | – |
-| SEC-061 | Block downloads on violation | MVP | specified | [R-MAL-013](../spec/malware-scanning.md), [R-VULN-002](../spec/vulnerability-scanning.md) (implemented), [R-VULN-015](../spec/vulnerability-scanning.md), [R-VULN-016](../spec/vulnerability-scanning.md) (implemented), [R-VULN-037](../spec/vulnerability-scanning.md) |
-| SEC-062 | Block downloads of not-yet-scanned artifacts | MVP | specified | [R-MAL-014](../spec/malware-scanning.md), [R-MAL-015](../spec/malware-scanning.md), [R-MAL-019](../spec/malware-scanning.md) (implemented), [R-VULN-015](../spec/vulnerability-scanning.md) |
+| SEC-061 | Block downloads on violation | MVP | specified | [R-MAL-013](../spec/malware-scanning.md) (implemented), [R-VULN-002](../spec/vulnerability-scanning.md) (implemented), [R-VULN-015](../spec/vulnerability-scanning.md), [R-VULN-016](../spec/vulnerability-scanning.md) (implemented), [R-VULN-037](../spec/vulnerability-scanning.md) |
+| SEC-062 | Block downloads of not-yet-scanned artifacts | MVP | specified | [R-MAL-014](../spec/malware-scanning.md) (implemented), [R-MAL-015](../spec/malware-scanning.md) (implemented), [R-MAL-019](../spec/malware-scanning.md) (implemented), [R-VULN-015](../spec/vulnerability-scanning.md) |
 | SEC-063 | Download status check | MVP | implemented | [R-MAL-022](../spec/malware-scanning.md) (implemented), [R-MAL-025](../spec/malware-scanning.md) (implemented), [R-VULN-020](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-064 | Global blocking overrides | MVP | specified | [R-MAL-019](../spec/malware-scanning.md) (implemented), [R-VULN-015](../spec/vulnerability-scanning.md), [R-VULN-025](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-065 | SBOM generation | Later | open | – |
@@ -3232,15 +3232,15 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-010 | `freshclam` beside the worker, and the task `malware-sync-db` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-011 | `upstream/scanner-clamav` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-012 | An installation without internet | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-016 | The answer each format's client gets | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-018 | Virtual repositories, the cache view and the Bastion | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-016 (implemented) | The answer each format's client gets | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-018 (implemented) | Virtual repositories, the cache view and the Bastion | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-020 (implemented) | The repository's stricter-only setting | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-021 (implemented) | Releasing a blob | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-023 (implemented) | Admin area › Settings › Malware scanning | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-026 (implemented) | Audit events, metrics and alerts | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-027 | Configuration, the chart's defaults and what the scanning costs | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-028 (implemented) | Backups, restores and replicas | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-029 | What a format brings | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-029 (implemented) | What a format brings | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-030 | The tests and what they cost | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-031 | The source tree's malware scan runs the product's ClamAV | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-OPS-045 (implemented) | Valkey and coordination observability | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |

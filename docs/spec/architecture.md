@@ -2529,6 +2529,11 @@ own tests:
     with the kit host's `WikiReadable` answering false and `Authorize` refusing a coordinate whose part is the wiki: a `Wiki`
     route answers the refusal, and no other answer holds a byte of the fixture's wiki samples (`Fixture.WikiSamples`, the README
     texts it seeds). A format whose entry says it has none declares no `Wiki` route.
+16. Download admission: [usage-and-limits.md](usage-and-limits.md) R-LIM-036.
+17. For a format with a `Download` route: every content case of a `Download` route that the fixture serves with `GET` is served
+    again on a host whose `Serve` answers each of the malware gate's three answers ([malware-scanning.md](malware-scanning.md)
+    R-MAL-016, R-MAL-029); the format's `WriteError` must answer `403`, `403` and `503`, each with `Cache-Control: no-store`, the
+    `503` with `Retry-After`, and no byte of the item.
 
 A check that cannot apply to a format is skipped in the format's test with a stated reason (generic
 has no routes, no clients and no package names); a skip without a reason fails the check, so a
@@ -2536,7 +2541,7 @@ later class cannot pass a check vacuously. The kit also refuses a skip that the 
 checks 1, 3, 7, 12 and 13 on a format that has routes, check 4 on one with a remote adapter, check 5 with a
 virtual adapter, check 6 with an `Upload` route, check 8 with clients, setup templates or a guide, check 9 with
 package names or a route that writes, check 10 with package names, check 11 with a view adapter, check 14 with a
-vulnerability adapter, check 15 with wiki content. Check 2 is never skipped. A check with nothing to run over (an empty fixture) fails unless it
+vulnerability adapter, check 15 with wiki content, checks 16 and 17 with a `Download` route. Check 2 is never skipped. A check with nothing to run over (an empty fixture) fails unless it
 is skipped. npm and NuGet skip no check (`TestR_ARCH_010_NoCheckIsSkipped`); what a check of theirs does not look at
 is an entry of `NoRevision` or `NoContent`, each with its reason, in the format's `conformance_test.go`.
 

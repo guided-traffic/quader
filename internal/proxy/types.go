@@ -203,6 +203,13 @@ type Request struct {
 	// artifact was stored as it: a download of the item it, like a stored answer through Serve (R-STOR-015, Q-REPO-331). It is not
 	// run for an answer that Serve wrote, which counts itself, nor for a body that was passed through unstored. nil counts nothing.
 	Streamed func(ctx context.Context, it items.Item)
+	// HoldFill holds the fill of an artifact: the leader's own client gets no byte while the body arrives, and is served from the
+	// stored item like every waiter of the flight. The host sets it where the malware gate is strict for the addressed or the
+	// storing repository, so that no byte of content without a verdict reaches a client (malware-scanning.md R-MAL-015, Q-MAL-30).
+	HoldFill bool
+	// Unstored decides a verified body the engine would pass to its client unstored, because the object store cannot take it
+	// (R-STOR-036): nil passes it; an error is the answer instead of the body (the malware gate's, R-MAL-013). nil decides nothing.
+	Unstored func(ctx context.Context, digest [32]byte) error
 }
 
 // Document is a metadata document as the engine hands it to the format.

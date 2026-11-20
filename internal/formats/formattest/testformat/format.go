@@ -138,6 +138,10 @@ const (
 	// WritesOwnDownload answers the tarball by writing the item's bytes itself instead of through Host.Serve: the download
 	// escapes the admission and the pacing of the download limits, check 16 (usage-and-limits.md R-LIM-036).
 	WritesOwnDownload Defect = "writes-own-download"
+	// RendersBareErrors renders an error as a status and a text alone, without the headers the core error carries: a refusal of the
+	// malware gate reaches the client without Cache-Control: no-store and the pending answer without Retry-After, check 17
+	// (malware-scanning.md R-MAL-029).
+	RendersBareErrors Defect = "renders-bare-errors"
 )
 
 // Option adjusts the format; it is not a defect.
@@ -171,6 +175,20 @@ type Format struct {
 }
 
 var _ formats.Format = Format{}
+
+// WriteError implements [formats.Format]: the core's problem+json, or with RendersBareErrors the status and the text alone.
+func (f Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
+	if !f.has(string(RendersBareErrors)) {
+		f.Base.WriteError(w, r, err)
+		return
+	}
+	e, ok := errs.As(err)
+	if !ok {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	http.Error(w, e.Detail, e.Status())
+}
 
 // New returns the test format with the given defects and options.
 func New(flags ...string) Format {
