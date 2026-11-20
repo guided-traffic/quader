@@ -485,6 +485,12 @@ virtual repository as the addressed one.
 filled is a miss; a member that cannot be asked, or whose object is lost, is remembered and is the answer when nothing serves; an error after the first byte ends the request. It puts
 `Quader-Resolved-From` on the answer of the member that serves, when the status line goes out.
 
+When every member said "not found", the answer is the format's own (`MANIFEST_UNKNOWN`, `BLOB_UNKNOWN`, `NAME_UNKNOWN` for the tags list and the referrers), passed through
+`formats.VirtualPlan.Unknown` of the plan `members` returns: where a member of the built-in project `upstream` that is not switched on would have been asked and the caller would
+read it, the message is the sentence that names it and its state (R-REPO-072, `docker pull` prints it after the code), the code and the status stay
+([virtual.md](virtual.md#a-placeholder-in-the-engine); `TestR_REPO_072_APlaceholdersSentenceIsTheMessageOfTheRegistrysCode` in
+[errors_test.go](../../internal/formats/oci/errors_test.go)).
+
 **Writes.** The write routes serve the class virtual (ADR-180). A handler that writes starts with `writeRequest`: the request itself for a local repository, a request made for the deployment
 target (`Request.WriteTarget`) for a virtual one. Decisions, the ownership rule, the package rows and the commit act on that request; the upload sessions are called with the addressed
 request (`rq.Host.Uploads().Start(ctx, addr, target, name)`), and every `Location` is built for the addressed one. A new write route must do the same. The DELETE handlers answer 405 for the class.

@@ -15,12 +15,16 @@ import (
 )
 
 // RepoSpec describes a repository of a decision point: its key, class, the members and deploy
-// target of a virtual one, and the cacheFillAction of a remote one ("" is read).
+// target of a virtual one, and the cacheFillAction of a remote one ("" is read). Project is the
+// key of its project ("" is it), Level the visibility level of its artifacts and its wiki ("" is
+// private, R-AUTHZ-033).
 type RepoSpec struct {
 	Key, Class   string
 	Members      []string
 	DeployTarget string
 	Fill         string
+	Project      string
+	Level        string
 }
 
 // Grant gives a principal actions on repositories, by key, or binds a system role to it.
@@ -56,11 +60,23 @@ func NewDecider(tb testing.TB, repos []RepoSpec, grants []Grant) *authz.Engine {
 			}
 			cfg = fmt.Sprintf(`{"remote":{"cacheFillAction":%q}}`, fill)
 		}
-		snap.Repositories = append(snap.Repositories, q.AuthzBuildRepositoriesRow{ID: id, Key: r.Key, Class: r.Class, Format: Format, Config: []byte(cfg), ProjectKey: "it"})
+		project := r.Project
+		if project == "" {
+			project = "it"
+		}
+		snap.Repositories = append(snap.Repositories, q.AuthzBuildRepositoriesRow{
+			ID: id, Key: r.Key, Class: r.Class, Format: Format, Config: []byte(cfg), ProjectKey: project,
+			VisibilityArtifacts: r.Level, VisibilityWiki: r.Level,
+		})
+	}
+	projectOf := map[string]string{}
+	for _, row := range snap.Repositories {
+		projectOf[row.Key] = row.ProjectKey
 	}
 	for _, r := range repos {
 		for _, m := range r.Members {
-			snap.VirtualMembers = append(snap.VirtualMembers, q.AuthzBuildVirtualMembersRow{VirtualID: ids[r.Key], MemberKey: m})
+			// A member is named with its own project, as the query names it (R-REPO-071: upstream/<key> beside the own project).
+			snap.VirtualMembers = append(snap.VirtualMembers, q.AuthzBuildVirtualMembersRow{VirtualID: ids[r.Key], MemberProject: projectOf[m], MemberKey: m})
 		}
 		if r.DeployTarget != "" {
 			snap.DeployTargets = append(snap.DeployTargets, q.AuthzBuildDeployTargetsRow{VirtualID: ids[r.Key], TargetKey: r.DeployTarget})

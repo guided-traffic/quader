@@ -105,8 +105,9 @@ func (e *Engine) Flush(ctx context.Context) {
 		}
 		e.m.bytes(subj.Kind, cached, uncached)
 		if e.o.Usage != nil && (requests|refused|cached|uncached|upstream|bg != 0 || len(events) > 0) {
+			served := c.served.Load()
 			d := UsageDelta{
-				At: now, Subject: subj, Place: res.Place, RepoID: c.served.Load(), Requests: requests, Refused: refused,
+				At: now, Subject: subj, Place: res.Place, RepoID: served, ViaRepoID: c.viaOf(served), Requests: requests, Refused: refused,
 				Cached: cached, Uncached: uncached, Upstream: upstream, Background: bg, Limits: res.Figures,
 			}
 			if subj.Kind != KindSystem {

@@ -43,19 +43,22 @@ func (q *Queries) AuthzBuildDeployTargets(ctx context.Context) ([]AuthzBuildDepl
 }
 
 const authzBuildVirtualMembers = `-- name: AuthzBuildVirtualMembers :many
-SELECT m.virtual_id, r.key AS member_key
+SELECT m.virtual_id, mp.key::text AS member_project, r.key AS member_key
   FROM virtual_members m
   JOIN repositories r ON r.id = m.member_id
+  JOIN project mp ON mp.id = r.project_id
  ORDER BY m.virtual_id, m.position
 `
 
 type AuthzBuildVirtualMembersRow struct {
-	VirtualID int64
-	MemberKey string
+	VirtualID     int64
+	MemberProject string
+	MemberKey     string
 }
 
 // The member lists the grant index compiles (R-AUTHZ-009), in the snapshot of
-// the index build.
+// the index build, each member with the key of its own project: the virtual
+// repository's, or the built-in project upstream (R-REPO-071, the guard AI006).
 func (q *Queries) AuthzBuildVirtualMembers(ctx context.Context) ([]AuthzBuildVirtualMembersRow, error) {
 	rows, err := q.db.Query(ctx, authzBuildVirtualMembers)
 	if err != nil {
@@ -65,7 +68,7 @@ func (q *Queries) AuthzBuildVirtualMembers(ctx context.Context) ([]AuthzBuildVir
 	items := []AuthzBuildVirtualMembersRow{}
 	for rows.Next() {
 		var i AuthzBuildVirtualMembersRow
-		if err := rows.Scan(&i.VirtualID, &i.MemberKey); err != nil {
+		if err := rows.Scan(&i.VirtualID, &i.MemberProject, &i.MemberKey); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -268,9 +271,12 @@ func (q *Queries) ListVirtualDeployTargets(ctx context.Context, ids []int64) ([]
 
 const listVirtualMembers = `-- name: ListVirtualMembers :many
 
-SELECT m.virtual_id, m.position, m.member_id, r.key AS member_key
+SELECT m.virtual_id, m.position, m.member_id,
+       (CASE WHEN r.project_id = v.project_id THEN r.key ELSE mp.key || '/' || r.key END)::text AS member_key
   FROM virtual_members m
   JOIN repositories r ON r.id = m.member_id
+  JOIN repositories v ON v.id = m.virtual_id
+  JOIN project mp ON mp.id = r.project_id
  WHERE m.virtual_id = ANY($1::bigint[])
  ORDER BY m.virtual_id, m.position
 `
@@ -287,6 +293,9 @@ type ListVirtualMembersRow struct {
 // the configuration document (Q-REPO-104). The repository package renders them
 // into the document on read and replaces them on write; the grant index reads
 // the members and the deploy target through the AuthzBuild* statements.
+// member_key is the member as the virtual repository's document writes it (R-REPO-017, R-REPO-071, Q-REPO-381): the bare key
+// of a repository of the virtual repository's own project, the qualified name upstream/<key> of a repository of the built-in
+// project, the only other project a member may belong to (the guard AI006).
 func (q *Queries) ListVirtualMembers(ctx context.Context, ids []int64) ([]ListVirtualMembersRow, error) {
 	rows, err := q.db.Query(ctx, listVirtualMembers, ids)
 	if err != nil {
@@ -313,9 +322,12 @@ func (q *Queries) ListVirtualMembers(ctx context.Context, ids []int64) ([]ListVi
 }
 
 const listVirtualPinMembers = `-- name: ListVirtualPinMembers :many
-SELECT p.virtual_id, p.position, p.member_id, r.key AS member_key
+SELECT p.virtual_id, p.position, p.member_id,
+       (CASE WHEN r.project_id = v.project_id THEN r.key ELSE mp.key || '/' || r.key END)::text AS member_key
   FROM virtual_pin_members p
   JOIN repositories r ON r.id = p.member_id
+  JOIN repositories v ON v.id = p.virtual_id
+  JOIN project mp ON mp.id = r.project_id
   LEFT JOIN virtual_members m ON m.virtual_id = p.virtual_id AND m.member_id = p.member_id
  WHERE p.virtual_id = ANY($1::bigint[])
  ORDER BY p.virtual_id, p.position, m.position NULLS LAST, r.key
@@ -329,7 +341,8 @@ type ListVirtualPinMembersRow struct {
 }
 
 // A rule's members come back in the order of the virtual repository's member
-// list, so that a read is stable whatever order the write named them in.
+// list, so that a read is stable whatever order the write named them in. A
+// member is written as ListVirtualMembers writes it.
 func (q *Queries) ListVirtualPinMembers(ctx context.Context, ids []int64) ([]ListVirtualPinMembersRow, error) {
 	rows, err := q.db.Query(ctx, listVirtualPinMembers, ids)
 	if err != nil {
@@ -383,35 +396,55 @@ func (q *Queries) ListVirtualPinRules(ctx context.Context, ids []int64) ([]Virtu
 }
 
 const lockRepositoriesByKeys = `-- name: LockRepositoriesByKeys :many
-SELECT r.id, r.key, r.class, r.format, r.lifecycle, r.config
+SELECT r.id, r.key, (p.key = $1::text)::boolean AS upstream, r.class, r.format, r.lifecycle, r.config,
+       COALESCE(u.kind, '')::text AS upstream_kind,
+       (u.first_switched_on_at IS NOT NULL)::boolean AS switched_on_before,
+       (u.retired_at IS NOT NULL)::boolean AS retired
   FROM repositories r
   JOIN project p ON p.id = r.project_id
- WHERE p.key = $1::text AND r.key = ANY($2::text[])
+  LEFT JOIN upstream_repository u ON u.repository_id = r.id
+ WHERE (p.key = $2::text AND r.key = ANY($3::text[]))
+    OR (p.key = $1::text AND r.key = ANY($4::text[]))
  ORDER BY r.id
    FOR SHARE OF r
 `
 
 type LockRepositoriesByKeysParams struct {
-	Project string
-	Keys    []string
+	UpstreamProject string
+	Project         string
+	Keys            []string
+	UpstreamKeys    []string
 }
 
 type LockRepositoriesByKeysRow struct {
-	ID        int64
-	Key       string
-	Class     string
-	Format    string
-	Lifecycle string
-	Config    json.RawMessage
+	ID               int64
+	Key              string
+	Upstream         bool
+	Class            string
+	Format           string
+	Lifecycle        string
+	Config           json.RawMessage
+	UpstreamKind     string
+	SwitchedOnBefore bool
+	Retired          bool
 }
 
-// Resolves the keys a virtual repository names and keeps the rows from being
-// marked for deletion before the transaction ends: FOR SHARE conflicts with the
-// update that sets lifecycle = 'deleting'. The order by id is the lock order. The
-// keys are bare keys of one project: a virtual repository holds repositories of its
-// own project only (Q-AUTHZ-206).
+// Resolves the repositories a virtual repository names and keeps the rows from
+// being marked for deletion, or switched, before the transaction ends: FOR SHARE
+// conflicts with the update that sets lifecycle = 'deleting' and with every write
+// of a repository row. The order by id is the lock order, one order for both
+// projects. keys are the bare keys of the virtual repository's own project,
+// upstream_keys the keys of the members written upstream/<key> (R-REPO-071,
+// Q-REPO-234); upstream says which project a row is of, and upstream_kind,
+// switched_on_before and retired are the row of upstream_repository a state is
+// derived from (Q-REPO-375), empty and false for a repository of the own project.
 func (q *Queries) LockRepositoriesByKeys(ctx context.Context, arg LockRepositoriesByKeysParams) ([]LockRepositoriesByKeysRow, error) {
-	rows, err := q.db.Query(ctx, lockRepositoriesByKeys, arg.Project, arg.Keys)
+	rows, err := q.db.Query(ctx, lockRepositoriesByKeys,
+		arg.UpstreamProject,
+		arg.Project,
+		arg.Keys,
+		arg.UpstreamKeys,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -422,10 +455,14 @@ func (q *Queries) LockRepositoriesByKeys(ctx context.Context, arg LockRepositori
 		if err := rows.Scan(
 			&i.ID,
 			&i.Key,
+			&i.Upstream,
 			&i.Class,
 			&i.Format,
 			&i.Lifecycle,
 			&i.Config,
+			&i.UpstreamKind,
+			&i.SwitchedOnBefore,
+			&i.Retired,
 		); err != nil {
 			return nil, err
 		}

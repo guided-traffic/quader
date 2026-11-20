@@ -25,8 +25,9 @@ The member editor of the UI (R-UI-022, a tab of the repository screen) patches `
 | File | Responsibility |
 |---|---|
 | [virtual.go](../../internal/repository/virtual.go) | `VirtualSettings`, `Pinning`, `PinRule`; the rows of a virtual repository (`virtualRel`) and how they are read (`loadVirtualRels`), rendered into the document and linked into the snapshot (`linkVirtual`); `Repository.Virtual`, `Members`, `DeployTarget` |
-| [members.go](../../internal/repository/members.go) | the checks that need PostgreSQL (`resolveVirtual`: member exists, same format, not being deleted, not virtual; deploy target local; the warning `dependency_confusion_unprotected`), the replace of the rows (`writeVirtual`), the detach of a deleted repository (`detachReferences`) |
-| [validate_virtual.go](../../internal/repository/validate_virtual.go) | the rules a document decides alone (`validateVirtual`: duplicates, the deploy target among the members, pin-rule shape) and the warning `pattern_unscoped_only` (`warnUnscopedOnly`) |
+| [members.go](../../internal/repository/members.go) | the checks that need PostgreSQL (`resolveVirtual`: member exists, same format, not being deleted, not virtual; a member of `upstream` is a preset repository that is not retired, `checkMember`, `memberFacts`; deploy target local; the warnings `dependency_confusion_unprotected` and `member_inactive`), the replace of the rows (`writeVirtual`), the detach of a deleted repository (`detachReferences`) |
+| [validate_virtual.go](../../internal/repository/validate_virtual.go) | the rules a document decides alone (`validateVirtual`: duplicates, a bare key or `upstream/<key>` and no other qualified name, not a key twice across the two projects, the deploy target among the members, pin-rule shape) and the warning `pattern_unscoped_only` (`warnUnscopedOnly`) |
+| [placeholder.go](../../internal/repository/placeholder.go) | members of the built-in project `upstream` (R-REPO-071, R-REPO-072): `MemberRef` (how a member is written), `Repository.Placeholder`, the sentences of a placeholder's 404 (`PlaceholderSentence`, `PlaceholderNotFound`) |
 | [pins.go](../../internal/repository/pins.go) | the prefix trie of claim and pin-rule patterns (`patTrie`) and the pin index of one virtual repository (`pinIndex.best`) |
 | [claims.go](../../internal/repository/claims.go) | `ClaimPattern` (the two admitted forms, specificity, overlap), the claim index (`claimIndex`), and the API service: `Service.Claims`, `Service.PutClaims`, the audit event |
 | [routing.go](../../internal/repository/routing.go) | `Routing`: `Route`, `RemoteRefused`, `CoveredByOwnClaim`, `ClaimsFor`, `ExposureSet`, `AutoClaim` |
@@ -45,7 +46,14 @@ The member editor of the UI (R-UI-022, a tab of the repository screen) patches `
   form of the format's name rule.
 - **The grant index reads the same rows**: `authz.Snapshot.VirtualMembers` and `DeployTargets` are read in the snapshot of the
   index build (`AuthzBuildVirtualMembers`, `AuthzBuildDeployTargets`), so `members` and `deployTarget` of a `repoInfo` come from
-  there and no longer from the document.
+  there and no longer from the document. Each member is named with its own project (`member_project`), so a member of `upstream`
+  is `upstream/<key>` in the index as in the snapshot: the scope lift of Q-AUTHZ-163 (`Index.reaches`), the anonymous rule 6
+  (`publicThroughout`), a listing through the virtual repository (`addressedReaches`) and a Bastion's reach follow it
+  ([permissions.md](../security/permissions.md#a-well-known-member-read-through-a-teams-virtual-repository)).
+- **A member is written as the member list writes it**: a bare key for a repository of the virtual repository's own project,
+  `upstream/<key>` for a repository of the built-in project (R-REPO-071, Q-REPO-381). `ListVirtualMembers` and
+  `ListVirtualPinMembers` compute that form (`member_key`), so the document, the pin rules, `Repository.Virtual()` and the journal
+  entries of R-REPO-061 carry it; `MemberRef(project, name)` is the same rule in Go, which routing uses to match a pin rule's member.
 
 ## Change areas and caches
 
@@ -79,6 +87,7 @@ type Route struct {
 	Members  []Repository        // taking part, in resolution order
 	Dropped  map[string]string   // member key -> DropDisabled | DropNotAdmitted | DropPinnedOut | DropClaimedElsewhere
 	Decision RouteDecision       // {Kind: DecidedByPin|DecidedByClaim|"", Pattern, ClaimedBy []string}
+	Placeholders []Repository    // members of upstream that are not active and would have been kept (R-REPO-072)
 }
 func (rt *Routing) Route(ctx context.Context, virtual Repository, req RouteRequest) (Route, error)
 func (rt *Routing) RemoteRefused(ctx context.Context, remote Repository, name string, via *Repository) (bool, error)
@@ -109,6 +118,28 @@ engine and follow `Route`.
 `Route` takes the member `Repository` values from the snapshot of the `virtual` it is given, so pass a value that came from
 `Reader.ByName` or `List`; a `Repository` from `Service.Get` has no resolved members. `Admitted` is false when the virtual
 repository's own patterns refuse the request.
+
+## Members of the project `upstream` and placeholders
+
+A virtual repository lists repositories of its own project and of the built-in project `upstream` ([wellknown.md](wellknown.md),
+R-REPO-071, R-REPO-072). What that changes here:
+
+| Step | What a member of `upstream` gets | Where |
+|---|---|---|
+| Document rules | `upstream/<key>` is a member and a pin member; any other qualified name, the own project's included, is `invalid_member`; a key of the own project beside `upstream/<the same key>` is `invalid_member` (Q-REPO-401); a deploy target is a bare key | `validateVirtual`, `upstreamMemberKey` |
+| Rows | `LockRepositoriesByKeys` locks the members of both projects `FOR SHARE` in one statement, in id order, and reads the row of `upstream_repository` beside each member of `upstream` | `resolveVirtual` |
+| Validation | a preset repository of the format that is not retired (a retired one the stored document lists stays); a system repository is "used by Quader only"; one that is not active is accepted with `member_inactive`, whose detail names it and its state | `checkMember` |
+| Route | a placeholder (`Repository.Placeholder`: a preset repository of `upstream` that is not `active`) is dropped as `disabled`, and a system repository named by a row anyway too; a placeholder that steps 2 and 3 would have kept had it been active (its patterns, the pin rule, the claims) is listed in `Route.Placeholders` | `routeOf`, `takesNoPart` |
+| Pin rules, remote refusal, search filters | a rule names the member as written, so `upstream/npmjs` and a repository `npmjs` of the own project are told apart | `MemberRef` in `routeOf`, `remoteRefused`, `keptFromMember` |
+| Shadowing check, auto claim | a placeholder is not in `Route.Members`, so the exposure set skips it | `ExposureSet` |
+| Move | only members of the source project are `member` references (Q-REPO-389); the guard AI007 of migration 00086 agrees | `ProjectRepositoryReferences` |
+| Journal | a removed member of `upstream` is in `membersRemoved` by its ID with its qualified name, and is replayed by the ID | `refOf`, `qualified` |
+
+The 404 of a name only a placeholder would have been asked for is the engine's ([below](#a-placeholder-in-the-engine)). The
+switch of a well-known repository is a `repo_config` change like every write of a repository, so the snapshot of every replica
+resolves through the member from the next request after the switch-on, within `cluster.epoch_poll_interval`, with no write to the
+virtual repository (R-REPO-072: measured 0.3 s with a poll interval of 300 ms in
+[virtual_members_test.go](../../test/integration/upstream/virtual_members_test.go)).
 
 `AutoClaim` is called inside the publish transaction of a local repository whose format supports claims, after the package row
 is locked and the ownership claim has been made. It returns an error only for a name the format rejects or a database failure,
@@ -196,6 +227,8 @@ last transaction notifies `claims` when the repository had any, so every replica
 | Test | Covers |
 |---|---|
 | [claims_test.go](../../internal/repository/claims_test.go), [routing_test.go](../../internal/repository/routing_test.go), [validate_virtual_test.go](../../internal/repository/validate_virtual_test.go) | pattern forms, total order, claim and pin lookup, routing (claims, pins, priority, admission, the R-AUTHZ-005 matcher table through `routeOf`), remote refusal, validation, the stored form |
+| [placeholder_test.go](../../internal/repository/placeholder_test.go) | R-REPO-071 and R-REPO-072 as tables, no database, under 1 s: how a member is written, the document rules of `upstream/<key>`, `checkMember` per state, kind and format, the placeholders of a route under patterns, pin rules and claims, a pin rule naming `upstream/npmjs`, the sentences, the journal's qualified name |
+| [virtual_members_test.go](../../test/integration/upstream/virtual_members_test.go) | the integration area `upstream` (shard b), one test of about 3 s with the test upstream of `test/npmstub` and the issuer double of `test/oidcstub`, documents of the corpus (about 1 KiB): a create with `member_inactive`, the refused qualified names, the guard AI006, the 404 with the sentence and the explanation, the switch-on, the rows 1, 3, 5, 7 and 8 of R-AUTHZ-041 with a CI token, also one whose job requested the scope `read:web/npm-all`, a service account's token and an external user's token, the journal replay of a removed member, a move with the member |
 | [virtual_test.go](../../test/integration/repository/virtual_test.go) | members and deploy target against PostgreSQL, order change on two replicas within 2 s without Valkey, detach, pin rules, warnings |
 | [journal_replay_test.go](../../internal/repository/journal_replay_test.go), [journal_narrowed_test.go](../../test/integration/repository/journal_narrowed_test.go), [journal_repository_narrowing_test.go](../../test/integration/backup/journal_repository_narrowing_test.go) | the narrowings and claims of R-REPO-061: the comparison of an update, the strict reader, the writer's transaction, the replay of each step into a restored copy, the fail-closed cases |
 | [claims_test.go](../../test/integration/repository/claims_test.go), [claims_http_test.go](../../test/integration/repository/claims_http_test.go) | claims service and API (428, 412, global permission), the auto claim and its skip rule, two replicas, the exposure set, the delete job |
@@ -225,7 +258,7 @@ what it needs of its neighbours it declares as interfaces ([Q-REPO-111](../spec/
 | [metadata.go](../../internal/virtual/metadata.go) | `Metadata`: strategy, cache lookup and validation, `build` (one goroutine per member), `mergeFingerprint`, `firstMatch` |
 | [mcache.go](../../internal/virtual/mcache.go) | the registered cache `merged_metadata`: key, entry, `weigh`, `onMergedChange`, the payload of `metadata_changed` |
 | [shadow.go](../../internal/virtual/shadow.go) | `ShadowCheck`, `ShadowOutcome` and its error |
-| [explain.go](../../internal/virtual/explain.go) | `Explain` and the `Explanation` of the API |
+| [explain.go](../../internal/virtual/explain.go) | `Explain` and the `Explanation` of the API; a member of `upstream` as `upstream/<key>`, named to every caller, a placeholder with `upstreamState` |
 | [metrics.go](../../internal/virtual/metrics.go) | `quader_virtual_resolutions_total`, `quader_shadow_checks_total` |
 | [virtualtest](../../internal/virtual/virtualtest/) | the fakes and fixtures: repositories with members, `Rows` (package rows), `Merger` (a test format), `Remote` (a programmable remote engine), `Artifacts` (tiers), `Router`, `NewDecider` (the real decision point over a few grants) |
 | [formathost/virtual.go](../../internal/formathost/virtual.go) | `NewResolver` (the `formats.Resolver` over the engine), `NewVirtualLocals` (`Locals` over the package rows and the item store) |
@@ -265,6 +298,29 @@ member's error as the logged cause, and turns a `NotFound` into the engine's one
 then remote members) and caches nothing. `Merge` collects one document per member concurrently and calls `merger.Merge`. The contract has no `Newest` (Merge with the remote
 members revalidated first, R-REPO-036): nothing returned it, the engine resolved it as `Merge`, and it was removed before the freeze (Q-ARCH-257); it returns
 with the first format that needs a latest-version request, as a new strategy.
+
+### A placeholder in the engine
+
+A member of the built-in project `upstream` that is not switched on takes no part ([above](#members-of-the-project-upstream-and-placeholders)); the
+engine says why where it could have changed the answer (R-REPO-072, Q-REPO-382, Q-REPO-400):
+
+- `Plan` keeps, of the route's `Placeholders`, the first in list order that the caller would read by its level or a grant once it is
+  active (`Decider.MemberUsableOn`, step 4: a user flagged external is not told about an `internal` one), and counts the others the caller
+  would read (`waitingFor`). On an endpoint with exposure rules it keeps none: no answer there names a member.
+- A 404 of step 7 (every consulted member said "not found", or none was consulted) of `Artifact`, of a `Merge` and of a `FirstMatch` is
+  `Plan.notFound`: the kind and the code of every other 404, so each format keeps its own not-found code and status, with the sentence of
+  `repository.PlaceholderSentence` as its message, which each format renders in its error shape (npm's `error` and `message`, NuGet's one
+  line, Ansible Galaxy's `detail`, the problem `detail` of Debian and of `/files/`). A 404 of the virtual repository's own patterns names nothing.
+- A format that walks the plan's members itself (OCI, [oci.md](oci.md)) reads the sentence from `formats.VirtualPlan.NotFound`
+  (`Plan.NotFoundMessage`) and puts it into its own not-found error with `VirtualPlan.Unknown`, which keeps the format's code
+  (`MANIFEST_UNKNOWN`, `BLOB_UNKNOWN`, `NAME_UNKNOWN`). Debian's `members/<key>/` path is the exception: APT reads no body, and a member it names
+  that is a placeholder answers the format's plain 404.
+- `Explain` names a member of `upstream` as `upstream/<key>` to every caller (its key is the same in every installation), as `no-read`
+  when the caller cannot read it and never in `unreadableMembers`; a placeholder's line is `disabled` with `upstreamState`.
+- `Quader-Resolved-From` writes the member as the member list writes it: `upstream/npmjs`.
+- The usage store learns the virtual repository a member of `upstream` served a request of another project through: the bridge's tiers
+  call `limits.Charge.ServedThrough(member, virtual)` before a stored item of such a member is served and before its fetch, and put the
+  addressed repository back after a fetch that found nothing ([usage-and-limits.md](usage-and-limits.md#the-usage-of-a-well-known-member-through-a-teams-virtual-repository)).
 
 ### The merged-metadata cache
 
@@ -408,6 +464,7 @@ The management API already takes the engine (`Options.Resolution`, set in `start
 | [metadata_test.go](../../internal/virtual/metadata_test.go) | R-REPO-020 (different readable members, shared entries, the rev_seq check without any signal, partial merges, the fingerprint of D-7, expiry, early eviction, the areas), R-ARCH-015 across two engines |
 | [shadow_test.go](../../internal/virtual/shadow_test.go) | R-REPO-048: every outcome row, one probe per remote repository, no negative entry, concurrent probes |
 | [explain_test.go](../../internal/virtual/explain_test.go) | R-REPO-019 decisions, hidden members, `decidedBy` |
+| [upstream_test.go](../../internal/virtual/upstream_test.go) | R-AUTHZ-041's seven rows through the engine with the real decision point (a CI token, a service account's token, a user flagged external), and R-REPO-072: the sentence per state in a merge and in the tiers, none where the member's patterns keep the name away or on an endpoint with exposure rules, several placeholders, the explanation; under 1 s |
 | [exposure_test.go](../../internal/virtual/exposure_test.go) | R-EP-018: a member's failure of an artifact and of a document names only the addressed repository on an endpoint with rules and keeps code and `Retry-After`, a missing item is the one 404, the member stays visible elsewhere; R-EP-019: the members skipped on an endpoint without cache fill are counted, a subject's missing populate right is not |
 | [virtual_test.go (formathost)](../../internal/formathost/virtual_test.go) | the bridge: caller, descriptor, tiers on a request of the member, merger, deploy target, shadow outcome |
 | [resolution_api_test.go](../../internal/api/v1/resolution_api_test.go) | the operation: declared permission, descriptor, 400, 404, 503, answers validated against the document |

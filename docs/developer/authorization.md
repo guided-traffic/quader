@@ -138,7 +138,8 @@ Subject (who, groups, credential scope, MinEpoch)  +  Coordinate (repository, pa
 
 - `repos`: the active repositories by key with class, format, the levels of its artifacts and wiki (`artifacts`, `wiki`, [visibility.go](../../internal/authz/visibility.go)), `hideExistence`, virtual members and
   deploy target (the rows of `virtual_members` and `virtual_deploy_targets`, read in the same snapshot as
-  `Snapshot.VirtualMembers` and `DeployTargets`; the remaining settings are decoded from the `config` document by
+  `Snapshot.VirtualMembers` and `DeployTargets`; a member is named by its own project, `upstream/<key>` for a member of the built-in
+  project, a deploy target by the virtual repository's; the remaining settings are decoded from the `config` document by
   `parseRepoConfig`; [virtual.md](virtual.md));
 - `grants[repositoryID][principalID]`: the compiled grants (actions, package and path matchers, policy name). Selectors are
   expanded against the repository list; `NuGet` repositories compile their package patterns case-folded;

@@ -158,12 +158,17 @@ func (r *Resolver) plan(ctx context.Context, c Caller, v repository.Repository, 
 	for _, m := range candidates {
 		read, fill := r.o.Decider.MemberUsableOn(ctx, c.Index, c.Subject, m.Name, coord)
 		p.usable[m.Name.String()] = usable{read: read, fill: fill}
-		if !read {
+		// A member of the project upstream is named to every caller: its key is the same in every installation (R-REPO-019).
+		if !read && m.Upstream == nil {
 			p.Unreadable++
 		}
 	}
 	if !p.Admitted {
 		return p, nil
+	}
+	if !c.Rules {
+		// An endpoint with exposure rules names no member in an answer (R-EP-018), so its 404 names no placeholder either.
+		r.waitingFor(ctx, c, p, coord)
 	}
 	for _, m := range route.Members {
 		u := p.usable[m.Name.String()]
@@ -242,3 +247,43 @@ func (r *Resolver) DeployTarget(v repository.Repository) (repository.Repository,
 // notFound is the 404 of a resolution that found nothing. It is the same error for a package that
 // does not exist and for one that only exists in members the caller cannot read (R-AUTHZ-009 rule 8).
 func notFound() error { return authz.NotFound() }
+
+// waitingFor notes the placeholder a 404 of the plan names (R-REPO-072, Q-REPO-382): the first member of the project upstream
+// in list order that is not active, that the route would have kept had it been active (its patterns, the pin rules and the
+// claims, Route.Placeholders), and that the caller would read by its level or a grant once it is (step 4); a user flagged
+// external is not told about an internal one. The others the caller would read are counted.
+func (r *Resolver) waitingFor(ctx context.Context, c Caller, p *Plan, coord authz.Coordinate) {
+	for _, m := range p.Route.Placeholders {
+		if read, _ := r.o.Decider.MemberUsableOn(ctx, c.Index, c.Subject, m.Name, coord); !read {
+			continue
+		}
+		if p.waiting == nil {
+			w := m
+			p.waiting = &w
+			continue
+		}
+		p.othersWaiting++
+	}
+}
+
+// NotFoundMessage is the sentence of the placeholder a 404 of the plan names (R-REPO-072), "" when there is none: for a format
+// that walks the members of the plan itself (formats.VirtualPlan.NotFound).
+func (p *Plan) NotFoundMessage() string {
+	if p.waiting == nil || p.waiting.Upstream == nil {
+		return ""
+	}
+	return repository.PlaceholderSentence(p.waiting.Name, p.waiting.Upstream.State, p.othersWaiting)
+}
+
+// notFound is the 404 of a resolution of the plan that found nothing (R-REPO-019 step 7): the sentence of the placeholder the
+// caller would have been served from had it been active, when there is one, else the one 404 of every missing resource. The
+// kind and the code are the same either way, so each format answers its own not-found code and status; only the message
+// differs, and the format renders it in its error shape (R-REPO-072).
+func (p *Plan) notFound() error {
+	if p.waiting != nil && p.waiting.Upstream != nil {
+		if e := repository.PlaceholderNotFound(p.waiting.Name, p.waiting.Upstream.State, p.othersWaiting); e != nil {
+			return e
+		}
+	}
+	return notFound()
+}

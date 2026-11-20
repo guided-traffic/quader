@@ -39,16 +39,16 @@ type vmember struct {
 func (m vmember) key() string { return m.pm.Member.Name.Key }
 
 // members plans the request for the path, as the client typed the name, and returns the members that take part: local members first, in
-// member order, then remote members in member order (R-OCI-027). A path the repository's patterns or the claims keep from the repository
-// has no member.
-func (f *Format) members(ctx context.Context, rq *formats.Request, path string) (locals, remotes []vmember, err error) {
+// member order, then remote members in member order (R-OCI-027), and the plan, whose Unknown words the walk's not-found answer (a
+// placeholder's sentence, R-REPO-072). A path the repository's patterns or the claims keep from the repository has no member.
+func (f *Format) members(ctx context.Context, rq *formats.Request, path string) (locals, remotes []vmember, plan *formats.VirtualPlan, err error) {
 	p := formats.Path{Path: path}
-	plan, err := rq.Host.Resolver().Plan(ctx, rq, p, f.Classify(p))
+	plan, err = rq.Host.Resolver().Plan(ctx, rq, p, f.Classify(p))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if !plan.Admitted {
-		return nil, nil, nil
+		return nil, nil, plan, nil
 	}
 	all := rq.Repo.Members()
 	for _, pm := range plan.Members {
@@ -58,7 +58,7 @@ func (f *Format) members(ctx context.Context, rq *formats.Request, path string) 
 			}
 			mrq, err := rq.Member(&all[i])
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			if pm.Tier == formats.TierLocal {
 				locals = append(locals, vmember{pm, mrq})
@@ -68,7 +68,7 @@ func (f *Format) members(ctx context.Context, rq *formats.Request, path string) 
 			break
 		}
 	}
-	return locals, remotes, nil
+	return locals, remotes, plan, nil
 }
 
 // resolvedWriter puts Quader-Resolved-From on the answer of the member that serves it, when the status line goes out, so that a member
@@ -190,7 +190,7 @@ func (f *Format) virtualManifestGet(ctx context.Context, rq *formats.Request, w 
 	if err := rq.Host.Authorize(ctx, rq, formats.Target{Package: name, Version: ref, Path: path, Actions: []formats.Action{formats.ActionRead}}); err != nil {
 		return err
 	}
-	locals, remotes, err := f.members(ctx, rq, path)
+	locals, remotes, plan, err := f.members(ctx, rq, path)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (f *Format) virtualManifestGet(ctx context.Context, rq *formats.Request, w 
 	for _, m := range append(locals, remotes...) {
 		steps = append(steps, step{m, func(w http.ResponseWriter) error { return f.handleManifestGet(ctx, m.rq, w) }})
 	}
-	return walk(ctx, rq, w, steps, errManifestUnknown)
+	return walk(ctx, rq, w, steps, func() error { return plan.Unknown(errManifestUnknown()) })
 }
 
 // virtualBlobGet is GET and HEAD of a blob through a virtual repository.
@@ -232,22 +232,23 @@ func (f *Format) blobLookup() lookup {
 // of the remote members, without asking an upstream; then the upstreams of the remote members the caller may fill. The bytes are the
 // same wherever they are found, so the first tier that has them serves them.
 func (f *Format) virtualByDigest(ctx context.Context, rq *formats.Request, w http.ResponseWriter, name, digest string, l lookup) error {
-	steps, err := f.digestSteps(ctx, rq, name, digest, l, true)
+	steps, plan, err := f.digestSteps(ctx, rq, name, digest, l, true)
 	if err != nil {
 		return err
 	}
-	return walk(ctx, rq, w, steps, l.unknown)
+	return walk(ctx, rq, w, steps, func() error { return plan.Unknown(l.unknown()) })
 }
 
-// digestSteps are the steps of the three tiers; withFetch false leaves the third out (the link step reads, it never fetches).
-func (f *Format) digestSteps(ctx context.Context, rq *formats.Request, name, digest string, l lookup, withFetch bool) ([]step, error) {
+// digestSteps are the steps of the three tiers and the plan they come from; withFetch false leaves the third out (the link step reads,
+// it never fetches).
+func (f *Format) digestSteps(ctx context.Context, rq *formats.Request, name, digest string, l lookup, withFetch bool) ([]step, *formats.VirtualPlan, error) {
 	path := l.pathOf(name, digest)
 	if err := rq.Host.Authorize(ctx, rq, formats.Target{Package: name, Path: path, Actions: []formats.Action{formats.ActionRead}}); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	locals, remotes, err := f.members(ctx, rq, path)
+	locals, remotes, plan, err := f.members(ctx, rq, path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	get := func(m vmember) func(http.ResponseWriter) error {
 		return func(w http.ResponseWriter) error { return l.get(ctx, m.rq, w) }
@@ -266,7 +267,7 @@ func (f *Format) digestSteps(ctx context.Context, rq *formats.Request, name, dig
 			}
 		}
 	}
-	return steps, nil
+	return steps, plan, nil
 }
 
 // serveCached serves what the cache of a remote member holds at the path of the digest, without a request to the upstream. The caller's
@@ -401,7 +402,7 @@ func (f *Format) virtualTagsList(ctx context.Context, rq *formats.Request, w htt
 	if last != "" && !ValidTag(last) {
 		return errs.E(errs.Invalid, errs.CodeOCITagInvalid, "The parameter last is not a tag.")
 	}
-	locals, remotes, err := f.members(ctx, rq, TaglistPath(name))
+	locals, remotes, plan, err := f.members(ctx, rq, TaglistPath(name))
 	if err != nil {
 		return err
 	}
@@ -438,7 +439,7 @@ func (f *Format) virtualTagsList(ctx context.Context, rq *formats.Request, w htt
 		return asAddressed(rq, failure)
 	}
 	if !held {
-		return errs.E(errs.NotFound, errs.CodeOCINameUnknown, "No member of the repository holds anything of the image name.")
+		return plan.Unknown(errs.E(errs.NotFound, errs.CodeOCINameUnknown, "No member of the repository holds anything of the image name."))
 	}
 	merged, err := virtualAdapter{}.Merge(ctx, rq, formats.Path{Path: TaglistPath(name)}, docs)
 	if err != nil {
@@ -525,7 +526,7 @@ func (f *Format) virtualReferrers(ctx context.Context, rq *formats.Request, w ht
 		}
 		after = &d
 	}
-	locals, remotes, err := f.members(ctx, rq, path)
+	locals, remotes, plan, err := f.members(ctx, rq, path)
 	if err != nil {
 		return err
 	}
@@ -582,7 +583,7 @@ func (f *Format) virtualReferrers(ctx context.Context, rq *formats.Request, w ht
 		if failure != nil {
 			return asAddressed(rq, failure)
 		}
-		return errs.E(errs.NotFound, errs.CodeOCINameUnknown, "No member of the repository serves referrers for this digest.")
+		return plan.Unknown(errs.E(errs.NotFound, errs.CodeOCINameUnknown, "No member of the repository serves referrers for this digest."))
 	}
 	slices.SortStableFunc(union, func(a, b unionDesc) int { return cmp.Compare(a.digest, b.digest) })
 	union = slices.CompactFunc(union, func(a, b unionDesc) bool { return a.digest == b.digest })

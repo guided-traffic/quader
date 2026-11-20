@@ -1335,6 +1335,7 @@ type UsageBucket struct {
 	LimitUncachedHour pgtype.Int8
 	LimitUpstreamHour pgtype.Int8
 	LimitBytesDay     pgtype.Int8
+	ViaRepositoryID   pgtype.Int8
 }
 
 type UsageDailySummary struct {

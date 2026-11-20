@@ -17,7 +17,9 @@ import (
 )
 
 // Router is a virtual.Router with configurable answers. By default a request is admitted and every
-// member of the virtual repository takes part.
+// member of the virtual repository takes part but a placeholder, a member of the project upstream that
+// is not active, which is dropped as disabled and is one of the route's Placeholders unless Dropped
+// gives it another reason (R-REPO-072).
 type Router struct {
 	mu sync.Mutex
 	// Dropped maps a member key to the reason it takes no part.
@@ -46,11 +48,18 @@ func (r *Router) Route(_ context.Context, v repository.Repository, _ repository.
 	r.Routes++
 	out := repository.Route{Admitted: !r.NotAdmitted, Dropped: map[qname.Repo]string{}, Decision: r.Decision}
 	for _, m := range v.Members() {
-		if why, ok := r.Dropped[m.Name.Key]; ok {
+		why, ok := r.Dropped[m.Name.Key]
+		switch {
+		case m.Placeholder():
+			out.Dropped[m.Name] = repository.DropDisabled
+			if !ok {
+				out.Placeholders = append(out.Placeholders, m)
+			}
+		case ok:
 			out.Dropped[m.Name] = why
-			continue
+		default:
+			out.Members = append(out.Members, m)
 		}
-		out.Members = append(out.Members, m)
 	}
 	return out, nil
 }

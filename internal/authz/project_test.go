@@ -87,7 +87,14 @@ func (f *fixture) assign(repo, project string) *fixture {
 	}
 	for i := range f.s.Repositories {
 		if f.s.Repositories[i].Key == repo {
+			old := f.s.Repositories[i].ProjectKey
 			f.s.Repositories[i].ProjectID, f.s.Repositories[i].ProjectKey = project, key
+			// The rows of the virtual repositories that list it name it with its project, as the query does.
+			for j := range f.s.VirtualMembers {
+				if m := &f.s.VirtualMembers[j]; m.MemberKey == repo && m.MemberProject == old {
+					m.MemberProject = key
+				}
+			}
 			return f
 		}
 	}

@@ -4,18 +4,21 @@
 
 -- name: UpsertUsageBuckets :execrows
 -- One flush of the usage buffer (R-LIM-028): a JSON array of rows, each added to its bucket. The rows go in in key order so
--- that the batches of several replicas do not deadlock on each other's rows; a row of a repository deleted since is dropped.
+-- that the batches of several replicas do not deadlock on each other's rows; a row of a repository deleted since is dropped,
+-- and a row whose virtual repository (via, Q-LIM-63) was deleted since keeps its serving repository without it.
 INSERT INTO usage_bucket AS b (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, repository_id,
+                               via_repository_id,
                                requests, refused, cached_bytes, uncached_bytes, upstream_requests, background_fetches,
                                limit_requests_hour, limit_cached_hour, limit_uncached_hour, limit_upstream_hour, limit_bytes_day)
 SELECT d ->> 'g', (d ->> 's')::timestamptz, d ->> 'k', d ->> 'r', d ->> 'c', d ->> 'p', NULLIF((d ->> 'repo')::bigint, 0),
+       (SELECT v.id FROM repositories v WHERE v.id = NULLIF((d ->> 'via')::bigint, 0)),
        (d ->> 'rq')::bigint, (d ->> 'rf')::bigint, (d ->> 'cb')::bigint, (d ->> 'ub')::bigint, (d ->> 'up')::bigint,
        (d ->> 'bg')::bigint,
        (d ->> 'lrh')::bigint, (d ->> 'lch')::bigint, (d ->> 'luh')::bigint, (d ->> 'lup')::bigint, (d ->> 'lbd')::bigint
   FROM jsonb_array_elements(sqlc.arg(rows)::text::jsonb) AS d
  WHERE NULLIF((d ->> 'repo')::bigint, 0) IS NULL OR EXISTS (SELECT 1 FROM repositories r WHERE r.id = (d ->> 'repo')::bigint)
- ORDER BY d ->> 'g', d ->> 's', d ->> 'k', d ->> 'r', d ->> 'c', d ->> 'p', (d ->> 'repo')::bigint
-ON CONFLICT (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, repository_id) DO UPDATE
+ ORDER BY d ->> 'g', d ->> 's', d ->> 'k', d ->> 'r', d ->> 'c', d ->> 'p', (d ->> 'repo')::bigint, (d ->> 'via')::bigint
+ON CONFLICT (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, repository_id, via_repository_id) DO UPDATE
    SET requests = b.requests + EXCLUDED.requests, refused = b.refused + EXCLUDED.refused,
        cached_bytes = b.cached_bytes + EXCLUDED.cached_bytes, uncached_bytes = b.uncached_bytes + EXCLUDED.uncached_bytes,
        upstream_requests = b.upstream_requests + EXCLUDED.upstream_requests,
@@ -36,13 +39,16 @@ ON CONFLICT (granularity, bucket_start, subject_kind, subject_ref, place, reposi
    SET count = e.count + EXCLUDED.count;
 
 -- name: UsageTotals :many
--- The consumption of every subject in a period and scope (R-LIM-034): one row per subject. repos empty is the instance.
+-- The consumption of every subject in a period and scope (R-LIM-034): one row per subject. repos empty is the instance. A
+-- scope holds the rows its repositories served and the rows its virtual repositories took from a well-known repository
+-- (via_repository_id, R-LIM-029, Q-LIM-63); a row matches the scope once, whichever of its two repositories is in it.
 SELECT b.subject_kind, b.subject_ref,
        sum(b.requests)::bigint AS requests, sum(b.refused)::bigint AS refused, sum(b.cached_bytes)::bigint AS cached_bytes,
        sum(b.uncached_bytes)::bigint AS uncached_bytes, sum(b.upstream_requests)::bigint AS upstream_requests
   FROM usage_bucket b
  WHERE b.granularity = sqlc.arg(granularity) AND b.bucket_start >= sqlc.arg(since)::text::timestamptz
-   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[]))
+   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[])
+        OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
    AND b.subject_kind = ANY(sqlc.arg(kinds)::text[])
    AND (sqlc.arg(subject_ref)::text = '' OR b.subject_ref = sqlc.arg(subject_ref)::text)
  GROUP BY b.subject_kind, b.subject_ref;
@@ -74,7 +80,8 @@ SELECT b.subject_kind, b.subject_ref, b.place,
                 AND b.limit_upstream_hour IS NULL AND b.limit_bytes_day IS NULL)::boolean AS unlimited
   FROM usage_bucket b
  WHERE b.granularity = '5m' AND b.bucket_start >= sqlc.arg(day_since)::text::timestamptz
-   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[]))
+   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[])
+        OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
    AND (sqlc.arg(subject_ref)::text = '' OR b.subject_ref = sqlc.arg(subject_ref)::text)
  GROUP BY b.subject_kind, b.subject_ref, b.place;
 
@@ -86,7 +93,8 @@ SELECT b.bucket_start, sum(b.requests)::bigint AS requests, sum(b.refused)::bigi
   FROM usage_bucket b
  WHERE b.granularity = '5m' AND b.bucket_start >= sqlc.arg(since)::text::timestamptz AND b.subject_kind = sqlc.arg(subject_kind)
    AND b.subject_ref = sqlc.arg(subject_ref)
-   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[]))
+   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[])
+        OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
  GROUP BY b.bucket_start
  ORDER BY b.bucket_start;
 
@@ -110,7 +118,8 @@ SELECT COALESCE(b.repository_id, 0)::bigint AS repository_id, COALESCE(p.key, ''
   LEFT JOIN project p ON p.id = r.project_id
  WHERE b.granularity = sqlc.arg(granularity) AND b.bucket_start >= sqlc.arg(since)::text::timestamptz AND b.subject_kind = sqlc.arg(subject_kind)
    AND b.subject_ref = sqlc.arg(subject_ref)
-   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[]))
+   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[])
+        OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
  GROUP BY b.repository_id, p.key, r.key
  ORDER BY sum(b.requests) DESC;
 
@@ -121,7 +130,8 @@ SELECT b.credential_ref, sum(b.requests)::bigint AS requests, sum(b.cached_bytes
   FROM usage_bucket b
  WHERE b.granularity = sqlc.arg(granularity) AND b.bucket_start >= sqlc.arg(since)::text::timestamptz AND b.subject_kind = 'user'
    AND b.subject_ref = sqlc.arg(subject_ref)
-   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[]))
+   AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[])
+        OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
  GROUP BY b.credential_ref
  ORDER BY sum(b.requests) DESC;
 

@@ -61,7 +61,7 @@ a body, the usage store behind the overview, the API and the screens. The techni
 | Background requests | `fetcher.run` | `Engine.System(repo)`: upstream requests and uncached bytes recorded under `system`, checked against nothing; a request that carries `proxy.Request.Charge` (a probe's background download) is charged to it instead, `Charge.Exchange` counting every exchange after the first |
 | A probe's background download | [formathost/probe.go](../../internal/formathost/probe.go) `decide`; [limits/background.go](../../internal/limits/background.go) | The decision runs `Charge.StartBackground`: a charge of the probe's subject and budget key (`Charge.Background`) passes step 9a now, counted for the key and the ceiling; a refusal in enforce starts nothing and counts no background download. The admitted charge travels with the job as a `limits.Ticket`, and the worker resumes it (`Engine.Resume`): uncached bytes for the key and the ceiling, no lease, no pacing (R-LIM-037, Q-LIM-54). Through a virtual repository the key is the one stage 7 resolved at the virtual repository and `StartBackground` is called with the serving member's ID: its ceiling, its usage row (Q-LIM-2, Q-REPO-367) |
 | The flush | [limits/flush.go](../../internal/limits/flush.go) `Engine.Flush` | Once a second, one batch: `INCRBY` of the bytes and refusals of every budget key and ceiling, `ZREM` of ended leases, `ZADD XX` renewals of leases older than 20 s, `ZCARD` of paced keys, the block markers found due; then the deltas to the usage buffer |
-| The usage buffer | [limits/usage/buffer.go](../../internal/limits/usage/buffer.go) `Buffer.Flush` | Every ten seconds one transaction: one upsert of the five-minute and hourly rows, one of the limit events, in key order |
+| The usage buffer | [limits/usage/buffer.go](../../internal/limits/usage/buffer.go) `Buffer.Flush` | Every ten seconds one transaction: one upsert of the five-minute and hourly rows, one of the limit events, in key order; a row's key holds the serving repository and the virtual repository of another project it was reached through ([below](#the-usage-of-a-well-known-member-through-a-teams-virtual-repository)) |
 | The request record | [httplimit.go](../../internal/limits/httplimit/httplimit.go) `Log`; [dispatcher.go](../../internal/api/dispatch/dispatcher.go) `serveRoute` | `observability.LimitsFields`: `limits_subject`, `limits_place`, `limits_rule`, `limits_outcome`, `bytes_cached`, `bytes_uncached` as fields of their own, null off the protocol paths; the dispatcher records the repository and the format of what it serves, the stage the addressed repository where nothing else did (`project` is the repository's project); a refusal's `limit_mode` is the counter's mode, `cluster` or `fallback` (Q-LIM-51) |
 
 ## Package layout
@@ -76,10 +76,36 @@ a body, the usage store behind the overview, the API and the screens. The techni
 
 Migrations: [00081_limits.sql](../../internal/meta/postgres/migrations/00081_limits.sql) (profiles with the five built-ins, rules with
 the built-in rule set, ceilings, project maxima, settings, blocks, the change area `limits`),
-[00082_usage.sql](../../internal/meta/postgres/migrations/00082_usage.sql) and
+[00082_usage.sql](../../internal/meta/postgres/migrations/00082_usage.sql),
 [00085_limits_request_bursts.sql](../../internal/meta/postgres/migrations/00085_limits_request_bursts.sql) (the built-ins' request
-figures from the measurement of Q-LIM-59; `BuiltinProfiles` in `model.go` holds the same numbers); queries in
+figures from the measurement of Q-LIM-59; `BuiltinProfiles` in `model.go` holds the same numbers) and
+[00087_usage_via.sql](../../internal/meta/postgres/migrations/00087_usage_via.sql) (`usage_bucket.via_repository_id` in the row's key,
+Q-LIM-63); queries in
 [limits.sql](../../internal/meta/postgres/queries/limits.sql) and [limits_usage.sql](../../internal/meta/postgres/queries/limits_usage.sql).
+
+## The usage of a well-known member through a team's virtual repository
+
+A virtual repository of a team may list a repository of the built-in project `upstream` ([wellknown.md](wellknown.md)). Which limits
+apply to such a request is Q-LIM-2's rule, unchanged ([Q-LIM-62](../spec/usage-and-limits.md#q-lim-62--a-request-through-a-virtual-repository-to-a-well-known-member-is-decided-at-the-addressed-repository-and-the-members-ceilings-bound-it)):
+stage 7 resolves the place at the addressed virtual repository, so the team's rules decide, and step 9a charges the ceiling of the
+remote that fetches, the well-known member's (`Charge.MayFetch` with the member's ID), so its ceilings bound every project's callers
+together. Nothing in the engine knows the project `upstream`.
+
+What it records ([Q-LIM-63](../spec/usage-and-limits.md#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository),
+[Q-LIM-75](../spec/usage-and-limits.md#q-lim-75--via_repository_id-names-the-request-a-well-known-member-served-and-nothing-else)):
+
+- The bridge's tiers ([formathost/virtual.go](../../internal/formathost/virtual.go), `tiers.through`) call
+  `Charge.ServedThrough(member, virtual)` when a member of `upstream` serves a request of a virtual repository of another project:
+  before a stored item is served, and before the fetch of the remote tier, putting the addressed repository back after a fetch that
+  found nothing. `Charge.viaOf` names the virtual repository only while that member is the repository that served.
+- The flush hands `UsageDelta.ViaRepoID` to the usage buffer, which keys the row by it; `UpsertUsageBuckets` writes
+  `via_repository_id` (NULL for a virtual repository deleted since). One member reached through two virtual repositories is two rows.
+- The reads of a scope (`UsageTotals`, `UsageByPlace`, `UsageHistory`, `UsageRepositories`, `UsageCredentials`) take a row whose
+  serving repository or whose `via_repository_id` is in the scope, so a project's Owner, and the overview narrowed to the virtual
+  repository, see what the team's builds took from the central repository (R-LIM-029), and the central repository's own scope keeps
+  its total.
+- Not carried: a merged document of several members (no member served it; its row is the addressed repository's, as before), the limit
+  events (`usage_limit_event` keeps the serving repository) and the daily sums.
 
 ## Configuration
 
@@ -123,6 +149,8 @@ of step 9a. No PostgreSQL statement runs on a request: the index is in memory, t
 | [ratelimit_test.go](../../internal/api/v1/ratelimit_test.go) | In `audit` nothing on a protocol path is refused by a class; in `enforce` `package_write` on `/api/<format>/`, `/files/` and `/v2/`, keyed by the subject (Q-LIM-4, Q-LIM-27) |
 | [ifmatch_test.go](../../internal/api/v1/ifmatch_test.go) | A project's first maximum by `PUT` without `If-Match`, a replace with it (Q-API-354) |
 | [requestlog_test.go](../../internal/observability/requestlog_test.go) | The limits' fields of the request record, null off the protocol paths |
+| `TestR_LIM_027_TheVirtualRepositoryAWellKnownMemberServedThroughNamesTheRowWhileItServes` ([charge_via_test.go](../../internal/limits/charge_via_test.go)), `TestR_LIM_027_AWellKnownMemberThroughTwoVirtualRepositoriesIsTwoRows` ([buffer_test.go](../../internal/limits/usage/buffer_test.go)) | `ServedThrough` and `viaOf`; the buffer keys a row by the virtual repository (Q-LIM-63); milliseconds |
+| `TestR_LIM_027_AWellKnownMemberServedThroughATeamsVirtualRepositoryRecordsTheVirtualRepository` ([via_test.go](../../test/integration/limits/via_test.go)) | A tarball of the test upstream fetched through `npm-all` at `upstream/npmjs`: the row with `via_repository_id`, none without it, and the overview narrowed to `npm-all` listing the reader (R-LIM-029); about 3 s, one tarball of about 1 KiB |
 | Integration set `limits` ([test/integration/limits](../../test/integration/limits)) | A cached download's round trips, Audit and Enforce, a failed credential, the overview; `TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken` (a docker-style exchange with a technical token's secret, then a `/v2/` request); `TestR_LIM_028_ADeletedTechnicalTokensRuleGoesAndItsUsageStays` (the token record's `limit`, a run of `limits-cleanup`, which also runs the fold of the hourly rows into the daily sums: `FoldUsageDays` grouped by an expression its subqueries named ungrouped and failed every run until 2026-11-19); `TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch`; `TestR_LIM_019_WithValkeyStoppedTheReplicaDecidesOnItsShare` |
 | Integration set `limits`, [figures_test.go](../../test/integration/limits/figures_test.go) | Each figure and subject once, without a format's client (Q-LIM-55): `TestR_LIM_021_…` (the day's volume: the crossing download completes, the next is refused before its first byte; the hour's requests), `TestR_LIM_024_…` (a download slowed to the floor while a parallel one is refused; neither in Audit), `TestR_LIM_024_WaitingDownloadsHoldAtMostTheirShareOfTheRequestSlots` (eight slots: two downloads wait, the next is refused at once, another caller is served; about 10 s), `TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsNotBlocked` (a retry every second at one request a second admitted again, a `Retry-After` that holds, a token that sends 20 requests a second for 3 s held to its figure's rate, not blocked, its `refusedPerHour` at 0; the take against the stack's Valkey with Sentinel; about 17 s), `TestR_LIM_025_…` (a token's refused writes block its budget key and nothing else, a reader's misses block nothing, an address blocked by wrong credentials serves a valid one, the lift, no block in Audit), `TestR_LIM_001_EachSubjectSpendsItsOwnBudget` (a user's two personal tokens share one budget; two technical tokens of one account have two, at the instance, the project and the repository; an address and an IPv6 `/64`; an administrator), `TestR_LIM_022_…` (the anonymous ceiling of an npm remote against a second address, a signed-in caller served, its own upstream bytes used up while the cached document is served), `TestR_LIM_026_TheSwitchReachesEveryReplicaWithinSeconds`. A rule there is the profile Unlimited with the one figure under test as an override; `X-Forwarded-For` from a trusted loopback makes two addresses |
 | One case per format's e2e set (`Test<Format>Limits_R_LIM_020_…`, [e2e.md](e2e.md#what-a-new-format-adds-to-the-tests)) | What the format's client prints at a refusal, whether it retries, how it exits: the manual's table of the clients |

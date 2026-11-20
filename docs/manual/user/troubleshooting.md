@@ -78,6 +78,11 @@ A `404` with `not_found` has several causes, and Quader does not say which, by d
 - The package lives in a member of the virtual repository that you cannot read. A token limited to the virtual repository reads none of its members.
 - An exposure rule of the endpoint you use hides the package or version, or the repository's name patterns refuse the name.
 - A remote repository is offline and the package is not cached (`not_cached_offline`).
+- The virtual repository lists a public registry of the project `upstream` that is not in use: an administrator of Quader has not
+  switched it on yet, has switched it off, or Quader no longer offers it. Here the error says so, in one sentence such as
+  "upstream/npmjs is a member of this virtual repository, but an administrator of Quader has not switched it on." The name resolves
+  through the registry as soon as an administrator switches it on, with no change to your configuration; until then, ask an
+  administrator or publish the package to a local member. You are not told this for a registry you could not read once it is on.
 - The registry address lacks the project key (`/api/npm/<project>/<key>/`), or the repository was moved to another project and has a new address.
 - The command is not implemented: `npm deprecate`, npm's token and profile commands.
 

@@ -57,7 +57,9 @@ remote repositories are applied by the repository service to a `Restricted` call
   see is 404 and a caller without a credential gets 401 while nothing is public (Q-API-249).
 - **A move refuses, it never rewrites.** Anything of the source project that names the repository refuses it with
   `repository_in_use` and the list of references; for a restricted caller (an Owner without `repositories:write-config`, the
-  handler passes `restricted`) a key selector of a global policy as well (`global_policy`, Q-REPO-232).
+  handler passes `restricted`) a key selector of a global policy as well (`global_policy`, Q-REPO-232). A virtual repository's members
+  of the built-in project `upstream` are no reference: they are valid in every project and move with it (`ProjectRepositoryReferences`
+  lists only the members of the source project, Q-REPO-389).
 
 ## The contracts
 

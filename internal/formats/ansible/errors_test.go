@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 func writeError(t *testing.T, method, target string, err error) *httptest.ResponseRecorder {
@@ -132,5 +135,19 @@ func TestR_ANS_007_BelowV1(t *testing.T) {
 		if got := belowV1(httptest.NewRequest("GET", p, nil)); got != want {
 			t.Errorf("belowV1(%q) = %v, want %v", p, got, want)
 		}
+	}
+}
+
+// TestR_REPO_072_APlaceholdersSentenceIsTheDetailTheGalaxyClientPrints: the 404 of a name a placeholder would have been asked for keeps
+// the Galaxy's status and code, and its sentence is the detail the client prints first (R-ANS-007).
+func TestR_REPO_072_APlaceholdersSentenceIsTheDetailTheGalaxyClientPrints(t *testing.T) {
+	member := qname.Repo{Project: wellknown.ProjectKey, Key: "galaxy"}
+	w := writeError(t, "GET", "/api/ansible/web/ansible-all/v3/collections/acme/tools/", repository.PlaceholderNotFound(member, wellknown.StateRetired, 0))
+	var b v3Body
+	if err := json.Unmarshal(w.Body.Bytes(), &b); err != nil || w.Code != 404 || len(b.Errors) != 1 {
+		t.Fatalf("status %d body %s: %v", w.Code, w.Body.String(), err)
+	}
+	if want := repository.PlaceholderSentence(member, wellknown.StateRetired, 0); b.Errors[0].Detail != want || b.Errors[0].Code != "not_found" {
+		t.Fatalf("error = %+v, want the detail %q", b.Errors[0], want)
 	}
 }

@@ -361,9 +361,11 @@ func (b *builder) addProjects(rows []q.AuthzBuildProjectsRow, members []q.AuthzB
 }
 
 func (b *builder) addRepositories(rows []q.AuthzBuildRepositoriesRow, members []q.AuthzBuildVirtualMembersRow, targets []q.AuthzBuildDeployTargetsRow) {
-	memberKeys := map[int64][]string{} // bare keys: a virtual repository holds repositories of its own project
+	// A member is named by its own project: the virtual repository's, or the built-in project upstream, whose repositories a
+	// virtual repository of any project lists (R-REPO-071). A deploy target is always of the virtual repository's project (AI006).
+	memberNames := map[int64][]qname.Repo{}
 	for _, m := range members {
-		memberKeys[m.VirtualID] = append(memberKeys[m.VirtualID], m.MemberKey)
+		memberNames[m.VirtualID] = append(memberNames[m.VirtualID], qname.Repo{Project: m.MemberProject, Key: m.MemberKey})
 	}
 	targetKey := map[int64]string{}
 	for _, t := range targets {
@@ -372,10 +374,7 @@ func (b *builder) addRepositories(rows []q.AuthzBuildRepositoriesRow, members []
 	for _, r := range rows {
 		cfg, ok := parseRepoConfig(r.Config)
 		project := r.ProjectKey
-		var members []qname.Repo
-		for _, k := range memberKeys[r.ID] {
-			members = append(members, qname.Repo{Project: project, Key: k})
-		}
+		members := memberNames[r.ID]
 		var target qname.Repo
 		if k := targetKey[r.ID]; k != "" {
 			target = qname.Repo{Project: project, Key: k}

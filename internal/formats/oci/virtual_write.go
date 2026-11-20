@@ -87,7 +87,7 @@ func readRequest(rq *formats.Request, name, digest string) *formats.Request {
 // tiers of R-REPO-019 step 6): the link step brings in what a member holds, it never fetches. ok is false when no member holds it.
 func (f *Format) memberManifest(ctx context.Context, rq *formats.Request, name, digest string) (data []byte, mediaType string, ok bool, err error) {
 	grq := readRequest(rq, name, digest)
-	steps, err := f.digestSteps(ctx, grq, name, digest, f.manifestLookup(), false)
+	steps, _, err := f.digestSteps(ctx, grq, name, digest, f.manifestLookup(), false)
 	if err != nil {
 		return nil, "", false, err
 	}

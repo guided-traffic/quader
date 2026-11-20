@@ -267,7 +267,11 @@ member refused).
 
 ## A well-known member read through a team's virtual repository
 
-Specified, not built ([authorization.md](../spec/authorization.md) R-AUTHZ-041, Q-AUTHZ-302). A member of the built-in project
+No code of its own ([authorization.md](../spec/authorization.md) R-AUTHZ-041, Q-AUTHZ-302): the decision is `MemberUsableOn` as for every
+member, and the worked rows of R-AUTHZ-041 are tests of the engine and of the virtual engine
+([upstream_rows_test.go](../../internal/authz/upstream_rows_test.go), [upstream_test.go](../../internal/virtual/upstream_test.go)) and, with a
+CI token (with and without a scope that names the virtual repository), a service account's token and an external user's token, of the
+integration area `upstream`. A member of the built-in project
 `upstream` is decided through a team's virtual repository as every member is: on its own level and the grants that name it. Nothing of
 the virtual repository's grants or roles reaches it, so listing it in a virtual repository opens it to nobody its level does not
 already admit. By the level `internal` of R-AUTHZ-030, an `internal` well-known repository is read by every signed-in
@@ -275,6 +279,14 @@ subject that is not a user flagged external or that user's token: a team's CI to
 account carries no external flag), an external member of the team skips it. A `private` one is read only by whom a global policy or a
 capability admits. A request through a Bastion is decided as the same request at the main installation's own door (R-AUTHZ-030,
 Q-BAS-148); the endpoint's exposure decides what is served.
+
+The grant index names such a member by its own project (`upstream/npmjs` in `web/npm-all`: `AuthzBuildVirtualMembers` returns the
+member's project and `addRepositories` in [index.go](../../internal/authz/index.go) uses it), so every question of the index that walks a
+virtual repository's members meets the member under its name: a token whose scope names the virtual repository by its exact name reads
+the member through it on the member's level or grants (`Index.reaches`, the lift above); an anonymous caller is asked to sign in while the
+member is not public (`publicThroughout`, R-AUTHZ-009 rule 6); a listing through the virtual repository decides the member's rows as reads
+through it (`addressedReaches`, Q-AUTHZ-168); and a Bastion's reach of the virtual repository counts the member (`reach.go`, R-BAS-012).
+`TestR_AUTHZ_009_TheGrantIndexFollowsAMemberOfUpstream` and row 8 of `TestR_AUTHZ_041_…` hold the four.
 
 ## What Valkey can do to authorization
 

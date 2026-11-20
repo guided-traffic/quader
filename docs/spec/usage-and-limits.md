@@ -1239,7 +1239,11 @@ repository's current project.
 `via_repository_id` is the virtual repository the client addressed when the repository that served is a well-known repository of the
 project `upstream` and the virtual repository belongs to another project; null otherwise
 ([Q-LIM-63](#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository)).
-The daily sums keep the serving repository only.
+It names a request the member served, a stored item or a fetch of its remote tier; a merged document of several members is the
+addressed repository's row as before, and a virtual repository deleted since leaves the column null. The daily sums and the limit
+events (`usage_limit_event`) keep the serving repository only
+([Q-LIM-75](#q-lim-75--via_repository_id-names-the-request-a-well-known-member-served-and-nothing-else)). A scope of the overview
+holds a row whose serving repository or whose `via_repository_id` is in it (R-LIM-029).
 
 ### R-LIM-028 · Writing the usage store, erasure and addresses
 Priority: **MVP** · Covers: BEYOND-030
@@ -2790,6 +2794,29 @@ is the installation's own work, bounded by its own capacity (replicas × slots),
 would revisit this if a rescan of a large registry shows up in the overview as a burden the operator wants to bound.
 
 **Applied in the spec:** R-LIM-001; [formats/oci.md](formats/oci.md) R-OCI-037; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-042.
+
+### Q-LIM-75 · `via_repository_id` names the request a well-known member served, and nothing else
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-LIM-63 adds `via_repository_id` to the rows of `usage_bucket` and says the Owner of the virtual repository's project sees them.
+Building it raised what else of a request through a virtual repository carries it: the usage store records a request under the repository
+that served it, a merged document of several members is served by none, and the limit events (`usage_limit_event`) are a table of their
+own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The column names only a request a member of `upstream` served (a stored item, a fetch of its remote tier); a merge stays the addressed repository's row; the limit events and the daily sums keep the serving repository (chosen) | One key column, as Q-LIM-63 specified; the bridge's tiers record the member and the virtual repository together (`Charge.ServedThrough`) | The team's rows are what its builds took from the central repository; nothing is counted twice; no second key change | A limit the team's caller met while a central member served it (a pacing in Audit) is counted at the central repository and not in the team's events |
+| (b) Every row of a request through a virtual repository of another project carries it, a merge included | The addressed repository in every row | One rule | A merge's row would name a serving repository that did not serve |
+| (c) The limit events carry it too | A column and a key of `usage_limit_event` as well | The team sees every event of its builds | A second key change for a count that is rare at a member, since the refusals of a team's caller are decided at its virtual repository, whose rows the team sees |
+
+**Choice:** (a).
+
+**Rationale:** the refusals that decide a team's share happen at the addressed repository (Q-LIM-2), and their events are already the team's;
+what a central member adds is the bytes and requests it served, which is what the column carries. The development agent would revisit this
+if Owners ask for the limits their callers met at a central repository.
+
+**Applied in the spec:** R-LIM-027.
 
 ## What this does not cover
 

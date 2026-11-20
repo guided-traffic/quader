@@ -63,13 +63,24 @@ func (f *fixture) repo(key, class, format, cfg string) *fixture {
 	// A test may store a document that does not parse (an unreadable
 	// configuration); it has no rows to split off.
 	_ = json.Unmarshal([]byte(cfg), &doc)
+	project := testProject(key)
 	for _, m := range doc.Virtual.Members {
-		f.s.VirtualMembers = append(f.s.VirtualMembers, q.AuthzBuildVirtualMembersRow{VirtualID: f.next, MemberKey: m})
+		// A member is a key of the virtual repository's project, or <project>/<key> of another one (upstream/npmjs, R-REPO-071),
+		// as the query names it with its own project.
+		mp, mk, qualified := strings.Cut(m, "/")
+		if !qualified {
+			mp, mk = project, m
+			for _, r := range f.s.Repositories {
+				if r.Key == m {
+					mp = r.ProjectKey
+				}
+			}
+		}
+		f.s.VirtualMembers = append(f.s.VirtualMembers, q.AuthzBuildVirtualMembersRow{VirtualID: f.next, MemberProject: mp, MemberKey: mk})
 	}
 	if doc.Virtual.DeployTarget != "" {
 		f.s.DeployTargets = append(f.s.DeployTargets, q.AuthzBuildDeployTargetsRow{VirtualID: f.next, TargetKey: doc.Virtual.DeployTarget})
 	}
-	project := testProject(key)
 	f.s.Repositories = append(f.s.Repositories, q.AuthzBuildRepositoriesRow{
 		ID: f.next, Key: key, ProjectKey: project, ProjectID: f.ensureProject(project), Class: class, Format: format, Config: []byte(cfg),
 	})

@@ -7,6 +7,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/qname"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -132,6 +133,26 @@ type VirtualPlan struct {
 	Admitted bool
 	// Members are the members the caller may read, in resolution order.
 	Members []PlannedMember
+	// NotFound is the message of a 404 of the plan (repositories-and-proxy.md R-REPO-072, Q-REPO-382):
+	// the sentence that names a member of the project upstream that is not switched on and that would
+	// have been asked for the request, for a caller who would read it; "" when there is none. A format
+	// that walks the members itself puts it into its own not-found error with [VirtualPlan.Unknown].
+	NotFound string
+}
+
+// Unknown is the answer of a walk over the plan in which every member answered "not found": err,
+// the format's own not-found error, with the plan's NotFound as its message when there is one. The
+// kind, the code and so the status stay the format's (R-REPO-072); an error of another kind is
+// returned as it is.
+func (p *VirtualPlan) Unknown(err error) error {
+	if p == nil || p.NotFound == "" {
+		return err
+	}
+	e, ok := errs.As(err)
+	if !ok || e.Kind != errs.NotFound {
+		return err
+	}
+	return errs.E(e.Kind, e.Code, p.NotFound)
 }
 
 // ReadShape is how a caller's read of the packages of one repository is decided.

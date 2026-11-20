@@ -103,14 +103,17 @@ type Plan struct {
 	Route    repository.Route
 	// Members are the members that take part for this caller, in resolution order.
 	Members []Member
-	// Unreadable is the number of members the caller cannot read (R-REPO-019 step 4). A plan for
-	// Explain counts every member of the repository; the plan of a request only those the route
-	// kept.
+	// Unreadable is the number of members the caller cannot read (R-REPO-019 step 4), a member of the
+	// project upstream not counted: it is named to every caller. A plan for Explain counts every
+	// member of the repository; the plan of a request only those the route kept.
 	Unreadable int
 	// Fingerprint is the SHA-256 over the endpoint and the ordered (member id, class, mayFill)
 	// of Members (D-7, Q-REPO-110): two callers share a merged document only when it is equal.
 	Fingerprint [32]byte
 	usable      map[string]usable
+	// waiting is the placeholder a 404 of the plan names, othersWaiting the number of the further ones (Plan.notFound).
+	waiting       *repository.Repository
+	othersWaiting int
 }
 
 type usable struct{ read, fill bool }

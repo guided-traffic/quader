@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/wellknown"
 
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -43,6 +44,17 @@ func repo(id int64, key string, class repository.Class) repository.Repository {
 		ID: strconv.FormatInt(id, 10), Name: qname.Repo{Project: "it", Key: key}, Class: class, Format: Format,
 		HideExistence: "inherit", Lifecycle: repository.Active,
 	}
+}
+
+// UpstreamRepo returns a preset repository of the built-in project upstream of the test format in a state (R-REPO-066,
+// R-REPO-068): a remote repository named upstream/<key> that carries its facts and is disabled unless it is active, as the
+// snapshot reads one.
+func UpstreamRepo(id int64, key string, state wellknown.State) repository.Repository {
+	r := repo(id, key, repository.Remote)
+	r.Name.Project = wellknown.ProjectKey
+	r.Disabled = state != wellknown.StateActive
+	r.Upstream = &repository.UpstreamFacts{Kind: wellknown.KindPreset, State: state}
+	return r
 }
 
 // VirtualRepo returns a virtual repository of the test format over the members, with the deploy target

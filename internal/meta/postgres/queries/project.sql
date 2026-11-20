@@ -259,11 +259,14 @@ RETURNING config_version;
 -- What of the repository's own project names it, and keeps it from moving (R-REPO-060,
 -- 409 repository_in_use): the virtual repositories that list it as a member, pin a
 -- rule to it or deploy into it, and the policies of the project with a key selector
--- on it (by stored name). A virtual repository moves only without members and
--- deployment target, which are repositories of the project: they are listed as
--- `member` and `deployment_target`. Every virtual repository is of the same project
--- (trigger AI006 of 00024). The inline grants of the project's CI mappings are a
--- JSON document; ProjectCIMappingGrants reads them for the caller.
+-- on it (by stored name). A virtual repository moves only without members of its
+-- project and without a deployment target: they are listed as `member` and
+-- `deployment_target`. A member of the built-in project upstream is valid in every
+-- project and moves with it (R-REPO-071, Q-REPO-389), so it is no reference. Every
+-- virtual repository that lists a repository of another project than upstream is of
+-- the same project (trigger AI006 of 00024 and 00086). The inline grants of the
+-- project's CI mappings are a JSON document; ProjectCIMappingGrants reads them for
+-- the caller.
 SELECT 'virtual_member'::text AS kind, v.key::text AS name
   FROM virtual_members m JOIN repositories v ON v.id = m.virtual_id
  WHERE m.member_id = sqlc.arg(id)::bigint
@@ -282,7 +285,7 @@ SELECT 'policy', a.name
 UNION
 SELECT 'member', r.key
   FROM virtual_members m JOIN repositories r ON r.id = m.member_id
- WHERE m.virtual_id = sqlc.arg(id)::bigint
+ WHERE m.virtual_id = sqlc.arg(id)::bigint AND r.project_id = sqlc.arg(project_id)::text::uuid
 UNION
 SELECT 'deployment_target', r.key
   FROM virtual_deploy_targets t JOIN repositories r ON r.id = t.target_id

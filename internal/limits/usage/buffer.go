@@ -24,8 +24,8 @@ import (
 // OverflowRef is the subject of the overflow rows a full buffer merges new keys into (R-LIM-028).
 const OverflowRef = "overflow"
 
-// key is a row of the store without its granularity: the five-minute bucket, the subject, the credential, the place and the
-// serving repository.
+// key is a row of the store without its granularity: the five-minute bucket, the subject, the credential, the place, the
+// serving repository and the virtual repository of another project it was reached through (Q-LIM-63).
 type key struct {
 	start      int64 // Unix seconds of the five-minute bucket
 	kind       limits.SubjectKind
@@ -33,6 +33,7 @@ type key struct {
 	credential string
 	place      string
 	repo       int64
+	via        int64
 }
 
 type counts struct {
@@ -123,7 +124,7 @@ func (b *Buffer) Add(d limits.UsageDelta) {
 		return
 	}
 	start := bucket5m(d.At)
-	k := key{start: start, kind: d.Subject.Kind, ref: d.Subject.Ref, credential: d.Subject.Credential, place: d.Place.Key(), repo: d.RepoID}
+	k := key{start: start, kind: d.Subject.Kind, ref: d.Subject.Ref, credential: d.Subject.Credential, place: d.Place.Key(), repo: d.RepoID, via: d.ViaRepoID}
 	if d.Subject.Kind != limits.KindUser {
 		k.credential = ""
 	}
@@ -201,6 +202,7 @@ type row struct {
 	C    string `json:"c"`
 	P    string `json:"p"`
 	Repo int64  `json:"repo"`
+	Via  int64  `json:"via"`
 	RQ   int64  `json:"rq"`
 	RF   int64  `json:"rf"`
 	CB   int64  `json:"cb"`
@@ -312,7 +314,7 @@ func (b *Buffer) Flush(ctx context.Context) error {
 
 func rowOf(g string, k key, c *counts) row {
 	return row{
-		G: g, S: stamp(k.start), K: string(k.kind), R: k.ref, C: k.credential, P: k.place, Repo: k.repo,
+		G: g, S: stamp(k.start), K: string(k.kind), R: k.ref, C: k.credential, P: k.place, Repo: k.repo, Via: k.via,
 		RQ: c.requests, RF: c.refused, CB: c.cached, UB: c.uncached, UP: c.upstream, BG: c.background,
 		LRH: limitOf(c.limits[limits.RequestsPerHour]), LCH: limitOf(c.limits[limits.CachedBytesPerHour]),
 		LUH: limitOf(c.limits[limits.UncachedBytesPerHour]), LUP: limitOf(c.limits[limits.UpstreamRequestsPerHour]),
@@ -341,8 +343,10 @@ func sortRows(rs []row) {
 			return a.C < b.C
 		case a.P != b.P:
 			return a.P < b.P
+		case a.Repo != b.Repo:
+			return a.Repo < b.Repo
 		}
-		return a.Repo < b.Repo
+		return a.Via < b.Via
 	})
 }
 

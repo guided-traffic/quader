@@ -35,6 +35,9 @@ type Charge struct {
 
 	// served is the repository that served the request, for the usage store (a virtual repository's member, R-LIM-006).
 	served atomic.Int64
+	// via is the virtual repository of another project through which the request reached viaFor, a repository of the project
+	// upstream (Q-LIM-63); it names the usage row only while viaFor is the repository that served.
+	via, viaFor atomic.Int64
 
 	refused  atomic.Bool
 	deferred atomic.Bool
@@ -142,6 +145,27 @@ func (c *Charge) Served(repoID int64) {
 	if c != nil && repoID > 0 {
 		c.served.Store(repoID)
 	}
+}
+
+// ServedThrough records the repository that serves the request (its ID) and the virtual repository of another project the
+// request reached it through (via, its ID), for the usage row's via_repository_id (usage-and-limits.md Q-LIM-63): the serving
+// repository is a well-known repository of the project upstream a team's virtual repository lists. A via of 0 is none. A
+// later Served of another repository leaves via out of the row.
+func (c *Charge) ServedThrough(repoID, via int64) {
+	if c == nil || repoID <= 0 {
+		return
+	}
+	c.via.Store(max(via, 0))
+	c.viaFor.Store(repoID)
+	c.served.Store(repoID)
+}
+
+// viaOf is the via of the repository that served: the one ServedThrough recorded with it, else 0.
+func (c *Charge) viaOf(served int64) int64 {
+	if served > 0 && c.viaFor.Load() == served {
+		return c.via.Load()
+	}
+	return 0
 }
 
 // ServedRepo is the repository that served the request, 0 when none is known.

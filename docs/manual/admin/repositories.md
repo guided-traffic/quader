@@ -365,6 +365,25 @@ A virtual repository has the group **Members** in the creation form and the open
 
 Below, **Effective resolution order** lists the stored members, and **Explain a path** shows, for a path as a package client sends it, what each member would do: serve it, not hold it, or not be asked because of a claim or a pin rule.
 
+### The public registries of the project `upstream`
+
+Besides the repositories of its own project, a virtual repository may list the well-known registries of the built-in project `upstream`
+that have its format, written `upstream/<key>` (`upstream/npmjs`, `upstream/docker-hub`): one central cache of the registry for every project,
+instead of a remote repository of your own. Pin rules and claims treat such a member like any remote member, and a repository of your own
+project with the same key cannot be listed beside it. Which registries are in use is an administrator's decision on the **Upstream
+registries** page:
+
+- A registry that is not switched on can still be listed. The save then carries the warning `member_inactive`, which names the member and
+  its state (`not-switched-on`, `switched-off`, `retired`). Until an administrator switches it on, the member is skipped: it is a
+  placeholder that keeps its place in the list.
+- A request for a name that only the placeholder would have served answers `404`, and the client prints why, for example "upstream/npmjs is a
+  member of this virtual repository, but an administrator of Quader has not switched it on." A name a member of your project holds is
+  served as before. **Explain a path** shows the placeholder as `disabled` with its state.
+- When an administrator switches the registry on, every virtual repository that lists it resolves through it from the next request, on
+  every replica, without a change to the virtual repository. A registry Quader no longer offers stays a placeholder until you remove it.
+- Who reads through the member is decided by the registry's own visibility: an **Internal** one is read by every signed-in user, CI job and
+  service account, but not by users flagged external; a **Private** one only by whom a global policy names.
+
 ## Edit a repository
 
 The settings page of a repository (**Settings** in the row's menu, or `/projects/<projectKey>/repositories/<key>/settings`) is

@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // The table of R-DEB-005: every code of the format answers the status the table gives it.
@@ -49,5 +52,24 @@ func TestWriteErrorIsTheProblemDetailsShape(t *testing.T) {
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || body.Code != "deb_invalid_archive" {
 		t.Fatalf("body %q: %v", rec.Body.String(), err)
+	}
+}
+
+// TestR_REPO_072_APlaceholdersSentenceIsTheProblemDetail: the 404 of a package file a placeholder would have been asked for keeps its
+// status and code, and its sentence is the problem's detail, which curl and scripts read (APT shows the status line, R-DEB-005).
+func TestR_REPO_072_APlaceholdersSentenceIsTheProblemDetail(t *testing.T) {
+	member := qname.Repo{Project: wellknown.ProjectKey, Key: "debian"}
+	rec := httptest.NewRecorder()
+	New().WriteError(rec, httptest.NewRequest(http.MethodGet, "/api/deb/web/deb-all/pool/main/h/hello/hello_1.0_amd64.deb", nil),
+		repository.PlaceholderNotFound(member, wellknown.StateNotSwitchedOn, 0))
+	var body struct {
+		Code   string `json:"code"`
+		Detail string `json:"detail"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || rec.Code != http.StatusNotFound {
+		t.Fatalf("status %d body %q: %v", rec.Code, rec.Body.String(), err)
+	}
+	if want := repository.PlaceholderSentence(member, wellknown.StateNotSwitchedOn, 0); body.Detail != want || body.Code != errs.CodeNotFound {
+		t.Fatalf("body = %+v, want the detail %q", body, want)
 	}
 }

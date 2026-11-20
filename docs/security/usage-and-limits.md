@@ -99,7 +99,7 @@ administrators (they are decided at the instance only), and cannot see or change
 
 | Data | Where | How long | Who reads it |
 |---|---|---|---|
-| A user's consumption, with the personal token's ID per row | five-minute and hourly rows | 25 hours and 30 days | `usage:read` (administrator, security administrator, auditor), the Owner of the project for its repositories' rows, the user itself |
+| A user's consumption, with the personal token's ID per row | five-minute and hourly rows | 25 hours and 30 days | `usage:read` (administrator, security administrator, auditor), the Owner of the project for its repositories' rows and for the rows its virtual repositories took from a well-known repository of `upstream` (`via_repository_id`, Q-LIM-63: only requests through the project's own virtual repositories, never another project's callers of the central repository), the user itself |
 | An anonymous caller's address (an IPv4 address, an IPv6 `/64`) | the same rows, `limit_block` | 25 hours, 30 days | the same; a project Owner sees the addresses of its repositories' anonymous callers (H-1011) |
 | Sums per day, repository and kind of caller, no person | `usage_daily_summary` | 400 days by default | the same readers |
 

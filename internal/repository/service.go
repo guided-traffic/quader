@@ -300,7 +300,7 @@ func (s *Service) createTx(ctx context.Context, tx meta.Tx, c Caller, project st
 		return Stored{}, err
 	}
 	// >>> M2 virtual
-	rel, err := s.resolveVirtual(ctx, qs, v, project, &d)
+	rel, err := s.resolveVirtual(ctx, qs, v, project, &d, nil)
 	if err != nil {
 		return Stored{}, err
 	}
@@ -582,7 +582,7 @@ func (s *Service) updatedDocument(ctx context.Context, qs *q.Queries, c Caller, 
 		return Document{}, nil, nil, err
 	}
 	// >>> M2 virtual
-	rel, err := s.resolveVirtual(ctx, qs, v, project, &nd)
+	rel, err := s.resolveVirtual(ctx, qs, v, project, &nd, cur)
 	if err != nil {
 		return Document{}, nil, nil, err
 	}

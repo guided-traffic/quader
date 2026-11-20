@@ -161,7 +161,9 @@ registry is built and frozen before the repository component is wired. A virtual
 removed in the first transaction. A local or remote repository that a virtual repository lists answers 409
 `repository_referenced` unless `detach` is set, in which case the same transaction removes the references
 ([virtual.md](virtual.md) "Deleting a repository"). Only virtual repositories of the repository's own project can list it (the
-triggers AI006 guarantee it), so `detachReferences` edits the virtual repositories of that project and of no other. The events of a repository
+triggers AI006 guarantee it), so `detachReferences` edits the virtual repositories of that project and of no other; the one exception, a
+repository of the built-in project `upstream`, which virtual repositories of every project list (R-REPO-071), is never deleted
+(R-REPO-069). The events of a repository
 carry `project` in their details and the qualified name as their subject; the delete paths resolve the project from the row (`projectKeyOf`).
 
 ## Remote settings

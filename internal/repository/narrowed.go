@@ -188,8 +188,10 @@ func addedPatterns(old, next []string) []string {
 	return out
 }
 
+// qualified is the qualified name of a member as a virtual repository of project writes it (MemberRef): a bare key is of the
+// project, upstream/<key> is qualified already (R-REPO-071).
 func qualified(project, key string) string {
-	if project == "" {
+	if project == "" || strings.Contains(key, "/") {
 		return key
 	}
 	return project + "/" + key

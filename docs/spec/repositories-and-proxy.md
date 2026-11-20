@@ -494,7 +494,7 @@ leaves the operator believing it is in effect.
 | Class or format unknown, or the format does not support the class | `unsupported_class`, `unknown_format` |
 | Class, format or key changed on update | `immutable` |
 | Pattern syntax or limits (R-REPO-005); claim or pin-rule pattern outside the forms R-REPO-023 admits | `invalid_pattern` |
-| Member missing from the virtual repository's project, written with a `/` other than `upstream/<key>` of a preset repository of the project `upstream` that is not retired (R-REPO-071), being deleted, of another format, duplicated, or the virtual repository itself | `invalid_member` |
+| Member missing from the virtual repository's project, written with a `/` other than `upstream/<key>` of a preset repository of the project `upstream` that is not retired (R-REPO-071), being deleted, of another format, duplicated, a key of the own project beside `upstream/<the same key>` (Q-REPO-401), or the virtual repository itself | `invalid_member` |
 | A member of a repository of the project `upstream` that the product manages or a dedicated operation owns (R-REPO-069) | `managed_by_product` |
 | Nesting cycle or depth over the limit (R-REPO-018) | `virtual_cycle`, `virtual_too_deep` |
 | Deploy target not a local repository in the effective member list (R-REPO-021), or written with a `/` | `invalid_deploy_target` |
@@ -1106,7 +1106,8 @@ Priority: **MVP** · Covers: REPO-033
   [Q-REPO-212](#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)): a project that needs a
   public registry lists the central repository of `upstream`, or keeps a remote repository of its own, and the blob store keeps a
   package fetched by two repositories once (INV-4). A member of `upstream` that is not switched on is accepted with the warning
-  `member_inactive` and is a placeholder until it is (R-REPO-072).
+  `member_inactive` and is a placeholder until it is (R-REPO-072). A repository of the own project and `upstream/<the same key>` are
+  not both members ([Q-REPO-401](#q-repo-401--a-key-of-the-own-project-and-the-same-key-in-upstream-are-not-both-members)).
 - Members MUST be of the virtual repository's format. In the MVP they are local or remote
   repositories; virtual members arrive with R-REPO-018 and are refused with 422 `validation_failed` with `invalid_member` in `errors[]`
   until then.
@@ -2064,7 +2065,9 @@ a virtual repository may list repositories of its own project and of `upstream`,
   format", "no longer offered by Quader", "used by Quader only" for a system repository). `<project>/<key>` of any other project, the
   own project written qualified, and a bare key that names no repository of the own project answer 422 `invalid_member` as before. A
   member that is not `active` is accepted with the warning `member_inactive`, which names it and its state, so a team lists
-  `upstream/npmjs` before an administrator switches it on.
+  `upstream/npmjs` before an administrator switches it on. A key of the own project and `upstream/<the same key>` in one member list
+  answer 422 `invalid_member` at the later one: the formats name a member by its key in what they hand to a client
+  ([Q-REPO-401](#q-repo-401--a-key-of-the-own-project-and-the-same-key-in-upstream-are-not-both-members)).
 - **Storage**: the rows of `virtual_members` and `virtual_pin_members` hold the member's ID, as for a member of the own project; the
   same-project guard admits the built-in project's repositories in those two tables (R-REPO-066). A write locks a member of
   `upstream` `FOR SHARE` as any member (Q-REPO-234).
@@ -2127,7 +2130,12 @@ repository is not there stays as a placeholder and takes effect again when the r
   | `retired` | "upstream/npmjs is a member of this virtual repository, but Quader no longer offers it; remove it from the members." |
 
   The sentence names a repository of the project `upstream`, which is the same in every installation, and its state, which is the
-  installation's; it names nothing of another project.
+  installation's; it names nothing of another project. With several placeholders the sentence of the first ends with "One more member
+  of the project upstream is not in use either." or "N more members of the project upstream are not in use either.", counting the
+  others the caller would read. An endpoint with exposure rules names no placeholder: its 404 is the one of a missing resource
+  (R-EP-018). A format that walks the members of the plan itself (OCI) gets the sentence with the plan (`formats.VirtualPlan.NotFound`)
+  and puts it into its own not-found answer, whose code it keeps (`MANIFEST_UNKNOWN`)
+  ([Q-REPO-400](#q-repo-400--the-404-of-several-placeholders-counts-the-others-and-an-endpoint-with-exposure-rules-names-none)).
 - **The shadowing check** (R-REPO-048) and the auto claim skip a placeholder as a disabled member (`Routing.ExposureSet`,
   [routing.go](../../internal/repository/routing.go)), so a first publish while a member is off asks nothing of it.
 - **The settings page** shows each placeholder with its state and one sentence (R-UI-189).
@@ -2244,11 +2252,11 @@ and the same 404 shapes as any repository, which every format's set already runs
 | Unit, `internal/virtual` | the 404 sentence of R-REPO-072: which placeholder would have been consulted, for which caller | under 1 s | none |
 | Unit, each format's error writer | the engine's not-found message reaches the format's shape: one case per format, a constant per format | milliseconds | none |
 | Unit, `internal/formats/deb` | each shipped archive key parses and is not within 90 days of its expiry (Q-REPO-379) | under 1 s | the keys in the binary |
-| Integration, area `upstream` | R-REPO-066 to R-REPO-073 and the project refusals of R-AUTHZ-041, in process against PostgreSQL with a stub npm upstream and a stub registry | about 25 s | one 1 KiB package document, one 1 KiB tarball, one 1 KiB artifact |
-| Integration, area `limits` | the usage row of a request through a virtual repository at an `upstream` member (Q-LIM-63) | about 2 s | one 1 KiB tarball |
+| Integration, area `upstream` | R-REPO-066 to R-REPO-073 and the project refusals of R-AUTHZ-041, in process against PostgreSQL with the stub npm upstream of `test/npmstub`; no other upstream is contacted | about 10 s (measured) | rows; one package document and one tarball of the test corpus, about 1 KiB each |
+| Integration, area `limits` | the usage row of a request through a virtual repository at an `upstream` member (Q-LIM-63), and the usage of the virtual repository that holds it (R-LIM-029) | about 3 s | one 1 KiB tarball |
 | Web unit (Vitest) | the admin page, the detail page, the member picker's group and the placeholder (R-UI-187 to R-UI-190) | about 5 s | fixtures |
 
-CI cost: the integration shard that runs the area `upstream` gains about 27 s, the unit run about 2 s, the web unit run about 5 s;
+CI cost: the integration shard b, which runs the areas `upstream` and `limits`, gains about 13 s, the unit run about 2 s, the web unit run about 5 s;
 no kind leg gains anything. The feature's code is shared code, so a change of it runs the reference leg npm and no other format's
 leg ([architecture.md](architecture.md) Q-ARCH-540, [developer/e2e.md](../developer/e2e.md#what-a-new-format-adds-to-the-tests)),
 and it adds no case to any format's set. With 25 formats a format adds its presets as rows of the data-driven unit and reconcile tests
@@ -9930,6 +9938,52 @@ runs in `quader migrate`, where a refusal fails the upgrade. Switching on needs 
 open it for them. The development agent would revisit this if the owner wants the product's level to hold in a restricting installation.
 
 **Applied in the spec:** R-REPO-066. Test: `TestR_AUTHZ_037_TheLevelsAWriteStores` (the product's create, three cases).
+
+### Q-REPO-400 · The 404 of several placeholders counts the others, and an endpoint with exposure rules names none
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-REPO-072 gave the sentence of one placeholder and said "with several, the first in list order and the number of the others",
+without the words; and an endpoint with exposure rules names no repository but the addressed one in any answer (R-EP-018), which a sentence
+that names `upstream/npmjs` would. Building it showed a third case: OCI walks the members of the plan itself and answers its own
+not-found codes, so the engine's 404 never reaches it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first sentence and "One more member of the project upstream is not in use either." / "N more members …", counting the others the caller would read; no sentence on an endpoint with exposure rules; the plan carries the sentence to a format that walks it (chosen) | `PlaceholderSentence`, `Plan.waitingFor` skips an endpoint with rules, `formats.VirtualPlan.NotFound` and `Unknown` | One sentence a client prints whole; R-EP-018 holds; `docker pull` shows the sentence after its `MANIFEST_UNKNOWN` | The others are counted, not named |
+| (b) Name every placeholder | A list in the sentence | Complete | A long line in a client's error output for a list of twelve registries |
+| (c) The sentence on every endpoint | One rule | Simple | An endpoint with exposure rules would name a member, which R-EP-018 forbids |
+
+**Choice:** (a). The kind and the code of the 404 stay the format's in every case.
+
+**Rationale:** the owner wanted the reason where a client prints it; one sentence with a count is what a client's error line holds. An endpoint
+with exposure rules exposes no member, so it has nothing to say about one. The development agent would revisit this if teams list several
+central members of one format and need to know which.
+
+**Applied in the spec:** R-REPO-072; the format contract gains `VirtualPlan.NotFound` and `VirtualPlan.Unknown`, an addition that keeps
+`ContractVersion` (ADR-209).
+
+### Q-REPO-401 · A key of the own project and the same key in `upstream` are not both members
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the formats name a member by its key in what they hand to a client: Debian's `members/<key>/<Filename>` paths of a merged index,
+Ansible Galaxy's role IDs of a virtual repository, the members of OCI's merged tags list. With `upstream/<key>` beside the own project's
+repositories (R-REPO-071), a team that keeps its own remote `npmjs` and lists `upstream/npmjs` as well has two members of one key.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Refuse the second with 422 `invalid_member` (chosen) | A document rule of `validateVirtual` | Every format's paths stay unambiguous; no format changes; the rule is one line of the member list | A team that wants both renames its own repository |
+| (b) Qualify the key in every format's paths (`members/upstream/npmjs/…`) | A change of the paths of three formats | Both members possible | Path grammars of Debian and Ansible change; a qualified key in a path segment needs escaping or a new route |
+| (c) Allow it, the first member wins | Nothing | — | A client's path names the wrong member, silently |
+
+**Choice:** (a).
+
+**Rationale:** the central repository exists so that a team does not keep its own remote of the same registry; listing both under one key is
+a mistake to show, not a case to serve. The development agent would revisit this if a team needs its own remote of a public registry and the
+central one in one virtual repository under the same key.
+
+**Applied in the spec:** R-REPO-008, R-REPO-017, R-REPO-071.
 
 ## What this does not cover
 

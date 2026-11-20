@@ -3434,6 +3434,11 @@ administered by the installation's administrators, not by a team.
   repository's local members and skips an `internal` member of `upstream` silently, as step 4 of R-REPO-019 skips every unreadable
   member. A request through a Bastion is decided as the same request at the main installation's own door: the channel plays no part
   (R-AUTHZ-030, [bastion.md](bastion.md) Q-BAS-148), and the exposure of the endpoint decides what is served (R-EP-013). A `private` member is read through it only by whom a global policy or a capability admits.
+  The questions that walk a virtual repository's members treat such a member as any member: a token whose scope names the virtual
+  repository by its exact name reads it through the virtual repository on its level or grants (the lift of
+  [Q-AUTHZ-163](#q-authz-163--a-scope-on-a-virtual-repository-covers-its-members-when-they-are-read-through-it), R-AUTHZ-013), an anonymous
+  caller needs it `public` as every member (R-AUTHZ-009 rule 6), and a Bastion's reach of the virtual repository counts it (R-BAS-012):
+  the grant index names it by its own project, `upstream/<key>`.
 - **Who administers them** ([Q-AUTHZ-303](#q-authz-303--repositorieswrite-config-administers-the-well-known-repositories)): the
   operations of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073 read with `repositories:read-config` and write with
   `repositories:write-config`; a level the installation restricts is chosen only by a holder of `security-settings:write`
@@ -3489,10 +3494,13 @@ Acceptance criteria (integration area `upstream`, about 2 s):
   | 5 | `sa:web/deployer` through a Bastion | `internal`, `active` | `lodash` via `npm-all` | 200 from `upstream/npmjs`: through a Bastion the level reads as without it |
   | 6 | CI token of `web-build` | `internal`, `not-switched-on` | `lodash` via `npm-all` | placeholder: 404 with the sentence of R-REPO-072 |
   | 7 | Erin's personal token | `internal`, `not-switched-on` | the same | 404 without the sentence: she would not read it once it is on |
+  | 8 | CI token of `web-build` whose job requested the scope `read:web/npm-all` | `internal`, `active` | `lodash` via `npm-all` | 200 from `upstream/npmjs`: the scope names the virtual repository it is read through (Q-AUTHZ-163); with `upstream/npmjs` `private` it is skipped, and Erin's token scoped so skips an `internal` one |
+  | 9 | anonymous, `npm-all` and `npm-local` `public` | `internal`, `active` | `lodash` via `npm-all` | 401: an anonymous caller reads through a virtual repository only while every member is `public` (R-AUTHZ-009 rule 6) |
 
-  Each row is a unit test of `internal/authz` and `internal/virtual` on the R-AUTHZ fixture (under 1 s). In the integration area
-  `upstream`, against the stub npm upstream (about 2 s), a CI token and a service-account token read `lodash` through `npm-all` by
-  the member's level (row 1), and an external user's token does not (row 3).
+  Each row is a unit test of `internal/authz` and `internal/virtual` on the R-AUTHZ fixture (under 1 s; row 9 is the coarse check of
+  `internal/authz` alone, before the virtual engine runs). In the integration area `upstream`, against the stub npm
+  upstream (about 2 s), a CI token, with and without the scope `read:web/npm-all`, and a service-account token read `lodash` through
+  `npm-all` by the member's level (rows 1 and 8), and an external user's token does not (row 3).
 
 ## Worked examples
 

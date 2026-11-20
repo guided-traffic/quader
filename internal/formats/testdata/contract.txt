@@ -555,6 +555,8 @@ formats.VirtualAdapter: method Merge(context.Context, *Request, Path, []MemberDo
 formats.VirtualAdapter: method Strategy(Path) Strategy
 formats.VirtualPlan: field Admitted bool
 formats.VirtualPlan: field Members []PlannedMember
+formats.VirtualPlan: field NotFound string
+formats.VirtualPlan: method Unknown(error) error
 formats.VulnerabilityAdapter: method AdvisoryName(string) (string, bool)
 formats.VulnerabilityAdapter: method AdvisoryVersion(string) (string, bool)
 formats.VulnerabilityAdapter: method CompareVersions(string, string) (int, error)

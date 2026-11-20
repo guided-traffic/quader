@@ -4405,7 +4405,9 @@ export interface paths {
          *     names the claim or the pin rule that narrowed the members; its `claimedBy` lists only the
          *     repositories the caller can read. A member the caller cannot read is not named: it counts in
          *     `unreadableMembers`, unless the caller holds `repositories:read-config`, who gets it as the
-         *     decision `no-read` and a count of 0. The decisions are `disabled`, `not_admitted`, `pinned-out`,
+         *     decision `no-read` and a count of 0; a member of the project `upstream` is named to every caller,
+         *     as `upstream/<key>`, and a placeholder (one that is not switched on) carries `upstreamState`
+         *     (R-REPO-072). The decisions are `disabled`, `not_admitted`, `pinned-out`,
          *     `claimed-elsewhere`, `refused-claimed`, `no-read`, `no-cache-fill`, `hit`, `miss`, `negative`,
          *     `offline` and `circuit-open`. Needs `read` on the virtual repository (the gate of step 1);
          *     another class answers `400 not_applicable`.
@@ -10270,11 +10272,21 @@ export interface components {
                 /** @description The repositories with the most specific claim that the caller can read. */
                 claimedBy?: string[];
             };
-            /** @description The members in the order of the member list, without those the caller cannot read. */
+            /**
+             * @description The members in the order of the member list, without those the caller cannot read; a member of the project
+             *     `upstream` is listed to every caller (R-REPO-019).
+             */
             members: {
+                /** @description The member as the member list writes it, the bare key or `upstream/<key>` (R-REPO-071). */
                 key: string;
                 /** @enum {string} */
                 class: "local" | "remote";
+                /**
+                 * @description The state of a placeholder, a member of the project `upstream` that is not switched on (R-REPO-068,
+                 *     R-REPO-072); absent for every other member.
+                 * @enum {string}
+                 */
+                upstreamState?: "switched-off" | "not-switched-on" | "retired";
                 /** @enum {string} */
                 decision: "disabled" | "not_admitted" | "pinned-out" | "claimed-elsewhere" | "refused-claimed" | "no-read" | "no-cache-fill" | "hit" | "miss" | "negative" | "offline" | "circuit-open";
             }[];

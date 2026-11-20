@@ -571,6 +571,17 @@ only the three levels and never the row's `default_level`, so neither a write th
 that only an administrator could choose. The service stores the set without duplicates in the order of the levels; the queries of
 [visibility.sql](../../internal/meta/postgres/queries/visibility.sql) read and write it with the default, under one `version`.
 
+## The usage of a well-known member through a virtual repository (00087)
+
+[00087_usage_via](../../internal/meta/postgres/migrations/00087_usage_via.sql) is an expand step of the built-in project `upstream`
+(usage-and-limits.md Q-LIM-63): `usage_bucket.via_repository_id`, NULL but for a row whose serving repository is a repository of
+`upstream` and whose request addressed a virtual repository of another project, with `ON DELETE CASCADE` like `repository_id`. The
+unique key `usage_bucket_key` is replaced by one that ends with the column (`NULLS NOT DISTINCT`, so a row without it keys as before),
+and the partial index `usage_bucket_via` serves the reads of a project's scope, which take a row by either repository
+([limits_usage.sql](../../internal/meta/postgres/queries/limits_usage.sql)). The table stays registered as transient
+([tables_limits.go](../../internal/meta/postgres/tables_limits.go)): a restore brings back no usage row, so the column needs no entry of
+its own. What the column means and who writes it is in [usage-and-limits.md](usage-and-limits.md#the-usage-of-a-well-known-member-through-a-teams-virtual-repository).
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.
@@ -736,7 +747,7 @@ Guards that the database enforces whatever the API checked. Together with the ea
 | `AI003` | `project_key_immutable`, `service_account_project_guard`, `authz_policy_project_guard` | a change of a project's key; a stored name of a project's service account or policy that is not `<key>/<name>` of its project, a `/` in the name of an instance-wide one, a change of their project |
 | `AI004` | `authz_policy_entry_global_only` on `authz_policy_entry` | a row for a project policy |
 | `AI005` | `project_account_principal_guard` on `authz_role_binding`, `authz_policy_entry` and `authz_project_policy_entry` | a project service account as the principal of a role binding or of an entry of a global policy, and of an entry of a policy of another project (Q-AUTHZ-175); a global service account and the project's own accounts pass |
-| `AI006` | `virtual_same_project_guard` on `virtual_members`, `virtual_deploy_targets`, `virtual_pin_members` | a member, pin member or deployment target of another project than the virtual repository's (Q-AUTHZ-206); a move that would leave one is refused by the service (409 `repository_in_use`); the function locks both repositories `FOR SHARE` before it reads their projects (00045, Q-REPO-234); since 00086 a member or pin member of the built-in project `upstream` passes (R-REPO-071) |
+| `AI006` | `virtual_same_project_guard` on `virtual_members`, `virtual_deploy_targets`, `virtual_pin_members` | a member, pin member or deployment target of another project than the virtual repository's (Q-AUTHZ-206); a move that would leave one is refused by the service (409 `repository_in_use`); the function locks both repositories `FOR SHARE` before it reads their projects (00045, Q-REPO-234); since 00086 a member or pin member of the built-in project `upstream` passes (R-REPO-071), a deployment target of it does not ([virtual_members_test.go](../../test/integration/upstream/virtual_members_test.go)) |
 | `AI010` | the guards of [00086_upstream.sql](../../internal/meta/postgres/migrations/00086_upstream.sql) | a delete of the built-in project `upstream` or a change of its display name, description or level; a member, policy, service account or CI mapping of it; a repository of it without its row in `upstream_repository` (at commit), a change of such a repository's project, key, class or format, a move into it ([wellknown.md](wellknown.md)); tested in the integration area [upstream](../../test/integration/upstream/) |
 
 Tested in [projects_test.go](../../test/integration/postgres/projects_test.go).

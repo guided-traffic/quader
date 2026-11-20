@@ -3073,6 +3073,27 @@ func (e RepositoryResolutionMembersDecision) Valid() bool {
 	}
 }
 
+// Defines values for RepositoryResolutionMembersUpstreamState.
+const (
+	RepositoryResolutionMembersUpstreamStateNotSwitchedOn RepositoryResolutionMembersUpstreamState = "not-switched-on"
+	RepositoryResolutionMembersUpstreamStateRetired       RepositoryResolutionMembersUpstreamState = "retired"
+	RepositoryResolutionMembersUpstreamStateSwitchedOff   RepositoryResolutionMembersUpstreamState = "switched-off"
+)
+
+// Valid indicates whether the value is a known member of the RepositoryResolutionMembersUpstreamState enum.
+func (e RepositoryResolutionMembersUpstreamState) Valid() bool {
+	switch e {
+	case RepositoryResolutionMembersUpstreamStateNotSwitchedOn:
+		return true
+	case RepositoryResolutionMembersUpstreamStateRetired:
+		return true
+	case RepositoryResolutionMembersUpstreamStateSwitchedOff:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RepositoryServiceAccountPatchActions.
 const (
 	RepositoryServiceAccountPatchActionsAnnotate  RepositoryServiceAccountPatchActions = "annotate"
@@ -10681,11 +10702,18 @@ type RepositoryResolution struct {
 		Path    string                             `json:"path"`
 	} `json:"descriptor"`
 
-	// Members The members in the order of the member list, without those the caller cannot read.
+	// Members The members in the order of the member list, without those the caller cannot read; a member of the project
+	// `upstream` is listed to every caller (R-REPO-019).
 	Members []struct {
 		Class    RepositoryResolutionMembersClass    `json:"class"`
 		Decision RepositoryResolutionMembersDecision `json:"decision"`
-		Key      string                              `json:"key"`
+
+		// Key The member as the member list writes it, the bare key or `upstream/<key>` (R-REPO-071).
+		Key string `json:"key"`
+
+		// UpstreamState The state of a placeholder, a member of the project `upstream` that is not switched on (R-REPO-068,
+		// R-REPO-072); absent for every other member.
+		UpstreamState *RepositoryResolutionMembersUpstreamState `json:"upstreamState,omitempty"`
 	} `json:"members"`
 	Repository string `json:"repository"`
 
@@ -10701,6 +10729,10 @@ type RepositoryResolutionMembersClass string
 
 // RepositoryResolutionMembersDecision defines model for RepositoryResolution.Members.Decision.
 type RepositoryResolutionMembersDecision string
+
+// RepositoryResolutionMembersUpstreamState The state of a placeholder, a member of the project `upstream` that is not switched on (R-REPO-068,
+// R-REPO-072); absent for every other member.
+type RepositoryResolutionMembersUpstreamState string
 
 // RepositoryServiceAccountPatch The description and the actions of a repository's account (R-AUTH-046, R-AUTHZ-039). The read-only members of
 // `ServiceAccount` are accepted and ignored.

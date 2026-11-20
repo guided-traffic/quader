@@ -180,7 +180,7 @@ func (r *Resolver) build(ctx context.Context, c Caller, p *Plan, m Merger, ttl t
 		if failure != nil {
 			return nil, failure
 		}
-		return nil, notFound()
+		return nil, p.notFound()
 	}
 	doc, err := m.Merge(ctx, d, parts)
 	if err != nil {
@@ -346,5 +346,5 @@ func (r *Resolver) firstMatch(ctx context.Context, c Caller, p *Plan, m Merger) 
 	if failure != nil {
 		return nil, failure
 	}
-	return nil, notFound()
+	return nil, p.notFound()
 }

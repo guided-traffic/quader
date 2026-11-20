@@ -5,9 +5,15 @@
 -- the members and the deploy target through the AuthzBuild* statements.
 
 -- name: ListVirtualMembers :many
-SELECT m.virtual_id, m.position, m.member_id, r.key AS member_key
+-- member_key is the member as the virtual repository's document writes it (R-REPO-017, R-REPO-071, Q-REPO-381): the bare key
+-- of a repository of the virtual repository's own project, the qualified name upstream/<key> of a repository of the built-in
+-- project, the only other project a member may belong to (the guard AI006).
+SELECT m.virtual_id, m.position, m.member_id,
+       (CASE WHEN r.project_id = v.project_id THEN r.key ELSE mp.key || '/' || r.key END)::text AS member_key
   FROM virtual_members m
   JOIN repositories r ON r.id = m.member_id
+  JOIN repositories v ON v.id = m.virtual_id
+  JOIN project mp ON mp.id = r.project_id
  WHERE m.virtual_id = ANY(sqlc.arg(ids)::bigint[])
  ORDER BY m.virtual_id, m.position;
 
@@ -25,24 +31,37 @@ SELECT virtual_id, position, package_patterns
 
 -- name: ListVirtualPinMembers :many
 -- A rule's members come back in the order of the virtual repository's member
--- list, so that a read is stable whatever order the write named them in.
-SELECT p.virtual_id, p.position, p.member_id, r.key AS member_key
+-- list, so that a read is stable whatever order the write named them in. A
+-- member is written as ListVirtualMembers writes it.
+SELECT p.virtual_id, p.position, p.member_id,
+       (CASE WHEN r.project_id = v.project_id THEN r.key ELSE mp.key || '/' || r.key END)::text AS member_key
   FROM virtual_pin_members p
   JOIN repositories r ON r.id = p.member_id
+  JOIN repositories v ON v.id = p.virtual_id
+  JOIN project mp ON mp.id = r.project_id
   LEFT JOIN virtual_members m ON m.virtual_id = p.virtual_id AND m.member_id = p.member_id
  WHERE p.virtual_id = ANY(sqlc.arg(ids)::bigint[])
  ORDER BY p.virtual_id, p.position, m.position NULLS LAST, r.key;
 
 -- name: LockRepositoriesByKeys :many
--- Resolves the keys a virtual repository names and keeps the rows from being
--- marked for deletion before the transaction ends: FOR SHARE conflicts with the
--- update that sets lifecycle = 'deleting'. The order by id is the lock order. The
--- keys are bare keys of one project: a virtual repository holds repositories of its
--- own project only (Q-AUTHZ-206).
-SELECT r.id, r.key, r.class, r.format, r.lifecycle, r.config
+-- Resolves the repositories a virtual repository names and keeps the rows from
+-- being marked for deletion, or switched, before the transaction ends: FOR SHARE
+-- conflicts with the update that sets lifecycle = 'deleting' and with every write
+-- of a repository row. The order by id is the lock order, one order for both
+-- projects. keys are the bare keys of the virtual repository's own project,
+-- upstream_keys the keys of the members written upstream/<key> (R-REPO-071,
+-- Q-REPO-234); upstream says which project a row is of, and upstream_kind,
+-- switched_on_before and retired are the row of upstream_repository a state is
+-- derived from (Q-REPO-375), empty and false for a repository of the own project.
+SELECT r.id, r.key, (p.key = sqlc.arg(upstream_project)::text)::boolean AS upstream, r.class, r.format, r.lifecycle, r.config,
+       COALESCE(u.kind, '')::text AS upstream_kind,
+       (u.first_switched_on_at IS NOT NULL)::boolean AS switched_on_before,
+       (u.retired_at IS NOT NULL)::boolean AS retired
   FROM repositories r
   JOIN project p ON p.id = r.project_id
- WHERE p.key = sqlc.arg(project)::text AND r.key = ANY(sqlc.arg(keys)::text[])
+  LEFT JOIN upstream_repository u ON u.repository_id = r.id
+ WHERE (p.key = sqlc.arg(project)::text AND r.key = ANY(sqlc.arg(keys)::text[]))
+    OR (p.key = sqlc.arg(upstream_project)::text AND r.key = ANY(sqlc.arg(upstream_keys)::text[]))
  ORDER BY r.id
    FOR SHARE OF r;
 
@@ -103,10 +122,12 @@ UPDATE repositories
 
 -- name: AuthzBuildVirtualMembers :many
 -- The member lists the grant index compiles (R-AUTHZ-009), in the snapshot of
--- the index build.
-SELECT m.virtual_id, r.key AS member_key
+-- the index build, each member with the key of its own project: the virtual
+-- repository's, or the built-in project upstream (R-REPO-071, the guard AI006).
+SELECT m.virtual_id, mp.key::text AS member_project, r.key AS member_key
   FROM virtual_members m
   JOIN repositories r ON r.id = m.member_id
+  JOIN project mp ON mp.id = r.project_id
  ORDER BY m.virtual_id, m.position;
 
 -- name: AuthzBuildDeployTargets :many

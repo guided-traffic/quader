@@ -10,6 +10,9 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 func render(method string, r *http.Request, err error) *httptest.ResponseRecorder {
@@ -152,5 +155,16 @@ func TestR_NUGET_002_TheSessionIDIsRecordedScrubbed(t *testing.T) {
 	recordClientFacts(httptest.NewRequest(http.MethodGet, "/y", nil).WithContext(ctx)) // no header
 	if info == nil {
 		t.Fatal("no request record")
+	}
+}
+
+// TestR_REPO_072_APlaceholdersSentenceIsTheOneLineOfTheNotFound: the 404 of a name a placeholder would have been asked for keeps
+// NuGet's status and code, and its sentence is the message of the one line the client prints (R-NUGET-002).
+func TestR_REPO_072_APlaceholdersSentenceIsTheOneLineOfTheNotFound(t *testing.T) {
+	member := qname.Repo{Project: wellknown.ProjectKey, Key: "nuget-org"}
+	w := render(http.MethodGet, nil, repository.PlaceholderNotFound(member, wellknown.StateSwitchedOff, 0))
+	want := "not_found: " + repository.PlaceholderSentence(member, wellknown.StateSwitchedOff, 0)
+	if w.Code != http.StatusNotFound || w.Body.String() != want {
+		t.Fatalf("status %d body %q, want %q", w.Code, w.Body.String(), want)
 	}
 }

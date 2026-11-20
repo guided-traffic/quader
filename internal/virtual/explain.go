@@ -56,18 +56,24 @@ type Decided struct {
 	ClaimedBy []qname.Repo `json:"claimedBy,omitempty"`
 }
 
-// MemberDecision is one member's line.
+// MemberDecision is one member's line. Key is the member as the member list writes it: the bare key of a member of the
+// virtual repository's project, upstream/<key> for a member of the project upstream (R-REPO-071). UpstreamState is the
+// state of a placeholder (R-REPO-072): a member of upstream that is not active.
 type MemberDecision struct {
-	Key      string `json:"key"`
-	Class    string `json:"class"`
-	Decision string `json:"decision"`
+	Key           string `json:"key"`
+	Class         string `json:"class"`
+	Decision      string `json:"decision"`
+	UpstreamState string `json:"upstreamState,omitempty"`
 }
 
 // Explain evaluates R-REPO-019 steps 1 to 6 for the caller and reports per member of the virtual
 // repository, in the order of its member list, what would happen to it. A member the caller cannot
 // read is not named (Security notes of repositories-and-proxy.md): it counts in UnreadableMembers,
 // and its key, like the keys of the repositories that hold a claim, only reaches a holder of
-// repositories:read-config. The permission is the gate of step 1, which the operation declares.
+// repositories:read-config. A member of the project upstream is the exception: its key is the same
+// in every installation, so it is named to every caller, as no-read when the caller cannot read it,
+// and a placeholder carries its state (R-REPO-019, R-REPO-072). The permission is the gate of step 1,
+// which the operation declares.
 func (r *Resolver) Explain(ctx context.Context, c Caller, v repository.Repository, d Descriptor) (Explanation, error) {
 	p, err := r.plan(ctx, c, v, d, true)
 	if err != nil {
@@ -84,9 +90,13 @@ func (r *Resolver) Explain(ctx context.Context, c Caller, v repository.Repositor
 	}
 	ex.DecidedBy = r.decidedBy(ctx, c, p, readConfig)
 	for _, m := range v.Members() {
-		line := MemberDecision{Key: m.Name.Key, Class: string(m.Class)}
+		line := MemberDecision{Key: repository.MemberRef(v.Name.Project, m.Name), Class: string(m.Class)}
+		if m.Placeholder() {
+			line.UpstreamState = string(m.Upstream.State)
+		}
 		if !p.usable[m.Name.String()].read {
-			if !readConfig {
+			// A member of the project upstream is named to every caller: its key is the same in every installation.
+			if !readConfig && m.Upstream == nil {
 				continue
 			}
 			line.Decision = DecisionNoRead

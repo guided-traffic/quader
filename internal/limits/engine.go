@@ -50,10 +50,13 @@ type UsageSink interface {
 
 // UsageDelta is the consumption of one subject at one place and serving repository since the last flush.
 type UsageDelta struct {
-	At                time.Time
-	Subject           Subject
-	Place             Place
-	RepoID            int64
+	At      time.Time
+	Subject Subject
+	Place   Place
+	RepoID  int64
+	// ViaRepoID is the virtual repository of another project the request reached the serving repository through, when that
+	// is a well-known repository of the project upstream (Q-LIM-63); 0 otherwise.
+	ViaRepoID         int64
 	Requests, Refused int64
 	Cached, Uncached  int64
 	Upstream          int64

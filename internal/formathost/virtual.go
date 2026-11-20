@@ -10,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/packages"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/virtual"
@@ -117,7 +118,7 @@ func (r *resolver) Plan(ctx context.Context, rq *formats.Request, p formats.Path
 	if err != nil {
 		return nil, err
 	}
-	out := &formats.VirtualPlan{Admitted: plan.Admitted, Members: make([]formats.PlannedMember, 0, len(plan.Members))}
+	out := &formats.VirtualPlan{Admitted: plan.Admitted, Members: make([]formats.PlannedMember, 0, len(plan.Members)), NotFound: plan.NotFoundMessage()}
 	for _, m := range plan.Members {
 		tier := formats.TierRemote
 		if m.Local() {
@@ -247,10 +248,25 @@ func (t tiers) forMember(m virtual.Member) (*formats.Request, error) {
 	return t.rq.Member(&m.Repo)
 }
 
-func (t tiers) serve(ctx context.Context, it formats.Item) virtual.Hit {
+func (t tiers) serve(ctx context.Context, m virtual.Member, it formats.Item) virtual.Hit {
 	return func(w http.ResponseWriter) error {
+		t.through(ctx, m)
 		return t.rq.Host.Items().Serve(ctx, t.rq, w, it, formats.ServeStored)
 	}
+}
+
+// through records, for the usage store, that a member of the project upstream serves a request of a virtual repository of
+// another project: the usage row names the virtual repository beside the repository that served (usage-and-limits.md
+// R-LIM-027, Q-LIM-63). Any other member is recorded by the item store alone, as before. The returned function puts back the
+// repository recorded before, for a fetch that found nothing.
+func (t tiers) through(ctx context.Context, m virtual.Member) (undo func()) {
+	if m.Repo.Upstream == nil || m.Repo.Name.Project == t.rq.Repo.Name.Project {
+		return func() {}
+	}
+	charge := limits.FromContext(ctx)
+	before := charge.ServedRepo()
+	charge.ServedThrough(m.ID, t.rq.RepoRef().ID)
+	return func() { charge.Served(before) }
 }
 
 // servable asks the format whether it serves the stored item of a member: a refusal that is a
@@ -272,7 +288,7 @@ func (t tiers) Local(ctx context.Context, m virtual.Member, _ virtual.Descriptor
 	if ok, err := t.servable(ctx, it); !ok || err != nil {
 		return nil, false, err
 	}
-	return t.serve(ctx, it), true, nil
+	return t.serve(ctx, m, it), true, nil
 }
 
 func (t tiers) RemoteCached(ctx context.Context, m virtual.Member, _ virtual.Descriptor) (virtual.Hit, bool, error) {
@@ -301,7 +317,7 @@ func (t tiers) RemoteCached(ctx context.Context, m virtual.Member, _ virtual.Des
 	if ok, err := t.servable(ctx, it); !ok || err != nil {
 		return nil, false, err
 	}
-	return t.serve(ctx, it), true, nil
+	return t.serve(ctx, m, it), true, nil
 }
 
 func (t tiers) RemoteFetch(ctx context.Context, m virtual.Member, _ virtual.Descriptor, w http.ResponseWriter) (bool, error) {
@@ -309,7 +325,11 @@ func (t tiers) RemoteFetch(ctx context.Context, m virtual.Member, _ virtual.Desc
 	if err != nil {
 		return false, err
 	}
+	undo := t.through(ctx, m)
 	err = t.rq.Host.Remote().Artifact(ctx, member, t.p, formats.Digests{}, w)
+	if err != nil {
+		undo()
+	}
 	return err == nil, err
 }
 

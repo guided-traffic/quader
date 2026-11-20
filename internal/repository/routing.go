@@ -164,6 +164,11 @@ type Route struct {
 	Dropped map[qname.Repo]string
 	// Decision is the pin rule or claim that narrowed the members.
 	Decision RouteDecision
+	// Placeholders are the members of the project upstream that are not active and that steps 2 and 3 would have kept, in
+	// list order: their patterns admit the request, no pin rule leaves them out and no claim takes the name elsewhere
+	// (R-REPO-072, Q-REPO-382). They take no part and are in Dropped as disabled; the virtual engine names the first one the
+	// caller would read in a 404.
+	Placeholders []Repository
 }
 
 // Route evaluates a request to a virtual repository: it drops the members that
@@ -219,15 +224,25 @@ func routeOf(cat *catalog.Registry, idx *claimIndex, nameOf func(int64) qname.Re
 		}
 	}
 	for _, m := range virtual.virt.members {
+		// A placeholder is dropped as disabled (R-REPO-072); the reason it would have had besides says whether it would have
+		// been asked for the request had it been active.
+		why := ""
 		switch {
-		case m.Disabled || m.Lifecycle != Active:
-			out.Dropped[m.Name] = DropDisabled
 		case !admits(m, info, req), unfoldable && m.Class == Remote:
-			out.Dropped[m.Name] = DropNotAdmitted
-		case pinned && !pin.names(m.Name.Key):
-			out.Dropped[m.Name] = DropPinnedOut
+			why = DropNotAdmitted
+		case pinned && !pin.names(MemberRef(virtual.Name.Project, m.Name)):
+			why = DropPinnedOut
 		case claimed != nil && !claimedBy(claimed, m.rid):
-			out.Dropped[m.Name] = DropClaimedElsewhere
+			why = DropClaimedElsewhere
+		}
+		switch {
+		case m.takesNoPart():
+			out.Dropped[m.Name] = DropDisabled
+			if why == "" && m.Placeholder() {
+				out.Placeholders = append(out.Placeholders, m)
+			}
+		case why != "":
+			out.Dropped[m.Name] = why
 		default:
 			out.Members = append(out.Members, m)
 		}
@@ -314,7 +329,7 @@ func remoteRefused(cat *catalog.Registry, idx *claimIndex, remote Repository, na
 		return false
 	}
 	if via != nil && via.virt != nil {
-		if pin, ok := via.virt.pins.best(name); ok && pin.names(remote.Name.Key) {
+		if pin, ok := via.virt.pins.best(name); ok && pin.names(MemberRef(via.Name.Project, remote.Name)) {
 			return false
 		}
 	}

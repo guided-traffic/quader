@@ -10,6 +10,8 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // Members, the deploy target and the pin rules as rows (R-REPO-017, R-REPO-021,
@@ -20,18 +22,85 @@ import (
 // repositories and returns them as rows to write. It adds the violations of
 // R-REPO-008 that only the database can decide to v: a member that is missing,
 // being deleted, of another format or itself virtual (nesting is R-REPO-018,
-// P1), and a deploy target that is not local. The members are locked FOR SHARE
-// in id order, so a concurrent deletion of a member waits for this transaction
-// instead of marking the repository after it was checked. The members, the deploy
-// target and the pin members are bare keys of project: a virtual repository holds
-// repositories of its own project only (Q-AUTHZ-206).
-func (s *Service) resolveVirtual(ctx context.Context, qs *q.Queries, v *validation, project string, d *Document) (*virtualRel, error) {
+// P1), a member of the project upstream that is no preset repository of the format
+// or is retired (R-REPO-071), and a deploy target that is not local. The members
+// are locked FOR SHARE in id order, both projects in one statement, so a
+// concurrent deletion of a member, or a switch of a member of upstream, waits for
+// this transaction instead of changing the repository after it was checked
+// (Q-REPO-234). The members and the pin members are written as MemberRef writes
+// them: bare keys of project and upstream/<key>; the deploy target is a bare key of
+// project (Q-AUTHZ-206, amended by Q-REPO-371). cur is the stored document of an
+// update, nil on a create: a member of upstream it lists that has been retired
+// since stays (R-REPO-071).
+func (s *Service) resolveVirtual(ctx context.Context, qs *q.Queries, v *validation, project string, d *Document, cur *Document) (*virtualRel, error) {
 	if d.Class != Virtual || d.Virtual == nil {
 		return nil, nil
 	}
 	vs := d.Virtual
-	var keys []string
+	byRef, err := lockMembers(ctx, qs, project, d)
+	if err != nil {
+		return nil, err
+	}
+	if len(vs.Members) > s.maxMembers {
+		v.add("/virtual/members", codeOutOfRange, "at most "+strconv.Itoa(s.maxMembers)+" members (repositories.max_virtual_members)")
+	}
+	var listed []string
+	if cur != nil && cur.Virtual != nil {
+		listed = cur.Virtual.Members
+	}
+	rel := &virtualRel{}
+	ref := func(k string) relRef { return relRef{id: byRef[k].ID, key: k} }
+	for i, k := range vs.Members {
+		ptr := "/virtual/members/" + strconv.Itoa(i)
+		if k == "" || k == d.Key || (strings.Contains(k, "/") && !isUpstreamRef(k)) {
+			continue // reported with the document rules
+		}
+		row, found := byRef[k]
+		c := s.checkMember(memberCheck{format: d.Format, ref: k, row: row, found: found, listed: slices.Contains(listed, k)})
+		if c.code != "" {
+			v.add(ptr, c.code, c.detail)
+			continue
+		}
+		if c.warning != "" {
+			v.warnings = append(v.warnings, Warning{Code: WarningMemberInactive, Pointer: ptr, Detail: c.warning})
+		}
+		rel.members = append(rel.members, ref(k))
+	}
+	if vs.DeployTarget != nil {
+		if row, found := byRef[*vs.DeployTarget]; found && !row.Upstream && slices.Contains(vs.Members, *vs.DeployTarget) {
+			if Class(row.Class) != Local {
+				v.add("/virtual/deployTarget", codeInvalidDeployTarget, "the deploy target must be a local repository")
+			} else {
+				t := ref(*vs.DeployTarget)
+				rel.target = &t
+			}
+		}
+	}
+	for _, r := range vs.Pinning.Rules {
+		pin := relPin{patterns: slices.Clone(r.Packages)}
+		for _, k := range r.Members {
+			if _, found := byRef[k]; found && slices.Contains(vs.Members, k) {
+				pin.members = append(pin.members, ref(k))
+			}
+		}
+		rel.pins = append(rel.pins, pin)
+	}
+	return rel, s.warnUnprotected(ctx, qs, v, rel, byRef)
+}
+
+// lockMembers locks the repositories a virtual document names, its members, its deploy target and its pin members, FOR SHARE in
+// one statement and in id order, and returns their rows by the member's written form: the bare key for a repository of project,
+// upstream/<key> for a repository of the built-in project (MemberRef). A name the document rules refuse is not looked up.
+func lockMembers(ctx context.Context, qs *q.Queries, project string, d *Document) (map[string]q.LockRepositoriesByKeysRow, error) {
+	vs := d.Virtual
+	var keys, upstreamKeys []string
 	add := func(k string) {
+		if uk, ok := upstreamMemberKey(k); ok {
+			if !slices.Contains(upstreamKeys, uk) {
+				upstreamKeys = append(upstreamKeys, uk)
+			}
+			return
+		}
 		if k != "" && k != d.Key && !strings.Contains(k, "/") && !slices.Contains(keys, k) {
 			keys = append(keys, k)
 		}
@@ -47,68 +116,118 @@ func (s *Service) resolveVirtual(ctx context.Context, qs *q.Queries, v *validati
 			add(k)
 		}
 	}
-	byKey := map[string]q.LockRepositoriesByKeysRow{}
-	if len(keys) > 0 {
-		rows, err := qs.LockRepositoriesByKeys(ctx, q.LockRepositoriesByKeysParams{Project: project, Keys: keys})
-		if err != nil {
-			return nil, err
-		}
-		for _, r := range rows {
-			byKey[r.Key] = r
-		}
+	byRef := map[string]q.LockRepositoriesByKeysRow{}
+	if len(keys)+len(upstreamKeys) == 0 {
+		return byRef, nil
 	}
-	if len(vs.Members) > s.maxMembers {
-		v.add("/virtual/members", codeOutOfRange, "at most "+strconv.Itoa(s.maxMembers)+" members (repositories.max_virtual_members)")
+	rows, err := qs.LockRepositoriesByKeys(ctx, q.LockRepositoriesByKeysParams{
+		UpstreamProject: wellknown.ProjectKey, Project: project, Keys: keys, UpstreamKeys: upstreamKeys,
+	})
+	if err != nil {
+		return nil, err
 	}
-	rel := &virtualRel{}
-	ref := func(k string) relRef { return relRef{id: byKey[k].ID, key: k} }
-	for i, k := range vs.Members {
-		ptr := "/virtual/members/" + strconv.Itoa(i)
-		row, found := byKey[k]
+	for _, r := range rows {
+		ref := r.Key
+		if r.Upstream && !wellknown.IsProject(project) {
+			ref = MemberRef(project, qname.Repo{Project: wellknown.ProjectKey, Key: r.Key})
+		}
+		byRef[ref] = r
+	}
+	return byRef, nil
+}
+
+// isUpstreamRef reports whether a member is written upstream/<key>.
+func isUpstreamRef(k string) bool {
+	_, ok := upstreamMemberKey(k)
+	return ok
+}
+
+// memberCheck is what checkMember decides one member on: the virtual repository's format, the member as written, its row (when
+// found) and whether the stored document of an update lists it already.
+type memberCheck struct {
+	format string
+	ref    string
+	row    q.LockRepositoriesByKeysRow
+	found  bool
+	listed bool
+}
+
+// memberVerdict is the outcome of checkMember: a violation (code and detail), or the detail of the warning member_inactive of
+// an accepted member of upstream that is not active, or neither.
+type memberVerdict struct {
+	code, detail string
+	warning      string
+}
+
+// checkMember applies the rules of R-REPO-008 and R-REPO-071 that need the member's row. A member of the project upstream is a
+// preset repository of the virtual repository's format that is not retired; a retired one the document listed before stays
+// (R-REPO-071), and one that is not active is accepted with member_inactive, which names it and its state, so a team lists it
+// before an administrator switches it on (Q-REPO-372).
+func (s *Service) checkMember(c memberCheck) memberVerdict {
+	row := c.row
+	if isUpstreamRef(c.ref) {
+		facts := s.memberFacts(row)
 		switch {
-		case k == "" || k == d.Key || strings.Contains(k, "/"):
-			// reported with the document rules
-		case !found:
-			v.add(ptr, errs.CodeInvalidMember, "the project "+project+" has no repository with the key "+strconv.Quote(k))
-		case Lifecycle(row.Lifecycle) == Deleting:
-			v.add(ptr, errs.CodeInvalidMember, "the repository is being deleted")
-		case row.Format != d.Format:
-			v.add(ptr, errs.CodeInvalidMember, "the repository has the format "+row.Format+", not "+d.Format)
-		case Class(row.Class) == Virtual:
-			v.add(ptr, errs.CodeInvalidMember, "a virtual repository takes local and remote members; nesting arrives with R-REPO-018")
+		case !c.found:
+			return memberVerdict{code: errs.CodeInvalidMember, detail: c.ref + " is no repository of the project upstream"}
+		case facts.System():
+			return memberVerdict{code: errs.CodeInvalidMember, detail: c.ref + " is used by Quader only and is never a member of a virtual repository"}
+		case row.Format != c.format:
+			return memberVerdict{code: errs.CodeInvalidMember, detail: c.ref + " is of another format: " + row.Format + ", not " + c.format}
+		case facts.Retired() && !c.listed:
+			return memberVerdict{code: errs.CodeInvalidMember, detail: c.ref + " is no longer offered by Quader"}
 		case debMemberUnverified(row.Format, row.Class, row.Config):
-			v.add(ptr, errs.CodeDebMemberUnverified, "a remote Debian repository without deb.upstreamKeys cannot be a member: the virtual repository signs what it merges with its own key and would hand on content nobody checked")
-		default:
-			rel.members = append(rel.members, ref(k))
+			return memberVerdict{code: errs.CodeDebMemberUnverified, detail: c.ref + " carries no deb.upstreamKeys, so it cannot be a member: the virtual repository signs what it merges with its own key and would hand on content nobody checked"}
 		}
-	}
-	if vs.DeployTarget != nil {
-		if row, found := byKey[*vs.DeployTarget]; found && slices.Contains(vs.Members, *vs.DeployTarget) {
-			if Class(row.Class) != Local {
-				v.add("/virtual/deployTarget", codeInvalidDeployTarget, "the deploy target must be a local repository")
-			} else {
-				t := ref(*vs.DeployTarget)
-				rel.target = &t
-			}
+		if facts.State != wellknown.StateActive {
+			return memberVerdict{warning: inactiveDetail(c.ref, facts.State)}
 		}
+		return memberVerdict{}
 	}
-	for _, r := range vs.Pinning.Rules {
-		pin := relPin{patterns: slices.Clone(r.Packages)}
-		for _, k := range r.Members {
-			if _, found := byKey[k]; found && slices.Contains(vs.Members, k) {
-				pin.members = append(pin.members, ref(k))
-			}
-		}
-		rel.pins = append(rel.pins, pin)
+	switch {
+	case !c.found:
+		return memberVerdict{code: errs.CodeInvalidMember, detail: "the project has no repository with the key " + strconv.Quote(c.ref)}
+	case Lifecycle(row.Lifecycle) == Deleting:
+		return memberVerdict{code: errs.CodeInvalidMember, detail: "the repository is being deleted"}
+	case row.Format != c.format:
+		return memberVerdict{code: errs.CodeInvalidMember, detail: "the repository has the format " + row.Format + ", not " + c.format}
+	case Class(row.Class) == Virtual:
+		return memberVerdict{code: errs.CodeInvalidMember, detail: "a virtual repository takes local and remote members; nesting arrives with R-REPO-018"}
+	case debMemberUnverified(row.Format, row.Class, row.Config):
+		return memberVerdict{code: errs.CodeDebMemberUnverified, detail: "a remote Debian repository without deb.upstreamKeys cannot be a member: the virtual repository signs what it merges with its own key and would hand on content nobody checked"}
 	}
-	return rel, s.warnUnprotected(ctx, qs, v, rel, byKey)
+	return memberVerdict{}
+}
+
+// memberFacts derives the kind and the state of a member of the project upstream from its locked row (Q-REPO-375), nil for any
+// other row: disabled is read from the stored document as every read of the repository reads it, so a document that does not
+// load counts as off.
+func (s *Service) memberFacts(row q.LockRepositoriesByKeysRow) *UpstreamFacts {
+	if !row.Upstream || row.UpstreamKind == "" {
+		return nil
+	}
+	r, _ := toRepository(q.Repository{ID: row.ID, Key: row.Key, Class: row.Class, Format: row.Format, Config: row.Config}, wellknown.ProjectKey, s.cat)
+	kind := wellknown.Kind(row.UpstreamKind)
+	return &UpstreamFacts{Kind: kind, State: wellknown.StateOf(kind, r.Disabled, row.SwitchedOnBefore, row.Retired)}
+}
+
+// inactiveDetail is the detail of the warning member_inactive: the member, its state and what it means (R-REPO-071).
+func inactiveDetail(ref string, state wellknown.State) string {
+	switch state {
+	case wellknown.StateSwitchedOff:
+		return ref + " is " + string(state) + ": it takes no part until an administrator of Quader switches it on again"
+	case wellknown.StateRetired:
+		return ref + " is " + string(state) + ": Quader no longer offers it and it takes no part; remove it from the members"
+	}
+	return ref + " is " + string(state) + ": it takes no part until an administrator of Quader switches it on"
 }
 
 // warnUnprotected raises dependency_confusion_unprotected (R-REPO-023): the
 // virtual repository has local and remote members, no pin rule, and none of its
-// local members claims anything automatically or by a claim of its own.
+// local members claims anything automatically or by a claim of its own. A member
+// of the project upstream is a remote member, active or not (R-REPO-071).
 func (s *Service) warnUnprotected(ctx context.Context, qs *q.Queries, v *validation, rel *virtualRel,
-	byKey map[string]q.LockRepositoriesByKeysRow,
+	byRef map[string]q.LockRepositoriesByKeysRow,
 ) error {
 	if len(rel.pins) > 0 {
 		return nil
@@ -116,7 +235,7 @@ func (s *Service) warnUnprotected(ctx context.Context, qs *q.Queries, v *validat
 	var locals []int64
 	remotes := false
 	for _, m := range rel.members {
-		row := byKey[m.key]
+		row := byRef[m.key]
 		switch Class(row.Class) {
 		case Local:
 			locals = append(locals, m.id)

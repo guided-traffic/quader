@@ -7,12 +7,15 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
-// The rules of R-REPO-008, R-REPO-017, R-REPO-021 and R-REPO-023 that a document
-// alone decides. What needs the other repositories (a member exists, is of the
-// format, is not being deleted) is decided against PostgreSQL in members.go, in
-// the same pass and under the same locks.
+// The rules of R-REPO-008, R-REPO-017, R-REPO-021, R-REPO-023 and R-REPO-071 that a
+// document alone decides. What needs the other repositories (a member exists, is of
+// the format, is not being deleted, a member of upstream is a preset repository that
+// is not retired) is decided against PostgreSQL in members.go, in the same pass and
+// under the same locks. A member is written as MemberRef writes it: a bare key of
+// the own project, or upstream/<key>.
 
 const (
 	codeInvalidDeployTarget = "invalid_deploy_target"
@@ -41,15 +44,22 @@ func validateVirtual(v *validation, cat *catalog.Registry, d *Document) {
 	isMember := map[string]bool{}
 	for i, k := range vs.Members {
 		ptr := "/virtual/members/" + strconv.Itoa(i)
+		// upstream/<key> names a repository of the built-in project, which the lookup decides (R-REPO-071, Q-REPO-381); any other
+		// qualified name, the own project's included, is no member.
+		uk, upstream := upstreamMemberKey(k)
 		switch {
 		case k == "":
 			v.add(ptr, errs.CodeInvalidMember, "a member is a repository key")
-		case strings.Contains(k, "/"):
-			v.add(ptr, errs.CodeInvalidMember, "a member is a bare key of the virtual repository's own project; a repository of another project cannot be a member")
+		case strings.Contains(k, "/") && !upstream:
+			v.add(ptr, errs.CodeInvalidMember, "a member is a bare key of the virtual repository's own project or upstream/<key> of a repository of the project upstream; a repository of another project cannot be a member")
 		case k == d.Key:
 			v.add(ptr, errs.CodeInvalidMember, "a virtual repository cannot be its own member")
 		case isMember[k]:
 			v.add(ptr, errs.CodeInvalidMember, "the repository is listed twice")
+		case upstream && isMember[uk], !upstream && isMember[wellknown.ProjectKey+"/"+k]:
+			// Formats name a member by its key in what they hand to a client (Debian's members/<key>/ paths, Ansible's role ids),
+			// so two members of one key would be one (Q-REPO-401).
+			v.add(ptr, errs.CodeInvalidMember, "a repository of the own project and a repository of the project upstream with the same key cannot both be members")
 		}
 		isMember[k] = true
 	}

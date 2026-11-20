@@ -142,18 +142,24 @@ The routing above is the same for everybody; the engine ([virtual.md](../develop
 
 ## Members of the project `upstream` and placeholders
 
-Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-071, R-REPO-072). A virtual repository lists
-`upstream/<key>` beside its own project's repositories. What the routing above does with such a member:
+Built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-071, R-REPO-072; [virtual.md](../developer/virtual.md#members-of-the-project-upstream-and-placeholders)).
+A virtual repository lists `upstream/<key>` beside its own project's repositories, and no repository of any other project: the document
+rule refuses every other qualified name, and the guard AI006 refuses the row of a member of another project whatever wrote it. What the
+routing above does with such a member:
 
-- **It is a remote member like any other.** Pin rules may name it; a `members` claim of a local member keeps the claimed names away from
+- **It is a remote member like any other.** Pin rules name it by `upstream/<key>`, so a repository of the own project with the same key is
+  not the same member (and the two are not both members, Q-REPO-401); a `members` claim of a local member keeps the claimed names away from
   it; a `global` claim and remote refusal hold for it, also addressed directly; `dependency_confusion_unprotected` counts it, active or
-  not. Its key is the same in every installation, so the explanation names it to every caller.
+  not. Its key is the same in every installation, so the explanation names it to every caller, as `no-read` to one who cannot read it.
 - **A member that is not switched on is a placeholder**, dropped as a disabled member (`Routing.Route`), and skipped by the shadowing
-  check and the auto claim (`Routing.ExposureSet`, both in [routing.go](../../internal/repository/routing.go)). It takes effect again
-  on every replica when an administrator switches the repository on, with no write to the virtual repository
+  check and the auto claim (`Routing.ExposureSet`, both in [routing.go](../../internal/repository/routing.go)); a system repository of
+  `upstream` named by a row anyway is dropped the same way. A placeholder takes effect again on every replica when an administrator
+  switches the repository on, with no write to the virtual repository
   ([H-1026](#h-1026--switching-a-well-known-repository-on-widens-every-virtual-repository-that-lists-it)).
-- **The 404 says why** only where the placeholder would have been consulted (patterns, pin rules, claims), so the sentence never names
-  a member for a name it would not have served.
+- **The 404 says why** only where the placeholder would have been consulted (patterns, pin rules, claims) and only to a caller who would
+  read it once it is on (a user flagged external is not told about an `internal` one), so the sentence never names a member for a name it
+  would not have served. Whether a 404 carries the sentence tells, like the explanation, whether a claim or a pin rule takes the name
+  elsewhere: the observation of H-7, no more. An endpoint with exposure rules names no placeholder (R-EP-018).
 
 ## What this does not cover
 
@@ -166,10 +172,10 @@ The gaps of the spec pages whose mechanism this page describes:
 
 ### H-1026 · Switching a well-known repository on widens every virtual repository that lists it
 
-Stage: the state of a well-known repository and the placeholders of R-REPO-072 (specified, not built). Subject: the names that the
-virtual repositories listing it resolve.
+Stage: the state of a well-known repository (R-REPO-068, not built: nothing switches one on yet) and the placeholders of R-REPO-072 (built).
+Subject: the names that the virtual repositories listing it resolve.
 
-- **Dormant until built; live by design (the owner's placeholder, "b").** While a listed well-known repository is off, a name that no
+- **Dormant until the switch of R-REPO-068 is built; live by design from then on (the owner's placeholder, "b").** While a listed well-known repository is off, a name that no
   local member holds answers 404 through the virtual repository. The moment an administrator switches it on, such a name resolves from
   the public registry in every virtual repository that lists it, with no change there and no event in the team's audit. A team that
   listed `upstream/npmjs` while it was off, did not claim its internal names and relies on the 404 for a name it has not published yet,

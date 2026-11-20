@@ -8,12 +8,13 @@ import (
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
-// ResolvedFromHeader names the member that served an artifact (R-REPO-019) by its key: a member lives in the project
-// of its virtual repository (Q-REPO-217), so the key names it. It is a member the
-// caller can read, so it discloses nothing new; it is never sent on an endpoint with exposure
-// rules, because members are not exposed there (R-EP-018).
+// ResolvedFromHeader names the member that served an artifact (R-REPO-019) as the member list writes it: the key of a
+// member of the virtual repository's project (Q-REPO-217), upstream/<key> for a member of the project upstream
+// (R-REPO-071). It is a member the caller can read, so it discloses nothing new; it is never sent on an endpoint with
+// exposure rules, because members are not exposed there (R-EP-018).
 const ResolvedFromHeader = "Quader-Resolved-From"
 
 // Artifact walks the three tiers of R-REPO-019 step 6 and serves the first hit: the local members
@@ -33,7 +34,7 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 	}
 	serve := func(m Member, hit Hit, source string) error {
 		if !c.Rules {
-			w.Header().Set(ResolvedFromHeader, m.Repo.Name.Key)
+			w.Header().Set(ResolvedFromHeader, repository.MemberRef(repo.Project, m.Repo.Name))
 		}
 		r.m.resolved(repo.String(), source)
 		return hit(w)
@@ -66,7 +67,7 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 		}
 		tw := &trackWriter{ResponseWriter: w}
 		if !c.Rules {
-			tw.Header().Set(ResolvedFromHeader, m.Repo.Name.Key)
+			tw.Header().Set(ResolvedFromHeader, repository.MemberRef(repo.Project, m.Repo.Name))
 		}
 		herr := hit(tw)
 		if herr == nil || tw.wrote || !contentLost(herr) {
@@ -92,7 +93,7 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 		}
 		tw := &trackWriter{ResponseWriter: w}
 		if !c.Rules {
-			tw.Header().Set(ResolvedFromHeader, m.Repo.Name.Key)
+			tw.Header().Set(ResolvedFromHeader, repository.MemberRef(repo.Project, m.Repo.Name))
 		}
 		found, err := t.RemoteFetch(ctx, m, d, tw)
 		if found && err == nil {
@@ -118,7 +119,7 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 	if failure != nil {
 		return failure
 	}
-	return notFound()
+	return p.notFound()
 }
 
 // trackWriter notes whether the response has been started, so that a fetch which failed after the
