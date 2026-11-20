@@ -6,7 +6,7 @@ How much you may download from Quader and how fast, where you see what you downl
 
 An installation can limit how much each caller downloads: how many requests per second and per hour, how many bytes per hour and per day from the cache and from the upstream of a remote repository, how many downloads at once, and how many refused requests per hour. Your sessions in the browser and every personal token of yours share one budget; a technical token of a system has a budget of its own.
 
-Every installation starts in the mode **Audit**: everything is counted and shown, and nothing is refused or slowed. In the mode **Enforce** the limits apply. Your **Usage** page says which mode is in force.
+Every installation starts in the mode **Enforce**: the limits apply. In the mode **Audit**, which an administrator can switch to, everything is counted and shown, and nothing is refused or slowed. Your **Usage** page says which mode is in force.
 
 ## Your usage page
 
