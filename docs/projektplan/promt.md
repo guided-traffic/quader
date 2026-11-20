@@ -864,7 +864,22 @@ runs are in `git log`; this section holds the current state.
   builder decides what the matrix tries (the standard path with the CRDs installed, the Secrets per kind once),
   goes through every value set and every other install of the chart outside the development profile, the set
   `upgrade-release` among them, and runs two cells on clusters of its own (since 23:27); its commit lands after
-  the nightly, and the matrix is dispatched alone then.
+  the nightly, and the matrix is dispatched alone then. **Reported at 23:39, held on its branch** (one commit of
+  the type `test`; the chart did not change): reproduced on a fresh kind cluster with tonight's exact error; of all
+  six value sets the Certificate is the only kind a plain cluster does not know. The matrix now tries the standard
+  path on every cell, as Q-HA-347 makes the issuer the plain way: each leg first dry-runs the one set that names a
+  Secret per kind on the bare cluster (the path without cert-manager needs no CRD), then applies the CRDs alone of
+  the pinned cert-manager chart (the development profile's pin; no controller and no webhook are needed for a dry
+  run or for an install whose pods never start), runs the six sets, and after the real install reads the issuer of
+  each kind's Certificate. About 2 s more a leg. All four cells passed on clusters of its own in 32 to 41 s each.
+  Recorded in the developer page of the matrix, under Q-HA-274 (whose line "none needs a CRD" was no longer true)
+  and in the prerequisites of R-HA-049, where the landing had left cert-manager out. **Every other install of the
+  chart outside the matrix, read:** the job `chart` and the chart tests render offline; every end-to-end leg,
+  the restore namespace and the upgrade tests use the development profile, which installs cert-manager; nothing
+  else fails. **The set `upgrade-release`** can pass again since the release of 22:26, whose own values already name
+  the issuer; between the landing and that release it would have waited 15 minutes for a Secret nobody issues
+  (read, not run). **Not verified until the dispatch:** the pull of the cert-manager chart on a hosted runner, the
+  legs' times there.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -885,7 +900,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (23:27), four builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the platform matrix's fix); the builders of packages 1 and 4 have finished:
+- **In work** (23:39), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once); held for the end of the nightly: the platform matrix's fix:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
