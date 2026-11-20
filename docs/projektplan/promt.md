@@ -1031,7 +1031,7 @@ runs are in `git log`; this section holds the current state.
     the task that fetches the database into `upstream/scanner-trivy`, the system's own reading through that
     repository, the actor of its fills, the cleanup's exemption for the layer in use, the "in use" line of the admin
     page and the sources screen; a migration with the next free number after the malware scan's 00088.
-    **Reported at 23:30, sent back at 23:25** (one commit on its branch, based before the evening's fixes): the task
+    **Reported at 23:24, sent back at 23:25** (one commit on its branch, based before the evening's fixes): the task
     `vuln-sync-trivy-db` asks the repository the configuration names (`upstream/scanner-trivy` by default) for
     `aquasec/trivy-db:2` through the worker's own fetching, as the system subject, so the repository fetches the layer
     once and keeps it, and a second run only checks the tag; a local repository is read from storage with no request,
