@@ -538,6 +538,10 @@ records the recorder that tells such a stall apart).
   "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
   breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
   Seen on 2026-11-20, not fixed.
+- The development profile's chart values pin the image tag `dev`, so `QUADER_IMAGE` alone does not change what the
+  pods of `make dev-up` run; a builder with a cluster of its own has to tag its image `dev` inside its kind nodes
+  (seen on 2026-11-20). The case of `TestE12Valkey` with every Sentinel unreachable relies since that day on the
+  cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -775,8 +779,24 @@ runs are in `git log`; this section holds the current state.
   reading:** the scanner landing made the development profile's NetworkPolicies for Valkey name its clients by their
   component (`api`, `packages`, `worker`, `e2e-driver`), because scanner pods carry the serve label too and are no
   client of Valkey (Q-HA-344); the extra replicas that test starts carry the component `e2e-replica`, which the list
-  does not hold, so they reach no Sentinel. A change of the landing, so fixed at once by a builder of its own
-  (below), who also goes through every other pod the suite and the profile create. **Not verified in CI of the
+  does not hold, so they reach no Sentinel. A change of the landing, so fixed at once by a builder of its own.
+  **Confirmed and fixed** (reported at 21:44, one commit of the type `test`, landed with the System page's fix):
+  reproduced on a kind cluster of its own with the old list, three attempts of 49 s each ending in `no_sentinel`;
+  the profile has one policy of its own for both tiers (`quader-valkey-clients`, ports 16379 and 36379), and its
+  list now names `e2e-replica`. The fix is in the policy and not in the test's label, because the extra replica is a
+  copy of `packages` that holds the Valkey credential, and the label `packages` would put it under the Services and
+  the disruption budgets. **No test had shown that the scanner is cut off from Valkey:** the third case of that test
+  (every Sentinel unreachable) now starts its replica with the scanner's component label instead of a loopback
+  Sentinel address, so the policy itself makes the Sentinels unreachable; with `scanner` put on the list as a control
+  the case failed as it should. No pod and no case more; the whole test took 150.8 s against 147.7 s measured before.
+  On that cluster: `TestE12Valkey` passed at its first run, the set `push` passed in 730 s. **Every other pod the
+  suite and the profile create, read against the list:** the pools carry the component `worker`, the driver is on
+  the list, the restore namespace runs only the release's three kinds, the Jobs and the clients' pods hold no Valkey
+  credential, the Bastion has a policy of its own; nothing else is cut off. **Not run, read only, until the nightly:**
+  the sets `drain`, `backup`, `bastion`, `alerts`, `upgrade`. **Beside the older finding, not a return of it:** the
+  open item of section 12 about the first readiness and Valkey is a matter of timing on a starved runner, rare and
+  mixed in its reasons; tonight's was the network dropping the traffic, three of three; the retry built for the old
+  one is why it showed as three attempts that could not tell, and not as a failure to reach. **Not verified in CI of the
   scanner landing because of the cancelled run:** the legs `npm`, `oci`, `access-long`, `vuln` and `bastion` and the
   three integration shards on that commit; its builder ran `e2e (vuln)` twice on a cluster of its own and five
   integration areas; the nightly of tonight runs every leg. **The run of the malware scan's first stage
@@ -809,10 +829,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (21:39), four builders, the most that run at once:
-  - **The Valkey policies of the development profile and the test's extra replicas** (since 21:12): the fix, the look
-    at every other pod of the suite and the profile for the same miss, `TestE12Valkey` on a kind cluster of its own, and
-    how tonight's failure relates to the older finding about the Valkey start cases.
+- **In work** (21:44), four builders, the most that run at once:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -849,8 +866,8 @@ runs are in `git log`; this section holds the current state.
     and an in-process fake of it, the metrics. Bound by this evening's lessons: no default or local start may be
     refused for a missing scanner's address; anything under `web/` gets the UI tests; a check that fails without
     gating gets a name and a sentence for the System page.
-  **Waiting for a free builder:** package B of the scanner (the next entry); package 3 of the malware scan (the
-  database and the chart), which also waits for package 2's first stage.
+  **Waiting for a free builder:** package 3 of the malware scan (the database and the chart), which also waits for
+  package 2's first stage.
   **How the malware scan lands from here** (the development agent's, 2026-11-20): its first stage is on `main`; what
   follows (the gate, the screens, the scanning side, the database and the chart) is collected on a branch
   `feat/malware` and lands together, as the project `upstream` did. Why: with the scanning on by default and no
@@ -893,8 +910,8 @@ runs are in `git log`; this section holds the current state.
     scanner's address, which with the scanning on by default may refuse a default or local start unless the default
     queues leave `malware` out; the count of unchecked blobs is computed over all items at every read of the
     settings, costly on a large installation.
-  - **Package B of the scanner, the analyser's database in a repository** (waiting for a free builder; on `main` with
-    package A and the malware scan's migration, so that its own takes 00089 without a gap):
+  - **Package B of the scanner, the analyser's database in a repository** (since 21:44; on `main` with package A
+    and the malware scan's migration, so that its own takes 00089 without a gap):
     the task that fetches the database into `upstream/scanner-trivy`, the system's own reading through that
     repository, the actor of its fills, the cleanup's exemption for the layer in use, the "in use" line of the admin
     page and the sources screen; a migration with the next free number after the malware scan's 00088.
