@@ -2089,6 +2089,20 @@ agent** is not decided until the owner has said so.
   the limits together with this variant's request pooler (the usage flush of every replica goes through it every ten
   seconds). The cluster-state artifact holds the pods after the teardown and says nothing. Decides: the same leg in a full
   nightly on a quiet `main`, and `drain-load-b`, `-c` and `-e` of this nightly against their baseline of the evening.
+  - **Decided by the runs that followed** (2026-11-20, 03:00 to 06:20 local time): it was the neighbours, not the limits.
+    In the same nightly, after the pipeline beside it had ended, the plain drain variants ran in Enforce and were faster
+    than the evening's baseline without the limits: `drain-load-b` warm-up 392 ms and drain 414 ms (500 and 533 before),
+    `drain-load-c` warm-up 311 ms (479), `drain-load-e` 345 and 483 ms (532 ms and 1.48 s, the red run of F-160, which was
+    not reproduced). In the full nightly on a quiet `main` (44653040868, nothing beside it) **`drain-load-pooler` was
+    green: warm-up 276 ms, drain 472 ms, no `429`**, 292 `npm ci` and 497 restores where the slow run had 210 and 225.
+    **What stays of it:** ten kind legs of a Test and Release run beside a nightly leg made that leg six to nine times
+    slower, which is more than the "tenth of its CPUs" F-133 was closed with for one neighbour; a code push during a
+    nightly costs the nightly its numbers. And a caller at its parallel figure turns a slow replica into refusals
+    (F-163's question for the walkthrough).
+  - **The other two red legs of that nightly, in the quiet run:** `e2e (backup)` green (F-162, the second set
+    bootstraps with `--replace`); `e2e (npm-ha-soak)` green (F-163): with the rule Unlimited P-8 served 489 of 1,000
+    offered requests a second with no `429` (135 a second and 1,922 refusals the night before), P-7 824 of 2,000 (402
+    before, with neighbours); P-1 p99 12.4 ms, P-3 4.4 ms, P-5 8.4 ms. `npm-ha` in Enforce: warm-up 193 ms, drain 173 ms.
 - **F-163 · The capacity test of npm met its own callers' limit in Enforce** (the full nightly on the download limits,
   44625277245 of 2026-11-19, `e2e (npm-ha-soak)`, `TestNPMPerf` P-8: of 1,000 requests a second for a cached 50 KiB
   tarball over 20 technical tokens, 1,922 were answered `429`; the replicas' logs name `limits.parallelDownloads` of the
