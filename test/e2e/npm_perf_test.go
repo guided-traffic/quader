@@ -44,6 +44,7 @@ func TestNPMPerf(t *testing.T) {
 		ensurePolicy(t, adm, perfSA, []string{npmLocalKey, npmRemoteKey, npmAllKey}, [2]any{"sa:" + perfSA, []string{"read"}})
 		// Each technical token is a subject of the download limits (R-LIM-001): twenty tokens carry P-7's 2,000 requests/s
 		tokens := pacedSATokens(t, adm, perfSA, 20, 3600)
+		unlimitedTokens(t, adm, perfSA)
 		local := func(p string) string {
 			return strings.Replace(p, npmAddr(npmAllKey)+"/", npmAddr(npmLocalKey)+"/", 1)
 		}
