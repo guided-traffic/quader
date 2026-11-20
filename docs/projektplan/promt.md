@@ -601,9 +601,11 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   refused request is not counted**, the block after refused requests is the brake against hammering; not built yet); podman holds a byte-limit refusal for about 16
   minutes (document; or a short `Retry-After` there: **decided by the owner on 2026-11-20, it stays and is documented**; the
   manual is to name the job's timeout as the setting for it); the new client cases run when their format changes, not when only the limits'
-  code changes (keep, as the rule has it; or add the limits' paths to the five legs).
+  code changes (keep, as the rule has it; or add the limits' paths to the five legs: **decided by the owner on 2026-11-20, it stays**).
 - **Under overload a caller at its parallel figure waits ten seconds for its refusal**, where the server's own shedding answers at
-  once (F-163, section 12 B): should a limit answer faster when the replica is already shedding?
+  once (F-163, section 12 B): should a limit answer faster when the replica is already shedding? **Decided by the owner on
+  2026-11-20:** the downloads that wait for a parallel slot are capped at a share of a replica's request slots, a further
+  one is refused at once; the capacity test then has to pass without exempt tokens. In work with the other limit decisions.
 
 **Decisions the development agent or a builder took, for his walkthrough** (each decision block says so)
 
