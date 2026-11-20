@@ -560,13 +560,13 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20**, 10:35.
 
-- **Landed on 2026-11-20:** W-27 (**Set up client** in variant A), W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
+- **Landed on 2026-11-20:** the limits' package (the built-in profiles from a measurement, a refused request not counted,
+  waiting downloads capped), W-27 (**Set up client** in variant A), W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
   visibility behind a fold, and the measurement of what a format costs ([test-cost.md](../developer/test-cost.md)).
 - **Red on `main`, not gating** (Test and Release 44715970992 of b74d0e98, read at 12:15): `UI layout checks` (the screen
   `setup-deb`: the label of a fold on two lines at 390 px) and `e2e (access-long)` (journey `20-ansible` expects the guide's
   first section open) come from W-27, a builder fixes both; `integration (shard c)` is `TestR_DEB_025` of section 12 D.
-- **In work:** the fix above; the limits' package (larger bursts from a measurement, refused requests not counted, waiting
-  downloads capped, the manual). Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
+- **In work:** the fix above. Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
   (larger default bursts from a measurement of one pull; a refused request is not counted in the request windows; the
   manual names the job's timeout for podman).
 - **Waits for the owner:** which of the measurement's candidates is cut first (section 12 A); put to him: whether a format's
@@ -617,8 +617,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   into the specification by a planner: the project is built in (an amendment of Q-AUTHZ-206, narrow: it holds only the
   repositories the product defines from the formats' upstream presets, nothing can be created in it, and every one is off
   until an administrator switches it on); a changed address is marked as differing from the product's and can be reset; a
-  stored credential is entered again when its hosts change, as for every remote (R-REPO-033). Open: the project's key, the
-  binding of a host. **The analyser's database** (owner, 2026-11-20, no longer parked): it must not make everybody use a
+  stored credential is entered again when its hosts change, as for every remote (R-REPO-033). The project's key is `upstream` (owner, 2026-11-20: "Okay, lass uns upstream
+  nehmen"). Open: the binding of a host. **The analyser's database** (owner, 2026-11-20, no longer parked): it must not make everybody use a
   central `ghcr` ("Ich fände es doof, wenn Trivy … dazu führt, dass jeder auch das zentrale ghcr nutzen muss"), and there is
   no second way that falls back to the public source. One repository of the well-known project holds it and lets nothing
   else through: "Nenn es nicht trivy-db sondern 'scanner-trivy', es ist immer private und nur für unseren Scanner. Der Admin
@@ -636,19 +636,6 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   is typed once per repository, and **Allow** fixes its token service in one click. (b) Yes: a list per format in the general
   settings, served with the format's presets. Recommendation: (a) now, (b) as its own task if he wants it.
 - **Palette** (T-21c): should the vulnerability report's trend chart and the grade bar share one palette?
-- **What a client does at a limit** (section 12 B), each with the builder's options: docker gives up at once on any 429 where the
-  other clients wait (keep; hold a request for seconds on the registry's paths, which changes his decision 4; or larger default
-  bursts: **decided by the owner on 2026-11-20, larger default bursts**, set from a measurement of the requests of one pull,
-  for every format, not built yet); a client that retries a second apart is never admitted at a tight request limit because a refused request still counts
-  in the window (keep; or do not count refused requests in the request windows: **decided by the owner on 2026-11-20, a
-  refused request is not counted**, the block after refused requests is the brake against hammering; not built yet); podman holds a byte-limit refusal for about 16
-  minutes (document; or a short `Retry-After` there: **decided by the owner on 2026-11-20, it stays and is documented**; the
-  manual is to name the job's timeout as the setting for it); the new client cases run when their format changes, not when only the limits'
-  code changes (keep, as the rule has it; or add the limits' paths to the five legs: **decided by the owner on 2026-11-20, it stays**).
-- **Under overload a caller at its parallel figure waits ten seconds for its refusal**, where the server's own shedding answers at
-  once (F-163, section 12 B): should a limit answer faster when the replica is already shedding? **Decided by the owner on
-  2026-11-20:** the downloads that wait for a parallel slot are capped at a share of a replica's request slots, a further
-  one is refused at once; the capacity test then has to pass without exempt tokens. In work with the other limit decisions.
 
 **Decisions the development agent or a builder took, for his walkthrough** (each decision block says so)
 
@@ -672,6 +659,16 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   visitor (Q-UI-804); a closed fold lost 12 px of padding on every screen (Q-UI-805). Seen by the development agent on the
   render: where a snippet has nothing to run for the reader, a terminal window holds only a comment (Ansible Galaxy, a
   repository open to anonymous readers).
+- The limits (2026-11-20), built on his four decisions (larger bursts from a measurement; a refused request is not counted;
+  podman's wait stays and is documented; waiting downloads are capped): the built-in profiles' new figures, requests a second
+  / burst / an hour: Anonymous 50 / 1,000 / 20,000, Restricted 100 / 1,000 / 25,000, Standard 200 / 4,000 / 100,000,
+  Technical 1,000 / 20,000 / 1,000,000 (Q-LIM-59; measured: a pull of 40 layers is 48 requests in 0.28 s); the request
+  windows are decided and counted by one script in the round trip of before, so **Quader's Valkey user needs `EVALSHA` and
+  `EVAL`** (Q-LIM-57; his installation runs as the operator's `default` user, H-72, and is not affected); every rate limit
+  of the installation counts nothing when it refuses (Q-LIM-61); waiting downloads may hold a quarter of a replica's request
+  slots, 1,024 of 4,096 (Q-LIM-60). **To put to him as a question of its own:** a 429 of a request figure now counts toward
+  `refusedPerHour` and its block of 15 minutes (Q-LIM-58), which a client with many connections reaches in one overflow
+  (Anonymous: 60 refusals an hour); the development agent had told him, wrongly, that this was already so.
 - The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
   well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
   repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).
@@ -822,12 +819,12 @@ the walk items and the run record); what the code holds beyond the plan has not 
 - **W-25 through a virtual repository** has integration tests of its own for OCI and npm; NuGet, Ansible and Debian have unit
   tests only; OCI through a virtual address has no unit test. The background path's own refusal by include and exclude
   patterns is exercised through one case.
-- **Under overload a caller at its parallel figure waits ten seconds for its refusal** while the server sheds at once (F-163):
-  not a test, a question for the owner, listed here because the capacity test only passes with its tokens exempted.
-- **The four behaviours of clients the owner has not decided on** (2026-11-20; the builder's options are in
-  [With the owner](#with-the-owner)): docker gives up on any 429 (decided: larger default bursts, to build);
-  a client retrying a second apart is never admitted at a tight request limit; podman's 16 minutes at a byte limit; the
-  client cases run on changes of their format only.
+- **Left by the limits' package of 2026-11-20** (its builder's list): the upstream-request figure of a remote's budget check
+  (`MayFetch`) still counts a request it refuses, the decision named the request windows only; an endpoint's own rate class
+  runs before the request check, so a request it admits and the check refuses still counts there; the profile editor's help
+  text on waiting downloads was not touched; the client cases of Debian, npm and Ansible Galaxy were not run again; every run
+  on the kind cluster was on `linux/arm64`. `package_write` (burst 400) would not hold a push of two platforms with more than
+  about 65 distinct layers each (Q-LIM-56).
 - **Refactor, named by the builders:** the class `package_write` is a stand-in until upload figures exist (Q-LIM-27); a
   screen cannot change a technical token's description or delete one (API only); the usage list's cursor is an offset
   (Q-LIM-45).
