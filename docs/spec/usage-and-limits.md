@@ -348,7 +348,12 @@ A request is a **refused request** of its subject when its answer is one of thes
   for a caller with or without a credential; not the challenge (below);
 - `401` because a presented credential failed (R-LIM-003);
 - `404` `repository_not_found` or a project that does not exist, for a caller with a credential (the `401` R-AUTH-037 gives an
-  anonymous caller for an unknown key is the challenge and not refused, below).
+  anonymous caller for an unknown key is the challenge and not refused, below);
+- `429` `rate_limited` by a request figure of its budget key (`requestsPerSecond`/`requestsBurst`, `requestsPerHour`) at stage 7, in
+  `enforce`, and in `audit` a request those figures would have refused: a refused request is counted in no request window
+  (R-LIM-017), so the figure of refused requests and its block are what stops a caller that keeps sending
+  ([Q-LIM-58](#q-lim-58--a-request-the-request-figures-refuse-is-a-refused-request)). A request a block refuses is none: the
+  block does not lengthen itself.
 
 Not a refused request ([Q-LIM-7](#q-lim-7--a-refused-request-is-a-refusal-not-a-missing-package)):
 
@@ -356,15 +361,17 @@ Not a refused request ([Q-LIM-7](#q-lim-7--a-refused-request-is-a-refusal-not-a-
   key that does not exist;
 - a `404` of a package, a version or a file that does not exist in a repository the caller may read (a normal miss: NuGet asks
   every feed of a restore for every package, a client probes a tag);
-- every other status (`400`, `409`, `413`, `422`, `429`, `5xx`).
+- every other status (`400`, `409`, `413`, `422`, a `429` of any other figure, of a block or of the class `package_write`, `5xx`).
 
-The decision point, the authentication stage and the dispatcher's repository lookup mark the request as refused in its
-`limits.Charge`; the counting reads the mark, never the status code.
+The decision point, the authentication stage, the dispatcher's repository lookup and stage 7 for its request figures mark the request
+as refused in its `limits.Charge`; the counting reads the mark, never the status code.
 
 Acceptance criteria:
 
 - `dotnet restore` of a solution with 300 packages over two feeds, one of which holds none of them, counts no refused request.
 - 61 requests with a valid token for a repository the token may not read count 61 refused requests of the token's subject.
+- 20 requests at once of a subject at `requestsPerSecond` 1 with a burst of 1 count 19 refused requests; with `refusedPerHour` 5 the
+  subject is blocked within two seconds, and the requests the block refuses count none.
 
 ### R-LIM-009 · The figures in every format
 Priority: **MVP** · Covers: BEYOND-030
@@ -779,7 +786,7 @@ read on a request ([Q-LIM-10](#q-lim-10--the-enforcing-counters-live-in-valkey-t
 
 | Figure | Where | Valkey commands | Charged when |
 |---|---|---|---|
-| Requests per second and per hour of a budget key | Valkey, sliding window (R-ARCH-034 arithmetic) | `INCR`, `EXPIRE NX`, `GET` | before the decision, at stage 7 |
+| Requests per second and per hour of a budget key | Valkey, sliding window (R-ARCH-034 arithmetic) | the take: one script (`EVALSHA`) that runs `GET`, `INCRBY`, `EXPIRE NX` | at stage 7, in the same step as the decision, and only when the request is admitted |
 | Cached bytes per hour, bytes per day of a budget key | Valkey, sliding window in bytes | `GET` at the check; `INCRBY` at the flush | at the flush after the bytes were written |
 | Uncached bytes per hour of a budget key and of a ceiling | Valkey, sliding window in bytes | `GET` at step 9a; `INCRBY` at the flush | at the flush after the bytes were read |
 | Upstream requests per hour of a budget key and of a ceiling | Valkey, sliding window | `INCR`, `EXPIRE NX`, `GET` | before the decision, at step 9a |
@@ -795,7 +802,7 @@ so the family's longest time to live is 48 hours.
 
 | Request | Round trips on its path |
 |---|---|
-| Every request on a protocol path | 1 at stage 7: the request windows of its budget key, the block marker, and in Audit mode the counter of its R-API-016 class, in one `MULTI` |
+| Every request on a protocol path | 1 at stage 7: the take of the request windows of its budget key with its block marker and, in `enforce` for an unsafe method, the window of `package_write`, in one `MULTI` (after a lost script cache the first take of a replica costs one more, below) |
 | A download from the cache | +1 in `edge.ServeItem` before the status line: the hour and day byte windows, the parallel lease |
 | A miss (document or artifact) that would contact the upstream | +1 at step 9a: upstream requests and uncached bytes of the budget key and of the ceiling, and for an artifact `GET` the parallel lease |
 | The end of a download, the bytes, refused requests | none on the request: the replica's buffer carries them to the next flush |
@@ -813,9 +820,21 @@ replica every `limits.usage.flush_interval` (10 s, R-LIM-028).
 - byte charges with `INCRBY`, no unit bound (the 100 units of `TakeNAt` stay for the limiters that use it);
 - leases in a sorted set.
 
+**The take** (the owner's decision 19,
+[Q-LIM-57](#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7)): the
+request windows are decided and counted in one step. One script reads the current and the previous counter of every window the
+request must fit (the burst window, the hour, the class of R-API-016 that is in force) and the block marker; when every window has
+room for the request with it and no block holds, it adds the request to each window, otherwise it adds nothing. A refused request
+therefore fills no window, and the `Retry-After` of a request figure's refusal is the time after which the caller's next request
+fits, if nothing else uses the room (R-LIM-020). The script is sent as `EVALSHA` inside the `MULTI` of stage 7, so the request still
+costs one round trip; a server that does not hold it (a restarted primary, a replica that a failover promoted: Valkey keeps scripts
+neither on disk nor on its replicas) answers `NOSCRIPT` and does nothing, and the take is sent once more with the script's body
+(`EVAL`), which loads it: one more round trip, once per replica after such an event. The script runs only `GET`, `INCRBY` and
+`EXPIRE` on the keys it is given, under the ACL of the Valkey user.
+
 The least-privilege command list of [architecture.md](architecture.md) R-ARCH-031 gains `INCRBY`, `ZADD`, `ZREM`,
-`ZREMRANGEBYSCORE` and `ZCARD`; the example ACL rule, the development profile's Valkey (`deploy/dev/valkey.yaml`) and the integration
-stack's Valkey user grant them. No script and no `DEL` is used.
+`ZREMRANGEBYSCORE`, `ZCARD`, `EVALSHA` and `EVAL`; the example ACL rule, the development profile's Valkey (`deploy/dev/valkey.yaml`)
+and the integration stack's Valkey user grant them. No `DEL` is used.
 
 Acceptance criteria:
 
@@ -832,7 +851,8 @@ Priority: **MVP** · Covers: BEYOND-030
   for requests, 3,600 s for an hour and 86,400 s for a day, window boundaries at multiples of `W` since the Unix epoch.
 - **What is promised**, across any number of replicas while Valkey is reachable:
   - Requests and upstream requests: in each fixed window at most the limit; in any rolling interval of length `W` at most twice the
-    limit (the bound of the two-window estimate).
+    limit (the bound of the two-window estimate). A request the request figures, a block or the class of R-API-016 refused is in no
+    request window (R-LIM-017).
   - Bytes per hour and per day: in each fixed window at most the limit, plus the bytes that the subject's downloads admitted before
     the limit was reached still transfer (a download is never cut, owner decision 4; at most `parallelDownloads` downloads), plus one
     `limits.flush_interval` (1 s) of the subject's transfer rate that was not yet charged when a check read the counter.
@@ -851,7 +871,7 @@ Every figure fails open to the replica's share and never refuses a request becau
 
 | Figure | While Valkey is unreachable on a replica |
 |---|---|
-| Requests, upstream requests, bytes per hour and per day, refused requests | a local window per budget key and ceiling with the limit ÷ n, n the live replicas of the role in the replica's pool (R-ARCH-034); local windows start empty |
+| Requests, upstream requests, bytes per hour and per day, refused requests | a local window per budget key and ceiling with the limit ÷ n, n the live replicas of the role in the replica's pool (R-ARCH-034); local windows start empty. The take runs on them under the replica's lock: a refused request fills no local window either. The class of R-API-016 decides on its own token bucket of the replica's share (R-ARCH-034), which takes nothing when it refuses; a request it refuses after the local windows took it is taken back from them |
 | Parallel downloads | a local count per budget key with ⌈limit ÷ n⌉ |
 | Block | only blocks the replica set itself in its local state are known; a block set before the outage is not seen |
 | Pacing | the replica paces at the figure ÷ n |
@@ -873,11 +893,17 @@ codes:
 
 | Code | Figure | `Retry-After` |
 |---|---|---|
-| `rate_limited` | `requestsPerSecond`/`requestsBurst`, `requestsPerHour` | the limiter's wait (R-ARCH-034), at least 1 s |
-| `download_limit_reached` | `cachedBytesPerHour`, `bytesPerDay` | the time until the window's estimate leaves room for one more byte, at least 1 s, at most the window |
+| `rate_limited` | `requestsPerSecond`/`requestsBurst`, `requestsPerHour` | the time after which the caller's next request fits, if nothing else uses the room: the refused request is in no window (R-LIM-017), so the wait is true; whole seconds, at least 1 s |
+| `download_limit_reached` | `cachedBytesPerHour`, `bytesPerDay` | the time until the window's estimate leaves room for one more byte, at least 1 s, at most the window: up to an hour or a day, and honest (the owner's decision 20) |
 | `upstream_limit_reached` | `uncachedBytesPerHour`, `upstreamRequestsPerHour`, a ceiling | as above |
 | `too_many_parallel_downloads` | `parallelDownloads` | 1 s |
 | `caller_blocked` | a block (R-LIM-025) | the block's remaining time |
+
+- **A client that retries a refusal** is admitted once it waits what `Retry-After` says: at a request figure that is a second or two;
+  at a byte figure it is the rest of the hour or the day, and a client that waits up to that long holds its command for that time
+  (podman: about 16 to 20 minutes before it gives up; the manual names the CI job's timeout as the setting for it). A client that
+  does not retry (`docker pull`, `docker push`) exits at the first refusal; the built-in request figures are set so that normal use
+  never meets one (R-LIM-010).
 
 - **Body.** On the management API's shape (`/files/`, generic): `application/problem+json` (R-API-009) with `code`, a `detail` in
   plain words that names the figure, the limit and the wait ("The download limit of 300 GB per hour is used up. Try again in 14
@@ -1011,6 +1037,11 @@ Priority: **MVP** · Covers: BEYOND-030
   <block ID> NX EX <block seconds>`); the block time is the instance setting `blockSeconds` (900 s by default, an estimate;
   60 to 86,400). While the marker exists, stage 7 answers every request charged to that budget key with 429 `caller_blocked` and a
   `Retry-After` of the remaining time, before the handler.
+- **The brake against a caller that keeps sending** (the owner's decision 19): a request refused by a request figure counts in no
+  request window but is a refused request (R-LIM-008,
+  [Q-LIM-58](#q-lim-58--a-request-the-request-figures-refuse-is-a-refused-request)), so a caller that sends faster than its figure
+  gets its figure's rate, and once its refusals of an hour pass `refusedPerHour`, nothing for the block's time. A client that honours
+  `Retry-After` is refused about once per wait and stays below the figure.
 - **Who is blocked** ([Q-LIM-15](#q-lim-15--a-block-holds-one-budget-key-for-15-minutes-and-only-requests-charged-to-it)): the
   budget key only. A block of an address blocks the anonymous requests from that address (a failed credential is answered 401 before
   stage 7 anyway, R-LIM-003), never a request whose credential is valid, which is charged to its own subject. A block of a user at a repository does not reach
@@ -1024,7 +1055,10 @@ Priority: **MVP** · Covers: BEYOND-030
 - **In `audit`** no marker is set; the flush records `would_limit` for `refusedPerHour` once per budget key and window.
 - **What it cannot do**: an attacker who sends wrong tokens from a victim's NAT address blocks that address's anonymous requests
   (anonymous colleagues of a public repository) for the block time, repeatably; it cannot block a colleague who presents a valid
-  credential, whose requests are charged to the colleague's subject. The remaining gap is H-1010 on
+  credential, whose requests are charged to the colleague's subject. Since a request figure's refusal is a refused request, one
+  anonymous client behind a NAT address that keeps sending past the address's request figure blocks the address's anonymous requests
+  the same way; the built-in Anonymous figures are set so that normal use from one address does not reach them (R-LIM-010). The
+  remaining gap is H-1010 on
   [security/usage-and-limits.md](../security/usage-and-limits.md). The failed-credential throttle of R-AUTH-038 is a separate
   mechanism and stays as it is.
 
@@ -2427,6 +2461,63 @@ buildx (about 130 with `docker push`, three per blob); a push of two platforms w
 **Applied in the spec:** [api-and-ui.md](api-and-ui.md) R-API-016's configuration. Code: `APIRateLimitPackageWrite` in
 [m1.go](../../internal/config/m1.go).
 
+### Q-LIM-57 · The request windows are decided and counted in one step, by a script in the round trip of stage 7
+
+Status: **Decided by the owner on 2026-11-20: a refused request is not counted in the request windows** (decision 19). How it is
+built is **decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-LIM-017 counted a request in its windows (`INCR`) before the decision, so a refused request filled the window too, and a
+client that waited the second its `Retry-After` named and came back kept the window full itself: at a tight figure it was never
+admitted again. The owner kept the constraint he had been told about: a request on a protocol path costs one pipelined round trip to
+Valkey at stage 7. Valkey has no command that adds to a counter only below a bound; `DELIFEQ` is the one conditional command the
+installation already uses.
+
+| Option | Round trips per request | For | Against |
+|---|---|---|---|
+| (a) One script that reads every window the request must fit and the block marker, and adds the request to all of them only when it fits all and no block holds; sent as `EVALSHA` inside the `MULTI` of stage 7 (chosen) | 1; after a lost script cache (a restarted primary, a failover) 1 more, once per replica | Exact: a refused request is in no window, its `Retry-After` is true, and the windows, the block and the class of R-API-016 are all or nothing; the same step serves every limiter of R-ARCH-034 (Q-LIM-61) | The ACL of R-ARCH-031 gains `EVALSHA` and `EVAL`; Valkey neither persists nor replicates its script cache, so `NOSCRIPT` must be handled |
+| (b) Counters of refusals beside the windows, the refusal counted in a second round trip, as the Bastion's guard does (Q-BAS-127) | 1 admitted, 2 refused | No new command | A caller that hammers doubles its own cost on Valkey; a request decided while another's refusal is not counted yet sees one too many |
+| (c) Counters of refusals carried by the flush (`limits.flush_interval`, 1 s) | 1 | No new command, no second round trip | The refusals are subtracted up to a second late: a client that comes back after a `Retry-After` of 1 s can meet its own refusals, so the `Retry-After` is not true, which is what the owner asked for |
+| (d) Read the windows, decide, then count in a second round trip | 2 for every admitted request | No script | Doubles the cost of every request; two replicas can both admit the last place of a window |
+
+**Choice:** (a). The script ([valkey_take.go](../../internal/cluster/valkey_take.go)) runs `GET` on the current and the previous
+counter of each window and on the marker, and `INCRBY` and `EXPIRE NX` on the current counters when the request fits: at most three
+windows and nine commands inside Valkey, against seven commands of the transaction before (three per window and the marker's `GET`),
+with the same one round trip. Valkey with Sentinel runs scripts on the primary and replicates their writes as effects; its script
+cache is per server and not replicated, so the first take on a promoted primary is answered `NOSCRIPT`, does nothing, and is sent once
+more as `EVAL` with the body, which loads it. The script reaches only the keys it is given and runs under the ACL of the Valkey user,
+so `EVAL` grants no command the user does not hold.
+
+**Rationale:** only a step that decides and counts at once makes the owner's rule exact, and inside the existing transaction it costs
+no round trip. The development agent would revisit this if an installation's Valkey refuses scripts (a managed service that turns
+`EVAL` off): then (c) is the variant without a script, at the price of a `Retry-After` that can be a second short.
+
+**Applied in the spec:** R-LIM-017, R-LIM-018, R-LIM-019, R-LIM-020; [architecture.md](architecture.md) R-ARCH-031 (the command list),
+R-ARCH-034. Code: `OpTake` in [valkey_limits.go](../../internal/cluster/valkey_limits.go), [valkey_take.go](../../internal/cluster/valkey_take.go),
+`Engine.Check` in [engine.go](../../internal/limits/engine.go). Tests: `TestR_LIM_017_ARefusedRequestFillsNoRequestWindow` in
+[engine_test.go](../../internal/limits/engine_test.go), `TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsBlocked`
+in [figures_test.go](../../test/integration/limits/figures_test.go) (against the stack's Valkey with Sentinel).
+
+### Q-LIM-58 · A request the request figures refuse is a refused request
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: with decision 19 the owner named `refusedPerHour` with its block as the brake against a client that hammers. R-LIM-008
+counted no `429` as a refused request, so a client that kept sending past its request figure met no brake but its figure's rate:
+the block never saw it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A `429` `rate_limited` of a request figure is a refused request (in `audit`, a request the figures would have refused); a block's refusal is none (chosen) | The refusals beyond the figure count toward `refusedPerHour` | The owner's brake exists: a caller at twice its figure for an hour is blocked once its refusals pass the figure; a client that honours `Retry-After` is refused about once per wait | One anonymous client behind a NAT that keeps sending blocks the address's anonymous requests (R-LIM-025) |
+| (b) Leave R-LIM-008 | A hammering caller is held to its figure's rate, nothing more | No change | The brake the owner named does not act on the case he named it for |
+| (c) Every `429` of the limits is a refused request | Byte figures, parallel downloads and `package_write` too | One rule | A client that honours a byte figure's long `Retry-After` and retries (podman about 20 times in 16 minutes) would be blocked for retrying as told; a caller that hammers at a byte figure already meets the request figure |
+
+**Choice:** (a). A request the block refuses is not counted, so a block does not lengthen itself.
+
+**Rationale:** the request windows are what a hammering caller runs into whatever else refuses it. The development agent would revisit
+this if a client that honours `Retry-After` at a tight figure of its own is blocked (its refusals then come close to its retries).
+
+**Applied in the spec:** R-LIM-008, R-LIM-025. Code: `checkWindow` in [engine.go](../../internal/limits/engine.go).
+
 ### Q-LIM-59 · The built-in profiles' request figures are set from a measurement of real clients
 
 Status: **Decided by the owner on 2026-11-20: larger default bursts, set from a measurement** (decision 18). The numbers are the
@@ -2496,6 +2587,40 @@ burst, or when the installation's capacity per replica (R-ARCH-027) is below wha
 **Applied in the spec:** R-LIM-010, R-LIM-005's acceptance criteria; [api-and-ui.md](api-and-ui.md) R-API-016's acceptance criteria.
 Code: migration [00085_limits_request_bursts.sql](../../internal/meta/postgres/migrations/00085_limits_request_bursts.sql),
 `BuiltinProfiles` in [model.go](../../internal/limits/model.go).
+
+### Q-LIM-61 · Every request window of the installation follows one rule: a refused request counts nothing
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the request windows of the download limits and the limiters of R-ARCH-034 (the management API's classes of R-API-016,
+`package_write`, the endpoint's class of R-EP-015, the CI exchange's of R-CI-021, the starts of the login flow and the Bastion
+download events of the main installation) share one arithmetic and, since R-LIM-017, one batch: `package_write` is decided in the take
+of stage 7. `Limiter.Take` counted a request before it decided; its own fallback, a token bucket, took nothing when it refused, and the
+Bastion's guard took nothing either (Q-BAS-127).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every take of a limiter of R-ARCH-034 counts the request only when it is admitted, through the same script (chosen) | One rule for every request window | A limiter means the same with Valkey and on its fallback; no caller slightly over a limit starves (Q-BAS-127's finding); every `Retry-After` is true; one code path | A caller that hammers the management API is held to its class's rate instead of being shut out while it keeps sending |
+| (b) Only the windows of the take of stage 7 (the figures and `package_write`); the other limiters keep counting refusals | | The login and CI limiters keep their penalty | Two rules; a limiter that admits differently with and without Valkey |
+| (c) Only the download limits' figures; `package_write` counted as before | | Smallest change | The take is no longer all or nothing: a write the class refuses would fill the figures' windows |
+
+**Choice:** (a). The count-only form of R-ARCH-034 (`Exceeded`, `Count`: failed credentials, wrong device codes, R-AUTH-038) is not a
+request window and is unchanged: it counts failures, which is its purpose, and it is the brake against guessing. The Bastion's guard
+keeps its counters of refusals (Q-BAS-127), the same rule without a script, because its Valkey user runs none.
+
+**Consequence for the fallback while Valkey is unreachable** (R-LIM-019, Q-LIM-12): a limiter's token bucket already took nothing on a
+refusal; the figures' local windows run the same take under the replica's lock, at the replica's share; the class in the take of stage
+7 decides on its own bucket, and a request it refuses after the local windows took it is given back to them. Between two limiters
+that run in two steps (the endpoint's class before stage 7, then the take) a request the second refuses still counts in the first.
+
+**Rationale:** one rule is the simpler product, and the old rule was the only place where a limiter's cluster mode and its fallback
+disagreed. The development agent would revisit this if a class of the management API needs a penalty for callers that ignore
+`Retry-After`; the block of R-LIM-025 is the model for one.
+
+**Applied in the spec:** [architecture.md](architecture.md) R-ARCH-034; [api-and-ui.md](api-and-ui.md) R-API-016; R-LIM-019. Code:
+`Limiter.TakeNAt`, `Limiter.BatchTake` in [limiter.go](../../internal/cluster/limiter.go), `windowTake` in
+[valkey_ratelimit.go](../../internal/cluster/valkey_ratelimit.go). Tests: `TestLimiterCluster` in
+[limiter_test.go](../../internal/cluster/limiter_test.go).
 
 ## What this does not cover
 

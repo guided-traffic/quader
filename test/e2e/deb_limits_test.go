@@ -15,8 +15,8 @@ import (
 //
 // APT retries a 429 three times (an "Ign" line each) before it fails, waiting longer each time: with its defaults the refused package
 // failed after 90 s (measured 2026-11-20). The byte step caps APT's wait at one second (Acquire::Retries::Delay::Maximum), so it shows the
-// same attempts in seconds; what the defaults cost is in the manual's table. The request step keeps the defaults: retries a second
-// apart are requests of the window too (R-ARCH-034), so at one request a second each would be refused again (seen once).
+// same attempts in seconds; what the defaults cost is in the manual's table. The request step keeps the defaults: a refused request is
+// in no window (R-LIM-017), so a retry after the second its Retry-After names is admitted.
 func TestDebLimits_R_LIM_020_WhatAptShowsAtARefusal(t *testing.T) {
 	fx := debFx(t)
 	name := fx.name("limits")

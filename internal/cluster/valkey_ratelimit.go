@@ -28,32 +28,23 @@ func (v *Valkey) windowKeys(limiter, bucket string, idx int64, ttl time.Duration
 	return cur, prev, err
 }
 
-// windowHit is the check of a limiter that counts requests: one round trip,
-// MULTI, n INCR of the current window's key (n is the units of the request, one
-// for a request that counts once), EXPIRE <key> <ttl> NX, GET of the previous
-// window's key, EXEC. It returns the counter of the current window including
-// this request and the counter of the previous one. No script and no command
-// beyond those of the least-privilege ACL is used (R-ARCH-030, R-ARCH-034):
-// INCRBY is not among them, so n units are n INCR in the one transaction, and
-// TakeNAt bounds n by MaxTakeUnits.
-func (v *Valkey) windowHit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration, n int64) (cur, prev int64, err error) {
+// windowHit counts one event whatever the limit (the counting form of Limiter.Estimate, which the Bastion's counters of a
+// block use): one round trip, MULTI, INCR of the current window's key, EXPIRE <key> <ttl> NX, GET of the previous window's
+// key, EXEC. It returns the counter of the current window including the event and the counter of the previous one. It runs
+// no script: the Bastion's Valkey user may not (Q-BAS-127).
+func (v *Valkey) windowHit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (cur, prev int64, err error) {
 	ck, pk, err := v.windowKeys(limiter, bucket, idx, ttl)
 	if err != nil {
 		return 0, 0, err
 	}
-	n = max(1, n)
 	err = v.exec(ctx, "incr", func(ctx context.Context, c valkey.Client) error {
-		cmds := make(valkey.Commands, 0, n+4)
-		cmds = append(cmds, c.B().Multi().Build())
-		for range n {
-			cmds = append(cmds, c.B().Incr().Key(ck.name).Build())
-		}
-		cmds = append(cmds,
+		res := c.DoMulti(ctx,
+			c.B().Multi().Build(),
+			c.B().Incr().Key(ck.name).Build(),
 			c.B().Expire().Key(ck.name).Seconds(ceilSeconds(ck.ttl)).Nx().Build(),
 			c.B().Get().Key(pk.name).Build(),
 			c.B().Exec().Build(),
 		)
-		res := c.DoMulti(ctx, cmds...)
 		last := len(res) - 1
 		for _, r := range res[:last] {
 			if err := r.Error(); err != nil {
@@ -64,16 +55,32 @@ func (v *Valkey) windowHit(ctx context.Context, limiter, bucket string, idx int6
 		if err != nil {
 			return err
 		}
-		if want := int(n) + 2; len(out) != want {
-			return fmt.Errorf("EXEC returned %d replies, want %d", len(out), want)
+		if len(out) != 3 {
+			return fmt.Errorf("EXEC returned %d replies, want 3", len(out))
 		}
-		if cur, err = out[n-1].AsInt64(); err != nil {
+		if cur, err = out[0].AsInt64(); err != nil {
 			return err
 		}
-		prev, err = optionalCounter(out[n+1])
+		prev, err = optionalCounter(out[2])
 		return err
 	})
 	return cur, prev, err
+}
+
+// windowTake is the check of a limiter that counts requests: one round trip that runs the take of valkey_take.go on the
+// limiter's window (R-ARCH-034, Q-LIM-61). The n units are counted only when they fit; the counters returned are those
+// without them.
+func (v *Valkey) windowTake(ctx context.Context, w WindowTake, n int64) (WindowState, error) {
+	var b LimitBatch
+	b.Add(LimitOp{Kind: OpTake, Windows: []WindowTake{w}, N: max(1, n)})
+	res, err := v.runLimits(ctx, &b)
+	if err != nil {
+		return WindowState{}, err
+	}
+	if len(res) != 1 || len(res[0].Windows) != 1 {
+		return WindowState{}, fmt.Errorf("the take of a limiter returned %d results", len(res))
+	}
+	return res[0].Windows[0], nil
 }
 
 // windowRead is the check of the count-only form: a GET of the current and of

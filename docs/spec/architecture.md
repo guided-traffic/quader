@@ -3847,16 +3847,18 @@ inside the process.
   recycled after `valkey.max_conn_lifetime`. A rotated Secret therefore takes effect without a
   restart. Passwords never appear in the configuration file, in logs or in metrics.
 - **Least privilege.** Quader needs only these commands, on keys and channels under its prefix:
-  `GET`, `SET`, `DELIFEQ`, `INCR`, `INCRBY`, `EXPIRE`, `ZADD`, `ZREM`, `ZREMRANGEBYSCORE`, `ZCARD`, `MULTI`, `EXEC`, `DISCARD`, `PUBLISH`,
-  `SUBSCRIBE`, `UNSUBSCRIBE`, `SUNSUBSCRIBE`, `PUNSUBSCRIBE`, `PING`, `HELLO`, `ROLE`,
+  `GET`, `SET`, `DELIFEQ`, `INCR`, `INCRBY`, `EXPIRE`, `EVALSHA`, `EVAL`, `ZADD`, `ZREM`, `ZREMRANGEBYSCORE`, `ZCARD`, `MULTI`, `EXEC`,
+  `DISCARD`, `PUBLISH`, `SUBSCRIBE`, `UNSUBSCRIBE`, `SUNSUBSCRIBE`, `PUNSUBSCRIBE`, `PING`, `HELLO`, `ROLE`,
   `CLIENT SETNAME` and `CLIENT SETINFO`. `DISCARD`, `SUNSUBSCRIBE` and `PUNSUBSCRIBE` are sent by
   the client library when it resets a Pub/Sub connection; Quader issues no sharded or pattern
-  subscription. It runs no scripts. `INCRBY` and the four sorted-set commands are the download limits' (byte charges and the
-  leases of parallel downloads, [usage-and-limits.md](usage-and-limits.md) R-LIM-017, Q-LIM-10). An example ACL rule, which the
-  integration tier and the dev profile use:
+  subscription. `INCRBY` and the four sorted-set commands are the download limits' (byte charges and the
+  leases of parallel downloads, [usage-and-limits.md](usage-and-limits.md) R-LIM-017, Q-LIM-10). `EVALSHA` and `EVAL` run one
+  script, the take of a request (R-ARCH-034, [usage-and-limits.md](usage-and-limits.md) Q-LIM-57), which calls only `GET`,
+  `INCRBY` and `EXPIRE` on the keys it is given; a script runs under the ACL of the user that sends it, so the two commands grant no
+  command and no key beyond the list. An example ACL rule, which the integration tier and the dev profile use:
 
   ```text
-  user quader on >… resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +incrby +expire +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
+  user quader on >… resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +incrby +expire +evalsha +eval +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
   ```
 
 - **Metrics.** Those of R-HA-057 (`quader_valkey_available`, `quader_valkey_circuit_open`,
@@ -4020,18 +4022,25 @@ The owning pages define the limit classes, their bucket keys and their values
 - **Cluster scope** uses a sliding-window counter in Valkey.
   - The window is `W = burst ÷ rate` seconds, at least 1 s, and at most `burst` requests are
     admitted per window.
-  - A check is one round trip: `MULTI`, `INCR` of the current window's key,
-    `EXPIRE <key> <2W> NX`, `GET` of the previous window's key, `EXEC`.
-  - A request is admitted when `previous × (1 − elapsed ÷ W) + current ≤ burst`. Otherwise it is
-    refused, and the owning page renders the `429` with its `Retry-After`.
+  - A check is one round trip: the take, one script (`EVALSHA` inside `MULTI`/`EXEC`) that reads the
+    current and the previous window's key and, when the request fits, adds it to the current one with
+    `INCRBY` and `EXPIRE <key> <2W> NX` ([usage-and-limits.md](usage-and-limits.md) Q-LIM-57). A
+    server whose script cache is empty (a restart, a failover) answers `NOSCRIPT`; the take is sent once
+    more as `EVAL` with the script's body.
+  - A request is admitted when `previous × (1 − elapsed ÷ W) + current + 1 ≤ burst`, where `current` does
+    not hold the request. Otherwise it is refused, and the owning page renders the `429` with its
+    `Retry-After`.
   - The window of a request, and its `elapsed`, are those of the time the request was received, not of
     the check: a request that a stage before the limiter held (the token lookup during a database
     switchover) is charged to the window it arrived in ([ha-and-helm.md](ha-and-helm.md) Q-HA-66). The
     per-replica fallback decides at the time of the check.
-  - The `INCR` runs before the decision, so refused requests count too. A caller that keeps sending
-    while refused stays refused until its rate drops below the limit; a caller that honours
-    `Retry-After` gets the configured rate.
-  - No script is used.
+  - A refused request counts nothing ([usage-and-limits.md](usage-and-limits.md) Q-LIM-61: one rule for
+    every request window, as the fallback's token bucket has always had it): a caller that keeps sending
+    gets the configured rate and no more, and the `Retry-After` of a refusal is the time after which its
+    next request fits. A take that shares its round trip with the request windows of the download limits
+    (`BatchTake`, the class of R-API-016 at stage 7) counts the request in every window or in none.
+  - The Bastion's limits reach the same rule without a script, with counters of refusals, because the
+    Bastion's Valkey user may run none ([bastion.md](bastion.md) Q-BAS-127).
 - **Count-only form.** Some limits count failures, not requests: a request is checked before it
   is processed, and only a failed one is counted afterwards. For these the limiter offers two
   calls with the same sliding-window arithmetic and the same per-replica fallback:

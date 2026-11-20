@@ -53,6 +53,10 @@ one place. Its cases:
 | A caller with a valid token that probes for hidden names | that token's subject (its user, its technical token, its CI project) at the place | every other subject |
 | An attacker who sends wrong or revoked tokens from a victim's NAT address | the NAT address's anonymous subject: requests without a credential and with failed credentials from it | every colleague behind the NAT who presents a valid credential: their requests are charged to their own subjects |
 | An attacker who probes without a credential | the address's anonymous subject | — |
+| A caller that keeps sending past its request figure (each `429` `rate_limited` is a refused request, [Q-LIM-58](../spec/usage-and-limits.md#q-lim-58--a-request-the-request-figures-refuse-is-a-refused-request)) | its own subject at the place; without a credential, the address's anonymous subject | every other subject; a request the block refuses counts nothing, so the block does not lengthen itself |
+
+A refused request fills no request window ([Q-LIM-57](../spec/usage-and-limits.md#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7)):
+a caller that keeps sending gets its figure's rate, and the block above is what stops it.
 
 What remains is H-1010: anonymous colleagues behind the same address (readers of a `public` repository who use no credential) are
 blocked for the block's time, repeatably. The failed-credential throttle of R-AUTH-038 is a separate mechanism with its own
@@ -66,7 +70,7 @@ Per case:
 | Mode | Stage | Subject | What bounds it | Live or dormant |
 |---|---|---|---|---|
 | `audit` (switched to by an administrator) | 7 | the address prefix | nothing: no request limit, nothing on bytes, upstream requests or parallel downloads; everything is recorded as would-have-been-limited ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce), [Q-LIM-4](../spec/usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included)) | dormant in the default state; live from an administrator's switch to `audit` (H-1015) |
-| `enforce` (the default) | 7 | the address prefix | the profile Anonymous: 20 per second, 2,000 per hour | live |
+| `enforce` (the default) | 7 | the address prefix | the profile Anonymous: 50 per second with a burst of 1,000, 20,000 per hour; a request refused there counts in no window and is a refused request of the address | live |
 | `enforce` | step 9a of R-REPO-025 | the address prefix and the remote's anonymous ceiling | 20 upstream requests and 2 GB from the upstream per hour per address; the ceiling for all anonymous callers, which is unset by default ([Q-LIM-16](../spec/usage-and-limits.md#q-lim-16--a-ceiling-is-a-remote-repositorys-for-the-two-upstream-figures-and-none-is-set-by-default)) | live; the installation's upstream quota is bounded only once a ceiling is set (H-1007) |
 | `enforce` | `edge.ServeItem` | the address prefix | 10 GB from the cache per hour, 30 GB a day, 4 parallel downloads, paced at 20 MB/s per address | live; many addresses together are bounded by the replicas' capacity only (H-1007) |
 | both | the usage store | the address prefix | the per-replica buffer is bounded (100,000 keys, then an overflow row), the Valkey keys expire within 48 hours | Valkey eviction is H-1008 |
@@ -136,6 +140,7 @@ The gaps of the spec page whose mechanisms this page describes:
 Component: the block of [R-LIM-025](../spec/usage-and-limits.md#r-lim-025--the-block-after-refused-requests). Subject: readers of
 `public` repositories without a credential behind a shared address (a NAT, a CI fleet, a proxy). Dormant in `audit`; live in
 `enforce`. What makes it real: anyone behind the same address sends `refusedPerHour` wrong tokens (60 an hour with the profile
+Anonymous), or 60 anonymous requests an hour past the address's request figure (a burst of 1,000 within 20 s with the profile
 Anonymous); every anonymous request from the address is then refused for the block time, again after each block. Callers with a
 valid credential are not affected.
 

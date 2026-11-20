@@ -15,6 +15,7 @@ Nothing outside `internal/cluster` reads or writes a Valkey key (Q-ARCH-16: noth
 | [`valkey_ops.go`](../../internal/cluster/valkey_ops.go) | The commands Quader needs (`get`, `set`, `setNX`, `setIfEq`, `delIfEq`, `incr`, `publish`, `ping`), unexported, behind breaker and command timeout |
 | [`valkey_keys.go`](../../internal/cluster/valkey_keys.go) | Key and channel family registry (`registerKeyFamily`, `registerChannelFamily`), `Key`/`Channel` types, `formKey`/`formKeyTTL`/`channel`, keyspace |
 | [`valkey_limits.go`](../../internal/cluster/valkey_limits.go) | The counters of the download limits ([usage-and-limits.md](usage-and-limits.md)): `LimitBatch` (window adds and reads, block markers, leases in a sorted set), `LimitCounters.Run` (one `MULTI`/`EXEC` per batch, `INCRBY`, `EXPIRE NX`, `GET`, `SET NX EX`, `SET XX KEEPTTL`, `DELIFEQ`, `ZADD`, `ZREM`, `ZREMRANGEBYSCORE`, `ZCARD`), `MemoryLimits` (the same semantics in the replica's memory: the fallback and the unit tests), the key family `lim` (48 h) |
+| [`valkey_take.go`](../../internal/cluster/valkey_take.go) | The take: the one script Quader runs (`EVALSHA`, `EVAL` on `NOSCRIPT`), which decides and counts the windows of a request in one step and counts nothing when it refuses (Q-LIM-57, Q-LIM-61); `WindowTake`, `WindowState`; the same step on `MemoryLimits` for the fallback, and `MemoryLimits.Return` |
 | [`valkey_ratelimit.go`](../../internal/cluster/valkey_ratelimit.go), [`limiter.go`](../../internal/cluster/limiter.go) | The rate-limit counters (key family `rl`) and the limiter with its per-replica fallback, see [Rate-limit counters](#rate-limit-counters) |
 | [`valkey_flight.go`](../../internal/cluster/valkey_flight.go) | `FlightKey`, `FlightLock` (`Acquire`, `Wait`), `FlightHold` (extension, `Release`, `Lost`), the shared flight subscriptions, see [FlightLock](#flightlock) |
 | [`valkey_negative.go`](../../internal/cluster/valkey_negative.go) | `NegativeStore` (`Lookup`, `Record`): the entries of the negative cache in Valkey, see [Negative store](#negative-store) |
@@ -115,10 +116,13 @@ l.Count(ctx, bucket)             // one failure
   on a bad or duplicate name or a window above 12 h. The window is `burst ÷ rate` seconds, at least 1 s.
 - Scope `cluster` counts in Valkey (key family `rl`, version 1, `rl:v1:<limiter>:<bucket hash>:<window index>`, expiry
   two windows; the limiter name has `.` written as `-`; the bucket is a SHA-256, never a raw name). A `Take` is one round
-  trip, `MULTI`, `INCR`, `EXPIRE … NX`, `GET` of the previous window, `EXEC`, and no script. The request is counted before
-  it is decided, so refused requests use up budget. `TakeNAt(ctx, bucket, n, at)` charges n units in the same round trip as n
-  `INCR` of the one transaction, n at most `MaxTakeUnits` (100; the byte charges of the download limits use `INCRBY` in their own family `lim`); the download intake of the Bastion
-  interface charges a batch with it (Q-BAS-117). `Exceeded` is a pipelined `GET` of both windows, `Count` the `INCR` part.
+  trip: the take of [valkey_take.go](../../internal/cluster/valkey_take.go), one script (`EVALSHA` in `MULTI`/`EXEC`) that reads
+  both windows and adds the request with `INCRBY` and `EXPIRE … NX` only when it fits, so a refused request uses up nothing
+  (Q-LIM-61); on `NOSCRIPT` (a restarted or promoted primary) the take is sent once more as `EVAL` with the body. `TakeNAt(ctx, bucket,
+  n, at)` charges n units in one take, n at most `MaxTakeUnits` (100); the download intake of the Bastion interface charges a batch
+  with it (Q-BAS-117). `BatchTake` adds the limiter's window to the take of stage 7, so the class of R-API-016 and the request windows
+  of the download limits are counted together or not at all. `Exceeded` is a pipelined `GET` of both windows, `Count` an `INCR`;
+  `Estimate` with `add` counts every event (`INCR`, no script), for the Bastion's counters of a block.
   The window index comes from the replica's wall clock; clock skew between replicas of some milliseconds moves a window
   boundary by that much. `TakeAt(ctx, bucket, at)` counts and decides in the window of `at`, the time the request was
   received (`httpserver.RequestInfo.Received`, step 5 of the chain); the API and endpoint limits call it, so a request that

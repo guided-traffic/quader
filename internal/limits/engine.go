@@ -226,9 +226,29 @@ func (e *Engine) run(ctx context.Context, b *cluster.LimitBatch) (res []cluster.
 	}
 	if e.o.Store != nil {
 		e.fallback.Store(true)
+		e.localTakes(b)
 	}
 	res, err = e.local.Run(ctx, b)
 	return res, e.o.Store != nil, err
+}
+
+// localTakes fits the takes of a batch to the replica's own state (R-LIM-019): each request window at the replica's share of
+// its limit, and without the window of a class of R-API-016, which decides on its own share (R-ARCH-034). The class's windows
+// are the last of a take, so the indexes of the others stay.
+func (e *Engine) localTakes(b *cluster.LimitBatch) {
+	for i, op := range b.Ops {
+		if op.Kind != cluster.OpTake {
+			continue
+		}
+		ws := make([]cluster.WindowTake, 0, len(op.Windows))
+		for _, w := range op.Windows {
+			if !w.Class {
+				w.Limit = e.scaled(w.Limit, true)
+				ws = append(ws, w)
+			}
+		}
+		b.Ops[i].Windows = ws
+	}
 }
 
 // scaled is a limit during the fallback: the replica's share, at least 1 (R-LIM-019).
@@ -328,96 +348,138 @@ func (e *Engine) refuse(c *Charge, rf refusal, quota int64) *errs.Error {
 	return err
 }
 
-// ClassCheck adds the check of a class of R-API-016 to the batch of stage 7 and returns the function that decides it.
-type ClassCheck func(b *cluster.LimitBatch) func(res []cluster.LimitResult, err error) error
+// ClassCheck adds the window of a class of R-API-016 to the take of stage 7 and returns the function that decides it from the
+// take's result.
+type ClassCheck func(take *cluster.LimitOp) func(res cluster.LimitResult, err error) error
 
-// Check is stage 7 for a request on a protocol path (R-LIM-005, R-LIM-017): one round trip that counts the request windows
-// of the budget key, reads its block marker and runs the class of R-API-016 that is in force. In enforce the block and the
-// request figures refuse; in audit they are recorded as would_limit and nothing refuses (Q-LIM-4: no class is in force).
+// window is one request window of the take of stage 7.
+type window struct {
+	i     int // its index in the take, -1 when the figure is not set
+	fig   Figure
+	w     time.Duration
+	limit int64
+	name  string
+}
+
+// addWindow adds a request window to the take.
+func addWindow(take *cluster.LimitOp, ctr, bucket string, w time.Duration, at time.Time, limit int64) int {
+	idx, el := cluster.WindowIndex(at, w)
+	take.Windows = append(take.Windows, cluster.WindowTake{Figure: ctr, Bucket: bucket, Window: w, Index: idx, Elapsed: el, Limit: limit})
+	return len(take.Windows) - 1
+}
+
+// Check is stage 7 for a request on a protocol path (R-LIM-005, R-LIM-017): one round trip that takes the request windows of
+// the budget key, reads its block marker and decides the class of R-API-016 that is in force, all in one take (Q-LIM-57): the
+// request is counted in its windows only when none of them, no block and no class refuses it, so a refused request fills no
+// window and the Retry-After of its refusal is the time after which the caller's next request fits. A request the request
+// figures refuse is a refused request of R-LIM-008 (Q-LIM-58). In enforce the block and the request figures refuse; in audit
+// they are recorded as would_limit and nothing refuses (Q-LIM-4: no class is in force).
 func (e *Engine) Check(ctx context.Context, c *Charge, at time.Time, class ClassCheck) Stage {
 	if at.IsZero() {
 		at = e.now()
 	}
 	f := c.Figures()
-	var b cluster.LimitBatch
 	bucket := cluster.LimitBucket(c.Key)
-	rbOp, rhOp := -1, -1
-	bw := burstWindow(f)
-	deferred := c.deferred.Load()
-	if bw > 0 && !deferred {
-		idx, _ := cluster.WindowIndex(at, bw)
-		rbOp = b.Add(cluster.LimitOp{Kind: cluster.OpWindowAdd, Figure: burstCounter(bw), Bucket: bucket, Window: bw, Index: idx, N: 1})
+	take := cluster.LimitOp{Kind: cluster.OpTake, Bucket: bucket, Marker: true, Now: e.now(), N: 1}
+	rb := window{i: -1, fig: RequestsPerSecond, w: burstWindow(f), limit: f.Burst(), name: "requests"}
+	rh := window{i: -1, fig: RequestsPerHour, w: hour, limit: f[RequestsPerHour], name: "requests-hour"}
+	if !c.deferred.Load() {
+		if rb.w > 0 {
+			rb.i = addWindow(&take, burstCounter(rb.w), bucket, rb.w, at, rb.limit)
+		}
+		if rh.limit > 0 {
+			rh.i = addWindow(&take, ctrRequestsHour, bucket, hour, at, rh.limit)
+		}
 	}
-	if f[RequestsPerHour] > 0 && !deferred {
-		idx, _ := cluster.WindowIndex(at, hour)
-		rhOp = b.Add(cluster.LimitOp{Kind: cluster.OpWindowAdd, Figure: ctrRequestsHour, Bucket: bucket, Window: hour, Index: idx, N: 1})
-	}
-	mkOp := b.Add(cluster.LimitOp{Kind: cluster.OpMarkerGet, Bucket: bucket})
-	var decideClass func([]cluster.LimitResult, error) error
+	var decideClass func(cluster.LimitResult, error) error
 	if class != nil {
-		decideClass = class(&b)
+		decideClass = class(&take)
 	}
+	var b cluster.LimitBatch
+	b.Add(take)
 	res, local, err := e.run(ctx, &b)
 	var st Stage
 	if err != nil { // the request's context ended
 		st.Err = err
 		return st
 	}
+	r := res[0]
 	if decideClass != nil {
 		var classErr error
 		if local {
 			classErr = cluster.ErrUnavailable // the class falls back to its own share
 		}
-		if cerr := decideClass(res, classErr); cerr != nil {
+		if cerr := decideClass(r, classErr); cerr != nil {
 			st.Err = cerr
-		}
-	}
-	enforce := c.Mode == ModeEnforce
-	// The block (R-LIM-025).
-	if mk := res[mkOp].Value; mk != "" {
-		if retry, ok := markerRemaining(mk, e.now()); ok {
-			e.decided(c, "refusedPerHour", enforce)
-			if enforce && st.Err == nil {
-				c.mu.Lock()
-				c.outcome, c.limiter = "blocked", "limits.refusedPerHour"
-				c.mu.Unlock()
-				st.Err = e.refuse(c, refusal{
-					code: CodeCallerBlocked, figure: RefusedPerHour.String(), limit: f[RefusedPerHour], window: hour,
-					place: c.Resolution.Place, retry: retry, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
-				}, f[RefusedPerHour])
+			if local && r.Admitted {
+				e.local.Return(b.Ops[0]) // the class refused on its own share after the windows took the request
 			}
 		}
 	}
-	// The request figures.
-	check := func(op int, fig Figure, w time.Duration, limit int64, name string) {
-		if op < 0 {
-			return
-		}
-		_, el := cluster.WindowIndex(at, w)
-		lim := e.scaled(limit, local)
-		r := res[op]
-		est := cluster.Estimate(r.Cur, r.Prev, el)
-		if enforce {
-			st.Policies = append(st.Policies, Policy{
-				Name: name, Quota: lim, Window: w, Remaining: max(0, lim-int64(est)),
-				Reset: time.Duration((1 - el) * float64(w)),
-			})
-		}
-		if est <= float64(lim) {
-			e.m.decision(fig.String(), c.Mode, "admitted")
-			return
-		}
-		e.decided(c, fig.String(), enforce)
-		if enforce && st.Err == nil {
-			st.Err = refusal{
-				code: errs.CodeRateLimited, figure: fig.String(), limit: limit, window: w, place: c.Resolution.Place,
-				retry: cluster.RoomAfter(r.Cur, r.Prev, el, w, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
-			}.err()
+	enforce := c.Mode == ModeEnforce
+	blocked := e.checkBlock(ctx, c, r.Value, &st, enforce)
+	for _, w := range []window{rb, rh} {
+		if w.i >= 0 {
+			e.checkWindow(ctx, c, at, w, r.Windows[w.i], local, blocked, &st)
 		}
 	}
-	check(rbOp, RequestsPerSecond, bw, f.Burst(), "requests")
-	check(rhOp, RequestsPerHour, hour, f[RequestsPerHour], "requests-hour")
 	return st
+}
+
+// checkBlock decides the block of the budget key from the marker the take read (R-LIM-025), and reports whether one holds.
+func (e *Engine) checkBlock(ctx context.Context, c *Charge, mk string, st *Stage, enforce bool) bool {
+	if mk == "" {
+		return false
+	}
+	retry, ok := markerRemaining(mk, e.now())
+	if !ok {
+		return false
+	}
+	e.decided(c, "refusedPerHour", enforce)
+	if enforce && st.Err == nil {
+		f := c.Figures()
+		c.mu.Lock()
+		c.outcome, c.limiter = "blocked", "limits.refusedPerHour"
+		c.mu.Unlock()
+		st.Err = e.refuse(c, refusal{
+			code: CodeCallerBlocked, figure: RefusedPerHour.String(), limit: f[RefusedPerHour], window: hour,
+			place: c.Resolution.Place, retry: retry, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+		}, f[RefusedPerHour])
+	}
+	return true
+}
+
+// checkWindow decides one request window from what the take found in it (R-LIM-020): the RateLimit policy in enforce, and a
+// window the request does not fit refuses it with the time after which the next request fits, counted as a refused request
+// unless a block refused it already (Q-LIM-58).
+func (e *Engine) checkWindow(ctx context.Context, c *Charge, at time.Time, w window, s cluster.WindowState, local, blocked bool, st *Stage) {
+	enforce := c.Mode == ModeEnforce
+	_, el := cluster.WindowIndex(at, w.w)
+	lim := e.scaled(w.limit, local)
+	est := cluster.Estimate(s.Cur, s.Prev, el) + 1
+	if enforce {
+		remaining := lim - int64(est)
+		if !s.Fits {
+			remaining = lim - int64(est-1)
+		}
+		st.Policies = append(st.Policies, Policy{
+			Name: w.name, Quota: lim, Window: w.w, Remaining: max(0, remaining), Reset: time.Duration((1 - el) * float64(w.w)),
+		})
+	}
+	if s.Fits {
+		e.m.decision(w.fig.String(), c.Mode, "admitted")
+		return
+	}
+	e.decided(c, w.fig.String(), enforce)
+	if !blocked {
+		c.MarkRefused()
+	}
+	if enforce && st.Err == nil {
+		st.Err = refusal{
+			code: errs.CodeRateLimited, figure: w.fig.String(), limit: w.limit, window: w.w, place: c.Resolution.Place,
+			retry: cluster.RoomAfter(s.Cur, s.Prev, el, w.w, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+		}.err()
+	}
 }
 
 // decided records a decision that limited (enforce) or would have limited (audit) the request.

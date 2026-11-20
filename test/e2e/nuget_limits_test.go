@@ -41,18 +41,18 @@ func TestNuGetLimits_R_LIM_020_WhatDotnetShowsAtARefusal(t *testing.T) {
 		return out, exitOf(err), time.Since(start)
 	}
 
-	// dotnet retries a 429 about a second apart without reading Retry-After; each retry is a request of the window (R-ARCH-034), so at
-	// one request a second every retry is refused again, and after five the restore fails with NU1301 (measured 2026-11-20: 5.8 s)
-	t.Run("R-LIM-020 requestsPerSecond: dotnet restore retries five times and fails with NU1301", func(t *testing.T) {
+	// dotnet retries a 429 about a second apart without reading Retry-After; a refused request is in no window (R-LIM-017), so a retry a
+	// second later is admitted and the restore succeeds (measured 2026-11-20: two retries, 5.5 s)
+	t.Run("R-LIM-020 requestsPerSecond: dotnet restore retries the 429 and succeeds", func(t *testing.T) {
 		key := repo(t, "rps", map[string]any{"requestsPerSecond": 1, "requestsBurst": 1})
 		out, code, d := restore(t, key)
-		retries := strings.Count(out, "Retrying 'FindPackagesByIdAsync'")
+		retries := strings.Count(out, "Retrying '")
 		noteRefusal(t, out, clientRefusal{
-			Client: "dotnet restore", Figure: "requestsPerSecond", Printed: firstLineWith(out, "error NU1301"),
+			Client: "dotnet restore", Figure: "requestsPerSecond", Printed: firstLineWith(out, "Retrying '"),
 			Exit: code, Seconds: d.Seconds(), Retried: retries > 0,
 		})
-		if code != 1 || retries == 0 || !strings.Contains(out, "429 (Too Many Requests)") {
-			t.Fatalf("dotnet restore at one request a second exited %d after %s with %d retries, want 1 after retries of the 429:\n%s", code, d, retries, tailLines(out, 30))
+		if code != 0 || retries == 0 {
+			t.Fatalf("dotnet restore at one request a second exited %d after %s with %d retries, want a retry of the 429 and success:\n%s", code, d, retries, tailLines(out, 30))
 		}
 	})
 

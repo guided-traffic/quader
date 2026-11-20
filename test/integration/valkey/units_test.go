@@ -7,12 +7,35 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// TestR_BAS_016_ABatchIsChargedItsEventsInValkey: TakeNAt counts n units in one transaction of n INCR, with the
-// least-privilege ACL of the stack (which has no INCRBY), against the shared window, so two replicas of the main
-// installation together admit a registration's events up to the burst and refuse the batch that does not fit,
-// with a Retry-After (R-ARCH-030, R-ARCH-034, Q-BAS-117).
+// TestR_LIM_017_TheTakeLoadsItsScriptAgainAfterTheServerLostIt: a primary that lost its script cache (a restart, a
+// failover) answers the take NOSCRIPT; the take is sent once more with the script's body, counts once, and the next one
+// finds the script again (R-LIM-017, R-ARCH-034).
+func TestR_LIM_017_TheTakeLoadsItsScriptAgainAfterTheServerLostIt(t *testing.T) {
+	c := newClient(t, stackConfig(t, 2*time.Second))
+	waitAvailable(t, c)
+	v := testenv.ValkeyConfig(t)
+	admin := adminAt(t, v, sentinelPrimary(t.Context(), t, v))
+	if err := admin.Do(t.Context(), admin.B().ScriptFlush().Build()).Error(); err != nil {
+		t.Fatalf("SCRIPT FLUSH: %v", err)
+	}
+	ls, err := cluster.NewLimiterSet(cluster.LimiterOptions{Valkey: c.Valkey})
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := ls.NewLimiter("it.take_"+randHex(4), cluster.ScopeCluster, 1, 2)
+	for i, want := range []bool{true, true, false} {
+		if v := l.Take(t.Context(), "a"); v.Allowed != want || v.Mode != cluster.ModeCluster {
+			t.Fatalf("take %d after the script cache was flushed: %+v, want allowed %v in the cluster", i+1, v, want)
+		}
+	}
+}
+
+// TestR_BAS_016_ABatchIsChargedItsEventsInValkey: TakeNAt counts n units in one take, with the least-privilege ACL of
+// the stack, against the shared window, so two replicas of the main installation together admit a registration's events
+// up to the burst and refuse the batch that does not fit, with a Retry-After (R-ARCH-030, R-ARCH-034, Q-BAS-117).
 func TestR_BAS_016_ABatchIsChargedItsEventsInValkey(t *testing.T) {
 	ks := randHex(8)
 	a, b := newClientIn(t, stackConfig(t, 2*time.Second), ks), newClientIn(t, stackConfig(t, 2*time.Second), ks)

@@ -880,11 +880,11 @@ rule for the request figures).
   admits at most `burst` requests per window. With the defaults below, `W` is 4 s for `read`, 5 s
   for `write` and 4 s for `anonymous`. Bucket keys reach Valkey only as hashes (R-ARCH-030). One
   check is one pipelined round trip, bounded by `valkey.command_timeout`.
-- **Refused requests count too.** The limiter increments the window's counter before it decides
-  (R-ARCH-034), so a `429` uses up budget like an admitted request. A caller that keeps sending
-  while refused stays refused until its rate drops below the limit; a caller that waits for
-  `Retry-After` gets the configured rate. A retry loop that ignores `Retry-After` therefore cannot
-  win back a share of the budget by hammering.
+- **A refused request counts nothing.** The limiter decides and counts in one step and counts a
+  request only when it admits it (R-ARCH-034, [usage-and-limits.md](usage-and-limits.md) Q-LIM-61:
+  one rule for every request window). A caller that keeps sending gets the configured rate and no
+  more; a caller that waits for `Retry-After` is admitted then. A retry loop that ignores
+  `Retry-After` gains nothing by hammering: everything above the rate is refused.
 - **Valkey unavailable.** While a replica cannot reach Valkey (its circuit breaker is open, or a
   call failed), the limiter answers from a local bucket with rate `rate ÷ n` and burst
   `max(1, burst ÷ n)`, where `n` is the number of live `web` replicas in the replica registry, at
@@ -929,9 +929,9 @@ Acceptance criteria:
 - A loop of 300 `GET /api/v1/repositories` with one token receives 429 answers after the burst,
   each with `Retry-After`; a second token is not slowed down.
 - With the defaults, a client that sends 100 reads per second with one token for 10 s and ignores
-  `Retry-After` is admitted at most 250 times, because its refused requests keep the window full
-  after the first burst. A second client with another token that waits for each `Retry-After`
-  before it sends again is admitted more often over the same 10 s.
+  `Retry-After` is admitted about 500 times (the rate of 50 a second; at most the burst more), and a
+  client at a limit of one a second with a burst of one that retries every second is admitted at
+  least every second time.
 - In the e2e profile `scatter` (three `web` replicas, round robin per request), 1,000
   `GET /api/v1/repositories` with one token within 2 s are admitted at most 300 times, the same
   bound as against one replica. With Valkey stopped, the same run is admitted at most 300 times,

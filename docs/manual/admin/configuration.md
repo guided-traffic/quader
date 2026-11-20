@@ -252,7 +252,7 @@ The scanning of stored packages against public advisory data is being built in t
 <details>
 <summary>Rate limits</summary>
 
-Each class allows `requests_per_second` on average and `burst` at once. The limits are counted across all replicas in Valkey; while Valkey is unavailable, each replica enforces its share.
+Each class allows `requests_per_second` on average and `burst` at once; a refused request counts nothing, so a caller that waits the `Retry-After` of a refusal is admitted. The limits are counted across all replicas in Valkey; while Valkey is unavailable, each replica enforces its share.
 
 | Key | Default | Applies to |
 |---|---|---|

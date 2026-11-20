@@ -55,7 +55,11 @@ The client reads the user name from `valkey.username_file` and the password from
 (`valkey.sentinel.username_file`, `password_file`).
 
 What Quader asks Valkey to allow for its own user is in [R-ARCH-031](../spec/architecture.md#r-arch-031--valkey-client-sentinel-discovery-tls-acl-and-degradation):
-a key prefix, the command set the client uses, and no scripting and no administration. The valkey operator that the owner's
+a key prefix, the command set the client uses, and no administration. The command set holds `EVALSHA` and `EVAL` for one script, the
+take of a request's rate windows ([usage-and-limits.md](../spec/usage-and-limits.md#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7)):
+a script runs under the ACL of the user that sends it, so it reaches no command and no key beyond the user's; what the two commands
+add is CPU time in Valkey, which `busy-reply-threshold` bounds for a script that would loop, and a writer under the user's credential
+could already refuse every request with 429 ([H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service)). The valkey operator that the owner's
 stack uses creates no ACL users and no separate Sentinel password yet. Until it does, the local profile runs Quader as the
 operator's `default` user with the cluster password, and the same Secret authenticates against the Sentinels: its values set
 `secrets.valkey.usernameKey: ""` ([values-dev.yaml](../../deploy/dev/values-dev.yaml); the owner's decision is recorded in

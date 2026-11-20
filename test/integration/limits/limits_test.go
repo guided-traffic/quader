@@ -174,7 +174,7 @@ func TestR_LIM_026_AuditRefusesNothingAndEnforceRefuses(t *testing.T) {
 		t.Fatalf("enforce refused nothing: %v", codes)
 	}
 	t.Run("R-LIM-021 the problem names the figure", func(t *testing.T) {
-		time.Sleep(2500 * time.Millisecond) // two burst windows: the two-window estimate counts the refused requests too (R-ARCH-034)
+		time.Sleep(2500 * time.Millisecond) // two burst windows: the admitted requests of the last one weigh on the next (R-ARCH-034)
 		a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil)
 		if a.Status != 429 || a.Code(t) != "download_limit_reached" || a.JSON(t)["figure"] != "cachedBytesPerHour" {
 			t.Fatalf("%d %s", a.Status, a.Body)

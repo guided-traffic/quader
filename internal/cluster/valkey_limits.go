@@ -15,11 +15,12 @@ import (
 )
 
 // The counters of the download limits (R-LIM-017, usage-and-limits.md). Every check of the limits is one batch: the
-// operations of a request (the request windows of its budget key, the block marker, in Audit mode the counter of its
-// R-API-016 class), of a download (the hour and day byte windows, the parallel lease) or of a flush (the byte and refused
-// charges of an interval, the leases that ended or are renewed, the markers that are due) go to Valkey in one MULTI/EXEC, a
-// single pipelined round trip under valkey.command_timeout. The commands are those of R-ARCH-031: GET, SET, DELIFEQ,
-// INCRBY, EXPIRE, ZADD, ZREM, ZREMRANGEBYSCORE, ZCARD. No script and no DEL is used.
+// operations of a request (the take of the request windows of its budget key with its block marker and the window of its
+// R-API-016 class, valkey_take.go), of a download (the hour and day byte windows, the parallel lease) or of a flush (the byte
+// and refused charges of an interval, the leases that ended or are renewed, the markers that are due) go to Valkey in one
+// MULTI/EXEC, a single pipelined round trip under valkey.command_timeout. The commands are those of R-ARCH-031: GET, SET,
+// DELIFEQ, INCRBY, EXPIRE, ZADD, ZREM, ZREMRANGEBYSCORE, ZCARD, and EVALSHA (EVAL after a lost script cache) for the take,
+// whose script decides and counts in one step (Q-LIM-57). No DEL is used.
 //
 // Keys are quader:<ks>:lim:v1:<figure>:<b>:<window index>, quader:<ks>:lim:v1:par:<b> (the leases of a budget key, a
 // sorted set scored by the lease's end) and quader:<ks>:lim:v1:blk:<b> (a block marker), with <b> the hash of the budget key
@@ -44,9 +45,11 @@ const (
 	// OpWindowZero sets the window of a figure to 0 if it exists (SET … XX KEEPTTL): a lifted block resets the refused
 	// counters so that the next refused request does not block again at once (R-LIM-025).
 	OpWindowZero
-	// OpClassAdd is OpWindowAdd on the counter of a limiter of R-ARCH-034 (the rl family): the class of R-API-016 in the
-	// same round trip as the request windows (R-LIM-017).
-	OpClassAdd
+	// OpTake adds N to every window of Windows if, with the N units, each window's estimate stays within its limit and the
+	// block marker of Bucket (when Marker is set) holds no block that lasts beyond Now; otherwise it adds nothing. It is the
+	// request windows' check of stage 7 (R-LIM-017, Q-LIM-57) and a limiter's take (R-ARCH-034): a refused request is not
+	// counted. Valkey runs it as one script (valkey_take.go).
+	OpTake
 	// OpMarkerGet reads a block marker (GET).
 	OpMarkerGet
 	// OpMarkerSet sets a block marker if none is set (SET NX EX).
@@ -68,14 +71,13 @@ const (
 // itself.
 type LimitOp struct {
 	Kind LimitOpKind
-	// Figure names the counter ("rb" requests in the burst window, "rh" requests per hour, …); for OpClassAdd it is the key
-	// name of the limiter.
+	// Figure names the counter ("rb" requests in the burst window, "rh" requests per hour, …).
 	Figure string
 	Bucket string
 	// Window is the window of a counter; Index the window's index (whole windows since the Unix epoch).
 	Window time.Duration
 	Index  int64
-	// N is what OpWindowAdd and OpClassAdd add, at least 1.
+	// N is what OpWindowAdd and OpTake add, at least 1.
 	N int64
 	// Member, Until and Now are the lease's name, its end and the time leases that ended before are dropped.
 	Member string
@@ -84,15 +86,23 @@ type LimitOp struct {
 	// Value and TTL are the marker's value and life.
 	Value string
 	TTL   time.Duration
+	// Windows are the windows of an OpTake; Marker makes it read the block marker of Bucket and take nothing while it holds a
+	// block that ends after Now.
+	Windows []WindowTake
+	Marker  bool
 }
 
 // LimitResult is the answer of one operation: Cur and Prev for a window, Count for a lease operation, Value for a marker
-// (empty when none is set), Set for OpMarkerSet (whether this batch set it).
+// (empty when none is set; for an OpTake the marker it read), Set for OpMarkerSet (whether this batch set it), Admitted and
+// Windows for an OpTake.
 type LimitResult struct {
 	Cur, Prev int64
 	Count     int64
 	Value     string
 	Set       bool
+	// Admitted is whether the take added its units; Windows what it found in each of its windows, in the order of the op.
+	Admitted bool
+	Windows  []WindowState
 }
 
 // LimitBatch collects the operations of one round trip. The zero value is empty and ready to use.
@@ -177,6 +187,7 @@ const (
 	roleCount
 	roleValue
 	roleSet
+	roleTake
 )
 
 func (v *Valkey) limKey(op LimitOp, prev bool) (Key, error) {
@@ -202,15 +213,15 @@ func (v *Valkey) limKey(op LimitOp, prev bool) (Key, error) {
 	if w < time.Second {
 		w = time.Second
 	}
-	if op.Kind == OpClassAdd {
-		return v.formKeyTTL(rlFamily, min(2*w, rlFamily.maxTTL), op.Figure, op.Bucket, strconv.FormatInt(idx, 10))
-	}
 	return v.formKeyTTL(limFamily, min(2*w, limFamily.maxTTL), op.Figure, op.Bucket, strconv.FormatInt(idx, 10))
 }
 
-// runLimits builds the transaction of a batch and reads its replies.
+// runLimits builds the transaction of a batch and reads its replies. A take whose script the server does not hold (NOSCRIPT:
+// a restarted server, or a replica that a failover promoted, holds none) did nothing inside the transaction; it is sent once
+// more with the script's body, which also loads it (valkey_take.go).
 func (v *Valkey) runLimits(ctx context.Context, b *LimitBatch) ([]LimitResult, error) {
 	out := make([]LimitResult, len(b.Ops))
+	var missing []int
 	err := v.exec(ctx, "multi", func(ctx context.Context, c valkey.Client) error {
 		cmds := make(valkey.Commands, 0, 2+4*len(b.Ops))
 		roles := make([]limCommand, 0, 4*len(b.Ops))
@@ -242,8 +253,12 @@ func (v *Valkey) runLimits(ctx context.Context, b *LimitBatch) ([]LimitResult, e
 		if len(replies) != len(roles) {
 			return fmt.Errorf("EXEC returned %d replies, want %d", len(replies), len(roles))
 		}
-		return readLimitReplies(replies, roles, out)
+		missing, err = readLimitReplies(replies, roles, out)
+		return err
 	})
+	if err == nil && len(missing) > 0 {
+		err = v.takeWithBody(ctx, b, missing, out)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -252,12 +267,20 @@ func (v *Valkey) runLimits(ctx context.Context, b *LimitBatch) ([]LimitResult, e
 
 // queueLimitOp queues the commands of one operation.
 func (v *Valkey) queueLimitOp(c valkey.Client, i uint8, op LimitOp, queue func(op, role uint8, cmd valkey.Completed)) error {
+	if op.Kind == OpTake {
+		keys, args, err := v.takeArgs(op)
+		if err != nil {
+			return err
+		}
+		queue(i, roleTake, c.B().Evalsha().Sha1(takeScriptSHA).Numkeys(int64(len(keys))).Key(keys...).Arg(args...).Build())
+		return nil
+	}
 	k, err := v.limKey(op, false)
 	if err != nil {
 		return err
 	}
 	switch op.Kind {
-	case OpWindowAdd, OpClassAdd:
+	case OpWindowAdd:
 		p, err := v.limKey(op, true)
 		if err != nil {
 			return err
@@ -304,13 +327,19 @@ func (v *Valkey) queueLimitOp(c valkey.Client, i uint8, op LimitOp, queue func(o
 
 func scoreOf(t time.Time) string { return strconv.FormatInt(t.UnixMilli(), 10) }
 
-// readLimitReplies reads the replies of EXEC into the results.
-func readLimitReplies(replies []valkey.ValkeyMessage, roles []limCommand, out []LimitResult) error {
+// readLimitReplies reads the replies of EXEC into the results. It returns the takes the server answered NOSCRIPT, which did
+// nothing.
+func readLimitReplies(replies []valkey.ValkeyMessage, roles []limCommand, out []LimitResult) (missing []int, err error) {
 	for n, r := range replies {
 		role := roles[n]
 		res := &out[role.op]
-		var err error
 		switch role.role {
+		case roleTake:
+			if ve, ok := valkey.IsValkeyErr(r.Error()); ok && ve.IsNoScript() {
+				missing = append(missing, role.op)
+				continue
+			}
+			*res, err = readTake(r)
 		case roleCur:
 			res.Cur, err = optionalCounter(r)
 		case rolePrev:
@@ -325,10 +354,10 @@ func readLimitReplies(replies []valkey.ValkeyMessage, roles []limCommand, out []
 			res.Set = !r.IsNil()
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return missing, nil
 }
 
 // MemoryLimits runs the batches of the limits in the replica's memory: the fallback while Valkey cannot be used
@@ -398,7 +427,9 @@ func (m *MemoryLimits) counter(key string, now time.Time) int64 {
 func (m *MemoryLimits) run(op LimitOp, now time.Time) LimitResult {
 	var r LimitResult
 	switch op.Kind {
-	case OpWindowAdd, OpClassAdd:
+	case OpTake:
+		r = m.take(op, now)
+	case OpWindowAdd:
 		k := memWindowKey(op, op.Index)
 		c, ok := m.windows[k]
 		if !ok || now.After(c.expires) {

@@ -27,15 +27,31 @@ func newMemWindows() *memWindows { return &memWindows{counts: map[string]int64{}
 
 func (m *memWindows) key(l, b string, idx int64) string { return fmt.Sprintf("%s/%s/%d", l, b, idx) }
 
-func (m *memWindows) hit(_ context.Context, l, b string, idx int64, _ time.Duration, n int64) (int64, int64, error) {
+func (m *memWindows) hit(_ context.Context, l, b string, idx int64, _ time.Duration) (int64, int64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.calls++
 	if m.fail {
 		return 0, 0, errors.New("boom")
 	}
-	m.counts[m.key(l, b, idx)] += n
+	m.counts[m.key(l, b, idx)]++
 	return m.counts[m.key(l, b, idx)], m.counts[m.key(l, b, idx-1)], nil
+}
+
+// take is the script of valkey_take.go on the map: the units are counted only when they fit.
+func (m *memWindows) take(_ context.Context, w WindowTake, n int64) (WindowState, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.calls++
+	if m.fail {
+		return WindowState{}, errors.New("boom")
+	}
+	s := WindowState{Cur: m.counts[m.key(w.Figure, w.Bucket, w.Index)], Prev: m.counts[m.key(w.Figure, w.Bucket, w.Index-1)]}
+	s.Fits = float64(s.Prev)*(1-w.Elapsed)+float64(s.Cur)+float64(n) <= float64(w.Limit)
+	if s.Fits {
+		m.counts[m.key(w.Figure, w.Bucket, w.Index)] += n
+	}
+	return s, nil
 }
 
 func (m *memWindows) read(_ context.Context, l, b string, idx int64, _ time.Duration) (int64, int64, error) {
@@ -128,35 +144,35 @@ func TestLimiterCluster(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-016 a refused request counts, a caller that ignores Retry-After stays refused", func(t *testing.T) {
+	t.Run("R-ARCH-034 a refused request counts nothing: a caller twice over the rate gets the rate, no more and no less", func(t *testing.T) {
 		st, clk := newMemWindows(), newLimClock()
 		l := replica(t, st, clk, 1, nil).NewLimiter("api_read", ScopeCluster, 50, 200)
 		admitted := 0
-		// 100 requests per second for 10 s, never waiting.
+		// 100 requests per second for 10 s, never waiting: the burst, then about the rate of 50 a second.
 		for range 1000 {
 			clk.advance(10 * time.Millisecond)
 			if l.Allow(t.Context(), "greedy") {
 				admitted++
 			}
 		}
-		if admitted > 250 {
-			t.Errorf("a client that ignores Retry-After was admitted %d times, want at most 250", admitted)
+		if admitted < 450 || admitted > 700 {
+			t.Errorf("a client at twice the rate was admitted %d times in 10 s, want about the rate's 500 and at most the burst more", admitted)
 		}
-		// A client that waits for each Retry-After is admitted more often.
-		polite := 0
-		for sent := 0; sent < 10*100; {
-			v := l.Take(t.Context(), "polite")
-			sent++
-			if v.Allowed {
-				polite++
-				clk.advance(10 * time.Millisecond)
-				continue
+	})
+
+	t.Run("R-ARCH-034 a caller at a burst of one that retries every second is admitted again", func(t *testing.T) {
+		st, clk := newMemWindows(), newLimClock()
+		l := replica(t, st, clk, 1, nil).NewLimiter("tight", ScopeCluster, 1, 1)
+		admitted := 0
+		for range 20 {
+			if l.Allow(t.Context(), "a") {
+				admitted++
 			}
-			clk.advance(v.RetryAfter)
-			sent += 99
+			clk.advance(time.Second)
 		}
-		if polite <= admitted {
-			t.Errorf("the polite client was admitted %d times, the greedy one %d", polite, admitted)
+		// Each admitted request fills its window and weighs on the next one, so every second retry is admitted.
+		if admitted < 9 {
+			t.Fatalf("%d of 20 retries a second apart were admitted at one request a second, want every second one", admitted)
 		}
 	})
 
@@ -210,9 +226,10 @@ func TestLimiterCluster(t *testing.T) {
 		if got := held(byCheck, 8); got != 10 {
 			t.Errorf("charged at the check, %d of 24 were admitted; the control expects the burst of 10", got)
 		}
-		// A client above its rate stays limited: each window of arrival admits its burst and no more.
-		if got := held(byArrival, 20); got != 10 {
-			t.Errorf("charged by arrival, %d of 60 held requests of a client at twice its rate were admitted, want 10", got)
+		// A client above its rate stays limited: three windows of arrival admit at most their burst each, and a refusal counts
+		// nothing, so about the rate (R-ARCH-034).
+		if got := held(byArrival, 20); got > 30 || got < 25 {
+			t.Errorf("charged by arrival, %d of 60 held requests of a client at twice its rate were admitted, want about the rate's 30", got)
 		}
 	})
 

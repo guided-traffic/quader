@@ -11,9 +11,9 @@ import (
 
 // The Bastion's limits do not charge what they refuse (Q-BAS-127): a limit admits up to its rate, and a refused
 // request does not use up the budget of its address, so a client slightly over its rate keeps being admitted at
-// the rate instead of starving. [Limiter.Take] charges the refused ones (R-ARCH-034, the main installation's
-// logins and API limits want that: a caller that keeps sending stays refused); the two methods below are the
-// other reading, for the counters of the Bastion's guard.
+// the rate instead of starving. [Limiter.Take] has the same rule since Q-LIM-61 and keeps it with a script that
+// decides and counts in one step (valkey_take.go); the two methods below reach it without a script, because the
+// Bastion's Valkey user may run none, for the counters of the Bastion's guard.
 //
 // The window counter is still incremented before the decision, in one round trip and without a script. A
 // refusal then counts itself a second time in a counter of refusals of its own, with the same window and
@@ -119,10 +119,10 @@ func (l *Limiter) TakeUncharged(ctx context.Context, bucket string) Verdict {
 		return l.record(l.takeLocal(bucket, now, l.share(), 1, ModeFallback))
 	}
 	l.inFallback.Store(false)
-	v := l.windowVerdict(cur, prev, el, 1)
+	fits := float64(prev)*(1-el)+float64(cur) <= float64(l.burst)
+	v := l.windowVerdict(WindowState{Cur: cur - 1, Prev: prev, Fits: fits}, el, 1)
 	if !v.Allowed {
 		l.markRefused(ctx, s, bucket, idx)
-		v.RetryAfter = wholeSeconds(l.retryAfter(cur-1, prev, el, 1))
 	}
 	return l.record(v)
 }

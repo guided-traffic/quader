@@ -2546,8 +2546,8 @@ needs a script, and the topologies decide what the local profile and CI must exe
   periodically (`valkey.sentinel.refresh_interval`), which catches a missed failover message.
 - **Least privilege.** TLS and an ACL user for the data nodes and for the Sentinels. Credentials
   are read on every connection attempt, so a rotated Secret takes effect without a restart. With
-  `SET … IFEQ` and `DELIFEQ`, both present from 9.0, Quader runs no scripts, and its ACL user can
-  be denied scripting.
+  `SET … IFEQ` and `DELIFEQ`, both present from 9.0, Quader needs no script for its locks; since 2026-11-20 it runs one script, the
+  take of a request's rate windows ([Q-LIM-57](spec/usage-and-limits.md#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7)), so its ACL user holds `EVALSHA` and `EVAL`.
 - **Topologies** ([Q-HA-14](spec/ha-and-helm.md#q-ha-14--valkey-topologies-quader-supports), option (b)). Sentinel is the only production topology at MVP;
   a standalone instance exists for development; a primary-endpoint mode for managed services is
   P1; Valkey Cluster is deferred.
@@ -2638,7 +2638,7 @@ requests reach replicas at random, and an address throttled on one replica was u
 next.
 
 **Decision.** The limiter of [R-ARCH-034](spec/architecture.md#r-arch-034--cluster-wide-rate-limit-counters) counts cluster-wide in Valkey, with a sliding-window
-counter per bucket and no scripts ([Q-ARCH-17](spec/architecture.md#q-arch-17--rate-limit-counters-across-replicas), option (b)). The round trip is pipelined,
+counter per bucket ([Q-ARCH-17](spec/architecture.md#q-arch-17--rate-limit-counters-across-replicas), option (b)); since 2026-11-20 one script decides and counts, and a refused request counts nothing ([Q-LIM-61](spec/usage-and-limits.md#q-lim-61--every-request-window-of-the-installation-follows-one-rule-a-refused-request-counts-nothing)). The round trip is pipelined,
 bounded by `valkey.command_timeout` and skipped while the breaker is open. While Valkey is
 unavailable, each replica keeps local buckets at the configured value divided by the live replicas
 of its role. Every class that limits callers uses cluster scope:

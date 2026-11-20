@@ -291,7 +291,7 @@ therefore deviates from R-HA-056 and R-ARCH-031, in the dev profile only:
 
 | Spec | Dev profile | Where the criterion is still proven |
 |---|---|---|
-| a Valkey ACL user limited to `~quader:*`, `&quader:*` and the listed commands, no scripting (R-ARCH-031) | Quader connects as `default` with the cluster password (`secrets.valkey.usernameKey: ""`) | the integration stack keeps the ACL user (`test/integration/valkey`) |
+| a Valkey ACL user limited to `~quader:*`, `&quader:*` and the listed commands, no scripting but the take's `EVALSHA` and `EVAL` (R-ARCH-031) | Quader connects as `default` with the cluster password (`secrets.valkey.usernameKey: ""`) | the integration stack keeps the ACL user (`test/integration/valkey`) |
 | a Sentinel credential separate from the data credential (R-HA-056) | `secrets.valkeySentinel` points at the same Secret, `quader-valkey-auth` | integration stack |
 | `maxmemory` set on Valkey (R-HA-056) | not set; the container limit (320 MiB) bounds it and the pod would be OOM-killed and restart empty, which costs cache warmth only (INV-3) | integration stack |
 

@@ -263,6 +263,70 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 	})
 }
 
+// R-LIM-017, R-LIM-020, R-LIM-008, R-LIM-025: a refused request is not counted in the request windows, so a caller at one request a
+// second that retries every second, as Retry-After tells it, is admitted again; a caller that hammers is refused beyond the figure, each
+// refusal is a refused request, and refusedPerHour blocks it. HEADs carry no body: the requests are the payload.
+func TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsBlocked(t *testing.T) {
+	var hammer string
+	e := newEnvWith(t, envOptions{valkey: true, seed: func(st *testenv.Stack) {
+		sa := st.ServiceAccount("hammer")
+		hammer = st.Token(sa, scope.Scope{Inherit: true})
+		st.Policy("hammer-reads", []string{"read"}, []string{rFiles}, sa)
+	}})
+	e.rule(t, rFiles, every("user"), map[string]any{"requestsPerSecond": 1, "requestsBurst": 1})
+	e.rule(t, rFiles, every("technicalToken"), map[string]any{"requestsPerSecond": 1, "requestsBurst": 1, "refusedPerHour": 5})
+
+	t.Run("R-LIM-017 R-LIM-020 a caller that retries every second is admitted again, and after the Retry-After of a refusal", func(t *testing.T) {
+		admitted, refused := 0, 0
+		for range 6 {
+			switch a := e.st.Do(e.r, "HEAD", e.filePath, e.reader, nil); a.Status {
+			case 200:
+				admitted++
+			case 429:
+				refused++
+			default:
+				t.Fatalf("%d %s", a.Status, a.Body)
+			}
+			time.Sleep(time.Second)
+		}
+		// an admitted request weighs on the next window: every second retry fits; when refusals were counted none did after the first
+		if admitted < 3 || refused == 0 {
+			t.Fatalf("%d of 6 requests a second apart admitted and %d refused, want every second one admitted", admitted, refused)
+		}
+		var a testenv.Answer
+		for range 3 { // two at once: the second is refused
+			if a = e.st.Do(e.r, "HEAD", e.filePath, e.reader, nil); a.Status == 429 {
+				break
+			}
+		}
+		s, _ := strconv.Atoi(a.Header.Get("Retry-After"))
+		wait := time.Duration(s) * time.Second
+		if a.Status != 429 || wait < time.Second {
+			t.Fatalf("no refusal with a Retry-After: %d %q", a.Status, a.Header.Get("Retry-After"))
+		}
+		time.Sleep(wait)
+		if a := e.st.Do(e.r, "HEAD", e.filePath, e.reader, nil); a.Status != 200 {
+			t.Fatalf("refused after waiting the Retry-After of %s: %d %s", wait, a.Status, a.Body)
+		}
+	})
+
+	t.Run("R-LIM-008 R-LIM-025 a hammering caller is refused beyond the figure, and blocked by its refusals", func(t *testing.T) {
+		codes := map[int]int{}
+		for range 12 {
+			codes[e.st.Do(e.r, "HEAD", e.filePath, hammer, nil).Status]++
+		}
+		if codes[200] == 0 || codes[429] < 6 {
+			t.Fatalf("12 requests at once at one a second: %v", codes)
+		}
+		time.Sleep(time.Second) // the flush passes refusedPerHour and sets the marker
+		refusal(t, e.st.Do(e.r, "GET", e.filePath, hammer, nil), "the hammering token after its refusals", "caller_blocked", "")
+		time.Sleep(2 * time.Second) // the reader's own window of the subtest above has room again
+		if a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil); a.Status != 200 {
+			t.Fatalf("another caller beside the blocked token: %d %s", a.Status, a.Body)
+		}
+	})
+}
+
 // R-LIM-001, R-LIM-002, R-LIM-012, R-LIM-038: every subject has a budget of its own at a place. A user's personal tokens share one; each
 // technical token of an account has its own, at every level of account; each address has its own; an administrator is unlimited.
 func TestR_LIM_001_EachSubjectSpendsItsOwnBudget(t *testing.T) {

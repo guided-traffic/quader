@@ -250,9 +250,9 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 	var check limits.ClassCheck
 	if name != "" {
 		c := s.classes[name]
-		check = func(b *cluster.LimitBatch) func([]cluster.LimitResult, error) error {
-			decide := c.l.BatchTake(b, subject.String(), received)
-			return func(res []cluster.LimitResult, err error) error {
+		check = func(take *cluster.LimitOp) func(cluster.LimitResult, error) error {
+			decide := c.l.BatchTake(take, subject.String(), received)
+			return func(res cluster.LimitResult, err error) error {
 				v := decide(res, err)
 				setRateLimitFields(w, c, name, v)
 				if v.Allowed {

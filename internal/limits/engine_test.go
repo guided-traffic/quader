@@ -175,6 +175,82 @@ func TestR_LIM_017_RequestWindowsAndCost(t *testing.T) {
 	})
 }
 
+func TestR_LIM_017_ARefusedRequestFillsNoRequestWindow(t *testing.T) {
+	tight := Figures{RequestsPerSecond: 1, RequestsBurst: 1}
+	call := func(r *rig) error {
+		c := r.e.Begin(anonCaller("198.51.100.7"), qname.Repo{})
+		defer r.e.Finish(c)
+		return r.e.Check(context.Background(), c, time.Time{}, nil).Err
+	}
+	t.Run("R-LIM-017 R-LIM-020 a caller at one request a second that retries every second is admitted again", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, tight)
+		admitted := 0
+		for range 10 {
+			if call(r) == nil {
+				admitted++
+			}
+			r.clk.add(time.Second)
+		}
+		// an admitted request weighs on the next window, so every second retry is admitted; counted refusals admitted one
+		if admitted < 5 {
+			t.Fatalf("%d of 10 retries a second apart were admitted, want every second one", admitted)
+		}
+	})
+	t.Run("R-LIM-020 a caller that waits the Retry-After of its refusal is admitted", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, tight)
+		if err := call(r); err != nil {
+			t.Fatal(err)
+		}
+		for range 5 { // hammering in between changes nothing
+			if err := call(r); codeOf(err) != errs.CodeRateLimited {
+				t.Fatalf("err = %v, want rate_limited", err)
+			}
+		}
+		e, _ := errs.As(call(r))
+		r.clk.add(e.RetryAfter)
+		if err := call(r); err != nil {
+			t.Fatalf("refused after the Retry-After of %s: %v", e.RetryAfter, err)
+		}
+	})
+	t.Run("R-LIM-008 R-LIM-025 a request the request figures refuse is a refused request: a hammering caller is blocked", func(t *testing.T) {
+		f := tight
+		f[RefusedPerHour] = 5
+		r := newRig(t, ModeEnforce, f)
+		for range 20 {
+			_ = call(r)
+		}
+		r.e.Flush(context.Background())
+		_, refused, _, _, _, _ := r.usage.sum()
+		if refused != 19 {
+			t.Fatalf("%d refused requests counted, want the 19 the request figure refused", refused)
+		}
+		r.e.Flush(context.Background()) // the marker the first flush found due
+		r.clk.add(5 * time.Second)
+		if err := call(r); codeOf(err) != CodeCallerBlocked {
+			t.Fatalf("after 19 refusals at a figure of 5 refused requests an hour: %v, want caller_blocked", err)
+		}
+		r.e.Flush(context.Background())
+		if _, refused2, _, _, _, _ := r.usage.sum(); refused2 != refused {
+			t.Fatalf("a request refused by the block counted as a refused request (%d, then %d)", refused, refused2)
+		}
+	})
+	t.Run("R-LIM-019 on the replica's share a refused request fills no window either", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, Figures{RequestsPerSecond: 2, RequestsBurst: 2}) // a share of 1 on each of 2 replicas
+		r.store.down.Store(true)
+		admitted := 0
+		for range 10 {
+			if call(r) == nil {
+				admitted++
+			}
+			_ = call(r)
+			r.clk.add(time.Second)
+		}
+		if admitted < 5 {
+			t.Fatalf("%d of 10 admitted on the share of one a second with a refused request between, want every second one", admitted)
+		}
+	})
+}
+
 func TestR_LIM_021_TheCheckBeforeADownload(t *testing.T) {
 	f := BuiltinProfiles()[ProfileAnonymous]
 	f[CachedBytesPerHour] = 100 * mb

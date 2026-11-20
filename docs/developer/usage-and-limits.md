@@ -15,6 +15,9 @@ a body, the usage store behind the overview, the API and the screens. The techni
   derivation; `httplimit.CallerOf` converts the principal of a request.
 - **Valkey enforces, PostgreSQL remembers.** Counters are windows in Valkey (key family `lim`); the usage store is a per-replica buffer
   flushed to PostgreSQL every ten seconds, read by the overview and never by a request.
+- **A refused request fills no request window.** Stage 7 decides and counts in one step, a script inside its one round trip (the
+  take, Q-LIM-57); every limiter of R-ARCH-034 takes the same way (Q-LIM-61). The brake against a caller that keeps sending is
+  `refusedPerHour` with its block: a request figure's refusal is a refused request (Q-LIM-58).
 - **A request writes no row and costs at most three round trips:** one at stage 7, one before a download from the cache, one at step
   9a for a miss. Bytes, refusals, the end of a download and lease renewals ride on the replica's flush, once a second.
 - **Enforce is the default; Audit counts everything and applies nothing.** A new instance starts in `enforce` (`DefaultSettings`,
@@ -68,11 +71,13 @@ a body, the usage store behind the overview, the API and the screens. The techni
 | [`internal/limits/store`](../../internal/limits/store) | domain | The PostgreSQL store: `Snapshot` for the index, the writes of the API (audited, announcing the area `limits`), the record of blocks, `Names` (the names of the users, technical tokens, CI projects and personal tokens an answer names, read once per answer) and the searches of the rule dialog's suggestions |
 | [`internal/limits/usage`](../../internal/limits/usage) | domain | The usage buffer, the reads of the overview and the detail, `limits-cleanup` |
 | [`internal/limits/httplimit`](../../internal/limits/httplimit) | edge | `ProtocolPath`, `Repo`, `CallerOf`, the counting and pacing `Writer`, the log fields, the `RateLimit` fields |
-| [`internal/cluster/valkey_limits.go`](../../internal/cluster/valkey_limits.go) | infrastructure | `LimitBatch`, `LimitCounters` (Valkey), `MemoryLimits` (the replica's fallback and the unit tests), `Estimate`, `RoomAfter` |
+| [`internal/cluster/valkey_limits.go`](../../internal/cluster/valkey_limits.go), [`valkey_take.go`](../../internal/cluster/valkey_take.go) | infrastructure | `LimitBatch`, `LimitCounters` (Valkey), `MemoryLimits` (the replica's fallback and the unit tests), `Estimate`, `RoomAfter`; the take (`OpTake`, `WindowTake`, the script, `EVAL` after `NOSCRIPT`, `MemoryLimits.Return`) |
 
 Migrations: [00081_limits.sql](../../internal/meta/postgres/migrations/00081_limits.sql) (profiles with the five built-ins, rules with
-the built-in rule set, ceilings, project maxima, settings, blocks, the change area `limits`) and
-[00082_usage.sql](../../internal/meta/postgres/migrations/00082_usage.sql); queries in
+the built-in rule set, ceilings, project maxima, settings, blocks, the change area `limits`),
+[00082_usage.sql](../../internal/meta/postgres/migrations/00082_usage.sql) and
+[00085_limits_request_bursts.sql](../../internal/meta/postgres/migrations/00085_limits_request_bursts.sql) (the built-ins' request
+figures from the measurement of Q-LIM-59; `BuiltinProfiles` in `model.go` holds the same numbers); queries in
 [limits.sql](../../internal/meta/postgres/queries/limits.sql) and [limits_usage.sql](../../internal/meta/postgres/queries/limits_usage.sql).
 
 ## Configuration

@@ -60,7 +60,11 @@ type Verdict struct {
 // windowStore is the counter storage of the cluster scope. *Valkey is the
 // production implementation (valkey_ratelimit.go); the unit tests use a map.
 type windowStore interface {
-	hit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration, n int64) (cur, prev int64, err error)
+	// take counts n units in the current window if the estimate with them stays within limit, and returns the counters
+	// without them and whether they were counted.
+	take(ctx context.Context, w WindowTake, n int64) (st WindowState, err error)
+	// hit counts one event whatever the limit and returns the counters with it.
+	hit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (cur, prev int64, err error)
 	read(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (cur, prev int64, err error)
 	count(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) error
 	available() bool
@@ -69,8 +73,12 @@ type windowStore interface {
 
 type valkeyWindows struct{ v *Valkey }
 
-func (w valkeyWindows) hit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration, n int64) (int64, int64, error) {
-	return w.v.windowHit(ctx, limiter, bucket, idx, ttl, n)
+func (w valkeyWindows) take(ctx context.Context, win WindowTake, n int64) (WindowState, error) {
+	return w.v.windowTake(ctx, win, n)
+}
+
+func (w valkeyWindows) hit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (int64, int64, error) {
+	return w.v.windowHit(ctx, limiter, bucket, idx, ttl)
 }
 
 func (w valkeyWindows) read(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (int64, int64, error) {
@@ -281,13 +289,13 @@ func (l *Limiter) usesValkey() bool {
 // whether it was admitted.
 func (l *Limiter) Allow(ctx context.Context, bucket string) bool { return l.Take(ctx, bucket).Allowed }
 
-// Take counts one request of bucket and decides (R-ARCH-034). In the cluster
-// scope the counter is incremented before the decision, so a refused request
-// uses up budget like an admitted one: a caller that keeps sending while
-// refused stays refused until its rate falls below the limit. While Valkey
-// cannot be used the check runs against a local token bucket with the rate
-// divided by the number of live replicas; it never fails and never waits for
-// more than valkey.command_timeout.
+// Take decides one request of bucket and counts it if it is admitted
+// (R-ARCH-034, Q-LIM-61): a refused request uses up nothing, so a caller that
+// waits the Retry-After of its refusal is admitted then, and a caller that keeps
+// sending gets the configured rate and no more. While Valkey cannot be used the
+// check runs against a local token bucket with the rate divided by the number of
+// live replicas, which takes nothing when it refuses either; it never fails and
+// never waits for more than valkey.command_timeout.
 func (l *Limiter) Take(ctx context.Context, bucket string) Verdict {
 	return l.TakeAt(ctx, bucket, time.Time{})
 }
@@ -302,15 +310,14 @@ func (l *Limiter) TakeAt(ctx context.Context, bucket string, at time.Time) Verdi
 	return l.TakeNAt(ctx, bucket, 1, at)
 }
 
-// MaxTakeUnits bounds the units one TakeNAt charges: in the cluster scope each unit is one INCR of the
-// request's transaction (the ACL of R-ARCH-030 has no INCRBY), so a caller groups what it counts into units of
-// a size that keeps n small.
+// MaxTakeUnits bounds the units one TakeNAt charges; a caller groups what it counts into units of a size that keeps n
+// small (R-BAS-016, Q-BAS-117).
 const MaxTakeUnits = 100
 
 // TakeNAt is TakeAt for a request that is charged n units instead of one: a batch of download events is
-// charged by the units of events it holds (R-BAS-016, Q-BAS-117). The n units are counted, admitted or not, as
-// one request is; a request is admitted when the window holds them all, so n above the burst is never
-// admitted. n below 1 counts as 1; n above MaxTakeUnits is refused without being counted.
+// charged by the units of events it holds (R-BAS-016, Q-BAS-117). A request is admitted, and its n units
+// counted, when the window holds them all, so n above the burst is never admitted; a refused one counts
+// nothing. n below 1 counts as 1; n above MaxTakeUnits is refused.
 func (l *Limiter) TakeNAt(ctx context.Context, bucket string, n int, at time.Time) Verdict {
 	n = max(1, n)
 	if n > MaxTakeUnits {
@@ -328,11 +335,11 @@ func (l *Limiter) TakeNAt(ctx context.Context, bucket string, n int, at time.Tim
 		return l.record(l.takeLocal(bucket, now, 1, n, ModeReplica))
 	}
 	if l.usesValkey() {
-		idx, el := l.windowIndex(at)
-		cur, prev, err := l.set.store.hit(ctx, l.keyName, l.bucketKey(bucket), idx, 2*l.window, int64(n))
+		w := l.windowTake(bucket, at)
+		st, err := l.set.store.take(ctx, w, int64(n))
 		if err == nil {
 			l.inFallback.Store(false)
-			return l.record(l.windowVerdict(cur, prev, el, n))
+			return l.record(l.windowVerdict(st, w.Elapsed, n))
 		}
 		l.set.store.degraded()
 	} else if l.set.store != nil {
@@ -342,25 +349,36 @@ func (l *Limiter) TakeNAt(ctx context.Context, bucket string, n int, at time.Tim
 	return l.record(l.takeLocal(bucket, now, l.share(), n, ModeFallback))
 }
 
-// BatchTake is TakeAt for a check that shares its round trip with others: it adds the request's counter to b (the class of
-// R-API-016 travels with the request windows of the download limits, R-LIM-017) and returns the function that decides once
-// the batch ran, from its results or, when the batch failed or Valkey cannot be used, from the replica's share. A limiter of
-// replica scope decides at once and adds nothing.
-func (l *Limiter) BatchTake(b *LimitBatch, bucket string, at time.Time) func(res []LimitResult, err error) Verdict {
+// windowTake is the limiter's window of a request of bucket that arrived at at.
+func (l *Limiter) windowTake(bucket string, at time.Time) WindowTake {
+	idx, el := l.windowIndex(at)
+	return WindowTake{
+		Class: true, Figure: l.keyName, Bucket: l.bucketKey(bucket), Window: l.window, Index: idx, Elapsed: el,
+		Limit: int64(l.burst),
+	}
+}
+
+// BatchTake is TakeAt for a check that shares its take with other windows: it adds the limiter's window to op, an OpTake (the
+// class of R-API-016 is decided with the request windows of the download limits, R-LIM-017, and counted only when every
+// window of the take admits the request), and returns the function that decides once the batch ran, from the take's result
+// or, when the batch failed or Valkey cannot be used, from the replica's share. A limiter of replica scope decides at once and
+// adds nothing.
+func (l *Limiter) BatchTake(op *LimitOp, bucket string, at time.Time) func(res LimitResult, err error) Verdict {
 	now := l.set.now()
 	if at.IsZero() || at.After(now) {
 		at = now
 	}
 	if l.scope == ScopeReplica {
 		v := l.record(l.takeLocal(bucket, now, 1, 1, ModeReplica))
-		return func([]LimitResult, error) Verdict { return v }
+		return func(LimitResult, error) Verdict { return v }
 	}
-	idx, el := l.windowIndex(at)
-	op := b.Add(LimitOp{Kind: OpClassAdd, Figure: l.keyName, Bucket: l.bucketKey(bucket), Window: l.window, Index: idx, N: 1})
-	return func(res []LimitResult, err error) Verdict {
-		if err == nil && op < len(res) {
+	w := l.windowTake(bucket, at)
+	i := len(op.Windows)
+	op.Windows = append(op.Windows, w)
+	return func(res LimitResult, err error) Verdict {
+		if err == nil && i < len(res.Windows) {
 			l.inFallback.Store(false)
-			return l.record(l.windowVerdict(res[op].Cur, res[op].Prev, el, 1))
+			return l.record(l.windowVerdict(res.Windows[i], w.Elapsed, 1))
 		}
 		if l.set.store != nil {
 			l.set.store.degraded()
@@ -370,26 +388,27 @@ func (l *Limiter) BatchTake(b *LimitBatch, bucket string, at time.Time) func(res
 	}
 }
 
-// windowVerdict applies the sliding-window rule to the counters of a check
-// that counted the request: admitted when previous x (1 - elapsed / W) +
-// current <= burst.
-func (l *Limiter) windowVerdict(cur, prev int64, elapsed float64, units int) Verdict {
-	est := float64(prev)*(1-elapsed) + float64(cur)
+// windowVerdict applies the sliding-window rule to what a take found: the request of units is admitted when previous x
+// (1 - elapsed / W) + current + units <= burst, and the counters are those without it.
+func (l *Limiter) windowVerdict(st WindowState, elapsed float64, units int) Verdict {
+	est := float64(st.Prev)*(1-elapsed) + float64(st.Cur) + float64(units)
 	v := Verdict{
-		Allowed: est <= float64(l.burst), Limit: l.burst, Window: l.window, Mode: ModeCluster,
+		Allowed: st.Fits, Limit: l.burst, Window: l.window, Mode: ModeCluster,
 		Remaining: max(0, int(math.Floor(float64(l.burst)-est))),
 		Reset:     time.Duration((1 - elapsed) * float64(l.window)),
 	}
 	if !v.Allowed {
-		v.RetryAfter = wholeSeconds(l.retryAfter(cur, prev, elapsed, units))
+		v.Remaining = max(0, int(math.Floor(float64(l.burst)-est+float64(units))))
+		v.RetryAfter = wholeSeconds(l.retryAfter(st.Cur, st.Prev, elapsed, units))
 	}
 	return v
 }
 
 // retryAfter is the time after which a request of units would be admitted if the
-// caller sent nothing more, computed from the counters of the check. It solves the
-// admission rule for the rest of the current window, and when the current
-// window cannot admit again, for the next one, whose previous counter is cur.
+// caller sent nothing more, computed from the counters of the check, which do not
+// hold the refused request. It solves the admission rule for the rest of the
+// current window, and when the current window cannot admit again, for the next
+// one, whose previous counter is cur.
 func (l *Limiter) retryAfter(cur, prev int64, elapsed float64, units int) time.Duration {
 	burst, w, u := float64(l.burst), float64(l.window), float64(units)
 	// Within the current window the next request counts as cur+units and is admitted

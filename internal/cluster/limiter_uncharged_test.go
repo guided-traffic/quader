@@ -10,7 +10,7 @@ import (
 // hitNet and refuse make memWindows an unchargedStore: the refusals live in counters of the limiter named
 // <limiter>-refused, the way the Valkey store keeps them.
 func (m *memWindows) hitNet(ctx context.Context, l, b string, idx int64, ttl time.Duration) (int64, int64, error) {
-	cur, prev, err := m.hit(ctx, l, b, idx, ttl, 1)
+	cur, prev, err := m.hit(ctx, l, b, idx, ttl)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -27,24 +27,24 @@ func TestR_BAS_035_AnUnchargedLimitAdmitsUpToItsRateWhateverIsRefused(t *testing
 	st, clk := newMemWindows(), newLimClock()
 	l := replica(t, st, clk, 1, nil).NewLimiter("bastion.requests", ScopeCluster, 10, 40)
 	ctx := t.Context()
-	// 11 requests per second for a minute: the charged form (Take) starves after the burst, this one admits
-	// the rate.
-	charged := replica(t, newMemWindows(), clk, 1, nil).NewLimiter("bastion.charged", ScopeCluster, 10, 40)
-	admitted, chargedAdmitted := 0, 0
+	// 11 requests per second for a minute: the Bastion's form without a script admits the rate, as Take does with its script
+	// (R-ARCH-034: one rule for every request window).
+	take := replica(t, newMemWindows(), clk, 1, nil).NewLimiter("bastion.take", ScopeCluster, 10, 40)
+	admitted, takeAdmitted := 0, 0
 	for range 11 * 60 {
 		if l.TakeUncharged(ctx, "a").Allowed {
 			admitted++
 		}
-		if charged.Take(ctx, "a").Allowed {
-			chargedAdmitted++
+		if take.Take(ctx, "a").Allowed {
+			takeAdmitted++
 		}
 		clk.advance(time.Second / 11)
 	}
 	if admitted < 580 || admitted > 660 {
 		t.Fatalf("%d of 660 admitted by the uncharged limit, want about 600", admitted)
 	}
-	if chargedAdmitted > 100 {
-		t.Fatalf("the charged form admitted %d: the comparison no longer shows the starvation it stands for", chargedAdmitted)
+	if takeAdmitted < 580 || takeAdmitted > 660 {
+		t.Fatalf("%d of 660 admitted by Take, want about 600 as the uncharged form", takeAdmitted)
 	}
 }
 
@@ -125,8 +125,12 @@ func TestR_BAS_035_AnUnchargedLimitFallsBackAndNeverFailsTheRequest(t *testing.T
 // bareStore is a windowStore without the counters of refusals.
 type bareStore struct{}
 
-func (bareStore) hit(context.Context, string, string, int64, time.Duration, int64) (int64, int64, error) {
+func (bareStore) hit(context.Context, string, string, int64, time.Duration) (int64, int64, error) {
 	return 1, 0, nil
+}
+
+func (bareStore) take(context.Context, WindowTake, int64) (WindowState, error) {
+	return WindowState{Fits: true}, nil
 }
 
 func (bareStore) read(context.Context, string, string, int64, time.Duration) (int64, int64, error) {
