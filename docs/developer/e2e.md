@@ -714,6 +714,19 @@ With `TestNPMHA`'s 22 documents (the first run of the day, before `allDocuments`
 tarballs 1,063 and 1,108 ms in the warm-up and the drain window, which is why the documents are held to their bound on their own
 ([Q-HA-94](../spec/ha-and-helm.md#q-ha-94--the-load-of-the-drain-per-role)).
 
+**The PostgreSQL primary's memory** (nightly of 2026-11-20, run 44828435420): the primary `quader-db-1` was OOM-killed at its limit of
+1Gi when the drain of `packages` ran a fourth `packages` pod beside the three (the replacement's pool beside the evicted pod's). Every
+request that needed the database waited about 16 s, on every replica at once: 2 s for the restart and crash recovery, then until the
+startup probe let the pod back into `quader-db-rw` and the standby streamed again, because a commit waits for the synchronous standby.
+The failure reads as a k6 p99 of 14 s against 197 ms and 168 tarballs answered `429 too_many_parallel_downloads` after 10 to 26 s: k6's
+open arrival rate held about 200 tarball downloads per token in that window, the built-in profile Technical admits 50 at a time, and a
+download beyond it waits `limits.parallel.wait` (10 s) and is then refused (R-LIM-024), which is the limit working as specified. The
+`/api/v1/system/ping` of the ping load stayed below 40 ms throughout, and the host used 15 to 19 of its 32 CPUs before the wait and 2 to
+5 during it: the runner did not stall, the pods waited. The run before (2026-11-19, run 44625277245) had come within 8 MiB of the
+limit at the same step. When a drain leg shows a stall on every replica at the same second, `describe-quader.txt` of the cluster state
+says whether a PostgreSQL pod was `OOMKilled`, and `evidence/pods.csv` holds its memory every 5 s. The limit is now 3Gi
+([local-profile.md](local-profile.md), [postgres.yaml](../../deploy/dev/postgres.yaml)).
+
 The measured values further down this page were taken on the profile before the cut (one `web` Deployment) and are not re-measured; a
 line that says `web` there names that profile.
 

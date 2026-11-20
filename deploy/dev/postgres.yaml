@@ -62,7 +62,12 @@ spec:
       cpu: 100m
       memory: 256Mi
     limits:
-      memory: 1Gi
+      # Sized for the connection budget the server admits: under the npm load of the drain per role, the end of one packages
+      # pod gave back 120 to 155 MiB of the primary's memory (its pool holds at most 20 connections, so at least 6 to 8 MiB each),
+      # and the primary held about 1 GiB with three packages pods and the other roles. At 1Gi it was OOM-killed when the drain of
+      # packages ran a fourth pod beside them (nightly of 2026-11-20), and the run before had come within 8 MiB of it at the
+      # same step. 323 connections of the scatter profile at 7.75 MiB plus the shared buffers are about 2.6 GiB.
+      memory: 3Gi
   affinity:
     enablePodAntiAffinity: true
     topologyKey: kubernetes.io/hostname
