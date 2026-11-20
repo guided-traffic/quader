@@ -619,7 +619,8 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (16:20), three builders; packages 2 and 3 of `upstream` have reported, nothing of the feature is landed:
+- **In work** (16:25), four builders; packages 2 and 3 of `upstream` have reported and each is resumed for a follow-up,
+  nothing of the feature is landed:
   - **Package 1 of `upstream`, second stage.** Its contract commit is `ceca6d08` on its branch, on top of `main` (not
     landed). It builds the reconcile, the refusals, the handlers, the archive keys of Debian and Ubuntu, the order of
     `GET /api/v1/projects` (Q-UI-837) and the integration area `upstream`. **Added on 2026-11-20, 16:20, from the other two
@@ -650,7 +651,9 @@ runs are in `git log`; this section holds the current state.
     **not yet run against the real API**, and the line in `web/e2e/renders/screens.ts` is missing for the same reason.
     Not built: the sentence of **Set up client** for `scanner-trivy` (R-UI-190). **Rendered and looked at by the
     development agent** (rule 11; 210 pictures of 29 screens, both schemes, 1440, 1024 and 390 px, four roles): the
-    screens hold together. What goes back to the builder, with the two shape changes once package 1 has them:
+    screens hold together. **Resumed at 16:25** for items 1, 2, 3, 5 and 6 below and the missing sentence of **Set up
+    client**; items 4 and 7, the two shape changes, the run against the real API and the render line wait for the
+    merged tree:
     1. the project `upstream` shows **Public** in the lists of projects and a globe beside its name in the side bar,
        because that is the stored level (Q-AUTHZ-301); by the owner's definition Public means everyone reads, which is
        not true of this project. It gets an en dash and no level icon (the development agent's);
