@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 16:55): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 17:25): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -575,7 +575,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 16:55.
+**State on 2026-11-20**, 17:25.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -645,8 +645,8 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (17:00), two builders; the three packages of `upstream` have all reported and are being brought together,
-  nothing of the feature is landed:
+- **In work** (17:25), two builders; packages 1 and 2 of `upstream` stand together on the branch `feat/upstream`, the UI
+  is being put on top, nothing of the feature is landed:
   - **Package 1 of `upstream`, reported:** `75702dc6` (the reconcile, the refusals, the handlers, the archive keys, the
     order of `GET /api/v1/projects`) and `ad0c54b5` (the two changes of the API's shape) on its contract commit
     `ceca6d08`; every gate green on the final tree (one `make lint` ran into the linter's own time limit at a load of
@@ -664,12 +664,20 @@ runs are in `git log`; this section holds the current state.
     contacted; a format adds rows, no time and no leg. **Not verified:** the refusal of an old session at an address
     write (the harness uses bearer tokens); the 409 of the service-account and CI-mapping writers over HTTP (unit
     tests only); the saved upstream test of a well-known repository, which by the code needs
-    `repositories:write-config`; and what the end-to-end tier sees of an installation that now holds 13 repositories
-    in a project `upstream`. **Resumed at 16:55 to bring the packages together:** its three commits become one on
-    `main` (migration 00086 was added in the first and changed in the second, which the history check of the
-    migrations refuses), package 2 goes on top as its own commit, package 2's SQL helper for the switch is replaced by
-    the real operation, the merged tree shows once that a Debian virtual repository accepts `upstream/debian`, and it
-    reads the end-to-end tests and journeys for what the project's mere presence breaks.
+    `repositories:write-config`. **Brought together with package 2 by its builder (17:20):** the branch
+    `feat/upstream` (worktree `.claude/worktrees/upstream-landing`) holds, on `main`, package 1 as one commit
+    (`c81cd14e7`; its three became one, because migration 00086 was added in the first and changed in the second, which
+    the history check of the migrations refuses) and package 2 on top (`3fdebef18`). Conflicts in four files, the
+    decision blocks kept whole in the order of their numbers; `internal/repository/service.go` merged itself and keeps
+    both behaviours. Package 2's SQL helper for the switch now calls the real operation (the member resolved on the
+    replica 78 ms after the switch), and a new case shows that a Debian virtual repository accepts `upstream/debian`
+    with the presets' keys (0.03 s). **Gates on the merged tree, all green:** `make lint` 326 s at a load of 26, the
+    unit run 75 s, `make web-test` 30 s, and the integration areas `upstream` 10.2 s, `repository` 134 s, `virtual`
+    6.6 s, `limits` 111 s, `projects` 43 s, `authz` 77 s. **The area `upstream` with both packages:** about 10 s,
+    and with the limits' case shard b gains about 13 s. **The end-to-end tests, read for what the project's mere
+    presence breaks:** none had to change (lists are checked by name or behind a filter, backups count blobs, the
+    keys of the tests are none of the 13); one is left to be settled: `web/e2e/tests/upgrade/16-upgrade.spec.ts`
+    expects `npm-local` among the 50 rows of the unfiltered admin list of repositories.
   - **Package 2 of `upstream`, complete:** `e391f1256` on `ceca6d08`, every gate green (the unit run 2:29 under load).
     Migration 00087. **What it cost:** unit tests under a second each; one integration test of about 3 s in the area
     `upstream` and one of 2.8 s in `limits`, both in shard b: about 8 s more there (the plan said 12 s). **Outside the
@@ -700,11 +708,13 @@ runs are in `git log`; this section holds the current state.
     reads it." in place of the levels; the fingerprints stand in the product's monospace face; **Set up client** of
     `scanner-trivy` says that clients cannot use it and shows no snippet. **One gate red in the follow-up:**
     `make web-test` failed two tests of other features that wait a fixed 320 ms (section 8), at a load of 53; both
-    files passed alone; the full run is repeated on the merged tree. **Waiting for the merged tree** (its second
-    follow-up): the two shapes of package 1, the run against the real API and the render line, the fold **Wiki
-    visibility** on a well-known repository's settings page (R-REPO-069 does not name it), `upstreamState` in
-    **Explain a path**, and the filter's focus (section 8), fixed once in the focus service in place of the
-    page's own way round it.
+    files passed alone; the full run is repeated on the merged tree. **Second follow-up, started at 17:20 on `feat/upstream`:** the filter's
+    focus (section 8) as a `fix:` commit of its own before the package, observed in a browser first and fixed once
+    in the focus service in place of the page's own way round it; the two shapes of package 1; every screen once
+    more against a backend built from the merged tree, with a database of its own; the fold **Wiki visibility** on a
+    well-known repository's settings page (R-REPO-069 does not name it); `upstreamState` in **Explain a path**; the
+    admin list and a registry's page in German; at most three lines in `web/e2e/renders/screens.ts`, each with what
+    it adds to the job; the upgrade test above.
     Seen and left: the groups stand in the order of the format catalog, Ansible Galaxy first and OCI last (alphabetical
     by display name, as the specification says); the project switcher lists Upstream under **Your projects**; the head
     "Members" on a virtual repository's settings page is as small as a label (so before this package);
@@ -729,21 +739,19 @@ runs are in `git log`; this section holds the current state.
     shows (the analyser in the distroless pod, no service-account token, the NetworkPolicy, readiness under
     `helm --wait`, whether a scanner pod should carry `quader/serve=true`, which `deploy/dev/drain.sh` selects),
     then the integration areas `authz`, `limits`, `oci` and `packages`, because the harness changed for every area.
+  **Housekeeping at 17:20:** twelve local branches without a worktree and without a commit missing on `main` deleted.
   **Waiting:** package B of the scanner, until `upstream` and package A are both on `main` (it needs `KindSystem` of
   the one and `upstream/scanner-trivy` of the other, and the two change the same files: `internal/authz/index.go`,
-  `internal/limits/usage/buffer.go`, the request path, the specification); the builder of package 3, for the merged
-  tree. **Order of landing:** whichever of `upstream` and package A is ready first; the other is rebased by its own
+  `internal/limits/usage/buffer.go`, the request path, the specification). **Order of landing:** whichever of `upstream` and package A is ready first; the other is rebased by its own
   builder. **Housekeeping of 2026-11-20:** `.bin/trivy-v0.76.1` in the main checkout, the analyser of the pin before,
   removed (the pin is v0.76.2, and the Makefile's path carries the version).
   **Cut between package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
   `scanner-trivy` (its 48 hours, its include pattern, the 404 for every client) and leaves the "in use" function empty,
   so the admin page says "Not in use" until package B supplies it; the system's own reading through the repository, the
   actor of its fills and the cleanup's exemption for the layer in use are package B's. **Landing the three packages:**
-  the development agent merges them on one branch in the order 1, 2, 3; both package 1 and package 3 wrote
-  `docs/manual/admin/upstream-registries.md`, and four spec and documentation pages are touched by more than one package.
-  On the merged tree a builder replaces package 2's SQL helper `virtSwitchOn` by package 1's operation, adds the case
-  that lists `upstream/debian` (refused with `deb_member_unverified` until the presets carry package 1's keys), and the
-  UI builder runs its screens against the real API and adds the render line; then the full gates, then `main`.
+  when the UI stands on `feat/upstream`, the development agent runs the full gates on that tree once more (the unit
+  run, the chart tests, lint, the web gates, the coverage tool, the scans), looks at the pictures, and lands the
+  branch on `main` as its commits: the fix of the filter's focus, package 1, package 2, package 3.
   **Numbers the builders hold** for decisions and gaps of their own: package 1 Q-REPO-390, Q-AUTHZ-305 to 309, Q-API-363
   to 369, H-1053 to H-1069, ADR-217, SQLSTATE AI011; package 2 Q-REPO-400 onward, Q-AUTHZ-310, Q-LIM-75, H-1080 onward,
   SQLSTATE AI015; package 3 Q-UI-838 to 849, H-1090; package A Q-VULN-180, Q-ARCH-550, Q-HA-340, Q-OCI-235, Q-AUTHZ-330,
