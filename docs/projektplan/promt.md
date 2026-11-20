@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 17:50): no registry task; a malware scan of every artifact with ClamAV, asked for by the owner that day and being prepared for him ([With the owner](#with-the-owner)); the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 18:05): no registry task; a malware scan of every artifact with ClamAV, asked for by the owner that day and being prepared for him ([With the owner](#with-the-owner)); the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -583,7 +583,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 17:50.
+**State on 2026-11-20**, 18:05.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -654,7 +654,7 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (17:25), two builders; packages 1 and 2 of `upstream` stand together on the branch `feat/upstream`, the UI
+- **In work** (18:05), two builders and a planner (the malware scan, [With the owner](#with-the-owner)); packages 1 and 2 of `upstream` stand together on the branch `feat/upstream`, the UI
   is being put on top, nothing of the feature is landed:
   - **Package 1 of `upstream`, reported:** `75702dc6` (the reconcile, the refusals, the handlers, the archive keys, the
     order of `GET /api/v1/projects`) and `ad0c54b5` (the two changes of the API's shape) on its contract commit
@@ -758,7 +758,10 @@ runs are in `git log`; this section holds the current state.
     Q-VULN-184), which would have stopped the UI development backend. The integration areas `authz`, `oci` and
     `packages` passed, `limits` after that fix. **Not verified:** a scanner pod killed in the middle of a call; the
     ServiceMonitor's scrape with the ops pair; the step in the job `container-scan`; the nightly's drain sets; the
-    other integration areas. **Not landed, on purpose:** see the order of landing below.
+    other integration areas. **Not landed, on purpose:** see the order of landing below. **Resumed at 18:05 for the
+    owner's decision of a certificate for each kind of pod** ([With the owner](#with-the-owner)): a second commit on
+    top, with the specification, chart tests, unit tests of the name checks, the area `vulnimage`, and the
+    end-to-end case once more on a cluster of its own.
   **Housekeeping at 17:20:** twelve local branches without a worktree and without a commit missing on `main` deleted.
   **Waiting:** package B of the scanner, until `upstream` and package A are both on `main` (it needs `KindSystem` of
   the one and `upstream/scanner-trivy` of the other, and the two change the same files: `internal/authz/index.go`,
@@ -771,7 +774,8 @@ runs are in `git log`; this section holds the current state.
   package A renders with the installation's values (24 objects, five of them new: the scanner's Deployment,
   NetworkPolicy, PodDisruptionBudget and two Services). What is missing is one line in the installation's
   `Certificate` (`client auth` among its usages), and the rules of that repository forbid a commit by the development
-  agent: put to the owner on 2026-11-20. The cluster's egress rules need nothing: a pod without a label reaches its
+  agent: put to the owner on 2026-11-20, who decided a certificate for each kind of pod in its place, which package A
+  now gets before it lands. The cluster's egress rules need nothing: a pod without a label reaches its
   own namespace, which is all the scanner asks. **Housekeeping of 2026-11-20:** `.bin/trivy-v0.76.1` in the main checkout, the analyser of the pin before,
   removed (the pin is v0.76.2, and the Makefile's path carries the version).
   **Cut between package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
@@ -811,22 +815,6 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   database and the rules of its distribution, memory, limits, licence) and how a gate covers every format, and comes back
   with the decisions. They go to him as a working paper he answers in (as the download limits did), not one by one in the
   chat. Nothing of it is decided or specified.
-- **A certificate for each kind of pod** (2026-11-20). Asked whether he adds `client auth` to his installation's
-  certificate before the release with the scanner role, he answered "Option A, macht es vielleicht Sinn das jeder Pod-kind
-  sein eigenes Cert erhält?" What the development agent found on that question, in package A's branch and on his
-  cluster: the scanner mounts by default the pair the edge trusts for `api` and `packages` (H-1035, live by default);
-  the scanner's optional pair of its own must carry the same name `<fullname>.<namespace>.svc` (R-HA-066), so by the
-  specification's text the edge would accept it as well (the development agent's conclusion, not tested); both links
-  admit any client certificate that chains to the CA, and his issuer `cluster-ca` has 76 certificates, 28 of which
-  allow client authentication, so what separates today is the NetworkPolicy and the scan token, not the certificate;
-  the planner had dismissed a required pair for the operator's effort and named the condition for looking again: the
-  chart rendering cert-manager Certificates itself (Q-HA-317), which it does not do today. **Put to him as three
-  options:** (a) as built; (b) only the scanner gets a pair and a name of its own, required; (c) every kind of pod
-  (`api`, `packages`, `worker`, `scanner`) gets a pair and a name of its own, each link checks the name of the other
-  side, and the chart issues the pairs through cert-manager from one issuer value, with a Secret's name per kind for an
-  installation without it. The development agent's recommendation is (c). With (c) the one line in his installation
-  is not needed: his values name the issuer and his own `Certificate` goes. **Until he answers:** nothing is committed
-  to his repository, package A stays on its branch, `upstream` lands first.
 - **The binding of a host to a repository of `upstream`** at its root (`docker pull mirror.example.com/library/alpine`, a Docker
   Engine's `registry-mirrors`; R-EP-006, R-OCI-029): named to him on 2026-11-20 as the second step after the project is
   built; today it is a configuration at start, not a click of the admin area. An address without the project segment, which
@@ -841,6 +829,25 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 **Decided by the owner on 2026-11-20, in work or waiting to be built**
 
+- **A certificate for each kind of pod, decided by the owner on 2026-11-20** ("Option c"). How it came up: his
+  installation takes every release within a minute, and its certificate allows server authentication only, so the
+  scanner pods of package A would have stayed not ready and the upgrade would have failed. Asked to add `client auth`,
+  he asked back: "Option A, macht es vielleicht Sinn das jeder Pod-kind sein eigenes Cert erhält?" What the development
+  agent found in package A's branch and on his cluster: the scanner mounts by default the pair the edge trusts for `api`
+  and `packages` (H-1035); the scanner's optional pair of its own must carry the same name (R-HA-066), so by the
+  specification's text the edge would accept it as well (a conclusion from the text, not tested); both links admit any
+  client certificate of the CA, and his issuer `cluster-ca` has 76 certificates, 28 of which allow client authentication;
+  the planner had dismissed a required pair for the operator's effort and named the condition for looking again, the
+  chart rendering cert-manager Certificates itself (Q-HA-317). The options as put to him: (a) as built; (b) only the
+  scanner gets a pair and a name of its own, required; (c) every kind of pod (`api`, `packages`, `worker`, `scanner`)
+  gets a pair and a name of its own, each link checks the name of the other side, and the chart issues the pairs
+  through cert-manager from one issuer value, with a Secret's name per kind for an installation without it. Named to
+  him with (c): cert-manager becomes the standard path, and over (b) it gains little security for the three kinds that
+  hold the database's and the object store's credentials anyway; its gain is one rule and a chart that knows names and
+  usages. **Being built** by the builder of package A as a second commit on its branch, before the scanner role lands
+  (run record). **For his installation afterwards:** the values name the issuer in place of `tls.secretName`, and his
+  hand-written `Certificate` goes; the development agent prepares that change and does not commit it (the rules of that
+  repository). The one line `client auth` is not needed any more.
 - **H-812** ([image-scanning.md](../security/image-scanning.md)), **decided by the owner on 2026-11-20** ("Perfekt, machen wir wie
   du analysiert hast", after he asked for a look at how Harbor's scanner adapter does it): the analysis of an image moves into
   a role `scanner` of the same binary with a Deployment of its own and no secret of the database, the object store or Valkey.
