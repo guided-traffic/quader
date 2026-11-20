@@ -612,8 +612,9 @@ runs are in `git log`; this section holds the current state.
   the sections Service accounts, Visibility and Download limits find a section by its own head; the other selectors
   of `web/e2e` that filter a container by a text were read and cannot take a level's sentence. Verified by the real
   walks at three widths as both users against the page `main` serves (8 passed); the render run itself was not
-  started locally, because its setup seeds the stack: the job `UI layout checks` of Test and Release 44770761554
-  shows it.
+  started locally, because its setup seeds the stack. **Test and Release 44770761554 of `cf983131`, read at 17:55:
+  green in every job,** `UI layout checks` included; a change under `web/e2e` alone ran the legs `push`, `ci` and
+  `access-long` and no format's.
 - **The level `internal`, the owner's definition of 2026-11-20, in work on `main`:** "internal sind alle angemeldeten User
   (auch technische) außer User und seine Tokens die das external-flag tragen. Internal ist einfach eine Sichtbarkeit für
   ein Projekt. Ist das Projekt privat, braucht man eine spezifische Einladung um das Projekt zu sehen. Ist es intern, kann
@@ -810,12 +811,22 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   database and the rules of its distribution, memory, limits, licence) and how a gate covers every format, and comes back
   with the decisions. They go to him as a working paper he answers in (as the download limits did), not one by one in the
   chat. Nothing of it is decided or specified.
-- **The certificate of his installation needs `client auth`** before the release with the scanner role reaches it (see
-  the order of landing in the run record): the line is ready for him, the development agent does not commit to that
-  repository.
-- **The scanner's link asks for a certificate that most installations do not have** (the development agent's Q-VULN-163:
-  mutual TLS with the chart's own pair; its own condition for looking again was "if operators' certificates commonly lack
-  client authentication", and the only installation there is lacks it). Stays as built; for the walkthrough.
+- **A certificate for each kind of pod** (2026-11-20). Asked whether he adds `client auth` to his installation's
+  certificate before the release with the scanner role, he answered "Option A, macht es vielleicht Sinn das jeder Pod-kind
+  sein eigenes Cert erhält?" What the development agent found on that question, in package A's branch and on his
+  cluster: the scanner mounts by default the pair the edge trusts for `api` and `packages` (H-1035, live by default);
+  the scanner's optional pair of its own must carry the same name `<fullname>.<namespace>.svc` (R-HA-066), so by the
+  specification's text the edge would accept it as well (the development agent's conclusion, not tested); both links
+  admit any client certificate that chains to the CA, and his issuer `cluster-ca` has 76 certificates, 28 of which
+  allow client authentication, so what separates today is the NetworkPolicy and the scan token, not the certificate;
+  the planner had dismissed a required pair for the operator's effort and named the condition for looking again: the
+  chart rendering cert-manager Certificates itself (Q-HA-317), which it does not do today. **Put to him as three
+  options:** (a) as built; (b) only the scanner gets a pair and a name of its own, required; (c) every kind of pod
+  (`api`, `packages`, `worker`, `scanner`) gets a pair and a name of its own, each link checks the name of the other
+  side, and the chart issues the pairs through cert-manager from one issuer value, with a Secret's name per kind for an
+  installation without it. The development agent's recommendation is (c). With (c) the one line in his installation
+  is not needed: his values name the issuer and his own `Certificate` goes. **Until he answers:** nothing is committed
+  to his repository, package A stays on its branch, `upstream` lands first.
 - **The binding of a host to a repository of `upstream`** at its root (`docker pull mirror.example.com/library/alpine`, a Docker
   Engine's `registry-mirrors`; R-EP-006, R-OCI-029): named to him on 2026-11-20 as the second step after the project is
   built; today it is a configuration at start, not a click of the admin area. An address without the project segment, which
