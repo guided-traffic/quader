@@ -876,7 +876,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (22:34), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner on `main`); the builders of packages 1 and 4 have finished:
+- **In work** (23:25), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner, sent back once); the builders of packages 1 and 4 have finished:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1031,6 +1031,26 @@ runs are in `git log`; this section holds the current state.
     the task that fetches the database into `upstream/scanner-trivy`, the system's own reading through that
     repository, the actor of its fills, the cleanup's exemption for the layer in use, the "in use" line of the admin
     page and the sources screen; a migration with the next free number after the malware scan's 00088.
+    **Reported at 23:30, sent back at 23:25** (one commit on its branch, based before the evening's fixes): the task
+    `vuln-sync-trivy-db` asks the repository the configuration names (`upstream/scanner-trivy` by default) for
+    `aquasec/trivy-db:2` through the worker's own fetching, as the system subject, so the repository fetches the layer
+    once and keeps it, and a second run only checks the tag; a local repository is read from storage with no request,
+    the path of an installation without internet; the database in use is the layer's digest on the source's row, and
+    a worker reads that layer from the repository and checks its hash; nothing falls back to the public registry, a
+    failed run records one of six codes and the database in use stays; migration 00089 drops the old table and its
+    stored file; the sources screen has a row **Image database** with the repository, the image and the tag, a button
+    to fetch it now and, for a local repository, the commands to fill it; the upstream registries page says "In use
+    by the image scanning". Its decisions: Q-VULN-190 to 193, Q-API-380, Q-UI-890. It also connected the usage
+    tracking of everything a worker fetches in the background, which was never recorded, mirror runs included
+    (Q-VULN-192). Looked at by the development agent: the sources screen with a current database at 1440 px light, a
+    local repository with a missing database and the commands open at 390 px dark. **Why it went back:** nothing
+    removes an older layer (the general cleanup of a remote's cache, R-REPO-046, was never built, and the builder
+    shipped that as a gap, H-1160): about 142 MB for every new database, 0.57 GB a day for good, against Q-VULN-175
+    (the layer in use, and the older ones for two days). It builds that removal for the database's system repository
+    now. It also rebases onto the evening's fixes, runs every integration area and the bare starts (its change
+    removes configuration keys and adds a rule), and answers with what it ran: whether any CI leg or local profile
+    now pulls the real database of 142 MB, where the removed keys are still written, and what the owner's
+    installation does at the upgrade. **It lands after the nightly.**
 - **The role `scanner` (package A), landed on 2026-11-20 at 20:19** in two commits: "container images are analysed in
   scanner pods that hold no secret of the installation" and "every kind of pod has a TLS certificate of its own, which
   the chart issues through cert-manager" (the owner's decision, [With the owner](#with-the-owner)). **The
