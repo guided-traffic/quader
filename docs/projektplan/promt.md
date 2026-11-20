@@ -879,7 +879,19 @@ runs are in `git log`; this section holds the current state.
   else fails. **The set `upgrade-release`** can pass again since the release of 22:26, whose own values already name
   the issuer; between the landing and that release it would have waited 15 minutes for a Secret nobody issues
   (read, not run). **Not verified until the dispatch:** the pull of the cert-manager chart on a hosted runner, the
-  legs' times there.
+  legs' times there. **The second red leg, at 23:48, cause not known:** `e2e (drain-roles)`, `TestDrainRoles`. Every
+  role was evicted pod by pod under the npm load; the ping load, the transfers, every npm command and the driver's
+  720 changes held without a failure. But for some seconds around 22:38:56 UTC, during the evictions, 168 of 88,360
+  requests of the load, all tarballs through the virtual repository `npm-all`, took 17 to 21 seconds and were then
+  answered 429, on two `packages` replicas (one being evicted, one a replacement), and the p99 of all npm requests in
+  the window was 14 s against 197 ms in the warm-up. The morning's scheduled nightly was green on the commit before
+  today's landings. Not known: which layer answered 429 after such a wait (a download limit or a request burst and
+  their fallback to shares per replica, the listener's admission, the virtual engine, the test's upstream), whether
+  the slow window and the refusals are one cause, and whether a change of the day did it (the scanner role with two
+  more pods and a drain script that rolls them, the second usage dimension of `upstream`, the join of the malware
+  verdict into the download statement) or a starved runner. A builder reads the leg's artifacts and the code for it
+  (since 23:50), with one local reproduction allowed and no repetition loop; a fix if it is a defect, a proposal if
+  the limit works as decided and the test's one caller is what it refuses.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -900,7 +912,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (23:39), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once); held for the end of the nightly: the platform matrix's fix:
+- **In work** (23:50), four builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's drain leg); held for the end of the nightly: the platform matrix's fix:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
