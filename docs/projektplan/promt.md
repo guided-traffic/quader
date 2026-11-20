@@ -630,7 +630,7 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (16:55), two builders; the three packages of `upstream` have all reported and are being brought together,
+- **In work** (17:00), two builders; the three packages of `upstream` have all reported and are being brought together,
   nothing of the feature is landed:
   - **Package 1 of `upstream`, reported:** `75702dc6` (the reconcile, the refusals, the handlers, the archive keys, the
     order of `GET /api/v1/projects`) and `ad0c54b5` (the two changes of the API's shape) on its contract commit
@@ -694,10 +694,32 @@ runs are in `git log`; this section holds the current state.
     by display name, as the specification says); the project switcher lists Upstream under **Your projects**; the head
     "Members" on a virtual repository's settings page is as small as a label (so before this package);
     the shared error notice's **Retry** sits 5.5 px off its line in every list (not this package's, section 8).
-  - **Package A of the scanner**, in two stages: everything up to the integration tier and the chart tests with the e2e
-    case written, then, when the host is quiet and it is told to, the one run of that case on a kind cluster of its own.
-  **Waiting:** package B of the scanner, for `KindSystem` of package A's first stage and for `upstream/scanner-trivy`;
-  the builder of package 3, for the merged tree.
+  - **Package A of the scanner, first stage reported:** `0f23ad8ed` on `7fe52214` (143 files), the role `scanner`
+    with its token, its listener on `packages`, the chart's objects and the tests up to the integration tier; no
+    migration. Gates green but one: `make versions-check` fails on this machine's Docker buildx (F-17, the owner's
+    link), not on the change. **What it cost:** about 25 unit tests in about 4 s; the fidelity test 2 s warm and 18 s
+    with a cold build cache in the job `container-scan` (the module download there not measured); six chart tests in
+    2 s; eight integration tests in the area `vulnimage`, about 21 s more in shard c; one end-to-end case in
+    `e2e (vuln)`, estimated 20 s, **not run yet**. No leg of a format gains anything. **Defects its own tests found,
+    fixed:** a scanner that refuses the worker's certificate counted as a lost call and spent an attempt; the rule
+    for the scan listener stood in a NetworkPolicy of its own; `spool.type: ephemeral` was ignored; usage rows of
+    the system subject lost their credential; the manifest's digest was not checked against the call's; the role
+    `all` went unready without the analyser, which would have stopped the UI development backend (Q-ARCH-551: its
+    check is reported and does not gate there). **Its own decisions:** Q-VULN-180 to 183, Q-ARCH-550 and 551,
+    Q-HA-340 to 343, the gap H-1070 (the scanner pod names no service account of the chart). **Left in place:** a
+    scanner outage also fires `QuaderVulnerabilityImageScansFailing` after an hour, as the specification says; a
+    repository enabled again can lose one of five attempts while a replica's grant index still shows it disabled.
+    **Second stage started at 17:00:** the one run of `make e2e SET=vuln` on a kind cluster of its own (Docker used
+    4.6 of 15.8 GiB; the cluster `mko-dev` of another project runs there and is not touched), what only a cluster
+    shows (the analyser in the distroless pod, no service-account token, the NetworkPolicy, readiness under
+    `helm --wait`, whether a scanner pod should carry `quader/serve=true`, which `deploy/dev/drain.sh` selects),
+    then the integration areas `authz`, `limits`, `oci` and `packages`, because the harness changed for every area.
+  **Waiting:** package B of the scanner, until `upstream` and package A are both on `main` (it needs `KindSystem` of
+  the one and `upstream/scanner-trivy` of the other, and the two change the same files: `internal/authz/index.go`,
+  `internal/limits/usage/buffer.go`, the request path, the specification); the builder of package 3, for the merged
+  tree. **Order of landing:** whichever of `upstream` and package A is ready first; the other is rebased by its own
+  builder. **Housekeeping of 2026-11-20:** `.bin/trivy-v0.76.1` in the main checkout, the analyser of the pin before,
+  removed (the pin is v0.76.2, and the Makefile's path carries the version).
   **Cut between package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
   `scanner-trivy` (its 48 hours, its include pattern, the 404 for every client) and leaves the "in use" function empty,
   so the admin page says "Not in use" until package B supplies it; the system's own reading through the repository, the
