@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -32,7 +31,6 @@ import (
 	"github.com/guided-traffic/quader/internal/packages/view"
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 	"github.com/guided-traffic/quader/test/integration/testenv"
-	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -40,7 +38,6 @@ func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
 const (
 	manifestType = "application/vnd.oci.image.manifest.v1+json"
 	repoKey      = "docker-local"
-	mirrorKey    = "vuln-mirror"
 	cve          = "CVE-2024-3094"
 	taskOff      = `{"vuln-sync-osv":{"enabled":false,"schedule":"*/15 * * * *"},"vuln-sync-osv-full":{"enabled":false,"schedule":"17 3 * * 0"},` +
 		`"vuln-sync-kev":{"enabled":false,"schedule":"41 */6 * * *"},"vuln-sync-trivy-db":{"enabled":false,"schedule":"23 */6 * * *"},` +
@@ -188,20 +185,18 @@ func v2(name string) string { return "/v2/" + testenv.DefaultProject + "/" + rep
 
 // options are what a test changes of the installation.
 type options struct {
-	// trivy is the environment of the database's source; empty for the source off.
-	trivy []string
-	// realDatabase leaves the database seam to the client mode, reading what the sync imported.
+	// realDatabase leaves the database seam to the client mode, reading the layer the task recorded from the database's repository
+	// (R-VULN-044).
 	realDatabase bool
 	// noDatabase keeps the database seam but publishes no database: Acquire answers ErrNoDatabase.
 	noDatabase bool
-	// mirror creates the generic local repository of mode repository.
-	mirror bool
 	// workerEnv is added to the environment of the worker.
 	workerEnv []string
 	// stackEnv is added to the environment of every replica, webEnv to the web replica's.
 	stackEnv, webEnv []string
-	// dial is the web replica's dial override: the names of an upstream stub.
-	dial map[string]string
+	// dial is the web replica's dial override: the names of an upstream stub; workerDial is the worker's, whose database task reads a
+	// remote repository in process (R-VULN-044).
+	dial, workerDial map[string]string
 	// laterWorker leaves the start of the worker to the test (startWorker), so that what a test sets up before is not scanned yet.
 	laterWorker bool
 	// seed writes rows into the stack before any replica starts: a repository a replica must see from its start.
@@ -213,25 +208,18 @@ func newFlow(t *testing.T) *flow { return newFlowWith(t, options{}) }
 func newFlowWith(t *testing.T, o options) *flow {
 	t.Helper()
 	dir := t.TempDir()
-	trivy := o.trivy
-	if len(trivy) == 0 {
-		trivy = []string{"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=off"}
-	}
 	// The stack serves every listener with its pair and makes its CA the internal CA: the worker's call to the scanner and the scanner's
 	// pull from the scan listener are mutual TLS, as in the chart (R-HA-066).
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnimage", TLS: true, Env: append(append([]string{
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnimage", TLS: true, Env: append([]string{
 		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
 		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + dir, "QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=0s",
 		"QUADER_MAINTENANCE_TASKS=" + taskOff, "QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
-	}, trivy...), o.stackEnv...)})
+	}, o.stackEnv...)})
 	f := &flow{t: t, st: st, an: &fakeAnalyser{}, db: &fakeDatabase{}, o: o}
 	rita := st.User("rita")
 	st.Bind("admin", rita)
 	f.adm = st.Token(rita, scope.Scope{Inherit: true, Admin: true})
 	st.Repository(repoKey, "local", "oci", `{"vulnerabilities":{"onMissingData":"allow"}}`)
-	if o.mirror {
-		st.Repository(mirrorKey, "local", "generic", "{}")
-	}
 	if o.seed != nil {
 		o.seed(st)
 	}
@@ -262,7 +250,7 @@ func newFlowWith(t *testing.T, o options) *flow {
 func (f *flow) startWorker() {
 	f.t.Helper()
 	env := append([]string{"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=" + f.st.Origin(f.scanner.ScannerAddr())}, f.o.workerEnv...)
-	f.worker = f.st.Start(f.t, testenv.ReplicaOptions{Name: "worker", Role: "worker", Vuln: f.ov, Env: env})
+	f.worker = f.st.Start(f.t, testenv.ReplicaOptions{Name: "worker", Role: "worker", Vuln: f.ov, Env: env, DialOverride: f.o.workerDial})
 }
 
 func (f *flow) setDB(d string) {
@@ -539,15 +527,19 @@ func TestR_VULN_034_AScanThatDoesNotFinishIsNeverReportedAsClean(t *testing.T) {
 }
 
 // dbArchive is a database archive as the publisher builds it, with a database file that is not a real one: the analyser is replaced here.
-func dbArchive(t *testing.T) []byte {
+func dbArchive(t *testing.T) []byte { return dbArchiveOf(t, "database bytes") }
+
+// dbArchiveOf is a database archive whose database file holds the text: another text is another layer, as each build of the publisher is.
+func dbArchiveOf(t *testing.T, db string) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gz)
-	for name, body := range map[string]string{
-		"metadata.json": `{"Version":2,"UpdatedAt":"2026-11-08T12:51:20Z","NextUpdate":"2026-11-09T12:51:20Z"}`,
-		"trivy.db":      "database bytes",
+	for _, f := range []struct{ name, body string }{
+		{"metadata.json", `{"Version":2,"UpdatedAt":"2026-11-08T12:51:20Z","NextUpdate":"2026-11-09T12:51:20Z"}`},
+		{"trivy.db", db},
 	} {
+		name, body := f.name, f.body
 		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(body))}); err != nil {
 			t.Fatal(err)
 		}
@@ -563,125 +555,6 @@ func dbArchive(t *testing.T) []byte {
 	}
 	return buf.Bytes()
 }
-
-// TestR_VULN_035_TheDatabaseIsCopiedToTheObjectStoreAndReadFromThereByAWorker goes the whole way of the client mode: the task copies the
-// published artifact through the outbound client into the object store, the state of the source becomes complete, a worker unpacks the
-// copy into its local cache and the detection reads that directory.
-func TestR_VULN_035_TheDatabaseIsCopiedToTheObjectStoreAndReadFromThereByAWorker(t *testing.T) {
-	archive := dbArchive(t)
-	layer := digestOf(archive)
-	var requests atomic.Int64
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v2/aquasec/trivy-db/manifests/2", func(w http.ResponseWriter, _ *http.Request) {
-		requests.Add(1)
-		_ = json.NewEncoder(w).Encode(map[string]any{"schemaVersion": 2, "layers": []any{map[string]any{
-			"mediaType": "application/vnd.aquasec.trivy.db.layer.v1.tar+gzip", "digest": layer, "size": len(archive),
-		}}})
-	})
-	mux.HandleFunc("/v2/aquasec/trivy-db/blobs/"+layer, func(w http.ResponseWriter, _ *http.Request) {
-		requests.Add(1)
-		_, _ = w.Write(archive)
-	})
-	srv := httptest.NewUnstartedServer(mux)
-	cert, err := osvstub.NewSelfSigned("localhost", "127.0.0.1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv.TLS = cert.ServerConfig()
-	srv.StartTLS()
-	t.Cleanup(srv.Close)
-	ca := filepath.Join(t.TempDir(), "ca.pem")
-	if err := os.WriteFile(ca, cert.CAPEM, 0o600); err != nil {
-		t.Fatal(err)
-	}
-
-	f := newFlowWith(t, options{realDatabase: true, trivy: []string{
-		"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=online", "QUADER_VULNERABILITIES_SOURCES_TRIVY_URL=" + srv.URL + "/v2/aquasec/trivy-db/",
-		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]", `QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
-	}})
-	// Before an import there is no database: an image stays pending and the state says why.
-	f.push("app", "1.0", newImage(t))
-	f.runScan()
-	testenv.WaitFor(t, "the scan without a database to end", 30*time.Second, func() bool {
-		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE state = 'pending'`) == 1
-	})
-	if n := f.an.detections.Load(); n != 0 {
-		t.Fatalf("%d detections without a database", n)
-	}
-	if ev := f.versionReport("app", "1.0").Repositories[0].Evaluation; ev != "pending_data" && ev != "pending_scan" {
-		t.Fatalf("evaluation without a database: %q", ev)
-	}
-
-	if a := f.st.Do(f.web(), "POST", "/api/v1/system/tasks/vuln-sync-trivy-db/run", f.adm, nil); a.Status != http.StatusAccepted {
-		t.Fatalf("start the sync: %d %s", a.Status, a.Body)
-	}
-	t.Cleanup(func() {
-		if t.Failed() {
-			t.Logf("source state: %s", f.st.Text(`SELECT COALESCE((SELECT concat_ws(' ', state, failures, last_error::text) FROM vuln_source_state WHERE source = 'trivy'), 'no row')`))
-			for _, line := range strings.Split(f.worker.Logs.String(), "\n") {
-				if strings.Contains(line, "trivy") || strings.Contains(line, "advisory sync") {
-					t.Log(line)
-				}
-			}
-		}
-	})
-	testenv.WaitFor(t, "the database imported", 60*time.Second, func() bool {
-		return f.st.Text(`SELECT COALESCE((SELECT state FROM vuln_source_state WHERE source = 'trivy' AND ecosystem = 'OCI'), 'none')`) == "complete"
-	})
-	if got := f.st.Text(`SELECT digest FROM vuln_image_db`); got != layer {
-		t.Fatalf("database in use: %q, want %q", got, layer)
-	}
-	// The import woke the job, and the worker read the copy from the object store.
-	r := f.waitEvaluation("app", "1.0", "evaluated")
-	if len(r.Repositories[0].Findings) != 1 {
-		t.Fatalf("findings: %+v", r.Repositories[0].Findings)
-	}
-
-	// A second run of the task finds the same digest and does not fetch the blob again.
-	before := requests.Load()
-	if a := f.st.Do(f.web(), "POST", "/api/v1/system/tasks/vuln-sync-trivy-db/run", f.adm, nil); a.Status != http.StatusAccepted && a.Status != http.StatusConflict {
-		t.Fatalf("start the sync: %d %s", a.Status, a.Body)
-	}
-	testenv.WaitFor(t, "the second sync to end", 30*time.Second, func() bool { return requests.Load() > before })
-	time.Sleep(time.Second)
-	if requests.Load() != before+1 {
-		t.Fatalf("the second sync made %d requests, one (the manifest) is enough", requests.Load()-before)
-	}
-}
-
-// TestR_VULN_035_AnAirGappedInstallationReadsTheDatabaseFromARepository is the path of R-VULN-005 for the database: the operator uploads the
-// archive to a generic local repository, the task imports it without any network request, and the same bytes are not imported twice.
-func TestR_VULN_035_AnAirGappedInstallationReadsTheDatabaseFromARepository(t *testing.T) {
-	f := newFlowWith(t, options{realDatabase: true, mirror: true, trivy: []string{
-		"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=repository",
-		"QUADER_VULNERABILITIES_SOURCES_TRIVY_REPOSITORY=" + testenv.DefaultProject + "/" + mirrorKey,
-	}})
-	archive := dbArchive(t)
-	if a := f.do("PUT", "/files/"+testenv.DefaultProject+"/"+mirrorKey+"/"+"trivy/db.tar.gz", archive, "Content-Type", "application/gzip"); a.Status != http.StatusCreated {
-		t.Fatalf("upload the database: %d %s", a.Status, a.Body)
-	}
-	f.push("app", "1.0", newImage(t))
-	if a := f.st.Do(f.web(), "POST", "/api/v1/system/tasks/vuln-sync-trivy-db/run", f.adm, nil); a.Status != http.StatusAccepted {
-		t.Fatalf("start the sync: %d %s", a.Status, a.Body)
-	}
-	testenv.WaitFor(t, "the database imported from the repository", 60*time.Second, func() bool {
-		return f.st.Text(`SELECT COALESCE((SELECT digest FROM vuln_image_db), '')`) == digestOf(archive)
-	})
-	r := f.waitEvaluation("app", "1.0", "evaluated")
-	if len(r.Repositories[0].Findings) != 1 {
-		t.Fatalf("findings: %+v", r.Repositories[0].Findings)
-	}
-	imported := f.st.Text(`SELECT imported_at::text FROM vuln_image_db`)
-	if a := f.st.Do(f.web(), "POST", "/api/v1/system/tasks/vuln-sync-trivy-db/run", f.adm, nil); a.Status != http.StatusAccepted && a.Status != http.StatusConflict {
-		t.Fatalf("start the sync: %d %s", a.Status, a.Body)
-	}
-	time.Sleep(2 * time.Second)
-	if got := f.st.Text(`SELECT imported_at::text FROM vuln_image_db`); got != imported {
-		t.Fatalf("the same bytes were imported again: %s, then %s", imported, got)
-	}
-}
-
-func (f *flow) web() *testenv.Replica { return f.api }
 
 func etagOf(t *testing.T, f *flow, id string) string {
 	t.Helper()

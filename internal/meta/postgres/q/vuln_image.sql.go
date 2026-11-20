@@ -41,39 +41,26 @@ func (q *Queries) VulnImageComponentsOf(ctx context.Context, ids []string) ([]Vu
 }
 
 const vulnImageDBGet = `-- name: VulnImageDBGet :many
-SELECT d.digest::text AS digest, d.blob_sha256 AS blob_sha256, d.size::bigint AS size,
-       (extract(epoch FROM d.updated_at) * 1000000)::bigint AS updated_us,
-       (extract(epoch FROM COALESCE(d.next_update, d.updated_at)) * 1000000)::bigint AS next_update_us
-  FROM vuln_image_db d
+SELECT s.etag::text AS digest
+  FROM vuln_source_state s
+ WHERE s.source = 'trivy' AND s.ecosystem = 'OCI' AND s.state = 'complete' AND s.etag LIKE 'sha256:%'
 `
 
-type VulnImageDBGetRow struct {
-	Digest       string
-	BlobSha256   []byte
-	Size         int64
-	UpdatedUs    int64
-	NextUpdateUs int64
-}
-
-func (q *Queries) VulnImageDBGet(ctx context.Context) ([]VulnImageDBGetRow, error) {
+// The database in use (R-VULN-044, Q-VULN-173): the row of the source trivy, ecosystem OCI, once a run recorded a layer. etag is the
+// layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository.
+func (q *Queries) VulnImageDBGet(ctx context.Context) ([]string, error) {
 	rows, err := q.db.Query(ctx, vulnImageDBGet)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []VulnImageDBGetRow{}
+	items := []string{}
 	for rows.Next() {
-		var i VulnImageDBGetRow
-		if err := rows.Scan(
-			&i.Digest,
-			&i.BlobSha256,
-			&i.Size,
-			&i.UpdatedUs,
-			&i.NextUpdateUs,
-		); err != nil {
+		var digest string
+		if err := rows.Scan(&digest); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, digest)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -81,32 +68,72 @@ func (q *Queries) VulnImageDBGet(ctx context.Context) ([]VulnImageDBGetRow, erro
 	return items, nil
 }
 
-const vulnImageDBPut = `-- name: VulnImageDBPut :exec
-INSERT INTO vuln_image_db (digest, blob_sha256, size, updated_at, next_update)
-VALUES ($1::text, $2, $3::bigint, to_timestamp($4::bigint / 1000000.0),
-        to_timestamp($5::bigint / 1000000.0))
-ON CONFLICT (singleton) DO UPDATE
-   SET digest = EXCLUDED.digest, blob_sha256 = EXCLUDED.blob_sha256, size = EXCLUDED.size, updated_at = EXCLUDED.updated_at,
-       next_update = EXCLUDED.next_update, imported_at = now()
+const vulnImageDatabaseInUse = `-- name: VulnImageDatabaseInUse :one
+SELECT vuln_image_database_in_use($1::bytea)::boolean AS in_use
 `
 
-type VulnImageDBPutParams struct {
-	Digest       string
-	BlobSha256   []byte
-	Size         int64
-	UpdatedUs    int64
-	NextUpdateUs int64
+// The exemption of the remote-cache cleanup (storage.md R-STOR-045, Q-VULN-175): whether a stored file's content is the image
+// scanning's database in use. The cleanup's statement applies it through vuln_image_database_in_use (migration 00089).
+func (q *Queries) VulnImageDatabaseInUse(ctx context.Context, sha256 []byte) (bool, error) {
+	row := q.db.QueryRow(ctx, vulnImageDatabaseInUse, sha256)
+	var in_use bool
+	err := row.Scan(&in_use)
+	return in_use, err
 }
 
-func (q *Queries) VulnImageDBPut(ctx context.Context, arg VulnImageDBPutParams) error {
-	_, err := q.db.Exec(ctx, vulnImageDBPut,
-		arg.Digest,
-		arg.BlobSha256,
-		arg.Size,
-		arg.UpdatedUs,
-		arg.NextUpdateUs,
+const vulnImageDatabaseStale = `-- name: VulnImageDatabaseStale :many
+SELECT i.path::text AS path
+  FROM items i
+ WHERE i.repo_id = $1::bigint AND i.kind = 'file' AND i.trashed_at IS NULL
+   AND (left(i.path, length($2::text)) = $2::text
+        OR left(i.path, length($3::text)) = $3::text)
+   AND i.created_at < $4::text::timestamptz
+   AND NOT (i.path = ANY($5::text[]))
+   AND NOT vuln_image_database_in_use(i.blob_sha256)
+   AND i.path > $6::text
+ ORDER BY i.path
+ LIMIT $7::int
+`
+
+type VulnImageDatabaseStaleParams struct {
+	RepoID    int64
+	Blobs     string
+	Manifests string
+	Before    string
+	Keep      []string
+	AfterPath string
+	MaxRows   int32
+}
+
+// The files of the database's image in its repository that the retention of Q-VULN-175 drops (Q-VULN-194): the layers and the manifests
+// below <image>/_blobs/ and <image>/_manifests/ stored before the cut-off, other than the paths the run keeps (the manifest of the tag it
+// read) and other than content that is the database in use, in path order after a cursor.
+func (q *Queries) VulnImageDatabaseStale(ctx context.Context, arg VulnImageDatabaseStaleParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, vulnImageDatabaseStale,
+		arg.RepoID,
+		arg.Blobs,
+		arg.Manifests,
+		arg.Before,
+		arg.Keep,
+		arg.AfterPath,
+		arg.MaxRows,
 	)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var path string
+		if err := rows.Scan(&path); err != nil {
+			return nil, err
+		}
+		items = append(items, path)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const vulnImageDeferred = `-- name: VulnImageDeferred :exec

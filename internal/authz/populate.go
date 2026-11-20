@@ -159,3 +159,12 @@ func BackgroundDownloadActor() audit.Actor {
 // [BackgroundDownloadActor]. Like [MirrorSubject] it asks no question; the populate check was asked for the probe's caller when the
 // probe was answered.
 func BackgroundDownloadSubject() Subject { return Subject{Kind: "system", Name: "background-download"} }
+
+// ImageDatabaseActor is the actor of what the image scanning's task stores in the database's repository: system:image-database
+// (R-AUTHZ-002, vulnerability-scanning.md R-VULN-044).
+func ImageDatabaseActor() audit.Actor { return audit.Actor{Kind: "system", Name: "image-database"} }
+
+// ImageDatabaseSubject is the subject of the populate event of that task's fill, the same system:image-database as
+// [ImageDatabaseActor]. Like [MirrorSubject] it asks no question: system work in process through the remote engine, within the
+// repository's include and exclude patterns, as a mirror pass fills.
+func ImageDatabaseSubject() Subject { return Subject{Kind: "system", Name: "image-database"} }

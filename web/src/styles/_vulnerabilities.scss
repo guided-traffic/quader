@@ -39,6 +39,11 @@
   white-space: nowrap;
 }
 
+// The image database's repository on the sources screen (Q-UI-890): each part of the name whole, a break only after its slash.
+.quader-data-table .qname-part {
+  white-space: nowrap;
+}
+
 // The severity badge (R-VULN-022): the icon in the severity's mark tone, the one scale of the bar and the trend; the word and
 // the score stay in the text around them. Not the status colours: a severity is no error, and Critical and High differ.
 .sev .material-icons {

@@ -45,6 +45,10 @@ type Config struct {
 	OSVMode, KEVMode string
 	// OSVRepository and KEVRepository are the mirror repositories of the mode repository.
 	OSVRepository, KEVRepository string
+	// ImagesEnabled is vulnerabilities.images.enabled, the one switch of the image scanning's database (R-VULN-044);
+	// DatabaseRepository and DatabaseImage are vulnerabilities.images.database.repository and .image.
+	ImagesEnabled                     bool
+	DatabaseRepository, DatabaseImage string
 	// Ecosystems are the ecosystems the OSV source imports.
 	Ecosystems []string
 	// MaxScopeRows overrides DefaultMaxScopeRows; zero keeps it.

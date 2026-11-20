@@ -227,6 +227,10 @@ func (b *mirrorHostBuilder) buildEngine() error {
 			Audit:    b.in.rec, Config: backgroundProxyConfig(a.cfg.Proxy), Enforce: b.vz.enforcer, SafetyTTL: a.cfg.Cache.SnapshotSafetyTTL,
 			Metrics: a.tele.metrics.Registry(), Log: a.log.With("component", "proxy"),
 			GlobalOffline: a.offlineForMaintenance(b.in.sys),
+			// The system's upstream work of the worker (a mirror pass, the image scanning's database task) is recorded under the subject
+			// system of its repository and limited by nothing (usage-and-limits.md Q-LIM-19, vulnerability-scanning.md R-VULN-044): the
+			// engine charges a background request without a charge of its own to Limits.System.
+			Limits: part[downloadLimitsArea](a.parts).engine,
 		}
 		if b.in.vk != nil { // a nil *cluster.Valkey in the interface would not be nil
 			opts.Lookups = b.in.vk

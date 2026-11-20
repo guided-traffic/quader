@@ -1434,7 +1434,7 @@ dazu führt, dass jeder auch das zentrale ghcr nutzen muss", and the repository 
 - A run that cannot use the repository fails with a code that says why, shown on the sources screen with a link to the repository; nothing
   falls back (Q-VULN-174, R-VULN-045, Q-UI-850).
 - Removed with no path from the state before: the table `vuln_image_db`, `vulnerabilities.sources.trivy` and its modes, the task's own OCI
-  client, the file in a generic repository; the table goes with migration 00088.
+  client, the file in a generic repository; the table goes with migration 00089 (00088 is the malware scanning's).
 
 **Consequences.** The repository's upstream address and account, an administrator's for every well-known repository, decide the database
 (H-813 restated). The database's bytes are counted in the usage store under the repository. The cache cleanup keeps the layer in use and

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -222,30 +223,36 @@ func dbArchive(t *testing.T, dbBytes int) []byte {
 	return buf.Bytes()
 }
 
-type archiveBlobs map[[32]byte][]byte
+// archiveBlobs is the database's repository as LocalDatabase reads it: the layers it holds by digest.
+type archiveBlobs map[string][]byte
 
-func (a archiveBlobs) Open(_ context.Context, sum [32]byte, _ int64) (io.ReadCloser, error) {
-	return io.NopCloser(bytes.NewReader(a[sum])), nil
+func (a archiveBlobs) Open(_ context.Context, digest string) (io.ReadCloser, error) {
+	b, ok := a[digest]
+	if !ok {
+		return nil, ErrLayerMissing
+	}
+	return io.NopCloser(bytes.NewReader(b)), nil
 }
 
 type currentDB struct{ db store.ImageDB }
 
 func (c *currentDB) DB(context.Context) (store.ImageDB, bool, error) { return c.db, true, nil }
 
-func dbOf(n byte) store.ImageDB {
-	return store.ImageDB{Digest: "sha256:" + fmt.Sprintf("%064x", n), Blob: [32]byte{n}}
+func dbOf(archive []byte) store.ImageDB {
+	return store.ImageDB{Digest: fmt.Sprintf("sha256:%x", sha256.Sum256(archive))}
 }
 
 func TestQ_VULN_145_TheUnpackedDatabaseIsHeldOnceBySizeAndFollowsItsDirectory(t *testing.T) {
 	ctx := context.Background()
-	one, two := dbOf(1), dbOf(2)
-	blobs := archiveBlobs{one.Blob: dbArchive(t, 1000), two.Blob: dbArchive(t, 3000)}
+	a1, a2 := dbArchive(t, 1000), dbArchive(t, 3000)
+	one, two := dbOf(a1), dbOf(a2)
+	blobs := archiveBlobs{one.Digest: a1, two.Digest: a2}
 	meta := int64(len(`{"Version":2,"UpdatedAt":"2026-11-08T12:51:20Z","NextUpdate":"2026-11-09T12:51:20Z"}`))
 	rows := &currentDB{db: one}
 
 	t.Run("the room is the size of the unpacked files, taken once however often the database is acquired", func(t *testing.T) {
 		sp := &fakeSpace{budget: 1 << 20}
-		d := &LocalDatabase{Dir: t.TempDir(), Blobs: blobs, Rows: rows, Space: sp}
+		d := &LocalDatabase{Dir: t.TempDir(), Layers: blobs, Rows: rows, Space: sp}
 		a1, err := d.Acquire(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -266,7 +273,7 @@ func TestQ_VULN_145_TheUnpackedDatabaseIsHeldOnceBySizeAndFollowsItsDirectory(t 
 	t.Run("a spool without room refuses the unpacking before a byte is written and leaves nothing held", func(t *testing.T) {
 		sp := &fakeSpace{budget: 500}
 		dir := t.TempDir()
-		d := &LocalDatabase{Dir: dir, Blobs: blobs, Rows: rows, Space: sp}
+		d := &LocalDatabase{Dir: dir, Layers: blobs, Rows: rows, Space: sp}
 		_, err := d.Acquire(ctx)
 		if !errors.Is(err, ErrNoSpace) {
 			t.Fatalf("%v", err)
@@ -280,7 +287,7 @@ func TestQ_VULN_145_TheUnpackedDatabaseIsHeldOnceBySizeAndFollowsItsDirectory(t 
 	})
 	t.Run("a new database frees the room of the old one first, so a spool sized for one database is enough", func(t *testing.T) {
 		sp := &fakeSpace{budget: 3000 + meta + 100}
-		d := &LocalDatabase{Dir: t.TempDir(), Blobs: blobs, Rows: &currentDB{db: one}, Space: sp}
+		d := &LocalDatabase{Dir: t.TempDir(), Layers: blobs, Rows: &currentDB{db: one}, Space: sp}
 		a, err := d.Acquire(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -298,7 +305,7 @@ func TestQ_VULN_145_TheUnpackedDatabaseIsHeldOnceBySizeAndFollowsItsDirectory(t 
 	})
 	t.Run("a database that is in use stays held while a new one is unpacked next to it", func(t *testing.T) {
 		sp := &fakeSpace{budget: 1 << 20}
-		d := &LocalDatabase{Dir: t.TempDir(), Blobs: blobs, Rows: &currentDB{db: one}, Space: sp}
+		d := &LocalDatabase{Dir: t.TempDir(), Layers: blobs, Rows: &currentDB{db: one}, Space: sp}
 		a1, err := d.Acquire(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -316,12 +323,12 @@ func TestQ_VULN_145_TheUnpackedDatabaseIsHeldOnceBySizeAndFollowsItsDirectory(t 
 	})
 	t.Run("a database a restarted container finds in its volume is adopted at the size it has on the disk", func(t *testing.T) {
 		dir := t.TempDir()
-		first := &LocalDatabase{Dir: dir, Blobs: blobs, Rows: &currentDB{db: one}, Space: &fakeSpace{budget: 1 << 20}}
+		first := &LocalDatabase{Dir: dir, Layers: blobs, Rows: &currentDB{db: one}, Space: &fakeSpace{budget: 1 << 20}}
 		if _, err := first.Acquire(ctx); err != nil {
 			t.Fatal(err)
 		}
 		sp := &fakeSpace{budget: 100} // smaller than the database: the bytes exist whatever the budget says
-		restarted := &LocalDatabase{Dir: dir, Blobs: archiveBlobs{}, Rows: &currentDB{db: one}, Space: sp}
+		restarted := &LocalDatabase{Dir: dir, Layers: archiveBlobs{}, Rows: &currentDB{db: one}, Space: sp}
 		a, err := restarted.Acquire(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -334,4 +341,47 @@ func TestQ_VULN_145_TheUnpackedDatabaseIsHeldOnceBySizeAndFollowsItsDirectory(t 
 			t.Fatal(err)
 		}
 	})
+}
+
+// R-VULN-044 acceptance: a layer whose bytes are not the digest in use leaves no unpacked directory and holds no room; a repository
+// that does not hold the layer answers ErrLayerMissing, which the scan reads as no database.
+func TestR_VULN_044_ALayerThatIsNotTheDigestInUseLeavesNothing(t *testing.T) {
+	ctx := context.Background()
+	good, other := dbArchive(t, 1000), dbArchive(t, 1001)
+	inUse := dbOf(good)
+	t.Run("other bytes under the digest in use", func(t *testing.T) {
+		sp := &fakeSpace{budget: 1 << 20}
+		dir := t.TempDir()
+		d := &LocalDatabase{Dir: dir, Layers: archiveBlobs{inUse.Digest: other}, Rows: &currentDB{db: inUse}, Space: sp}
+		_, err := d.Acquire(ctx)
+		if !errors.Is(err, errLayerDigest) {
+			t.Fatalf("%v", err)
+		}
+		if sp.Held() != 0 {
+			t.Fatalf("held %d after the refusal", sp.Held())
+		}
+		if ents, _ := os.ReadDir(dir); len(ents) != 0 {
+			t.Fatalf("%d entries left in the cache", len(ents))
+		}
+	})
+	t.Run("the layer is not in the repository", func(t *testing.T) {
+		sp := &fakeSpace{budget: 1 << 20}
+		d := &LocalDatabase{Dir: t.TempDir(), Layers: archiveBlobs{}, Rows: &currentDB{db: inUse}, Space: sp}
+		if _, err := d.Acquire(ctx); !errors.Is(err, ErrLayerMissing) || sp.Held() != 0 {
+			t.Fatalf("%v, held %d", err, sp.Held())
+		}
+	})
+	t.Run("a digest that is no sha256 decides no path", func(t *testing.T) {
+		d := &LocalDatabase{Dir: t.TempDir(), Layers: archiveBlobs{}, Rows: &currentDB{db: store.ImageDB{Digest: "sha256:../../etc"}}, Space: &fakeSpace{budget: 1 << 20}}
+		if _, err := d.Acquire(ctx); err == nil || errors.Is(err, ErrLayerMissing) {
+			t.Fatalf("%v", err)
+		}
+	})
+}
+
+// R-VULN-044, Q-VULN-171: the tag of the database's image is the schema version this release reads, and no setting.
+func TestR_VULN_044_TheTagIsTheSchemaVersion(t *testing.T) {
+	if DatabaseTag != fmt.Sprint(dbSchemaVersion) {
+		t.Fatalf("tag %q, schema version %d", DatabaseTag, dbSchemaVersion)
+	}
 }

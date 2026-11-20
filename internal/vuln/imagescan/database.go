@@ -4,6 +4,8 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -86,9 +88,27 @@ func walkArchive(archive io.Reader, fn func(name string, size int64, r io.Reader
 	}
 }
 
-// DBBlobs opens the archive of a database from the object store.
-type DBBlobs interface {
-	Open(ctx context.Context, sha256 [32]byte, size int64) (io.ReadCloser, error)
+// DatabaseTag is the tag of the database's image: the schema version of the database this release reads (R-VULN-044, Q-VULN-171). It
+// is no setting, so that no configuration can point the analyser at a schema it cannot read; TestR_VULN_044_TheTagIsTheSchemaVersion
+// holds it to dbSchemaVersion.
+const DatabaseTag = "2"
+
+// LayerMediaType is the media type of the database's layer in its image's manifest (R-VULN-044).
+const LayerMediaType = "application/vnd.aquasec.trivy.db.layer.v1.tar+gzip"
+
+// ErrLayerMissing says that the database's repository does not hold the layer of the database in use: a holder of delete removed it by
+// hand, or the setting names another repository now (R-VULN-044). The scan acts as before the first database and wakes the task
+// vuln-sync-trivy-db, which makes the repository hold it again or records why it cannot.
+var ErrLayerMissing = errors.New("the database's repository does not hold the layer of the database in use")
+
+// errLayerDigest is a layer whose bytes are not the digest in use: nothing of it is kept.
+var errLayerDigest = errors.New("the layer of the database is not the digest in use")
+
+// DBLayers opens the layer of the database in use from the repository it lies in: the item `<image>/_blobs/<digest>` of the repository
+// vulnerabilities.images.database.repository names, read through the item store, which is no download (R-VULN-044). A layer the
+// repository does not hold is [ErrLayerMissing].
+type DBLayers interface {
+	Open(ctx context.Context, digest string) (io.ReadCloser, error)
 }
 
 // DBReader reads which database is in use.
@@ -96,14 +116,14 @@ type DBReader interface {
 	DB(ctx context.Context) (store.ImageDB, bool, error)
 }
 
-// LocalDatabase is the client mode of the [Database] seam (Q-VULN-137): the database that the sync put in the object store is unpacked once
-// into a directory of the worker's local cache, by digest, and each detection reads that directory. A replica has no state that matters: an
-// empty cache is filled from the object store on the first detection after a start.
+// LocalDatabase is the client mode of the [Database] seam (Q-VULN-137): the layer of the database in use is read from its repository once,
+// hashed while it is unpacked into a directory of the worker's local cache by digest, and each detection reads that directory. A replica
+// has no state that matters: an empty cache is filled from the repository on the first detection after a start.
 type LocalDatabase struct {
 	// Dir is the root of the local cache.
-	Dir   string
-	Blobs DBBlobs
-	Rows  DBReader
+	Dir    string
+	Layers DBLayers
+	Rows   DBReader
 	// Space is the spool the unpacked database is counted against (Q-VULN-145): its files are held before they are written, for as long
 	// as the directory exists, and a directory found on the volume at start is adopted.
 	Space Space
@@ -132,6 +152,10 @@ func (d *LocalDatabase) Acquire(ctx context.Context) (DatabaseAccess, error) {
 	}
 	if !found {
 		return DatabaseAccess{}, ErrNoDatabase
+	}
+	if !ValidDigest(db.Digest) {
+		// The digest names the cache's directory: one that is not sha256 and 64 hexadecimal digits decides no path.
+		return DatabaseAccess{}, fmt.Errorf("the database in use names %q, which is no sha256 digest", db.Digest)
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -180,11 +204,15 @@ func (d *LocalDatabase) ensure(ctx context.Context, db store.ImageDB, dir string
 	if err := os.MkdirAll(filepath.Join(tmp, "db"), 0o700); err != nil {
 		return err
 	}
-	rc, err := d.Blobs.Open(ctx, db.Blob, db.Size)
+	rc, err := d.Layers.Open(ctx, db.Digest)
 	if err != nil {
-		return fmt.Errorf("the database archive from the object store: %w", err)
+		return fmt.Errorf("the database's layer from its repository: %w", err)
 	}
 	defer func() { _ = rc.Close() }()
+	// The stream is hashed while it is unpacked, and the directory is discarded when the hash is not the digest in use: the layer is
+	// an item of a repository that an administrator may fill, and the digest the task recorded is what was checked (R-VULN-044).
+	sum := sha256.New()
+	body := io.TeeReader(contextReader{ctx, rc}, sum)
 	seen := map[string]bool{}
 	var held dbHold
 	keep := false
@@ -193,7 +221,7 @@ func (d *LocalDatabase) ensure(ctx context.Context, db store.ImageDB, dir string
 			held.release()
 		}
 	}()
-	err = walkArchive(contextReader{ctx, rc}, func(name string, size int64, r io.Reader) (bool, error) {
+	err = walkArchive(body, func(name string, size int64, r io.Reader) (bool, error) {
 		seen[name] = true
 		// The room for a file is taken from its size in the archive's header before the first byte is written, and the copy below is
 		// bounded by that size, so the unpacked database never holds more than it was admitted for.
@@ -219,6 +247,12 @@ func (d *LocalDatabase) ensure(ctx context.Context, db store.ImageDB, dir string
 	}
 	if !seen[dbFileName] || !seen[dbMetaName] {
 		return errors.New("the database archive does not hold trivy.db and metadata.json")
+	}
+	if _, err := io.Copy(io.Discard, body); err != nil { // the rest of the gzip stream, so that the hash covers every byte
+		return fmt.Errorf("the database's layer from its repository: %w", err)
+	}
+	if got := "sha256:" + hex.EncodeToString(sum.Sum(nil)); got != db.Digest {
+		return fmt.Errorf("%w: the bytes read are %s, the database in use is %s", errLayerDigest, got, db.Digest)
 	}
 	_ = os.RemoveAll(dir)
 	if err := os.Rename(tmp, dir); err != nil {

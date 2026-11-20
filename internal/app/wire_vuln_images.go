@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -67,7 +66,9 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 	cleanScanDir(ctx, images.ScanDir, log)
 	rows := store.NewImages(in.db)
 	space := spoolSpace{in.blobs.Spool()}
-	var database imagescan.Database = &imagescan.LocalDatabase{Dir: filepath.Join(images.ScanDir, "db"), Blobs: dbBlobs{in.blobs}, Rows: rows, Space: space}
+	// The layer in use is read from the database's repository (R-VULN-044): the item of the repository the setting names.
+	layers := databaseLayers{a: a, repo: images.Database.Repository, image: images.Database.Image}
+	var database imagescan.Database = &imagescan.LocalDatabase{Dir: filepath.Join(images.ScanDir, "db"), Layers: layers, Rows: rows, Space: space}
 	if override != nil && override.ImageDatabase != nil {
 		database = override.ImageDatabase
 	}
@@ -78,16 +79,24 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 	}
 	out.scannerClient = call
 	// <<< the role scanner
+	var wakeDatabase func(ctx context.Context, tx meta.Tx) error
+	if in.queue != nil {
+		queue := in.queue
+		wakeDatabase = func(ctx context.Context, tx meta.Tx) error {
+			_, err := queue.Enqueue(ctx, tx, jobs.EnqueueSpec{Kind: vuln.KindSyncTrivyDB, DedupKey: vuln.TaskSyncTrivyDB})
+			return err
+		}
+	}
 	svc, err := imagescan.New(imagescan.Options{
 		DB: in.db, Images: rows, Evaluate: evaluation, Scanner: call, Tokens: tokens, Analyser: analyser, Database: database,
-		States: out.states, Enqueue: out.wakeImages, ScratchDir: images.ScanDir, Space: space, Concurrency: images.Concurrency, RunSlice: images.RunSlice,
-		MaxAttempts: images.MaxAttempts, Delay: images.ScanDelay, Metrics: m, Log: log,
+		States: out.states, Enqueue: out.wakeImages, WakeDatabase: wakeDatabase, ScratchDir: images.ScanDir, Space: space,
+		Concurrency: images.Concurrency, RunSlice: images.RunSlice, MaxAttempts: images.MaxAttempts, Delay: images.ScanDelay, Metrics: m, Log: log,
 		Run: imagescan.Limits{Timeout: images.Timeout, MemoryBytes: int64(images.MemoryLimit), OutputBytes: imageOutputBytes, StderrBytes: 16 << 10},
 	})
 	if err != nil {
 		return fmt.Errorf("the image scanning: %w", err)
 	}
-	out.images, out.dbCommit = svc, in.blobs
+	out.images = svc
 	return nil
 }
 
@@ -144,14 +153,6 @@ func (s spoolSpace) Adopt(n int64) func() { return s.spool.Adopt(n).Release }
 // Budget implements [imagescan.Space].
 func (s spoolSpace) Budget() int64 { return s.spool.Budget() }
 
-// dbBlobs opens the archive of the database from the object store.
-type dbBlobs struct{ store *blob.Store }
-
-// Open implements [imagescan.DBBlobs].
-func (b dbBlobs) Open(ctx context.Context, sha256 [32]byte, size int64) (io.ReadCloser, error) {
-	return b.store.Open(ctx, blob.Digest(sha256), size, blob.OpenOptions{})
-}
-
 // registerVulnImageJobs registers the kinds and tasks of the image scanning. The scan coalesces: its work is in a table, so one run after
 // another loses nothing, and the queue is the advisory sync's, whose slot a long run gives back through its time slice.
 func (a *App) registerVulnImageJobs(r *jobs.Registry) {
@@ -162,15 +163,13 @@ func (a *App) registerVulnImageJobs(r *jobs.Registry) {
 		}
 		return svc.RunScan(ctx, run)
 	}
+	// The database's task reads the repository the setting names (R-VULN-044); it is on with the image scanning and by nothing else.
 	db := func(ctx context.Context, run *jobs.Run) error {
 		area := part[vulnArea](a.parts)
-		if area.sync == nil || a.cfg.Vulnerabilities.Sources.Trivy.Mode == "off" {
+		if area.sync == nil {
 			return run.SetResult(map[string]string{"skipped": "the vulnerability database is not synced on this replica"})
 		}
-		if area.dbCommit == nil {
-			return fmt.Errorf("the vulnerability database: the blob store is not wired yet")
-		}
-		return area.sync.RunTrivyDB(ctx, run, area.dbCommit)
+		return area.sync.RunTrivyDB(ctx, run, run.ID)
 	}
 	r.RegisterKind(vuln.KindImageScan, jobs.KindSpec{Queue: vuln.QueueVuln, DedupMode: jobs.Coalesce, MaxAttempts: 3, Handler: scan})
 	r.RegisterKind(vuln.KindSyncTrivyDB, jobs.KindSpec{Queue: vuln.QueueVuln, DedupMode: jobs.Exclusive, MaxAttempts: 1, Handler: db})

@@ -20344,6 +20344,52 @@ revisits it if a longer range than 365 days comes (the API answers up to 400).
 **Applied in the spec:** R-VULN-022. Code: [report-trend.ts](../../web/src/app/features/vulnerabilities/report-trend.ts),
 [_vulnerabilities.scss](../../web/src/styles/_vulnerabilities.scss).
 
+### Q-API-380 · The sources item of the image database names the class of its repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-VULN-045 shows the commands that fill the database's repository for a local repository only. The sources item named the
+repository and the reference (`aquasec/trivy-db:2`), not what kind of repository it is, and the screen is read with `settings:read`, which
+does not read a repository's document.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A member `repositoryClass`, `local` or `remote`, on the item of `trivy`, `null` elsewhere and for a repository that does not resolve (chosen) | The report reads the repository by its name when it answers | The screen decides on the answer it has; a reader without `repositories:read-config` sees the commands too | One more member, which says that a repository of that name exists to a holder of `settings:read`, who already sees its name |
+| (b) The screen reads the repository's document | No API change | Exact | Needs `repositories:read-config`; without it the commands would vanish |
+| (c) The commands for every repository of the setting | No class needed | Simple | `upstream/scanner-trivy` is a remote that answers every push 404; the commands would not work and would mislead |
+
+**Choice:** (a). **Rationale:** the screen shows what the installation can do, and the class decides it. The development agent would
+revisit this if the sources item gains a link of its own to the repository's page.
+
+**Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-021, R-VULN-045. Code:
+[sources.go](../../internal/vuln/report/sources.go), the schema `VulnerabilitySourceState` of [openapi.yaml](../../api/openapi.yaml).
+
+### Q-UI-890 · The image database is a row of the sources table, its repository in the mode's column, its fetch a button of the runs
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Builds
+Q-UI-850.
+
+Context: the sources table showed every source as `OSV` or `CISA KEV` (the row of `trivy` read "OSV OCI" in mode `off`), and the runs had a
+button per task of OSV and KEV only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row is **Image database**, "for the image scanning" under it; the mode column holds the repository's qualified name (a link with `repositories:read-config`) and the image and tag under it; **Fetch the image database now** joins the runs, disabled with the setting `vulnerabilities.images.enabled` named while the image scanning is off; a failure's title names the repository; the commands of a local repository sit in a closed fold under the table (chosen) | One table, one column richer for one row | The repository is where the mode of the other rows is, so the table keeps its widths; the run an administrator needs after fixing the repository is one click; the fold keeps the plain screen plain | The mode column holds a name instead of a word for one row |
+| (b) A section of its own under the table | A card for the database | Room for more | The database's state, age and failures would no longer be read beside the others' |
+| (c) The repository in the source column | The name under **Image database** | The mode column stays words | The source column is the table's row header, which a screen reader reads with every cell; a link in it is read twice |
+
+**Choice:** (a). The commands name `mirror.gcr.io` for `aquasec/trivy-db` and `ghcr.io` for `aquasecurity/trivy-db`, the registries that
+publish under those names, with this installation's host and the repository's qualified name filled in. The repository's name may break
+after its slash and nowhere else: the findings list keeps a qualified name on one line (Q-UI-428), but here one line made the least width
+of the table pass 1440 px and every row stacked, and a break at the hyphen of `scanner-trivy`, which the browser chose before, splits a key.
+While any source shows the error of its last run, the failures column holds 16 rem: squeezed between the others it had put the title under
+the count (the layout check's `row-offset`) and the detail into a ribbon of three words a line. With the 16 rem the rows stack at 1440 px,
+as R-UI-174 makes a table do whose columns do not fit, and read as sentences; without a failure the screen is a table at 1440 px. **Rationale:** the screen of every
+source's health reads one more source the same way. The development agent would revisit this if a second source of the image scanning comes.
+
+**Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022, R-VULN-045. Code:
+[vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts).
+
 
 ### Q-API-370 · The malware scan's operations, and the member `malware` of a file
 

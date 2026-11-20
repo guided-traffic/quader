@@ -287,6 +287,13 @@ const (
 	CodeShrinkRefused = "shrink_refused"
 	// CodeMirrorRepositoryInvalid: mode repository names a repository that is not a generic local one.
 	CodeMirrorRepositoryInvalid = "mirror_repository_invalid"
+	// The codes of a run of vuln-sync-trivy-db that cannot use the database's repository (R-VULN-044, Q-VULN-174).
+	// CodeDatabaseRepositoryInvalid: the repository does not exist, is not of the format oci, or is virtual.
+	CodeDatabaseRepositoryInvalid = "database_repository_invalid"
+	// CodeDatabaseRepositoryOff: the repository is disabled.
+	CodeDatabaseRepositoryOff = "database_repository_off"
+	// CodeDatabaseMissing: the repository does not hold the image at the tag, or its manifest has no layer of the database.
+	CodeDatabaseMissing = "database_missing"
 	// The codes of a run that ended before its sync did, other than by a drain (Q-VULN-80).
 	// CodeSyncLeaseLost: the worker lost the lease of the run's job and stopped the run.
 	CodeSyncLeaseLost = "sync_lease_lost"
@@ -865,12 +872,15 @@ var registry = []CodeInfo{
 	{CodeFindingResolved, Conflict, "Finding resolved", "The finding is resolved by Quader: no stored version is affected any longer. A person cannot change it; it returns to its earlier status when the match returns."},
 	{CodeStatusNotSettable, Unprocessable, "Status not settable", "The status resolved is set by Quader only."},
 	{CodeExportTooLarge, Unprocessable, "Export too large", "The export would exceed vulnerabilities.export.max_rows; narrow the filter."},
-	{CodeArchiveTooLarge, UpstreamFailed, "Advisory archive too large", "The advisory archive is larger than vulnerabilities.sources.osv.max_archive_size; the previous data stays in force."},
+	{CodeArchiveTooLarge, UpstreamFailed, "Advisory archive too large", "The advisory archive is larger than its source's max_archive_size (vulnerabilities.sources.osv, or vulnerabilities.images.database for the image scanning's database, whose layer's declared size is checked before it is fetched); the previous data stays in force."},
 	{CodeArchiveDigestMismatch, UpstreamFailed, "Advisory archive digest mismatch", "The MD5 of the downloaded archive differs from the digest the source announced; the previous data stays in force."},
 	{CodeArchiveLimit, UpstreamFailed, "Advisory archive refused", "The archive is not a valid zip archive, or it crossed a bound of the archive as a whole (entries, declared or inflated size, names); the previous data stays in force."},
 	{CodeTooManyInvalidRecords, UpstreamFailed, "Too many invalid advisory records", "More than 1 % of the records of a full sync failed validation (R-VULN-006); records that a bound of their own rejects do not count. This indicates a truncated or tampered source; the previous data stays in force."},
 	{CodeShrinkRefused, UpstreamFailed, "Advisory data would shrink too much", "A full sync would delete more than max_shrink of the stored records; the previous data stays in force. A manual run with acceptShrink overrides it once."},
 	{CodeMirrorRepositoryInvalid, Conflict, "Mirror repository invalid", "mode repository names a repository that is not a generic local repository; every run fails until the configuration names one."},
+	{CodeDatabaseRepositoryInvalid, Conflict, "Database repository invalid", "vulnerabilities.images.database.repository names a repository that does not exist, is not of the format oci, or is virtual; every run of vuln-sync-trivy-db fails until it names a local or remote OCI repository, and the database in use stays in force."},
+	{CodeDatabaseRepositoryOff, Conflict, "Database repository switched off", "The repository the image scanning's database comes from is disabled; every run of vuln-sync-trivy-db fails until it is enabled, and the database in use stays in force."},
+	{CodeDatabaseMissing, UpstreamFailed, "Database not in its repository", "The repository the image scanning's database comes from does not hold the image at the tag of this release: a local repository before the push, a remote whose upstream answers 404 or whose patterns refuse the name, or a manifest without a layer of the database's media type. The database in use stays in force."},
 	{CodeSyncLeaseLost, Unavailable, "Sync lease lost", "The worker that ran the sync lost the lease of its job (it could not renew it in time, or the job was ended without it) and stopped the run. The records written before the stop stay; the next run of the ecosystem finishes their alias groups."},
 	{CodeSyncPanicked, Internal, "Sync run panicked", "The sync run stopped on an internal fault of the worker; the log of the worker holds it. The records written before the stop stay; the next run of the ecosystem finishes their alias groups."},
 	{CodeSyncCancelled, Conflict, "Sync run cancelled", "An operator cancelled the job of the sync run. It is not counted as a failure of the source; the records written before the cancel stay, and the next run of the ecosystem finishes their alias groups."},

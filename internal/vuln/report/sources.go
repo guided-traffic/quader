@@ -7,8 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
@@ -23,12 +26,17 @@ const (
 // SourceView is one source and ecosystem as the sources operation shows it (R-VULN-021).
 type SourceView struct {
 	Source, Ecosystem, Mode, State string
-	// Repository is the mirror repository in the mode repository, "" otherwise.
-	Repository             string
-	Stale                  bool
-	SyncedAt, FullSyncedAt *time.Time
-	AttemptedAt, NextRunAt *time.Time
-	Failures               int
+	// Repository is the mirror repository in the mode repository, and the database's repository of the source trivy (R-VULN-045);
+	// "" otherwise.
+	Repository string
+	// Reference is the database's image and tag in its repository, aquasec/trivy-db:2 by default; RepositoryClass is local or remote
+	// for a database's repository that resolves to an OCI repository of either class, "" otherwise. The screen shows the commands that
+	// fill a local one (R-VULN-045, Q-API-380).
+	Reference, RepositoryClass string
+	Stale                      bool
+	SyncedAt, FullSyncedAt     *time.Time
+	AttemptedAt, NextRunAt     *time.Time
+	Failures                   int
 	// LastError is the problem object of the last failed run, nil when there is none.
 	LastError                      json.RawMessage
 	Records, Rejected, Unevaluable int
@@ -42,8 +50,9 @@ type SourceConfig struct {
 	Enabled bool
 	// OSVMode and KEVMode are the modes of the sources (online, repository, off).
 	OSVMode, KEVMode string
-	// TrivyMode is the mode of the vulnerability database of the image scanning; "" when the images are not scanned.
-	TrivyMode string
+	// Images is vulnerabilities.images.enabled: the image scanning's database is read from its repository, mode repository, exactly
+	// while it is on (R-VULN-044, R-VULN-045).
+	Images bool
 	// Ecosystems are the ecosystems the OSV source imports (config EffectiveEcosystems).
 	Ecosystems []string
 	// StaleAfter is vulnerabilities.stale_after; zero never marks a source stale.
@@ -63,7 +72,7 @@ func SourceViews(cfg SourceConfig, rows []store.SourceRow, now time.Time) []Sour
 	for _, e := range cfg.Ecosystems {
 		configured[SourceOSV+"\x00"+e] = true
 	}
-	if cfg.TrivyMode != "" {
+	if cfg.Images {
 		configured[SourceTrivy+"\x00"+advisory.EcosystemOCI] = true
 	}
 	keys := map[string]bool{}
@@ -91,7 +100,7 @@ func SourceViews(cfg SourceConfig, rows []store.SourceRow, now time.Time) []Sour
 		case r.Source == SourceKEV:
 			mode = cfg.KEVMode
 		case r.Source == SourceTrivy:
-			mode = cfg.TrivyMode
+			mode = "repository"
 		default:
 			mode = cfg.OSVMode
 		}
@@ -106,7 +115,7 @@ func SourceViews(cfg SourceConfig, rows []store.SourceRow, now time.Time) []Sour
 }
 
 // Sources returns the state of every configured source and ecosystem, in the order of source and ecosystem. nextRun answers the
-// next scheduled run of a task by its name (vuln.TaskSyncOSV, vuln.TaskSyncKEV), nil for none.
+// next scheduled run of a task by its name (vuln.TaskSyncOSV, vuln.TaskSyncKEV, vuln.TaskSyncTrivyDB), nil for none.
 func (s *Service) Sources(ctx context.Context, nextRun func(task string) *time.Time) ([]SourceView, error) {
 	rows, err := s.st.Sources(ctx)
 	if err != nil {
@@ -115,26 +124,51 @@ func (s *Service) Sources(ctx context.Context, nextRun func(task string) *time.T
 	out := SourceViews(s.sourceConfig(), rows, s.now())
 	for i := range out {
 		v := &out[i]
-		if v.Mode == "repository" {
-			v.Repository = s.cfg.OSVRepository
-			if v.Source == SourceKEV {
-				v.Repository = s.cfg.KEVRepository
+		task := vuln.TaskSyncOSV
+		switch {
+		case v.Source == SourceTrivy:
+			task = vuln.TaskSyncTrivyDB
+			if v.Mode == "repository" {
+				s.databaseRepository(ctx, v)
 			}
+		case v.Mode != "repository":
+		case v.Source == SourceKEV:
+			v.Repository = s.cfg.KEVRepository
+		default:
+			v.Repository = s.cfg.OSVRepository
+		}
+		if v.Source == SourceKEV {
+			task = vuln.TaskSyncKEV
 		}
 		if nextRun != nil && v.Mode != "off" {
-			task := vuln.TaskSyncOSV
-			if v.Source == SourceKEV {
-				task = vuln.TaskSyncKEV
-			}
 			v.NextRunAt = nextRun(task)
 		}
 	}
 	return out, nil
 }
 
+// databaseRepository names the image scanning's database on its row (R-VULN-045): the repository of the setting, the image and the
+// tag, and the class of the repository when it resolves to a local or remote OCI repository, so that the screen shows the commands that
+// fill a local one (Q-API-380). A repository that does not resolve leaves the class empty; the run's failure says why.
+func (s *Service) databaseRepository(ctx context.Context, v *SourceView) {
+	v.Repository, v.Reference = s.cfg.DatabaseRepository, s.cfg.DatabaseImage+":"+imagescan.DatabaseTag
+	name, err := qname.ParseRepo(s.cfg.DatabaseRepository)
+	if err != nil || s.repo == nil {
+		return
+	}
+	r, err := s.repo.ByName(ctx, name)
+	if err != nil || r.Format != "oci" {
+		return
+	}
+	if r.Class == repository.Local || r.Class == repository.Remote {
+		v.RepositoryClass = string(r.Class)
+	}
+}
+
 func (s *Service) sourceConfig() SourceConfig {
 	return SourceConfig{
 		Enabled: s.cfg.Enabled, OSVMode: s.cfg.OSVMode, KEVMode: s.cfg.KEVMode, Ecosystems: s.cfg.Ecosystems, StaleAfter: s.cfg.StaleAfter,
+		Images: s.cfg.ImagesEnabled,
 	}
 }
 

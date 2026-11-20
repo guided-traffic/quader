@@ -9,7 +9,7 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 626 of 1,047 spec requirements are implemented: a passing test names them and no
+**Status.** 628 of 1,047 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
@@ -1260,9 +1260,9 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
-| SEC-001 | Package risk data source | MVP | specified | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented), [R-VULN-007](../spec/vulnerability-scanning.md) (implemented), [R-VULN-008](../spec/vulnerability-scanning.md) (implemented), [R-VULN-010](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md), [R-VULN-030](../spec/vulnerability-scanning.md) |
-| SEC-002 | Online synchronization of the vulnerability database | MVP | specified | [R-VULN-004](../spec/vulnerability-scanning.md) (implemented), [R-VULN-021](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-045](../spec/vulnerability-scanning.md) |
-| SEC-003 | Offline synchronization of the vulnerability database | MVP | specified | [R-VULN-005](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) |
+| SEC-001 | Package risk data source | MVP | specified | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented), [R-VULN-007](../spec/vulnerability-scanning.md) (implemented), [R-VULN-008](../spec/vulnerability-scanning.md) (implemented), [R-VULN-010](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) (implemented), [R-VULN-030](../spec/vulnerability-scanning.md) |
+| SEC-002 | Online synchronization of the vulnerability database | MVP | specified | [R-VULN-004](../spec/vulnerability-scanning.md) (implemented), [R-VULN-021](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-045](../spec/vulnerability-scanning.md) (implemented) |
+| SEC-003 | Offline synchronization of the vulnerability database | MVP | specified | [R-VULN-005](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-004 | Malicious package intelligence | MVP | implemented | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-005 | Package labels | P2 | open | – |
 | SEC-006 | Custom licenses | P2 | open | – |

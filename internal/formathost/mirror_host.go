@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -60,15 +61,29 @@ func NewMirrorHost(h *Host, e MirrorEngine) (*MirrorHost, error) {
 	return &MirrorHost{h: h, e: e}, nil
 }
 
-// mirrorActor and mirrorSubject are the system as the audit trail records it for what a pass stores (R-REPO-057).
-var (
-	mirrorActor   = authz.MirrorActor()
-	mirrorSubject = authz.MirrorSubject()
-	// backgroundActor and backgroundSubject are the system as the audit trail records it for what a probe's background download
-	// stores (R-REPO-065).
-	backgroundActor   = authz.BackgroundDownloadActor()
-	backgroundSubject = authz.BackgroundDownloadSubject()
+// mirrorSubject is the system as the request a format's gate is handed for a background fill names it (R-REPO-057).
+var mirrorSubject = authz.MirrorSubject()
+
+// filler is the system work a background request's fills are recorded for (R-AUTHZ-008): a mirror's pass (R-REPO-057), a probe's
+// background download (R-REPO-065) or the image scanning's database task (vulnerability-scanning.md R-VULN-044).
+type filler int
+
+const (
+	fillMirror filler = iota
+	fillBackgroundDownload
+	fillImageDatabase
 )
+
+// who is the actor, the subject and the reason the fill transaction records for the work.
+func (f filler) who() (audit.Actor, authz.Subject, string) {
+	switch f {
+	case fillBackgroundDownload:
+		return authz.BackgroundDownloadActor(), authz.BackgroundDownloadSubject(), authz.ReasonBackgroundDownload
+	case fillImageDatabase:
+		return authz.ImageDatabaseActor(), authz.ImageDatabaseSubject(), authz.ReasonImageDatabase
+	}
+	return authz.MirrorActor(), mirrorSubject, authz.ReasonMirror
+}
 
 // Lister implements [mirror.Host]: the discovery of the format's remote adapter, found through the capabilities Register read.
 // Ready implements [mirror.Host]: a built host serves passes until its engine drains; a process that is shutting down starts no
@@ -261,14 +276,16 @@ func (m *MirrorHost) request(ctx context.Context, repo repository.Repository, p 
 	}
 }
 
-// backgroundFacts are what makes a request of the client path's wrapper a background request of a pass, or of a probe's background
-// download (R-REPO-065): then charge is the probe's (limits.Engine.Resume) and the fills are recorded for system:background-download.
+// backgroundFacts are what makes a request of the client path's wrapper a background request of a pass, of a probe's background
+// download (R-REPO-065: then charge is the probe's, limits.Engine.Resume, and the fills are recorded for system:background-download) or
+// of the image scanning's database task (R-VULN-044: no charge, so the engine records the system's, and the fills are recorded for
+// system:image-database).
 type backgroundFacts struct {
 	h       *Host
 	jobID   string
 	ceiling int
 	charge  *limits.Charge
-	probe   bool
+	fill    filler
 }
 
 type backgroundKey struct{}
@@ -290,10 +307,7 @@ func backgroundFrom(ctx context.Context) (*backgroundFacts, bool) {
 func (b *backgroundFacts) apply(preq *proxy.Request, rq *formats.Request, info formats.PathInfo, p formats.Path) {
 	preq.Priority, preq.Ceiling, preq.JobID, preq.Mode = proxy.PriorityBackground, b.ceiling, b.jobID, proxy.Normal
 	preq.Charge = b.charge
-	actor, subject, reason := mirrorActor, mirrorSubject, authz.ReasonMirror
-	if b.probe {
-		actor, subject, reason = backgroundActor, backgroundSubject, authz.ReasonBackgroundDownload
-	}
+	actor, subject, reason := b.fill.who()
 	preq.Caller = proxy.CallerFacts{Actor: actor}
 	preq.Populate = &mirrorPopulate{h: b.h, subject: subject, reason: reason, coord: authz.Coordinate{
 		Repository: rq.Repo.Name, Class: rq.Repo.Class, Format: rq.Repo.Format, Kind: authz.KindWrite,
@@ -341,15 +355,15 @@ type passUpstream struct {
 	// since is when this attempt of the pass began: a stored document that was validated before it is not current for the
 	// pass's discovery, whatever its period says (see Document).
 	since time.Time
-	// charge and probe make the requests those of a probe's background download (R-REPO-065): charged to the probe's budget key
-	// and recorded for system:background-download.
+	// charge and fill make the requests those of a probe's background download (R-REPO-065: charged to the probe's budget key and
+	// recorded for system:background-download) or of the image scanning's database task (R-VULN-044).
 	charge *limits.Charge
-	probe  bool
+	fill   filler
 }
 
 // facts are the background facts of the upstream's requests.
 func (u *passUpstream) facts() *backgroundFacts {
-	return &backgroundFacts{h: u.m.h, jobID: u.pass.JobID, ceiling: u.pass.Ceiling, charge: u.charge, probe: u.probe}
+	return &backgroundFacts{h: u.m.h, jobID: u.pass.JobID, ceiling: u.pass.Ceiling, charge: u.charge, fill: u.fill}
 }
 
 var _ discover.Upstream = (*passUpstream)(nil)

@@ -81,7 +81,8 @@ func (a *App) newVulnSync(in infra, m *vmetrics.Metrics) (*vsync.Service, error)
 			Repos: func() repository.Reader { return part[repositoryArea](a.parts).reader },
 			Items: func() *items.Store { s, _ := a.itemStore.get(); return s },
 		},
-		Config: a.cfg.Vulnerabilities, Adapters: adapters, Log: a.log,
+		ImageDatabase: imageDatabase{a: a},
+		Config:        a.cfg.Vulnerabilities, Adapters: adapters, Log: a.log,
 	}
 	if in.queue != nil {
 		o.Jobs = in.queue

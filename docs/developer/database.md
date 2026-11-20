@@ -595,6 +595,17 @@ both by the item's blob, so a download reads its verdict in its one statement (R
 statements are [malware.sql](../../internal/meta/postgres/queries/malware.sql), and the contracts the four packages share are in
 [malware.md](malware.md).
 
+## The database's repository of the image scanning (00089)
+
+[00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image
+scanning's database (vulnerability-scanning.md R-VULN-044, Q-VULN-173): it deletes the row of `vuln_image_db` first, so that the table's
+statement trigger releases the archive's blob reference and the collection removes the object, then drops the table and its registration
+([tables_vuln.go](../../internal/meta/postgres/tables_vuln.go)). The database in use is now the row of the source `trivy`, ecosystem `OCI`,
+in `vuln_source_state` (`etag` the layer's digest, `archive_sha256` its bytes; `VulnImageDBGet` in
+[vuln_image.sql](../../internal/meta/postgres/queries/vuln_image.sql)); the migration keeps that row, whose digest is the published
+layer's (Q-VULN-191). It also creates the function `vuln_image_database_in_use(sha256 bytea)`, the exemption the remote-cache cleanup
+applies to every candidate (storage.md R-STOR-045, Q-VULN-190): `STABLE`, one indexed read of the source's row.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

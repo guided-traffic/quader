@@ -44,6 +44,18 @@ func TestR_VULN_024_VulnerabilityDataFacts(t *testing.T) {
 	if s := by["kev/"]; s.Mode != gen.VulnerabilityDataFactsSourcesModeRepository {
 		t.Errorf("kev = %+v", s)
 	}
+	// R-VULN-045: with the image scanning on, its database is a source of the block, read from its repository.
+	v.Images.Enabled = true
+	found := false
+	for _, s := range vulnFactsFrom(v, rows, now).Sources {
+		if string(s.Source) == "trivy" {
+			found = s.Ecosystem == "OCI" && s.Mode == gen.VulnerabilityDataFactsSourcesModeRepository && s.State == "empty"
+		}
+	}
+	if !found {
+		t.Error("the image scanning's database is not a source of the block, or not trivy/OCI in the mode repository")
+	}
+	v.Images.Enabled = false
 	v.Enabled = false
 	for _, s := range vulnFactsFrom(v, rows, now).Sources {
 		if s.Mode != gen.VulnerabilityDataFactsSourcesModeOff {

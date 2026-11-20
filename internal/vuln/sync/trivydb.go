@@ -2,21 +2,18 @@ package sync
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"strings"
+	"time"
 
-	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/cluster"
-	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/jobs"
-	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/advisory"
@@ -24,35 +21,92 @@ import (
 	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
-// The vulnerability database of the image scanning (R-VULN-035): one archive, published as an OCI artifact, that the task
-// vuln-sync-trivy-db copies into the object store. A worker never downloads it from the publisher itself; it fetches the copy once and
-// keeps it unpacked on its local disk (imagescan.LocalDatabase). In mode repository the archive comes from a generic local repository
-// and the installation makes no request at all (R-VULN-005).
+// The vulnerability database of the image scanning (R-VULN-035, R-VULN-044): one archive, published as an OCI artifact, that lies in a
+// repository of the installation, upstream/scanner-trivy by default (ADR-214). The task vuln-sync-trivy-db resolves the tag of the
+// database's image through that repository in process, makes the repository hold the layer, checks the archive and records the layer's
+// digest on the row of the source trivy as the database in use (Q-VULN-173). Nothing is copied anywhere beside the repository, and
+// nothing falls back to the publisher (Q-VULN-174): a run that cannot use the repository fails with a code that names why, and the
+// database in use stays. A worker reads the layer from the repository (imagescan.LocalDatabase).
 
-// TrivyMirrorPath is the path of the archive in the mirror repository of mode repository.
-const TrivyMirrorPath = "trivy/db.tar.gz"
+// maxDatabaseManifest bounds the manifest of the database's tag (formats/oci.md R-OCI-020).
+const maxDatabaseManifest = 4 << 20
 
-// trivyLayerMedia is the media type of the archive's layer.
-const trivyLayerMedia = "application/vnd.aquasec.trivy.db.layer.v1.tar+gzip"
+// ImageDatabase is the repository layer as the task reads the database's repository; internal/app implements it over the repository
+// model, the worker's format host and the item store (R-VULN-044, Q-VULN-172).
+type ImageDatabase interface {
+	// Resolve resolves the repository by its qualified name for one run, and checks what it must be: it exists, is of the format oci,
+	// is local or remote, and is not disabled. A refusal wraps [ErrDatabaseRepositoryInvalid] or [ErrDatabaseRepositoryOff]. jobID
+	// names the run's job in the upstream log.
+	Resolve(ctx context.Context, repo, jobID string) (DatabaseRepository, error)
+}
 
-// maxTrivyManifest bounds the manifest and the token answer of the publisher's registry.
-const maxTrivyManifest = 1 << 20
+// DatabaseRepository is the database's repository for one run.
+type DatabaseRepository interface {
+	// Manifest returns the manifest the tag of the image names: a remote's tag document is fetched or revalidated through the
+	// worker's format host as a background request, a local repository's is read from the item store. found is false when the
+	// repository does not hold it: a local repository before the push, a remote whose upstream answers 404 or whose include and exclude
+	// patterns refuse the name. An error of a remote's upstream wraps [ErrDatabaseUpstream].
+	Manifest(ctx context.Context, image, tag string) (body []byte, found bool, err error)
+	// Holds reports whether the repository holds the layer, the item <image>/_blobs/<digest>.
+	Holds(ctx context.Context, image, digest string) (bool, error)
+	// Store makes a remote repository hold the layer: through the format's gate, the engine's integrity check of the digest and the
+	// repository's patterns, with the populate record of system:image-database; found is false when the upstream does not have it.
+	// A local repository stores nothing and answers whether it holds the layer.
+	Store(ctx context.Context, image, digest string) (found bool, err error)
+	// Open reads the stored layer through the item store, which is no download (R-STOR-015).
+	Open(ctx context.Context, image, digest string) (io.ReadCloser, error)
+	// RetentionHours is the repository's own cache period, remote.cache.unusedRetentionHours of a remote: 48 on upstream/scanner-trivy,
+	// fixed by the product (Q-VULN-175). 0 keeps every layer: a local repository, which is its operator's to keep, and a remote without
+	// a period (Q-VULN-194).
+	RetentionHours() int
+	// Prune removes the layers and manifests of image stored before before, other than the manifest with the digest manifest and other
+	// than content that is the database in use (vuln_image_database_in_use), through the item store's removal with the actor
+	// system:image-database, so that the blobs, the format's rows and the audit trail follow the way of every removal; it answers how
+	// many files went.
+	Prune(ctx context.Context, image, manifest string, before time.Time) (int, error)
+}
 
-// DBCommitter commits a spooled archive to the object store and links it in the same transaction. *blob.Store implements it.
-type DBCommitter interface {
-	Commit(ctx context.Context, sp *blob.Spooled, link blob.LinkFunc) (blob.CommitResult, error)
+// The refusals of the database's repository (Q-VULN-174); an implementation of [ImageDatabase] wraps them with what it found.
+var (
+	// ErrDatabaseRepositoryInvalid: the repository does not exist, is not of the format oci, or is virtual.
+	ErrDatabaseRepositoryInvalid = errors.New("the database's repository is no local or remote OCI repository")
+	// ErrDatabaseRepositoryOff: the repository is disabled.
+	ErrDatabaseRepositoryOff = errors.New("the database's repository is switched off")
+	// ErrDatabaseUpstream: a remote repository could not reach its upstream (the engine's failure, its open circuit, offline mode).
+	ErrDatabaseUpstream = errors.New("the database's repository cannot reach its registry")
+	// ErrDatabaseMissing: the repository does not hold the image at the tag, or the layer its manifest names; the refusal says why (a
+	// local repository before the push, a remote whose upstream answers 404 or whose patterns refuse the name).
+	ErrDatabaseMissing = errors.New("the database's repository does not hold the database")
+)
+
+// DatabaseRefusal is a refusal of the database's repository with what was found: Kind is one of the sentinels above, Detail the
+// sentence the source's row shows after the repository and the reference, Err the error below it, if any.
+type DatabaseRefusal struct {
+	Kind   error
+	Detail string
+	Err    error
+}
+
+func (r *DatabaseRefusal) Error() string { return r.Kind.Error() + ": " + r.Detail }
+
+// Unwrap answers the sentinel and the error below it.
+func (r *DatabaseRefusal) Unwrap() []error {
+	if r.Err == nil {
+		return []error{r.Kind}
+	}
+	return []error{r.Kind, r.Err}
 }
 
 // RunTrivyDB is the handler of vuln-sync-trivy-db. Like the other sources it records what ended a failing run on its row, and it leaves the
-// database in use as it is: the images are evaluated against the last good one until a new one has been imported completely.
-func (s *Service) RunTrivyDB(ctx context.Context, run Run, committer DBCommitter) error {
-	cfg := s.o.Config.Sources.Trivy
-	if !s.o.Config.Enabled || cfg.Mode == "off" {
-		return run.SetResult(map[string]string{"skipped": "the source is off"})
+// database in use as it is: the images are evaluated against the last good one until a new one has been recorded. jobID is the run's
+// job, which the upstream log names.
+func (s *Service) RunTrivyDB(ctx context.Context, run Run, jobID string) error {
+	if !s.o.Config.Enabled || !s.o.Config.Images.Enabled {
+		return run.SetResult(map[string]string{"skipped": "the image scanning is off"})
 	}
 	var at attempt
 	res, err := guarded(ctx, s, store.SourceTrivy, advisory.EcosystemOCI, kindFull, &at, func() (Result, error) {
-		return s.syncTrivy(ctx, committer, &at)
+		return s.syncTrivy(ctx, jobID, &at)
 	})
 	if err != nil {
 		if released(ctx) {
@@ -68,7 +122,7 @@ func (s *Service) RunTrivyDB(ctx context.Context, run Run, committer DBCommitter
 	return run.SetResult(res)
 }
 
-func (s *Service) syncTrivy(ctx context.Context, committer DBCommitter, at *attempt) (Result, error) {
+func (s *Service) syncTrivy(ctx context.Context, jobID string, at *attempt) (Result, error) {
 	res := Result{Ecosystem: advisory.EcosystemOCI, Kind: kindFull}
 	if err := s.o.DB.InTx(ctx, func(tx metaTx) error {
 		db, err := store.DBOf(tx)
@@ -90,81 +144,214 @@ func (s *Service) syncTrivy(ctx context.Context, committer DBCommitter, at *atte
 	}); err != nil {
 		return res, err
 	}
-	cfg := s.o.Config.Sources.Trivy
+	if s.o.ImageDatabase == nil {
+		return res, errors.New("the vulnerability database: this replica reads no repositories")
+	}
+	cfg := s.o.Config.Images.Database
 	dctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
-	var sp *blob.Spooled
-	var err error
-	var unchanged bool
-	if cfg.Mode == "repository" {
-		sp, unchanged, err = s.trivyFromMirror(dctx, cfg, st)
-	} else {
-		sp, unchanged, err = s.trivyFromRegistry(dctx, cfg, st)
+	ref := cfg.Repository + " " + cfg.Image + ":" + imagescan.DatabaseTag
+	repo, err := s.o.ImageDatabase.Resolve(dctx, cfg.Repository, jobID)
+	if err != nil {
+		return res, databaseFailure(ref, err)
 	}
+	manifest, found, err := repo.Manifest(dctx, cfg.Image, imagescan.DatabaseTag)
+	if err != nil {
+		return res, databaseFailure(ref, err)
+	}
+	if !found {
+		return res, problemf(errs.CodeDatabaseMissing, ref+": the repository holds no such tag", nil)
+	}
+	layer, err := databaseLayer(manifest)
+	if err != nil {
+		return res, problemf(errs.CodeDatabaseMissing, ref+": "+err.Error(), nil)
+	}
+	held, err := repo.Holds(dctx, cfg.Image, layer.Digest)
 	if err != nil {
 		return res, err
 	}
-	if unchanged {
-		return s.trivyUnchanged(ctx, res)
+	// The digest's SHA-256 on the row is what the trim's exemption reads: a row without it (written before Q-VULN-191) is recorded again.
+	if held && layer.Digest == st.ETag && st.Complete() && "sha256:"+hex.EncodeToString(st.ArchiveSHA256) == layer.Digest {
+		res, err = s.trivyUnchanged(ctx, res)
+		return s.prune(ctx, res, err, repo, cfg.Image, manifest)
 	}
-	defer func() { _ = sp.Close() }()
-	return s.importTrivy(ctx, committer, sp, res)
+	if limit := int64(cfg.MaxArchiveSize); layer.Size > limit {
+		return res, problemf(errs.CodeArchiveTooLarge, fmt.Sprintf("%s: the layer is %d bytes, vulnerabilities.images.database.max_archive_size is %d", ref, layer.Size, limit), nil)
+	}
+	if !held {
+		stored, err := repo.Store(dctx, cfg.Image, layer.Digest)
+		if err != nil {
+			return res, databaseFailure(ref, err)
+		}
+		if !stored {
+			return res, problemf(errs.CodeDatabaseMissing, fmt.Sprintf("%s: the repository holds no layer %s", ref, layer.Digest), nil)
+		}
+	}
+	md, err := readLayerMetadata(dctx, repo, cfg.Image, layer.Digest)
+	if err != nil {
+		return res, problemf(errs.CodeArchiveLimit, fmt.Sprintf("%s: the layer %s: %v", ref, layer.Digest, err), nil)
+	}
+	res, err = s.recordTrivy(ctx, res, layer.Digest, md)
+	return s.prune(ctx, res, err, repo, cfg.Image, manifest)
 }
 
-// importTrivy checks the archive, stores it and makes it the database in use, in the transaction that links its blob.
-func (s *Service) importTrivy(ctx context.Context, committer DBCommitter, sp *blob.Spooled, res Result) (Result, error) {
-	md, err := imagescan.ReadDBMetadata(sp.Reader())
-	if err != nil {
-		return res, problemf(errs.CodeArchiveLimit, err.Error(), nil)
+// retentionCutoff is the time before which the database's repository lets the layers that are not in use go: its own cache period
+// before now, 48 hours on upstream/scanner-trivy (Q-VULN-175). ok is false for a repository without a period, which keeps every layer
+// (Q-VULN-194).
+func retentionCutoff(hours int, now time.Time) (before time.Time, ok bool) {
+	if hours <= 0 {
+		return time.Time{}, false
 	}
-	digest := "sha256:" + sp.SHA256.Hex()
-	if _, err := committer.Commit(ctx, sp, func(ctx context.Context, tx meta.Tx) error {
-		return s.linkTrivy(ctx, tx, sp, digest, md)
-	}); err != nil {
-		return res, fmt.Errorf("commit the vulnerability database: %w", err)
+	return now.Add(-time.Duration(hours) * time.Hour), true
+}
+
+// prune applies the repository's retention after a run that succeeded, and only then (Q-VULN-194): a run that failed keeps every layer,
+// so a publisher or a repository in trouble never costs the installation its last good database or the ones before it. The manifest the
+// run read stays, and so does the layer in use. A removal that fails is logged and noted in the run's result; the run itself succeeded.
+func (s *Service) prune(ctx context.Context, res Result, err error, repo DatabaseRepository, image string, manifest []byte) (Result, error) {
+	if err != nil {
+		return res, err
+	}
+	before, ok := retentionCutoff(repo.RetentionHours(), s.now())
+	if !ok {
+		return res, nil
+	}
+	sum := sha256.Sum256(manifest)
+	n, perr := repo.Prune(ctx, image, "sha256:"+hex.EncodeToString(sum[:]), before)
+	res.Deleted = n
+	if perr != nil {
+		s.log.WarnContext(ctx, "the older layers of the vulnerability database were not removed", "removed", n, "error", perr)
+		res.Note = "the older layers were not removed: " + perr.Error()
+	}
+	return res, nil
+}
+
+// registered is the failure of a code with the kind the code registry gives it: database_repository_invalid and
+// database_repository_off are conflicts of the configuration, 409, not failures of an upstream (problemf's 502).
+func registered(code, detail string) *failure {
+	f := problemf(code, detail, nil)
+	if info, ok := errs.Lookup(code); ok {
+		f.kind = info.Kind
+	}
+	return f
+}
+
+// databaseFailure maps a refusal of the repository layer to the code of R-VULN-044 and names the repository and the reference in the
+// detail; another error (the metadata store's) is the run's as it is.
+func databaseFailure(ref string, err error) error {
+	detail := err.Error()
+	var refusal *DatabaseRefusal
+	if errors.As(err, &refusal) {
+		detail = refusal.Detail
+	}
+	switch {
+	case errors.Is(err, ErrDatabaseRepositoryInvalid):
+		return registered(errs.CodeDatabaseRepositoryInvalid, ref+": "+detail)
+	case errors.Is(err, ErrDatabaseRepositoryOff):
+		return registered(errs.CodeDatabaseRepositoryOff, ref+": "+detail)
+	case errors.Is(err, ErrDatabaseUpstream):
+		return problemf(errs.CodeUpstreamFailed, ref+": "+detail, nil)
+	case errors.Is(err, ErrDatabaseMissing):
+		return problemf(errs.CodeDatabaseMissing, ref+": "+detail, nil)
+	}
+	return err
+}
+
+// databaseDescriptor is the layer of the database as the manifest names it.
+type databaseDescriptor struct {
+	MediaType string `json:"mediaType"`
+	Digest    string `json:"digest"`
+	Size      int64  `json:"size"`
+}
+
+// databaseLayer returns the layer of the database's media type that the manifest names. The manifest is untrusted (an upstream's, or
+// what an administrator pushed): it is decoded within its bound, and a digest that is not sha256 and 64 hexadecimal digits is refused,
+// because it names an item and a directory of the worker's cache.
+func databaseLayer(manifest []byte) (databaseDescriptor, error) {
+	if len(manifest) > maxDatabaseManifest {
+		return databaseDescriptor{}, fmt.Errorf("the manifest is larger than %d bytes", maxDatabaseManifest)
+	}
+	var m struct {
+		Layers []databaseDescriptor `json:"layers"`
+	}
+	if err := json.Unmarshal(manifest, &m); err != nil {
+		return databaseDescriptor{}, fmt.Errorf("the manifest does not decode: %w", err)
+	}
+	for _, l := range m.Layers {
+		if l.MediaType != imagescan.LayerMediaType {
+			continue
+		}
+		if !imagescan.ValidDigest(l.Digest) || l.Size < 0 {
+			return databaseDescriptor{}, fmt.Errorf("the database's layer names the digest %q and the size %d", l.Digest, l.Size)
+		}
+		return l, nil
+	}
+	return databaseDescriptor{}, errors.New("the manifest holds no layer of the media type " + imagescan.LayerMediaType)
+}
+
+// readLayerMetadata reads metadata.json from the stored layer as R-VULN-035 reads an archive: the schema version and a build time.
+func readLayerMetadata(ctx context.Context, repo DatabaseRepository, image, digest string) (imagescan.DBMetadata, error) {
+	rc, err := repo.Open(ctx, image, digest)
+	if err != nil {
+		return imagescan.DBMetadata{}, err
+	}
+	defer func() { _ = rc.Close() }()
+	return imagescan.ReadDBMetadata(rc)
+}
+
+// recordTrivy makes the layer the database in use, in one transaction: the row of the source with the digest and its SHA-256, a raised
+// data epoch, the notification of the change area vuln_data and the wake-up of the scan (Q-VULN-173).
+func (s *Service) recordTrivy(ctx context.Context, res Result, digest string, md imagescan.DBMetadata) (Result, error) {
+	sum, err := hex.DecodeString(strings.TrimPrefix(digest, "sha256:"))
+	if err != nil {
+		return res, err
+	}
+	err = s.o.DB.InTx(ctx, func(tx metaTx) error {
+		db, err := store.DBOf(tx)
+		if err != nil {
+			return err
+		}
+		cur, err := s.st.Lock(ctx, db, store.SourceTrivy, advisory.EcosystemOCI)
+		if err != nil {
+			return err
+		}
+		now := s.now()
+		next := cur
+		next.State, next.SyncedAt, next.FullSyncedAt = store.StateComplete, now, now
+		next.ETag, next.ArchiveSHA256, next.Records = digest, sum, 1
+		// The same digest stored again (a layer the repository had lost, or the first run after the upgrade of Q-VULN-191) is the same
+		// database: the detections made against it stay current, so the data epoch stays and nothing is detected again.
+		same := cur.ETag == digest && cur.Complete()
+		if !same {
+			next.DataEpoch = cur.DataEpoch + 1
+		}
+		if err := s.st.Save(ctx, db, next); err != nil {
+			return err
+		}
+		if !same {
+			if err := s.o.Changes.Notify(tx, cluster.AreaVulnData, vuln.DataChangePayloadVersion, vuln.DataChange{Ecosystem: advisory.EcosystemOCI, Epoch: next.DataEpoch}); err != nil {
+				return err
+			}
+		}
+		if s.o.Jobs == nil {
+			return nil
+		}
+		_, err = s.o.Jobs.Enqueue(ctx, tx, jobs.EnqueueSpec{Kind: vuln.KindImageScan, DedupKey: vuln.DedupImageScan})
+		return err
+	})
+	if err != nil {
+		return res, err
 	}
 	res.Outcome = outcomeChanged
 	res.Records = 1
 	s.countRun(store.SourceTrivy, advisory.EcosystemOCI, kindFull, outcomeChanged)
-	s.log.InfoContext(ctx, "vulnerability database imported", "digest", digest, "built", md.UpdatedAt)
+	s.log.InfoContext(ctx, "vulnerability database recorded", "digest", digest, "built", md.UpdatedAt)
 	return res, nil
 }
 
-// linkTrivy is the link of the commit protocol: the row of the database in use, the state of the source, and the wake-up of the scan.
-func (s *Service) linkTrivy(ctx context.Context, tx meta.Tx, sp *blob.Spooled, digest string, m imagescan.DBMetadata) error {
-	var blobKey [32]byte
-	copy(blobKey[:], sp.SHA256.Bytes())
-	if err := store.PutDB(ctx, tx, store.ImageDB{Digest: digest, Blob: blobKey, Size: sp.Size, UpdatedAt: m.UpdatedAt, NextUpdate: m.NextUpdate}); err != nil {
-		return err
-	}
-	db, err := store.DBOf(tx)
-	if err != nil {
-		return err
-	}
-	cur, err := s.st.Lock(ctx, db, store.SourceTrivy, advisory.EcosystemOCI)
-	if err != nil {
-		return err
-	}
-	now := s.now()
-	next := cur
-	next.State, next.SyncedAt, next.FullSyncedAt = store.StateComplete, now, now
-	next.ETag, next.Records = digest, 1
-	next.DataEpoch = cur.DataEpoch + 1
-	if err := s.st.Save(ctx, db, next); err != nil {
-		return err
-	}
-	if err := s.o.Changes.Notify(tx, cluster.AreaVulnData, vuln.DataChangePayloadVersion, vuln.DataChange{Ecosystem: advisory.EcosystemOCI, Epoch: next.DataEpoch}); err != nil {
-		return err
-	}
-	if s.o.Jobs == nil {
-		return nil
-	}
-	_, err = s.o.Jobs.Enqueue(ctx, tx, jobs.EnqueueSpec{Kind: vuln.KindImageScan, DedupKey: vuln.DedupImageScan})
-	return err
-}
-
-// trivyUnchanged records a run that found the database in use still current. A publisher that stopped publishing shows as stale, because
-// the state keeps the time the source last succeeded and the sources API and alert compare that with the age of the data separately.
+// trivyUnchanged records a run that found the database in use still current and held by its repository: only the tag's document was
+// revalidated. A publisher that stopped publishing shows as stale, because the state keeps the time the source last succeeded and the
+// sources API and alert compare that with the age of the data separately.
 func (s *Service) trivyUnchanged(ctx context.Context, res Result) (Result, error) {
 	err := s.o.DB.InTx(ctx, func(tx metaTx) error {
 		db, err := store.DBOf(tx)
@@ -184,189 +371,4 @@ func (s *Service) trivyUnchanged(ctx context.Context, res Result) (Result, error
 	res.Outcome = outcomeUnchanged
 	s.countRun(store.SourceTrivy, advisory.EcosystemOCI, kindFull, outcomeUnchanged)
 	return res, nil
-}
-
-// trivyFromMirror reads the archive of mode repository: unchanged when the item's digest is the one imported last, and a missing item
-// leaves the source as it is.
-func (s *Service) trivyFromMirror(ctx context.Context, cfg config.VulnerabilityTrivy, st store.SyncState) (*blob.Spooled, bool, error) {
-	if s.o.Mirror == nil {
-		return nil, false, problemf(errs.CodeMirrorRepositoryInvalid, "the mirror repository is not available on this replica", nil)
-	}
-	item, err := s.o.Mirror.Stat(ctx, cfg.Repository, TrivyMirrorPath)
-	if err != nil {
-		return nil, false, err
-	}
-	if item == nil {
-		return nil, true, nil
-	}
-	digest := "sha256:" + hex.EncodeToString(item.SHA256[:])
-	if st.ETag == digest && st.Complete() {
-		return nil, true, nil
-	}
-	rc, err := item.Open(ctx)
-	if err != nil {
-		return nil, false, err
-	}
-	defer func() { _ = rc.Close() }()
-	sp, err := s.o.Spool.Ingest(ctx, rc, blob.IngestOptions{ContentLength: item.Size, MaxSize: int64(cfg.MaxArchiveSize)})
-	return sp, false, err
-}
-
-// trivyFromRegistry reads the artifact of mode online from the registry that publishes it, through the outbound client of the advisory
-// sources: its egress rules, proxy and redirect limits apply, and the only thing the request says about the installation is that it asks
-// for the public database.
-func (s *Service) trivyFromRegistry(ctx context.Context, cfg config.VulnerabilityTrivy, st store.SyncState) (*blob.Spooled, bool, error) {
-	base, err := url.Parse(cfg.URL)
-	if err != nil || base.Scheme != "https" || base.Host == "" {
-		return nil, false, problemf(errs.CodeArchiveLimit, "vulnerabilities.sources.trivy.url is not an https URL", nil)
-	}
-	token := ""
-	manifest, status, challenge, err := s.trivyGet(ctx, cfg.URL+"manifests/"+cfg.Reference, "application/vnd.oci.image.manifest.v1+json", token)
-	if err != nil {
-		return nil, false, err
-	}
-	if status == http.StatusUnauthorized {
-		if token, err = s.trivyToken(ctx, base, challenge); err != nil {
-			return nil, false, err
-		}
-		if manifest, status, _, err = s.trivyGet(ctx, cfg.URL+"manifests/"+cfg.Reference, "application/vnd.oci.image.manifest.v1+json", token); err != nil {
-			return nil, false, err
-		}
-	}
-	if status != http.StatusOK {
-		return nil, false, problemf(errs.CodeUpstreamFailed, fmt.Sprintf("the registry answered the database manifest with %d", status), nil)
-	}
-	layer, err := trivyLayer(manifest)
-	if err != nil {
-		return nil, false, problemf(errs.CodeArchiveLimit, err.Error(), nil)
-	}
-	if layer.Digest == st.ETag && st.Complete() {
-		return nil, true, nil
-	}
-	if layer.Size > int64(cfg.MaxArchiveSize) {
-		return nil, false, problemf(errs.CodeArchiveTooLarge, fmt.Sprintf("the database is %d bytes, vulnerabilities.sources.trivy.max_archive_size is %d", layer.Size, int64(cfg.MaxArchiveSize)), nil)
-	}
-	return s.trivyBlob(ctx, cfg, layer.Digest, layer.Size, token)
-}
-
-type trivyDescriptor struct {
-	MediaType string `json:"mediaType"`
-	Digest    string `json:"digest"`
-	Size      int64  `json:"size"`
-}
-
-func trivyLayer(manifest []byte) (trivyDescriptor, error) {
-	var m struct {
-		Layers []trivyDescriptor `json:"layers"`
-	}
-	if err := json.Unmarshal(manifest, &m); err != nil {
-		return trivyDescriptor{}, fmt.Errorf("the database manifest: %w", err)
-	}
-	for _, l := range m.Layers {
-		if l.MediaType == trivyLayerMedia {
-			if !strings.HasPrefix(l.Digest, "sha256:") {
-				return trivyDescriptor{}, errors.New("the database layer has no SHA-256 digest")
-			}
-			return l, nil
-		}
-	}
-	return trivyDescriptor{}, errors.New("the manifest holds no layer of the database's media type")
-}
-
-func (s *Service) trivyBlob(ctx context.Context, cfg config.VulnerabilityTrivy, digest string, size int64, token string) (*blob.Spooled, bool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.URL+"blobs/"+digest, http.NoBody)
-	if err != nil {
-		return nil, false, err
-	}
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-	resp, err := s.o.HTTP.Do(req)
-	if err != nil {
-		return nil, false, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return nil, false, problemf(errs.CodeUpstreamFailed, fmt.Sprintf("the registry answered the database layer with %d", resp.StatusCode), nil)
-	}
-	sum, err := hex.DecodeString(strings.TrimPrefix(digest, "sha256:"))
-	if err != nil {
-		return nil, false, err
-	}
-	sp, err := s.o.Spool.Ingest(ctx, resp.Body, blob.IngestOptions{ContentLength: size, MaxSize: int64(cfg.MaxArchiveSize), Expect: blob.Expected{SHA256: sum}})
-	return sp, false, err
-}
-
-// trivyGet makes one request of the registry protocol and answers its body within the bound, its status and its challenge.
-func (s *Service) trivyGet(ctx context.Context, target, accept, token string) ([]byte, int, string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, http.NoBody)
-	if err != nil {
-		return nil, 0, "", err
-	}
-	req.Header.Set("Accept", accept)
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-	resp, err := s.o.HTTP.Do(req)
-	if err != nil {
-		return nil, 0, "", err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxTrivyManifest))
-	if err != nil {
-		return nil, 0, "", err
-	}
-	return body, resp.StatusCode, resp.Header.Get("WWW-Authenticate"), nil
-}
-
-// trivyToken answers a Bearer challenge of the registry. The realm must be https: the outbound client's egress rules decide whether its
-// host may be reached at all.
-func (s *Service) trivyToken(ctx context.Context, base *url.URL, challenge string) (string, error) {
-	params := parseChallenge(challenge)
-	realm, err := url.Parse(params["realm"])
-	if err != nil || realm.Scheme != "https" || realm.Host == "" {
-		return "", problemf(errs.CodeUpstreamFailed, "the registry names no usable token service for "+base.Host, nil)
-	}
-	v := realm.Query()
-	if svc := params["service"]; svc != "" {
-		v.Set("service", svc)
-	}
-	if sc := params["scope"]; sc != "" {
-		v.Set("scope", sc)
-	}
-	realm.RawQuery = v.Encode()
-	body, status, _, err := s.trivyGet(ctx, realm.String(), "application/json", "")
-	if err != nil {
-		return "", err
-	}
-	if status != http.StatusOK {
-		return "", problemf(errs.CodeUpstreamFailed, fmt.Sprintf("the token service answered %d", status), nil)
-	}
-	var tok struct {
-		Token       string `json:"token"`
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.Unmarshal(body, &tok); err != nil {
-		return "", problemf(errs.CodeUpstreamFailed, "the token service's answer cannot be read", nil)
-	}
-	if tok.Token != "" {
-		return tok.Token, nil
-	}
-	return tok.AccessToken, nil
-}
-
-// parseChallenge reads the parameters of a Bearer challenge.
-func parseChallenge(h string) map[string]string {
-	out := map[string]string{}
-	_, rest, ok := strings.Cut(h, " ")
-	if !ok {
-		return out
-	}
-	for _, part := range strings.Split(rest, ",") {
-		k, v, ok := strings.Cut(strings.TrimSpace(part), "=")
-		if ok {
-			out[strings.ToLower(k)] = strings.Trim(v, `"`)
-		}
-	}
-	return out
 }

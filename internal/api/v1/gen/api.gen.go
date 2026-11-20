@@ -4200,8 +4200,9 @@ func (e VulnerabilityDataFactsSourcesMode) Valid() bool {
 
 // Defines values for VulnerabilityDataFactsSourcesSource.
 const (
-	VulnerabilityDataFactsSourcesSourceKev VulnerabilityDataFactsSourcesSource = "kev"
-	VulnerabilityDataFactsSourcesSourceOsv VulnerabilityDataFactsSourcesSource = "osv"
+	VulnerabilityDataFactsSourcesSourceKev   VulnerabilityDataFactsSourcesSource = "kev"
+	VulnerabilityDataFactsSourcesSourceOsv   VulnerabilityDataFactsSourcesSource = "osv"
+	VulnerabilityDataFactsSourcesSourceTrivy VulnerabilityDataFactsSourcesSource = "trivy"
 )
 
 // Valid indicates whether the value is a known member of the VulnerabilityDataFactsSourcesSource enum.
@@ -4210,6 +4211,8 @@ func (e VulnerabilityDataFactsSourcesSource) Valid() bool {
 	case VulnerabilityDataFactsSourcesSourceKev:
 		return true
 	case VulnerabilityDataFactsSourcesSourceOsv:
+		return true
+	case VulnerabilityDataFactsSourcesSourceTrivy:
 		return true
 	default:
 		return false
@@ -4528,10 +4531,32 @@ func (e VulnerabilitySourceStateMode) Valid() bool {
 	}
 }
 
+// Defines values for VulnerabilitySourceStateRepositoryClass.
+const (
+	VulnerabilitySourceStateRepositoryClassLessThannil VulnerabilitySourceStateRepositoryClass = "<nil>"
+	VulnerabilitySourceStateRepositoryClassLocal       VulnerabilitySourceStateRepositoryClass = "local"
+	VulnerabilitySourceStateRepositoryClassRemote      VulnerabilitySourceStateRepositoryClass = "remote"
+)
+
+// Valid indicates whether the value is a known member of the VulnerabilitySourceStateRepositoryClass enum.
+func (e VulnerabilitySourceStateRepositoryClass) Valid() bool {
+	switch e {
+	case VulnerabilitySourceStateRepositoryClassLessThannil:
+		return true
+	case VulnerabilitySourceStateRepositoryClassLocal:
+		return true
+	case VulnerabilitySourceStateRepositoryClassRemote:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VulnerabilitySourceStateSource.
 const (
-	VulnerabilitySourceStateSourceKev VulnerabilitySourceStateSource = "kev"
-	VulnerabilitySourceStateSourceOsv VulnerabilitySourceStateSource = "osv"
+	VulnerabilitySourceStateSourceKev   VulnerabilitySourceStateSource = "kev"
+	VulnerabilitySourceStateSourceOsv   VulnerabilitySourceStateSource = "osv"
+	VulnerabilitySourceStateSourceTrivy VulnerabilitySourceStateSource = "trivy"
 )
 
 // Valid indicates whether the value is a known member of the VulnerabilitySourceStateSource enum.
@@ -4540,6 +4565,8 @@ func (e VulnerabilitySourceStateSource) Valid() bool {
 	case VulnerabilitySourceStateSourceKev:
 		return true
 	case VulnerabilitySourceStateSourceOsv:
+		return true
+	case VulnerabilitySourceStateSourceTrivy:
 		return true
 	default:
 		return false
@@ -12925,25 +12952,38 @@ type VulnerabilitySourceList struct {
 type VulnerabilitySourceState struct {
 	AttemptedAt *time.Time `json:"attemptedAt"`
 
-	// Ecosystem The OSV ecosystem; empty for kev.
+	// Ecosystem The OSV ecosystem; empty for kev; OCI for trivy.
 	Ecosystem string `json:"ecosystem"`
 
 	// Failures Consecutive failed runs.
 	Failures int `json:"failures"`
 
 	// FullRejected The records the last full sync rejected; an incremental run does not change it (Q-VULN-122).
-	FullRejected int                          `json:"fullRejected"`
-	FullSyncedAt *time.Time                   `json:"fullSyncedAt"`
-	LastError    *Problem                     `json:"lastError"`
-	Mode         VulnerabilitySourceStateMode `json:"mode"`
-	NextRunAt    *time.Time                   `json:"nextRunAt"`
-	Records      int                          `json:"records"`
+	FullRejected int        `json:"fullRejected"`
+	FullSyncedAt *time.Time `json:"fullSyncedAt"`
+	LastError    *Problem   `json:"lastError"`
+
+	// Mode The image scanning's database is always `repository` while the image scanning is on: it comes from a repository of the installation (R-VULN-044).
+	Mode      VulnerabilitySourceStateMode `json:"mode"`
+	NextRunAt *time.Time                   `json:"nextRunAt"`
+	Records   int                          `json:"records"`
+
+	// Reference For `trivy`, the database's image and tag in its repository, `aquasec/trivy-db:2` by default (R-VULN-045); else `null`.
+	Reference *string `json:"reference"`
 
 	// Rejected The records the last run, full or incremental, rejected (R-VULN-004).
 	Rejected int `json:"rejected"`
 
-	// Repository The key of the configured mirror repository in the mode `repository` (R-VULN-005), else `null`.
-	Repository  *string                        `json:"repository"`
+	// Repository The qualified name of the configured mirror repository in the mode `repository` (R-VULN-005), and for `trivy` the
+	// database's repository, `vulnerabilities.images.database.repository` (R-VULN-045); else `null`.
+	Repository *string `json:"repository"`
+
+	// RepositoryClass For `trivy`, the class of the database's repository when it is a local or remote OCI repository, so that a client shows
+	// the commands that fill a local one (R-VULN-045, Q-API-380); `null` for every other source and for a repository that does
+	// not resolve, whose run fails with `database_repository_invalid`.
+	RepositoryClass *VulnerabilitySourceStateRepositoryClass `json:"repositoryClass"`
+
+	// Source `trivy` is the image scanning's database (R-VULN-044), with the one ecosystem `OCI`.
 	Source      VulnerabilitySourceStateSource `json:"source"`
 	Stale       bool                           `json:"stale"`
 	State       VulnerabilitySourceStateState  `json:"state"`
@@ -12951,10 +12991,15 @@ type VulnerabilitySourceState struct {
 	Unevaluable int                            `json:"unevaluable"`
 }
 
-// VulnerabilitySourceStateMode defines model for VulnerabilitySourceState.Mode.
+// VulnerabilitySourceStateMode The image scanning's database is always `repository` while the image scanning is on: it comes from a repository of the installation (R-VULN-044).
 type VulnerabilitySourceStateMode string
 
-// VulnerabilitySourceStateSource defines model for VulnerabilitySourceState.Source.
+// VulnerabilitySourceStateRepositoryClass For `trivy`, the class of the database's repository when it is a local or remote OCI repository, so that a client shows
+// the commands that fill a local one (R-VULN-045, Q-API-380); `null` for every other source and for a repository that does
+// not resolve, whose run fails with `database_repository_invalid`.
+type VulnerabilitySourceStateRepositoryClass string
+
+// VulnerabilitySourceStateSource `trivy` is the image scanning's database (R-VULN-044), with the one ecosystem `OCI`.
 type VulnerabilitySourceStateSource string
 
 // VulnerabilitySourceStateState defines model for VulnerabilitySourceState.State.

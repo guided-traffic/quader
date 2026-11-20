@@ -238,6 +238,19 @@ async function* explained(page: Page): AsyncGenerator<string> {
   if (await openExplanation(page)) yield 'explained';
 }
 
+/**
+ * The advisory sources as they open, then, where the image database comes from a local repository, with the fold of the commands
+ * that fill it open (R-VULN-045, Q-UI-890). With the database's default repository, a remote, there is no fold and no second state.
+ */
+async function* databaseCommandsOpen(page: Page): AsyncGenerator<string> {
+  yield '';
+  const closed = page.locator('main quader-disclosure button[aria-expanded="false"]');
+  if ((await closed.count()) === 0) return;
+  await closed.first().click();
+  await expect(page.locator('main quader-disclosure button[aria-expanded="true"]')).toHaveCount(1);
+  yield 'commands';
+}
+
 /** Opens every folded section of the explanation; false where there is none. */
 async function openExplanation(page: Page): Promise<boolean> {
   const selector = 'main quader-guide-view quader-disclosure button[aria-expanded="false"]';
@@ -1155,6 +1168,8 @@ export const screens: readonly Screen[] = [
   // the most to lay out (its archive keys). The member editor's placeholder is in repository-settings-oci-virtual.
   { id: 'admin-upstream', path: '/ui/admin/upstream', kinds: admins },
   { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
+  // The system repository of the image scanning's database: in use while the scanning reads through it (R-REPO-070, R-VULN-044).
+  { id: 'admin-upstream-scanner-trivy', path: '/ui/admin/upstream/scanner-trivy', kinds: admins },
   { id: 'admin-repository-new', path: '/ui/admin/repositories/new', kinds: admins, walk: chooser },
   { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen(userChips) },
   { id: 'admin-user', path: '/ui/admin/users/sam', kinds: admins },
@@ -1198,7 +1213,7 @@ export const screens: readonly Screen[] = [
   // The upstream of a remote where it is entered: the presets, the credentials, Test connection, the details (R-UI-082).
   ...upstreams,
   { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen() },
-  { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins },
+  { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
   { id: 'admin-system', path: '/ui/admin/system', kinds: admins },
   { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins },
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },

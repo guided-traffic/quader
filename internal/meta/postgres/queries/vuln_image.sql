@@ -108,18 +108,32 @@ DELETE FROM vuln_image_sbom b
     OR NOT EXISTS (SELECT 1 FROM vuln_image_scan s WHERE s.digest = b.digest);
 
 -- name: VulnImageDBGet :many
-SELECT d.digest::text AS digest, d.blob_sha256 AS blob_sha256, d.size::bigint AS size,
-       (extract(epoch FROM d.updated_at) * 1000000)::bigint AS updated_us,
-       (extract(epoch FROM COALESCE(d.next_update, d.updated_at)) * 1000000)::bigint AS next_update_us
-  FROM vuln_image_db d;
+-- The database in use (R-VULN-044, Q-VULN-173): the row of the source trivy, ecosystem OCI, once a run recorded a layer. etag is the
+-- layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository.
+SELECT s.etag::text AS digest
+  FROM vuln_source_state s
+ WHERE s.source = 'trivy' AND s.ecosystem = 'OCI' AND s.state = 'complete' AND s.etag LIKE 'sha256:%';
 
--- name: VulnImageDBPut :exec
-INSERT INTO vuln_image_db (digest, blob_sha256, size, updated_at, next_update)
-VALUES (sqlc.arg(digest)::text, sqlc.arg(blob_sha256), sqlc.arg(size)::bigint, to_timestamp(sqlc.arg(updated_us)::bigint / 1000000.0),
-        to_timestamp(sqlc.arg(next_update_us)::bigint / 1000000.0))
-ON CONFLICT (singleton) DO UPDATE
-   SET digest = EXCLUDED.digest, blob_sha256 = EXCLUDED.blob_sha256, size = EXCLUDED.size, updated_at = EXCLUDED.updated_at,
-       next_update = EXCLUDED.next_update, imported_at = now();
+-- name: VulnImageDatabaseStale :many
+-- The files of the database's image in its repository that the retention of Q-VULN-175 drops (Q-VULN-194): the layers and the manifests
+-- below <image>/_blobs/ and <image>/_manifests/ stored before the cut-off, other than the paths the run keeps (the manifest of the tag it
+-- read) and other than content that is the database in use, in path order after a cursor.
+SELECT i.path::text AS path
+  FROM items i
+ WHERE i.repo_id = sqlc.arg(repo_id)::bigint AND i.kind = 'file' AND i.trashed_at IS NULL
+   AND (left(i.path, length(sqlc.arg(blobs)::text)) = sqlc.arg(blobs)::text
+        OR left(i.path, length(sqlc.arg(manifests)::text)) = sqlc.arg(manifests)::text)
+   AND i.created_at < sqlc.arg(before)::text::timestamptz
+   AND NOT (i.path = ANY(sqlc.arg(keep)::text[]))
+   AND NOT vuln_image_database_in_use(i.blob_sha256)
+   AND i.path > sqlc.arg(after_path)::text
+ ORDER BY i.path
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: VulnImageDatabaseInUse :one
+-- The exemption of the remote-cache cleanup (storage.md R-STOR-045, Q-VULN-175): whether a stored file's content is the image
+-- scanning's database in use. The cleanup's statement applies it through vuln_image_database_in_use (migration 00089).
+SELECT vuln_image_database_in_use(sqlc.arg(sha256)::bytea)::boolean AS in_use;
 
 -- name: VulnImageUpsertAdvisory :exec
 -- The advisory of an image finding, as the analyser reported it: the findings API, the detail and the filters read the same table as

@@ -13574,7 +13574,8 @@ paths:
       summary: The advisory sources and their state
       description: |
         Per source and ecosystem: `mode`, `state`, `stale`, `syncedAt`, `fullSyncedAt`, `attemptedAt`, `failures`, `lastError`,
-        `records`, `rejected`, `fullRejected`, `unevaluable` and `nextRunAt` (R-VULN-021).
+        `records`, `rejected`, `fullRejected`, `unevaluable` and `nextRunAt` (R-VULN-021); for the image scanning's database (the
+        source `trivy`, ecosystem `OCI`) `mode: "repository"`, `repository`, `reference` and `repositoryClass` (R-VULN-045).
       x-quader-permission:
         permission: settings:read
       responses:
@@ -24673,15 +24674,33 @@ components:
     VulnerabilitySourceState:
       type: object
       additionalProperties: false
-      required: [source, ecosystem, mode, repository, state, stale, syncedAt, fullSyncedAt, attemptedAt, failures, lastError, records, rejected, unevaluable, fullRejected, nextRunAt]
+      required: [source, ecosystem, mode, repository, reference, repositoryClass, state, stale, syncedAt, fullSyncedAt, attemptedAt, failures, lastError, records, rejected, unevaluable, fullRejected, nextRunAt]
       description: One source and ecosystem (R-VULN-021).
       properties:
-        source: {type: string, enum: [osv, kev]}
-        ecosystem: {type: string, description: The OSV ecosystem; empty for kev.}
-        mode: {type: string, enum: [online, repository, "off"]}
+        source:
+          type: string
+          enum: [osv, kev, trivy]
+          description: "`trivy` is the image scanning's database (R-VULN-044), with the one ecosystem `OCI`."
+        ecosystem: {type: string, description: The OSV ecosystem; empty for kev; OCI for trivy.}
+        mode:
+          type: string
+          enum: [online, repository, "off"]
+          description: "The image scanning's database is always `repository` while the image scanning is on: it comes from a repository of the installation (R-VULN-044)."
         repository:
           type: [string, "null"]
-          description: The key of the configured mirror repository in the mode `repository` (R-VULN-005), else `null`.
+          description: |
+            The qualified name of the configured mirror repository in the mode `repository` (R-VULN-005), and for `trivy` the
+            database's repository, `vulnerabilities.images.database.repository` (R-VULN-045); else `null`.
+        reference:
+          type: [string, "null"]
+          description: For `trivy`, the database's image and tag in its repository, `aquasec/trivy-db:2` by default (R-VULN-045); else `null`.
+        repositoryClass:
+          type: [string, "null"]
+          enum: [local, remote, null]
+          description: |
+            For `trivy`, the class of the database's repository when it is a local or remote OCI repository, so that a client shows
+            the commands that fill a local one (R-VULN-045, Q-API-380); `null` for every other source and for a repository that does
+            not resolve, whose run fails with `database_repository_invalid`.
         state: {type: string, enum: [empty, complete]}
         stale: {type: boolean}
         syncedAt: {type: [string, "null"], format: date-time}
@@ -24786,7 +24805,7 @@ components:
             additionalProperties: false
             required: [source, ecosystem, mode, state, stale, syncedAt, failures]
             properties:
-              source: {type: string, enum: [osv, kev]}
+              source: {type: string, enum: [osv, kev, trivy]}
               ecosystem: {type: string}
               mode: {type: string, enum: [online, repository, "off"]}
               state: {type: string, enum: [empty, complete]}

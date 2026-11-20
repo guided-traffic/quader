@@ -58,8 +58,6 @@ type vulnArea struct {
 	images *imagescan.Service
 	// scannerClient is the worker's call of the role scanner (wire_vuln_scanner_call.go); nil where images is.
 	scannerClient *imagescan.Client
-	// dbCommit stores the archive of the vulnerability database of the image scanning; nil where no job runs.
-	dbCommit vsync.DBCommitter
 	// wakeImages enqueues the scan of images in a commit's transaction; nil where no job queue is wired.
 	wakeImages func(ctx context.Context, tx meta.Tx) error
 	// enforcer applies the download policy: the policy of a repository for the item lookup, the verdict, the remote miss gate

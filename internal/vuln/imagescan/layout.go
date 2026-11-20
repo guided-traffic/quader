@@ -162,7 +162,7 @@ func hexOf(digest string) string { return strings.TrimPrefix(digest, "sha256:") 
 
 // checkManifest returns the compressed size of the config and the layers together.
 func checkManifest(m imageManifest, lim ContentLimits) (int64, error) {
-	if !validDigest(m.Config.Digest) {
+	if !ValidDigest(m.Config.Digest) {
 		return 0, &ScanError{Code: CodeManifestInvalid, Detail: "the manifest names no valid config digest", Terminal: true}
 	}
 	if len(m.Layers) > lim.MaxLayers {
@@ -170,7 +170,7 @@ func checkManifest(m imageManifest, lim ContentLimits) (int64, error) {
 	}
 	total := m.Config.Size
 	for _, l := range m.Layers {
-		if !validDigest(l.Digest) {
+		if !ValidDigest(l.Digest) {
 			return 0, &ScanError{Code: CodeManifestInvalid, Detail: "the manifest names a layer without a valid digest", Terminal: true}
 		}
 		if l.Size < 0 {
@@ -184,7 +184,8 @@ func checkManifest(m imageManifest, lim ContentLimits) (int64, error) {
 	return total, nil
 }
 
-func validDigest(d string) bool {
+// ValidDigest reports whether d is a SHA-256 digest as the registry spells it: "sha256:" and 64 lower-case hexadecimal digits.
+func ValidDigest(d string) bool {
 	h, ok := strings.CutPrefix(d, "sha256:")
 	if !ok || len(h) != 64 {
 		return false

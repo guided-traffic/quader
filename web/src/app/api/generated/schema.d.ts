@@ -4930,7 +4930,8 @@ export interface paths {
         /**
          * The advisory sources and their state
          * @description Per source and ecosystem: `mode`, `state`, `stale`, `syncedAt`, `fullSyncedAt`, `attemptedAt`, `failures`, `lastError`,
-         *     `records`, `rejected`, `fullRejected`, `unevaluable` and `nextRunAt` (R-VULN-021).
+         *     `records`, `rejected`, `fullRejected`, `unevaluable` and `nextRunAt` (R-VULN-021); for the image scanning's database (the
+         *     source `trivy`, ecosystem `OCI`) `mode: "repository"`, `repository`, `reference` and `repositoryClass` (R-VULN-045).
          */
         get: operations["listVulnerabilitySources"];
         put?: never;
@@ -11336,14 +11337,32 @@ export interface components {
         };
         /** @description One source and ecosystem (R-VULN-021). */
         VulnerabilitySourceState: {
-            /** @enum {string} */
-            source: "osv" | "kev";
-            /** @description The OSV ecosystem; empty for kev. */
+            /**
+             * @description `trivy` is the image scanning's database (R-VULN-044), with the one ecosystem `OCI`.
+             * @enum {string}
+             */
+            source: "osv" | "kev" | "trivy";
+            /** @description The OSV ecosystem; empty for kev; OCI for trivy. */
             ecosystem: string;
-            /** @enum {string} */
+            /**
+             * @description The image scanning's database is always `repository` while the image scanning is on: it comes from a repository of the installation (R-VULN-044).
+             * @enum {string}
+             */
             mode: "online" | "repository" | "off";
-            /** @description The key of the configured mirror repository in the mode `repository` (R-VULN-005), else `null`. */
+            /**
+             * @description The qualified name of the configured mirror repository in the mode `repository` (R-VULN-005), and for `trivy` the
+             *     database's repository, `vulnerabilities.images.database.repository` (R-VULN-045); else `null`.
+             */
             repository: string | null;
+            /** @description For `trivy`, the database's image and tag in its repository, `aquasec/trivy-db:2` by default (R-VULN-045); else `null`. */
+            reference: string | null;
+            /**
+             * @description For `trivy`, the class of the database's repository when it is a local or remote OCI repository, so that a client shows
+             *     the commands that fill a local one (R-VULN-045, Q-API-380); `null` for every other source and for a repository that does
+             *     not resolve, whose run fails with `database_repository_invalid`.
+             * @enum {string|null}
+             */
+            repositoryClass: "local" | "remote" | null;
             /** @enum {string} */
             state: "empty" | "complete";
             stale: boolean;
@@ -11420,7 +11439,7 @@ export interface components {
             enforcement: "enforce" | "report";
             sources: {
                 /** @enum {string} */
-                source: "osv" | "kev";
+                source: "osv" | "kev" | "trivy";
                 ecosystem: string;
                 /** @enum {string} */
                 mode: "online" | "repository" | "off";

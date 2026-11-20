@@ -227,12 +227,17 @@ func (s *Server) ListVulnerabilitySources(w http.ResponseWriter, r *http.Request
 	}
 	out := gen.VulnerabilitySourceList{Items: make([]gen.VulnerabilitySourceState, 0, len(rows))}
 	for _, v := range rows {
-		out.Items = append(out.Items, gen.VulnerabilitySourceState{
+		item := gen.VulnerabilitySourceState{
 			Source: gen.VulnerabilitySourceStateSource(v.Source), Ecosystem: v.Ecosystem, Mode: gen.VulnerabilitySourceStateMode(v.Mode),
 			State: gen.VulnerabilitySourceStateState(v.State), Stale: v.Stale, SyncedAt: v.SyncedAt, FullSyncedAt: v.FullSyncedAt,
 			AttemptedAt: v.AttemptedAt, Failures: v.Failures, LastError: toProblem(v.LastError), Records: v.Records, Rejected: v.Rejected, FullRejected: v.FullRejected,
-			Unevaluable: v.Unevaluable, NextRunAt: v.NextRunAt, Repository: nonEmpty(v.Repository),
-		})
+			Unevaluable: v.Unevaluable, NextRunAt: v.NextRunAt, Repository: nonEmpty(v.Repository), Reference: nonEmpty(v.Reference),
+		}
+		if v.RepositoryClass != "" {
+			class := gen.VulnerabilitySourceStateRepositoryClass(v.RepositoryClass)
+			item.RepositoryClass = &class
+		}
+		out.Items = append(out.Items, item)
 	}
 	writeJSON(w, r, http.StatusOK, out)
 }

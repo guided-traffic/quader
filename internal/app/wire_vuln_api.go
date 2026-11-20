@@ -36,7 +36,8 @@ func (a *App) wireVulnAPI(_ context.Context, in infra, az authzArea, repo reposi
 			Enabled: cfg.Enabled, Enforcement: enforcement, StaleAfter: cfg.StaleAfter, ExportMaxRows: cfg.Export.MaxRows,
 			PublicUpstreams: cfg.Matching.PublicUpstreams, OSVMode: cfg.Sources.OSV.Mode, KEVMode: cfg.Sources.KEV.Mode,
 			OSVRepository: cfg.Sources.OSV.Repository, KEVRepository: cfg.Sources.KEV.Repository,
-			Ecosystems: cfg.Sources.OSV.EffectiveEcosystems(),
+			Ecosystems:    cfg.Sources.OSV.EffectiveEcosystems(),
+			ImagesEnabled: cfg.Images.Enabled, DatabaseRepository: cfg.Images.Database.Repository, DatabaseImage: cfg.Images.Database.Image,
 		},
 	})
 	if err != nil {

@@ -18,9 +18,9 @@ import (
 type ExpectedSource struct{ Source, Ecosystem string }
 
 // ExpectedSources lists the sources the configuration syncs: nothing while the scanning is disabled, the effective
-// ecosystems of the OSV source unless its mode is off, and the KEV catalog unless its mode is off. A source whose mode is
-// off keeps its stored data and its row, and is no longer measured: its data ages by decision, so no alert follows it
-// (R-VULN-025).
+// ecosystems of the OSV source unless its mode is off, the KEV catalog unless its mode is off, and the image scanning's database
+// while the image scanning is on, the one switch of its repository (R-VULN-044). A source whose mode is off keeps its stored data
+// and its row, and is no longer measured: its data ages by decision, so no alert follows it (R-VULN-025).
 func ExpectedSources(v config.Vulnerabilities) []ExpectedSource {
 	if !v.Enabled {
 		return nil
@@ -34,7 +34,7 @@ func ExpectedSources(v config.Vulnerabilities) []ExpectedSource {
 	if v.Sources.KEV.Mode != "off" {
 		out = append(out, ExpectedSource{vmetrics.SourceKEV, ""})
 	}
-	if v.Images.Enabled && v.Sources.Trivy.Mode != "off" {
+	if v.Images.Enabled {
 		out = append(out, ExpectedSource{SourceTrivy, advisory.EcosystemOCI})
 	}
 	return out

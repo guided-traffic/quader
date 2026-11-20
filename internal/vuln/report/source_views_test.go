@@ -49,3 +49,29 @@ func TestR_VULN_021_OneViewOfTheSourceState(t *testing.T) {
 		}
 	}
 }
+
+// R-VULN-045: the image scanning's database is a source of the view exactly while the image scanning is on, and then its mode is
+// repository: it comes from a repository of the installation (R-VULN-044); a stored row of it with the image scanning off is off.
+func TestR_VULN_045_TheDatabaseIsInModeRepositoryWhileTheImageScanningIsOn(t *testing.T) {
+	now := time.Date(2026, 11, 20, 12, 0, 0, 0, time.UTC)
+	cfg := SourceConfig{Enabled: true, OSVMode: "online", KEVMode: "online", Ecosystems: []string{"npm"}, StaleAfter: 24 * time.Hour, Images: true}
+	find := func(views []SourceView) (SourceView, bool) {
+		for _, v := range views {
+			if v.Source == SourceTrivy && v.Ecosystem == "OCI" {
+				return v, true
+			}
+		}
+		return SourceView{}, false
+	}
+	if v, ok := find(SourceViews(cfg, nil, now)); !ok || v.Mode != "repository" || v.State != "empty" {
+		t.Fatalf("the database without a row: %+v (%v)", v, ok)
+	}
+	cfg.Images = false
+	if _, ok := find(SourceViews(cfg, nil, now)); ok {
+		t.Fatal("the database is listed with the image scanning off and no row")
+	}
+	synced := now.Add(-time.Hour)
+	if v, ok := find(SourceViews(cfg, []store.SourceRow{{Source: "trivy", Ecosystem: "OCI", State: "complete", SyncedAt: &synced}}, now)); !ok || v.Mode != "off" {
+		t.Fatalf("a stored row with the image scanning off: %+v (%v)", v, ok)
+	}
+}

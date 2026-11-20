@@ -135,7 +135,7 @@ func TestR_VULN_026_TheStateARestoreLeaves(t *testing.T) {
 	e.seedInstallation()
 
 	transient, data := transientTables()
-	if got := strings.Join(sorted(transient), ","); got != "vuln_advisory,vuln_affected,vuln_claimed_match,vuln_image_db,vuln_image_sbom,vuln_image_scan,vuln_kev,vuln_pending_evaluation,vuln_source_state,vuln_sync_touched" {
+	if got := strings.Join(sorted(transient), ","); got != "vuln_advisory,vuln_affected,vuln_claimed_match,vuln_image_sbom,vuln_image_scan,vuln_kev,vuln_pending_evaluation,vuln_source_state,vuln_sync_touched" {
 		t.Errorf("transient tables = %s", got)
 	}
 	if got := strings.Join(sorted(data), ","); got != "vuln_finding,vuln_finding_event" {
@@ -197,8 +197,9 @@ func TestR_VULN_026_FailSafeBeforeTheFirstSync(t *testing.T) {
 		if v == nil {
 			t.Fatal("the system information has no vulnerabilityData block")
 		}
-		if v.Enforcement != "enforce" || len(v.Sources) != 2 {
-			t.Fatalf("vulnerabilityData = %+v, want enforcement enforce and the sources osv/npm and kev", v)
+		// The image scanning is on by default, so its database is a source here as on the sources API (R-VULN-045).
+		if v.Enforcement != "enforce" || len(v.Sources) != 3 {
+			t.Fatalf("vulnerabilityData = %+v, want enforcement enforce and the sources osv/npm, kev and trivy/OCI", v)
 		}
 		for _, s := range v.Sources {
 			if s.State != "empty" || s.Stale || s.SyncedAt != nil || s.Failures != 0 {

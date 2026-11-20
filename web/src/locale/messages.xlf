@@ -33487,9 +33487,73 @@
         <source>Select <ph id="0" equiv="advisory" disp="f.advisory"/> in <ph id="1" equiv="package" disp="f.package"/>@<ph id="2" equiv="version" disp="f.version"/></source>
       </segment>
     </unit>
+    <unit id="vuln.sources.database-copy">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:82</note>
+      </notes>
+      <segment>
+        <source>On a machine that reaches both</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-two-steps">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:87</note>
+      </notes>
+      <segment>
+        <source>On two machines, one on each side</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-invalid">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:104</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> is not a local or remote OCI repository.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-off">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:106</note>
+      </notes>
+      <segment>
+        <source>The repository <ph id="0" equiv="repository" disp="repository"/> is switched off.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-missing">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:108</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> does not hold <ph id="1" equiv="reference" disp="reference"/>.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-upstream">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:110</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> cannot reach its registry.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-too-large">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:112</note>
+      </notes>
+      <segment>
+        <source>The image database is larger than the limit of this installation.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-archive">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:114</note>
+      </notes>
+      <segment>
+        <source>The image database is damaged and was not used.</source>
+      </segment>
+    </unit>
     <unit id="vuln.sources.heading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:66,68</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:131,133</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -33497,7 +33561,7 @@
     </unit>
     <unit id="vuln.sources.hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:69,72</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:134,137</note>
       </notes>
       <segment>
         <source>
@@ -33505,9 +33569,25 @@
     </source>
       </segment>
     </unit>
+    <unit id="vuln.sources.database">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:161,162</note>
+      </notes>
+      <segment>
+        <source>Image database</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-hint">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:162,164</note>
+      </notes>
+      <segment>
+        <source>for the image scanning</source>
+      </segment>
+    </unit>
     <unit id="vuln.sources.state-empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:100,101</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:196,197</note>
       </notes>
       <segment>
         <source>Not imported yet</source>
@@ -33515,7 +33595,7 @@
     </unit>
     <unit id="vuln.sources.state-stale">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:102,103</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:198,199</note>
       </notes>
       <segment>
         <source>Stale</source>
@@ -33523,7 +33603,7 @@
     </unit>
     <unit id="vuln.sources.state-current">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:104,106</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:200,202</note>
       </notes>
       <segment>
         <source>Current</source>
@@ -33531,7 +33611,7 @@
     </unit>
     <unit id="vuln.sources.rejected-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:131,132</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:227,228</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ s.fullRejected | number }}"/> in the last full sync</source>
@@ -33539,7 +33619,7 @@
     </unit>
     <unit id="vuln.sources.run-group">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:149</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:245</note>
       </notes>
       <segment>
         <source>Run now</source>
@@ -33547,7 +33627,7 @@
     </unit>
     <unit id="vuln.sources.run-osv">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:150,151</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:246,247</note>
       </notes>
       <segment>
         <source>Run the incremental sync now</source>
@@ -33555,7 +33635,7 @@
     </unit>
     <unit id="vuln.sources.run-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:151,152</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:247,248</note>
       </notes>
       <segment>
         <source>Run a full sync now</source>
@@ -33563,15 +33643,23 @@
     </unit>
     <unit id="vuln.sources.run-kev">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:152,154</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:248,249</note>
       </notes>
       <segment>
         <source>Refresh the known-exploited catalog now</source>
       </segment>
     </unit>
+    <unit id="vuln.sources.run-database">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:249,251</note>
+      </notes>
+      <segment>
+        <source>Fetch the image database now</source>
+      </segment>
+    </unit>
     <unit id="vuln.sources.osv-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:155,157</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:252,254</note>
       </notes>
       <segment>
         <source>OSV is off, so it cannot run. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.mode</pc> turns it on.</source>
@@ -33579,15 +33667,23 @@
     </unit>
     <unit id="vuln.sources.kev-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:158,160</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:255,257</note>
       </notes>
       <segment>
         <source>CISA KEV is off, so its catalog cannot be refreshed. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.mode</pc> turns it on.</source>
       </segment>
     </unit>
+    <unit id="vuln.sources.database-off">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:258,260</note>
+      </notes>
+      <segment>
+        <source>The image scanning is off, so its database is not fetched. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> turns it on.</source>
+      </segment>
+    </unit>
     <unit id="vuln.sources.mirror">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:164,165</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:278,279</note>
       </notes>
       <segment>
         <source>Load the files into the mirror</source>
@@ -33595,7 +33691,7 @@
     </unit>
     <unit id="vuln.sources.mirror-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:167,169</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:281,283</note>
       </notes>
       <segment>
         <source>
@@ -33605,7 +33701,7 @@
     </unit>
     <unit id="vuln.sources.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:203</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:321</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -33613,7 +33709,7 @@
     </unit>
     <unit id="vuln.sources.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:204</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:322</note>
       </notes>
       <segment>
         <source>There is no advisory source yet.</source>
@@ -33621,15 +33717,31 @@
     </unit>
     <unit id="vuln.sources.copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:205</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:323</note>
       </notes>
       <segment>
         <source>Copy the commands</source>
       </segment>
     </unit>
+    <unit id="vuln.sources.database-fill">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:324</note>
+      </notes>
+      <segment>
+        <source>Fill the repository of the image database</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-fill-hint">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:325</note>
+      </notes>
+      <segment>
+        <source>The image database comes from a local repository of this installation, which makes no request for it. Copy the database into it with oras, from a machine that reaches both the publisher and this installation, or in two steps through a file.</source>
+      </segment>
+    </unit>
     <unit id="vuln.sources.col-source">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:208</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:334</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -33637,7 +33749,7 @@
     </unit>
     <unit id="vuln.sources.col-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:209</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:335</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -33645,15 +33757,15 @@
     </unit>
     <unit id="vuln.sources.help-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:209</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:335</note>
       </notes>
       <segment>
-        <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was.</source>
+        <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was. The image database always comes from the repository of this installation named here.</source>
       </segment>
     </unit>
     <unit id="vuln.sources.col-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:210</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:336</note>
       </notes>
       <segment>
         <source>State</source>
@@ -33661,7 +33773,7 @@
     </unit>
     <unit id="vuln.sources.help-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:210</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:336</note>
       </notes>
       <segment>
         <source>Stale means the last successful sync is older than the configured limit.</source>
@@ -33669,7 +33781,7 @@
     </unit>
     <unit id="vuln.sources.col-synced">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:211</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:337</note>
       </notes>
       <segment>
         <source>Last sync</source>
@@ -33677,7 +33789,7 @@
     </unit>
     <unit id="vuln.sources.col-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:212</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:339</note>
       </notes>
       <segment>
         <source>Failures</source>
@@ -33685,7 +33797,7 @@
     </unit>
     <unit id="vuln.sources.help-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:212</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:340</note>
       </notes>
       <segment>
         <source>The count of consecutive failed runs and the error of the last one.</source>
@@ -33693,7 +33805,7 @@
     </unit>
     <unit id="vuln.sources.col-records">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:213</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:342</note>
       </notes>
       <segment>
         <source>Records</source>
@@ -33701,7 +33813,7 @@
     </unit>
     <unit id="vuln.sources.col-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:214</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:343</note>
       </notes>
       <segment>
         <source>Rejected</source>
@@ -33709,7 +33821,7 @@
     </unit>
     <unit id="vuln.sources.help-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:214</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:343</note>
       </notes>
       <segment>
         <source>Records of the last run that were rejected: they failed validation or crossed the size or compression limit of a record. Below it, the count of the last full sync, which an incremental run does not change. A rejected record that was stored before keeps its stored copy.</source>
@@ -33717,7 +33829,7 @@
     </unit>
     <unit id="vuln.sources.col-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:215</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:344</note>
       </notes>
       <segment>
         <source>Unevaluable</source>
@@ -33725,7 +33837,7 @@
     </unit>
     <unit id="vuln.sources.help-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:215</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:344</note>
       </notes>
       <segment>
         <source>Affected ranges Quader cannot compare with a version; a version they name is not flagged by them.</source>
@@ -33733,7 +33845,7 @@
     </unit>
     <unit id="vuln.sources.col-next">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:216</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:345</note>
       </notes>
       <segment>
         <source>Next run</source>
@@ -33741,7 +33853,7 @@
     </unit>
     <unit id="vuln.sources.mode-online">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:233</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:363</note>
       </notes>
       <segment>
         <source>Online</source>
@@ -33749,7 +33861,7 @@
     </unit>
     <unit id="vuln.sources.mode-repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:235</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:365</note>
       </notes>
       <segment>
         <source>Mirror repository</source>
@@ -33757,7 +33869,7 @@
     </unit>
     <unit id="vuln.sources.mode-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:237</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:367</note>
       </notes>
       <segment>
         <source>Off</source>
@@ -33765,7 +33877,7 @@
     </unit>
     <unit id="vuln.sources.queued">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:254</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
       </notes>
       <segment>
         <source>The run is queued. Reload the page to see its result.</source>

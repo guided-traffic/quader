@@ -78,10 +78,11 @@ by nothing (Q-LIM-66).
 
 Nothing about an image, as long as the analyser behaves as configured. It runs with the flags that switch off its update check, its
 telemetry and every database update (`--skip-version-check`, `--disable-telemetry`, `--skip-db-update`, `--skip-java-db-update`,
-`--offline-scan`), in the scanner and in the worker. The only outbound request of the feature is the database's: today the sync of the
-source `trivy` in the worker, under the outbound policy of [egress.md](egress.md); once R-VULN-044 is built, the database repository's,
-made by the remote engine of the worker to the repository's upstream under its settings, and none with a local repository. Neither carries a
-package name or a digest of an image. That the pinned binary makes no other request under these
+`--offline-scan`), in the scanner and in the worker. The only outbound request of the feature is the database's: the database
+repository's, made by the remote engine of the worker to the repository's upstream under its settings (its address, its account, the egress
+rules of [egress.md](egress.md), the outbound proxy), as a background request within the repository's share, and none with a local
+repository ([R-VULN-044](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository)). It asks for the tag of the database's
+image and for its layer, and carries no package name and no digest of an image. That the pinned binary makes no other request under these
 flags was read from its options and its log, not measured on the network.
 
 ## The database as input
@@ -90,8 +91,13 @@ The database decides what is reported about every image. It comes from its repos
 ([R-VULN-044](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository)), so whoever decides that repository's content decides
 it ([H-813](#h-813--the-integrity-of-the-database-is-that-of-its-repository)). An archive is read as untrusted input: only `trivy.db` and
 `metadata.json` at the root are taken, each within a size bound, and no entry decides a path, so the class of bug behind
-GHSA-mcj4-mphf-j9ff (a crafted database writing outside the cache) has nothing to act on. The worker hashes the layer while it unpacks it and
-keeps nothing whose hash is not the digest in use. A database that does not pass its checks is refused and the last good one stays.
+GHSA-mcj4-mphf-j9ff (a crafted database writing outside the cache) has nothing to act on. The layer's name decides no path either: the task
+takes a digest only as `sha256:` and 64 lower-case hexadecimal digits, and the worker refuses any other digest it reads from the source's row
+before it names its cache's directory ([Q-VULN-193](../spec/vulnerability-scanning.md#q-vuln-193--the-layers-digest-is-taken-only-as-sha256-and-64-hexadecimal-digits-in-the-task-and-in-the-worker)).
+The worker hashes the layer while it unpacks it and keeps nothing whose hash is not the digest in use. A database that does not pass its
+checks is refused and the last good one stays. The task's fills are recorded as `authz.write.allowed` with the actor `system:image-database`
+and the reason `image-database` ([authorization.md](../spec/authorization.md) R-AUTHZ-008), so the audit log says when the repository took a
+new layer and from where.
 
 ## Why a failed scan is visible
 
@@ -134,7 +140,7 @@ manifest item itself is not gated by the pull's check either.
 ### H-813 · The integrity of the database is that of its repository
 
 Component: the database's repository and the task of [R-VULN-044](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository).
-Subject: every finding of every image, and every block set on one. Live once R-VULN-044 is built. The layer is checked against the digest
+Subject: every finding of every image, and every block set on one. Live. The layer is checked against the digest
 its manifest names, and the manifest comes over TLS from the repository's upstream, or from whoever pushed it into a local repository.
 Nothing checks a signature by the publisher. Who decides what is reported: the publisher; an instance administrator, who sets the upstream
 address and the account of `upstream/scanner-trivy` like those of every well-known repository; a holder of `deploy` on a local repository the
@@ -288,3 +294,15 @@ tried, and the kubelet restarts the container; the worker spends an attempt per 
 again for each event that makes the manifest due (a rescan, a new analyser version). Other images wait meanwhile as `scanner_busy` or
 `scanner_unavailable`, without spending attempts. What makes it real: a pusher who repeats such images under new digests, which costs the
 scanning its capacity but never makes an image read as clean.
+
+### H-1160 · A publisher whose builds keep failing the archive's checks leaves one stored layer per build
+
+Component: the task of [R-VULN-044](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository) and its trim
+([Q-VULN-194](../spec/vulnerability-scanning.md#q-vuln-194--after-a-run-that-succeeded-the-repositorys-own-cache-period-lets-the-older-layers-and-manifests-go)).
+Subject: the object store's room, the availability of every repository it holds. Live, dormant while the publisher is sound. After a run
+that succeeded, `upstream/scanner-trivy` keeps the layer in use and the layers of the last 48 hours and lets the older ones go, so it holds
+at most about nine layers of about 142 MB (141,735,981 bytes on 2026-11-20). A run that failed trims nothing, on purpose: it has not shown
+which layer is good. A layer that the run stored and whose archive then failed the checks of R-VULN-035 (`archive_limit`) stays, and the
+next build's run does the same. What makes it real: a publisher that ships broken builds for days, one stored layer per build, four a day,
+until a run succeeds and the trim takes them two days after they were stored. A repository of the installation's own keeps every layer it
+holds: that is its operator's to keep, and the general cache cleanup of R-REPO-046, which would apply an own remote's period, is not built.

@@ -107,6 +107,11 @@ vulnerabilities:
       ecosystems: [npm]
     kev:
       mode: "off"
+maintenance:
+  tasks:
+    # Nor does it fetch the image scanning's database on a schedule: about 142 MB from mirror.gcr.io through upstream/scanner-trivy every
+    # sixth hour (R-VULN-044). "Fetch the image database now" on Admin area > Advisory sources runs the task once.
+    vuln-sync-trivy-db: {enabled: false, schedule: "23 */6 * * *"}
 api:
   rate_limits:
     # make ui-renders opens three pages of one user at a time (UI_RENDERS_WORKERS): a full run reached 197 reads of one

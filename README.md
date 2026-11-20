@@ -1998,6 +1998,11 @@ vulnerabilities:
     registry:
       url: ""                           # default; example https://quader-packages-scan.quader.svc:8082; required in the role scanner; empty in all = its own scan listener (the chart sets it)
       server_name: ""                   # default: the host of url; listed exactly in the scan listener's certificate; the chart sets <fullname>-packages.<namespace>.svc
+    database:                           # the analyser's database and the repository it lies in (R-VULN-044)
+      repository: upstream/scanner-trivy   # default; <projectKey>/<repoKey> of a local or remote OCI repository; checked at every run of vuln-sync-trivy-db
+      image: aquasec/trivy-db           # default; the image in that repository; only aquasec/trivy-db with upstream/scanner-trivy; the tag is the release's schema version, 2
+      max_archive_size: 2GiB            # default; at least 1MiB: the layer's declared size, checked before it is fetched (archive_too_large)
+      timeout: 15m                      # default; 10s to 24h: one run's fetch and check of the layer
 ```
 
 Security notes:
@@ -2016,6 +2021,10 @@ Security notes:
 - `epss`: the operator who switches it on decides whether the data's terms permit the installation's use. FIRST publishes the EPSS
   scores without a stated licence, its site reads "All Rights Reserved", and it asks for attribution in products that use the
   scores; Quader makes no statement about what that permits ([Q-VULN-21](docs/spec/vulnerability-scanning.md#q-vuln-21--epss-is-an-operator-option-whose-terms-the-operator-decides)).
+- `images.database.repository`: the repository decides what every image is compared with. With `upstream/scanner-trivy`, its address and
+  account on **Upstream registries** decide it; with a local repository of your own, whoever may push to it does
+  ([H-813](docs/security/image-scanning.md#h-813--the-integrity-of-the-database-is-that-of-its-repository)). Nothing falls back to the
+  public registry.
 
 </details>
 

@@ -120,6 +120,9 @@ type Options struct {
 	Metrics *vmetrics.Metrics
 	// Mirror reads the files of mode repository; nil makes that mode fail with mirror_repository_invalid.
 	Mirror Mirror
+	// ImageDatabase reads the repository the image scanning's database lies in (R-VULN-044); nil fails every run of
+	// vuln-sync-trivy-db.
+	ImageDatabase ImageDatabase
 	// Config is the vulnerabilities section.
 	Config config.Vulnerabilities
 	// Adapters returns the adapter of every ecosystem the release can sync, read at run time because the format registry is

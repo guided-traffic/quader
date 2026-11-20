@@ -4717,6 +4717,42 @@
               "type": "integer",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_CONCURRENCY"
             },
+            "database": {
+              "additionalProperties": false,
+              "properties": {
+                "image": {
+                  "default": "aquasec/trivy-db",
+                  "description": "The image of the database in that repository (R-OCI-002). Only aquasec/trivy-db is accepted while repository is upstream/scanner-trivy, whose include pattern admits that name only; another name is for a repository of an own project, for a registry that publishes the database under another name (ghcr.io: aquasecurity/trivy-db).",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_DATABASE_IMAGE"
+                },
+                "max_archive_size": {
+                  "default": "2GiB",
+                  "description": "Largest database layer accepted: its declared size is checked before it is fetched or read, and a larger one fails the run with archive_too_large. The worker's spool must hold the unpacked database plus headroom.",
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_DATABASE_MAX_ARCHIVE_SIZE",
+                  "x-quader-type": "bytes"
+                },
+                "repository": {
+                  "default": "upstream/scanner-trivy",
+                  "description": "The qualified name \u003cprojectKey\u003e/\u003crepoKey\u003e of the OCI repository the database comes from: the system repository upstream/scanner-trivy, a remote of mirror.gcr.io that is always private and only for the scanner, or a local or remote OCI repository of an own project, for an installation without the internet (R-VULN-044). Whoever may push to such a repository decides what the images are compared with.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_DATABASE_REPOSITORY"
+                },
+                "timeout": {
+                  "default": "15m",
+                  "description": "Time limit of one run's fetch and check of the database's layer.",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_DATABASE_TIMEOUT",
+                  "x-quader-type": "duration"
+                }
+              },
+              "type": "object"
+            },
             "enabled": {
               "default": true,
               "description": "false: no image is scanned; a repository's images are not_covered. The findings stay as they are, and the chart renders no scanner.",
@@ -5032,59 +5068,6 @@
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_SOURCES_OSV_TIMEOUT",
                   "x-quader-type": "duration"
-                }
-              },
-              "type": "object"
-            },
-            "trivy": {
-              "additionalProperties": false,
-              "properties": {
-                "max_archive_size": {
-                  "default": "2GiB",
-                  "description": "Largest database archive accepted. The worker's spool must hold one archive plus headroom.",
-                  "type": [
-                    "string",
-                    "integer"
-                  ],
-                  "x-quader-env": "QUADER_VULNERABILITIES_SOURCES_TRIVY_MAX_ARCHIVE_SIZE",
-                  "x-quader-type": "bytes"
-                },
-                "mode": {
-                  "default": "online",
-                  "description": "online: a worker copies the published database into the object store; repository: it reads trivy/db.tar.gz from a generic local repository, for an air-gapped installation (R-VULN-005); off: the stored database stays as it is and ages.",
-                  "enum": [
-                    "online",
-                    "repository",
-                    "off"
-                  ],
-                  "type": "string",
-                  "x-quader-env": "QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE"
-                },
-                "reference": {
-                  "default": "2",
-                  "description": "The tag of the artifact, which is the schema version of the database this release reads.",
-                  "type": "string",
-                  "x-quader-env": "QUADER_VULNERABILITIES_SOURCES_TRIVY_REFERENCE"
-                },
-                "repository": {
-                  "default": "",
-                  "description": "Mode repository: the qualified name \u003cprojectKey\u003e/\u003crepoKey\u003e of a generic local repository that holds trivy/db.tar.gz. Whoever holds deploy on it decides what the images are compared with.",
-                  "type": "string",
-                  "x-quader-env": "QUADER_VULNERABILITIES_SOURCES_TRIVY_REPOSITORY"
-                },
-                "timeout": {
-                  "default": "15m",
-                  "description": "Timeout of one import of the database.",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_VULNERABILITIES_SOURCES_TRIVY_TIMEOUT",
-                  "x-quader-type": "duration"
-                },
-                "url": {
-                  "default": "https://mirror.gcr.io/v2/aquasec/trivy-db/",
-                  "description": "The registry path of the database artifact, ending in a slash; https only.",
-                  "type": "string",
-                  "x-quader-env": "QUADER_VULNERABILITIES_SOURCES_TRIVY_URL"
                 }
               },
               "type": "object"

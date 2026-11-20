@@ -50,7 +50,7 @@ func vulnFactsFrom(v config.Vulnerabilities, rows []store.SourceRow, now time.Ti
 	out := &gen.VulnerabilityDataFacts{Enforcement: gen.VulnerabilityDataFactsEnforcement(v.Enforcement)}
 	views := report.SourceViews(report.SourceConfig{
 		Enabled: v.Enabled, OSVMode: v.Sources.OSV.Mode, KEVMode: v.Sources.KEV.Mode,
-		Ecosystems: v.Sources.OSV.EffectiveEcosystems(), StaleAfter: v.StaleAfter,
+		Ecosystems: v.Sources.OSV.EffectiveEcosystems(), StaleAfter: v.StaleAfter, Images: v.Images.Enabled,
 	}, rows, now)
 	for _, e := range views {
 		out.Sources = append(out.Sources, vulnFactSource{

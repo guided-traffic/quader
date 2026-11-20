@@ -19809,8 +19809,8 @@
         <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:210</note>
       </notes>
       <segment>
-        <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was.</source>
-        <target>online liest das öffentliche Archiv, repository liest ein Spiegel-Repository, off hält die Synchronisierung an und behält die Daten, wie sie waren.</target>
+        <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was. The image database always comes from the repository of this installation named here.</source>
+        <target>online liest das öffentliche Archiv, repository liest ein Spiegel-Repository, off hält die Synchronisierung an und behält die Daten, wie sie waren. Die Image-Datenbank kommt immer aus dem hier genannten Repository dieser Installation.</target>
       </segment>
     </unit>
     <unit id="audit.filter.repository">
@@ -40048,6 +40048,90 @@
       <segment>
         <source>Malware scan setting changed</source>
         <target>Einstellung der Malware-Prüfung geändert</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database">
+      <segment>
+        <source>Image database</source>
+        <target>Image-Datenbank</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-hint">
+      <segment>
+        <source>for the image scanning</source>
+        <target>für die Image-Analyse</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.run-database">
+      <segment>
+        <source>Fetch the image database now</source>
+        <target>Image-Datenbank jetzt abrufen</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-off">
+      <segment>
+        <source>The image scanning is off, so its database is not fetched. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> turns it on.</source>
+        <target>Die Image-Analyse ist aus, deshalb wird ihre Datenbank nicht abgerufen. Die Einstellung <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> schaltet sie ein.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-fill">
+      <segment>
+        <source>Fill the repository of the image database</source>
+        <target>Repository der Image-Datenbank füllen</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-fill-hint">
+      <segment>
+        <source>The image database comes from a local repository of this installation, which makes no request for it. Copy the database into it with oras, from a machine that reaches both the publisher and this installation, or in two steps through a file.</source>
+        <target>Die Image-Datenbank kommt aus einem lokalen Repository dieser Installation, die dafür keine Anfrage stellt. Kopieren Sie die Datenbank mit oras hinein, von einem Rechner, der den Herausgeber und diese Installation erreicht, oder in zwei Schritten über eine Datei.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-copy">
+      <segment>
+        <source>On a machine that reaches both</source>
+        <target>Auf einem Rechner, der beide erreicht</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.database-two-steps">
+      <segment>
+        <source>On two machines, one on each side</source>
+        <target>Auf zwei Rechnern, je einer auf jeder Seite</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-invalid">
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> is not a local or remote OCI repository.</source>
+        <target><ph id="0" equiv="repository" disp="repository"/> ist kein lokales oder Remote-OCI-Repository.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-off">
+      <segment>
+        <source>The repository <ph id="0" equiv="repository" disp="repository"/> is switched off.</source>
+        <target>Das Repository <ph id="0" equiv="repository" disp="repository"/> ist ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-missing">
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> does not hold <ph id="1" equiv="reference" disp="reference"/>.</source>
+        <target><ph id="0" equiv="repository" disp="repository"/> enthält <ph id="1" equiv="reference" disp="reference"/> nicht.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-upstream">
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> cannot reach its registry.</source>
+        <target><ph id="0" equiv="repository" disp="repository"/> erreicht seine Registry nicht.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-too-large">
+      <segment>
+        <source>The image database is larger than the limit of this installation.</source>
+        <target>Die Image-Datenbank ist größer als die Grenze dieser Installation.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.db-archive">
+      <segment>
+        <source>The image database is damaged and was not used.</source>
+        <target>Die Image-Datenbank ist beschädigt und wurde nicht verwendet.</target>
       </segment>
     </unit>
   </file>

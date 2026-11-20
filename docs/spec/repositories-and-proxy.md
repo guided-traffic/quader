@@ -2036,11 +2036,14 @@ off unless an administrator wants it; there is no second way that falls back to 
   of the source `trivy` in `vuln_source_state`, R-VULN-044), in this repository and in whichever repository
   `vulnerabilities.images.database.repository` names; the worker's reads of it are no downloads and would not keep it otherwise. The
   48 hours of `scanner-trivy` remove every older layer two days after it was stored, so the repository holds the database in use and the
-  few published since, not one layer per six hours for ever.
+  few published since, not one layer per six hours for ever. Until the cleanup is built, the image scanning's task applies the 48 hours itself after each run that
+  succeeded ([vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-194).
 - **In use exactly while the image scanning reads its database through it.** It has no switch and no state of its own, and Switch
   all on never touches it: it reaches its upstream only when the scanning's job asks, which happens only while the image scanning is
   on and its database setting names `upstream/scanner-trivy` (its default). One switch decides, the image scanning's. The admin page
-  shows "In use by the image scanning" or "Not in use", from the configuration of the replica that answers (R-UI-187).
+  shows "In use by the image scanning" or "Not in use", from the configuration of the replica that answers (R-UI-187;
+  `config.Vulnerabilities.ReadsThroughScannerTrivy`: `vulnerabilities.enabled`, `vulnerabilities.images.enabled` and
+  `images.database.repository` naming `upstream/scanner-trivy`).
 - **What an administrator changes**: its address and an account, as on every well-known repository; its visibility is fixed (the
   owner, 2026-11-20, confirming the development agent's reading: "scanner-trivy, genau wie von dir beschrieben"). The address must
   serve the image `aquasec/trivy-db`: the include rule and the name the scanning asks for are the product's. What an administrator does

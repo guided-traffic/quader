@@ -93,6 +93,12 @@ config:
         mode: "off"
       kev:
         mode: "off"
+  # Nor does a test cluster fetch the image scanning's database on a schedule: about 142 MB from mirror.gcr.io through
+  # upstream/scanner-trivy at minute 23 of every sixth hour (R-VULN-044), which a leg that runs across that minute would pull. No test
+  # needs it (the scanner's case asserts the analysis, Q-VULN-168); a disabled task still runs when it is triggered.
+  maintenance:
+    tasks:
+      vuln-sync-trivy-db: {enabled: false, schedule: "23 */6 * * *"}
   system:
     bootstrap_anonymous_read: true         # until authentication ships nobody holds system.read; the E0.13 load reads /system/replicas
   # Login against the test IdP (E1.1, deploy/dev/keycloak.yaml) and the break-glass account (R-AUTH-014). The client

@@ -81,6 +81,9 @@ type Options struct {
 	States vuln.States
 	// Enqueue wakes the job; it runs in the caller's transaction.
 	Enqueue func(ctx context.Context, tx meta.Tx) error
+	// WakeDatabase enqueues vuln-sync-trivy-db at once when the database's repository no longer holds the layer in use (R-VULN-044);
+	// it runs in the caller's transaction. nil wakes nothing: the task's schedule brings the layer back.
+	WakeDatabase func(ctx context.Context, tx meta.Tx) error
 	// ScratchDir is the root of the working directories of the detections, on the worker's local disk.
 	ScratchDir string
 	// Space is the worker's spool; the room of every detection is taken from it before the detection writes a file (Q-VULN-145).
@@ -155,7 +158,19 @@ func (s *Service) RunScan(ctx context.Context, run Run) error {
 	if errors.Is(err, ErrNoDatabase) {
 		// The analysis does not wait for the database (Q-VULN-168): what has no analysis is analysed, and the rows stay pending.
 		s.count("no_database")
-		return s.analyseOnly(ctx, run)
+		return s.analyseOnly(ctx, run, "no vulnerability database has been imported yet; the detection waits for it")
+	}
+	if errors.Is(err, ErrLayerMissing) {
+		// The repository lost the layer in use (R-VULN-044): the run acts as before the first database, and the task that makes the
+		// repository hold it is woken at once instead of at its next slot.
+		s.count("no_database")
+		s.log.WarnContext(ctx, "the vulnerability database's repository does not hold the layer in use; the database task is woken", "error", err)
+		if s.o.WakeDatabase != nil {
+			if werr := s.o.DB.InTx(ctx, func(tx meta.Tx) error { return s.o.WakeDatabase(ctx, tx) }); werr != nil {
+				return werr
+			}
+		}
+		return s.analyseOnly(ctx, run, err.Error()+"; vuln-sync-trivy-db is woken to store it again, and the detection waits for it")
 	}
 	if errors.Is(err, ErrNoSpace) {
 		// The images stay as they are; the task asks again at its next slot, when the other work of the spool may have ended.
@@ -209,8 +224,8 @@ func (s *Service) continued(ctx context.Context, run Run, result map[string]any)
 }
 
 // analyseOnly is a run without a database (Q-VULN-168): the scanner analyses what has no analysis yet and the rows stay pending, so the
-// first database detects without a layer read and nothing reads as clean meanwhile.
-func (s *Service) analyseOnly(ctx context.Context, run Run) error {
+// first database detects without a layer read and nothing reads as clean meanwhile. why is the reason the run's result names.
+func (s *Service) analyseOnly(ctx context.Context, run Run, why string) error {
 	deadline := s.o.Now().Add(s.o.RunSlice)
 	seen := map[[32]byte]bool{}
 	var done int64
@@ -232,7 +247,7 @@ func (s *Service) analyseOnly(ctx context.Context, run Run) error {
 		if len(batch) == 0 {
 			// An analysis that a scanner of another analyser version answered is stored under that version; this run does not take
 			// its row again.
-			return run.SetResult(map[string]any{"analysed": done, "skipped": "no vulnerability database has been imported yet; the detection waits for it"})
+			return run.SetResult(map[string]any{"analysed": done, "skipped": why})
 		}
 		if err := s.each(batch, func(d store.ImageDue) error {
 			if _, err := s.analyse(ctx, imageRefOf(d), d.Repo); err != nil {

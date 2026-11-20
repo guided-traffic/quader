@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -122,5 +123,13 @@ func TestR_REPO_068_TheStateIsDerivedFromWhatIsStored(t *testing.T) {
 		if got := wellknown.StateOf(tc.kind, tc.disabled, tc.switchedOnBefore, tc.retired); got != tc.want {
 			t.Errorf("StateOf(%s, disabled %v, before %v, retired %v) = %q, want %q", tc.kind, tc.disabled, tc.switchedOnBefore, tc.retired, got, tc.want)
 		}
+	}
+}
+
+// R-VULN-044, Q-VULN-171: the defaults of vulnerabilities.images.database are the well-known repository of the database and the one
+// image its include pattern admits; the configuration spells them because it cannot import this package.
+func TestR_VULN_044_TheDefaultsAreTheWellKnownRepositorys(t *testing.T) {
+	if config.ScannerTrivyRepository != wellknown.ScannerTrivy.String() || config.ScannerTrivyImage != wellknown.ScannerTrivyImage {
+		t.Fatalf("config %s %s, wellknown %s %s", config.ScannerTrivyRepository, config.ScannerTrivyImage, wellknown.ScannerTrivy, wellknown.ScannerTrivyImage)
 	}
 }

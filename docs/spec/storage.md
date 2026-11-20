@@ -3311,7 +3311,11 @@ Priority: **P1** · Covers: RET-036
 - The task never removes the item of the layer that is the image scanning's database in use: the item
   `<image>/_blobs/<digest>` of the repository `vulnerabilities.images.database.repository` names, by the digest the source `trivy`
   records ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044, [repositories-and-proxy.md](repositories-and-proxy.md)
-  R-REPO-070). The workers read it through the item store, which is no download, so its last use would otherwise stay its creation.
+  R-REPO-070). The workers read it through the item store, which is no download, so its last use would otherwise stay its creation. The
+  task's candidate statement applies the function `vuln_image_database_in_use(blob_sha256)` of migration 00089 to every candidate, which
+  answers from the scanning's own state ([vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-190); the function is built, the
+  task is not. Until it is, the image scanning's task trims the database's repository itself by the same rule, the repository's own cache
+  period, after each run that succeeded (Q-VULN-194): `upstream/scanner-trivy` holds the layer in use and two days of builds.
 - The task processes repositories one after another in batches and checkpoints after each batch,
   so a drained run continues on another `worker` from its checkpoint. It honours the deletion
   pause of R-STOR-024 before every batch. Manual start:

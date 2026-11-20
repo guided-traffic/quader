@@ -24,22 +24,12 @@ type Vulnerabilities struct {
 	Export   VulnerabilityExport   `yaml:"export"`
 }
 
-// VulnerabilitySources are the advisory sources (R-VULN-003).
+// VulnerabilitySources are the advisory sources (R-VULN-003). The image scanning's database is no source of this section: it comes
+// from a repository of the installation (images.database, R-VULN-044), and a key below sources.trivy is refused as an unknown key.
 type VulnerabilitySources struct {
-	OSV   VulnerabilityOSV   `yaml:"osv"`
-	KEV   VulnerabilityKEV   `yaml:"kev"`
-	EPSS  VulnerabilityEPSS  `yaml:"epss"`
-	Trivy VulnerabilityTrivy `yaml:"trivy"`
-}
-
-// VulnerabilityTrivy configures the vulnerability database of the image scanning (R-VULN-035).
-type VulnerabilityTrivy struct {
-	Mode           string        `yaml:"mode" default:"online" validate:"oneof=online|repository|off" doc:"online: a worker copies the published database into the object store; repository: it reads trivy/db.tar.gz from a generic local repository, for an air-gapped installation (R-VULN-005); off: the stored database stays as it is and ages."`
-	URL            string        `yaml:"url" default:"https://mirror.gcr.io/v2/aquasec/trivy-db/" doc:"The registry path of the database artifact, ending in a slash; https only."`
-	Reference      string        `yaml:"reference" default:"2" doc:"The tag of the artifact, which is the schema version of the database this release reads."`
-	Repository     string        `yaml:"repository" default:"" doc:"Mode repository: the qualified name <projectKey>/<repoKey> of a generic local repository that holds trivy/db.tar.gz. Whoever holds deploy on it decides what the images are compared with."`
-	Timeout        time.Duration `yaml:"timeout" default:"15m" validate:"min=10s,max=24h" doc:"Timeout of one import of the database."`
-	MaxArchiveSize ByteSize      `yaml:"max_archive_size" default:"2GiB" validate:"min=1MiB" doc:"Largest database archive accepted. The worker's spool must hold one archive plus headroom."`
+	OSV  VulnerabilityOSV  `yaml:"osv"`
+	KEV  VulnerabilityKEV  `yaml:"kev"`
+	EPSS VulnerabilityEPSS `yaml:"epss"`
 }
 
 // VulnerabilityImages configures the scanning of container images (R-VULN-033 to R-VULN-036).
@@ -62,6 +52,9 @@ type VulnerabilityImages struct {
 	PullTimeout time.Duration            `yaml:"pull_timeout" default:"10m" validate:"min=1m,max=1h" doc:"The scanner's pull of one image through the scan listener, and the lifetime of its scan token (R-OCI-037). The worker's call has the deadline pull_timeout plus timeout plus 1m."`
 	Scanner     VulnerabilityScannerLink `yaml:"scanner" doc:"The worker's side of the call to the scanner (R-VULN-041)."`
 	Registry    VulnerabilityPullLink    `yaml:"registry" doc:"The scanner's side of the pull from the scan listener of packages (R-VULN-042)."`
+
+	// The analyser's database and the repository it lies in (R-VULN-035, R-VULN-044): vulnerabilities_database.go.
+	Database VulnerabilityImageDatabase `yaml:"database" doc:"The analyser's vulnerability database: the repository of this installation it lies in and the image in it (R-VULN-044)."`
 }
 
 // VulnerabilityOSV configures the OSV source (R-VULN-003 to R-VULN-006).
@@ -137,15 +130,10 @@ func (v *Vulnerabilities) Validate(r *Report) {
 	checkHTTPSURL(r, "sources.osv.base_url", o.BaseURL, o.Mode == "online")
 	checkHTTPSURL(r, "sources.kev.url", v.Sources.KEV.URL, v.Sources.KEV.Mode == "online")
 	checkHTTPSURL(r, "sources.epss.url", v.Sources.EPSS.URL, v.Sources.EPSS.Mode == "online")
-	checkHTTPSURL(r, "sources.trivy.url", v.Sources.Trivy.URL, v.Sources.Trivy.Mode == "online")
-	if !strings.HasSuffix(v.Sources.Trivy.URL, "/") {
-		r.Add("sources.trivy.url", "must end in a slash")
-	}
 	for _, s := range []struct{ key, mode, repo string }{
 		{"sources.osv.repository", o.Mode, o.Repository},
 		{"sources.kev.repository", v.Sources.KEV.Mode, v.Sources.KEV.Repository},
 		{"sources.epss.repository", v.Sources.EPSS.Mode, v.Sources.EPSS.Repository},
-		{"sources.trivy.repository", v.Sources.Trivy.Mode, v.Sources.Trivy.Repository},
 	} {
 		if s.mode == "repository" && strings.TrimSpace(s.repo) == "" {
 			r.Add(s.key, "is required when the source's mode is repository: it names the generic local repository that holds the files (R-VULN-005)")

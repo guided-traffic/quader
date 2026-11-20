@@ -330,7 +330,7 @@ func TestR_VULN_041_AnImageIsAnalysedBeforeAnyDatabaseExists(t *testing.T) {
 func TestR_HA_067_TheRoleAllStaysReadyWithoutTheAnalyser(t *testing.T) {
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnall", TLS: true, Env: []string{
 		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
-		"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=off", "QUADER_MAINTENANCE_TASKS=" + taskOff,
+		"QUADER_MAINTENANCE_TASKS=" + taskOff,
 		"QUADER_VULNERABILITIES_IMAGES_BINARY=" + filepath.Join(t.TempDir(), "no-analyser"),
 		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + t.TempDir(),
 	}})

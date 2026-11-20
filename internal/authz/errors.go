@@ -39,6 +39,9 @@ const (
 	// ReasonBackgroundDownload is the reason of the populate event of a fill that the background download of a probe made: the
 	// system filled the cache for the version a client named without fetching it (repositories-and-proxy.md R-REPO-065).
 	ReasonBackgroundDownload = "background-download"
+	// ReasonImageDatabase is the reason of the populate event of a fill that the image scanning's task made: the system made the
+	// database's repository hold the layer of the analyser's database (vulnerability-scanning.md R-VULN-044).
+	ReasonImageDatabase = "image-database"
 )
 
 // codeEndpointReadOnly is registered by the endpoints area (R-EP-013); authz

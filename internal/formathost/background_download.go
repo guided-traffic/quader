@@ -147,6 +147,6 @@ func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, 
 	if err != nil {
 		return nil, err
 	}
-	pu.charge, pu.probe = charge, true
+	pu.charge, pu.fill = charge, fillBackgroundDownload
 	return &backgroundUpstream{passUpstream: pu, win: mirror.NewWindow(nil, nil, share)}, nil
 }

@@ -158,40 +158,48 @@ func (s *Images) PruneSBOMs(ctx context.Context, analyser string) (n int64, err 
 	return n, err
 }
 
-// ImageDB is the vulnerability database in use.
+// ImageDB is the vulnerability database in use (R-VULN-044, Q-VULN-173): the digest of the layer the task recorded on the row of the
+// source trivy. The layer is an item of the database's repository, `<image>/_blobs/<digest>`; nothing else of it is kept here.
 type ImageDB struct {
-	Digest     string
-	Blob       [32]byte
-	Size       int64
-	UpdatedAt  time.Time
-	NextUpdate time.Time
+	// Digest is the layer's digest, "sha256:<hex>".
+	Digest string
 }
 
-// DB reads the database in use; found is false before the first import.
+// DB reads the database in use; found is false before a run recorded one.
 func (s *Images) DB(ctx context.Context) (db ImageDB, found bool, err error) {
 	err = s.tx(ctx, func(qs *q.Queries) error {
 		rows, err := qs.VulnImageDBGet(ctx)
 		if err != nil || len(rows) == 0 {
 			return err
 		}
-		r := rows[0]
-		db = ImageDB{Digest: r.Digest, Size: r.Size, UpdatedAt: microTime(r.UpdatedUs), NextUpdate: microTime(r.NextUpdateUs)}
-		copy(db.Blob[:], r.BlobSha256)
-		found = true
+		db, found = ImageDB{Digest: rows[0]}, true
 		return nil
 	})
 	return db, found, err
 }
 
-// PutDB records a new database in the transaction that links its blob.
-func PutDB(ctx context.Context, tx meta.Tx, db ImageDB) error {
-	qs, err := queries(tx)
-	if err != nil {
+// DatabaseStale lists, at most limit after the cursor, the files of the database's image in its repository that the retention of
+// Q-VULN-175 drops (Q-VULN-194): the layers and manifests of image stored before before, other than the paths in keep and other than
+// content that is the database in use. The removal itself is the item store's (items.Store.RemoveIn).
+func (s *Images) DatabaseStale(ctx context.Context, repoID int64, image string, keep []string, before time.Time, after string, limit int) (paths []string, err error) {
+	err = s.tx(ctx, func(qs *q.Queries) (err error) {
+		paths, err = qs.VulnImageDatabaseStale(ctx, q.VulnImageDatabaseStaleParams{
+			RepoID: repoID, Blobs: image + "/_blobs/", Manifests: image + "/_manifests/", Before: before.UTC().Format(time.RFC3339Nano),
+			Keep: nn(keep), AfterPath: after, MaxRows: rows32(limit),
+		})
 		return err
-	}
-	return qs.VulnImageDBPut(ctx, q.VulnImageDBPutParams{
-		Digest: db.Digest, BlobSha256: db.Blob[:], Size: db.Size, UpdatedUs: micros(db.UpdatedAt), NextUpdateUs: micros(db.NextUpdate),
 	})
+	return paths, err
+}
+
+// LayerInUse reports whether content of that SHA-256 is the database in use: the exemption the remote-cache cleanup applies to every
+// candidate (storage.md R-STOR-045, Q-VULN-175), through the function vuln_image_database_in_use of migration 00089.
+func (s *Images) LayerInUse(ctx context.Context, sha256 [32]byte) (inUse bool, err error) {
+	err = s.tx(ctx, func(qs *q.Queries) (err error) {
+		inUse, err = qs.VulnImageDatabaseInUse(ctx, sha256[:])
+		return err
+	})
+	return inUse, err
 }
 
 // ImageVerdict is what a pull of a manifest needs to know.

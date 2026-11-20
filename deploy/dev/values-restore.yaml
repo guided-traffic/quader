@@ -75,6 +75,10 @@ config:
         mode: "off"
       kev:
         mode: "off"
+  # The image scanning's database is not fetched on a schedule either, as in values-dev.yaml (R-VULN-044).
+  maintenance:
+    tasks:
+      vuln-sync-trivy-db: {enabled: false, schedule: "23 */6 * * *"}
   system:
     bootstrap_anonymous_read: true
   health:

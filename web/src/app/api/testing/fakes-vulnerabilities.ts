@@ -506,6 +506,8 @@ export function sampleSource(over: Partial<VulnerabilitySourceState> = {}): Vuln
     attemptedAt: ago(0.1),
     failures: 0,
     repository: null,
+    reference: null,
+    repositoryClass: null,
     lastError: null,
     records: 1234,
     rejected: 0,
@@ -514,6 +516,14 @@ export function sampleSource(over: Partial<VulnerabilitySourceState> = {}): Vuln
     nextRunAt: new Date(Date.now() + 3_600_000).toISOString(),
     ...over,
   };
+}
+
+/** The image scanning's database as the sources API answers it (R-VULN-045): upstream/scanner-trivy, current, by default. */
+export function sampleDatabase(over: Partial<VulnerabilitySourceState> = {}): VulnerabilitySourceState {
+  return sampleSource({
+    source: 'trivy', ecosystem: 'OCI', mode: 'repository', repository: 'upstream/scanner-trivy', reference: 'aquasec/trivy-db:2',
+    repositoryClass: 'remote', records: 1, unevaluable: 0, ...over,
+  });
 }
 
 export function severityCounts(over: Partial<VulnerabilitySeverityCounts> = {}): VulnerabilitySeverityCounts {

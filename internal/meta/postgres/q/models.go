@@ -1586,17 +1586,6 @@ type VulnFindingEvent struct {
 	Details    json.RawMessage
 }
 
-type VulnImageDb struct {
-	ID         pgtype.Int8
-	Singleton  int16
-	Digest     string
-	BlobSha256 []byte
-	Size       int64
-	UpdatedAt  pgtype.Timestamptz
-	NextUpdate pgtype.Timestamptz
-	ImportedAt pgtype.Timestamptz
-}
-
 type VulnImageSbom struct {
 	Digest    []byte
 	Analyser  string
