@@ -50,7 +50,7 @@ describe('System status screen', () => {
 
   it('R-UI-145 Q-UI-560 a replica\'s state is a badge, its icon and its word with a capital in one element', async () => {
     const { root } = await render();
-    const state = root.querySelector('section.role tbody tr td:nth-child(4) > :is(.ok, .bad, .badge)')!;
+    const state = root.querySelector('section.role tbody tr td:nth-child(4) > .state > :is(.ok, .bad, .badge)')!;
     expect(state.firstElementChild!.classList).toContain('material-icons');
     expect(state.textContent!.replace(state.firstElementChild!.textContent!, '').trim()).toMatch(/^[A-Z]/);
   });
@@ -104,6 +104,9 @@ describe('System status screen', () => {
     const worker = root.querySelectorAll<HTMLElement>('section.role')[2]!;
     const pools = [...worker.querySelectorAll('section.pool > h4')].map(spoken);
     expect(pools).toEqual(['Main live 2, ready 2, degraded 0', 'Pool vuln live 1, ready 1, degraded 0']);
+    // As it reads: the word and the pool's name with a space between them, not "Poolvuln".
+    const named = worker.querySelectorAll('section.pool > h4')[1]!;
+    expect(named.textContent!.replace(named.querySelector('.counts')!.textContent!, '').trim()).toBe('Pool vuln');
     expect(text(worker)).toContain('quader-worker-vuln-0');
     // The pool has one ready replica, so it is not drain-safe, and the warning is on the pool, not on the role.
     const warnings = [...worker.querySelectorAll('p.warning')].map((w) => w.textContent?.trim());
@@ -154,6 +157,20 @@ describe('System status screen', () => {
     expect(t).not.toContain('Replicas unready');
     expect(t).toContain('Degraded on 2 of 2 replicas');
     expect(t).toContain('change-log poll');
+  });
+
+  it('R-UI-038 R-UI-172 an unready replica names its failing checks beside its state, a space after the colon', async () => {
+    const { root } = await render((system) => {
+      system.replicasResult = [
+        sampleReplica({ state: 'unready', checks: { database: { status: 'fail' }, schema: { status: 'fail' } }, degraded: ['valkey'] }),
+      ];
+    });
+    const state = root.querySelector('section.role tbody td.state-cell > .state')!;
+    // The checks are the second column of the state's grid, so their first line is the row's (the layout check measures it).
+    expect(state.querySelector(':scope > .bad + .checks')).toBeTruthy();
+    const checks = [...state.querySelectorAll('.checks > .check')].map((c) => text(c as HTMLElement).trim());
+    expect(checks[0]).toBe('Failing checks: database, schema');
+    expect(checks[1]).toMatch(/^warning ?Valkey:/);
   });
 
   it('R-UI-038 two replicas on one node make the role not drain-safe', async () => {

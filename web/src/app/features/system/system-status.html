@@ -174,8 +174,7 @@
                   @if (p.pool === null) {
                     <span i18n="@@system.pool.main">Main</span>
                   } @else {
-                    <span i18n="@@system.pool.named">Pool</span>
-                    <span translate="no">{{ p.pool }}</span>
+                    <span i18n="@@system.pool.named">Pool</span>&ngsp;<span translate="no">{{ p.pool }}</span>
                   }
                   <span class="counts" i18n="@@system.role.counts"
                     >live {{ p.live }}, ready {{ p.ready }}, degraded {{ p.degraded }}</span
@@ -225,52 +224,59 @@
                         }
                       </td>
                       <td translate="no">{{ r.version }}</td>
-                      <td>
-                        @if (r.lost) {
-                          <span class="warn"
-                            ><span class="material-icons" aria-hidden="true">warning</span
-                            ><ng-container i18n="@@system.state.lost">Lost</ng-container></span
-                          >
-                        } @else {
-                          @switch (r.state) {
-                            @case ('ready') {
-                              <span class="ok"
-                                ><span class="material-icons" aria-hidden="true">check_circle</span
-                                ><ng-container i18n="@@system.state.ready">Ready</ng-container></span
-                              >
-                            }
-                            @case ('starting') {
-                              <span class="badge"
-                                ><span class="material-icons" aria-hidden="true">hourglass_empty</span
-                                ><ng-container i18n="@@system.state.starting">Starting</ng-container></span
-                              >
-                            }
-                            @case ('draining') {
-                              <span class="badge"
-                                ><span class="material-icons" aria-hidden="true">hourglass_empty</span
-                                ><ng-container i18n="@@system.state.draining">Draining</ng-container></span
-                              >
-                            }
-                            @case ('unready') {
-                              <span class="bad"
-                                ><span class="material-icons" aria-hidden="true">error</span
-                                ><ng-container i18n="@@system.state.unready">Unready</ng-container></span
-                              >
+                      <!-- The state and, beside it, the checks that fail, one under the other: the first check's words stand on the
+                           line of the replica's name (R-UI-172); on a line under the state they stood 20 px below it. -->
+                      <td class="state-cell">
+                        <div class="state">
+                          @if (r.lost) {
+                            <span class="warn"
+                              ><span class="material-icons" aria-hidden="true">warning</span
+                              ><ng-container i18n="@@system.state.lost">Lost</ng-container></span
+                            >
+                          } @else {
+                            @switch (r.state) {
+                              @case ('ready') {
+                                <span class="ok"
+                                  ><span class="material-icons" aria-hidden="true">check_circle</span
+                                  ><ng-container i18n="@@system.state.ready">Ready</ng-container></span
+                                >
+                              }
+                              @case ('starting') {
+                                <span class="badge"
+                                  ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                                  ><ng-container i18n="@@system.state.starting">Starting</ng-container></span
+                                >
+                              }
+                              @case ('draining') {
+                                <span class="badge"
+                                  ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                                  ><ng-container i18n="@@system.state.draining">Draining</ng-container></span
+                                >
+                              }
+                              @case ('unready') {
+                                <span class="bad"
+                                  ><span class="material-icons" aria-hidden="true">error</span
+                                  ><ng-container i18n="@@system.state.unready">Unready</ng-container></span
+                                >
+                              }
                             }
                           }
-                        }
-                        @if (failing(r).length > 0) {
-                          <div class="check-list">
-                            <span i18n="@@system.checks.failing">Failing checks:</span>
-                            <span translate="no">{{ failing(r).join(', ') }}</span>
-                          </div>
-                        }
-                        @for (c of degraded(r); track c) {
-                          <div class="check-list">
-                            <span class="material-icons warn" aria-hidden="true">warning</span>
-                            <span>{{ checkText(c) }}</span>
-                          </div>
-                        }
+                          @if (failing(r).length > 0 || degraded(r).length > 0) {
+                            <div class="checks">
+                              @if (failing(r).length > 0) {
+                                <div class="check">
+                                  <span i18n="@@system.checks.failing">Failing checks:</span>&ngsp;<span translate="no">{{ failing(r).join(', ') }}</span>
+                                </div>
+                              }
+                              @for (c of degraded(r); track c) {
+                                <div class="check">
+                                  <span class="material-icons warn" aria-hidden="true">warning</span>
+                                  <span>{{ checkText(c) }}</span>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
                       </td>
                       <td>
                         <time [attr.datetime]="r.heartbeatAt">{{

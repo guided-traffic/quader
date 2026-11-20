@@ -134,9 +134,28 @@ td {
   gap: var(--quader-space-2);
 }
 
-.check-list {
-  margin-block-start: var(--quader-space-1);
+// A replica's state: the status, and beside it the checks that fail, one under the other. The first check's words stand on the
+// line of the replica's name like every cell's first line (R-UI-172); the status stands on that line by its margins (R-UI-175).
+.state {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--quader-space-3);
+}
+
+.checks {
+  display: grid;
+  row-gap: var(--quader-space-1);
   max-inline-size: 36rem;
+}
+
+// In a row that stands as a block the column's name is the cell's first column, so the state starts on the name's line
+// (Q-UI-762), as a meter's does (_list-screens.scss).
+.quader-data-table.stacked td.state-cell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--quader-space-1);
 }
 
 .visually-hidden {
