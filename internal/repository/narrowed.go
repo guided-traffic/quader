@@ -28,6 +28,8 @@ const (
 	partPinsAdded         = "pinsAdded"
 	partPinMembersRemoved = "pinMembersRemoved"
 	partVulnerabilities   = "vulnerabilities"
+	// partMalware is the member malware.onlyChecked switched on (R-MAL-020, Q-MAL-35).
+	partMalware = "malware"
 	// partDebUpstreamKeysRemoved lists the fingerprints an update took out of deb.upstreamKeys of a remote Debian repository
 	// (R-DEB-020, R-DEB-032, Q-REPO-274).
 	partDebUpstreamKeysRemoved = "debUpstreamKeysRemoved"
@@ -65,6 +67,8 @@ type narrowedEntry struct {
 	PinsAdded         []pinPart   `json:"pinsAdded,omitempty"`
 	PinMembersRemoved []pinPart   `json:"pinMembersRemoved,omitempty"`
 	Vulnerabilities   *vulnChange `json:"vulnerabilities,omitempty"`
+	// Malware is the member malware after a write that switched onlyChecked on; the replay sets it on.
+	Malware *MalwareSettings `json:"malware,omitempty"`
 	// DebUpstreamKeysRemoved are the fingerprints taken out of deb.upstreamKeys.
 	DebUpstreamKeysRemoved []string `json:"debUpstreamKeysRemoved,omitempty"`
 }
@@ -84,6 +88,7 @@ func (e narrowedEntry) parts() []string {
 	add(len(e.PinsAdded) > 0, partPinsAdded)
 	add(len(e.PinMembersRemoved) > 0, partPinMembersRemoved)
 	add(e.Vulnerabilities != nil, partVulnerabilities)
+	add(e.Malware != nil, partMalware)
 	add(len(e.DebUpstreamKeysRemoved) > 0, partDebUpstreamKeysRemoved)
 	return out
 }
@@ -122,6 +127,10 @@ func (s *Service) narrowing(r Repository, cur, nd *Document, curRel, rel *virtua
 	// The write strengthens the member when the old value does less than the new one in some field.
 	if len(weakensVulnerabilities(after, before)) > 0 {
 		e.Vulnerabilities = &vulnChange{Before: before, After: after}
+	}
+	// Switching malware.onlyChecked on narrows what the repository serves (R-MAL-020, R-REPO-061).
+	if !malwareOnlyChecked(cur.Malware) && malwareOnlyChecked(nd.Malware) {
+		e.Malware = &MalwareSettings{OnlyChecked: true}
 	}
 	return e
 }

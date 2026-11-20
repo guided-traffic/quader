@@ -254,9 +254,28 @@ SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.
        (CASE WHEN $4::boolean THEN EXISTS (
             SELECT 1 FROM remote_cache_entries e JOIN blobs eb ON eb.sha256 = e.blob_sha256
              WHERE e.repo_id = i.repo_id AND e.path = i.path AND e.variant = $5::text AND e.upstream_gone_at IS NULL)
-            ELSE false END)::boolean AS entry_stored
+            ELSE false END)::boolean AS entry_stored,
+       (ms.sha256 IS NOT NULL)::boolean AS malware_known,
+       COALESCE(ms.state, '')::text AS malware_state,
+       COALESCE(ms.reason, '')::text AS malware_reason,
+       COALESCE(ms.signature, '')::text AS malware_signature,
+       COALESCE(ms.part, '')::text AS malware_part,
+       COALESCE(ms.db_version, '')::text AS malware_db_version,
+       ms.db_built_at AS malware_db_built_at,
+       ms.scanned_at AS malware_scanned_at,
+       ms.first_found_at AS malware_first_found_at,
+       COALESCE(ms.due, false)::boolean AS malware_due,
+       (mr.sha256 IS NOT NULL)::boolean AS malware_released,
+       COALESCE(mr.reason, '')::text AS malware_release_reason,
+       COALESCE(mr.state, '')::text AS malware_release_state,
+       COALESCE(mr.released_by::text, '')::text AS malware_released_by,
+       COALESCE(CASE mp2.kind WHEN 'ci_mapping' THEN 'ci' ELSE mp2.kind END || ':' || mp2.name, '')::text AS malware_released_by_name,
+       mr.released_at AS malware_released_at
   FROM items i
   LEFT JOIN blobs b ON b.sha256 = i.blob_sha256
+  LEFT JOIN malware_scan ms ON ms.sha256 = i.blob_sha256
+  LEFT JOIN malware_release mr ON mr.sha256 = i.blob_sha256
+  LEFT JOIN principal mp2 ON mp2.id = mr.released_by
   LEFT JOIN principal cp ON cp.id = i.created_by
   LEFT JOIN principal mp ON mp.id = i.modified_by
   LEFT JOIN LATERAL (
@@ -315,53 +334,69 @@ type GetLiveItemParams struct {
 }
 
 type GetLiveItemRow struct {
-	ID                  int64
-	RepoID              int64
-	Path                string
-	ParentPath          string
-	Kind                string
-	BlobSha256          []byte
-	Size                pgtype.Int8
-	MediaType           pgtype.Text
-	DeclaredSha256      []byte
-	DeclaredSha512      []byte
-	DeclaredSha1        []byte
-	DeclaredMd5         []byte
-	DeclaredMismatch    bool
-	ExplicitFolder      bool
-	Generated           bool
-	UpstreamUrl         pgtype.Text
-	CreatedAt           pgtype.Timestamptz
-	ModifiedAt          pgtype.Timestamptz
-	UpdatedAt           pgtype.Timestamptz
-	CreatedByName       string
-	ModifiedByName      string
-	BlobSha1            []byte
-	BlobMd5             []byte
-	BlobSha512          []byte
-	ContentStatus       pgtype.Text
-	VersionID           int64
-	BlockFindingID      string
-	BlockAdvisoryID     string
-	BlockKind           string
-	BlockStatus         string
-	FactKind            string
-	FactTombstoned      bool
-	FactOciManifest     bool
-	FactDebRemoteKnown  bool
-	FactDebRemoteSha256 []byte
-	FactDebRemoteSize   int64
-	FactNugetStored     bool
-	FactNugetListed     bool
-	FactNpmKnown        bool
-	FactNpmListed       bool
-	FactNpmIntegrity    string
-	FactNpmShasum       string
-	FactNpmDocStored    bool
-	FactNpmDocCurrent   bool
-	FactNpmGoneUs       int64
-	FactNpmServeRemoved bool
-	EntryStored         bool
+	ID                    int64
+	RepoID                int64
+	Path                  string
+	ParentPath            string
+	Kind                  string
+	BlobSha256            []byte
+	Size                  pgtype.Int8
+	MediaType             pgtype.Text
+	DeclaredSha256        []byte
+	DeclaredSha512        []byte
+	DeclaredSha1          []byte
+	DeclaredMd5           []byte
+	DeclaredMismatch      bool
+	ExplicitFolder        bool
+	Generated             bool
+	UpstreamUrl           pgtype.Text
+	CreatedAt             pgtype.Timestamptz
+	ModifiedAt            pgtype.Timestamptz
+	UpdatedAt             pgtype.Timestamptz
+	CreatedByName         string
+	ModifiedByName        string
+	BlobSha1              []byte
+	BlobMd5               []byte
+	BlobSha512            []byte
+	ContentStatus         pgtype.Text
+	VersionID             int64
+	BlockFindingID        string
+	BlockAdvisoryID       string
+	BlockKind             string
+	BlockStatus           string
+	FactKind              string
+	FactTombstoned        bool
+	FactOciManifest       bool
+	FactDebRemoteKnown    bool
+	FactDebRemoteSha256   []byte
+	FactDebRemoteSize     int64
+	FactNugetStored       bool
+	FactNugetListed       bool
+	FactNpmKnown          bool
+	FactNpmListed         bool
+	FactNpmIntegrity      string
+	FactNpmShasum         string
+	FactNpmDocStored      bool
+	FactNpmDocCurrent     bool
+	FactNpmGoneUs         int64
+	FactNpmServeRemoved   bool
+	EntryStored           bool
+	MalwareKnown          bool
+	MalwareState          string
+	MalwareReason         string
+	MalwareSignature      string
+	MalwarePart           string
+	MalwareDbVersion      string
+	MalwareDbBuiltAt      pgtype.Timestamptz
+	MalwareScannedAt      pgtype.Timestamptz
+	MalwareFirstFoundAt   pgtype.Timestamptz
+	MalwareDue            bool
+	MalwareReleased       bool
+	MalwareReleaseReason  string
+	MalwareReleaseState   string
+	MalwareReleasedBy     string
+	MalwareReleasedByName string
+	MalwareReleasedAt     pgtype.Timestamptz
 }
 
 // The statements of the files transfer and the items API (R-STOR-007, R-STOR-012,
@@ -385,6 +420,9 @@ type GetLiveItemRow struct {
 // exists at the item's path (variant entry_variant) and is not marked gone: the remote hit is the item and its entry. For a Debian
 // repository deb_local reads the withheld mark of the item's path (deb_tombstones, R-DEB-032) and deb_remote the SHA-256 and size that
 // the newest parsed index lists for the item's path (deb_remote_entries, R-DEB-022); both ignore facts_package.
+//
+// The verdict of the malware scanning (malware-scanning.md R-MAL-013, Q-MAL-23) is read here as well: the row of malware_scan and
+// the release of the item's blob, both keyed by the digest, so the gate costs no statement more. A blob without a row is pending.
 func (q *Queries) GetLiveItem(ctx context.Context, arg GetLiveItemParams) ([]GetLiveItemRow, error) {
 	rows, err := q.db.Query(ctx, getLiveItem,
 		arg.FactsKind,
@@ -452,6 +490,22 @@ func (q *Queries) GetLiveItem(ctx context.Context, arg GetLiveItemParams) ([]Get
 			&i.FactNpmGoneUs,
 			&i.FactNpmServeRemoved,
 			&i.EntryStored,
+			&i.MalwareKnown,
+			&i.MalwareState,
+			&i.MalwareReason,
+			&i.MalwareSignature,
+			&i.MalwarePart,
+			&i.MalwareDbVersion,
+			&i.MalwareDbBuiltAt,
+			&i.MalwareScannedAt,
+			&i.MalwareFirstFoundAt,
+			&i.MalwareDue,
+			&i.MalwareReleased,
+			&i.MalwareReleaseReason,
+			&i.MalwareReleaseState,
+			&i.MalwareReleasedBy,
+			&i.MalwareReleasedByName,
+			&i.MalwareReleasedAt,
 		); err != nil {
 			return nil, err
 		}

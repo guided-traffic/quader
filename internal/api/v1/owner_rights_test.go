@@ -88,6 +88,8 @@ var ownerRightsReads = map[string]string{
 	"listVulnerabilityFindings":        "as getVulnerabilitySummary",
 	"getVulnerabilityFinding":          "as getVulnerabilitySummary; a finding outside the read scope is a 404",
 	"exportVulnerabilityFindings":      "as getVulnerabilitySummary",
+	"getMalwareSwitch":                 "malware.enabled and the installation's switch: nothing of the owner's account (Q-MAL-45)",
+	"listMalwareFinds":                 "the finds the read scope of the decision point admits for the subject, scope included, item by item (malwareScopeOf, R-MAL-022)",
 	"getVulnerabilityAdvisory":         "the advisory and the findings of it inside the subject's read scope (report.Scope)",
 	"getPackageVulnerabilities":        "the findings of a package inside the subject's read scope (report.PackageScope)",
 	"getPackageVersionVulnerabilities": "as getPackageVulnerabilities",

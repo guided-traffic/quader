@@ -300,6 +300,29 @@ const (
 
 // <<< M4b vulnerabilities
 //
+// >>> malware
+
+// Codes of the malware scanning (malware-scanning.md R-MAL-016, R-MAL-020 to R-MAL-022). The first three are the gate's answers
+// on every download route, rendered by each format in its client's shape; the others are answers of the management API.
+const (
+	// CodeMalwareFound: the blob of the download is infected and no release passes it (403, R-MAL-013).
+	CodeMalwareFound = "malware_found"
+	// CodeMalwareNotChecked: the gate is strict and the blob is unscannable or failed (403, R-MAL-013).
+	CodeMalwareNotChecked = "malware_not_checked"
+	// CodeMalwareCheckPending: the gate is strict and the verdict did not arrive within malware.download_wait (503, R-MAL-014).
+	CodeMalwareCheckPending = "malware_check_pending"
+	// CodeMalwareWeakeningRefused: a project Owner's write switches a repository's member malware off (403, R-MAL-020).
+	CodeMalwareWeakeningRefused = "malware_weakening_refused"
+	// CodeNothingToRelease: a release of a blob whose verdict is pending or clean (409, R-MAL-021).
+	CodeNothingToRelease = "nothing_to_release"
+	// CodeAlreadyReleased: a release of a blob a release already passes (409, R-MAL-021).
+	CodeAlreadyReleased = "already_released"
+	// CodeMalwareNotEnabled: an operation that needs the scanning while malware.enabled is false (409, Q-MAL-47).
+	CodeMalwareNotEnabled = "malware_not_enabled"
+)
+
+// <<< malware
+//
 // >>> M6b mirror
 
 // Codes of the mirror mode of remote repositories (repositories-and-proxy.md R-REPO-050 to R-REPO-052): the validation of
@@ -853,6 +876,16 @@ var registry = []CodeInfo{
 	{CodeSyncCancelled, Conflict, "Sync run cancelled", "An operator cancelled the job of the sync run. It is not counted as a failure of the source; the records written before the cancel stay, and the next run of the ecosystem finishes their alias groups."},
 	{CodeSyncInterrupted, Unavailable, "Sync run interrupted", "The sync run stopped before it ended, for a reason other than a drain, a cancel or a lost lease, such as the timeout of its job. The records written before the stop stay; the next run of the ecosystem finishes their alias groups."},
 	// <<< M4b vulnerabilities
+	//
+	// >>> malware
+	{CodeMalwareFound, Forbidden, "Malware found", "Quader's malware scan found a signature of ClamAV in the stored bytes, and no instance auditor released them. The problem names the signature and the date of the signature database; the response is never cached."},
+	{CodeMalwareNotChecked, Forbidden, "Not checked for malware", "Only checked artifacts can be downloaded here, and the malware scan could not check these bytes (too large, past a limit, encrypted, or the scans failed). An instance auditor can release them in the security dashboard. The response is never cached."},
+	{CodeMalwareCheckPending, Unavailable, "Malware check pending", "Only checked artifacts can be downloaded here, and the bytes are being scanned; retry after the Retry-After period. The response is never cached."},
+	{CodeMalwareWeakeningRefused, Forbidden, "Malware setting cannot be weakened", "The write would switch the repository's setting malware.onlyChecked off. That needs the capability repositories:write-config or vulnerabilities:triage; a project Owner's manageRepositories does not carry it."},
+	{CodeNothingToRelease, Conflict, "Nothing to release", "The blob's verdict is pending or clean: a release is for infected, unscannable and failed content only."},
+	{CodeAlreadyReleased, Conflict, "Already released", "A release already passes the blob; withdraw it first to grant another."},
+	{CodeMalwareNotEnabled, Conflict, "Malware scanning off", "malware.enabled is false in the installation's configuration: no verdict is made, so there is nothing to scan again."},
+	// <<< malware
 	//
 	// >>> M6b mirror
 	{CodeMirrorUnbounded, Invalid, "Mirror unbounded", "A mirror of the format's well-known upstream needs a bound: include patterns that each have a literal prefix, or remote.mirror.maxBytes."},

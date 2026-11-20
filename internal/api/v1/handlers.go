@@ -243,6 +243,12 @@ type Options struct {
 	Vuln VulnServices
 	// <<< M4b vulnerabilities
 
+	// >>> malware
+	// Malware holds the services of the malware scanning's operations and of the member malware of a stored file
+	// (malware_api.go); without a store the operations answer 503 and no answer carries the member.
+	Malware MalwareServices
+	// <<< malware
+
 	// >>> T-17 deb
 	// DebKeys is the data port's signing-key group behind the Debian key operations (deb_keys.go); nil answers them with 503.
 	DebKeys DebKeyStore

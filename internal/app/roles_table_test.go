@@ -16,7 +16,7 @@ func roleTable() map[string][]Area {
 	common := []Area{
 		AreaKeys, AreaPostgres, AreaAudit, AreaBlob, AreaValkey, AreaCoordination, AreaInfra,
 		AreaKeyRing, AreaFormatPorts, AreaExposure, AreaRepository, AreaVirtual, AreaInvalidation, AreaProxy,
-		AreaIdentity, AreaAuthz, AreaOwnership, AreaCI, AreaVuln, AreaMirror, AreaFormats, AreaFiles, AreaDownloadLimits,
+		AreaIdentity, AreaAuthz, AreaOwnership, AreaCI, AreaVuln, AreaMalware, AreaMirror, AreaFormats, AreaFiles, AreaDownloadLimits,
 	}
 	listener := []Area{AreaLimits, AreaVirtualEngine, AreaAuth, AreaEndpoints, AreaAPI}
 	filling := []Area{AreaProxyEngine, AreaFormatHost}

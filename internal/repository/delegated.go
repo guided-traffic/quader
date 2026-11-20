@@ -127,5 +127,15 @@ func restrictedVulnerabilities(c Caller, cur, nd *Document) error {
 			"The write weakens vulnerabilities."+strings.Join(weak, ", vulnerabilities.")+
 				": that needs repositories:write-config or vulnerabilities:triage, which the role owner does not carry.")
 	}
+	if weakenedMalware(cur, nd) {
+		return errs.E(errs.Forbidden, errs.CodeMalwareWeakeningRefused,
+			"The write switches malware.onlyChecked off: that needs repositories:write-config or vulnerabilities:triage, which the role owner does not carry.")
+	}
 	return nil
+}
+
+// weakenedMalware reports whether a write switches the member malware.onlyChecked off (R-MAL-020, Q-MAL-31): a weakening as
+// R-VULN-002 defines one, which a project Owner may not make. An absent member is off.
+func weakenedMalware(cur, nd *Document) bool {
+	return malwareOnlyChecked(cur.Malware) && !malwareOnlyChecked(nd.Malware)
 }

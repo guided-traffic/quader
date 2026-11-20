@@ -94,6 +94,8 @@ type ItemView struct {
 	ContentURL       *string    `json:"contentUrl,omitempty"`
 	ListingURL       *string    `json:"listingUrl,omitempty"`
 	ItemURL          string     `json:"itemUrl"`
+	// Malware is the member of R-MAL-022; the caller sets it with [DescribeMalware], nil where the answer carries none.
+	Malware *MalwareView `json:"malware,omitempty"`
 }
 
 func nonEmpty(s string) *string {

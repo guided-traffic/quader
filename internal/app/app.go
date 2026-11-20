@@ -595,6 +595,8 @@ func (a *App) startClient() error {
 			SystemState: part[infra](a.parts).sys,
 			// The download limits and the usage overview (wire_limits.go).
 			Limits: a.limitsAPI(),
+			// The malware scanning's operations and the member malware of a file (wire_malware.go).
+			Malware: a.malwareAPI(),
 		})
 		// The router drops the routes of a family the endpoint's surface does not hold.
 		api.Register(router)

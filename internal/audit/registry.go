@@ -94,10 +94,12 @@ type EventType struct {
 // therefore declare an optional journal entry (R-OPS-014): npm journals neither
 // of them, NuGet journals both for its local repositories. The two finding
 // events of the vulnerability scanning journal the changes that set a download
-// block and no others (Q-VULN-48).
+// block and no others (Q-VULN-48), and the switch of the malware scanning is
+// journaled when it is turned on and not when it is turned off (Q-MAL-35).
 var sharedTypes = map[string]bool{
 	"package.published": true, "package.deleted": true,
 	"vulnerability.finding.status_changed": true, "vulnerability.finding.reopened": true,
+	"malware.settings.changed": true,
 }
 
 var namePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,2}$`)

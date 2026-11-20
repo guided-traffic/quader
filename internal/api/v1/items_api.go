@@ -94,11 +94,15 @@ func (s *Server) GetItem(w http.ResponseWriter, r *http.Request, projectKey, rep
 			it, err = svc.ItemInfo(r.Context(), c, repoKey, path)
 		}
 	}
+	view := edge.DescribeItem(it, s.links(r))
+	if err == nil && it.Kind == items.KindFile {
+		view.Malware, err = s.malwareMember(r.Context(), repoKey, it.Malware, it.Generated)
+	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
-	writeJSON(w, r, http.StatusOK, edge.DescribeItem(it, s.links(r)))
+	writeJSON(w, r, http.StatusOK, view)
 }
 
 // DeleteItem implements DELETE /api/v1/repositories/{repoKey}/items (R-STOR-018).

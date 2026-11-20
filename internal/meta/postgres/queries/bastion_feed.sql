@@ -80,3 +80,13 @@ SELECT name::text AS name FROM up ORDER BY name;
 -- unbound from a group is grants, from a user or service account principal): ids that no longer exist return
 -- no row.
 SELECT id::text AS id, kind FROM principal WHERE id = ANY(sqlc.arg(ids)::text[]::uuid[]);
+
+-- name: BastionBlobHolders :many
+-- The repositories that hold a live item over a blob when the feed is read, by their qualified names: the content entry of
+-- malware.found and malware.release.withdrawn (R-BAS-015, Q-BAS-164). A blob no item holds any more names none.
+SELECT DISTINCT (p.key || '/' || r.key)::text AS name
+  FROM items i
+  JOIN repositories r ON r.id = i.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE i.blob_sha256 = sqlc.arg(sha256)::bytea AND i.kind = 'file' AND i.trashed_at IS NULL
+ ORDER BY 1;

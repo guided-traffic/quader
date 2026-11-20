@@ -582,6 +582,19 @@ and the partial index `usage_bucket_via` serves the reads of a project's scope, 
 ([tables_limits.go](../../internal/meta/postgres/tables_limits.go)): a restore brings back no usage row, so the column needs no entry of
 its own. What the column means and who writes it is in [usage-and-limits.md](usage-and-limits.md#the-usage-of-a-well-known-member-through-a-teams-virtual-repository).
 
+## The malware scanning (00088)
+
+[00088_malware](../../internal/meta/postgres/migrations/00088_malware.sql) is an expand step of the malware scanning (malware-scanning.md
+R-MAL-002, R-MAL-010, R-MAL-019, R-MAL-021): `malware_scan`, the verdict of a blob keyed by its SHA-256 with the job's columns (due,
+priority, attempts, not_before), `malware_release`, the release of a blob, the one-row tables `malware_settings` (the switch, off),
+`malware_database` (the signature database in use, empty) and `malware_scanners`, and the `cluster_epoch` rows of the change areas
+`malware_settings` and `malware_database`. Neither the verdict nor the release has a foreign key to `blobs`: a foreign key to `blobs` is
+a reference the collection keeps (R-STOR-024), so the job's sweep removes the row of a blob no item holds instead. `GetLiveItem` left-joins
+both by the item's blob, so a download reads its verdict in its one statement (R-ARCH-027). The tables are registered in
+[tables_malware.go](../../internal/meta/postgres/tables_malware.go) (four of the class `Data`, `malware_scanners` `Transient`), the
+statements are [malware.sql](../../internal/meta/postgres/queries/malware.sql), and the contracts the four packages share are in
+[malware.md](malware.md).
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

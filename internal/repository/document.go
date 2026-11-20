@@ -76,12 +76,24 @@ type Settings struct {
 	// [vuln.DefaultSettings]; a member set with a few fields takes the defaults of the others (Q-VULN-26). Virtual
 	// repositories and formats without the adapter answer not_applicable for it.
 	Vulnerabilities *vuln.Settings `json:"vulnerabilities,omitempty"`
+	// Malware is the member owned by malware-scanning.md (R-MAL-020): on every class of every format, it only adds strictness to
+	// the installation's switch. It is absent until set, and an absent member is the default (onlyChecked false).
+	Malware *MalwareSettings `json:"malware,omitempty"`
 
 	// pending are the secret fields of the validated document that still have to
 	// be written to repository_secrets. They carry the plaintext of a request, so
 	// they stay out of the JSON form (validateRemote, Service.writeSecrets).
 	pending []pendingSecret
 }
+
+// MalwareSettings is the member `malware` of a document (R-MAL-020): onlyChecked serves only checked artifacts from the
+// repository, and through every virtual repository that lists it, also while the installation's switch is off.
+type MalwareSettings struct {
+	OnlyChecked bool `json:"onlyChecked"`
+}
+
+// malwareOnlyChecked is the effective value of the member: an absent member is false.
+func malwareOnlyChecked(m *MalwareSettings) bool { return m != nil && m.OnlyChecked }
 
 // LocalSettings is the `local` section of a document. Which members apply
 // depends on the format (R-REPO-004, R-GENERIC-008): none of them applies to a

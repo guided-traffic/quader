@@ -108,8 +108,9 @@ RETURNING repo_id;
 -- A page of the cache entries of one repository for diagnosis (R-REPO-032), in the
 -- order of the primary key; after_path and after_variant are the key of the last
 -- row of the previous page. A prefix filters like a prefix of an invalidation. An
--- absent expiry (an artifact) or gone mark is 0.
-SELECT path, variant, kind, upstream_url,
+-- absent expiry (an artifact) or gone mark is 0. blob_sha256 is the content of the entry, whose malware verdict the
+-- cache view shows for an artifact (R-MAL-022).
+SELECT path, variant, kind, upstream_url, blob_sha256,
        (extract(epoch FROM fetched_at) * 1000000)::bigint AS fetched_us,
        (extract(epoch FROM validated_at) * 1000000)::bigint AS validated_us,
        COALESCE((extract(epoch FROM expires_at) * 1000000)::bigint, 0)::bigint AS expires_us,

@@ -2,6 +2,7 @@ package bastionmain
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"log/slog"
 	"slices"
@@ -57,6 +58,7 @@ func feedActions() []string {
 		audit.EventRepositoryDisabled, eventRepositoryDeleted, audit.EventRepositoryNarrowed, eventClaimsChanged,
 		audit.EventNPMUnpublish, audit.EventPackageDeleted,
 		audit.EventVulnFindingStatusChanged, audit.EventVulnFindingReopened,
+		audit.EventMalwareFound, audit.EventMalwareReleaseWithdrawn,
 	}
 }
 
@@ -83,6 +85,7 @@ func noFeedEntry() map[string]string {
 		audit.EventBastionDeleted:          "a registration is no caller a Bastion answers; its tokens' token.revoked entries come before it, and the Bastion learns of its end from 401 bastion_token_invalid (R-BAS-006, Q-BAS-145)",
 		audit.EventGroupUpdated:            "clearing auto-join removes no membership that exists (R-AUTH-019): only users created afterwards stay out of the group; a rename or a description changes no grant",
 		audit.EventUserUpdated:             "removes a pending identity link, which no caller holds until a login completes it; a profile change changes no grant",
+		audit.EventMalwareSettingsChanged:  "turning the switch on changes which bytes the main installation serves in every repository; a content entry for every repository would empty every Bastion's cache, so a Bastion learns it at its next revalidation (H-1102, Q-BAS-164)",
 	}
 }
 
@@ -136,6 +139,8 @@ type rawEntry struct {
 	tokens     []string
 	principals []string
 	repository string
+	// digest, with kind content, is the hex SHA-256 of a blob whose holders are the repositories of the entry (Q-BAS-164).
+	digest string
 	// names, with kind principal, are member names that still need their IDs.
 	names []string
 }
@@ -157,6 +162,8 @@ type detailsDoc struct {
 	// Before and After are the old and the new value of a change event (a level, a flag).
 	Before json.RawMessage `json:"before"`
 	After  json.RawMessage `json:"after"`
+	// SHA256 is the blob of a malware event (R-MAL-026).
+	SHA256 string `json:"sha256"`
 }
 
 // mapper turns one stored event and its parsed details into the entries it yields.
@@ -182,6 +189,8 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 		audit.EventPackageDeleted:           mapWithdrawal,
 		audit.EventVulnFindingReopened:      mapBlock,
 		audit.EventVulnFindingStatusChanged: mapBlock,
+		audit.EventMalwareFound:             mapBlob,
+		audit.EventMalwareReleaseWithdrawn:  mapBlob,
 	}
 	// serviceaccount.updated narrows the actions of a repository's service account (R-AUTHZ-039): the answers of that account go.
 	for _, a := range []string{audit.EventUserDisabled, audit.EventUserDeleted, audit.EventSADisabled, audit.EventSADeleted, audit.EventSAUpdated} {
@@ -331,6 +340,16 @@ func mapBlock(ev FeedEvent, d *detailsDoc, defaultEndpoint string) []rawEntry {
 		return nil
 	}
 	return mapWithdrawal(ev, d, defaultEndpoint)
+}
+
+// mapBlob: a find and a withdrawn release refuse a blob in every repository that holds it (R-MAL-018, Q-BAS-164). The entry is
+// the content of those repositories when the feed is read and of the virtual ones above them; an event whose blob does not read
+// cannot be narrowed to repositories: grants.
+func mapBlob(_ FeedEvent, d *detailsDoc, _ string) []rawEntry {
+	if b, err := hex.DecodeString(d.SHA256); err != nil || len(b) != 32 {
+		return grantsEntry()
+	}
+	return []rawEntry{{kind: iface.FeedContent, digest: d.SHA256}}
 }
 
 // mapEvent maps one audit event to the entries it yields (the table of R-BAS-015): none for an event that
@@ -568,19 +587,24 @@ func (f *Feed) reset(ctx context.Context, qs *q.Queries, ans *iface.FeedAnswer) 
 }
 
 // lookups holds the results of the queries the mapped entries need: the virtual closure of every repository
-// named by a content entry and the IDs of the members named by a membership event.
+// named by a content entry, the repositories (with their closure) that hold the blob of a content entry, and the IDs
+// of the members named by a membership event.
 type lookups struct {
 	closure map[string][]string
+	blobs   map[string][]string
 	ids     map[string][]string
 }
 
 func (f *Feed) lookups(ctx context.Context, qs *q.Queries, mapped [][]rawEntry) (lookups, error) {
-	l := lookups{closure: map[string][]string{}, ids: map[string][]string{}}
-	var repos, names []string
+	l := lookups{closure: map[string][]string{}, blobs: map[string][]string{}, ids: map[string][]string{}}
+	var repos, names, digests []string
 	for _, es := range mapped {
 		for _, e := range es {
 			if e.repository != "" && !slices.Contains(repos, e.repository) {
 				repos = append(repos, e.repository)
+			}
+			if e.digest != "" && !slices.Contains(digests, e.digest) {
+				digests = append(digests, e.digest)
 			}
 			for _, n := range e.names {
 				if n = memberName(n); !slices.Contains(names, n) {
@@ -604,6 +628,11 @@ func (f *Feed) lookups(ctx context.Context, qs *q.Queries, mapped [][]rawEntry) 
 		}
 		l.closure[name] = out
 	}
+	for _, d := range digests {
+		if err := l.blobHolders(ctx, qs, d); err != nil {
+			return l, err
+		}
+	}
 	if len(names) > 0 {
 		rows, err := qs.BastionPrincipalIDsByName(ctx, names)
 		if err != nil {
@@ -616,6 +645,27 @@ func (f *Feed) lookups(ctx context.Context, qs *q.Queries, mapped [][]rawEntry) 
 	return l, nil
 }
 
+// blobHolders looks up the repositories that hold a blob now and the virtual repositories above them, in that order.
+func (l lookups) blobHolders(ctx context.Context, qs *q.Queries, digest string) error {
+	raw, _ := hex.DecodeString(digest) // mapBlob let only 64 hexadecimal digits through
+	holders, err := qs.BastionBlobHolders(ctx, raw)
+	if err != nil || len(holders) == 0 {
+		return err
+	}
+	closure, err := qs.BastionVirtualClosure(ctx, holders)
+	if err != nil {
+		return err
+	}
+	out := slices.Clone(holders)
+	for _, n := range closure {
+		if !slices.Contains(out, n) {
+			out = append(out, n)
+		}
+	}
+	l.blobs[digest] = out
+	return nil
+}
+
 // memberName is the name a member reference of a membership event has in the principal table: a service account
 // is referenced as "sa:<name>", a user by its name, which holds no colon.
 func memberName(ref string) string { return strings.TrimPrefix(ref, "sa:") }
@@ -624,6 +674,9 @@ func memberName(ref string) string { return strings.TrimPrefix(ref, "sa:") }
 func (l lookups) entries(ev FeedEvent, es []rawEntry) []iface.FeedEntry {
 	var out []iface.FeedEntry
 	for _, e := range es {
+		if e.digest != "" && len(l.blobs[e.digest]) == 0 {
+			continue // no repository holds the blob any more: no Bastion keeps an answer of it
+		}
 		fe := iface.FeedEntry{ID: ev.ID, At: ev.At, Kind: e.kind}
 		if n := len(out); n > 0 {
 			fe.ID = ev.ID + ":" + strconv.Itoa(n)
@@ -648,6 +701,9 @@ func (l lookups) entries(ev FeedEvent, es []rawEntry) []iface.FeedEntry {
 			}
 		case iface.FeedContent:
 			fe.Repositories = l.closure[e.repository]
+			if e.digest != "" {
+				fe.Repositories = l.blobs[e.digest]
+			}
 		}
 		out = append(out, fe)
 	}

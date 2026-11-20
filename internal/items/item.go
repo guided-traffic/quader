@@ -6,6 +6,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/malware"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/servefacts"
 	"github.com/guided-traffic/quader/internal/vuln"
@@ -59,6 +60,9 @@ type Item struct {
 	// the cache entry of the artifact exists and is not marked gone.
 	Facts       servefacts.Facts
 	EntryStored bool
+	// Malware is the verdict of the malware scanning on the item's blob and its release, read in the lookup (R-MAL-013,
+	// Q-MAL-23); the zero value is a blob without a row, which is pending. A folder has none.
+	Malware malware.Verdict
 }
 
 // itemFrom converts the row of GetLiveItem.
@@ -96,7 +100,25 @@ func itemFrom(repoKey qname.Repo, key servefacts.Key, r q.GetLiveItemRow) Item {
 	copy(it.Digest[:], r.BlobSha256)
 	it.SHA1, it.MD5, it.SHA512 = r.BlobSha1, r.BlobMd5, r.BlobSha512
 	it.ContentStatus = r.ContentStatus.String
+	it.Malware = malwareVerdict(it.Digest, r)
 	return it
+}
+
+// malwareVerdict reads the verdict columns of the lookup.
+func malwareVerdict(d blob.Digest, r q.GetLiveItemRow) malware.Verdict {
+	v := malware.Verdict{Known: r.MalwareKnown}
+	if r.MalwareKnown {
+		v.State, v.Reason, v.Signature, v.Part = malware.State(r.MalwareState), r.MalwareReason, r.MalwareSignature, r.MalwarePart
+		v.Database, v.DatabaseBuiltAt = r.MalwareDbVersion, r.MalwareDbBuiltAt.Time.UTC()
+		v.ScannedAt, v.FirstFoundAt, v.Due = r.MalwareScannedAt.Time.UTC(), r.MalwareFirstFoundAt.Time.UTC(), r.MalwareDue
+	}
+	if r.MalwareReleased {
+		v.Release = &malware.Release{
+			Digest: d, Reason: r.MalwareReleaseReason, State: malware.State(r.MalwareReleaseState), ReleasedBy: r.MalwareReleasedBy,
+			ReleasedByName: r.MalwareReleasedByName, ReleasedAt: r.MalwareReleasedAt.Time.UTC(),
+		}
+	}
+	return v
 }
 
 // ETag is the strong entity tag of a file: the content address (R-STOR-012).

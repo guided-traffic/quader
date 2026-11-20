@@ -2,14 +2,17 @@ package v1
 
 import (
 	"context"
+	"encoding/hex"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
 
+	"github.com/guided-traffic/quader/internal/api/edge"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/proxy/invalidation"
@@ -105,6 +108,8 @@ type cacheEntryRep struct {
 	ExpiresAt      *time.Time `json:"expiresAt"`
 	UpstreamGoneAt *time.Time `json:"upstreamGoneAt"`
 	LastUsedAt     time.Time  `json:"lastUsedAt"`
+	// Malware is the member of an artifact's verdict (R-MAL-022); absent for a metadata entry and while the scanning is off.
+	Malware *edge.MalwareView `json:"malware,omitempty"`
 }
 
 func toCacheEntryRep(e invalidation.Entry) cacheEntryRep {
@@ -180,7 +185,41 @@ func (s *Server) ListCacheEntries(w http.ResponseWriter, r *http.Request, projec
 		return
 	}
 	page := NewPage(lq, rows, func(e invalidation.Entry) []string { return []string{e.Path, e.Variant} })
-	WritePage(w, r, MapPage(page, toCacheEntryRep))
+	out := MapPage(page, toCacheEntryRep)
+	if err := s.addCacheMalware(ctx, repoKey, page.Items, out.Items); err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.listCacheEntries"))
+		return
+	}
+	WritePage(w, r, out)
+}
+
+// addCacheMalware adds the member malware to the artifact entries of a page (R-MAL-022): the cache view is gated as the remote
+// is (R-MAL-018), so an entry shows the verdict its download meets.
+func (s *Server) addCacheMalware(ctx context.Context, key qname.Repo, rows []invalidation.Entry, out []cacheEntryRep) error {
+	var hexes []string
+	for _, e := range rows {
+		if e.Kind == invalidation.EntryKindArtifact {
+			hexes = append(hexes, hex.EncodeToString(e.SHA256[:]))
+		}
+	}
+	verdicts, err := s.malwareVerdicts(ctx, hexes)
+	if err != nil || verdicts == nil {
+		return err
+	}
+	mc, err := s.malwareContexts(ctx)
+	if err != nil {
+		return err
+	}
+	c, err := mc.of(key)
+	if err != nil {
+		return err
+	}
+	for i, e := range rows {
+		if e.Kind == invalidation.EntryKindArtifact {
+			out[i].Malware = edge.DescribeMalware(verdicts[blob.Digest(e.SHA256)], c, false)
+		}
+	}
+	return nil
 }
 
 // cacheEntryFilter reads the filters and the cursor of the entry list.

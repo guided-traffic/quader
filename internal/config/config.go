@@ -67,6 +67,9 @@ type Config struct {
 	// The counting of the download limits (limits.go, usage-and-limits.md).
 	Limits Limits `yaml:"limits"`
 
+	// The malware scanning (malware.go, malware-scanning.md).
+	Malware Malware `yaml:"malware"`
+
 	// ConfigAsCode holds secrets_dir, which the secret references of M2 use.
 	ConfigAsCode AsCode `yaml:"config_as_code"`
 }

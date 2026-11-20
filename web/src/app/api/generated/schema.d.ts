@@ -5040,6 +5040,181 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/malware/switch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether the scanning is on and only checked artifacts can be downloaded
+         * @description The two facts a screen outside the admin area needs (Q-MAL-45): `enabled` is `malware.enabled` of the configuration, and
+         *     `onlyChecked` the installation's switch **Only checked artifacts can be downloaded** (R-MAL-019). A repository's settings
+         *     page shows its own setting read-only while the switch is on (R-MAL-024), and the admin area shows the page Malware
+         *     scanning while the scanning is on (R-MAL-023). Every signed-in caller reads it; it holds nothing else.
+         */
+        get: operations["getMalwareSwitch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/malware/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the switch and the state of the malware scanning
+         * @description The installation's switch with its `ETag`, the backlog that switching it on would refuse or hold, the signature database in
+         *     use and the scanners the worker last saw (R-MAL-019, R-MAL-022, R-MAL-023). `backlog.unchecked` counts the blobs of
+         *     scannable items without a verdict, `backlog.notCheckable` those whose verdict is unscannable or failed and that no release
+         *     passes. Read from PostgreSQL, so an answer shows a change another replica committed.
+         */
+        get: operations["getMalwareSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Switch Only checked artifacts can be downloaded on or off
+         * @description A JSON merge patch with `onlyChecked` (R-MAL-019); `If-Match` is required. A change records `malware.settings.changed`
+         *     with `before` and `after`; switching on carries the journal flag, so a restore to an earlier point keeps it on. Every
+         *     replica follows within the bound of R-ARCH-018. The answer is the settings after the change.
+         */
+        patch: operations["updateMalwareSettings"];
+        trace?: never;
+    };
+    "/api/v1/malware/finds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the blobs the malware scan found or could not check
+         * @description One page of blobs whose verdict is `infected`, `unscannable` or `failed`, newest find first, each with its verdict, its
+         *     release and the items that hold it (R-MAL-022, R-MAL-025). A holder of `content:metadata-read` sees every find; a caller
+         *     with `read` on some repositories sees the items in those, and a blob only with them. A page may hold fewer finds than
+         *     `limit` when the caller reads only some items of a repository; `nextCursor` is null only on the last page. A find lists at
+         *     most 100 of its items and 100 of its repositories; `itemCount`, `repositoryCount` and `itemsTruncated` say how many the
+         *     caller may see. Filters: `state` (repeatable), `released`, `repository` (`<project>/<key>`), `q` (a fragment of a path or
+         *     of the signature, any case). An unknown filter answers `400`.
+         */
+        get: operations["listMalwareFinds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/malware/blobs/{sha256}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The blob's SHA-256 as 64 lower-case hexadecimal digits. */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * The verdict of one blob
+         * @description The verdict of a blob and the release that passes it, if any: the status check of a download (R-MAL-022). The caller needs
+         *     `read` on a repository that holds an item over the blob; a blob no such repository holds answers `404`, whatever its
+         *     verdict. A blob held by a repository the caller reads whose scanning has not reached it answers `pending`.
+         */
+        get: operations["getMalwareBlob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/malware/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release a blob the malware scan refuses
+         * @description Passes the blob through the gate in every repository that holds it, under the switch and without it, until the release is
+         *     withdrawn; it survives rescans and the removal of the blob's items (R-MAL-021). For a false positive (`infected`) and for
+         *     content nothing could check (`unscannable`, `failed`): a `pending` or `clean` blob answers `409 nothing_to_release`, a
+         *     released one `409 already_released`. Needs the capability `vulnerabilities:triage` together with `content:metadata-read`
+         *     (Q-MAL-21): the system roles `auditor` and `admin`. Records `malware.release.granted`.
+         */
+        post: operations["createMalwareRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/malware/releases/{sha256}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The blob's SHA-256 as 64 lower-case hexadecimal digits. */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Withdraw the release of a blob
+         * @description The blob is refused again from the next request (R-MAL-021). Records `malware.release.withdrawn` with the journal flag, so a
+         *     restore keeps it withdrawn, and the Bastions drop what they cached of it (R-BAS-015). `404` when no release passes the blob.
+         *     Needs `vulnerabilities:triage` together with `content:metadata-read`.
+         */
+        delete: operations["deleteMalwareRelease"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/malware/rescan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scan every verdict again
+         * @description Marks every verdict, or those of the blobs one repository holds, due at the lowest priority (`cycle`), and wakes the job
+         *     `malware-scan` (R-MAL-022, R-MAL-009). A verdict stays in force until its rescan; a row that waits already keeps its higher
+         *     priority. Answers `202` with the job, which may be the job that already waits. `409 malware_not_enabled` while
+         *     `malware.enabled` is false.
+         */
+        post: operations["rescanMalware"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror": {
         parameters: {
             query?: never;
@@ -9031,6 +9206,7 @@ export interface components {
             deb?: components["schemas"]["DebSettings"];
             ansible?: components["schemas"]["AnsibleSettings"];
             vulnerabilities?: components["schemas"]["VulnerabilitySettings"];
+            malware?: components["schemas"]["RepositoryMalwareSettings"];
             /** @enum {string} */
             readonly lifecycle?: "active" | "deleting";
             /** Format: date-time */
@@ -9257,6 +9433,7 @@ export interface components {
             /** @description Folders only. */
             listingUrl?: string;
             itemUrl: string;
+            malware?: components["schemas"]["MalwareStatus"];
         };
         Child: {
             /** @description Relative to the listed folder. */
@@ -9573,6 +9750,7 @@ export interface components {
             downloadUrl: string;
             /** @description The relative URL of the content route of the file item (`/api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}`), which the session cookie authenticates on the role `api`; the UI's downloads use it (R-API-025, R-API-029, Q-UI-106). */
             contentUrl: string;
+            malware?: components["schemas"]["MalwareStatus"];
         };
         PackageVersion: {
             packageId: string;
@@ -9983,6 +10161,7 @@ export interface components {
             upstreamGoneAt: string | null;
             /** Format: date-time */
             lastUsedAt: string;
+            malware?: components["schemas"]["MalwareStatus"];
         };
         CacheEntryPage: {
             items: components["schemas"]["CacheEntry"][];
@@ -10611,6 +10790,217 @@ export interface components {
              * @enum {string}
              */
             onMissingData: "allow" | "block";
+        };
+        /**
+         * @description The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
+         *     signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
+         *     `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+         * @enum {string}
+         */
+        MalwareState: "pending" | "clean" | "infected" | "unscannable" | "failed";
+        /** @enum {string} */
+        MalwareFindState: "infected" | "unscannable" | "failed";
+        MalwareSwitch: {
+            /** @description `malware.enabled`: false means no scan, no verdict and no refusal for malware. */
+            enabled: boolean;
+            /** @description The installation's switch **Only checked artifacts can be downloaded** (R-MAL-019). */
+            onlyChecked: boolean;
+        };
+        MalwareSettings: {
+            /** @description `malware.enabled` of the configuration (Q-MAL-45); the settings page shows that the scanning is off when false. */
+            enabled: boolean;
+            /** @description Only checked artifacts can be downloaded (R-MAL-019); false by default. */
+            onlyChecked: boolean;
+            /**
+             * Format: int64
+             * @description The revision of the switch; the `ETag` is its quoted form.
+             */
+            version: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description `<kind>:<name>` of the principal who changed the switch last; null for none. */
+            updatedBy: string | null;
+            backlog: components["schemas"]["MalwareBacklog"];
+            database: components["schemas"]["MalwareDatabaseState"];
+            scanners: components["schemas"]["MalwareScanners"];
+        };
+        /** @description What switching the switch on would hold or refuse (R-MAL-019). */
+        MalwareBacklog: {
+            /**
+             * Format: int64
+             * @description Blobs of scannable items without a verdict; under the switch they wait for their scan when asked for.
+             */
+            unchecked: number;
+            /**
+             * Format: int64
+             * @description Blobs whose verdict is unscannable or failed and that no release passes; under the switch they are refused.
+             */
+            notCheckable: number;
+        };
+        /** @description The signature database in use (R-MAL-010, R-MAL-023); `version` is null until the first version is in use. */
+        MalwareDatabaseState: {
+            /** @description The set's name, `main-<n>.daily-<n>.bytecode-<n>`. */
+            version: string | null;
+            /**
+             * Format: date-time
+             * @description The build time of the daily file; the database's date that the screens show.
+             */
+            builtAt: string | null;
+            /** Format: date-time */
+            importedAt: string | null;
+            /** @description `builtAt` is older than `malware.database.stale_after`; scanning goes on with it. */
+            stale: boolean;
+            /** @description The qualified name of the repository the database is kept in (`malware.database.repository`). */
+            repository: string;
+            /** @description `malware.database.freshclam`: false for an installation without internet, whose page shows the commands of R-MAL-012. */
+            freshclam: boolean;
+            lastError: components["schemas"]["MalwareDatabaseError"] | null;
+        };
+        MalwareDatabaseError: {
+            /** @description database_missing, database_invalid, database_repository_invalid or store_failed (R-MAL-010). */
+            code: string;
+            detail: string;
+            /** Format: date-time */
+            at: string;
+            /** @description The runs of the task that failed in a row. */
+            failures: number;
+        };
+        /** @description What the worker last saw of the malware scanners (Q-MAL-43); `observedAt` is null while it made no call. */
+        MalwareScanners: {
+            ready: number;
+            busy: number;
+            /** Format: date-time */
+            observedAt: string | null;
+        };
+        MalwareSettingsPatch: {
+            onlyChecked?: boolean;
+        };
+        /**
+         * @description The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
+         *     whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
+         *     A signature is text and is never rendered as markup.
+         */
+        MalwareStatus: {
+            state: components["schemas"]["MalwareState"];
+            /** Format: date-time */
+            scannedAt: string | null;
+            /** @description The version of the signature database the verdict was made with. */
+            database: string | null;
+            /**
+             * Format: date-time
+             * @description That version's build time, shown as the database's date with **No malware found** (R-MAL-003, Q-MAL-41).
+             */
+            databaseBuiltAt: string | null;
+            signature: string | null;
+            /** @description The member of an archive the signature was found in, when the scanner unpacked it. */
+            part: string | null;
+            /** @description The reason of an unscannable verdict or the code of a failed one. */
+            reason: string | null;
+            released: boolean;
+            /** @description `<kind>:<name>` of the principal who released the blob; null without a release or a principal record. */
+            releasedBy: string | null;
+            /** Format: date-time */
+            releasedAt: string | null;
+            /**
+             * @description The gate refuses the file in its repository now (Q-MAL-45): infected without a release, or unscannable or failed where
+             *     only checked artifacts can be downloaded. A pending file is not refused; it waits for its scan.
+             */
+            refused: boolean;
+        };
+        MalwareRelease: {
+            sha256: string;
+            reason: string;
+            state: components["schemas"]["MalwareFindState"];
+            /** @description The signature of the verdict that was released (infected). */
+            signature: string | null;
+            /** @description The reason of the verdict that was released (unscannable, failed). */
+            reasonCode: string | null;
+            releasedBy: string | null;
+            /** Format: date-time */
+            releasedAt: string;
+        };
+        MalwareReleaseRequest: {
+            sha256: string;
+            reason: string;
+        };
+        MalwareBlob: {
+            sha256: string;
+            state: components["schemas"]["MalwareState"];
+            reason: string | null;
+            signature: string | null;
+            part: string | null;
+            database: string | null;
+            /** Format: date-time */
+            databaseBuiltAt: string | null;
+            /** Format: date-time */
+            scannedAt: string | null;
+            /** Format: date-time */
+            firstFoundAt: string | null;
+            /** @description A scan is due; the verdict stays in force until it is made. */
+            checking: boolean;
+            release: components["schemas"]["MalwareRelease"] | null;
+        };
+        MalwareFindItem: {
+            /** @description `<project>/<key>`. */
+            repository: string;
+            format: string;
+            path: string;
+            package: string | null;
+            version: string | null;
+        };
+        MalwareFind: {
+            sha256: string;
+            state: components["schemas"]["MalwareFindState"];
+            reason: string | null;
+            signature: string | null;
+            part: string | null;
+            database: string | null;
+            /** Format: date-time */
+            databaseBuiltAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the blob was first found infected, or when it was found unscannable or failed; the list's order.
+             */
+            foundAt: string;
+            /** Format: date-time */
+            scannedAt: string | null;
+            /** @description The repositories the caller may see that hold the blob. */
+            repositoryCount: number;
+            firstRepository: string | null;
+            /** @description Those repositories by name, sorted, at most 100; the release dialog names them (R-MAL-025). */
+            repositories: string[];
+            itemCount: number;
+            /** @description More items hold the blob than `items` lists (100), or than the answer counted (1,000 per blob). */
+            itemsTruncated: boolean;
+            items: components["schemas"]["MalwareFindItem"][];
+            release: components["schemas"]["MalwareRelease"] | null;
+        };
+        MalwareFindPage: {
+            items: components["schemas"]["MalwareFind"][];
+            nextCursor: string | null;
+        };
+        MalwareRescanRequest: {
+            /** @description `<project>/<key>`: only the blobs an item of this repository holds. */
+            repository?: string;
+        };
+        MalwareRescanResult: {
+            job: components["schemas"]["JobReference"];
+            /**
+             * Format: int64
+             * @description The verdicts the rescan looked at.
+             */
+            marked: number;
+        };
+        /**
+         * @description The member `malware` of a repository document (R-MAL-020, R-REPO-004), on every class of every format. It only adds
+         *     strictness: with the installation's switch on it changes nothing, with it off `onlyChecked: true` serves only checked
+         *     artifacts from this repository, and through a virtual repository that names it or lists it. Switching it on records
+         *     `repository.narrowed`; switching it off needs `repositories:write-config` or `vulnerabilities:triage` (`403
+         *     malware_weakening_refused` for a project Owner). An absent member is the default.
+         */
+        RepositoryMalwareSettings: {
+            /** @default false */
+            onlyChecked: boolean;
         };
         /** @description The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value. */
         VulnerabilityCvss: {
@@ -23401,6 +23791,287 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getMalwareSwitch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The switch. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "enabled": true,
+                     *       "onlyChecked": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MalwareSwitch"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getMalwareSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareSettings"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateMalwareSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "onlyChecked": true
+                 *     }
+                 */
+                "application/merge-patch+json": components["schemas"]["MalwareSettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description The settings after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listMalwareFinds: {
+        parameters: {
+            query?: {
+                /** @description infected, unscannable or failed. Repeat for several; without it all three. */
+                state?: components["schemas"]["MalwareFindState"][];
+                /** @description true: only released finds; false: only finds without a release. */
+                released?: boolean;
+                /** @description A repository name `<project>/<key>`: only finds an item of it holds. */
+                repository?: string;
+                /** @description A fragment of a path or of the signature, matched without regard to case. */
+                q?: string;
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of finds. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareFindPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getMalwareBlob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The blob's SHA-256 as 64 lower-case hexadecimal digits. */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The verdict. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareBlob"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createMalwareRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "sha256": "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f",
+                 *       "reason": "The publisher's build tool is flagged by a signature that ClamAV withdrew on 2026-11-21."
+                 *     }
+                 */
+                "application/json": components["schemas"]["MalwareReleaseRequest"];
+            };
+        };
+        responses: {
+            /** @description The release. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareRelease"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteMalwareRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The blob's SHA-256 as 64 lower-case hexadecimal digits. */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The release is withdrawn. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    rescanMalware: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "repository": "web/npm-remote"
+                 *     }
+                 */
+                "application/json": components["schemas"]["MalwareRescanRequest"];
+            };
+        };
+        responses: {
+            /** @description The rescan is marked and the job queued. */
+            202: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareRescanResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];

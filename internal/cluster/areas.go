@@ -145,6 +145,14 @@ func init() {
 	// >>> W-26 limits
 	RegisterArea(Area{Name: AreaLimits, Owner: "R-LIM-013", Class: ChangeArea, PayloadVersion: 1})
 	// <<< W-26 limits
+	//
+	// The areas of the malware scanning (malware-scanning.md R-MAL-010, R-MAL-014, R-MAL-019). The cluster_epoch rows of the two
+	// change areas are seeded by 00088_malware; malware_verdict is a signal and has none (Q-MAL-44).
+	// >>> malware
+	RegisterArea(Area{Name: AreaMalwareSettings, Owner: "R-MAL-019", Class: ChangeArea, PayloadVersion: 1})
+	RegisterArea(Area{Name: AreaMalwareDatabase, Owner: "R-MAL-010", Class: ChangeArea, PayloadVersion: 1})
+	RegisterArea(Area{Name: AreaMalwareVerdict, Owner: "R-MAL-014", Class: SignalArea})
+	// <<< malware
 }
 
 // Names of the areas of this package.
@@ -257,3 +265,21 @@ const AreaMirrorYield = "mirror_yield"
 const AreaLimits = "limits"
 
 // <<< W-26 limits
+
+// >>> malware
+
+// AreaMalwareSettings carries a change of the installation's switch "Only checked artifacts can be downloaded" (R-MAL-019).
+// Every replica reloads its snapshot of malware_settings, which the download gate reads instead of the database. The payload is
+// {"version": <the row's version>}.
+const AreaMalwareSettings = "malware_settings"
+
+// AreaMalwareDatabase carries a change of the signature database in use (R-MAL-010): a new version, a version put back after a
+// scanner refused one, a failure of the task. The payload is {"version": "<the version in use>"}.
+const AreaMalwareDatabase = "malware_database"
+
+// AreaMalwareVerdict is the signal the job raises after it committed verdicts (R-MAL-014, Q-MAL-44): the payload is the
+// lower-case hex SHA-256 of one blob whose verdict was written. A download that waits for that verdict decides again; a waiter on
+// a replica that missed the signal reads the row once a second, so nothing depends on its delivery.
+const AreaMalwareVerdict = "malware_verdict"
+
+// <<< malware

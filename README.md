@@ -249,6 +249,7 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 | `/api/npm/<projectKey>/<repoKey>/-/npm/v1/security/advisories/bulk` | POST | yes: the bulk audit, answered from Quader's data (mode `local`, M4b) or forwarded (`npm.audit.mode: forward`, M2); `…/-/npm/v1/security/audits` and `…/audits/quick` answer `501 npm_audit_unavailable` in every mode ([routes.go](internal/formats/npm/routes.go)) |
 | `/api/v1/vulnerabilities/findings`, `…/findings/export`, `…/findings/{id}`, `…/findings/set-status`, `…/advisories/{ecosystem}/{id}`, `…/summary`, `…/trend`, `…/sources`, `…/claimed-name-matches` | GET; PATCH on `…/findings/{id}`, POST on `…/set-status` | yes (M4b; [the operations](#management-api)) |
 | `/api/v1/packages/{packageId}/vulnerabilities`, `/api/v1/packages/{packageId}/versions/{version}/vulnerabilities`, `/api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan` | GET; POST for the rescan | yes (M4b) |
+| `/api/v1/malware/switch`, `…/settings`, `…/finds`, `…/blobs/{sha256}`, `…/releases`, `…/releases/{sha256}`, `…/rescan` | GET; PATCH on `…/settings`, POST on `…/releases` and `…/rescan`, DELETE on `…/releases/{sha256}` | yes (malware scanning, package 1; [the operations](#management-api)): the switch, the state of the scanning, the finds, the verdict of a blob, the release and the rescan; nothing writes a verdict until the job is built |
 | `/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror`, `/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run` | GET; POST | yes (phase 6b): the status of a remote repository's mirror and a request for a pass now ([mirror_api.go](internal/api/v1/mirror_api.go)); both answer `400 not_applicable` for a local or virtual repository |
 | `/api/v1/system/backups`, `/api/v1/system/backups/summary`, `/api/v1/system/backups/{runId}` | GET | yes (M5; [backups_api.go](internal/api/v1/backups_api.go)): the runs of the backup job from `backup_run`, the status of the job, one run; no path starts, deletes, verifies or restores a backup |
 | `/api/v1/avatars/{digest}` | GET | yes (R-API-055): the avatar image of a user, `{digest}` the 64 lower-case hex characters of the SHA-256 of the stored PNG; the `avatarUrl` of a user record is this path |
@@ -509,6 +510,7 @@ only if its `manifest.json` exists.
 | Debian tables | `deb_suites` (a suite of a local or virtual repository with `change_seq`, `built_seq`, the published generation and its state), `deb_binaries` (a stored package file with its normalized control paragraph), `deb_coordinates` (the suites and components a file is listed in), `deb_generations`, `deb_tombstones` (a package file the journal replay withheld), `deb_signing_keys` (a repository's signing keys; `private_key` is a sealed column, `secrets-reencrypt` walks it) and the remote's cache rows `deb_remote_releases`, `deb_remote_files`, `deb_remote_indexes`, `deb_remote_entries`; export class `data`; `deb_suites.change_seq` and `built_seq` are revision columns | yes (migrations 00060 to 00065, [tables_deb.go](internal/formatdata/deb/tables_deb.go)); every group of the data port is built |
 | Key grammar | `repositories.key` and `project.key` carry the checks of the OCI component grammar (`repositories_key_check`, `project_key_check`), and the checks of the composite names that embed a project key (`principal_check`, `authz_policy_name_check`, `ci_mappings_tier_check`) follow it; the step is a contract step (`requires-app >= 0.1.0`, so the compatibility floor does not move: pre-alpha, no replica of an older release has to keep serving) and stops at a key it refuses | yes (migration 00056) |
 | Mirror tables | `mirror_state` (one row per remote in mode `mirror`: the pass in progress with its fence `pass_job_id` and `pass_holder`, the cursor of the last complete pass, failures, rate-limit waits, the bound; export class `data`), `mirror_pending` (the names a pass has discovered and not filled; export class `transient`) | yes (migration 00040) |
+| Malware tables | `malware_scan` (the verdict of a blob, keyed by its SHA-256, no foreign key to `blobs`, with the job's columns), `malware_release` (the release of a blob), `malware_settings` (the switch, one row), `malware_database` (the signature database in use, one row), export class `data`; `malware_scanners` (what the job last saw of the scanners, one row), `transient` | yes (migration 00088, [tables_malware.go](internal/meta/postgres/tables_malware.go)); the job and the database task that write them are not built yet |
 | Advisory-lock categories | two-`int4` form: `1` lease, `2` fetch (retired, never reused), `3` migration, `4` configuration | yes (`internal/cluster/locks.go`) |
 | Roles and `application_name` | `quader_owner`, `quader_app`, `quader:<replica>:<class>` | planned ([R-HA-014](docs/spec/ha-and-helm.md)) for the role names; the `application_name` is built |
 
@@ -525,6 +527,8 @@ Names of the areas of the PostgreSQL change log ([internal/cluster/areas.go](int
 | `ci_mappings` | the in-process copies of the CI issuers and their mappings ([R-CI-002](docs/spec/gitlab-ci-oidc.md), R-CI-009; the exchange compares versions in its transaction and does not wait for it) | yes: every issuer and mapping write notifies it |
 | `ci_issuer_keys` | the in-process copy of a CI issuer's signing key set ([R-CI-003](docs/spec/gitlab-ci-oidc.md)); notified only when the content changed | contract: the area and its epoch row exist, no producer yet |
 | `vuln_data` | the per-replica copy of `vuln_source_state` (cache `vuln_source_state`, safety TTL 60 s) and the rendered NuGet vulnerability page (cache `vuln_nuget_page`); payload `{"ecosystem": "npm", "epoch": 42}`, written once per sync run that changed records or the state, never per request (R-VULN-027) | yes (M4b; epoch row from migration 00035) |
+| `malware_settings` | every replica's copy of the switch Only checked artifacts can be downloaded; payload `{"version": n}` (R-MAL-019) | yes (epoch row from migration 00088) |
+| `malware_database` | the signature database in use; payload `{"version": "<in use>"}` (R-MAL-010). The verdict a waiting download learns travels in the signal area `malware_verdict` (Valkey only, Q-MAL-44) | contract: the area and its epoch row exist, no producer yet |
 
 ### Metrics
 
@@ -755,6 +759,7 @@ The names of the event registry ([internal/audit](internal/audit/)). Each event 
 | Bastion interface | `bastion.contact` (a Bastion replica reported for the first time or a reported value changed, R-BAS-010), `bastion.downloads.dropped` (a batch of download events reported or lost events, R-BAS-016); `artifact.downloaded` carries `origin: bastion`, `bastion` and `replica` for a download a Bastion served from its cache |
 | Mirror mode | `mirror.pass_completed` (a pass attempt ended `complete`, `partial`, `bound_reached`, `offline` or `stopped`), `mirror.pass_failed`, `mirror.bound_reached` (once per transition), `mirror.rate_limited` (at most once per pass and hour); all asynchronous with the system as actor ([internal/audit/events_mirror.go](internal/audit/events_mirror.go)); the details hold counts, codes and the upstream's host name, never a URL; `mirror.pass_requested` (transactional, the caller) belongs to the run operation |
 | Vulnerability scanning | `vulnerability.finding.status_changed` (a triager's change, each change of a bulk `set-status` with one `bulk` identifier), `vulnerability.finding.reopened` (Quader reopens a dismissed finding), both transactional and carrying the journal entry when the change sets a download block; `vulnerability.download_blocked` (asynchronous, at most once a minute per repository, version and client address on each replica, `enforced: false` in mode `report`), `vulnerability.claimed_name_match` (asynchronous, once per advisory and name), `vulnerability.source.failed` (asynchronous, at most once an hour per source and ecosystem), `vulnerability.source.imported` (an import of mode `repository`, with the digest and `deployedBy`, or a run with `acceptShrink`), `vulnerability.advisory.kind_changed` (an alias group's canonical record changed kind) ([internal/audit/events_vuln.go](internal/audit/events_vuln.go)); `repository.updated` of a write that weakens the member `vulnerabilities` carries `block: lifted` and the members in `weakened` |
+| Malware scanning | `malware.found` (a scan made a blob infected or named another signature for it; journaled), `malware.cleared` (a rescan made it clean), `malware.release.granted`, `malware.release.withdrawn` (journaled), `malware.settings.changed` (journaled when it turns the switch on), `malware.download_blocked` (asynchronous), `malware.database.imported`, `malware.database.failed` (asynchronous) ([internal/audit/events_malware.go](internal/audit/events_malware.go)); `repository.updated` of a write that switches `malware.onlyChecked` off carries `block: lifted` and `malware.onlyChecked` in `weakened`, and switching it on records `repository.narrowed` with the part `malware` |
 
 </details>
 
@@ -763,7 +768,7 @@ The names of the event registry ([internal/audit](internal/audit/)). Each event 
 The code registry is [internal/errs/codes.go](internal/errs/codes.go). Every problem answer carries one of these values as `code`. The HTTP status of each code is in the registry.
 
 <details>
-<summary>Error codes (283 codes in the registry, grouped as the file groups them)</summary>
+<summary>Error codes (290 codes in the registry, grouped as the file groups them)</summary>
 
 - Audit (M1): `invalid_audit_range`
 - General: `internal`, `malformed_request`, `validation_failed`, `unauthenticated`, `not_implemented`, `forbidden`, `not_found`, `method_not_allowed`, `conflict`, `precondition_failed`, `payload_too_large`, `unsupported_media_type`, `rate_limited`, `insufficient_storage`, `unavailable`, `upstream_failed`, `upstream_timeout`, `repository_not_found`, `database_unavailable`, `egress_denied`, `key_ring_incompatible`, `object_store_unavailable`, `shutting_down`, `server_busy`, `database_timeout`, `misdirected_request`, `invalid_cursor`, `invalid_header`, `already_exists`, `idempotency_in_progress`, `idempotency_key_reused`, `precondition_required`, `reserved_name`, `managed_by_config`
@@ -784,6 +789,7 @@ The code registry is [internal/errs/codes.go](internal/errs/codes.go). Every pro
 - Virtual repositories (M2): `shadows_remote_package`, `shadow_check_unavailable`
 - Package content (M2): `content_refused`
 - Bastion interface (phase 5b): `bastion_token_invalid` (`401`, the Bastion token of a request is invalid, on every path as problem details), `bastion_interface_mismatch` (`400`, with the member `interfaceVersion`), `invalid_cursor` (`400`, a feed cursor that does not parse), `rate_limited` (`429`, an address with too many rejected Bastion tokens, or a batch of download events beyond the registration's budget) and `not_found` (`404`, a forward of a path outside `/api/<format>/` and `/files/`); the registry also holds `bastion_read_only`, `bastion_not_served`, `bastion_base_url_unknown`, `bastion_not_implemented` and `principal_not_allowed`, and the Bastion's own refusals of R-BAS-029 (`main_failed`, `main_unreachable`, `bastion_busy`, `main_timeout`, `auth_timeout`, `address_blocked`)
+- Malware scanning: `malware_found` (`403`), `malware_not_checked` (`403`), `malware_check_pending` (`503` with `Retry-After`; the three are the download gate's, which is not built yet), `malware_weakening_refused` (`403`, an Owner's write that switches `malware.onlyChecked` off), `nothing_to_release` (`409`, the blob is pending or clean), `already_released` (`409`), `malware_not_enabled` (`409`, a rescan while `malware.enabled` is false)
 - Vulnerability scanning (M4b): `vulnerability_blocked` (`403`, a finding blocks the version), `vulnerability_data_missing` (`403`, the repository sets `onMissingData: block` and the ecosystem's data was never imported completely), `vulnerability_data_unavailable` (`503`, the npm audit or the NuGet vulnerability documents before the data is complete), `vulnerability_weakening_refused` (`403`, a write of an Owner without `repositories:write-config` or `vulnerabilities:triage` that weakens the member `vulnerabilities`), `finding_not_confirmed` (`409`, `blocked` on a finding that is not confirmed), `finding_resolved` (`409`), `status_not_settable` (`422`, a person sets `resolved`), `export_too_large` (`422`, above `vulnerabilities.export.max_rows`); the codes of a failed sync run, recorded in `vuln_source_state.last_error` and never an answer to a request: `archive_too_large`, `archive_digest_mismatch`, `archive_limit`, `too_many_invalid_records`, `shrink_refused`, `mirror_repository_invalid`, and for a run that ended before its sync `sync_lease_lost`, `sync_panicked`, `sync_interrupted` and `sync_cancelled` (an operator's cancel, which does not count as a failure)
 - Mirror passes (phase 6b): the codes of a failed pass attempt, recorded in `mirror_state.last_error_code`, in `mirror.pass_failed` and in the status, and never an answer to a request: `discovery_unavailable` (the method that `discovery` names is not offered), `discovery_failed`, `discovery_stalled`, `cursor_too_large`, `not_applicable`, `upstream_unavailable`, `internal`
 - GitLab CI OIDC (M4): `ci_not_implemented`, `pin_required`, `pin_claim_not_immutable`, `public_issuer_required`, `kind_not_available`, `issuer_managed_by_configuration`, `discovery_unreachable`, `issuer_mismatch`, `no_usable_keys`, `algorithms_not_offered`, `condition_invalid`, `catch_all_condition`, `unprotected_write`, `unpinned_write`, `empty_grant`, `template_invalid`, `template_unanchored`, `unknown_policy`, `unknown_group`, `mapping_limit_reached`, `priority_taken`, `job_token_fallback_not_available`, `groups_not_allowed_in_project`, `policy_outside_project`, `mappings_unpinned`; the exchange's own `reason` values are in [internal/ci/reason](internal/ci/reason/reason.go) and answer in the OAuth error shape (R-CI-008): `malformed_request`, `unsupported_content_type`, `unsupported_subject_token_type`, `unsupported_requested_token_type`, `actor_token_not_supported`, `subject_token_malformed`, `wrong_subject_token_type`, `unknown_issuer`, `issuer_disabled`, `issuer_mismatch`, `algorithm_not_allowed`, `token_type_not_allowed`, `unknown_signing_key`, `signature_invalid`, `audience_invalid`, `audience_not_exclusive`, `token_expired`, `token_not_yet_valid`, `issued_in_future`, `required_claim_missing`, `subject_token_replayed`, `subject_token_predates_restore`, `cross_project_source_denied`, `no_matching_mapping`, `grant_render_failed`, `subject_token_expires_too_soon`, `ttl_below_minimum`, `job_token_rejected` (P2), `job_not_running` (P2) (all `400 invalid_request`); `grant_type_unsupported` (`unsupported_grant_type`); `scope_malformed`, `scope_not_granted` (`invalid_scope`); `audience_not_this_server` (`invalid_target`); `rate_limited` (`429 slow_down`); `signing_keys_unavailable`, `gitlab_unreachable` (P2), `database_unavailable`, `configuration_changed` (`503 temporarily_unavailable`); `internal` (`500 server_error`)
@@ -812,6 +818,7 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 | `vuln-rescan` | `internal/app/wire_vuln_eval.go` | queue `default`, exclusive per repository (`vuln-rescan:<repository id>`); enqueued in the transaction of a change of the repository's `vulnerabilities.enabled`, `matchPublicAdvisories` or upstream URL, and by `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan` |
 | `mirror-pass` | `internal/app/wire_mirror.go` (kind), `internal/api/v1/mirror_api.go` (enqueue) | queue `mirror`, exclusive per repository (`mirror-pass:<repository id>`), 1 attempt; arguments `{"repository": "<projectKey>/<repoKey>", "repositoryId": <id>, "full": <bool>}`, the job's target the qualified name; enqueued by `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run` in the transaction that records the request in `mirror_state.pass_requested_*` and writes `mirror.pass_requested`, listed by `GET /api/v1/system/jobs?kind=mirror-pass`; the engine runs it as below |
 | `vuln-findings-retention` | `internal/app/wire_vuln_eval.go` | task (`maintenance` queue, exclusive, 3 attempts), `50 3 * * *`: deletes the resolved findings older than `vulnerabilities.findings.resolved_retention` |
+| `malware-scan` | not registered yet (the job of the malware scanning) | queue `malware`, coalesce; enqueued by `POST /api/v1/malware/rescan` and by a download that waits for a verdict, with `malware.ScanKindSpec()`; a row waits on the queue until the job is built |
 | `mirror-dispatch` | `internal/app/wire_mirror.go` | task, queue `maintenance` (so that passes holding the slots of the queue `mirror` cannot starve it), exclusive, 1 attempt, `* * * * *`; ensures a `mirror_state` row for every remote in mode `mirror` and enqueues `mirror-pass` for each that is due; `maintenance.tasks.mirror-dispatch` overrides the schedule |
 | `mirror-pass` | `internal/app/wire_mirror.go`, `internal/mirror/pass.go` | queue `mirror`, exclusive per repository (`mirror-pass:<repository id>`), 1 attempt, no timeout; enqueued by the dispatch and by the run operation; a failed, released or crashed attempt is continued by the next dispatch; the result is `{"outcome", …}`, `{"deferred": "rate_limited", "until"}` or `{"skipped": "repository_gone" \| "not_mirror" \| "paused" \| "invalid_document" \| "rate_limited"}` |
 | `oci-sweep` | `internal/formatdata/oci/sweep.go` (kind), `internal/app/wire_formats.go` (on a replica that claims jobs) | task (`maintenance` queue, exclusive, 3 attempts), `0 * * * *`: removes the blob items of an image name in a local OCI repository that no manifest references and no open upload session can still reference, once they are older than `oci.unreferenced_blob_grace`, as the system actor `removal` (R-OCI-019) |
@@ -2204,6 +2211,31 @@ and the problem details of R-ARCH-023 with the `deb_*` codes of [error codes](#e
 
 </details>
 
+<details>
+<summary>Malware scanning: the keys of the gate and the settings page, and the repository document member</summary>
+
+The keys come from the struct tags of [internal/config/malware.go](internal/config/malware.go) (R-MAL-027); the keys of the job, the
+scanner and the database task join as they are built. The member `malware` is part of the repository document, not of `quader.yaml`
+([malware.md](docs/developer/malware.md)).
+
+```yaml
+malware:
+  enabled: true                         # default; false: no scan, no verdict, nothing refused for malware; the stored verdicts stay
+  download_wait: 25s                    # default; 0s to 60s, counted from the request's arrival: how long a download of unchecked content waits where only checked artifacts are served
+  max_waiting: 512                      # default; 1 to 100000 waiting downloads per replica
+  database:
+    repository: upstream/scanner-clamav # default; or a local generic repository of an own project (no internet); whoever holds deploy on it decides the signatures
+    freshclam: true                     # default; false: the repository is filled by hand and the settings page shows the commands
+    stale_after: 48h                    # default; 1h to 8760h: an older database is stale; scanning goes on with it
+```
+
+```yaml
+malware:                                # repository document member, every class of every format
+  onlyChecked: false                    # default; true: only checked artifacts are served from this repository and through every virtual repository that lists it; an Owner switches it on, switching it off needs repositories:write-config or vulnerabilities:triage
+```
+
+</details>
+
 ### Security-relevant settings
 
 | Setting | Default | What changes | Decision |
@@ -2651,6 +2683,21 @@ The operations of the vulnerability scanning ([docs/developer/vulnerabilities.md
 | `GET /api/v1/packages/{packageId}/versions/{version}/vulnerabilities` | `getPackageVersionVulnerabilities` | authenticated; per readable repository that holds the version: evaluation, block and findings |
 | `GET /api/v1/packages/{packageId}/vulnerabilities` | `getPackageVulnerabilities` | authenticated; the readable open findings per version |
 | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan` | `rescanRepositoryVulnerabilities` | action `manage` on `path.projectKey`/`path.repoKey` · idempotent; `202` with the `vuln-rescan` job, `409` while one is queued or running |
+
+**malware**
+
+The operations of the malware scanning ([docs/developer/malware.md](docs/developer/malware.md#the-api), [the gate and the release](docs/security/malware-scanning.md#the-gate-and-why-a-refusal-is-visible)).
+
+| Method and path | Operation | Permission |
+|---|---|---|
+| `GET /api/v1/malware/switch` | `getMalwareSwitch` | authenticated; `enabled` and `onlyChecked` only |
+| `GET /api/v1/malware/settings` | `getMalwareSettings` | `settings:read` |
+| `PATCH /api/v1/malware/settings` | `updateMalwareSettings` | `settings:write` · `If-Match`; a JSON merge patch with `onlyChecked`, journaled when it turns on |
+| `GET /api/v1/malware/finds` | `listMalwareFinds` | authenticated; the items the caller may read, every item for a holder of `content:metadata-read` |
+| `GET /api/v1/malware/blobs/{sha256}` | `getMalwareBlob` | public; `read` on a repository that holds the blob, `404` otherwise |
+| `POST /api/v1/malware/releases` | `createMalwareRelease` | `vulnerabilities:triage` and `content:metadata-read`; `409 nothing_to_release`, `409 already_released` |
+| `DELETE /api/v1/malware/releases/{sha256}` | `deleteMalwareRelease` | `vulnerabilities:triage` and `content:metadata-read`; journaled |
+| `POST /api/v1/malware/rescan` | `rescanMalware` | `settings:write` · idempotent; `202` with the `malware-scan` job and the rows marked |
 
 </details>
 

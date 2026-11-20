@@ -213,6 +213,8 @@ type Entry struct {
 	ExpiresAt      *time.Time // nil for an artifact
 	UpstreamGoneAt *time.Time
 	LastUsedAt     time.Time
+	// SHA256 is the digest of the entry's content (R-MAL-022: the cache view shows an artifact's malware verdict).
+	SHA256 [32]byte
 }
 
 // Key returns the sort key of the entry.
@@ -251,6 +253,7 @@ func (s *Service) Entries(ctx context.Context, repoID int64, f EntryFilter) ([]E
 			FetchedAt: time.UnixMicro(r.FetchedUs).UTC(), ValidatedAt: time.UnixMicro(r.ValidatedUs).UTC(),
 			ExpiresAt: optionalTime(r.ExpiresUs), UpstreamGoneAt: optionalTime(r.GoneUs), LastUsedAt: time.UnixMicro(r.LastUsedUs).UTC(),
 		}
+		copy(out[i].SHA256[:], r.BlobSha256)
 	}
 	return out, nil
 }

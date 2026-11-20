@@ -803,6 +803,11 @@ func updateDetails(r Repository, changes []string, cur, nd *Document) eventDetai
 	if weak := weakenedVulnerabilities(cur, nd); len(weak) > 0 {
 		d.Block, d.Weakened = "lifted", weak
 	}
+	// Switching malware.onlyChecked off may serve content the gate held or refused (R-MAL-020): the same filter finds it.
+	if weakenedMalware(cur, nd) {
+		d.Block = "lifted"
+		d.Weakened = append(d.Weakened, "malware.onlyChecked")
+	}
 	return d
 }
 

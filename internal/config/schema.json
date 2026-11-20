@@ -2567,6 +2567,60 @@
       },
       "type": "object"
     },
+    "malware": {
+      "additionalProperties": false,
+      "properties": {
+        "database": {
+          "additionalProperties": false,
+          "properties": {
+            "freshclam": {
+              "default": true,
+              "description": "true: the freshclam container beside the worker fetches the database from ClamAV's network; false: an administrator fills the repository by hand with the files of cvdupdate, and the settings page shows the commands (R-MAL-012).",
+              "type": "boolean",
+              "x-quader-env": "QUADER_MALWARE_DATABASE_FRESHCLAM"
+            },
+            "repository": {
+              "default": "upstream/scanner-clamav",
+              "description": "The qualified name \u003cprojectKey\u003e/\u003crepoKey\u003e of the repository the signature database is kept in: the system repository upstream/scanner-clamav, or a local generic repository of an own project for an installation without internet (R-MAL-012). Whoever holds deploy on such a repository decides what the scanners compare content with (H-1107).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_DATABASE_REPOSITORY"
+            },
+            "stale_after": {
+              "default": "48h",
+              "description": "A database whose build time is older than this makes the scanning stale: scanning goes on with it, the settings page says so and QuaderMalwareDatabaseStale fires (R-MAL-010).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_DATABASE_STALE_AFTER",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
+        "download_wait": {
+          "default": "25s",
+          "description": "How long a download of content that is not checked yet waits for its verdict where the gate is strict, counted from the request's arrival (R-MAL-014, Q-MAL-29); then 503 malware_check_pending with Retry-After. The default keeps the whole answer inside apt's 30-second timeout.",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_MALWARE_DOWNLOAD_WAIT",
+          "x-quader-type": "duration"
+        },
+        "enabled": {
+          "default": true,
+          "description": "false: no scan, no verdict and no gate: nothing is refused for malware and the stored verdicts stay as they are (R-MAL-001). With the scanning on and the switch Only checked artifacts can be downloaded off (the default), only content found infected is refused.",
+          "type": "boolean",
+          "x-quader-env": "QUADER_MALWARE_ENABLED"
+        },
+        "max_waiting": {
+          "default": 512,
+          "description": "Downloads one replica holds waiting for a verdict; a further one is answered 503 malware_check_pending at once (R-MAL-014).",
+          "maximum": 100000,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_MALWARE_MAX_WAITING"
+        }
+      },
+      "type": "object"
+    },
     "metrics": {
       "additionalProperties": false,
       "properties": {

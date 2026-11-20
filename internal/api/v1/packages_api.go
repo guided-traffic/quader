@@ -18,6 +18,7 @@ import (
 	"github.com/guided-traffic/quader/internal/api/edge"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
@@ -431,6 +432,10 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 	}
 	base := httpserver.InfoFrom(ctx).BaseURL
 	out := versionOf(base, d)
+	if err := s.addMalwareStatus(ctx, d, out.Files); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	if format == "ansible" {
 		// The announcement of the documentation is wiki content: absent for a caller who may not read it (R-ANS-036, R-ANS-037).
 		out.Metadata.Docs = s.docsAnnouncement(r, id, version)
@@ -459,6 +464,38 @@ func versionOf(base string, d view.VersionDetail) gen.PackageVersion {
 		})
 	}
 	return out
+}
+
+// addMalwareStatus adds the member malware to each file of a version (R-MAL-022, R-MAL-024): the verdicts in one statement, the
+// strictness of each holding repository from the replica's snapshot. Without the scanning the files carry no member.
+func (s *Server) addMalwareStatus(ctx context.Context, d view.VersionDetail, files []gen.PackageFile) error {
+	if len(files) == 0 {
+		return nil
+	}
+	hexes := make([]string, len(d.Files))
+	for i, f := range d.Files {
+		hexes[i] = f.SHA256
+	}
+	verdicts, err := s.malwareVerdicts(ctx, hexes)
+	if err != nil || verdicts == nil {
+		return err
+	}
+	mc, err := s.malwareContexts(ctx)
+	if err != nil {
+		return err
+	}
+	for i, f := range d.Files {
+		dg, ok := blob.ParseDigest(f.SHA256)
+		if !ok {
+			continue
+		}
+		c, err := mc.of(f.Repo)
+		if err != nil {
+			return err
+		}
+		files[i].Malware = malwareStatusRep(edge.DescribeMalware(verdicts[dg], c, false))
+	}
+	return nil
 }
 
 // metadataOf maps the format-specific metadata of a version to the typed member: the announcement of the documentation (`docs`,

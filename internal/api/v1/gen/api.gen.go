@@ -1870,6 +1870,54 @@ func (e MaintenanceModeMode) Valid() bool {
 	}
 }
 
+// Defines values for MalwareFindState.
+const (
+	MalwareFindStateFailed      MalwareFindState = "failed"
+	MalwareFindStateInfected    MalwareFindState = "infected"
+	MalwareFindStateUnscannable MalwareFindState = "unscannable"
+)
+
+// Valid indicates whether the value is a known member of the MalwareFindState enum.
+func (e MalwareFindState) Valid() bool {
+	switch e {
+	case MalwareFindStateFailed:
+		return true
+	case MalwareFindStateInfected:
+		return true
+	case MalwareFindStateUnscannable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MalwareState.
+const (
+	MalwareStateClean       MalwareState = "clean"
+	MalwareStateFailed      MalwareState = "failed"
+	MalwareStateInfected    MalwareState = "infected"
+	MalwareStatePending     MalwareState = "pending"
+	MalwareStateUnscannable MalwareState = "unscannable"
+)
+
+// Valid indicates whether the value is a known member of the MalwareState enum.
+func (e MalwareState) Valid() bool {
+	switch e {
+	case MalwareStateClean:
+		return true
+	case MalwareStateFailed:
+		return true
+	case MalwareStateInfected:
+		return true
+	case MalwareStatePending:
+		return true
+	case MalwareStateUnscannable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ManualHeadingLevel.
 const (
 	N2 ManualHeadingLevel = 2
@@ -6656,10 +6704,15 @@ type BastionTokenSummary struct {
 
 // CacheEntry defines model for CacheEntry.
 type CacheEntry struct {
-	ExpiresAt      *time.Time     `json:"expiresAt"`
-	FetchedAt      time.Time      `json:"fetchedAt"`
-	Kind           CacheEntryKind `json:"kind"`
-	LastUsedAt     time.Time      `json:"lastUsedAt"`
+	ExpiresAt  *time.Time     `json:"expiresAt"`
+	FetchedAt  time.Time      `json:"fetchedAt"`
+	Kind       CacheEntryKind `json:"kind"`
+	LastUsedAt time.Time      `json:"lastUsedAt"`
+
+	// Malware The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
+	// whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
+	// A signature is text and is never rendered as markup.
+	Malware        *MalwareStatus `json:"malware,omitempty"`
 	Path           string         `json:"path"`
 	UpstreamGoneAt *time.Time     `json:"upstreamGoneAt"`
 	UpstreamUrl    string         `json:"upstreamUrl"`
@@ -8145,6 +8198,11 @@ type Item struct {
 	// ListingUrl Folders only.
 	ListingUrl *string `json:"listingUrl,omitempty"`
 
+	// Malware The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
+	// whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
+	// A signature is text and is never rendered as markup.
+	Malware *MalwareStatus `json:"malware,omitempty"`
+
 	// MediaType Files only; `application/octet-stream` when none was recorded.
 	MediaType *string `json:"mediaType,omitempty"`
 	Modified  Stamp   `json:"modified"`
@@ -8808,6 +8866,234 @@ type MaintenanceMode struct {
 
 // MaintenanceModeMode defines model for MaintenanceMode.Mode.
 type MaintenanceModeMode string
+
+// MalwareBacklog What switching the switch on would hold or refuse (R-MAL-019).
+type MalwareBacklog struct {
+	// NotCheckable Blobs whose verdict is unscannable or failed and that no release passes; under the switch they are refused.
+	NotCheckable int64 `json:"notCheckable"`
+
+	// Unchecked Blobs of scannable items without a verdict; under the switch they wait for their scan when asked for.
+	Unchecked int64 `json:"unchecked"`
+}
+
+// MalwareBlob defines model for MalwareBlob.
+type MalwareBlob struct {
+	// Checking A scan is due; the verdict stays in force until it is made.
+	Checking        bool            `json:"checking"`
+	Database        *string         `json:"database"`
+	DatabaseBuiltAt *time.Time      `json:"databaseBuiltAt"`
+	FirstFoundAt    *time.Time      `json:"firstFoundAt"`
+	Part            *string         `json:"part"`
+	Reason          *string         `json:"reason"`
+	Release         *MalwareRelease `json:"release"`
+	ScannedAt       *time.Time      `json:"scannedAt"`
+	Sha256          string          `json:"sha256"`
+	Signature       *string         `json:"signature"`
+
+	// State The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
+	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
+	// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+	State MalwareState `json:"state"`
+}
+
+// MalwareDatabaseError defines model for MalwareDatabaseError.
+type MalwareDatabaseError struct {
+	At time.Time `json:"at"`
+
+	// Code database_missing, database_invalid, database_repository_invalid or store_failed (R-MAL-010).
+	Code   string `json:"code"`
+	Detail string `json:"detail"`
+
+	// Failures The runs of the task that failed in a row.
+	Failures int `json:"failures"`
+}
+
+// MalwareDatabaseState The signature database in use (R-MAL-010, R-MAL-023); `version` is null until the first version is in use.
+type MalwareDatabaseState struct {
+	// BuiltAt The build time of the daily file; the database's date that the screens show.
+	BuiltAt *time.Time `json:"builtAt"`
+
+	// Freshclam `malware.database.freshclam`: false for an installation without internet, whose page shows the commands of R-MAL-012.
+	Freshclam  bool                  `json:"freshclam"`
+	ImportedAt *time.Time            `json:"importedAt"`
+	LastError  *MalwareDatabaseError `json:"lastError"`
+
+	// Repository The qualified name of the repository the database is kept in (`malware.database.repository`).
+	Repository string `json:"repository"`
+
+	// Stale `builtAt` is older than `malware.database.stale_after`; scanning goes on with it.
+	Stale bool `json:"stale"`
+
+	// Version The set's name, `main-<n>.daily-<n>.bytecode-<n>`.
+	Version *string `json:"version"`
+}
+
+// MalwareFind defines model for MalwareFind.
+type MalwareFind struct {
+	Database        *string    `json:"database"`
+	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt"`
+	FirstRepository *string    `json:"firstRepository"`
+
+	// FoundAt When the blob was first found infected, or when it was found unscannable or failed; the list's order.
+	FoundAt   time.Time         `json:"foundAt"`
+	ItemCount int               `json:"itemCount"`
+	Items     []MalwareFindItem `json:"items"`
+
+	// ItemsTruncated More items hold the blob than `items` lists (100), or than the answer counted (1,000 per blob).
+	ItemsTruncated bool            `json:"itemsTruncated"`
+	Part           *string         `json:"part"`
+	Reason         *string         `json:"reason"`
+	Release        *MalwareRelease `json:"release"`
+
+	// Repositories Those repositories by name, sorted, at most 100; the release dialog names them (R-MAL-025).
+	Repositories []string `json:"repositories"`
+
+	// RepositoryCount The repositories the caller may see that hold the blob.
+	RepositoryCount int              `json:"repositoryCount"`
+	ScannedAt       *time.Time       `json:"scannedAt"`
+	Sha256          string           `json:"sha256"`
+	Signature       *string          `json:"signature"`
+	State           MalwareFindState `json:"state"`
+}
+
+// MalwareFindItem defines model for MalwareFindItem.
+type MalwareFindItem struct {
+	Format  string  `json:"format"`
+	Package *string `json:"package"`
+	Path    string  `json:"path"`
+
+	// Repository `<project>/<key>`.
+	Repository string  `json:"repository"`
+	Version    *string `json:"version"`
+}
+
+// MalwareFindPage defines model for MalwareFindPage.
+type MalwareFindPage struct {
+	Items      []MalwareFind `json:"items"`
+	NextCursor *string       `json:"nextCursor"`
+}
+
+// MalwareFindState defines model for MalwareFindState.
+type MalwareFindState string
+
+// MalwareRelease defines model for MalwareRelease.
+type MalwareRelease struct {
+	Reason string `json:"reason"`
+
+	// ReasonCode The reason of the verdict that was released (unscannable, failed).
+	ReasonCode *string   `json:"reasonCode"`
+	ReleasedAt time.Time `json:"releasedAt"`
+	ReleasedBy *string   `json:"releasedBy"`
+	Sha256     string    `json:"sha256"`
+
+	// Signature The signature of the verdict that was released (infected).
+	Signature *string          `json:"signature"`
+	State     MalwareFindState `json:"state"`
+}
+
+// MalwareReleaseRequest defines model for MalwareReleaseRequest.
+type MalwareReleaseRequest struct {
+	Reason string `json:"reason"`
+	Sha256 string `json:"sha256"`
+}
+
+// MalwareRescanRequest defines model for MalwareRescanRequest.
+type MalwareRescanRequest struct {
+	// Repository `<project>/<key>`: only the blobs an item of this repository holds.
+	Repository *string `json:"repository,omitempty"`
+}
+
+// MalwareRescanResult defines model for MalwareRescanResult.
+type MalwareRescanResult struct {
+	Job JobReference `json:"job"`
+
+	// Marked The verdicts the rescan looked at.
+	Marked int64 `json:"marked"`
+}
+
+// MalwareScanners What the worker last saw of the malware scanners (Q-MAL-43); `observedAt` is null while it made no call.
+type MalwareScanners struct {
+	Busy       int        `json:"busy"`
+	ObservedAt *time.Time `json:"observedAt"`
+	Ready      int        `json:"ready"`
+}
+
+// MalwareSettings defines model for MalwareSettings.
+type MalwareSettings struct {
+	// Backlog What switching the switch on would hold or refuse (R-MAL-019).
+	Backlog MalwareBacklog `json:"backlog"`
+
+	// Database The signature database in use (R-MAL-010, R-MAL-023); `version` is null until the first version is in use.
+	Database MalwareDatabaseState `json:"database"`
+
+	// Enabled `malware.enabled` of the configuration (Q-MAL-45); the settings page shows that the scanning is off when false.
+	Enabled bool `json:"enabled"`
+
+	// OnlyChecked Only checked artifacts can be downloaded (R-MAL-019); false by default.
+	OnlyChecked bool `json:"onlyChecked"`
+
+	// Scanners What the worker last saw of the malware scanners (Q-MAL-43); `observedAt` is null while it made no call.
+	Scanners  MalwareScanners `json:"scanners"`
+	UpdatedAt time.Time       `json:"updatedAt"`
+
+	// UpdatedBy `<kind>:<name>` of the principal who changed the switch last; null for none.
+	UpdatedBy *string `json:"updatedBy"`
+
+	// Version The revision of the switch; the `ETag` is its quoted form.
+	Version int64 `json:"version"`
+}
+
+// MalwareSettingsPatch defines model for MalwareSettingsPatch.
+type MalwareSettingsPatch struct {
+	OnlyChecked *bool `json:"onlyChecked,omitempty"`
+}
+
+// MalwareState The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
+// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
+// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+type MalwareState string
+
+// MalwareStatus The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
+// whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
+// A signature is text and is never rendered as markup.
+type MalwareStatus struct {
+	// Database The version of the signature database the verdict was made with.
+	Database *string `json:"database"`
+
+	// DatabaseBuiltAt That version's build time, shown as the database's date with **No malware found** (R-MAL-003, Q-MAL-41).
+	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt"`
+
+	// Part The member of an archive the signature was found in, when the scanner unpacked it.
+	Part *string `json:"part"`
+
+	// Reason The reason of an unscannable verdict or the code of a failed one.
+	Reason *string `json:"reason"`
+
+	// Refused The gate refuses the file in its repository now (Q-MAL-45): infected without a release, or unscannable or failed where
+	// only checked artifacts can be downloaded. A pending file is not refused; it waits for its scan.
+	Refused    bool       `json:"refused"`
+	Released   bool       `json:"released"`
+	ReleasedAt *time.Time `json:"releasedAt"`
+
+	// ReleasedBy `<kind>:<name>` of the principal who released the blob; null without a release or a principal record.
+	ReleasedBy *string    `json:"releasedBy"`
+	ScannedAt  *time.Time `json:"scannedAt"`
+	Signature  *string    `json:"signature"`
+
+	// State The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
+	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
+	// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+	State MalwareState `json:"state"`
+}
+
+// MalwareSwitch defines model for MalwareSwitch.
+type MalwareSwitch struct {
+	// Enabled `malware.enabled`: false means no scan, no verdict and no refusal for malware.
+	Enabled bool `json:"enabled"`
+
+	// OnlyChecked The installation's switch **Only checked artifacts can be downloaded** (R-MAL-019).
+	OnlyChecked bool `json:"onlyChecked"`
+}
 
 // ManualContents defines model for ManualContents.
 type ManualContents struct {
@@ -9578,6 +9864,11 @@ type PackageFile struct {
 
 	// DownloadUrl Absolute, built on the public base URL.
 	DownloadUrl string `json:"downloadUrl"`
+
+	// Malware The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
+	// whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
+	// A signature is text and is never rendered as markup.
+	Malware *MalwareStatus `json:"malware,omitempty"`
 
 	// Path The path of the file item in the repository that holds it.
 	Path      string `json:"path"`
@@ -10520,6 +10811,13 @@ type Repository struct {
 	Lifecycle      *RepositoryLifecycle    `json:"lifecycle,omitempty"`
 	Local          *map[string]interface{} `json:"local,omitempty"`
 
+	// Malware The member `malware` of a repository document (R-MAL-020, R-REPO-004), on every class of every format. It only adds
+	// strictness: with the installation's switch on it changes nothing, with it off `onlyChecked: true` serves only checked
+	// artifacts from this repository, and through a virtual repository that names it or lists it. Switching it on records
+	// `repository.narrowed`; switching it off needs `repositories:write-config` or `vulnerabilities:triage` (`403
+	// malware_weakening_refused` for a project Owner). An absent member is the default.
+	Malware *RepositoryMalwareSettings `json:"malware,omitempty"`
+
 	// Npm The settings of the npm format, the `npm` member of a repository document (R-REPO-004). The document
 	// of the format's JSON Schema is `settingsSchema` of `GET /api/v1/formats`; `TestR_ARCH_008_NpmSettingsSchemaEqualsTheOpenAPIMember`
 	// fails on any difference between the two. A setting that does not apply to the class of the repository
@@ -10668,6 +10966,15 @@ type RepositoryList struct {
 // RepositoryList_Items_Item defines model for RepositoryList.items.Item.
 type RepositoryList_Items_Item struct {
 	union json.RawMessage
+}
+
+// RepositoryMalwareSettings The member `malware` of a repository document (R-MAL-020, R-REPO-004), on every class of every format. It only adds
+// strictness: with the installation's switch on it changes nothing, with it off `onlyChecked: true` serves only checked
+// artifacts from this repository, and through a virtual repository that names it or lists it. Switching it on records
+// `repository.narrowed`; switching it off needs `repositories:write-config` or `vulnerabilities:triage` (`403
+// malware_weakening_refused` for a project Owner). An absent member is the default.
+type RepositoryMalwareSettings struct {
+	OnlyChecked *bool `json:"onlyChecked,omitempty"`
 }
 
 // RepositoryRead The answer of a read, by the caller's view.
@@ -13282,6 +13589,39 @@ type SuggestLimitSubjectsParams struct {
 // SuggestLimitSubjectsParamsKinds defines parameters for SuggestLimitSubjects.
 type SuggestLimitSubjectsParamsKinds string
 
+// ListMalwareFindsParams defines parameters for ListMalwareFinds.
+type ListMalwareFindsParams struct {
+	// State infected, unscannable or failed. Repeat for several; without it all three.
+	State *[]MalwareFindState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Released true: only released finds; false: only finds without a release.
+	Released *bool `form:"released,omitempty" json:"released,omitempty"`
+
+	// Repository A repository name `<project>/<key>`: only finds an item of it holds.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+
+	// Q A fragment of a path or of the signature, matched without regard to case.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// RescanMalwareParams defines parameters for RescanMalware.
+type RescanMalwareParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// UpdateMalwareSettingsParams defines parameters for UpdateMalwareSettings.
+type UpdateMalwareSettingsParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // ListOwnedPackagesParams defines parameters for ListOwnedPackages.
 type ListOwnedPackagesParams struct {
 	// Owner The owner identity (`user:alice`, `group:team-web`, `sa:ci-bot`, `ci:<issuer>/<mapping>`).
@@ -14888,6 +15228,15 @@ type ReplaceLimitProfileJSONRequestBody = LimitProfileWrite
 // UpdateLimitSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateLimitSettings for application/merge-patch+json ContentType.
 type UpdateLimitSettingsApplicationMergePatchPlusJSONRequestBody = LimitSettingsPatch
 
+// CreateMalwareReleaseJSONRequestBody defines body for CreateMalwareRelease for application/json ContentType.
+type CreateMalwareReleaseJSONRequestBody = MalwareReleaseRequest
+
+// RescanMalwareJSONRequestBody defines body for RescanMalware for application/json ContentType.
+type RescanMalwareJSONRequestBody = MalwareRescanRequest
+
+// UpdateMalwareSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateMalwareSettings for application/merge-patch+json ContentType.
+type UpdateMalwareSettingsApplicationMergePatchPlusJSONRequestBody = MalwareSettingsPatch
+
 // CreatePermissionPolicyJSONRequestBody defines body for CreatePermissionPolicy for application/json ContentType.
 type CreatePermissionPolicyJSONRequestBody = PermissionPolicyInput
 
@@ -16032,6 +16381,30 @@ type ServerInterface interface {
 	// SuggestLimitSubjects Suggest technical tokens and CI projects
 	// (GET /api/v1/limits/subjects)
 	SuggestLimitSubjects(w http.ResponseWriter, r *http.Request, params SuggestLimitSubjectsParams)
+	// GetMalwareBlob The verdict of one blob
+	// (GET /api/v1/malware/blobs/{sha256})
+	GetMalwareBlob(w http.ResponseWriter, r *http.Request, sha256 string)
+	// ListMalwareFinds List the blobs the malware scan found or could not check
+	// (GET /api/v1/malware/finds)
+	ListMalwareFinds(w http.ResponseWriter, r *http.Request, params ListMalwareFindsParams)
+	// CreateMalwareRelease Release a blob the malware scan refuses
+	// (POST /api/v1/malware/releases)
+	CreateMalwareRelease(w http.ResponseWriter, r *http.Request)
+	// DeleteMalwareRelease Withdraw the release of a blob
+	// (DELETE /api/v1/malware/releases/{sha256})
+	DeleteMalwareRelease(w http.ResponseWriter, r *http.Request, sha256 string)
+	// RescanMalware Scan every verdict again
+	// (POST /api/v1/malware/rescan)
+	RescanMalware(w http.ResponseWriter, r *http.Request, params RescanMalwareParams)
+	// GetMalwareSettings Read the switch and the state of the malware scanning
+	// (GET /api/v1/malware/settings)
+	GetMalwareSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateMalwareSettings Switch Only checked artifacts can be downloaded on or off
+	// (PATCH /api/v1/malware/settings)
+	UpdateMalwareSettings(w http.ResponseWriter, r *http.Request, params UpdateMalwareSettingsParams)
+	// GetMalwareSwitch Whether the scanning is on and only checked artifacts can be downloaded
+	// (GET /api/v1/malware/switch)
+	GetMalwareSwitch(w http.ResponseWriter, r *http.Request)
 	// GetManualContents The contents of the manual
 	// (GET /api/v1/manual)
 	GetManualContents(w http.ResponseWriter, r *http.Request)
@@ -19953,6 +20326,284 @@ func (siw *ServerInterfaceWrapper) SuggestLimitSubjects(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SuggestLimitSubjects(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMalwareBlob operation middleware
+func (siw *ServerInterfaceWrapper) GetMalwareBlob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sha256" -------------
+	var sha256 string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sha256", r.PathValue("sha256"), &sha256, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMalwareBlob(w, r, sha256)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMalwareFinds operation middleware
+func (siw *ServerInterfaceWrapper) ListMalwareFinds(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMalwareFindsParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "released" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "released", r.URL.Query(), &params.Released, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "released"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "released", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMalwareFinds(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateMalwareRelease operation middleware
+func (siw *ServerInterfaceWrapper) CreateMalwareRelease(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateMalwareRelease(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteMalwareRelease operation middleware
+func (siw *ServerInterfaceWrapper) DeleteMalwareRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sha256" -------------
+	var sha256 string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sha256", r.PathValue("sha256"), &sha256, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteMalwareRelease(w, r, sha256)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RescanMalware operation middleware
+func (siw *ServerInterfaceWrapper) RescanMalware(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RescanMalwareParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RescanMalware(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMalwareSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetMalwareSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMalwareSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateMalwareSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMalwareSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateMalwareSettingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateMalwareSettings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMalwareSwitch operation middleware
+func (siw *ServerInterfaceWrapper) GetMalwareSwitch(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMalwareSwitch(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -32329,6 +32980,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/vulnerabilities", wrapper.GetPackageVersionVulnerabilities)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/vulnerabilities", wrapper.GetPackageVulnerabilities)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan", wrapper.RescanRepositoryVulnerabilities)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/switch", wrapper.GetMalwareSwitch)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/settings", wrapper.GetMalwareSettings)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/malware/settings", wrapper.UpdateMalwareSettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/finds", wrapper.ListMalwareFinds)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/blobs/{sha256}", wrapper.GetMalwareBlob)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/malware/releases", wrapper.CreateMalwareRelease)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/malware/releases/{sha256}", wrapper.DeleteMalwareRelease)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/malware/rescan", wrapper.RescanMalware)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror", wrapper.GetRepositoryMirror)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run", wrapper.RunRepositoryMirror)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/backups", wrapper.ListBackupRuns)

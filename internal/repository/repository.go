@@ -91,7 +91,14 @@ type Repository struct {
 	// vulnerability adapter, "" for a virtual repository or a format without one (R-VULN-002).
 	vulnerabilities vuln.Settings
 	vulnEcosystem   string
+	// malwareOnlyChecked is the member malware.onlyChecked (R-MAL-020).
+	malwareOnlyChecked bool
 }
+
+// MalwareOnlyChecked reports the repository's member malware.onlyChecked (R-MAL-020): only checked artifacts are served from it,
+// whatever the installation's switch says. It reads the replica's snapshot, so the download gate costs no query for it; a change is
+// in force on every replica within the propagation bound of the repo_config area.
+func (r Repository) MalwareOnlyChecked() bool { return r.malwareOnlyChecked }
 
 // NumericID is the repository's database ID (ID as a number), 0 when ID is not one.
 func (r Repository) NumericID() int64 {

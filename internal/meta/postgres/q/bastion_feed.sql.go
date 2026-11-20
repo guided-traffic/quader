@@ -11,6 +11,37 @@ import (
 	"time"
 )
 
+const bastionBlobHolders = `-- name: BastionBlobHolders :many
+SELECT DISTINCT (p.key || '/' || r.key)::text AS name
+  FROM items i
+  JOIN repositories r ON r.id = i.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE i.blob_sha256 = $1::bytea AND i.kind = 'file' AND i.trashed_at IS NULL
+ ORDER BY 1
+`
+
+// The repositories that hold a live item over a blob when the feed is read, by their qualified names: the content entry of
+// malware.found and malware.release.withdrawn (R-BAS-015, Q-BAS-164). A blob no item holds any more names none.
+func (q *Queries) BastionBlobHolders(ctx context.Context, sha256 []byte) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionBlobHolders, sha256)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bastionFeedAhead = `-- name: BastionFeedAhead :many
 SELECT id::text AS id, occurred_at, action, COALESCE(actor_id::text, '')::text AS actor_id,
        COALESCE(resource_type, '')::text AS resource_type, COALESCE(resource_id, '')::text AS resource_id,

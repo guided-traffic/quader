@@ -21,6 +21,9 @@
 -- exists at the item's path (variant entry_variant) and is not marked gone: the remote hit is the item and its entry. For a Debian
 -- repository deb_local reads the withheld mark of the item's path (deb_tombstones, R-DEB-032) and deb_remote the SHA-256 and size that
 -- the newest parsed index lists for the item's path (deb_remote_entries, R-DEB-022); both ignore facts_package.
+--
+-- The verdict of the malware scanning (malware-scanning.md R-MAL-013, Q-MAL-23) is read here as well: the row of malware_scan and
+-- the release of the item's blob, both keyed by the digest, so the gate costs no statement more. A blob without a row is pending.
 SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.media_type,
        i.declared_sha256, i.declared_sha512, i.declared_sha1, i.declared_md5, i.declared_mismatch,
        i.explicit_folder, i.generated, i.upstream_url,
@@ -67,9 +70,28 @@ SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.
        (CASE WHEN sqlc.arg(entry_probe)::boolean THEN EXISTS (
             SELECT 1 FROM remote_cache_entries e JOIN blobs eb ON eb.sha256 = e.blob_sha256
              WHERE e.repo_id = i.repo_id AND e.path = i.path AND e.variant = sqlc.arg(entry_variant)::text AND e.upstream_gone_at IS NULL)
-            ELSE false END)::boolean AS entry_stored
+            ELSE false END)::boolean AS entry_stored,
+       (ms.sha256 IS NOT NULL)::boolean AS malware_known,
+       COALESCE(ms.state, '')::text AS malware_state,
+       COALESCE(ms.reason, '')::text AS malware_reason,
+       COALESCE(ms.signature, '')::text AS malware_signature,
+       COALESCE(ms.part, '')::text AS malware_part,
+       COALESCE(ms.db_version, '')::text AS malware_db_version,
+       ms.db_built_at AS malware_db_built_at,
+       ms.scanned_at AS malware_scanned_at,
+       ms.first_found_at AS malware_first_found_at,
+       COALESCE(ms.due, false)::boolean AS malware_due,
+       (mr.sha256 IS NOT NULL)::boolean AS malware_released,
+       COALESCE(mr.reason, '')::text AS malware_release_reason,
+       COALESCE(mr.state, '')::text AS malware_release_state,
+       COALESCE(mr.released_by::text, '')::text AS malware_released_by,
+       COALESCE(CASE mp2.kind WHEN 'ci_mapping' THEN 'ci' ELSE mp2.kind END || ':' || mp2.name, '')::text AS malware_released_by_name,
+       mr.released_at AS malware_released_at
   FROM items i
   LEFT JOIN blobs b ON b.sha256 = i.blob_sha256
+  LEFT JOIN malware_scan ms ON ms.sha256 = i.blob_sha256
+  LEFT JOIN malware_release mr ON mr.sha256 = i.blob_sha256
+  LEFT JOIN principal mp2 ON mp2.id = mr.released_by
   LEFT JOIN principal cp ON cp.id = i.created_by
   LEFT JOIN principal mp ON mp.id = i.modified_by
   LEFT JOIN LATERAL (

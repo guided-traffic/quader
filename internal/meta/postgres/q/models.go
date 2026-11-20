@@ -767,6 +767,68 @@ type LimitSetting struct {
 	UpdatedBy    pgtype.UUID
 }
 
+type MalwareDatabase struct {
+	ID            bool
+	Version       pgtype.Text
+	Files         json.RawMessage
+	BuiltAt       pgtype.Timestamptz
+	ImportedAt    pgtype.Timestamptz
+	Repository    string
+	Previous      json.RawMessage
+	Refused       []string
+	Failures      int32
+	LastErrorCode pgtype.Text
+	LastError     pgtype.Text
+	LastErrorAt   pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+type MalwareRelease struct {
+	Sha256     []byte
+	Reason     string
+	State      string
+	Signature  pgtype.Text
+	ReasonCode pgtype.Text
+	ReleasedBy pgtype.UUID
+	ReleasedAt pgtype.Timestamptz
+}
+
+type MalwareScan struct {
+	Sha256       []byte
+	State        string
+	Reason       pgtype.Text
+	Signature    pgtype.Text
+	Part         pgtype.Text
+	DbVersion    pgtype.Text
+	DbBuiltAt    pgtype.Timestamptz
+	Limits       pgtype.Text
+	HolderRepoID int64
+	Size         int64
+	Due          bool
+	Priority     int16
+	Attempts     int32
+	NotBefore    pgtype.Timestamptz
+	AskedAt      pgtype.Timestamptz
+	FirstFoundAt pgtype.Timestamptz
+	ScannedAt    pgtype.Timestamptz
+	CreatedAt    pgtype.Timestamptz
+}
+
+type MalwareScanner struct {
+	ID         bool
+	Ready      int32
+	Busy       int32
+	ObservedAt pgtype.Timestamptz
+}
+
+type MalwareSetting struct {
+	ID          bool
+	OnlyChecked bool
+	Version     int64
+	UpdatedAt   pgtype.Timestamptz
+	UpdatedBy   pgtype.UUID
+}
+
 type MirrorPending struct {
 	RepoID    int64
 	Name      string

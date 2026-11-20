@@ -269,6 +269,7 @@ func (r *replayer) narrowed() (journal.Result, error) {
 	if err := r.vulnerabilities(e.Vulnerabilities); err != nil {
 		return journal.Result{}, err
 	}
+	r.malware(e.Malware)
 	if err := r.debUpstreamKeysRemoved(e.DebUpstreamKeysRemoved); err != nil {
 		return journal.Result{}, err
 	}
@@ -563,6 +564,18 @@ func (r *replayer) vulnerabilities(c *vulnChange) error {
 		TargetKind: "repository", TargetKey: r.subject,
 	})
 	return err
+}
+
+// malware replays the part malware (R-MAL-020, R-MAL-028): the member malware.onlyChecked is set on, on every class; a member
+// that is on already leaves the part in effect.
+func (r *replayer) malware(m *MalwareSettings) {
+	if m == nil || !m.OnlyChecked || malwareOnlyChecked(r.set.Malware) {
+		return
+	}
+	next := MalwareSettings{OnlyChecked: true}
+	r.set.Malware = &next
+	r.setMember("malware", next)
+	r.applied(partMalware)
 }
 
 // finish writes the document when a part touched it or the rows, tells the change areas, and builds the result: suspended
