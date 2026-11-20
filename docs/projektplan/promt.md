@@ -329,6 +329,9 @@ records the recorder that tells such a stall apart).
 - **The setup of an end-to-end set can run into the write class's rate limit** (2026-11-20, `make e2e SET=vuln` on an idle
   20-core host: `create service account e2e-nuget: 429 rate_limited`, burst 50, then 10 a second). The setup of `vuln`
   now waits out a 429 by its `Retry-After`; the other sets' setups were not looked at, and a fast runner can hit the same.
+- **The job `Malware Scan (source code)` takes ClamAV unpinned from the runner's package manager** and the signatures
+  from the distribution network on every run (`.github/workflows/release.yml`). Once the product pins a ClamAV image for
+  the malware scan of artifacts, that is two versions of one tool: the job then runs the pinned one.
 - **Two component tests of the person search wait a fixed 320 ms** (`policy-editor.spec.ts`, "no match "@sam" under
   Principal"; `project-screens.spec.ts`, "Service account of web"): both failed one `make web-test` on 2026-11-20 at a
   host load of 53 and passed when their files ran alone. A fixed wait measures the host; the tests should wait for the
@@ -512,6 +515,10 @@ records the recorder that tells such a stall apart).
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
+- **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
+  tested): `isMemberMiss` in `internal/formats/oci/virtual_read.go` counts every `Forbidden` as "this member does not
+  have it", so a block of the vulnerability scanning in one member yields the next member's content or a 404, where
+  R-VULN-015 says a block ends the resolution. The generic engine ends it.
 - **A repository enabled again can lose one of five scan attempts** (the scanner role, not on `main` yet): for about a
   second a replica's grant index still shows it disabled, the scanner's pull is refused and the scan ends
   `layer_missing`; retried after a minute, never read as clean. Written into R-VULN-034 by its builder. A fix is named
@@ -770,11 +777,36 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 - **A malware scan of every artifact with ClamAV** (2026-11-20, his words): "Kannst du gleich mal mit mir einen ClamAV
   Scanner nach dem Schema von Trivy vorbereiten. Brauchen wir auch. Alle Artefakte müssen Viren-geprüft werden. Es muss im
-  Admin-Bereich einen Schalter geben, der es ermöglicht, dass nur geprüfte Artefakte gedownloaded werden können." Being
-  prepared since 17:45: a planner reads what the scanner role and the project `upstream` give it, what ClamAV demands (its
-  database and the rules of its distribution, memory, limits, licence) and how a gate covers every format, and comes back
-  with the decisions. They go to him as a working paper he answers in (as the download limits did), not one by one in the
-  chat. Nothing of it is decided or specified.
+  Admin-Bereich einen Schalter geben, der es ermöglicht, dass nur geprüfte Artefakte gedownloaded werden können."
+  **Prepared and put to him at 18:40 as a working paper he answers in** (as the download limits were): three readings of
+  his words and fourteen decisions, each with options and the development agent's favourite, and a sketch of what each
+  client is answered. Nothing of it is decided or specified. What the planner established, read in the code and in
+  ClamAV's own documentation:
+  - **One place every download passes** (`itemStore.Serve` in `internal/formathost/ingest.go`, where the block of the
+    vulnerability scanning sits; `/files/` has a copy), and it reads the blob's row in the same statement: a verdict per
+    blob costs no query there and holds for every format and class, also those to come.
+  - **The scanner role is for images only**: its token names one manifest, its listener takes registry paths. A second
+    analyser is the case for which ADR-212 and ADR-213 name their own conditions for looking again.
+  - **ClamAV cannot go into Quader's image** (distroless, a static binary; `clamd` is a dynamically linked program under
+    the GPL-2.0): a container of its own, which is also the licence's boundary.
+  - **Quader may not fetch the signature database itself**: ClamAV's project allows `freshclam` and `cvdupdate` and
+    refuses scripted clients, so the shape of `upstream/scanner-trivy` cannot be copied; the generic format has only
+    the class local.
+  - **ClamAV 1.5.5 reads neither `ar` nor zstd**, so a `.deb` and a zstd layer have to be unpacked by the scanner, for
+    which Quader has bounded readers.
+  - **A signature scan does not find most registry malware**: no measurement of ClamAV against malicious packages was
+    found, and in a benchmark of 6,420 malicious npm packages 72 % work through install scripts; the `malicious`
+    advisories (npm and NuGet only) find those by identity. The switch should be named for what it is.
+  - **Not verified:** `clamd`'s memory with today's smaller database (the documentation's figures, upwards of 1.2 GiB,
+    are older); any terms for passing the signatures on; apt's behaviour on a 503.
+  The favourites in short: the verdict on the blob; scanned in the background with a priority scan and a bounded wait
+  when a pending blob is asked for; under the switch a pending blob is held up to 25 s and then answered 503, the rest
+  403 in each client's shape, a first pull through a remote stored before it is served; the switch for the
+  installation only; an infected blob blocked always and released by an administrator per digest; `clamd` in a
+  Deployment of its own of the role `scanner`; a route for one blob by digest on the scan listener; `freshclam` beside
+  the worker, the database kept in a system repository `upstream/scanner-clamav`; a new database reaches what was
+  downloaded lately within a day and the rest in a cycle of 30 days; four work packages, after the scanner role and
+  the project `upstream` are on `main`.
 - **The binding of a host to a repository of `upstream`** at its root (`docker pull mirror.example.com/library/alpine`, a Docker
   Engine's `registry-mirrors`; R-EP-006, R-OCI-029): named to him on 2026-11-20 as the second step after the project is
   built; today it is a configuration at start, not a click of the admin area. An address without the project segment, which
