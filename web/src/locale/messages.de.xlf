@@ -39978,5 +39978,77 @@
         <target>Und <ph id="0" equiv="count" disp="n"/> weitere virtuelle Repositories.</target>
       </segment>
     </unit>
+    <unit id="audit.action.malware.cleared">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:197</note>
+      </notes>
+      <segment>
+        <source>Malware find cleared by a rescan</source>
+        <target>Malware-Befund durch eine erneute Prüfung aufgehoben</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.malware.database.failed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:199</note>
+      </notes>
+      <segment>
+        <source>Malware signature update failed</source>
+        <target>Aktualisierung der Malware-Signaturen fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.malware.database.imported">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:201</note>
+      </notes>
+      <segment>
+        <source>Malware signatures imported</source>
+        <target>Malware-Signaturen importiert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.malware.download_blocked">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:203</note>
+      </notes>
+      <segment>
+        <source>Download blocked by the malware scan</source>
+        <target>Download durch die Malware-Prüfung gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.malware.found">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:205</note>
+      </notes>
+      <segment>
+        <source>Malware found in a file</source>
+        <target>Malware in einer Datei gefunden</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.malware.release.granted">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:207</note>
+      </notes>
+      <segment>
+        <source>File released despite the malware scan</source>
+        <target>Datei trotz der Malware-Prüfung zum Download zugelassen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.malware.release.withdrawn">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:209</note>
+      </notes>
+      <segment>
+        <source>File&apos;s release despite the malware scan withdrawn</source>
+        <target>Zulassung einer Datei trotz der Malware-Prüfung zurückgezogen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.malware.settings.changed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:211</note>
+      </notes>
+      <segment>
+        <source>Malware scan setting changed</source>
+        <target>Einstellung der Malware-Prüfung geändert</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

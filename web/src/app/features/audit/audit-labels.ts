@@ -193,6 +193,22 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.limits.project_maximum.changed:Project maximum for download limits changed`;
     case 'limits.settings.changed':
       return $localize`:@@audit.action.limits.settings.changed:Download limit settings changed`;
+    case 'malware.cleared':
+      return $localize`:@@audit.action.malware.cleared:Malware find cleared by a rescan`;
+    case 'malware.database.failed':
+      return $localize`:@@audit.action.malware.database.failed:Malware signature update failed`;
+    case 'malware.database.imported':
+      return $localize`:@@audit.action.malware.database.imported:Malware signatures imported`;
+    case 'malware.download_blocked':
+      return $localize`:@@audit.action.malware.download_blocked:Download blocked by the malware scan`;
+    case 'malware.found':
+      return $localize`:@@audit.action.malware.found:Malware found in a file`;
+    case 'malware.release.granted':
+      return $localize`:@@audit.action.malware.release.granted:File released despite the malware scan`;
+    case 'malware.release.withdrawn':
+      return $localize`:@@audit.action.malware.release.withdrawn:File's release despite the malware scan withdrawn`;
+    case 'malware.settings.changed':
+      return $localize`:@@audit.action.malware.settings.changed:Malware scan setting changed`;
     case 'mirror.bound_reached':
       return $localize`:@@audit.action.mirror.bound_reached:Mirror reached its limit`;
     case 'mirror.pass_completed':
