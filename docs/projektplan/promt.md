@@ -547,39 +547,11 @@ entry. The walk is part of [phase 8](BETA.md#phase-8--walkthrough-and-beta-relea
 it, one per package, each under rule 11. An entry marked **owner** is the owner's word; an entry marked **seen by the development
 agent** is not decided until the owner has said so.
 
-W-1 to W-26 are built and on `main`; their decisions are in the specification. What the owner has to decide or look at is in the
+W-1 to W-27 are built and on `main`; their decisions are in the specification. What the owner has to decide or look at is in the
 list [With the owner](#with-the-owner); what is untested is in section 12. Open as work:
 
-- **W-27 · Set up client is dreary and has too much text** (**owner**, 2026-11-20): "unsere Seiten von 'Set up client' [brauchen]
-  mehr Bilder oder [müssen] etwas farbenfroher aufgebaut werden. Diese Code- oder Text-Blöcke sollten in keinen 'VSCode'-Fenster
-  aufgelistet sein. Das hier ist so trist. Beim drauf schauen auf diese Anleitung hat man überhaupt keine Lust das mitzumachen.
-  Hier muss echt was passieren. Ich wünsche mir, dass ein Subagent der sich damit auskennt, damit mal auseinander setzt." Asked
-  how far the page may leave the palette: "Ne, du sollst schon in der Palette bleiben. Aber so wie es jetzt aussieht, ist es
-  scheiße, ganz einfach. Zu viel Schrift, keine Lust zusehen."
-  And on pictures and the blocks: "Bilder haben keine Einschränkungen der Palette. Wenn du also einen Text, anstatt in einer
-  schnöden Box in einem schicken VSCode Texteditor darstellst, ist das in Ordnung."
-  - **The owner's frame:** the page's own controls and text stay in the palette (the colours, type and measures of Q-UI-128);
-    a picture is not bound by the palette, and a snippet drawn as a smart editor window instead of a plain box counts as one;
-    less text; more pictures; a subagent that knows the field works on it.
-  - **Seen by the development agent on the renders** (`setup-npm-local`, `setup-oci-local`, `setup-npm-virtual-explained`): the
-    page's only colour is the three step discs and one link; it has no picture, and the format is a small glyph in a badge; a
-    snippet is a grey framed box of monospace text in which a placeholder (`<package>`, `${QUADER_TOKEN}`) looks like the rest,
-    with its copy button outside the box; four controls stand before step 1, and **Create a token** is a default button; nine
-    closed sections follow the steps as a list of lines, and opened the page is 9,332 px high at 1,440 px; the right third of
-    the page is empty at 1,440 px.
-  - **Chosen by the owner** (2026-11-20, from three variants a designer drew as a mockup with renders, `.out/w27/`, not
-    committed): "Variante A ist am besten und gefällt mir." Variant A keeps today's order and column. A snippet is a window:
-    an editor for a file (a tab with the file's name, line numbers, **Download** and **Copy** in its bar), a terminal for a
-    command, light in the light scheme and dark in the dark one, with syntax colours and the placeholders marked. A small
-    picture of the flow (the machine, the token, the repository) stands in the header, and a rail joins the steps. The
-    credential is one framed row with **Create a token** as the page's one blue button. The sentences are cut (npm: 72 words
-    before the end of step 2 become 38; OCI: 157 become 45), a second way of a step (Kubernetes) is folded. The explanation
-    stays on the page, as
-    [ADR-202](../decisions.md#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository) has it, as closed rows
-    under **Guide**. One design for every format; a format adds at most an accent inside the pictures and a glyph, and no
-    screen to the render set. No logo of npm, Ansible Galaxy or Docker (Q-UI-225 to 227). Not chosen: B (a picture per step,
-    the explanation in a drawer), C (a workbench with live substitution).
-  - In work: a builder builds variant A under rule 11.
+Nothing of the walk is open as work: W-27 (the page **Set up client** as editor and terminal windows, with less text, the
+owner's choice of variant A on 2026-11-20) is built; what he has to look at is in [With the owner](#with-the-owner).
 
 ## 11 · Run record
 
@@ -588,9 +560,11 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20**, 10:35.
 
-- **Landed on 2026-11-20:** W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
+- **Landed on 2026-11-20:** W-27 (**Set up client** in variant A), W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
   visibility behind a fold, and the measurement of what a format costs ([test-cost.md](../developer/test-cost.md)).
-- **In work:** W-27, a builder builds variant A, the owner's choice, in a worktree (nothing landed yet).
+- **In work:** nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
+  (larger default bursts from a measurement of one pull; a refused request is not counted in the request windows; the
+  manual names the job's timeout for podman).
 - **Waits for the owner:** which of the measurement's candidates is cut first (section 12 A); put to him: whether a format's
   e2e leg runs on a push only when that format changed.
 - **Decided, not built now:** W-12, an invitation by e-mail, later ("Option c, aber erst später", 2026-11-20;
@@ -645,6 +619,14 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - The lists (W-4, Q-UI-426): the description stays under the key instead of in a column of its own, so that every repository list
   is built from the same cell; the admin area's repository list keeps its copy button for the address, because his objection named
   the project's list.
+- W-27 (2026-11-20), beside his choice of variant A (Q-UI-800): an accent per format that is used only inside the pictures,
+  coral for npm and sky for OCI as he saw them, violet for NuGet, raspberry for Debian, teal for Ansible Galaxy and amber for
+  generic chosen by the builder (Q-UI-803); the client-setup answer names the parts of a snippet that are the reader's, and the
+  format contract gained two fields for it (Q-UI-802, ADR-208); the OCI pull names `myapp:1.0` as the push does; one sentence
+  per snippet at most, a second way of a step behind a fold, and the snippets that need a credential hidden from an anonymous
+  visitor (Q-UI-804); a closed fold lost 12 px of padding on every screen (Q-UI-805). Seen by the development agent on the
+  render: where a snippet has nothing to run for the reader, a terminal window holds only a comment (Ansible Galaxy, a
+  repository open to anonymous readers).
 - The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
   well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
   repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).
@@ -807,6 +789,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### C · The walk (W-12 to W-24)
 
+- **Set up client (W-27):** the journeys `08-packages` and `09-guides` have new selectors and were not run on a cluster; the
+  German page and the Bastion target were not rendered; the renders ran against answers rewritten in the builder's dev
+  server, not against the changed backend (its side is unit-tested).
 - **The kind test `e1_01_login_test.go`**, changed for the ended session at load (W-21), has not been run on a cluster.
 - **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
   dispatch of the nightly that names `e2e-upgrade` shows it.
