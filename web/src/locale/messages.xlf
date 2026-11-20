@@ -207,7 +207,7 @@
     <unit id="nav.context.admin">
       <notes>
         <note category="location">src/app/app.routes.ts:11</note>
-        <note category="location">src/app/core/navigation.ts:106</note>
+        <note category="location">src/app/core/navigation.ts:109</note>
       </notes>
       <segment>
         <source>Admin area</source>
@@ -216,7 +216,7 @@
     <unit id="nav.section.security-audit">
       <notes>
         <note category="location">src/app/app.routes.ts:12</note>
-        <note category="location">src/app/core/navigation.ts:88</note>
+        <note category="location">src/app/core/navigation.ts:91</note>
       </notes>
       <segment>
         <source>Security audit</source>
@@ -262,7 +262,7 @@
     <unit id="nav.guides">
       <notes>
         <note category="location">src/app/app.routes.ts:62</note>
-        <note category="location">src/app/core/navigation.ts:81</note>
+        <note category="location">src/app/core/navigation.ts:84</note>
         <note category="location">src/app/features/search/search-model.ts:95</note>
       </notes>
       <segment>
@@ -1559,6 +1559,62 @@
         <source>A download limit refused this download.</source>
       </segment>
     </unit>
+    <unit id="problem.malware_found">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:8</note>
+      </notes>
+      <segment>
+        <source>Quader&apos;s malware scan found malware in this file, so it cannot be downloaded. An instance auditor can release it in the security dashboard.</source>
+      </segment>
+    </unit>
+    <unit id="problem.malware_not_checked">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:10</note>
+      </notes>
+      <segment>
+        <source>The malware scan could not check this file, and only checked artifacts can be downloaded here. An instance auditor can release it in the security dashboard.</source>
+      </segment>
+    </unit>
+    <unit id="problem.malware_check_pending">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:12</note>
+      </notes>
+      <segment>
+        <source>Quader is checking this file for malware. Try again in a minute.</source>
+      </segment>
+    </unit>
+    <unit id="problem.malware_weakening_refused">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:14</note>
+      </notes>
+      <segment>
+        <source>Only an administrator or someone who triages vulnerabilities can switch this off. Ask one of them.</source>
+      </segment>
+    </unit>
+    <unit id="problem.nothing_to_release">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:16</note>
+      </notes>
+      <segment>
+        <source>There is nothing to release: the file is not checked yet, or no malware was found in it.</source>
+      </segment>
+    </unit>
+    <unit id="problem.already_released">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:18</note>
+      </notes>
+      <segment>
+        <source>These bytes are released already. Load the list again to see the release.</source>
+      </segment>
+    </unit>
+    <unit id="problem.malware_not_enabled">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:20</note>
+      </notes>
+      <segment>
+        <source>The malware scan is off in this installation&apos;s configuration, so there is nothing to scan again.</source>
+      </segment>
+    </unit>
     <unit id="problem.vuln.finding-not-confirmed">
       <notes>
         <note category="location">src/app/core/http/problem-messages-vulnerability.ts:9</note>
@@ -1649,7 +1705,7 @@
     </unit>
     <unit id="problem.unauthenticated">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:37</note>
+        <note category="location">src/app/core/http/problem-messages.ts:40</note>
       </notes>
       <segment>
         <source>You are not signed in, or your session has ended.</source>
@@ -1657,7 +1713,7 @@
     </unit>
     <unit id="problem.reauthentication_required">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:39</note>
+        <note category="location">src/app/core/http/problem-messages.ts:42</note>
       </notes>
       <segment>
         <source>This action needs a recent sign-in.</source>
@@ -1665,7 +1721,7 @@
     </unit>
     <unit id="problem.forbidden">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:41</note>
+        <note category="location">src/app/core/http/problem-messages.ts:44</note>
       </notes>
       <segment>
         <source>You do not have the permission for this.</source>
@@ -1673,7 +1729,7 @@
     </unit>
     <unit id="problem.csrf_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:43</note>
+        <note category="location">src/app/core/http/problem-messages.ts:46</note>
       </notes>
       <segment>
         <source>The request was refused as a possible forgery. Reload the page and try again.</source>
@@ -1681,7 +1737,7 @@
     </unit>
     <unit id="problem.not_found">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:45</note>
+        <note category="location">src/app/core/http/problem-messages.ts:48</note>
       </notes>
       <segment>
         <source>This does not exist, or you may not see it.</source>
@@ -1689,7 +1745,7 @@
     </unit>
     <unit id="problem.already_exists">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:47</note>
+        <note category="location">src/app/core/http/problem-messages.ts:50</note>
       </notes>
       <segment>
         <source>An object with this key or name already exists.</source>
@@ -1697,7 +1753,7 @@
     </unit>
     <unit id="problem.conflict">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:49</note>
+        <note category="location">src/app/core/http/problem-messages.ts:52</note>
       </notes>
       <segment>
         <source>The request conflicts with the current state.</source>
@@ -1705,7 +1761,7 @@
     </unit>
     <unit id="problem.idempotency_in_progress">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:51</note>
+        <note category="location">src/app/core/http/problem-messages.ts:54</note>
       </notes>
       <segment>
         <source>The same request is still being processed. Try again in a moment.</source>
@@ -1713,7 +1769,7 @@
     </unit>
     <unit id="problem.idempotency_key_reused">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:53</note>
+        <note category="location">src/app/core/http/problem-messages.ts:56</note>
       </notes>
       <segment>
         <source>This form was already submitted with different content. Reopen it and try again.</source>
@@ -1721,7 +1777,7 @@
     </unit>
     <unit id="problem.token_already_issued">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:55</note>
+        <note category="location">src/app/core/http/problem-messages.ts:58</note>
       </notes>
       <segment>
         <source>A token was already issued for this request.</source>
@@ -1729,7 +1785,7 @@
     </unit>
     <unit id="problem.precondition_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:57</note>
+        <note category="location">src/app/core/http/problem-messages.ts:60</note>
       </notes>
       <segment>
         <source>Changed by someone else since you opened it.</source>
@@ -1737,7 +1793,7 @@
     </unit>
     <unit id="problem.precondition_required">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:59</note>
+        <note category="location">src/app/core/http/problem-messages.ts:62</note>
       </notes>
       <segment>
         <source>The request did not say which version it changes. Reload the page and try again.</source>
@@ -1745,7 +1801,7 @@
     </unit>
     <unit id="problem.authz_epoch_unknown">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:61</note>
+        <note category="location">src/app/core/http/problem-messages.ts:64</note>
       </notes>
       <segment>
         <source>Your last change may not have been saved.</source>
@@ -1753,7 +1809,7 @@
     </unit>
     <unit id="problem.payload_too_large">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:63</note>
+        <note category="location">src/app/core/http/problem-messages.ts:66</note>
       </notes>
       <segment>
         <source>The request is too large.</source>
@@ -1761,7 +1817,7 @@
     </unit>
     <unit id="problem.validation_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:65</note>
+        <note category="location">src/app/core/http/problem-messages.ts:68</note>
       </notes>
       <segment>
         <source>Some entries are not valid.</source>
@@ -1769,7 +1825,7 @@
     </unit>
     <unit id="problem.malformed_request">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:67</note>
+        <note category="location">src/app/core/http/problem-messages.ts:70</note>
       </notes>
       <segment>
         <source>The request could not be understood.</source>
@@ -1777,7 +1833,7 @@
     </unit>
     <unit id="problem.invalid_cursor">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:69</note>
+        <note category="location">src/app/core/http/problem-messages.ts:72</note>
       </notes>
       <segment>
         <source>The list changed while you were paging. Start again from the first page.</source>
@@ -1785,7 +1841,7 @@
     </unit>
     <unit id="problem.upstream_error">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:73</note>
+        <note category="location">src/app/core/http/problem-messages.ts:76</note>
       </notes>
       <segment>
         <source>An upstream service did not answer correctly.</source>
@@ -1793,7 +1849,7 @@
     </unit>
     <unit id="problem.unavailable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:76</note>
+        <note category="location">src/app/core/http/problem-messages.ts:79</note>
       </notes>
       <segment>
         <source>The service is temporarily unavailable.</source>
@@ -1801,7 +1857,7 @@
     </unit>
     <unit id="problem.internal">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:78</note>
+        <note category="location">src/app/core/http/problem-messages.ts:81</note>
       </notes>
       <segment>
         <source>Something went wrong on the server.</source>
@@ -1809,7 +1865,7 @@
     </unit>
     <unit id="problem.repository_not_found">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:81</note>
+        <note category="location">src/app/core/http/problem-messages.ts:84</note>
       </notes>
       <segment>
         <source>This repository does not exist, or you may not see it.</source>
@@ -1817,7 +1873,7 @@
     </unit>
     <unit id="problem.repository_disabled">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:83</note>
+        <note category="location">src/app/core/http/problem-messages.ts:86</note>
       </notes>
       <segment>
         <source>This repository is disabled.</source>
@@ -1825,7 +1881,7 @@
     </unit>
     <unit id="problem.repository_referenced">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:85</note>
+        <note category="location">src/app/core/http/problem-messages.ts:88</note>
       </notes>
       <segment>
         <source>Other repositories still include this one.</source>
@@ -1833,7 +1889,7 @@
     </unit>
     <unit id="problem.invalid_key">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:87</note>
+        <note category="location">src/app/core/http/problem-messages.ts:90</note>
       </notes>
       <segment>
         <source>The key must have 2 to 64 characters: lower-case letters and digits, separated by a single dot or underscore, a double underscore or hyphens; it starts and ends with a letter or digit.</source>
@@ -1841,7 +1897,7 @@
     </unit>
     <unit id="problem.reserved_name">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:89</note>
+        <note category="location">src/app/core/http/problem-messages.ts:92</note>
       </notes>
       <segment>
         <source>This name is reserved.</source>
@@ -1849,7 +1905,7 @@
     </unit>
     <unit id="problem.invalid_pattern">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:91</note>
+        <note category="location">src/app/core/http/problem-messages.ts:94</note>
       </notes>
       <segment>
         <source>This pattern is not valid.</source>
@@ -1857,7 +1913,7 @@
     </unit>
     <unit id="problem.invalid_document">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:93</note>
+        <note category="location">src/app/core/http/problem-messages.ts:96</note>
       </notes>
       <segment>
         <source>The document contains a member that is unknown or misspelt.</source>
@@ -1865,7 +1921,7 @@
     </unit>
     <unit id="problem.immutable_field">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:95</note>
+        <note category="location">src/app/core/http/problem-messages.ts:98</note>
       </notes>
       <segment>
         <source>This field cannot be changed after creation.</source>
@@ -1873,7 +1929,7 @@
     </unit>
     <unit id="problem.not_applicable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:97</note>
+        <note category="location">src/app/core/http/problem-messages.ts:100</note>
       </notes>
       <segment>
         <source>This setting does not apply to this class or format.</source>
@@ -1881,7 +1937,7 @@
     </unit>
     <unit id="problem.unsupported_class">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:99</note>
+        <note category="location">src/app/core/http/problem-messages.ts:102</note>
       </notes>
       <segment>
         <source>This format does not support the chosen class.</source>
@@ -1889,7 +1945,7 @@
     </unit>
     <unit id="problem.invalid_path">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:101</note>
+        <note category="location">src/app/core/http/problem-messages.ts:104</note>
       </notes>
       <segment>
         <source>The path is not valid: no empty, dot or double-dot segments, no backslash or control characters.</source>
@@ -1897,7 +1953,7 @@
     </unit>
     <unit id="problem.path_conflict">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:103</note>
+        <note category="location">src/app/core/http/problem-messages.ts:106</note>
       </notes>
       <segment>
         <source>A file and a folder cannot share a path.</source>
@@ -1905,7 +1961,7 @@
     </unit>
     <unit id="problem.not_admitted">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:105</note>
+        <note category="location">src/app/core/http/problem-messages.ts:108</note>
       </notes>
       <segment>
         <source>The include and exclude patterns of this repository do not admit this path.</source>
@@ -1913,7 +1969,7 @@
     </unit>
     <unit id="problem.content_unavailable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:107</note>
+        <note category="location">src/app/core/http/problem-messages.ts:110</note>
       </notes>
       <segment>
         <source>The content is temporarily unavailable. Try again later.</source>
@@ -1921,7 +1977,7 @@
     </unit>
     <unit id="problem.endpoint_not_configured">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:109</note>
+        <note category="location">src/app/core/http/problem-messages.ts:112</note>
       </notes>
       <segment>
         <source>This endpoint is no longer configured, so its rules cannot be created or replaced.</source>
@@ -1929,7 +1985,7 @@
     </unit>
     <unit id="problem.exposure_rule_limit_reached">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:111</note>
+        <note category="location">src/app/core/http/problem-messages.ts:114</note>
       </notes>
       <segment>
         <source>This endpoint has reached the maximum number of exposure rules.</source>
@@ -1937,7 +1993,7 @@
     </unit>
     <unit id="problem.format_not_exposable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:113</note>
+        <note category="location">src/app/core/http/problem-messages.ts:116</note>
       </notes>
       <segment>
         <source>Repositories of this format cannot be exposed through rules yet.</source>
@@ -1945,7 +2001,7 @@
     </unit>
     <unit id="problem.invalid_version_range">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:115</note>
+        <note category="location">src/app/core/http/problem-messages.ts:118</note>
       </notes>
       <segment>
         <source>The version range is not valid in the syntax of this format.</source>
@@ -1953,7 +2009,7 @@
     </unit>
     <unit id="problem.dimension_not_supported">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:117</note>
+        <note category="location">src/app/core/http/problem-messages.ts:120</note>
       </notes>
       <segment>
         <source>This format has no such filter.</source>
@@ -1961,7 +2017,7 @@
     </unit>
     <unit id="problem.invalid_audit_range">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:119</note>
+        <note category="location">src/app/core/http/problem-messages.ts:122</note>
       </notes>
       <segment>
         <source>The export needs a start and an end, at most 400 days apart.</source>
@@ -1969,7 +2025,7 @@
     </unit>
     <unit id="problem.key_ring_incompatible">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:121</note>
+        <note category="location">src/app/core/http/problem-messages.ts:124</note>
       </notes>
       <segment>
         <source>The replicas do not hold the same key IDs, so the secrets cannot be re-encrypted yet.</source>
@@ -1977,7 +2033,7 @@
     </unit>
     <unit id="problem.package_owned_by_other_owner">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:126</note>
+        <note category="location">src/app/core/http/problem-messages.ts:129</note>
       </notes>
       <segment>
         <source>This package name belongs to other owners. Ask one of them, or someone who manages the repository, to add you.</source>
@@ -1985,7 +2041,7 @@
     </unit>
     <unit id="problem.last_owner">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:128</note>
+        <note category="location">src/app/core/http/problem-messages.ts:131</note>
       </notes>
       <segment>
         <source>This is the only owner of the package. Add the new owner first, or release the name.</source>
@@ -1993,7 +2049,7 @@
     </unit>
     <unit id="problem.populate_not_permitted">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:130</note>
+        <note category="location">src/app/core/http/problem-messages.ts:133</note>
       </notes>
       <segment>
         <source>This content is not in the cache, and you may not fetch it from the upstream.</source>
@@ -2001,7 +2057,7 @@
     </unit>
     <unit id="problem.rate_limited">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:176</note>
+        <note category="location">src/app/core/http/problem-messages.ts:186</note>
       </notes>
       <segment>
         <source>Too many requests. Wait a moment and try again.</source>
@@ -2009,7 +2065,7 @@
     </unit>
     <unit id="problem.rate_limited_wait">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:177</note>
+        <note category="location">src/app/core/http/problem-messages.ts:187</note>
       </notes>
       <segment>
         <source>Too many requests. Try again in <ph id="0" equiv="seconds" disp="seconds"/> seconds.</source>
@@ -2017,7 +2073,7 @@
     </unit>
     <unit id="problem.network">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:183</note>
+        <note category="location">src/app/core/http/problem-messages.ts:193</note>
       </notes>
       <segment>
         <source>The server could not be reached. Check your connection and try again.</source>
@@ -2025,7 +2081,7 @@
     </unit>
     <unit id="nav.context.home">
       <notes>
-        <note category="location">src/app/core/navigation.ts:78</note>
+        <note category="location">src/app/core/navigation.ts:81</note>
       </notes>
       <segment>
         <source>Your work</source>
@@ -2033,8 +2089,8 @@
     </unit>
     <unit id="nav.projects">
       <notes>
-        <note category="location">src/app/core/navigation.ts:80</note>
-        <note category="location">src/app/core/navigation.ts:109</note>
+        <note category="location">src/app/core/navigation.ts:83</note>
+        <note category="location">src/app/core/navigation.ts:112</note>
         <note category="location">src/app/features/search/search-model.ts:94</note>
       </notes>
       <segment>
@@ -2043,7 +2099,7 @@
     </unit>
     <unit id="nav.security-dashboard">
       <notes>
-        <note category="location">src/app/core/navigation.ts:94</note>
+        <note category="location">src/app/core/navigation.ts:97</note>
       </notes>
       <segment>
         <source>Security dashboard</source>
@@ -2051,7 +2107,7 @@
     </unit>
     <unit id="nav.dashboard">
       <notes>
-        <note category="location">src/app/core/navigation.ts:108</note>
+        <note category="location">src/app/core/navigation.ts:111</note>
       </notes>
       <segment>
         <source>Dashboard</source>
@@ -2059,8 +2115,8 @@
     </unit>
     <unit id="nav.repositories">
       <notes>
-        <note category="location">src/app/core/navigation.ts:110</note>
-        <note category="location">src/app/core/navigation.ts:209</note>
+        <note category="location">src/app/core/navigation.ts:113</note>
+        <note category="location">src/app/core/navigation.ts:222</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -2068,7 +2124,7 @@
     </unit>
     <unit id="nav.upstream">
       <notes>
-        <note category="location">src/app/core/navigation.ts:112</note>
+        <note category="location">src/app/core/navigation.ts:115</note>
       </notes>
       <segment>
         <source>Upstream registries</source>
@@ -2076,7 +2132,7 @@
     </unit>
     <unit id="nav.endpoints">
       <notes>
-        <note category="location">src/app/core/navigation.ts:113</note>
+        <note category="location">src/app/core/navigation.ts:116</note>
       </notes>
       <segment>
         <source>Endpoints</source>
@@ -2084,7 +2140,7 @@
     </unit>
     <unit id="nav.bastions">
       <notes>
-        <note category="location">src/app/core/navigation.ts:115</note>
+        <note category="location">src/app/core/navigation.ts:118</note>
       </notes>
       <segment>
         <source>Bastions</source>
@@ -2092,7 +2148,7 @@
     </unit>
     <unit id="nav.section.identity">
       <notes>
-        <note category="location">src/app/core/navigation.ts:121</note>
+        <note category="location">src/app/core/navigation.ts:124</note>
       </notes>
       <segment>
         <source>Identity</source>
@@ -2100,7 +2156,7 @@
     </unit>
     <unit id="nav.users">
       <notes>
-        <note category="location">src/app/core/navigation.ts:123</note>
+        <note category="location">src/app/core/navigation.ts:126</note>
       </notes>
       <segment>
         <source>Users</source>
@@ -2108,7 +2164,7 @@
     </unit>
     <unit id="nav.groups">
       <notes>
-        <note category="location">src/app/core/navigation.ts:124</note>
+        <note category="location">src/app/core/navigation.ts:127</note>
       </notes>
       <segment>
         <source>Groups</source>
@@ -2116,8 +2172,8 @@
     </unit>
     <unit id="nav.service-accounts">
       <notes>
-        <note category="location">src/app/core/navigation.ts:125</note>
-        <note category="location">src/app/core/navigation.ts:198</note>
+        <note category="location">src/app/core/navigation.ts:128</note>
+        <note category="location">src/app/core/navigation.ts:211</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -2125,7 +2181,7 @@
     </unit>
     <unit id="nav.tokens">
       <notes>
-        <note category="location">src/app/core/navigation.ts:126</note>
+        <note category="location">src/app/core/navigation.ts:129</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -2133,8 +2189,8 @@
     </unit>
     <unit id="nav.usage">
       <notes>
-        <note category="location">src/app/core/navigation.ts:129</note>
-        <note category="location">src/app/core/navigation.ts:202</note>
+        <note category="location">src/app/core/navigation.ts:132</note>
+        <note category="location">src/app/core/navigation.ts:215</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -2142,7 +2198,7 @@
     </unit>
     <unit id="nav.limits">
       <notes>
-        <note category="location">src/app/core/navigation.ts:130</note>
+        <note category="location">src/app/core/navigation.ts:133</note>
       </notes>
       <segment>
         <source>Download limits</source>
@@ -2150,8 +2206,8 @@
     </unit>
     <unit id="nav.ci">
       <notes>
-        <note category="location">src/app/core/navigation.ts:133</note>
-        <note category="location">src/app/core/navigation.ts:205</note>
+        <note category="location">src/app/core/navigation.ts:136</note>
+        <note category="location">src/app/core/navigation.ts:218</note>
       </notes>
       <segment>
         <source>CI identity</source>
@@ -2159,7 +2215,7 @@
     </unit>
     <unit id="nav.section.access">
       <notes>
-        <note category="location">src/app/core/navigation.ts:141</note>
+        <note category="location">src/app/core/navigation.ts:144</note>
       </notes>
       <segment>
         <source>Access</source>
@@ -2167,8 +2223,8 @@
     </unit>
     <unit id="nav.permissions">
       <notes>
-        <note category="location">src/app/core/navigation.ts:143</note>
-        <note category="location">src/app/core/navigation.ts:195</note>
+        <note category="location">src/app/core/navigation.ts:146</note>
+        <note category="location">src/app/core/navigation.ts:208</note>
       </notes>
       <segment>
         <source>Permission policies</source>
@@ -2176,7 +2232,7 @@
     </unit>
     <unit id="nav.roles">
       <notes>
-        <note category="location">src/app/core/navigation.ts:144</note>
+        <note category="location">src/app/core/navigation.ts:147</note>
       </notes>
       <segment>
         <source>System roles</source>
@@ -2184,7 +2240,7 @@
     </unit>
     <unit id="nav.section.system">
       <notes>
-        <note category="location">src/app/core/navigation.ts:151</note>
+        <note category="location">src/app/core/navigation.ts:154</note>
       </notes>
       <segment>
         <source>System</source>
@@ -2192,7 +2248,7 @@
     </unit>
     <unit id="nav.system">
       <notes>
-        <note category="location">src/app/core/navigation.ts:153</note>
+        <note category="location">src/app/core/navigation.ts:156</note>
       </notes>
       <segment>
         <source>System status</source>
@@ -2200,7 +2256,7 @@
     </unit>
     <unit id="nav.audit">
       <notes>
-        <note category="location">src/app/core/navigation.ts:154</note>
+        <note category="location">src/app/core/navigation.ts:157</note>
       </notes>
       <segment>
         <source>Audit log</source>
@@ -2208,7 +2264,7 @@
     </unit>
     <unit id="nav.advisory-sources">
       <notes>
-        <note category="location">src/app/core/navigation.ts:156</note>
+        <note category="location">src/app/core/navigation.ts:159</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -2216,7 +2272,7 @@
     </unit>
     <unit id="nav.section.settings">
       <notes>
-        <note category="location">src/app/core/navigation.ts:165</note>
+        <note category="location">src/app/core/navigation.ts:168</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -2224,7 +2280,7 @@
     </unit>
     <unit id="nav.settings.general">
       <notes>
-        <note category="location">src/app/core/navigation.ts:167</note>
+        <note category="location">src/app/core/navigation.ts:170</note>
       </notes>
       <segment>
         <source>General</source>
@@ -2232,15 +2288,23 @@
     </unit>
     <unit id="nav.settings.auth">
       <notes>
-        <note category="location">src/app/core/navigation.ts:168</note>
+        <note category="location">src/app/core/navigation.ts:171</note>
       </notes>
       <segment>
         <source>Authentication</source>
       </segment>
     </unit>
+    <unit id="nav.settings.malware">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:177</note>
+      </notes>
+      <segment>
+        <source>Malware scanning</source>
+      </segment>
+    </unit>
     <unit id="nav.project.members">
       <notes>
-        <note category="location">src/app/core/navigation.ts:193</note>
+        <note category="location">src/app/core/navigation.ts:206</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -2248,7 +2312,7 @@
     </unit>
     <unit id="nav.packages">
       <notes>
-        <note category="location">src/app/core/navigation.ts:211</note>
+        <note category="location">src/app/core/navigation.ts:224</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:30</note>
       </notes>
       <segment>
@@ -2257,7 +2321,7 @@
     </unit>
     <unit id="nav.vulnerabilities">
       <notes>
-        <note category="location">src/app/core/navigation.ts:214</note>
+        <note category="location">src/app/core/navigation.ts:227</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -2265,7 +2329,7 @@
     </unit>
     <unit id="nav.section.project-access">
       <notes>
-        <note category="location">src/app/core/navigation.ts:223</note>
+        <note category="location">src/app/core/navigation.ts:236</note>
       </notes>
       <segment>
         <source>Access</source>
@@ -2273,7 +2337,7 @@
     </unit>
     <unit id="nav.project.settings">
       <notes>
-        <note category="location">src/app/core/navigation.ts:229</note>
+        <note category="location">src/app/core/navigation.ts:242</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -4167,8 +4231,8 @@
         <note category="location">src/app/features/audit/audit-log.html:293,295</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:172,176</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:180,183</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:117,119</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:181,184</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:124,126</note>
         <note category="location">src/app/features/repositories/repository-create.html:244,246</note>
         <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
         <note category="location">src/app/features/repositories/repository-format-chooser.ts:40,42</note>
@@ -8748,6 +8812,7 @@
       <notes>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:410,412</note>
         <note category="location">src/app/features/repositories/repository-detail.html:37,40</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:65,67</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:201,203</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:260,262</note>
       </notes>
@@ -9807,7 +9872,7 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:146</note>
         <note category="location">src/app/features/repositories/repository-detail.html:54,55</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:395,396</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:411,412</note>
         <note category="location">src/app/features/repositories/repository-list.html:64,65</note>
         <note category="location">src/app/features/repositories/repository-list.html:68</note>
         <note category="location">src/app/features/repositories/repository-list.ts:185</note>
@@ -12695,7 +12760,7 @@
     <unit id="pkg.meta.external">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:190,191</note>
-        <note category="location">src/app/features/packages/package-version.html:205,206</note>
+        <note category="location">src/app/features/packages/package-version.html:236,237</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -12829,7 +12894,7 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:20,21</note>
         <note category="location">src/app/features/packages/package-detail.html:23,24</note>
         <note category="location">src/app/features/packages/package-version.html:19,20</note>
-        <note category="location">src/app/features/packages/package-version.html:117,118</note>
+        <note category="location">src/app/features/packages/package-version.html:134,135</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -13324,7 +13389,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:168</note>
-        <note category="location">src/app/features/packages/package-version.ts:339</note>
+        <note category="location">src/app/features/packages/package-version.ts:354</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -13758,9 +13823,25 @@
         <source>Blocked in</source>
       </segment>
     </unit>
+    <unit id="pkg.malware.found">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:72,73</note>
+      </notes>
+      <segment>
+        <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads are refused.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.malware.not-checked">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:77,78</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware. Downloads are refused here.</source>
+      </segment>
+    </unit>
     <unit id="pkg.deprecated">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:69</note>
+        <note category="location">src/app/features/packages/package-version.html:86</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
@@ -13768,7 +13849,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:134,136</note>
+        <note category="location">src/app/features/packages/package-version.html:164,166</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -13776,7 +13857,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:142,143</note>
+        <note category="location">src/app/features/packages/package-version.html:173,174</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -13784,8 +13865,8 @@
     </unit>
     <unit id="pkg.image.digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:144,146</note>
-        <note category="location">src/app/features/packages/package-version.ts:333</note>
+        <note category="location">src/app/features/packages/package-version.html:175,177</note>
+        <note category="location">src/app/features/packages/package-version.ts:348</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -13793,8 +13874,8 @@
     </unit>
     <unit id="pkg.image.media-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:150,151</note>
-        <note category="location">src/app/features/packages/package-version.ts:334</note>
+        <note category="location">src/app/features/packages/package-version.html:181,182</note>
+        <note category="location">src/app/features/packages/package-version.ts:349</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -13802,7 +13883,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:154,155</note>
+        <note category="location">src/app/features/packages/package-version.html:185,186</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -13810,7 +13891,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:157,158</note>
+        <note category="location">src/app/features/packages/package-version.html:188,189</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -13818,7 +13899,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:161,162</note>
+        <note category="location">src/app/features/packages/package-version.html:192,193</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -13826,7 +13907,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:187,188</note>
+        <note category="location">src/app/features/packages/package-version.html:218,219</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -13834,7 +13915,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:196,197</note>
+        <note category="location">src/app/features/packages/package-version.html:227,228</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -13842,7 +13923,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:215,216</note>
+        <note category="location">src/app/features/packages/package-version.html:246,247</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -13850,7 +13931,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:240,241</note>
+        <note category="location">src/app/features/packages/package-version.html:271,272</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -13858,7 +13939,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:246,248</note>
+        <note category="location">src/app/features/packages/package-version.html:277,279</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -13866,7 +13947,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:250,252</note>
+        <note category="location">src/app/features/packages/package-version.html:281,283</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -13874,9 +13955,9 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:262,263</note>
-        <note category="location">src/app/features/packages/package-version.html:271,272</note>
-        <note category="location">src/app/features/packages/package-version.html:280,281</note>
+        <note category="location">src/app/features/packages/package-version.html:293,294</note>
+        <note category="location">src/app/features/packages/package-version.html:302,303</note>
+        <note category="location">src/app/features/packages/package-version.html:311,312</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -13884,7 +13965,7 @@
     </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:289,290</note>
+        <note category="location">src/app/features/packages/package-version.html:320,321</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -13892,7 +13973,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:297,298</note>
+        <note category="location">src/app/features/packages/package-version.html:328,329</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -13900,7 +13981,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:174</note>
+        <note category="location">src/app/features/packages/package-version.ts:176</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -13908,7 +13989,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:179</note>
+        <note category="location">src/app/features/packages/package-version.ts:181</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -13916,7 +13997,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:184</note>
+        <note category="location">src/app/features/packages/package-version.ts:186</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -13924,7 +14005,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:189</note>
+        <note category="location">src/app/features/packages/package-version.ts:191</note>
       </notes>
       <segment>
         <source>README</source>
@@ -13932,7 +14013,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:190</note>
+        <note category="location">src/app/features/packages/package-version.ts:192</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -13940,7 +14021,7 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:191</note>
+        <note category="location">src/app/features/packages/package-version.ts:193</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -13948,7 +14029,7 @@
     </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:193</note>
+        <note category="location">src/app/features/packages/package-version.ts:195</note>
       </notes>
       <segment>
         <source>Import log</source>
@@ -13956,7 +14037,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:317</note>
+        <note category="location">src/app/features/packages/package-version.ts:331</note>
       </notes>
       <segment>
         <source>File</source>
@@ -13964,7 +14045,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:318</note>
+        <note category="location">src/app/features/packages/package-version.ts:332</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -13972,7 +14053,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:321</note>
+        <note category="location">src/app/features/packages/package-version.ts:335</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -13980,15 +14061,23 @@
     </unit>
     <unit id="pkg.help.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:322</note>
+        <note category="location">src/app/features/packages/package-version.ts:336</note>
       </notes>
       <segment>
         <source>The checksum of the file&apos;s content. Compare it with the output of sha256sum on the downloaded file.</source>
       </segment>
     </unit>
+    <unit id="pkg.file.malware">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:338</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+      </segment>
+    </unit>
     <unit id="pkg.file.download">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:324</note>
+        <note category="location">src/app/features/packages/package-version.ts:339</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -13996,7 +14085,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:327</note>
+        <note category="location">src/app/features/packages/package-version.ts:342</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -14004,7 +14093,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:328</note>
+        <note category="location">src/app/features/packages/package-version.ts:343</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -14012,7 +14101,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:329</note>
+        <note category="location">src/app/features/packages/package-version.ts:344</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -14020,7 +14109,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:332</note>
+        <note category="location">src/app/features/packages/package-version.ts:347</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -14028,7 +14117,7 @@
     </unit>
     <unit id="pkg.image.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:335</note>
+        <note category="location">src/app/features/packages/package-version.ts:350</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -14036,7 +14125,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:337</note>
+        <note category="location">src/app/features/packages/package-version.ts:352</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -14044,7 +14133,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:338</note>
+        <note category="location">src/app/features/packages/package-version.ts:353</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -14052,7 +14141,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:340</note>
+        <note category="location">src/app/features/packages/package-version.ts:355</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -14060,7 +14149,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:341</note>
+        <note category="location">src/app/features/packages/package-version.ts:356</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -14068,7 +14157,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:342</note>
+        <note category="location">src/app/features/packages/package-version.ts:357</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -14076,7 +14165,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:343</note>
+        <note category="location">src/app/features/packages/package-version.ts:358</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -14084,7 +14173,7 @@
     </unit>
     <unit id="repo.class.local">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:345</note>
+        <note category="location">src/app/features/packages/package-version.ts:360</note>
         <note category="location">src/app/features/repositories/repository-class.ts:9</note>
       </notes>
       <segment>
@@ -14093,7 +14182,7 @@
     </unit>
     <unit id="repo.class.remote">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:346</note>
+        <note category="location">src/app/features/packages/package-version.ts:361</note>
         <note category="location">src/app/features/repositories/repository-class.ts:11</note>
       </notes>
       <segment>
@@ -14102,7 +14191,7 @@
     </unit>
     <unit id="repo.class.virtual">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:347</note>
+        <note category="location">src/app/features/packages/package-version.ts:362</note>
         <note category="location">src/app/features/repositories/repository-class.ts:13</note>
       </notes>
       <segment>
@@ -17992,7 +18081,7 @@
     </unit>
     <unit id="files.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:136,137</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:137,138</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -18000,7 +18089,7 @@
     </unit>
     <unit id="files.delete">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:142,143</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:143,144</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -18008,8 +18097,8 @@
     </unit>
     <unit id="repo.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:154,155</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:492,493</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:155,156</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:508,509</note>
         <note category="location">src/app/features/repositories/repository-list.html:218,219</note>
       </notes>
       <segment>
@@ -18018,7 +18107,7 @@
     </unit>
     <unit id="repo.content.upstream">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:196</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:197</note>
       </notes>
       <segment>
         <source>Caches</source>
@@ -18026,7 +18115,7 @@
     </unit>
     <unit id="repo.content.resolves-from">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:201,202</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:202,203</note>
       </notes>
       <segment>
         <source>Resolves from</source>
@@ -18179,8 +18268,8 @@
     </unit>
     <unit id="files.download-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:33,34</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:161</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:35,36</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:168</note>
       </notes>
       <segment>
         <source>Download address</source>
@@ -18188,7 +18277,7 @@
     </unit>
     <unit id="files.fact.size">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:39,40</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:41,42</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -18196,7 +18285,7 @@
     </unit>
     <unit id="files.fact.media">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:41,42</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:43,44</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -18204,7 +18293,7 @@
     </unit>
     <unit id="files.fact.created">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:43,45</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:45,47</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -18212,8 +18301,8 @@
     </unit>
     <unit id="files.by">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:47</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:54</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:49</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:56</note>
       </notes>
       <segment>
         <source>by</source>
@@ -18221,7 +18310,7 @@
     </unit>
     <unit id="files.fact.modified">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:50,52</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:52,54</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -18229,7 +18318,7 @@
     </unit>
     <unit id="files.fact.content">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:58,60</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:60,62</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -18237,7 +18326,7 @@
     </unit>
     <unit id="files.content.missing">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:62,63</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:64,65</note>
       </notes>
       <segment>
         <source>The stored content is missing.</source>
@@ -18245,15 +18334,23 @@
     </unit>
     <unit id="files.content.corrupt">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:64,66</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:66,68</note>
       </notes>
       <segment>
         <source>The stored content failed its checksum.</source>
       </segment>
     </unit>
+    <unit id="files.fact.malware">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:72,73</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+      </segment>
+    </unit>
     <unit id="files.details">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:81</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:88</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -18261,7 +18358,7 @@
     </unit>
     <unit id="files.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:82,83</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:89,90</note>
       </notes>
       <segment>
         <source>Every checksum, the downloads, and the file as the API describes it.</source>
@@ -18269,7 +18366,7 @@
     </unit>
     <unit id="files.checksums">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:85,86</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:92,93</note>
       </notes>
       <segment>
         <source>Checksums</source>
@@ -18277,7 +18374,7 @@
     </unit>
     <unit id="files.stats.heading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:97,98</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:104,105</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -18285,7 +18382,7 @@
     </unit>
     <unit id="files.stats.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:102,103</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:109,110</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -18293,7 +18390,7 @@
     </unit>
     <unit id="files.stats.last">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:104,106</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:111,113</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -18301,7 +18398,7 @@
     </unit>
     <unit id="files.stats.by">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:112,113</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:119,120</note>
       </notes>
       <segment>
         <source>Last downloader</source>
@@ -18309,7 +18406,7 @@
     </unit>
     <unit id="files.stats.hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:115,116</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:122,123</note>
       </notes>
       <segment>
         <source>Counts reach the database within a minute of a download.</source>
@@ -18317,7 +18414,7 @@
     </unit>
     <unit id="files.api.json">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:119,120</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:126,127</note>
       </notes>
       <segment>
         <source>The file as the API describes it</source>
@@ -18325,7 +18422,7 @@
     </unit>
     <unit id="files.api.curl">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:121,122</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:128,129</note>
       </notes>
       <segment>
         <source>The same request with curl</source>
@@ -18333,7 +18430,7 @@
     </unit>
     <unit id="files.api.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:124,125</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:131,132</note>
       </notes>
       <segment>
         <source>Download with curl</source>
@@ -18341,7 +18438,7 @@
     </unit>
     <unit id="files.copy-download-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:162</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:169</note>
       </notes>
       <segment>
         <source>Copy download address</source>
@@ -18349,7 +18446,7 @@
     </unit>
     <unit id="files.copy-digest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:164</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:171</note>
       </notes>
       <segment>
         <source>Copy <ph id="0" equiv="checksum" disp="name"/></source>
@@ -19694,7 +19791,7 @@
         <note category="location">src/app/features/repositories/mirror-settings.ts:44</note>
         <note category="location">src/app/features/repositories/repository-create.html:195,196</note>
         <note category="location">src/app/features/repositories/repository-detail.html:214</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:423</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:428</note>
       </notes>
       <segment>
         <source>Mirror</source>
@@ -20790,8 +20887,8 @@
         <note category="location">src/app/features/repositories/repository-create.html:100,102</note>
         <note category="location">src/app/features/repositories/repository-create.ts:657</note>
         <note category="location">src/app/features/repositories/repository-detail.html:87,89</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:419</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:444</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:424</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:449</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -20875,9 +20972,9 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:185,186</note>
         <note category="location">src/app/features/repositories/repository-create.ts:659</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:310,311</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:429</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:446</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:326,327</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:434</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:451</note>
       </notes>
       <segment>
         <source>Administrator notes</source>
@@ -20895,7 +20992,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:191,192</note>
         <note category="location">src/app/features/repositories/repository-detail.html:286,287</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:427</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:432</note>
       </notes>
       <segment>
         <source>Access details</source>
@@ -21045,7 +21142,7 @@
     <unit id="repo.field.include">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:661</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:448</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:453</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:46,48</note>
       </notes>
       <segment>
@@ -21055,7 +21152,7 @@
     <unit id="repo.field.exclude">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:663</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:450</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:455</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:63,65</note>
       </notes>
       <segment>
@@ -21065,7 +21162,7 @@
     <unit id="repo.field.hide">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:665</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:452</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:457</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:105,107</note>
       </notes>
       <segment>
@@ -21108,6 +21205,7 @@
     <unit id="repo.settings.save">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:31,32</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:61,62</note>
         <note category="location">src/app/features/repositories/virtual-members.html:51,52</note>
       </notes>
       <segment>
@@ -21125,7 +21223,7 @@
     <unit id="repo.col.format">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:56,57</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:397,398</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:413,414</note>
         <note category="location">src/app/features/repositories/repository-list.html:51,52</note>
         <note category="location">src/app/features/repositories/repository-list.html:55</note>
         <note category="location">src/app/features/repositories/repository-list.ts:183</note>
@@ -21196,7 +21294,7 @@
     <unit id="upstream.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:144,145</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:421</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:426</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:80</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:96,97</note>
       </notes>
@@ -21286,7 +21384,7 @@
     </unit>
     <unit id="repo.settings.notes-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:312,314</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:328,330</note>
       </notes>
       <segment>
         <source>Notes for the people who configure the repository.</source>
@@ -21294,7 +21392,7 @@
     </unit>
     <unit id="repo.tab.deb-keys">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:325,326</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:341,342</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -21302,7 +21400,7 @@
     </unit>
     <unit id="repo.settings.deb-keys-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:327,328</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:343,344</note>
       </notes>
       <segment>
         <source>The keys that sign the repository&apos;s indexes.</source>
@@ -21310,7 +21408,7 @@
     </unit>
     <unit id="repo.settings.deb-index">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:337</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:353</note>
       </notes>
       <segment>
         <source>Indexes</source>
@@ -21318,7 +21416,7 @@
     </unit>
     <unit id="repo.settings.deb-index-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:338,339</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:354,355</note>
       </notes>
       <segment>
         <source>The state of each suite&apos;s indexes, and a rebuild.</source>
@@ -21326,7 +21424,7 @@
     </unit>
     <unit id="repo.tab.ansible-imports">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:350,351</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:366,367</note>
       </notes>
       <segment>
         <source>Import tasks</source>
@@ -21334,7 +21432,7 @@
     </unit>
     <unit id="repo.settings.imports-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:352,353</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:368,369</note>
       </notes>
       <segment>
         <source>The imports of published collections and their logs.</source>
@@ -21342,7 +21440,7 @@
     </unit>
     <unit id="repo.tab.ansible-tombstones">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:363,364</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:379,380</note>
       </notes>
       <segment>
         <source>Tombstones</source>
@@ -21350,7 +21448,7 @@
     </unit>
     <unit id="repo.settings.tombstones-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:365,366</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:381,382</note>
       </notes>
       <segment>
         <source>Deleted collection versions whose names stay taken.</source>
@@ -21358,7 +21456,7 @@
     </unit>
     <unit id="repo.settings.service-accounts">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:377,378</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:393,394</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -21366,7 +21464,7 @@
     </unit>
     <unit id="repo.settings.service-accounts-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:379,380</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:395,396</note>
       </notes>
       <segment>
         <source>Accounts that hold their rights on this repository and nowhere else, each with its technical tokens.</source>
@@ -21374,7 +21472,7 @@
     </unit>
     <unit id="repo.settings.details">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:391</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:407</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:293</note>
       </notes>
       <segment>
@@ -21383,7 +21481,7 @@
     </unit>
     <unit id="repo.settings.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:392,395</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:408,411</note>
       </notes>
       <segment>
         <source>The class, the format, the layout and the dates of the repository.</source>
@@ -21391,7 +21489,7 @@
     </unit>
     <unit id="repo.detail.layout">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:399,400</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:415,416</note>
       </notes>
       <segment>
         <source>Layout</source>
@@ -21399,7 +21497,7 @@
     </unit>
     <unit id="repo.detail.project">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:402,403</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:418,419</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -21407,7 +21505,7 @@
     </unit>
     <unit id="repo.detail.created">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:406,407</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:422,423</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:310,311</note>
       </notes>
       <segment>
@@ -21416,7 +21514,7 @@
     </unit>
     <unit id="repo.detail.updated">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:410,411</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:426,427</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:314,315</note>
       </notes>
       <segment>
@@ -21425,7 +21523,7 @@
     </unit>
     <unit id="repo.col.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:414,415</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:430,431</note>
         <note category="location">src/app/features/repositories/repository-list.ts:253</note>
       </notes>
       <segment>
@@ -21434,7 +21532,7 @@
     </unit>
     <unit id="repo.tab.api">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:423</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:439</note>
       </notes>
       <segment>
         <source>API</source>
@@ -21442,7 +21540,7 @@
     </unit>
     <unit id="repo.settings.api-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:424,426</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:440,442</note>
       </notes>
       <segment>
         <source>The stored document, and each unsaved change as the request that saves it.</source>
@@ -21450,7 +21548,7 @@
     </unit>
     <unit id="repo.detail.api.document">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:426,427</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:442,443</note>
       </notes>
       <segment>
         <source>Stored document</source>
@@ -21458,7 +21556,7 @@
     </unit>
     <unit id="repo.detail.api.patch">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:428,429</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:444,445</note>
       </notes>
       <segment>
         <source>Your change as a request</source>
@@ -21466,7 +21564,7 @@
     </unit>
     <unit id="repo.detail.api.nochange">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:433,435</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:449,451</note>
       </notes>
       <segment>
         <source>Change a setting to see the request that saves it.</source>
@@ -21474,7 +21572,7 @@
     </unit>
     <unit id="repo.detail.advanced">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:443,444</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:459,460</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -21482,7 +21580,7 @@
     </unit>
     <unit id="repo.settings.advanced-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:445,447</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:461,463</note>
       </notes>
       <segment>
         <source>Disable, move or delete this repository.</source>
@@ -21490,7 +21588,7 @@
     </unit>
     <unit id="repo.enable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:452,453</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:468,469</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -21498,7 +21596,7 @@
     </unit>
     <unit id="repo.enable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:453,454</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:469,470</note>
       </notes>
       <segment>
         <source>The repository is disabled: it serves nothing and takes no publish.</source>
@@ -21506,8 +21604,8 @@
     </unit>
     <unit id="repo.enable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:454,456</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:782</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:470,472</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:822</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -21515,7 +21613,7 @@
     </unit>
     <unit id="repo.disable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:456,457</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:472,473</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -21523,7 +21621,7 @@
     </unit>
     <unit id="repo.disable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:457,458</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:473,474</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it; its content stays.</source>
@@ -21531,8 +21629,8 @@
     </unit>
     <unit id="repo.disable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:458,460</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:777</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:474,476</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:817</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -21540,7 +21638,7 @@
     </unit>
     <unit id="repo.move.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:463,464</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:479,480</note>
       </notes>
       <segment>
         <source>Move to another project</source>
@@ -21548,7 +21646,7 @@
     </unit>
     <unit id="repo.move.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:465,466</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:481,482</note>
       </notes>
       <segment>
         <source> The repository keeps its key and its content; its address changes. You must be Owner of the target project too. </source>
@@ -21556,7 +21654,7 @@
     </unit>
     <unit id="repo.move.target">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:470,471</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:486,487</note>
       </notes>
       <segment>
         <source>Target project</source>
@@ -21564,7 +21662,7 @@
     </unit>
     <unit id="repo.move.action">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:476,477</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:492,493</note>
       </notes>
       <segment>
         <source> Move repository </source>
@@ -21572,7 +21670,7 @@
     </unit>
     <unit id="repo.delete.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:482,483</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:498,499</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -21580,7 +21678,7 @@
     </unit>
     <unit id="repo.detail.delete-note">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:483,484</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:499,500</note>
       </notes>
       <segment>
         <source>Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</source>
@@ -21588,7 +21686,7 @@
     </unit>
     <unit id="repo.detail.delete">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:484,486</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:500,502</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -21596,7 +21694,7 @@
     </unit>
     <unit id="wellknown.account.basic-of">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:209</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:212</note>
       </notes>
       <segment>
         <source>Username and password of <ph id="0" equiv="user" disp="remote.username"/></source>
@@ -21604,7 +21702,7 @@
     </unit>
     <unit id="upstream.auth.basic">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:210</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:213</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:684</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:15</note>
       </notes>
@@ -21614,7 +21712,7 @@
     </unit>
     <unit id="upstream.auth.bearer">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:212</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:215</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:686</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:16</note>
       </notes>
@@ -21624,7 +21722,7 @@
     </unit>
     <unit id="wellknown.account.none">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:214</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:217</note>
       </notes>
       <segment>
         <source>No account</source>
@@ -21632,7 +21730,8 @@
     </unit>
     <unit id="repo.settings.unsaved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:336</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:339</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:104</note>
         <note category="location">src/app/features/repositories/repository-visibility.ts:215</note>
       </notes>
       <segment>
@@ -21641,7 +21740,7 @@
     </unit>
     <unit id="repo.settings.format-heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:434</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:439</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="format" disp="this.formatLabel()"/> settings</source>
@@ -21649,8 +21748,8 @@
     </unit>
     <unit id="repo.edit.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:528</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:554</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:533</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:559</note>
       </notes>
       <segment>
         <source>Repository saved.</source>
@@ -21658,15 +21757,31 @@
     </unit>
     <unit id="repo.visibility.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:616</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:621</note>
       </notes>
       <segment>
         <source>Visibility saved.</source>
       </segment>
     </unit>
+    <unit id="repo.malware.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:683</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded from this repository now.</source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:684</note>
+      </notes>
+      <segment>
+        <source>This repository follows the installation&apos;s malware setting again.</source>
+      </segment>
+    </unit>
     <unit id="repo.members.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:677</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:717</note>
       </notes>
       <segment>
         <source>Members saved.</source>
@@ -21674,7 +21789,7 @@
     </unit>
     <unit id="mirror.paused-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:706</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:746</note>
       </notes>
       <segment>
         <source>Mirror paused.</source>
@@ -21682,7 +21797,7 @@
     </unit>
     <unit id="mirror.resumed-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:706</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:746</note>
       </notes>
       <segment>
         <source>Mirror resumed.</source>
@@ -21690,7 +21805,7 @@
     </unit>
     <unit id="repo.disable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:773</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:813</note>
       </notes>
       <segment>
         <source>Disable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -21698,7 +21813,7 @@
     </unit>
     <unit id="repo.disable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:775</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:815</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it, and virtual repositories skip it, until it is enabled again. Its content stays.</source>
@@ -21706,7 +21821,7 @@
     </unit>
     <unit id="repo.enable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:780</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:820</note>
       </notes>
       <segment>
         <source>Enable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -21714,7 +21829,7 @@
     </unit>
     <unit id="repo.enable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:781</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:821</note>
       </notes>
       <segment>
         <source>Clients can download from it and publish to it again.</source>
@@ -21722,7 +21837,7 @@
     </unit>
     <unit id="repo.disable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:815</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:855</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> disabled.</source>
@@ -21730,7 +21845,7 @@
     </unit>
     <unit id="repo.enable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:816</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:856</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> enabled.</source>
@@ -21738,7 +21853,7 @@
     </unit>
     <unit id="repo.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:822</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:862</note>
         <note category="location">src/app/features/repositories/repository-list.ts:332</note>
       </notes>
       <segment>
@@ -21747,7 +21862,7 @@
     </unit>
     <unit id="repo.delete.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:824</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:864</note>
         <note category="location">src/app/features/repositories/repository-list.ts:334</note>
       </notes>
       <segment>
@@ -21756,7 +21871,7 @@
     </unit>
     <unit id="repo.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:826</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:866</note>
         <note category="location">src/app/features/repositories/repository-list.ts:336</note>
       </notes>
       <segment>
@@ -21765,7 +21880,7 @@
     </unit>
     <unit id="repo.move.choose">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:852</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:892</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -21773,7 +21888,7 @@
     </unit>
     <unit id="repo.move.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:870</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:910</note>
       </notes>
       <segment>
         <source>Move repository <ph id="0" equiv="key" disp="this.ref()"/> to project <ph id="1" equiv="project" disp="target"/>?</source>
@@ -21781,7 +21896,7 @@
     </unit>
     <unit id="repo.move.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:872</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:912</note>
       </notes>
       <segment>
         <source>The repository gets a new address; clients must switch to it. Policies, pins, virtual memberships and CI mappings that name it in this project stop applying, and the move is refused while any of them exists.</source>
@@ -21789,7 +21904,7 @@
     </unit>
     <unit id="repo.move.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:874</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:914</note>
       </notes>
       <segment>
         <source>Move repository</source>
@@ -21797,7 +21912,7 @@
     </unit>
     <unit id="repo.move.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:883</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:923</note>
       </notes>
       <segment>
         <source>Repository moved to project <ph id="0" equiv="project" disp="target"/>.</source>
@@ -21805,7 +21920,7 @@
     </unit>
     <unit id="repo.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:897</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:937</note>
         <note category="location">src/app/features/repositories/repository-list.ts:381</note>
       </notes>
       <segment>
@@ -21814,7 +21929,7 @@
     </unit>
     <unit id="repo.delete.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:902</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:942</note>
         <note category="location">src/app/features/repositories/repository-list.ts:371</note>
       </notes>
       <segment>
@@ -21823,7 +21938,7 @@
     </unit>
     <unit id="repo.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:907</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:947</note>
         <note category="location">src/app/features/repositories/repository-list.ts:284</note>
       </notes>
       <segment>
@@ -22104,6 +22219,70 @@
       </notes>
       <segment>
         <source>Also remove it from the virtual repositories that include it</source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:23,24</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:25,26</note>
+      </notes>
+      <segment>
+        <source>Whether only checked artifacts can be downloaded from this repository.</source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.only-checked">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:38,39</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded from this repository</source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.installation-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:42,44</note>
+      </notes>
+      <segment>
+        <source>The installation lets only checked artifacts be downloaded.</source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.what">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:45,47</note>
+      </notes>
+      <segment>
+        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them. </source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:49,51</note>
+      </notes>
+      <segment>
+        <source>Applies to everything this repository serves from its members.</source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.locked">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:53,54</note>
+      </notes>
+      <segment>
+        <source> Only an administrator or someone who triages vulnerabilities can switch this off. </source>
+      </segment>
+    </unit>
+    <unit id="repo.malware.save-for">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:62,64</note>
+      </notes>
+      <segment>
+        <source> (malware scan)</source>
       </segment>
     </unit>
     <unit id="repo.visibility.level">
@@ -25276,9 +25455,403 @@
         <source>Switch on</source>
       </segment>
     </unit>
+    <unit id="malware.settings.heading">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:1</note>
+      </notes>
+      <segment>
+        <source>Malware scanning</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.off">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:15,17</note>
+      </notes>
+      <segment>
+        <source>The malware scan is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.enabled</pc> is false in the configuration. Nothing is scanned, and no download is refused for malware.</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.downloads">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:21,23</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:28,29</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked-on">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:33,34</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Only checked artifacts can be downloaded</pc> is on.</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked-off">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:35,36</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Only checked artifacts can be downloaded</pc> is off.</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:40,43</note>
+      </notes>
+      <segment>
+        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them in the security dashboard. </source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.changed-by">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:45</note>
+      </notes>
+      <segment>
+        <source>Last changed by</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.save">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:53,54</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.save-for">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:54,56</note>
+      </notes>
+      <segment>
+        <source> (downloads)</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.scanning">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:62,63</note>
+      </notes>
+      <segment>
+        <source>Scanning</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.unchecked">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:64,65</note>
+      </notes>
+      <segment>
+        <source>Not checked yet</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.not-checkable">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:66,67</note>
+      </notes>
+      <segment>
+        <source>Could not be checked</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.scanners">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:68,69</note>
+      </notes>
+      <segment>
+        <source>Scanners</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.no-scanner">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:72,73</note>
+      </notes>
+      <segment>
+        <source>None ready</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.ready">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:74</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 ready} other {<ph id="0" equiv="INTERPOLATION"/> ready}}</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.busy">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:75,76</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 scan running} other {<ph id="0" equiv="INTERPOLATION"/> scans running}}</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.seen">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:78</note>
+      </notes>
+      <segment>
+        <source>seen</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.no-scan-yet">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:81,84</note>
+      </notes>
+      <segment>
+        <source>No scan has run yet.</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.backlog-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:86,89</note>
+      </notes>
+      <segment>
+        <source> Under the switch, an artifact without a verdict waits for its scan when it is downloaded; one that could not be checked is refused. </source>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:94,97</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:237</note>
+      </notes>
+      <segment>
+        <source>Scan everything again</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.finds-link">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
+      </notes>
+      <segment>
+        <source>Finds are in the security dashboard</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.database">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:105,107</note>
+      </notes>
+      <segment>
+        <source>Signature database</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.when">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:112,113</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {Failed once,} other {Failed <ph id="0" equiv="INTERPOLATION"/> times in a row,}}</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.last">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:113</note>
+      </notes>
+      <segment>
+        <source>last</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.version">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:122,123</note>
+      </notes>
+      <segment>
+        <source>Version</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.date">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:124,126</note>
+      </notes>
+      <segment>
+        <source>Date</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.stale">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:130,131</note>
+      </notes>
+      <segment>
+        <source>Stale</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.current">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:132,133</note>
+      </notes>
+      <segment>
+        <source>Current</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.stored">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:136,137</note>
+      </notes>
+      <segment>
+        <source>Stored</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.repository">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:139,141</note>
+        <note category="location">src/app/features/settings/malware-settings.html:162,164</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.stale-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:150,152</note>
+      </notes>
+      <segment>
+        <source> The database is older than two days. Scanning goes on with it; new signatures arrive when the next update succeeds. </source>
+      </segment>
+    </unit>
+    <unit id="malware.db.none-badge">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:155,156</note>
+      </notes>
+      <segment>
+        <source>None yet</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.none">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:157,159</note>
+      </notes>
+      <segment>
+        <source>No signature database is in use yet, so nothing is scanned. Under the switch, downloads wait and are refused as not checked yet.</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.offline">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:174,175</note>
+      </notes>
+      <segment>
+        <source>Fill the repository</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.offline-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:176,178</note>
+      </notes>
+      <segment>
+        <source> This installation fetches no database itself. On a machine that reaches the internet, fetch the files with ClamAV&apos;s mirror tool and upload the whole files to the root of the repository; Quader reads them at its next run. </source>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.missing">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:27</note>
+      </notes>
+      <segment>
+        <source>No signature database was found.</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:29</note>
+      </notes>
+      <segment>
+        <source>A file of the signature database was refused.</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.repository">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:31</note>
+      </notes>
+      <segment>
+        <source>The repository the configuration names cannot hold the database.</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.store">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:33</note>
+      </notes>
+      <segment>
+        <source>A file of the signature database could not be stored.</source>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.other">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:35</note>
+      </notes>
+      <segment>
+        <source>The last update of the signature database failed.</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.backlog-question">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:170</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.confirm-title">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:180</note>
+      </notes>
+      <segment>
+        <source>Let only checked artifacts be downloaded?</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:182</note>
+      </notes>
+      <segment>
+        <source>Switch on</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.saved-on">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:192</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded now.</source>
+      </segment>
+    </unit>
+    <unit id="malware.settings.saved-off">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:193</note>
+      </notes>
+      <segment>
+        <source>Artifacts that are not checked can be downloaded again.</source>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.title">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:233</note>
+      </notes>
+      <segment>
+        <source>Scan every artifact again?</source>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.text">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:235</note>
+      </notes>
+      <segment>
+        <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.done">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:245</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
+      </segment>
+    </unit>
     <unit id="route.settings.general.title">
       <notes>
-        <note category="location">src/app/features/settings/settings.routes.ts:11</note>
+        <note category="location">src/app/features/settings/settings.routes.ts:12</note>
       </notes>
       <segment>
         <source>General settings</source>
@@ -25286,10 +25859,18 @@
     </unit>
     <unit id="route.settings.auth.title">
       <notes>
-        <note category="location">src/app/features/settings/settings.routes.ts:16</note>
+        <note category="location">src/app/features/settings/settings.routes.ts:17</note>
       </notes>
       <segment>
         <source>Authentication settings</source>
+      </segment>
+    </unit>
+    <unit id="route.settings.malware.title">
+      <notes>
+        <note category="location">src/app/features/settings/settings.routes.ts:22</note>
+      </notes>
+      <segment>
+        <source>Malware scanning</source>
       </segment>
     </unit>
     <unit id="setup.unknown-guide">
@@ -31918,6 +32499,378 @@
         <source>, licensed under</source>
       </segment>
     </unit>
+    <unit id="security.heading">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:2,4</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:3,5</note>
+      </notes>
+      <segment>
+        <source>Security dashboard</source>
+      </segment>
+    </unit>
+    <unit id="malware.read-only">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:10,12</note>
+      </notes>
+      <segment>
+        <source>You can read the finds. Releasing one needs the permission to triage vulnerabilities.</source>
+      </segment>
+    </unit>
+    <unit id="malware.list.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:16,18</note>
+      </notes>
+      <segment>
+        <source>Finds</source>
+      </segment>
+    </unit>
+    <unit id="malware.filter.state">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:35</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:177</note>
+      </notes>
+      <segment>
+        <source>State</source>
+      </segment>
+    </unit>
+    <unit id="malware.filter.release">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:42,43</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:43</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:184</note>
+      </notes>
+      <segment>
+        <source>Release</source>
+      </segment>
+    </unit>
+    <unit id="malware.filter.any">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:44,45</note>
+      </notes>
+      <segment>
+        <source>Any</source>
+      </segment>
+    </unit>
+    <unit id="malware.filter.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:45,46</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:185</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+      </segment>
+    </unit>
+    <unit id="malware.filter.not-released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:46,48</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:185</note>
+      </notes>
+      <segment>
+        <source>Not released</source>
+      </segment>
+    </unit>
+    <unit id="malware.filter.repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:49,50</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:50</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:189</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+      </segment>
+    </unit>
+    <unit id="malware.filter.any-repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:51,52</note>
+      </notes>
+      <segment>
+        <source>Any repository</source>
+      </segment>
+    </unit>
+    <unit id="malware.database-of">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:101</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:54</note>
+      </notes>
+      <segment>
+        <source>ClamAV database of</source>
+      </segment>
+    </unit>
+    <unit id="malware.state.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:111,113</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:108</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+      </segment>
+    </unit>
+    <unit id="malware.released-by">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:114</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:41,42</note>
+      </notes>
+      <segment>
+        <source>by <ph id="0" equiv="INTERPOLATION" disp="{{ principal(r.releasedBy) }}"/></source>
+      </segment>
+    </unit>
+    <unit id="malware.more-repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:123,125</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {and 1 more} other {and <ph id="0" equiv="INTERPOLATION"/> more}}</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-label">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:146,147</note>
+      </notes>
+      <segment>
+        <source>Reason of the release:</source>
+      </segment>
+    </unit>
+    <unit id="malware.items.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:150,151</note>
+      </notes>
+      <segment>
+        <source>Files that hold these bytes</source>
+      </segment>
+    </unit>
+    <unit id="malware.items.more">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:162,163</note>
+      </notes>
+      <segment>
+        <source>More files hold these bytes than the list shows: <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount }}"/> in <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.repositoryCount }}"/> repositories.</source>
+      </segment>
+    </unit>
+    <unit id="malware.items.digest">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:165</note>
+      </notes>
+      <segment>
+        <source>SHA-256</source>
+      </segment>
+    </unit>
+    <unit id="malware.search">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:194</note>
+      </notes>
+      <segment>
+        <source>Search by path or signature</source>
+      </segment>
+    </unit>
+    <unit id="malware.list.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:195</note>
+      </notes>
+      <segment>
+        <source>Malware finds</source>
+      </segment>
+    </unit>
+    <unit id="malware.list.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:196</note>
+      </notes>
+      <segment>
+        <source>No find matches the filters.</source>
+      </segment>
+    </unit>
+    <unit id="malware.list.empty">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:200</note>
+      </notes>
+      <segment>
+        <source>No malware found.</source>
+      </segment>
+    </unit>
+    <unit id="malware.list.empty-dated">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:202</note>
+      </notes>
+      <segment>
+        <source>No malware found. The signature database in use is ClamAV&apos;s of <ph id="0" equiv="date" disp="date"/>.</source>
+      </segment>
+    </unit>
+    <unit id="malware.col.file">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:206</note>
+      </notes>
+      <segment>
+        <source>File</source>
+      </segment>
+    </unit>
+    <unit id="malware.col.verdict">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:208</note>
+      </notes>
+      <segment>
+        <source>Verdict</source>
+      </segment>
+    </unit>
+    <unit id="malware.col.repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:209</note>
+      </notes>
+      <segment>
+        <source>Repositories</source>
+      </segment>
+    </unit>
+    <unit id="malware.col.found">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:210</note>
+      </notes>
+      <segment>
+        <source>Found</source>
+      </segment>
+    </unit>
+    <unit id="malware.col.actions">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:211</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="malware.row.open">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:239</note>
+      </notes>
+      <segment>
+        <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
+      </segment>
+    </unit>
+    <unit id="malware.withdraw">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:262</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:327</note>
+      </notes>
+      <segment>
+        <source>Withdraw release</source>
+      </segment>
+    </unit>
+    <unit id="malware.release">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:262</note>
+      </notes>
+      <segment>
+        <source>Release</source>
+      </segment>
+    </unit>
+    <unit id="malware.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:318</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
+      </segment>
+    </unit>
+    <unit id="malware.withdraw.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:324</note>
+      </notes>
+      <segment>
+        <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
+      </segment>
+    </unit>
+    <unit id="malware.withdraw.text">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:325</note>
+      </notes>
+      <segment>
+        <source>Every repository that holds these bytes refuses them again from the next download.</source>
+      </segment>
+    </unit>
+    <unit id="malware.withdrawn">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:332</note>
+      </notes>
+      <segment>
+        <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.unchecked-warning">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:40,43</note>
+      </notes>
+      <segment>
+        <source>Nothing has checked these bytes. A release serves them whatever they hold.</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.serves">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:43,44</note>
+      </notes>
+      <segment>
+        <source>Releasing serves these bytes from every repository that holds them.</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.more-repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:50,52</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {and 1 more repository} other {and <ph id="0" equiv="INTERPOLATION"/> more repositories}}</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:56,57</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.cancel">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:64,65</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.submit">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:65,68</note>
+      </notes>
+      <segment>
+        <source>Release</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-hint">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:91</note>
+      </notes>
+      <segment>
+        <source>Why these bytes may be downloaded, for example a signature that ClamAV withdrew. At most 1,000 characters; kept with the release.</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:92</note>
+      </notes>
+      <segment>
+        <source>Release <ph id="0" equiv="file" disp="findName(this.find)"/>?</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-required">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:103</note>
+      </notes>
+      <segment>
+        <source>A release needs a reason.</source>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-long">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:104</note>
+      </notes>
+      <segment>
+        <source>The reason is longer than 1,000 characters.</source>
+      </segment>
+    </unit>
     <unit id="pkg.vuln.none-repositories">
       <notes>
         <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:48,50</note>
@@ -32110,9 +33063,41 @@
         <source>365 days</source>
       </segment>
     </unit>
+    <unit id="security.views">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security-views.ts:14</note>
+      </notes>
+      <segment>
+        <source>Security dashboard views</source>
+      </segment>
+    </unit>
+    <unit id="security.view.vulnerabilities">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security-views.ts:16,18</note>
+      </notes>
+      <segment>
+        <source>Vulnerabilities</source>
+      </segment>
+    </unit>
+    <unit id="security.view.malware">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security-views.ts:19,23</note>
+      </notes>
+      <segment>
+        <source>Malware</source>
+      </segment>
+    </unit>
+    <unit id="route.security.malware.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security.routes.ts:25</note>
+      </notes>
+      <segment>
+        <source>Malware</source>
+      </segment>
+    </unit>
     <unit id="route.vulnerabilities.finding.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/security.routes.ts:24</note>
+        <note category="location">src/app/features/vulnerabilities/security.routes.ts:30</note>
         <note category="location">src/app/features/vulnerabilities/vulnerabilities.routes.ts:25</note>
       </notes>
       <segment>
@@ -32121,7 +33106,7 @@
     </unit>
     <unit id="route.vulnerabilities.advisory.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/security.routes.ts:29</note>
+        <note category="location">src/app/features/vulnerabilities/security.routes.ts:35</note>
         <note category="location">src/app/features/vulnerabilities/vulnerabilities.routes.ts:30</note>
       </notes>
       <segment>
@@ -32372,7 +33357,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/version-findings.ts:88</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:98</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:288</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:290</note>
       </notes>
       <segment>
         <source>Severity</source>
@@ -32381,7 +33366,7 @@
     <unit id="vuln.col.identifier">
       <notes>
         <note category="location">src/app/features/vulnerabilities/version-findings.ts:89</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:292</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:294</note>
       </notes>
       <segment>
         <source>Identifier</source>
@@ -32391,7 +33376,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/version-findings.ts:90</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:99</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:289</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:291</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -32705,7 +33690,7 @@
     <unit id="vuln.col.package">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:100</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:293</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:295</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -32714,7 +33699,7 @@
     <unit id="vuln.col.repository">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:101</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:294</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:296</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -32723,7 +33708,7 @@
     <unit id="vuln.col.detected">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:102</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:296</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:298</note>
       </notes>
       <segment>
         <source>Detected</source>
@@ -33057,14 +34042,6 @@
         <source>The finding was changed.</source>
       </segment>
     </unit>
-    <unit id="security.heading">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:3,5</note>
-      </notes>
-      <segment>
-        <source>Security dashboard</source>
-      </segment>
-    </unit>
     <unit id="vuln.heading">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:5,7</note>
@@ -33083,7 +34060,7 @@
     </unit>
     <unit id="vuln.export">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:10,13</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:10,12</note>
       </notes>
       <segment>
         <source>Export CSV</source>
@@ -33091,7 +34068,7 @@
     </unit>
     <unit id="security.read-only">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:22,26</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:26,30</note>
       </notes>
       <segment>
         <source>You can read the findings of every project. Changing their status needs the permission to triage vulnerabilities.</source>
@@ -33099,7 +34076,7 @@
     </unit>
     <unit id="vuln.list.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:36,37</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:40,41</note>
       </notes>
       <segment>
         <source>Findings</source>
@@ -33107,7 +34084,7 @@
     </unit>
     <unit id="vuln.select-all">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:51,52</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:55,56</note>
       </notes>
       <segment>
         <source>Select all loaded findings</source>
@@ -33115,7 +34092,7 @@
     </unit>
     <unit id="vuln.selected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:53,54</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:57,58</note>
       </notes>
       <segment>
         <source>selected</source>
@@ -33123,7 +34100,7 @@
     </unit>
     <unit id="vuln.bulk">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:54,55</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:58,59</note>
       </notes>
       <segment>
         <source>Change status</source>
@@ -33131,7 +34108,7 @@
     </unit>
     <unit id="vuln.clear-selection">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:55,57</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:59,61</note>
       </notes>
       <segment>
         <source>Clear selection</source>
@@ -33139,8 +34116,8 @@
     </unit>
     <unit id="vuln.filter.project">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:70,72</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:371</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:74,76</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:373</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -33148,8 +34125,8 @@
     </unit>
     <unit id="vuln.filter.severity">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:81,82</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:384</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:85,86</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:386</note>
       </notes>
       <segment>
         <source>Severity</source>
@@ -33157,8 +34134,8 @@
     </unit>
     <unit id="vuln.filter.status">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:90</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:386</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:94</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:388</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -33166,9 +34143,9 @@
     </unit>
     <unit id="vuln.filter.kind">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:98</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:98</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:388</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:102</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:102</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:390</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -33176,11 +34153,11 @@
     </unit>
     <unit id="vuln.filter.any">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:99,100</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:146,147</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:153,154</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:161,162</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:169,170</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:103,104</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:150,151</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:157,158</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:165,166</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:173,174</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -33188,8 +34165,8 @@
     </unit>
     <unit id="vuln.filter.repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:105,107</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:374</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:109,111</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:376</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -33197,8 +34174,8 @@
     </unit>
     <unit id="vuln.filter.format">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:116</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:376</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:120</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:378</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -33206,8 +34183,8 @@
     </unit>
     <unit id="vuln.filter.package">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:123,125</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:378</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:127,129</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:380</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -33215,7 +34192,7 @@
     </unit>
     <unit id="vuln.filter.package-name">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:125,126</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:129,130</note>
       </notes>
       <segment>
         <source>Package name</source>
@@ -33223,8 +34200,8 @@
     </unit>
     <unit id="vuln.filter.version">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:129,130</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:380</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:133,134</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:382</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -33232,9 +34209,9 @@
     </unit>
     <unit id="vuln.filter.advisory">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:134,135</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:135</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:383</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:138,139</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:139</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:385</note>
       </notes>
       <segment>
         <source>Advisory</source>
@@ -33242,7 +34219,7 @@
     </unit>
     <unit id="vuln.filter.advisory-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:136,139</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:140,143</note>
       </notes>
       <segment>
         <source>An identifier or an alias, for example GHSA-… or CVE-….</source>
@@ -33250,7 +34227,7 @@
     </unit>
     <unit id="vuln.filter.flags">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:141,144</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:145,148</note>
       </notes>
       <segment>
         <source>Exploit, fix and block</source>
@@ -33258,8 +34235,8 @@
     </unit>
     <unit id="vuln.filter.exploited">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:144,145</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:391</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:148,149</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:393</note>
       </notes>
       <segment>
         <source>Known exploited</source>
@@ -33267,9 +34244,9 @@
     </unit>
     <unit id="vuln.filter.yes-option">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:147,149</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:154,155</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:162,163</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:151,153</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:158,159</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:166,167</note>
       </notes>
       <segment>
         <source>Yes</source>
@@ -33277,8 +34254,8 @@
     </unit>
     <unit id="vuln.filter.fix">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:151,152</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:392</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:155,156</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:394</note>
       </notes>
       <segment>
         <source>Fix available</source>
@@ -33286,8 +34263,8 @@
     </unit>
     <unit id="vuln.filter.no-option">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:155,157</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:163,165</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:159,161</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:167,169</note>
       </notes>
       <segment>
         <source>No</source>
@@ -33295,8 +34272,8 @@
     </unit>
     <unit id="vuln.filter.blocked">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:159,160</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:393</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:163,164</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:395</note>
       </notes>
       <segment>
         <source>Blocks downloads</source>
@@ -33304,8 +34281,8 @@
     </unit>
     <unit id="vuln.filter.block-reason">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:167,168</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:394</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:171,172</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:396</note>
       </notes>
       <segment>
         <source>Block reason</source>
@@ -33313,7 +34290,7 @@
     </unit>
     <unit id="vuln.filter.detected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:176,178</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:180,182</note>
       </notes>
       <segment>
         <source>Detected</source>
@@ -33321,7 +34298,7 @@
     </unit>
     <unit id="vuln.filter.from">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:178,179</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:182,183</note>
       </notes>
       <segment>
         <source>From</source>
@@ -33329,7 +34306,7 @@
     </unit>
     <unit id="vuln.filter.to">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:182,183</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:186,187</note>
       </notes>
       <segment>
         <source>Until</source>
@@ -33337,7 +34314,7 @@
     </unit>
     <unit id="vuln.marker.malicious">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:218,220</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:222,224</note>
       </notes>
       <segment>
         <source>Malicious</source>
@@ -33345,7 +34322,7 @@
     </unit>
     <unit id="vuln.marker.exploited">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:221,223</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:225,227</note>
       </notes>
       <segment>
         <source>Known exploited</source>
@@ -33353,7 +34330,7 @@
     </unit>
     <unit id="vuln.list.clear">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:253,256</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:257,260</note>
       </notes>
       <segment>
         <source>Clear all filters</source>
@@ -33361,7 +34338,7 @@
     </unit>
     <unit id="security.search">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:244</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:246</note>
       </notes>
       <segment>
         <source>Search by advisory, alias, package or summary</source>
@@ -33369,7 +34346,7 @@
     </unit>
     <unit id="vuln.list.search">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:245</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:247</note>
       </notes>
       <segment>
         <source>Filter findings</source>
@@ -33377,7 +34354,7 @@
     </unit>
     <unit id="security.scope.filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:275</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:277</note>
       </notes>
       <segment>
         <source>The counts and the trend cover the projects, repositories and formats of the filters. The search and the other filters narrow the list of findings only.</source>
@@ -33385,7 +34362,7 @@
     </unit>
     <unit id="security.scope.all">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:276</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:278</note>
       </notes>
       <segment>
         <source>The counts and the trend cover every project. A project, repository or format filter narrows them too; the search and the other filters narrow the list of findings only.</source>
@@ -33393,7 +34370,7 @@
     </unit>
     <unit id="vuln.col.select">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:287</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:289</note>
       </notes>
       <segment>
         <source>Select</source>
@@ -33401,7 +34378,7 @@
     </unit>
     <unit id="vuln.col.fixed-in">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:295</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:297</note>
       </notes>
       <segment>
         <source>Fixed in</source>
@@ -33409,7 +34386,7 @@
     </unit>
     <unit id="vuln.list.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:299</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:301</note>
       </notes>
       <segment>
         <source>Vulnerability findings</source>
@@ -33417,7 +34394,7 @@
     </unit>
     <unit id="vuln.list.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:300</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:302</note>
       </notes>
       <segment>
         <source>No open findings. Nothing in the repositories you can read is affected by a known advisory.</source>
@@ -33425,7 +34402,7 @@
     </unit>
     <unit id="vuln.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:301</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:303</note>
       </notes>
       <segment>
         <source>No finding matches the filters.</source>
@@ -33433,7 +34410,7 @@
     </unit>
     <unit id="security.project-filter">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:326</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:328</note>
       </notes>
       <segment>
         <source>Show only the findings of project <ph id="0" equiv="project" disp="project"/></source>
@@ -33441,7 +34418,7 @@
     </unit>
     <unit id="vuln.fix.none">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:340</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:342</note>
       </notes>
       <segment>
         <source>None yet</source>
@@ -33449,7 +34426,7 @@
     </unit>
     <unit id="vuln.filter.yes">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:389</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:391</note>
       </notes>
       <segment>
         <source>yes</source>
@@ -33457,7 +34434,7 @@
     </unit>
     <unit id="vuln.filter.no">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:390</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:392</note>
       </notes>
       <segment>
         <source>no</source>
@@ -33465,7 +34442,7 @@
     </unit>
     <unit id="vuln.filter.detected-from">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:395</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:397</note>
       </notes>
       <segment>
         <source>Detected from</source>
@@ -33473,7 +34450,7 @@
     </unit>
     <unit id="vuln.filter.detected-to">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:396</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:398</note>
       </notes>
       <segment>
         <source>Detected until</source>
@@ -33481,7 +34458,7 @@
     </unit>
     <unit id="vuln.select-row">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:517</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:519</note>
       </notes>
       <segment>
         <source>Select <ph id="0" equiv="advisory" disp="f.advisory"/> in <ph id="1" equiv="package" disp="f.package"/>@<ph id="2" equiv="version" disp="f.version"/></source>
@@ -34973,6 +35950,135 @@
       </notes>
       <segment>
         <source><ph id="0" equiv="label" disp="this.label()"/> <ph id="1" equiv="state" disp="state"/></source>
+      </segment>
+    </unit>
+    <unit id="malware.released-signature">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:46</note>
+      </notes>
+      <segment>
+        <source>found:</source>
+      </segment>
+    </unit>
+    <unit id="malware.in-part">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:63</note>
+      </notes>
+      <segment>
+        <source>in</source>
+      </segment>
+    </unit>
+    <unit id="malware.refused">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:74,76</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused.</source>
+      </segment>
+    </unit>
+    <unit id="malware.promise">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:11</note>
+      </notes>
+      <segment>
+        <source>The malware scan compares every artifact with ClamAV&apos;s signatures of known malware. It does not find malware that no signature describes yet, such as a malicious install script published today; for npm and NuGet, the vulnerability scanning blocks known malicious packages by name.</source>
+      </segment>
+    </unit>
+    <unit id="malware.state.clean">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:18</note>
+      </notes>
+      <segment>
+        <source>No malware found</source>
+      </segment>
+    </unit>
+    <unit id="malware.state.infected">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:20</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:33</note>
+      </notes>
+      <segment>
+        <source>Malware found</source>
+      </segment>
+    </unit>
+    <unit id="malware.state.not-checked">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:23</note>
+      </notes>
+      <segment>
+        <source>Could not be checked</source>
+      </segment>
+    </unit>
+    <unit id="malware.state.pending">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:25</note>
+      </notes>
+      <segment>
+        <source>Checking</source>
+      </segment>
+    </unit>
+    <unit id="malware.find.unscannable">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:35</note>
+      </notes>
+      <segment>
+        <source>Not checkable</source>
+      </segment>
+    </unit>
+    <unit id="malware.find.failed">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:37</note>
+      </notes>
+      <segment>
+        <source>Scan failed</source>
+      </segment>
+    </unit>
+    <unit id="malware.reason.too-large">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:48</note>
+      </notes>
+      <segment>
+        <source>too large to scan</source>
+      </segment>
+    </unit>
+    <unit id="malware.reason.limits">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:50</note>
+      </notes>
+      <segment>
+        <source>a scan limit was reached inside it</source>
+      </segment>
+    </unit>
+    <unit id="malware.reason.encrypted">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:52</note>
+      </notes>
+      <segment>
+        <source>an encrypted archive or document</source>
+      </segment>
+    </unit>
+    <unit id="malware.reason.failed-code">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:56</note>
+      </notes>
+      <segment>
+        <source>every scan failed (<ph id="0" equiv="code" disp="reason"/>)</source>
+      </segment>
+    </unit>
+    <unit id="malware.reason.failed">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:57</note>
+      </notes>
+      <segment>
+        <source>every scan failed</source>
+      </segment>
+    </unit>
+    <unit id="malware.someone">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:65</note>
+      </notes>
+      <segment>
+        <source>someone</source>
       </segment>
     </unit>
     <unit id="notice.dismiss">

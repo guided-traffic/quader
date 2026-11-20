@@ -6,6 +6,7 @@ import { SessionApi } from '../../../api/session-api';
 import { FakeSessionApi } from '../../../api/testing/fakes';
 import { FakeFilesApi, FakeNode, FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
 import { PermissionCheck } from '../../../api/session-api';
+import { malwareStatus } from '../../../api/testing/fakes-malware';
 import { button, expectAccessible, renderScreen, settle, sleep, text, type } from '../../../testing/screen';
 import { RepositoryContent } from './repository-content';
 
@@ -252,6 +253,20 @@ describe('The files of a repository', () => {
     const { root } = await open('generic-local', 'readme.txt', undefined, (c) => c.action === 'read');
     expect(text(root.querySelector('.file-actions')!)).toContain('Download');
     expect(text(root.querySelector('.file-actions')!)).not.toContain('Delete');
+  });
+
+  it('R-MAL-024 Q-UI-882 a file the malware scan refuses offers no Download, and says why; one that waits keeps it', async () => {
+    const refused = await open('generic-local', 'readme.txt', (files) => {
+      files.tree.set('web/generic-local', [
+        { path: 'readme.txt', kind: 'file', size: 120, malware: malwareStatus({ state: 'infected', signature: 'Eicar-Test-Signature', refused: true }) },
+      ]);
+    });
+    expect(text(refused.root.querySelector('.file-actions')!)).not.toContain('Download');
+    expect(text(refused.root.querySelector('[data-testid="malware-fact"]')!)).toContain('Downloads are refused.');
+    const pending = await open('generic-local', 'readme.txt', (files) => {
+      files.tree.set('web/generic-local', [{ path: 'readme.txt', kind: 'file', size: 120, malware: malwareStatus({ state: 'pending' }) }]);
+    });
+    expect(text(pending.root.querySelector('.file-actions')!)).toContain('Download');
   });
 
   it('Q-UI-511 a package format keeps its packages as the page and offers its raw files under Files, with a way back; it takes no upload', async () => {

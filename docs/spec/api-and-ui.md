@@ -3522,7 +3522,8 @@ Priority: **MVP** · Covers: UI-001, UI-004
   (repositories, upstream registries (R-UI-187), endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
   log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on;
-  Q-UI-326, [Q-UI-870](#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group)). Every entry has an icon, which is decoration: the label is the accessible name.
+  Q-UI-326, [Q-UI-870](#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group), read once per page load,
+  [Q-UI-874](#q-ui-874--the-screens-outside-the-settings-page-read-the-switch-once-per-page-load)). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.
 - Layout and density (Q-UI-2, Q-UI-68, Q-UI-127): the navigation is a left side bar below the top bar, on the
   same fill, and the content is a panel set into them; the side bar is visible at viewport widths of 1024 CSS px and
@@ -3612,7 +3613,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
 | `/security` (`?q=&advisory=&project=&severity=&…`), `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}` | The security dashboard over every project, its finding and advisory; for the holder of `content:metadata-read`, else not found | R-UI-158, R-UI-159, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
-| `/security/malware` (specified, not built) | The malware view of the security dashboard: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)) | R-MAL-025 |
+| `/security/malware` | The malware view of the security dashboard: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)) | R-MAL-025 |
 | `/admin/trash` | Trash can of the installation, for administrators (P1, not built) | R-UI-014 |
 | `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1) | R-UI-040 |
 | `/guides`, `/guides/{format}` | Guides: the formats as tiles, the repositories of one format | R-UI-124 |
@@ -7367,9 +7368,10 @@ Instanz-Administratoren."
   answers **Page not found** ([Q-UI-622](#q-ui-622--a-caller-without-the-capability-gets-page-not-found-at-security)). The role
   `security-admin` holds `vulnerabilities:triage` without `content:metadata-read` and has no dashboard: it triages on the screens of
   the projects whose repositories it may read.
-- **Two views** (specified, not built; [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)): **Vulnerabilities**
+- **Two views** ([Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)): **Vulnerabilities**
   (`/security`) and **Malware** (`/security/malware`, [malware-scanning.md](malware-scanning.md) R-MAL-025), as two links under the page's
-  title; the side bar keeps its one entry.
+  title, which each view places under its own header ([Q-UI-873](#q-ui-873--the-dashboards-two-views-are-a-strip-of-links-that-each-view-places-under-its-own-header));
+  the side bar keeps its one entry.
 - **On the page** (R-UI-005): the selection, **Change status** and the finding's status buttons for the holder of
   `vulnerabilities:triage`; **Advisory sources** for the holder of `settings:read`; nothing else leads into the admin area; a
   package opens in its project.
@@ -20437,6 +20439,161 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A badge in every list of packages | Visible everywhere | — | Lists of packages are per version, a verdict per file; most rows would say "No malware found" |
 
 **Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024.
+
+### Q-UI-873 · The dashboard's two views are a strip of links that each view places under its own header
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It builds
+Q-UI-871.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One component, `<quader-security-views>`, a `tab-nav` of the links **Vulnerabilities** and **Malware**, that each view puts directly under its header (chosen) | Each view keeps its title "Security dashboard" and its own actions | **Export CSV** and **Advisory sources** stay the vulnerability view's; the report stays one component for a project and the dashboard; each view has its own address and filters | The header is written twice, once per view |
+| (b) A frame page with one header and the views as its outlet, as System status (Q-UI-650) | One header | The title once | The report's header actions belong to one view only and would have to move into the frame; the project's report has no frame |
+| (c) Tabs that switch in place | No route | — | Two lists of different shapes would share one address and one set of query parameters |
+
+**Choice:** (a). **Applied in the spec:** R-UI-158; [malware-scanning.md](malware-scanning.md) R-MAL-025. Code:
+[security-views.ts](../../web/src/app/features/vulnerabilities/security-views.ts).
+
+### Q-UI-874 · The screens outside the settings page read the switch once per page load
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the admin area shows **Settings › Malware scanning** while the scanning is on (Q-UI-870), and a repository's section shows its
+setting read-only while the installation's switch is on (R-MAL-024); both read `getMalwareSwitch` (Q-MAL-45).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A store, `MalwareSwitchStore`, that reads the switch once per page load for a signed-in caller who could see a screen of it, and that the settings page updates with what a save answered (chosen) | One read | The side bar and the repository settings share it; a change on the settings page shows at once on the same page load | A switch another administrator changed shows on another page load |
+| (b) Every screen reads it itself | Always fresh | — | The side bar would read it on every navigation |
+| (c) A member of `authz/me` | No read of its own | — | A setting of the installation is no right of the caller, and the API is not this package's |
+
+**Choice:** (a). While the switch is not known, the entry and the section are hidden: the API decides in any case.
+**Applied in the spec:** R-UI-002. Code: [malware-switch.ts](../../web/src/app/core/malware-switch.ts).
+
+### Q-UI-875 · A repository's section is shown while the scanning is on, and an Owner who may not switch it off sees it read-only
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It reads
+Q-MAL-31 for the screen.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The closed section **Malware scan** only while `enabled`; a writer without `repositories:write-config` or `vulnerabilities:triage` sees a setting that is on checked and read-only, with "Only an administrator or someone who triages vulnerabilities can switch this off." (chosen) | The Owner learns before acting | No refusal by surprise; a setting without the scanning is not offered | The rule is repeated in the browser, where the API decides anyway |
+| (b) The box always enabled; the `403 malware_weakening_refused` stands in the section after **Save changes** | One rule, the server's | — | An Owner learns only by trying, and a box that cannot be changed looks as if it could |
+
+**Choice:** (a); the `403` is still shown in the section if it comes. A system repository has no section: its member is fixed
+(R-MAL-011). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024. Code:
+[repository-malware.ts](../../web/src/app/features/repositories/repository-malware.ts).
+
+### Q-UI-876 · The words and the marks of a verdict
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-MAL-024 names the words (**No malware found**, **Checking**, **Malware found**, **Could not be checked**, **Released**) and
+asks for a mark where the design system has one, green for a positive status only, and that a pending or unscannable file must not look
+like a clean one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The status badges of the design system: **No malware found** `ok` with `verified_user` and "ClamAV database of" its date; **Checking** neutral with `hourglass_empty`; **Malware found** `bad` with `bug_report` and the signature; **Could not be checked** `warn` with `help_outline` and the reason; **Released** neutral with `lock_open`, by whom and when, and what was released (chosen) | One component, `<quader-malware-status>`, for a file's page and a version's Files tab | Only the clean state is green; a file that waits is grey, one that could not be checked amber; every state has a word and an icon | The release, a decision of a person, has no colour of its own |
+| (b) A grade-like shield | A picture per state | Visible from afar | A shield is the vulnerability grade's (R-VULN-038); two shields for two kinds of check would be read as one |
+
+**Choice:** (a). In a table's cell (a version's **Files** tab, the dashboard's **Verdict**, which also holds a release) the state is the icon and
+the word as the first line, in the status's colour, with the detail under it, as the vulnerability list's status is
+(`quader-finding-status`): a badge followed by a signature that wraps put the cell's first text line under the row's line (R-UI-172), and
+the render's check found it. The dashboard's list tells the two kinds of "could not be checked" apart, because its filter does: **Not
+checkable** (`unscannable`) and **Scan failed** (`failed`). A version's **Files** tab has the column **Malware scan** while the answer
+carries the member, so a version of an installation without the scanning has none. In German a release is "zum Download zulassen",
+its noun "Zulassung", withdrawing it "zurückziehen", a find "Malware-Befund", as the glossary has them ("freigeben" renders exposure). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024, R-MAL-025. Code:
+[malware-status.ts](../../web/src/app/shared/malware/malware-status.ts), [malware-words.ts](../../web/src/app/shared/malware/malware-words.ts).
+
+### Q-UI-877 · A find is named by its first file, and its row's one action is Release or Withdraw release
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a find is a blob (R-MAL-001), held by files of any number of repositories; `listMalwareFinds` gives up to 100 of them and their
+counts.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row header is the file name of the first file and, muted under it, the first twelve characters of the digest; the button before it opens the row to every file (repository, path, package and version) and the release's reason; the row's one action is **Release** or, released, **Withdraw release** (chosen) | What a reader knows the bytes by | A row reads as a file; R-UI-163's one word per row; the files of a find are a list of their own when opened | The first file stands for files with other names |
+| (b) The digest as the row's name | Exact | One name for the bytes | Nobody recognises a digest |
+| (c) One row per file | A list of files | Familiar | A release is per blob: one decision would show in many rows |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-025. Code:
+[malware-finds.ts](../../web/src/app/features/vulnerabilities/malware-finds.ts).
+
+### Q-UI-878 · The database's repository links to the page where it is managed
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A repository of the project `upstream` links to its page of the upstream registries (`/admin/upstream/<key>`, R-UI-188), any other to its page in its project (chosen) | Where its address and state are set | The administrator lands where `scanner-clamav` is managed; an installation without internet lands on its own repository | `/admin/upstream/scanner-clamav` answers not found until the repository is declared (R-REPO-075) |
+| (b) The list of the upstream registries (`/admin/upstream`) | One link target | Always there | One more click to the row |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-023.
+
+### Q-UI-879 · Scan everything again asks first
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A question that says what happens ("Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan."), then the number of verdicts marked as a status (chosen) | One click more | A rescan of every verdict is a load on the scanners for hours on a large installation; the question says that nothing is refused meanwhile | — |
+| (b) At once | One click | Harmless: every verdict stays in force | A stray click starts hours of work |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-023.
+
+### Q-UI-880 · The manual covers the malware scan in the pages its readers already read
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Sections of existing pages: the administrator's in **Monitoring and operations** (`#malware-scanning`, which the Documentation link of the settings page opens), the auditor's in **Security dashboard** (`#malware`), the plain user's states on **Browsing and transferring files** and a refused download in **Errors and troubleshooting** (chosen) | No new page | Each reader finds it where the neighbouring topic is; no page joins the contents list of the manual, which the screens' work does not own (`internal/manual`) | The administrator's text is one section of a long page |
+| (b) A page of its own, **Malware scanning**, in the administrator guide | A page per topic | Findable in the contents | A new page is an entry of `contents` in `internal/manual/manual.go`, Go code of the manual's loader |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-023 to R-MAL-025. When the scanning's
+other packages add what an administrator configures (the chart's keys, the alerts), a page of its own becomes the better home.
+
+### Q-UI-881 · The renders seed the verdicts by SQL and take the states of the installation from the real answer changed in the browser
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: no scanner writes a verdict in the UI development profile, and the render run is one database shared by every screen at once:
+the installation's switch on would make every other screen of the run (and the seed's own downloads, once the gate exists) strict.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The seed writes the verdicts, two releases, the database in use and the scanners by SQL, keyed by the blobs of the files it uploads, as it writes the usage; the switch stays off; the states of the settings page and a repository's section that the shared database cannot hold (a stale database with a failure, none yet, the scanning off, the switch on) are the real answer changed in the browser (`page.route`), as `restrictInternal` does (chosen) | Every state rendered, the database unchanged for the others | The rows are the store's own, so the API, its counts and the finds' scope are real; no screen of the run sees another's state | The changed answers are not the server's |
+| (b) Each state written into the database before its picture | Real answers | — | Other screens rendered in parallel would see it; the switch on would hold the seed's downloads |
+
+**Choice:** (a). The seed's bytes are its own text, never a test signature: the source tree's malware scan (R-MAL-031) would find one.
+**Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-023 to R-MAL-025. Code:
+[web/e2e/renders/malware.ts](../../web/e2e/renders/malware.ts).
+
+### Q-UI-882 · A file the gate refuses offers no download, and its fact says why
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the member `malware` of a file says with `refused` that the gate refuses its download in its repository now (Q-MAL-45). The
+file's page kept **Download** above the fact "Malware found … Downloads are refused.", and a version's Files tab kept the row's
+**Download** beside it. The app's way with an action that does not work: a disabled repository has no **Set up client**, and its badge
+says why ([repository-content.html](../../web/src/app/features/repositories/content/repository-content.html)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Hidden: the file's page has no **Download**, the Files tab's row has the en dash in its place; the fact **Malware scan** beside it says "Downloads are refused." (chosen) | The disabled repository's form | Nothing is offered that answers `403`; the reason stands where the action was; one form in both places | A reader who wants the bytes anyway for an analysis gets them only through a release |
+| (b) A disabled button with the reason beside it | The control stays in its place | Shows that the download exists | A second sentence beside the fact that already says it; a disabled link is not a control the app has |
+| (c) Offered as it is | No change | The server's `403` explains itself | The page offers what it knows fails |
+
+**Choice:** (a). Only `refused` decides: a file that waits for its scan while nothing refuses it, an unscannable one in a repository that
+is not strict, and a released one keep **Download**. The **Download address** stays a fact of the file's page, because a client that
+asks gets the refusal with its reason, and so does the copy of a row's address in the file list, which has no download action and whose
+rows carry no verdict (`Child`). The install command of a version stays, as it does for a version a finding blocks.
+**Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024. Code:
+[repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
+[package-version.html](../../web/src/app/features/packages/package-version.html).
 
 ## What this does not cover
 

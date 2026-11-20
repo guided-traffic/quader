@@ -299,6 +299,22 @@
           </form>
         </quader-disclosure>
 
+        <!-- >>> malware -->
+        <!-- The stricter-only setting of the malware scan (R-MAL-020, R-MAL-024): a closed section after Access details, while the
+             scanning is on; never on a system repository, whose member is fixed. -->
+        @if (malwareShown()) {
+          <quader-repository-malware
+            [stored]="repo.malware?.onlyChecked ?? false"
+            [virtual]="repo.class === 'virtual'"
+            [canChange]="managed() ? canNarrow() : canChange()"
+            [canWeaken]="canWeakenMalware()"
+            [saving]="malwareSaving()"
+            [failure]="malwareFailure()"
+            (save)="saveMalware($event)"
+          />
+        }
+        <!-- <<< malware -->
+
         <!-- >>> W-26 limits -->
         @if (limitsShown()) {
           <quader-repository-limits [project]="project()" [repository]="key()" [remote]="repo.class === 'remote'" />

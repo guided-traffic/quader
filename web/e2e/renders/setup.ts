@@ -15,6 +15,7 @@ import {
   syncAdvisories,
 } from './seed';
 import { authFile, edge, outDir, stateDir } from './paths';
+import { seedMalwareContent, seedMalwareVerdicts } from './malware';
 
 /**
  * The global setup of `make ui-renders`: waits for the edge (the dev server of the UI development profile), seeds the data
@@ -45,6 +46,9 @@ export default async function setup(): Promise<void> {
     await plainUserToken(browser);
     // After the technical tokens and the sign-ins, whose principals the usage names (R-LIM-001).
     seedUsage();
+    // After the content, whose blobs the verdicts name, and the auditor's sign-in, who released two of them (R-MAL-024, R-MAL-025).
+    await seedMalwareContent(admin);
+    seedMalwareVerdicts();
     await syncAdvisories(admin);
     for (const kind of ['plain', 'power', 'admin'] as const) await openRecent(browser, kind);
   } finally {

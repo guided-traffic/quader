@@ -156,6 +156,23 @@ Cached packages are served while the upstream is down. Content that is no NuGet 
 
 APT prints the status line of a failed request and no body; a signature that cannot be verified, a client clock that trails Quader's, a `Hash Sum mismatch` and the answers of an upload are explained in [Debian packages with APT](apt-packages.md#when-something-goes-wrong). The upload's answers carry a code in the body, which `curl -fsS` hides: drop `-f` to read it.
 
+## A download is refused for malware
+
+Quader compares the bytes of every file a client can download with ClamAV's signatures of known malware. When the scan stands in the
+way of a download, every client gets an answer of its own kind with the same text: npm prints it after `E403`, Docker after `denied:`,
+`dotnet restore` and APT show the status, and `curl` on the address prints the text.
+
+| Code | Status | What happened | What to do |
+|---|---|---|---|
+| `malware_found` | 403 | The scan found a signature in the file: the text names the file, the repository, the signature and the date of the database, for example `Quader found malware in pkg/-/pkg-2.3.0.tgz of web/npm-internal: Js.Downloader.Agent-10045123-0 (ClamAV database of 2026-11-20)` | Use another version, or another file. If you are sure it is a false positive, ask an instance auditor: an auditor can release these bytes in the security dashboard, and the next download succeeds |
+| `malware_not_checked` | 403 | Only checked artifacts can be downloaded here, and the scan could not check the file: it is too large, a scan limit was reached inside it, it is encrypted, or every scan failed | Ask an instance auditor, who can release the bytes after looking at them, or use a file the scan can read |
+| `malware_check_pending` | 503 | Only checked artifacts can be downloaded here, and the file is being scanned for the first time; the answer carries `Retry-After` | Run the command again in a minute. npm, NuGet and APT retry by themselves; Docker and `ansible-galaxy` do not, so their first pull of a large new file can fail once and work when you repeat it |
+
+The page of the file and the **Files** tab of a version show the state of the scan
+([the malware scan's states](files.md#the-malware-scans-states)). The same bytes have the same state in every repository, and through a
+virtual repository the member that holds the file decides: Quader does not serve the same file from another member. An answer of the
+scan is never cached.
+
 ## Session ended and re-authentication
 
 A browser session ends after a period without activity and after a maximum length (one and twelve hours unless an administrator set other values), or when it is ended under **Profile › Sessions**.
@@ -190,6 +207,9 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `populate_not_permitted` | 403 | Not cached, and you may not fetch it from the upstream |
 | `vulnerability_blocked` | 403 | A finding of this version blocks it in this repository (a known malicious package, or a block set in triage) |
 | `vulnerability_data_missing` | 403 | The repository blocks what it cannot check, and the advisory data was never imported |
+| `malware_found` | 403 | The malware scan found a signature in the file and no auditor released it |
+| `malware_not_checked` | 403 | Only checked artifacts can be downloaded here, and the malware scan could not check the file |
+| `malware_weakening_refused` | 403 | Switching a repository's malware setting off needs an administrator or someone who triages vulnerabilities |
 | `pat_not_allowed` | 403 | Personal tokens are restricted to members of certain groups |
 | `derivation_exceeds_parent` | 403 | A token created with a token would outlive or outrank it |
 | `not_found` | 404 | Does not exist, or is hidden from you |
@@ -228,6 +248,7 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `upstream_unreachable`, `upstream_error`, `upstream_auth_failed`, `upstream_integrity_mismatch`, `npm_invalid_upstream_document`, `nuget_invalid_upstream_document`, `upstream_package_mismatch`, `egress_denied`, `foreign_host_denied` | 502 | The remote repository's upstream failed, refused or sent something Quader does not accept, and nothing usable is cached |
 | `server_busy`, `shutting_down` | 503 | The replica is at its limit or stopping; retry |
 | `database_unavailable`, `authz_stale`, `unavailable` | 503 | A dependency is temporarily unavailable; retry |
+| `malware_check_pending` | 503 | Only checked artifacts can be downloaded here, and the file is being scanned; retry after `Retry-After` |
 | `upstream_assumed_offline`, `shadow_check_unavailable`, `fetch_queue_timeout` | 503 | The upstream is assumed down, or busy; retry after `Retry-After` |
 | `content_unavailable` | 503 | The stored object of the file is missing from the object store. A remote repository fetches it again from its upstream and answers this only while it cannot (offline, the upstream down, the cache view); a local repository answers it until the object is back (an administrator restores it; Quader looks again at most every 30 seconds) or the same file is uploaded again. Retry after `Retry-After`; tell an administrator when it persists. The status is 500 when the object failed Quader's verification instead |
 | `upstream_timeout` | 504 | The upstream did not answer in time |

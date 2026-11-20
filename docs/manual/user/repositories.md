@@ -123,7 +123,9 @@ Debian packages are not scanned for vulnerabilities yet; the page says so and sh
 
 **Settings** on the content page opens the settings of the repository at `…/settings`. Editing it needs a further permission and is described in [Managing repositories](../admin/repositories.md). If you may use the repository but not read its configuration, the page says **You may use this repository but not read or change its configuration.** and shows the facts instead of the form.
 
-The settings page is one column: the key and the description at the top, then **Visibility** and, for a remote or virtual repository, its **Upstream** or **Members**, all open; below them closed sections such as **Access details**, the format's settings (for example **npm settings**), **Details** and **API**. How a client is configured is not a setting: it is **Set up client** at the top of the repository's page.
+The settings page is one column: the key and the description at the top, then **Visibility** and, for a remote or virtual repository, its **Upstream** or **Members**, all open; below them closed sections such as **Access details**, **Malware scan** (whether only checked artifacts can be downloaded from the
+repository, while the installation scans for malware; see [Monitoring and operations](../admin/operations.md#malware-scanning)), the
+format's settings (for example **npm settings**), **Details** and **API**. How a client is configured is not a setting: it is **Set up client** at the top of the repository's page.
 
 ## Set up client and the guides
 

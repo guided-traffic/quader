@@ -27,6 +27,7 @@ import {
   ciProject,
 } from './seed';
 import { gradedPackage, manyVersionsPackage } from './advisories';
+import { malwarePackage, quarantine } from './malware';
 import { routeTooMany } from './suggestions';
 
 /**
@@ -545,6 +546,153 @@ async function restrictInternal(page: Page): Promise<void> {
   await page.reload();
   await answered;
   await page.waitForLoadState('networkidle');
+}
+
+/**
+ * An answer of the app's API changed in the browser from the real one, and the page loaded again: the states of the malware scan
+ * that the shared render database cannot hold (R-MAL-023, R-MAL-024): a stale database with a failure, none yet, the scanning off,
+ * the installation's switch on. Whether the caller may read it stays the server's.
+ */
+async function answerWith(page: Page, url: string, change: (body: Record<string, unknown>) => Record<string, unknown>): Promise<void> {
+  await page.unroute(url);
+  await page.route(url, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: JSON.stringify(change((await res.json()) as Record<string, unknown>)) });
+  });
+  const answered = page.waitForResponse(url);
+  await page.reload();
+  await answered;
+  await page.waitForLoadState('networkidle');
+}
+
+/**
+ * **Settings › Malware scanning** (R-MAL-023): as seeded (the switch off, the backlog of the seed's files without a verdict, a current
+ * database, two scanners); the question before the switch goes on with a backlog; a database four days old whose updates fail, a
+ * backlog of tens of thousands, no scanner ready and an installation without internet with its commands; no database yet and the
+ * switch on; the scanning off in the configuration.
+ */
+async function* malwareSettings(page: Page): AsyncGenerator<string> {
+  const settings = '**/api/v1/malware/settings';
+  await expect(page.getByRole('heading', { name: 'Signature database' })).toBeVisible();
+  yield '';
+  await page.getByRole('checkbox', { name: 'Only checked artifacts can be downloaded' }).check();
+  await page.getByRole('button', { name: /^Save changes/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Let only checked artifacts be downloaded?' })).toBeVisible();
+  yield 'confirm';
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await answerWith(page, settings, (b) => ({
+    ...b,
+    backlog: { unchecked: 48213, notCheckable: 1207 },
+    scanners: { ready: 0, busy: 0, observedAt: new Date(Date.now() - 9 * 60_000).toISOString() },
+    database: {
+      version: 'main-62.daily-27832.bytecode-339',
+      builtAt: new Date(Date.now() - 4 * 86_400_000).toISOString(),
+      importedAt: new Date(Date.now() - 4 * 86_400_000 + 3_600_000).toISOString(),
+      stale: true,
+      repository: 'ops/clamav-db',
+      freshclam: false,
+      lastError: {
+        code: 'database_missing',
+        detail: 'The repository ops/clamav-db holds no main.cvd, daily.cvd or bytecode.cvd at its root.',
+        at: new Date(Date.now() - 25 * 60_000).toISOString(),
+        failures: 12,
+      },
+    },
+  }));
+  await expect(page.getByRole('heading', { name: 'Fill the repository' })).toBeVisible();
+  yield 'stale';
+  await answerWith(page, settings, (b) => ({
+    ...b,
+    onlyChecked: true,
+    backlog: { unchecked: 0, notCheckable: 0 },
+    scanners: { ready: 0, busy: 0, observedAt: null },
+    database: { ...(b['database'] as object), version: null, builtAt: null, importedAt: null, stale: false, lastError: null },
+  }));
+  await expect(page.locator('main [data-testid="malware-db-none"]')).toBeVisible();
+  yield 'none';
+  await answerWith(page, settings, (b) => ({ ...b, enabled: false }));
+  await expect(page.locator('main [data-testid="malware-off"]')).toBeVisible();
+  yield 'off';
+  await page.unroute(settings);
+}
+
+/**
+ * The malware view of the security dashboard (R-MAL-025) as the instance auditor: the finds as they open (one find in three
+ * repositories, a long signature in a long path, the unscannable, failed and released ones); the first find opened to its files; the
+ * drawer; the release dialog of the find in three repositories, sent without a reason; the empty list.
+ */
+async function* malwareFinds(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main tbody tr').first()).toBeVisible();
+  yield '';
+  await page.locator('main .name-cell button[aria-expanded="false"]').first().click();
+  await expect(page.locator('main .collapse-region.open .find-items li').first()).toBeVisible();
+  yield 'opened';
+  await page.locator('main .name-cell button[aria-expanded="true"]').first().click();
+  await page.locator('main .filter-toggle').first().click();
+  const drawer = page.getByRole('dialog', { name: 'Filters' });
+  await expect(drawer.locator('form.filter-form')).toBeVisible();
+  yield 'filters';
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
+  await page.getByRole('button', { name: 'Release eicar.com.txt' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Release eicar.com.txt?' });
+  await dialog.getByRole('button', { name: 'Release', exact: true }).click();
+  await expect(dialog.getByText('A release needs a reason.')).toBeVisible();
+  yield 'release';
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await answerWith(page, '**/api/v1/malware/finds?**', () => ({ items: [], nextCursor: null }));
+  await expect(page.getByText(/^No malware found\./)).toBeVisible();
+  yield 'empty';
+  await page.unroute('**/api/v1/malware/finds?**');
+}
+
+/** A version's states at its page (R-MAL-024): the infected tarball, the unscannable one its strict repository refuses, a clean one, one that waits. */
+async function* malwareVersions(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="malware-banner"]')).toBeVisible();
+  yield '';
+  for (const [version, state] of [
+    ['2.4.0-rc.1', 'unscannable'],
+    ['2.2.0', 'clean'],
+    ['2.5.0-next.1', 'pending'],
+  ] as const) {
+    await page.goto(`${ver(P, malwarePackage, version)}?tab=files`);
+    await expect(page.locator('main quader-malware-status').first()).toBeVisible();
+    yield state;
+  }
+}
+
+/** A file's fact at its page (R-MAL-024): a long signature in an archive's member, a release, a file that waits. */
+async function* malwareFiles(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="malware-fact"]')).toBeVisible();
+  yield '';
+  for (const [file, state] of [
+    ['nightly-build-cache.tar.zst', 'released'],
+    ['README.md', 'pending'],
+  ] as const) {
+    await page.goto(`${P}/repositories/assets/files/${quarantine}/${file}`);
+    await expect(page.locator('main [data-testid="malware-fact"]')).toBeVisible();
+    yield state;
+  }
+}
+
+/**
+ * The repository's section **Malware scan** (R-MAL-020): opened on the strict npm repository (its Owner cannot switch it off, an
+ * administrator can), then with the installation's switch on, which makes it checked and read-only.
+ */
+async function* malwareSection(page: Page): AsyncGenerator<string> {
+  const open = async (): Promise<void> => {
+    const { toggle } = sectionHeaded(page, 'Malware scan');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  };
+  await open();
+  yield '';
+  await answerWith(page, '**/api/v1/malware/switch', (b) => ({ ...b, onlyChecked: true }));
+  await open();
+  await expect(page.locator('main [data-testid="repo-malware-installation"]')).toBeVisible();
+  yield 'installation-on';
+  await page.unroute('**/api/v1/malware/switch');
 }
 
 /** A repository's settings with Internal restricted: the Owner keeps the internal levels with a note, an administrator sees notes. */
@@ -1071,6 +1219,14 @@ export const screens: readonly Screen[] = [
   { id: 'files-npm', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-`, kinds: all },
   { id: 'files-npm-file', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-/ui-kit-1.1.0.tgz`, kinds: owners },
   { id: 'files-oci', path: `${P}/repositories/images/files`, kinds: ['plain'] },
+  // The malware scan's fact of a file and a version (R-MAL-024): what a plain user meets; the same for every kind.
+  {
+    id: 'files-malware',
+    path: `${P}/repositories/assets/files/${quarantine}/customer-portal-installer-with-a-long-name-for-the-windows-build-agents.exe`,
+    kinds: ['plain'],
+    walk: malwareFiles,
+  },
+  { id: 'package-version-malware', path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`, kinds: ['plain'], walk: malwareVersions },
   { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips) },
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },
@@ -1080,6 +1236,8 @@ export const screens: readonly Screen[] = [
   { id: 'security', path: '/ui/security', kinds: auditors, walk: filtersOpen(securityChips) },
   { id: 'security-search', path: '/ui/security', kinds: ['auditor'], walk: searched('DEMO-2026-00001') },
   { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'] },
+  // The dashboard's malware view (R-MAL-025): what the auditor assesses and releases; an administrator sees the same.
+  { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds },
   // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
   { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all },
   { id: 'setup-npm-remote', path: `${P}/repositories/npmjs/setup`, kinds: all },
@@ -1142,6 +1300,8 @@ export const screens: readonly Screen[] = [
   { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },
   { id: 'project-usage-caller', path: `${P}/usage/user/${kinds.power}`, kinds: owners, walk: usageDetailWalk },
   { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
+  // The strict repository's section Malware scan (R-MAL-020): its Owner may not switch it off, an administrator may.
+  { id: 'repository-settings-malware', path: `${P}/repositories/${malwarePackage.repo}/settings`, kinds: owners, walk: malwareSection },
   // The one state of the visibility section that no stored repository shows: the server's answer under each level's group.
   {
     id: 'repository-settings-visibility-refused',
@@ -1219,4 +1379,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins },
   { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
+  // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
+  { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },
+  { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
 ];

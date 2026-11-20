@@ -24,6 +24,26 @@ Select a file's name to open its page. It shows:
 - the file's path, its name last, with **Download** and, if you may delete it, **Delete** at the end of the row;
 - **Download address**, the file's address below the files path, with a copy button: the address for curl and other tools (see [Transfer files with curl](#transfer-files-with-curl));
 - **Size**, **Media type**, **Created** and **Last changed** (each with who did it, where known), and **SHA-256** with a copy button. If the stored content is missing or damaged, **Content** says so; tell an administrator.
+- **Malware scan**, while the installation scans for malware: what the scan said of the file's bytes (see [the malware scan's states](#the-malware-scans-states)).
+
+### The malware scan's states
+
+Quader compares the bytes of every file a client can download with ClamAV's signatures of known malware. The fact **Malware scan**
+says what that found; a file Quader writes itself (a Debian index) has none.
+
+| State | What it means | Downloads |
+|---|---|---|
+| **No malware found**, with the date of the ClamAV database | No signature matched. A signature scan does not find malware that no signature describes yet | Served |
+| **Checking** | The file is not checked yet | Served, or, where only checked artifacts can be downloaded, the download waits for the scan for up to 25 seconds |
+| **Malware found**, with the signature and, inside an archive, the file it was found in | A signature matched | Refused |
+| **Could not be checked**, with the reason: too large, a scan limit was reached inside it, encrypted, or every scan failed | Nothing could check the bytes | Served, or refused where only checked artifacts can be downloaded |
+| **Released**, by whom and when | An instance auditor released these bytes after looking at them | Served |
+
+**Downloads are refused.** after the state says that the file cannot be downloaded from this repository now; the page then offers no
+**Download**, and a version's **Files** tab none in the file's row. The download address stays: a client that asks gets the refusal and
+its reason. What to do then is in
+[Errors and troubleshooting](troubleshooting.md#a-download-is-refused-for-malware). The same bytes have the same state in every
+repository that holds them.
 
 **Details** at the end of the page opens the rest: every checksum (**SHA-256**, **SHA-512**, **SHA-1** and **MD5**), each with a copy button; the downloads (**Downloads**, **Last download** and **Last downloader**), which reach the statistics within a minute of a download; and the file as the management API describes it, with the matching curl requests. They send the token from the environment variable `QUADER_TOKEN`: the header is in double quotes so that your shell fills in the value, and the address is in single quotes. Set the variable first, without typing the token into a shell that records its history.
 

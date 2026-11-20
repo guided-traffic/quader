@@ -38,6 +38,7 @@ import {
 } from './version-metadata';
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
+import { MalwareStatusView } from '../../shared/malware/malware-status';
 
 export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'details' | 'import-log';
 
@@ -81,6 +82,7 @@ interface TabEntry {
     VersionSize,
     NoValue,
     DownloadLink,
+    MalwareStatusView,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',
@@ -313,16 +315,29 @@ export class PackageVersionPage {
     return ['/projects', qualified.slice(0, i), 'repositories', qualified.slice(i + 1)];
   }
 
-  protected readonly fileColumns: readonly TableColumn[] = [
-    { id: 'path', label: $localize`:@@pkg.file.path:File` },
+  /**
+   * The malware scan's fact per file (R-MAL-024, Q-UI-872): a column while the answer carries the member, which it does whenever the
+   * scanning is on; a generated file has none.
+   */
+  protected readonly malwareShown = computed(() => (this.detail()?.files ?? []).some((f) => f.malware !== undefined));
+  /** The files the gate refuses now, each with a banner above the tabs (R-MAL-024). */
+  protected readonly refusedFiles = computed(() => (this.detail()?.files ?? []).filter((f) => f.malware?.refused === true));
+  /** The file name of a path, which the banner names. */
+  protected fileName(path: string): string {
+    return path.split('/').filter((p) => p !== '').pop() ?? path;
+  }
+
+  protected readonly fileColumns = computed<readonly TableColumn[]>(() => [
+    { id: 'path', label: $localize`:@@pkg.file.path:File`, width: '12rem' },
     { id: 'size', label: $localize`:@@pkg.file.size:Size`, numeric: true },
     {
       id: 'sha256',
       label: $localize`:@@pkg.file.sha256:SHA-256`,
       help: $localize`:@@pkg.help.sha256:The checksum of the file's content. Compare it with the output of sha256sum on the downloaded file.`,
     },
+    ...(this.malwareShown() ? [{ id: 'malware', label: $localize`:@@pkg.file.malware:Malware scan`, width: '12rem' }] : []),
     { id: 'download', label: $localize`:@@pkg.file.download:Download`, hideLabel: true },
-  ];
+  ]);
   protected readonly repositoryColumns: readonly TableColumn[] = [
     { id: 'repository', label: $localize`:@@pkg.repo.repository:Repository` },
     { id: 'class', label: $localize`:@@pkg.repo.class:Class` },

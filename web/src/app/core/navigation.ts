@@ -1,4 +1,5 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, effect, inject, untracked } from '@angular/core';
+import { MalwareSwitchStore } from './malware-switch';
 import { ProjectContext, projectKeyOf } from './project-context';
 import { SessionStore } from './session-store';
 import { isUpstreamProject } from './upstream-project';
@@ -16,6 +17,8 @@ export interface NavItem {
   readonly icon: string;
   /** Capability from `authz/me` that shows the entry (R-UI-002); none means always shown. */
   readonly capability?: string;
+  /** A feature of the installation the entry needs: `malware`, shown while the malware scanning is on (Q-UI-870). */
+  readonly feature?: 'malware';
 }
 
 /** A section of the sidebar with nested entries that can be folded. */
@@ -166,6 +169,16 @@ export const NAV_AREAS: readonly NavArea[] = [
             items: [
               { route: '/admin/settings/general', icon: 'tune', label: $localize`:@@nav.settings.general:General`, capability: 'settings:read' },
               { route: '/admin/settings/auth', icon: 'lock', label: $localize`:@@nav.settings.auth:Authentication`, capability: 'settings:read' },
+              // >>> malware
+              // The third page of the group while the malware scanning is on (R-MAL-023, Q-UI-870).
+              {
+                route: '/admin/settings/malware',
+                icon: 'gpp_maybe',
+                label: $localize`:@@nav.settings.malware:Malware scanning`,
+                capability: 'settings:read',
+                feature: 'malware',
+              },
+              // <<< malware
             ],
           },
         ],
@@ -235,6 +248,14 @@ export function projectEntries(key: string, session: SessionStore): readonly Nav
 export class Navigation {
   private readonly session = inject(SessionStore);
   private readonly context = inject(ProjectContext);
+  private readonly malware = inject(MalwareSwitchStore);
+
+  constructor() {
+    // The one entry that depends on the installation (Settings › Malware scanning) asks once the caller could see it.
+    effect(() => {
+      if (this.session.capabilities().includes('settings:read')) untracked(() => void this.malware.load());
+    });
+  }
 
   /**
    * The fixed areas: the home sidebar, and the admin sidebar for a caller who may use one of its entries. Every entry of the
@@ -243,7 +264,9 @@ export class Navigation {
    */
   readonly areas = computed<readonly NavArea[]>(() => {
     const capabilities = this.session.capabilities();
-    const allowed = (i: Pick<NavItem, 'capability'>) => !i.capability || capabilities.includes(i.capability);
+    const malware = this.malware.enabled();
+    const allowed = (i: Pick<NavItem, 'capability' | 'feature'>) =>
+      (!i.capability || capabilities.includes(i.capability)) && (i.feature !== 'malware' || malware);
     const entries = (list: readonly NavEntry[]): NavEntry[] =>
       list.flatMap((e): NavEntry[] => {
         if (e.kind === 'item') return allowed(e) ? [e] : [];

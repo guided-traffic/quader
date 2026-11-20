@@ -38,7 +38,7 @@ export default defineConfig({
     // The scrollbars are shown, as on a desktop with a mouse: one beside a table's rows takes the table's width.
     launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
   },
-  projects: (['anonymous', 'plain', 'power', 'admin'] as const).map((kind) => ({
+  projects: (['anonymous', 'plain', 'power', 'admin', 'auditor'] as const).map((kind) => ({
     name: kind,
     grep: new RegExp(`@${kind}\\b`),
     use: { ...devices['Desktop Chrome'], ...(kind === 'anonymous' ? {} : { storageState: authFile(kind) }) },

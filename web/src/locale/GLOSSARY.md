@@ -108,3 +108,4 @@ before using a new term in a German text.
 | account (of an upstream), archive keys, image scanning | Konto, Archivschlüssel, Image-Analyse |
 | malware, malware scan, find (a file in which the scan found malware), signatures (of the malware scan) | Malware, Malware-Prüfung, Malware-Befund, Malware-Signaturen |
 | release (a file the malware scan did not pass, for download), withdraw (a release) | zum Download zulassen (Zulassung; not "freigeben", which renders exposure), zurückziehen |
+| signature database, checked (an artifact with a verdict), verdict (of the malware scan) | Signaturdatenbank, geprüft, Prüfergebnis |

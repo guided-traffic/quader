@@ -1,6 +1,6 @@
 # Security dashboard
 
-The security dashboard is the instance-wide view of the vulnerability findings, for the auditors and the administrators of the installation. It shows the counts and the trend over every project, finds a finding by its advisory identifier or any alias of it, lists the findings with the project of each, and lets the people who may triage change their status.
+The security dashboard is the instance-wide view of the vulnerability findings and of the malware scan's finds, for the auditors and the administrators of the installation. It shows the counts and the trend over every project, finds a finding by its advisory identifier or any alias of it, lists the findings with the project of each, and lets the people who may triage change their status; its second view lists the malware finds and releases one.
 
 A project's **Vulnerabilities** screen is the same report for that project; this page covers what differs. For what a finding is and what the triage statuses mean, see [Vulnerabilities](vulnerabilities.md).
 
@@ -49,6 +49,42 @@ With `vulnerabilities:triage`, tick findings (**Select all loaded findings** tic
 ## After a restore
 
 A restore to an earlier point replays every block that was set after it, whether a person set it or the scanning did (a malicious version detected, an advisory that turned malicious, a version blocked again when it came back). A finding that the restored installation did not have is created by the replay; its history has a row, a detection or a status change, that names no person. A version the repository does not store any more is resolved with the reason that the version was removed: the block still counts for a fetch of that version, and for a published copy of it, until the ecosystem has synced since the restore. The first complete sync then decides again: a block whose advisory still affects the version stays, one whose advisory stopped applying resolves. You can lift a replayed block on a stored version like any other block.
+
+## Malware
+
+The dashboard has two views, **Vulnerabilities** and **Malware**, as two links under its title; **Malware** opens
+`/ui/<locale>/security/malware`. It lists what the malware scan found or could not check: one row per content, because the scan judges the
+bytes, and the same bytes in thirty repositories are one row.
+
+Above the list stands what the scan promises and what it does not: it compares every artifact with ClamAV's signatures of known malware
+and does not find malware that no signature describes yet, such as a malicious install script published today. For npm and NuGet, the
+vulnerability findings of the other view block known malicious packages by name.
+
+| Column | What it shows |
+|---|---|
+| **File** | The name of the first file that holds the bytes and the first twelve characters of their SHA-256. The button before it opens the row: every file that holds the bytes, with its repository, its path and its package and version, and the reason of a release |
+| **Verdict** | **Malware found** with the signature (and the file inside an archive it was found in), **Not checkable** with the reason (too large, a scan limit reached inside it, encrypted), or **Scan failed** with the last error; the date of the ClamAV database; and, for released bytes, **Released** by whom and when |
+| **Repositories** | The first repository that holds the bytes, and how many more do |
+| **Found** | When the scan found it, the newest first |
+
+**Search by path or signature** finds a part of a file's path or of a signature. **Filters** offers **State**, **Release** (released or
+not) and **Repository**; each filter that is set is a chip beside **Filters**, and everything is part of the address. When nothing was
+found, the list says **No malware found.** with the date of the signature database in use.
+
+**Release.** With `vulnerabilities:triage` together with `content:metadata-read` (the roles `auditor` and `admin`), each row offers
+**Release**. The dialog names the bytes, what the scan said, and every repository that holds them, because a release serves these bytes
+from every one of them, under the switch **Only checked artifacts can be downloaded** and without it, until it is withdrawn. It needs a
+reason, which is kept with the release and recorded in the audit log. Release a false positive (a signature that matched harmless bytes)
+or content nothing could check that you have looked at; for content nothing could check, the dialog says that nothing checked it. A
+release survives every new scan of the bytes and their removal: the same bytes stored again are released.
+
+**Withdraw release** on a released row asks first; from the next download every repository refuses the bytes again. A release is never
+offered for content that is not checked yet or in which no malware was found. Whoever reads the dashboard without the triage capability
+sees the list and no action, and the page says so. Nothing is deleted: refused bytes stay stored, so a false positive costs no data; a
+holder of `delete` on a repository removes its files as any files.
+
+The settings of the scan (the switch, the backlog, the scanners, the signature database) are the administrator's, in the admin area
+under **Settings › Malware scanning** ([Monitoring and operations](../admin/operations.md#malware-scanning)).
 
 ## Limits
 

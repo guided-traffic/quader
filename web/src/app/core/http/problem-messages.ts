@@ -13,6 +13,9 @@ import { describeVulnerabilityProblem } from './problem-messages-vulnerability';
 // >>> W-26 limits
 import { describeLimitsProblem } from './problem-messages-limits';
 // <<< W-26 limits
+// >>> malware
+import { describeMalwareProblem } from './problem-messages-malware';
+// <<< malware
 // <<< M4b vulnerabilities
 
 export interface ProblemText {
@@ -131,7 +134,7 @@ export function describeProblem(error: ApiError): ProblemText {
     // <<< M2 ownership
     default:
       // >>> M1 ui-b
-      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? fallback(error);
+      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? malwareProblem(error) ?? fallback(error);
       // <<< M1 ui-b
   }
 }
@@ -170,6 +173,13 @@ function limitsProblem(error: ApiError): ProblemText | null {
   return text === null ? null : { text, known: true };
 }
 // <<< W-26 limits
+
+// >>> malware
+function malwareProblem(error: ApiError): ProblemText | null {
+  const text = describeMalwareProblem(error.code);
+  return text === null ? null : { text, known: true };
+}
+// <<< malware
 
 function rateLimited(seconds: number | null): string {
   return seconds === null

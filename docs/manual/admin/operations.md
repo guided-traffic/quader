@@ -291,6 +291,46 @@ A name in `disabledAlerts` that is no alert of the chart fails the install. If y
 - `npm audit` through Quader answers `503` and the NuGet vulnerability resource is not listed;
 - the system information shows each source with state `empty`, `QuaderVulnerabilityDataStale` fires after 15 minutes, and the first `vuln-sync-osv` slot (every 15 minutes by default) imports the data and starts the full evaluation. You can start it at once from the task list.
 
+## Malware scanning
+
+Quader compares the bytes of every file a client can download with ClamAV's signatures of known malware, once per content for the whole
+installation. A signature scan does not find malware that no signature describes yet, such as a malicious install script published
+today; for npm and NuGet, the vulnerability scanning blocks known malicious packages by name. Content in which the scan finds a signature is
+refused always while the scanning is on (`malware.enabled`, on by default).
+
+**The page.** **Admin area › Settings › Malware scanning** (`/admin/settings/malware`) is shown to whoever holds `settings:read` while
+the scanning is on; changing the switch and **Scan everything again** need `settings:write`. An auditor reads the page; the switch is
+then a sentence, not a check box. The page holds the settings and the state of the scanning, and no find: the finds are the instance
+auditor's, in the security dashboard's view **Malware** ([Security dashboard](../user/security-dashboard.md#malware)), and the page links
+there for whoever may open it. With `malware.enabled: false` the side bar has no entry, and the page says that the scanning is off.
+
+| Section | What it shows |
+|---|---|
+| **Downloads** | **Only checked artifacts can be downloaded**, off by default. On, a download is served only when the scan found no malware or an auditor released the bytes: content that is not checked yet waits up to `malware.download_wait` (25 seconds) for its scan and is then refused with `503` and `Retry-After`; content nothing could check (too large, a scan limit reached inside it, encrypted, the scans failed) is refused until an auditor releases it. When content waits or cannot be checked, **Save changes** asks first and names how much. Who changed the switch last, and when |
+| **Scanning** | **Not checked yet** and **Could not be checked**: what the switch would hold or refuse now. **Scanners**: the ready scanners and the scans running, as the worker last saw them, or **None ready**. **Scan everything again** marks every verdict to be scanned again at the lowest priority, after the work that waits; each verdict stays in force until its new scan |
+| **Signature database** | The version in use, its date with **Current** or **Stale** (older than `malware.database.stale_after`, 48 hours; scanning goes on with it), when Quader stored it, and the repository that keeps it (`upstream/scanner-clamav`, on its page of the upstream registries). A failed update names what failed and how often in a row. Until the first version is in use, nothing is scanned |
+
+**A failed update** of the signature database is one of:
+
+| Message | Code | What to do |
+|---|---|---|
+| No signature database was found. | `database_missing` | `freshclam` beside the worker has not fetched one yet or cannot reach ClamAV's network (its log says which); without internet, the repository holds no database at its root |
+| A file of the signature database was refused. | `database_invalid` | A file failed the checks, or a scanner could not load the version; the version before stays in use and the refused one is not offered again |
+| The repository the configuration names cannot hold the database. | `database_repository_invalid` | `malware.database.repository` names no local generic repository |
+| A file of the signature database could not be stored. | `store_failed` | The object store refused the write; see [When a dependency is unavailable](#when-a-dependency-is-unavailable) |
+
+**Without internet.** With `malware.database.freshclam: false` and `malware.database.repository` naming a local generic repository of
+your own, the page shows the commands that fill it, with this installation's address and the repository filled in: ClamAV's mirror tool
+`cvdupdate` fetches the files on a machine that reaches the network, and the three whole files are uploaded to the root of the repository.
+Whoever may deploy to that repository decides what the scanners compare content with.
+
+**A repository's own setting.** A repository's settings have a closed section **Malware scan** with **Only checked artifacts can be
+downloaded from this repository**: a team that wants checked content without the installation's switch sets it. It only makes a
+repository stricter: while the installation's switch is on, it is checked and cannot be changed. On a virtual repository it covers
+everything the repository serves from its members, and a strict member stays strict through every virtual repository. An Owner of the
+project may switch it on; switching it off needs `repositories:write-config` or `vulnerabilities:triage`, and the section tells an Owner
+whom to ask. It is not part of the form that creates a repository.
+
 ## What to watch
 
 | Signal | Meaning |

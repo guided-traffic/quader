@@ -130,8 +130,9 @@
         </nav>
         @if (view() === 'file' && item(); as it) {
           <div class="file-actions">
-            @if (it.contentUrl; as content) {
-              <a class="btn btn-default on-line" [href]="content" download quaderDownload>
+            <!-- A file the malware scan's gate refuses here offers no download: the fact Malware scan says why (Q-UI-882). -->
+            @if (it.contentUrl && it.malware?.refused !== true) {
+              <a class="btn btn-default on-line" [href]="it.contentUrl" download quaderDownload>
                 <span class="material-icons" aria-hidden="true">download</span>
                 <ng-container i18n="@@files.download">Download</ng-container>
               </a>

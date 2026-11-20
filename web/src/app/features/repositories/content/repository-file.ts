@@ -6,6 +6,7 @@ import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { Disclosure } from '../../../shared/ui/disclosure';
 import { TimeAgo } from '../../../shared/ui/time-ago';
+import { MalwareStatusView } from '../../../shared/malware/malware-status';
 import { formatSize } from '../../packages/format-size';
 import { nameOf } from './file-paths';
 
@@ -14,13 +15,14 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
 
 /**
  * The page of one file of a repository (R-UI-010, Q-UI-514), below its path, which names it and holds **Download** and, for a
- * holder of `delete`, **Delete** (the page's): the download address to copy; the facts a reader needs (size, media type, created, last changed, SHA-256). The other checksums, the
+ * holder of `delete`, **Delete** (the page's): the download address to copy; the facts a reader needs (size, media type, created, last
+ * changed, the malware scan's verdict of R-MAL-024, SHA-256). The other checksums, the
  * download statistics and the item as the API describes it are the closed section **Details**: they are for who checks a file,
  * not for who fetches it.
  */
 @Component({
   selector: 'quader-repository-file',
-  imports: [AddressField, CopyButton, Disclosure, ErrorNotice, TimeAgo],
+  imports: [AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, TimeAgo],
   template: `
     @let it = item();
     <section class="file-view" aria-labelledby="file-name">
@@ -64,6 +66,11 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
               <ng-container i18n="@@files.content.corrupt">The stored content failed its checksum.</ng-container>
             }
           </dd>
+        }
+        <!-- The malware scan's verdict of the file's bytes (R-MAL-024, Q-UI-872); absent for a generated file and while the scanning is off. -->
+        @if (it.malware; as m) {
+          <dt i18n="@@files.fact.malware">Malware scan</dt>
+          <dd data-testid="malware-fact"><quader-malware-status [status]="m" /></dd>
         }
         @if (it.digests?.sha256; as sha) {
           <dt translate="no">SHA-256</dt>

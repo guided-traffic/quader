@@ -62,6 +62,23 @@
         >
       </p>
     }
+    <!-- A file the malware scan's gate refuses in a repository the reader may read (R-MAL-024, Q-UI-872); nothing for a clean or a
+         pending one. -->
+    @for (f of refusedFiles(); track f.path) {
+      <p class="banner-warning" role="note" data-testid="malware-banner">
+        <span class="material-icons inline warn" aria-hidden="true">bug_report</span>
+        @if (f.malware?.state === 'infected') {
+          <span i18n="@@pkg.malware.found"
+            >Malware found in <code translate="no">{{ fileName(f.path) }}</code> (<code translate="no">{{ f.malware.signature }}</code>). Downloads are
+            refused.</span
+          >
+        } @else {
+          <span i18n="@@pkg.malware.not-checked"
+            ><code translate="no">{{ fileName(f.path) }}</code> could not be checked for malware. Downloads are refused here.</span
+          >
+        }
+      </p>
+    }
     @if (deprecated(); as why) {
       <p class="banner-warning" role="note">
         <span class="material-icons inline warn" aria-hidden="true">warning</span>
@@ -120,7 +137,7 @@
               }
             }
             @case ('files') {
-              <quader-data-table [caption]="tableCaptionFiles" [columns]="fileColumns" [empty]="d.files.length === 0">
+              <quader-data-table [caption]="tableCaptionFiles" [columns]="fileColumns()" [empty]="d.files.length === 0">
                 @for (f of d.files; track f.path) {
                   <tr>
                     <th scope="row" class="wrap-name file-path" translate="no">{{ f.path }}</th>
@@ -130,8 +147,22 @@
                       <code class="ellipsis" translate="no" [attr.title]="f.sha256">{{ f.sha256 }}</code>
                       <quader-copy-button [value]="f.sha256" [label]="copySha" />
                     </td>
+                    @if (malwareShown()) {
+                      <td class="malware-cell">
+                        @if (f.malware; as m) {
+                          <quader-malware-status [status]="m" form="line" />
+                        } @else {
+                          <quader-no-value />
+                        }
+                      </td>
+                    }
                     <td>
-                      <a class="btn btn-tertiary" [href]="f.contentUrl" download quaderDownload i18n="@@pkg.file.download-link">Download</a>
+                      <!-- A file the malware scan's gate refuses offers no download; its fact says why (Q-UI-882). -->
+                      @if (f.malware?.refused === true) {
+                        <quader-no-value />
+                      } @else {
+                        <a class="btn btn-tertiary" [href]="f.contentUrl" download quaderDownload i18n="@@pkg.file.download-link">Download</a>
+                      }
                     </td>
                   </tr>
                 }

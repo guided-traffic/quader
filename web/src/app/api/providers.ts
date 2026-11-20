@@ -53,6 +53,9 @@ import { HttpLimitsApi, LimitsApi } from './limits-api';
 // >>> upstream
 import { HttpUpstreamApi, UpstreamApi } from './upstream-api';
 // <<< upstream
+// >>> malware
+import { HttpMalwareApi, MalwareApi } from './malware-api';
+// <<< malware
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -117,5 +120,8 @@ export function provideApiServices(): Provider[] {
     // >>> upstream
     { provide: UpstreamApi, useClass: HttpUpstreamApi },
     // <<< upstream
+    // >>> malware
+    { provide: MalwareApi, useClass: HttpMalwareApi },
+    // <<< malware
   ];
 }

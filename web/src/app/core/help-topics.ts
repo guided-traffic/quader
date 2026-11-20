@@ -50,6 +50,9 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/admin/service-accounts', { section: 'admin', page: 'sign-in-and-identity' }],
   ['/admin/settings', { section: 'admin', page: 'sign-in-and-identity' }],
   ['/admin/settings/general', { section: 'admin', page: 'operations' }],
+  // >>> malware
+  ['/admin/settings/malware', { section: 'admin', page: 'operations' }],
+  // <<< malware
   ['/admin/tokens', { section: 'admin', page: 'tokens' }],
   // >>> M4 ci
   ['/admin/ci', { section: 'admin', page: 'gitlab-ci' }],

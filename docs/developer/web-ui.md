@@ -197,7 +197,7 @@ make ui-dev-down                  # when done (keeps the data)
 
 | What | Where |
 |---|---|
-| The pictures | `.out/ui-renders/<kind>/<screen>[-<tab>]-<scheme>-<width>.png`; `<kind>` is `plain`, `power`, `admin` or `anonymous`, `<scheme>` `light` or `dark`, `<width>` 1440, 1024 or 390 |
+| The pictures | `.out/ui-renders/<kind>/<screen>[-<tab>]-<scheme>-<width>.png`; `<kind>` is `plain`, `power`, `admin`, `auditor` or `anonymous`, `<scheme>` `light` or `dark`, `<width>` 1440, 1024 or 390 |
 | The contact sheet | `.out/ui-renders/index.html`: the failures, the screens whose page scrolls sideways at any width and those with a region that scrolls sideways at 1024 px and wider, each with its widest element, then every screen with a row per kind and tab |
 | What each picture measured | `.out/ui-renders/report.json` (how far the content and each region scroll sideways, the `offender`: the innermost element that reaches furthest past the panel's edge, hidden ones in closed sections included), `failures.txt` |
 | The logs of what it started | `.out/ui-renders.backend.log`, `.out/ui-renders.web.log` |
@@ -229,7 +229,14 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    findings of a stable version fixed in the next one, and the tags `latest`, `next` and `lts`: the package page's versions table
    (R-UI-110) with search, sort and **Load more**. So the lists hold S, A, B, C, D (and E with the counts of the owner's reference card), the internal `@acme`
    packages are N/A (claimed names), and the images are N/A (the profile cannot scan an image: no analyser on the host, so an
-   image's end of life, the C at best, is shown by the unit tests only).
+   image's end of life, the C at best, is shown by the unit tests only). **Malware** ([renders/malware.ts](../../web/e2e/renders/malware.ts),
+   Q-UI-881): no scanner runs in the profile, so after the content the seed uploads the files of `web-frontend/assets/quarantine` (one
+   of them the same bytes as a file of `customer-portal-release-delivery/signed-release-artifacts` and of `platform/advisory-mirror`)
+   and publishes `@acme/build-helpers` (four versions) to `npm-internal`, makes `npm-internal` strict (`malware.onlyChecked`), and writes
+   by SQL the verdicts of those files (clean, infected with a long signature in an archive's member, unscannable, failed), two releases
+   by the auditor, the signature database in use and two scanners; a file without a row waits ("Checking"), as every other file of the
+   seed does. The installation's switch stays off: the switch on, a stale or missing database and the scanning off are the real answers
+   changed in the browser by the walks of the malware screens.
 2. **The three kinds of user** of [R-UI-067](../spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator)
    and the auditor of the security dashboard (R-UI-158) sign in through the provider; their sessions are kept in
    `.out/ui-renders/.auth/` for the run:
@@ -239,7 +246,7 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    | `plain` | `sam` | `reader` of `web-frontend` and `platform`; no system role; holds one personal token `laptop`, so the token pages show a list and **Revoke all tokens** |
    | `power` | `priya` | `owner` of `web-frontend`, `developer` of `platform`; publishes the seed's packages |
    | `admin` | `ada` | the system role `admin`; member of no project |
-   | `auditor` | `noor` | the system role `auditor`; member of no project; the security dashboard's screens (`security…`) |
+   | `auditor` | `noor` | the system role `auditor`; member of no project; the security dashboard's screens (`security…`), the auditor's read of the admin area's malware settings, the usage and the limits. Its cases ran from 2026-11-20 on: before, the run's configuration had no project for the kind, and they were skipped without a word |
    | `anonymous` | nobody | the sign-in and signed-out screens |
 
    The break-glass account itself is not rendered: it signs in only through the local form and seeds the data.
@@ -1367,6 +1374,15 @@ about 2 s together. No browser journey: every criterion is shown in the componen
 [screens.ts](../../web/e2e/renders/screens.ts) yet: the operations of R-API-083 answer `501` until their handlers are built
 ([wellknown.md](wellknown.md)), and the render run fails a screen on a 5xx; the line, and a seed that switches a registry on, come
 with the handlers.
+
+## The malware screens
+
+The settings page of the malware scanning in the admin area (R-MAL-023), the dashboard's view **Malware** with the release
+(R-MAL-025), the fact of a file and the banner of a version (R-MAL-024) and a repository's section **Malware scan** (R-MAL-020). The
+files, the decisions and the tests are on [malware.md](malware.md#the-screens-package-4). Two things the rest of the app does with
+them: the side bar's entry and the repository's section read `getMalwareSwitch` once per page load through `MalwareSwitchStore` and
+are hidden until it answers that the scanning is on (Q-UI-874), and the security dashboard's report and the malware view each put
+`<quader-security-views>` under their own header (Q-UI-873).
 
 ## The usage and download limits screens
 

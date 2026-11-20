@@ -99,7 +99,9 @@ Select a version to open its page. Its address is the package's with `@` and the
 Under the name and the version, one line holds the facts of the version: its grade with the number of findings and how many have a
 fix (select it to open the findings), when it was published, its size, when a client last downloaded it, its downloads and its licences. A
 version that its publisher marked as deprecated shows **Deprecated.** with the publisher's message; a version whose download a
-repository refuses shows **Blocked in** and the repository.
+repository refuses shows **Blocked in** and the repository. A file of the version that the malware scan refuses shows **Malware found in**
+the file and the signature, or that the file **could not be checked for malware** where only checked artifacts can be downloaded; each
+ends with **Downloads are refused.** (see [the malware scan's states](files.md#the-malware-scans-states)).
 
 ### Tabs
 
@@ -107,7 +109,7 @@ repository refuses shows **Blocked in** and the repository.
 |---|---|
 | **Vulnerabilities** | For each repository that holds the version, its grade card and its open findings, the worst first (see [Vulnerabilities](vulnerabilities.md#on-the-page-of-a-version)). The first tab of a version that is checked |
 | **README** | The README of this version. Shown only when the version has one |
-| **Files** | The files of this version with **Size**, **SHA-256** and a **Download** link. **Copy SHA-256** copies the checksum; compare it with the output of `sha256sum` on the downloaded file |
+| **Files** | The files of this version with **Size**, **SHA-256**, **Malware scan** (while the installation scans for malware: **No malware found**, **Checking**, **Malware found**, **Could not be checked** or **Released**, see [the malware scan's states](files.md#the-malware-scans-states)) and a **Download** link, which a file the malware scan refuses does not have. **Copy SHA-256** copies the checksum; compare it with the output of `sha256sum` on the downloaded file |
 | **Details** | **Links** (**Homepage**, **Source repository**, **Issue tracker**), **Authors**, **Dependencies**, **Development dependencies**, **Peer dependencies**, **Optional dependencies** and **Required runtimes**, as far as the version declares them; for an image its digest, media type, size and platforms, each platform with its own size or, in a remote repository, **Not fetched** until a client pulls it; then **Repositories**: each repository that holds the version, its **Class** and when it was **Published** there |
 
 Links in **Details** open in a new tab and only for `http` and `https` addresses; any other link is shown as text.

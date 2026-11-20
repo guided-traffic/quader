@@ -1397,6 +1397,42 @@
         <target>365 Tage</target>
       </segment>
     </unit>
+    <unit id="security.views">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security-views.ts:14</note>
+      </notes>
+      <segment>
+        <source>Security dashboard views</source>
+        <target>Ansichten des Sicherheits-Dashboards</target>
+      </segment>
+    </unit>
+    <unit id="security.view.vulnerabilities">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security-views.ts:16,18</note>
+      </notes>
+      <segment>
+        <source>Vulnerabilities</source>
+        <target>Schwachstellen</target>
+      </segment>
+    </unit>
+    <unit id="security.view.malware">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security-views.ts:19,23</note>
+      </notes>
+      <segment>
+        <source>Malware</source>
+        <target>Malware</target>
+      </segment>
+    </unit>
+    <unit id="route.security.malware.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security.routes.ts:25</note>
+      </notes>
+      <segment>
+        <source>Malware</source>
+        <target>Malware</target>
+      </segment>
+    </unit>
     <unit id="profile.sessions.ended-others">
       <notes>
         <note category="location">src/app/features/profile/profile-sessions.ts:123</note>
@@ -2033,6 +2069,151 @@
       <segment>
         <source><ph id="0" equiv="label" disp="this.label()"/> <ph id="1" equiv="state" disp="state"/></source>
         <target><ph id="0" equiv="label" disp="this.label()"/> <ph id="1" equiv="state" disp="state"/></target>
+      </segment>
+    </unit>
+    <unit id="malware.released-signature">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:27</note>
+      </notes>
+      <segment>
+        <source>found:</source>
+        <target>gefunden:</target>
+      </segment>
+    </unit>
+    <unit id="malware.in-part">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:50</note>
+      </notes>
+      <segment>
+        <source>in</source>
+        <target>in</target>
+      </segment>
+    </unit>
+    <unit id="malware.refused">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:67,70</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused.</source>
+        <target>Downloads werden abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="malware.promise">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:11</note>
+      </notes>
+      <segment>
+        <source>The malware scan compares every artifact with ClamAV&apos;s signatures of known malware. It does not find malware that no signature describes yet, such as a malicious install script published today; for npm and NuGet, the vulnerability scanning blocks known malicious packages by name.</source>
+        <target>Die Malware-Prüfung vergleicht jedes Artefakt mit den Signaturen bekannter Malware von ClamAV. Sie findet keine Malware, die noch keine Signatur beschreibt, etwa ein heute veröffentlichtes bösartiges Installationsskript; für npm und NuGet sperrt die Schwachstellenprüfung bekannte bösartige Pakete nach ihrem Namen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.state.clean">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:18</note>
+      </notes>
+      <segment>
+        <source>No malware found</source>
+        <target>Keine Malware gefunden</target>
+      </segment>
+    </unit>
+    <unit id="malware.state.infected">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:20</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:33</note>
+      </notes>
+      <segment>
+        <source>Malware found</source>
+        <target>Malware gefunden</target>
+      </segment>
+    </unit>
+    <unit id="malware.state.not-checked">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:23</note>
+      </notes>
+      <segment>
+        <source>Could not be checked</source>
+        <target>Nicht prüfbar</target>
+      </segment>
+    </unit>
+    <unit id="malware.state.pending">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:25</note>
+      </notes>
+      <segment>
+        <source>Checking</source>
+        <target>Wird geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.find.unscannable">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:35</note>
+      </notes>
+      <segment>
+        <source>Not checkable</source>
+        <target>Nicht prüfbar</target>
+      </segment>
+    </unit>
+    <unit id="malware.find.failed">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:37</note>
+      </notes>
+      <segment>
+        <source>Scan failed</source>
+        <target>Prüfung fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="malware.reason.too-large">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:48</note>
+      </notes>
+      <segment>
+        <source>too large to scan</source>
+        <target>zu groß für die Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.reason.limits">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:50</note>
+      </notes>
+      <segment>
+        <source>a scan limit was reached inside it</source>
+        <target>eine Prüfgrenze wurde in ihr erreicht</target>
+      </segment>
+    </unit>
+    <unit id="malware.reason.encrypted">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:52</note>
+      </notes>
+      <segment>
+        <source>an encrypted archive or document</source>
+        <target>ein verschlüsseltes Archiv oder Dokument</target>
+      </segment>
+    </unit>
+    <unit id="malware.reason.failed-code">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:56</note>
+      </notes>
+      <segment>
+        <source>every scan failed (<ph id="0" equiv="code" disp="reason"/>)</source>
+        <target>jede Prüfung ist fehlgeschlagen (<ph id="0" equiv="code" disp="reason"/>)</target>
+      </segment>
+    </unit>
+    <unit id="malware.reason.failed">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:57</note>
+      </notes>
+      <segment>
+        <source>every scan failed</source>
+        <target>jede Prüfung ist fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="malware.someone">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:65</note>
+      </notes>
+      <segment>
+        <source>someone</source>
+        <target>jemandem</target>
       </segment>
     </unit>
     <unit id="files.api.download">
@@ -2735,6 +2916,15 @@
         <target>Der gespeicherte Inhalt hat seine Prüfsumme nicht bestanden.</target>
       </segment>
     </unit>
+    <unit id="files.fact.malware">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:72,73</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+        <target>Malware-Prüfung</target>
+      </segment>
+    </unit>
     <unit id="shell.theme.dark">
       <notes>
         <note category="location">src/app/app.ts:151</note>
@@ -3105,6 +3295,449 @@
       <segment>
         <source>Switch on</source>
         <target>Einschalten</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.heading">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:1</note>
+      </notes>
+      <segment>
+        <source>Malware scanning</source>
+        <target>Malware-Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.off">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:15,17</note>
+      </notes>
+      <segment>
+        <source>The malware scan is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.enabled</pc> is false in the configuration. Nothing is scanned, and no download is refused for malware.</source>
+        <target>Die Malware-Prüfung ist in dieser Installation ausgeschaltet: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.enabled</pc> ist in der Konfiguration false. Nichts wird geprüft, und kein Download wird wegen Malware abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.downloads">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:21,23</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+        <target>Downloads</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:28,29</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded</source>
+        <target>Nur geprüfte Artefakte können heruntergeladen werden</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked-on">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:33,34</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Only checked artifacts can be downloaded</pc> is on.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Nur geprüfte Artefakte können heruntergeladen werden</pc> ist eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked-off">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:35,36</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Only checked artifacts can be downloaded</pc> is off.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Nur geprüfte Artefakte können heruntergeladen werden</pc> ist ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.only-checked-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:40,43</note>
+      </notes>
+      <segment>
+        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them in the security dashboard. </source>
+        <target> Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie im Sicherheits-Dashboard zulässt. </target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.changed-by">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:45</note>
+      </notes>
+      <segment>
+        <source>Last changed by</source>
+        <target>Zuletzt geändert von</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.save">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:53,54</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+        <target>Änderungen speichern</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.save-for">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:54,56</note>
+      </notes>
+      <segment>
+        <source> (downloads)</source>
+        <target> (Downloads)</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.scanning">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:62,63</note>
+      </notes>
+      <segment>
+        <source>Scanning</source>
+        <target>Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.unchecked">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:64,65</note>
+      </notes>
+      <segment>
+        <source>Not checked yet</source>
+        <target>Noch nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.not-checkable">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:66,67</note>
+      </notes>
+      <segment>
+        <source>Could not be checked</source>
+        <target>Nicht prüfbar</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.scanners">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:68,69</note>
+      </notes>
+      <segment>
+        <source>Scanners</source>
+        <target>Scanner</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.no-scanner">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:72,73</note>
+      </notes>
+      <segment>
+        <source>None ready</source>
+        <target>Keiner bereit</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.ready">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:74</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 ready} other {<ph id="0" equiv="INTERPOLATION"/> ready}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 bereit} other {<ph id="0" equiv="INTERPOLATION"/> bereit}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.busy">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:75,76</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 scan running} other {<ph id="0" equiv="INTERPOLATION"/> scans running}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Prüfung läuft} other {<ph id="0" equiv="INTERPOLATION"/> Prüfungen laufen}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.seen">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:78</note>
+      </notes>
+      <segment>
+        <source>seen</source>
+        <target>gesehen</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.no-scan-yet">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:81,84</note>
+      </notes>
+      <segment>
+        <source>No scan has run yet.</source>
+        <target>Es lief noch keine Prüfung.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.backlog-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:86,89</note>
+      </notes>
+      <segment>
+        <source> Under the switch, an artifact without a verdict waits for its scan when it is downloaded; one that could not be checked is refused. </source>
+        <target> Mit dem Schalter wartet ein Artefakt ohne Prüfergebnis beim Download auf seine Prüfung; eines, das nicht geprüft werden konnte, wird abgelehnt. </target>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:94,97</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:236</note>
+      </notes>
+      <segment>
+        <source>Scan everything again</source>
+        <target>Alles erneut prüfen</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.finds-link">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
+      </notes>
+      <segment>
+        <source>Finds are in the security dashboard</source>
+        <target>Die Malware-Befunde stehen im Sicherheits-Dashboard</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.database">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:105,107</note>
+      </notes>
+      <segment>
+        <source>Signature database</source>
+        <target>Signaturdatenbank</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.when">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:112,113</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {Failed once,} other {Failed <ph id="0" equiv="INTERPOLATION"/> times in a row,}}</source>
+        <target>{VAR_PLURAL, plural, =1 {Einmal fehlgeschlagen,} other {<ph id="0" equiv="INTERPOLATION"/>-mal in Folge fehlgeschlagen,}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.last">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:113</note>
+      </notes>
+      <segment>
+        <source>last</source>
+        <target>zuletzt</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.version">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:122,123</note>
+      </notes>
+      <segment>
+        <source>Version</source>
+        <target>Version</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.date">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:124,126</note>
+      </notes>
+      <segment>
+        <source>Date</source>
+        <target>Datum</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.stale">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:130,131</note>
+      </notes>
+      <segment>
+        <source>Stale</source>
+        <target>Veraltet</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.current">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:132,133</note>
+      </notes>
+      <segment>
+        <source>Current</source>
+        <target>Aktuell</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.stored">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:136,137</note>
+      </notes>
+      <segment>
+        <source>Stored</source>
+        <target>Gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.repository">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:139,141</note>
+        <note category="location">src/app/features/settings/malware-settings.html:162,164</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.stale-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:150,152</note>
+      </notes>
+      <segment>
+        <source> The database is older than two days. Scanning goes on with it; new signatures arrive when the next update succeeds. </source>
+        <target> Die Datenbank ist älter als zwei Tage. Die Prüfung läuft mit ihr weiter; neue Signaturen kommen mit der nächsten erfolgreichen Aktualisierung. </target>
+      </segment>
+    </unit>
+    <unit id="malware.db.none-badge">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:155,156</note>
+      </notes>
+      <segment>
+        <source>None yet</source>
+        <target>Noch keine</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.none">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:157,159</note>
+      </notes>
+      <segment>
+        <source>No signature database is in use yet, so nothing is scanned. Under the switch, downloads wait and are refused as not checked yet.</source>
+        <target>Es ist noch keine Signaturdatenbank in Gebrauch, daher wird nichts geprüft. Mit dem Schalter warten Downloads und werden als noch nicht geprüft abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.offline">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:174,175</note>
+      </notes>
+      <segment>
+        <source>Fill the repository</source>
+        <target>Das Repository befüllen</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.offline-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:176,178</note>
+      </notes>
+      <segment>
+        <source> This installation fetches no database itself. On a machine that reaches the internet, fetch the files with ClamAV&apos;s mirror tool and upload the whole files to the root of the repository; Quader reads them at its next run. </source>
+        <target> Diese Installation holt selbst keine Datenbank. Holen Sie die Dateien auf einem Rechner mit Internetzugang mit dem Mirror-Werkzeug von ClamAV und laden Sie die ganzen Dateien in das Wurzelverzeichnis des Repositorys hoch; Quader liest sie beim nächsten Lauf. </target>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.missing">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:27</note>
+      </notes>
+      <segment>
+        <source>No signature database was found.</source>
+        <target>Es wurde keine Signaturdatenbank gefunden.</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:29</note>
+      </notes>
+      <segment>
+        <source>A file of the signature database was refused.</source>
+        <target>Eine Datei der Signaturdatenbank wurde abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.repository">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:31</note>
+      </notes>
+      <segment>
+        <source>The repository the configuration names cannot hold the database.</source>
+        <target>Das Repository, das die Konfiguration nennt, kann die Datenbank nicht aufnehmen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.store">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:33</note>
+      </notes>
+      <segment>
+        <source>A file of the signature database could not be stored.</source>
+        <target>Eine Datei der Signaturdatenbank konnte nicht gespeichert werden.</target>
+      </segment>
+    </unit>
+    <unit id="malware.db.error.other">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:35</note>
+      </notes>
+      <segment>
+        <source>The last update of the signature database failed.</source>
+        <target>Die letzte Aktualisierung der Signaturdatenbank ist fehlgeschlagen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.backlog-question">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:169</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
+        <target><ph id="0" equiv="unchecked" disp="n"/> Artefakte haben noch kein Prüfergebnis und <ph id="1" equiv="notCheckable" disp="m"/> konnten nicht geprüft werden. Sie warten oder werden abgelehnt, bis sie geprüft oder zugelassen sind.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.confirm-title">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:179</note>
+      </notes>
+      <segment>
+        <source>Let only checked artifacts be downloaded?</source>
+        <target>Nur geprüfte Artefakte herunterladen lassen?</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:181</note>
+      </notes>
+      <segment>
+        <source>Switch on</source>
+        <target>Einschalten</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.saved-on">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:191</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded now.</source>
+        <target>Jetzt können nur geprüfte Artefakte heruntergeladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.saved-off">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:192</note>
+      </notes>
+      <segment>
+        <source>Artifacts that are not checked can be downloaded again.</source>
+        <target>Artefakte, die nicht geprüft sind, können wieder heruntergeladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.title">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:232</note>
+      </notes>
+      <segment>
+        <source>Scan every artifact again?</source>
+        <target>Jedes Artefakt erneut prüfen?</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.text">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:234</note>
+      </notes>
+      <segment>
+        <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
+        <target>Jedes Prüfergebnis wird mit der Signaturdatenbank in Gebrauch erneut geprüft, nach der Arbeit, die schon wartet. Jedes Prüfergebnis gilt bis zu seiner neuen Prüfung.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescan.done">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:244</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
+        <target><ph id="0" equiv="count" disp="n"/> Prüfergebnisse sind zur erneuten Prüfung vorgemerkt.</target>
       </segment>
     </unit>
     <unit id="system.db.schema">
@@ -3657,6 +4290,78 @@
       <segment>
         <source>Also remove it from the virtual repositories that include it</source>
         <target>Auch aus den virtuellen Repositories entfernen, die es enthalten</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:23,24</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+        <target>Malware-Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:25,26</note>
+      </notes>
+      <segment>
+        <source>Whether only checked artifacts can be downloaded from this repository.</source>
+        <target>Ob aus diesem Repository nur geprüfte Artefakte heruntergeladen werden können.</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.only-checked">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:38,39</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded from this repository</source>
+        <target>Aus diesem Repository können nur geprüfte Artefakte heruntergeladen werden</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.installation-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:42,44</note>
+      </notes>
+      <segment>
+        <source>The installation lets only checked artifacts be downloaded.</source>
+        <target>Die Installation lässt nur geprüfte Artefakte herunterladen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.what">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:45,47</note>
+      </notes>
+      <segment>
+        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them. </source>
+        <target> Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie zulässt. </target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:49,51</note>
+      </notes>
+      <segment>
+        <source>Applies to everything this repository serves from its members.</source>
+        <target>Gilt für alles, was dieses Repository aus seinen Mitgliedern ausliefert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.locked">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:53,54</note>
+      </notes>
+      <segment>
+        <source> Only an administrator or someone who triages vulnerabilities can switch this off. </source>
+        <target> Nur ein Administrator oder jemand, der Schwachstellen triagiert, kann dies ausschalten. </target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.save-for">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:62,64</note>
+      </notes>
+      <segment>
+        <source> (malware scan)</source>
+        <target> (Malware-Prüfung)</target>
       </segment>
     </unit>
     <unit id="bastion.disable">
@@ -8313,6 +9018,24 @@
       <segment>
         <source>Blocked in</source>
         <target>Gesperrt in</target>
+      </segment>
+    </unit>
+    <unit id="pkg.malware.found">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:72,73</note>
+      </notes>
+      <segment>
+        <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads are refused.</source>
+        <target>Malware gefunden in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads werden abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.malware.not-checked">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:77,78</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware. Downloads are refused here.</source>
+        <target><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> konnte nicht auf Malware geprüft werden. Downloads werden hier abgelehnt.</target>
       </segment>
     </unit>
     <unit id="repo.deleting">
@@ -20748,6 +21471,413 @@
         <target>Sicherheits-Dashboard</target>
       </segment>
     </unit>
+    <unit id="malware.read-only">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:10,12</note>
+      </notes>
+      <segment>
+        <source>You can read the finds. Releasing one needs the permission to triage vulnerabilities.</source>
+        <target>Sie können die Malware-Befunde lesen. Einen zum Download zuzulassen erfordert die Berechtigung, Schwachstellen zu triagieren.</target>
+      </segment>
+    </unit>
+    <unit id="malware.list.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:16,18</note>
+      </notes>
+      <segment>
+        <source>Finds</source>
+        <target>Malware-Befunde</target>
+      </segment>
+    </unit>
+    <unit id="malware.filter.state">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:35</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:154</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="malware.filter.release">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:42,43</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:43</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:161</note>
+      </notes>
+      <segment>
+        <source>Release</source>
+        <target>Zulassung</target>
+      </segment>
+    </unit>
+    <unit id="malware.filter.any">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:44,45</note>
+      </notes>
+      <segment>
+        <source>Any</source>
+        <target>Beliebig</target>
+      </segment>
+    </unit>
+    <unit id="malware.filter.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:45,46</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:162</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+        <target>Zugelassen</target>
+      </segment>
+    </unit>
+    <unit id="malware.filter.not-released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:46,48</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:162</note>
+      </notes>
+      <segment>
+        <source>Not released</source>
+        <target>Nicht zugelassen</target>
+      </segment>
+    </unit>
+    <unit id="malware.filter.repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:49,50</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:50</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:166</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="malware.filter.any-repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:51,52</note>
+      </notes>
+      <segment>
+        <source>Any repository</source>
+        <target>Jedes Repository</target>
+      </segment>
+    </unit>
+    <unit id="malware.database-of">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:105</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:38</note>
+      </notes>
+      <segment>
+        <source>ClamAV database of</source>
+        <target>ClamAV-Datenbank vom</target>
+      </segment>
+    </unit>
+    <unit id="malware.more-repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:115,117</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {and 1 more} other {and <ph id="0" equiv="INTERPOLATION"/> more}}</source>
+        <target>{VAR_PLURAL, plural, =1 {und 1 weiteres} other {und <ph id="0" equiv="INTERPOLATION"/> weitere}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.state.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:124,125</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:20,21</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+        <target>Zugelassen</target>
+      </segment>
+    </unit>
+    <unit id="malware.released-by">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:126</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:22,23</note>
+      </notes>
+      <segment>
+        <source>by <ph id="0" equiv="INTERPOLATION" disp="{{ principal(r.releasedBy) }}"/></source>
+        <target>von <ph id="0" equiv="INTERPOLATION" disp="{{ principal(r.releasedBy) }}"/></target>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-label">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:148,149</note>
+      </notes>
+      <segment>
+        <source>Reason of the release:</source>
+        <target>Grund der Zulassung:</target>
+      </segment>
+    </unit>
+    <unit id="malware.items.more">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:167,168</note>
+      </notes>
+      <segment>
+        <source>More files hold these bytes than the list shows: <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount }}"/> in <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.repositoryCount }}"/> repositories.</source>
+        <target>Mehr Dateien enthalten diese Bytes, als die Liste zeigt: <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount }}"/> in <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.repositoryCount }}"/> Repositorys.</target>
+      </segment>
+    </unit>
+    <unit id="malware.items.digest">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:170</note>
+      </notes>
+      <segment>
+        <source>SHA-256</source>
+        <target>SHA-256</target>
+      </segment>
+    </unit>
+    <unit id="malware.search">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:171</note>
+      </notes>
+      <segment>
+        <source>Search by path or signature</source>
+        <target>Nach Pfad oder Signatur suchen</target>
+      </segment>
+    </unit>
+    <unit id="malware.list.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:172</note>
+      </notes>
+      <segment>
+        <source>Malware finds</source>
+        <target>Malware-Befunde</target>
+      </segment>
+    </unit>
+    <unit id="malware.list.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:173</note>
+      </notes>
+      <segment>
+        <source>No find matches the filters.</source>
+        <target>Kein Malware-Befund passt zu den Filtern.</target>
+      </segment>
+    </unit>
+    <unit id="malware.list.empty">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:177</note>
+      </notes>
+      <segment>
+        <source>No malware found.</source>
+        <target>Keine Malware gefunden.</target>
+      </segment>
+    </unit>
+    <unit id="malware.list.empty-dated">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:179</note>
+      </notes>
+      <segment>
+        <source>No malware found. The signature database in use is ClamAV&apos;s of <ph id="0" equiv="date" disp="date"/>.</source>
+        <target>Keine Malware gefunden. Die Signaturdatenbank in Gebrauch ist die von ClamAV vom <ph id="0" equiv="date" disp="date"/>.</target>
+      </segment>
+    </unit>
+    <unit id="malware.items.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:182</note>
+      </notes>
+      <segment>
+        <source>Files that hold these bytes</source>
+        <target>Dateien, die diese Bytes enthalten</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.file">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:190</note>
+      </notes>
+      <segment>
+        <source>File</source>
+        <target>Datei</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.verdict">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:191</note>
+      </notes>
+      <segment>
+        <source>Verdict</source>
+        <target>Prüfergebnis</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:192</note>
+      </notes>
+      <segment>
+        <source>Repositories</source>
+        <target>Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.found">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:193</note>
+      </notes>
+      <segment>
+        <source>Found</source>
+        <target>Gefunden</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.actions">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:195</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="malware.row.open">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:223</note>
+      </notes>
+      <segment>
+        <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
+        <target>Alle Dateien von <ph id="0" equiv="file" disp="findName(f)"/></target>
+      </segment>
+    </unit>
+    <unit id="malware.withdraw">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:246</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:311</note>
+      </notes>
+      <segment>
+        <source>Withdraw release</source>
+        <target>Zulassung zurückziehen</target>
+      </segment>
+    </unit>
+    <unit id="malware.release">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:246</note>
+      </notes>
+      <segment>
+        <source>Release</source>
+        <target>Zum Download zulassen</target>
+      </segment>
+    </unit>
+    <unit id="malware.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:302</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
+        <target><ph id="0" equiv="file" disp="findName(f)"/> ist in jedem Repository, das es enthält, zum Download zugelassen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.withdraw.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:308</note>
+      </notes>
+      <segment>
+        <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
+        <target>Die Zulassung von <ph id="0" equiv="file" disp="findName(f)"/> zurückziehen?</target>
+      </segment>
+    </unit>
+    <unit id="malware.withdraw.text">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:309</note>
+      </notes>
+      <segment>
+        <source>Every repository that holds these bytes refuses them again from the next download.</source>
+        <target>Jedes Repository, das diese Bytes enthält, lehnt sie ab dem nächsten Download wieder ab.</target>
+      </segment>
+    </unit>
+    <unit id="malware.withdrawn">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:316</note>
+      </notes>
+      <segment>
+        <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
+        <target>Die Zulassung von <ph id="0" equiv="file" disp="findName(f)"/> ist zurückgezogen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.unchecked-warning">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:40,43</note>
+      </notes>
+      <segment>
+        <source>Nothing has checked these bytes. A release serves them whatever they hold.</source>
+        <target>Nichts hat diese Bytes geprüft. Eine Zulassung liefert sie aus, was immer sie enthalten.</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.serves">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:43,44</note>
+      </notes>
+      <segment>
+        <source>Releasing serves these bytes from every repository that holds them.</source>
+        <target>Eine Zulassung liefert diese Bytes aus jedem Repository aus, das sie enthält.</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.more-repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:50,52</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {and 1 more repository} other {and <ph id="0" equiv="INTERPOLATION"/> more repositories}}</source>
+        <target>{VAR_PLURAL, plural, =1 {und 1 weiteres Repository} other {und <ph id="0" equiv="INTERPOLATION"/> weitere Repositorys}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:56,57</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Grund</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.cancel">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:64,65</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.submit">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:65,68</note>
+      </notes>
+      <segment>
+        <source>Release</source>
+        <target>Zum Download zulassen</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-hint">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:91</note>
+      </notes>
+      <segment>
+        <source>Why these bytes may be downloaded, for example a signature that ClamAV withdrew. At most 1,000 characters; kept with the release.</source>
+        <target>Warum diese Bytes heruntergeladen werden dürfen, zum Beispiel eine Signatur, die ClamAV zurückgezogen hat. Höchstens 1.000 Zeichen; wird mit der Zulassung gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:92</note>
+      </notes>
+      <segment>
+        <source>Release <ph id="0" equiv="file" disp="findName(this.find)"/>?</source>
+        <target><ph id="0" equiv="file" disp="findName(this.find)"/> zum Download zulassen?</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-required">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:103</note>
+      </notes>
+      <segment>
+        <source>A release needs a reason.</source>
+        <target>Eine Zulassung braucht einen Grund.</target>
+      </segment>
+    </unit>
+    <unit id="malware.release.reason-long">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:104</note>
+      </notes>
+      <segment>
+        <source>The reason is longer than 1,000 characters.</source>
+        <target>Der Grund ist länger als 1.000 Zeichen.</target>
+      </segment>
+    </unit>
     <unit id="profile.sessions.ended">
       <notes>
         <note category="location">src/app/features/profile/profile-sessions.ts:110</note>
@@ -20881,6 +22011,15 @@
       <segment>
         <source>The checksum of the file&apos;s content. Compare it with the output of sha256sum on the downloaded file.</source>
         <target>Die Prüfsumme des Dateiinhalts. Vergleichen Sie sie mit der Ausgabe von sha256sum für die heruntergeladene Datei.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.file.malware">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:338</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+        <target>Malware-Prüfung</target>
       </segment>
     </unit>
     <unit id="session.later">
@@ -29746,6 +30885,15 @@
         <target>Authentifizierung</target>
       </segment>
     </unit>
+    <unit id="nav.settings.malware">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:177</note>
+      </notes>
+      <segment>
+        <source>Malware scanning</source>
+        <target>Malware-Prüfung</target>
+      </segment>
+    </unit>
     <unit id="general.banner.title">
       <notes>
         <note category="location">src/app/features/settings/general-settings.html:112,114</note>
@@ -29991,6 +31139,15 @@
       <segment>
         <source>Authentication settings</source>
         <target>Einstellungen zur Authentifizierung</target>
+      </segment>
+    </unit>
+    <unit id="route.settings.malware.title">
+      <notes>
+        <note category="location">src/app/features/settings/settings.routes.ts:22</note>
+      </notes>
+      <segment>
+        <source>Malware scanning</source>
+        <target>Malware-Prüfung</target>
       </segment>
     </unit>
     <unit id="setup.snippet.gitlab-native">
@@ -31634,6 +32791,24 @@
       <segment>
         <source>Visibility saved.</source>
         <target>Sichtbarkeit gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:681</note>
+      </notes>
+      <segment>
+        <source>Only checked artifacts can be downloaded from this repository now.</source>
+        <target>Aus diesem Repository können jetzt nur geprüfte Artefakte heruntergeladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:682</note>
+      </notes>
+      <segment>
+        <source>This repository follows the installation&apos;s malware setting again.</source>
+        <target>Dieses Repository folgt wieder der Malware-Einstellung der Installation.</target>
       </segment>
     </unit>
     <unit id="backups.details.label">
@@ -34508,6 +35683,69 @@
       <segment>
         <source>A download limit refused this download.</source>
         <target>Ein Download-Limit hat diesen Download abgewiesen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.malware_found">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:8</note>
+      </notes>
+      <segment>
+        <source>Quader&apos;s malware scan found malware in this file, so it cannot be downloaded. An instance auditor can release it in the security dashboard.</source>
+        <target>Die Malware-Prüfung von Quader hat in dieser Datei Malware gefunden, daher kann sie nicht heruntergeladen werden. Ein Instanz-Auditor kann sie im Sicherheits-Dashboard zum Download zulassen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.malware_not_checked">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:10</note>
+      </notes>
+      <segment>
+        <source>The malware scan could not check this file, and only checked artifacts can be downloaded here. An instance auditor can release it in the security dashboard.</source>
+        <target>Die Malware-Prüfung konnte diese Datei nicht prüfen, und hier können nur geprüfte Artefakte heruntergeladen werden. Ein Instanz-Auditor kann sie im Sicherheits-Dashboard zum Download zulassen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.malware_check_pending">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:12</note>
+      </notes>
+      <segment>
+        <source>Quader is checking this file for malware. Try again in a minute.</source>
+        <target>Quader prüft diese Datei gerade auf Malware. Versuchen Sie es in einer Minute erneut.</target>
+      </segment>
+    </unit>
+    <unit id="problem.malware_weakening_refused">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:14</note>
+      </notes>
+      <segment>
+        <source>Only an administrator or someone who triages vulnerabilities can switch this off. Ask one of them.</source>
+        <target>Nur ein Administrator oder jemand, der Schwachstellen triagiert, kann dies ausschalten. Fragen Sie eine dieser Personen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.nothing_to_release">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:16</note>
+      </notes>
+      <segment>
+        <source>There is nothing to release: the file is not checked yet, or no malware was found in it.</source>
+        <target>Es gibt nichts zum Download zuzulassen: Die Datei ist noch nicht geprüft, oder in ihr wurde keine Malware gefunden.</target>
+      </segment>
+    </unit>
+    <unit id="problem.already_released">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:18</note>
+      </notes>
+      <segment>
+        <source>These bytes are released already. Load the list again to see the release.</source>
+        <target>Diese Bytes sind bereits zum Download zugelassen. Laden Sie die Liste neu, um die Zulassung zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.malware_not_enabled">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-malware.ts:20</note>
+      </notes>
+      <segment>
+        <source>The malware scan is off in this installation&apos;s configuration, so there is nothing to scan again.</source>
+        <target>Die Malware-Prüfung ist in der Konfiguration dieser Installation ausgeschaltet, es gibt also nichts erneut zu prüfen.</target>
       </segment>
     </unit>
     <unit id="nav.usage">

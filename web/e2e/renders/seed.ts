@@ -14,7 +14,7 @@ import {
   vendorPackages,
   zipArchive,
 } from './advisories';
-import { stateDir } from './paths';
+import { edge, stateDir } from './paths';
 
 /**
  * The data of `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): four projects (one with a long name and key), repositories of every
@@ -142,7 +142,7 @@ export const repositories: readonly RepoSeed[] = [
     description: 'The images of image-source, cached through its registry address.',
     // The upstream's namespace prefix: image-cache's tools/agent is image-source's vendor/tools/agent, so that the package page of
     // tools/agent shows the remote's versions alone.
-    url: `https://localhost:4200/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
+    url: `${edge}/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
     // Its pulls give the rows of W-24 one platform and none of an index: a probe would download the rest (R-REPO-065).
     downloadOnProbe: false,
   },
@@ -152,7 +152,7 @@ export const repositories: readonly RepoSeed[] = [
     format: 'oci',
     class: 'remote',
     description: 'The images of image-source; a tag a client only asks about is downloaded in the background.',
-    url: `https://localhost:4200/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
+    url: `${edge}/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
   },
   { project: otherProject, key: longDebKey, format: 'deb', class: 'local', description: 'Packages of the platform team for Debian 12 and 13.' },
   { project: otherProject, key: 'debian', format: 'deb', class: 'remote', description: 'deb.debian.org, cached.' },
@@ -196,6 +196,11 @@ export const npmPackages: readonly { repo: string; name: string; version: string
   { repo: 'npm-internal', name: 'customer-portal-api-client-generated-from-the-openapi-document', version: '0.4.0' },
   { repo: 'npm-internal', name: 'customer-portal-api-client-generated-from-the-openapi-document', version: '0.5.0-next.20261118.1' },
   { repo: longNpmKey, name: '@acme/portal', version: '5.0.0-rc.3' },
+  // The versions of the malware scan's states at a version (malware.ts, R-MAL-024): clean, infected, unscannable, waiting.
+  { repo: 'npm-internal', name: '@acme/build-helpers', version: '2.2.0' },
+  { repo: 'npm-internal', name: '@acme/build-helpers', version: '2.3.0' },
+  { repo: 'npm-internal', name: '@acme/build-helpers', version: '2.4.0-rc.1' },
+  { repo: 'npm-internal', name: '@acme/build-helpers', version: '2.5.0-next.1' },
 ];
 
 /** The deep folder of the generic files, and the number of entries of the folder with many (more than a page of 200). */
@@ -942,7 +947,7 @@ const postgresContainer = 'quader-ui-dev-postgres';
  * database owner. It is the renders' seam for what no request makes in the seed's time: 24 hours and 30 days of usage, the CI
  * issuer of a CI project, a block. Quader has no path that writes any of it.
  */
-function psql(sql: string): void {
+export function psql(sql: string): void {
   const password = readFileSync(join(stateDir, 'secrets', 'db-pass'), 'utf8').trim();
   execFileSync(
     'docker',
@@ -952,13 +957,13 @@ function psql(sql: string): void {
 }
 
 /** A text as an SQL literal. */
-const lit = (s: string): string => `'${s.replace(/'/g, "''")}'`;
+export const lit = (s: string): string => `'${s.replace(/'/g, "''")}'`;
 
 /** The ID of a technical token by its account's stored name and its name, as SQL (R-AUTH-045). */
 const tokenRef = (account: string, name: string): string =>
   `(SELECT t.id::text FROM technical_token t JOIN principal p ON p.id = t.service_account_id WHERE p.name = ${lit(account)} AND t.name = ${lit(name)})`;
 const userRef = (name: string): string => `(SELECT id::text FROM principal WHERE kind = 'user' AND name = ${lit(name)})`;
-const repoId = (project: string, key: string): string =>
+export const repoId = (project: string, key: string): string =>
   `(SELECT r.id FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = ${lit(project)} AND r.key = ${lit(key)})`;
 const projectPlace = (project: string): string => `(SELECT 'project:' || id::text FROM project WHERE key = ${lit(project)})`;
 const repoPlace = (project: string, key: string): string => `('repository:' || ${repoId(project, key)}::text)`;

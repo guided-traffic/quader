@@ -20,6 +20,12 @@ export const SECURITY_ROUTES: Routes = [
         loadComponent: () => import('./vulnerability-report').then((m) => m.VulnerabilityReport),
       },
       {
+        // The dashboard's second view (R-MAL-025, Q-UI-871): the blobs the malware scan found or could not check.
+        path: 'malware',
+        title: $localize`:@@route.security.malware.title:Malware`,
+        loadComponent: () => import('./malware-finds').then((m) => m.MalwareFinds),
+      },
+      {
         path: 'findings/:id',
         title: $localize`:@@route.vulnerabilities.finding.title:Finding`,
         loadComponent: () => import('./vulnerability-finding').then((m) => m.FindingPage),

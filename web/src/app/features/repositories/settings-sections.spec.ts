@@ -92,7 +92,7 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
       expect(r.root.querySelector<HTMLTextAreaElement>('#f-description')!.value).toBe('Docker Hub, cached');
       expect(r.root.querySelector('quader-repository-visibility')).not.toBeNull();
       expect(r.root.querySelector('quader-upstream-settings')).not.toBeNull();
-      expect(sectionHeadings(r.root)).toEqual(['Mirror', 'Access details', 'Administrator notes', 'Service accounts', 'Details', 'API', 'Advanced']);
+      expect(sectionHeadings(r.root)).toEqual(['Mirror', 'Access details', 'Malware scan', 'Administrator notes', 'Service accounts', 'Details', 'API', 'Advanced']);
       for (const toggle of r.root.querySelectorAll('quader-disclosure .toggle')) expect(toggle.getAttribute('aria-expanded')).toBe('false');
       for (const h of r.root.querySelectorAll('h1, h2, h3')) expect(text(h)).not.toMatch(/ and /);
       await expectAccessible(r.root);

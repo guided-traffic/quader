@@ -812,6 +812,8 @@ export interface FakeNode {
   readonly path: string;
   readonly kind: 'file' | 'folder';
   readonly size?: number;
+  /** The malware scan's member of a file (R-MAL-024); absent as for a file the scanning has no member for. */
+  readonly malware?: Item['malware'];
 }
 
 export class FakeFilesApi extends FilesApi {
@@ -858,6 +860,7 @@ export class FakeFilesApi extends FilesApi {
             contentStatus: 'ok' as const,
             downloadUrl: `https://quader.example.net/files/${repository}/${node.path}`,
             contentUrl: `${repositoryUrl(repository)}/content/${node.path}`,
+            ...(node.malware ? { malware: node.malware } : {}),
           }
         : {
             explicit: true,

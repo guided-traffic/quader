@@ -64,6 +64,8 @@ import { RepositoryLimitsSection } from '../limits/repository-limits-section';
 import { UpstreamApi, UpstreamRepository } from '../../api/upstream-api';
 import { MemberState, stateBadge } from '../upstream/upstream-words';
 import { memberInactiveText } from './well-known-members';
+import { MalwareSwitchStore } from '../../core/malware-switch';
+import { RepositoryMalwareSection } from './repository-malware';
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
 type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
@@ -98,6 +100,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     RepositoryFields,
     RepositoryServiceAccounts,
     RepositoryLimitsSection,
+    RepositoryMalwareSection,
     RepositoryVisibilityBlock,
     RouterLink,
     SelectField,
@@ -377,6 +380,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
   );
 
   constructor() {
+    // Whether the section Malware scan is shown: an Owner holds no settings:read, so the side bar has not asked (Q-UI-874).
+    void this.malwareSwitch.load();
     effect(() => {
       const value = valueOf(this.loaded);
       if (value) untracked(() => this.adopt(value));
@@ -647,6 +652,41 @@ export class RepositoryDetail implements HasUnsavedChanges {
       } catch (e) {
         this.visibilityFailure.set(asApiError(e));
       }
+    }
+  }
+
+  // ---- The malware scan's setting (R-MAL-020) ----
+
+  private readonly malwareSwitch = inject(MalwareSwitchStore);
+  /** The section while the scanning is on; a system repository's member is the product's (R-MAL-011). */
+  protected readonly malwareShown = computed(() => this.malwareSwitch.enabled() && !this.systemRepository());
+  /** Switching it off is a weakening (Q-MAL-31): the capabilities that may, which a project Owner does not hold. */
+  protected readonly canWeakenMalware = computed(
+    () => this.session.has('repositories:write-config') || this.session.has('vulnerabilities:triage'),
+  );
+  protected readonly malwareSaving = signal(false);
+  protected readonly malwareFailure = signal<ApiError | null>(null);
+
+  /**
+   * Stores `malware.onlyChecked` with the loaded `ETag`. The patch carries that member only, so other unsaved edits stay; a refusal
+   * (a 412, `403 malware_weakening_refused`) stands in the section.
+   */
+  protected async saveMalware(onlyChecked: boolean): Promise<void> {
+    if (this.malwareSaving() || !this.stored()) return;
+    this.malwareSaving.set(true);
+    this.malwareFailure.set(null);
+    try {
+      const saved = await this.api.patch(this.ref(), { malware: { onlyChecked } }, this.etag);
+      this.takeStored(saved.value, saved.etag);
+      this.notifier.status(
+        onlyChecked
+          ? $localize`:@@repo.malware.saved-on:Only checked artifacts can be downloaded from this repository now.`
+          : $localize`:@@repo.malware.saved-off:This repository follows the installation's malware setting again.`,
+      );
+    } catch (e) {
+      this.malwareFailure.set(asApiError(e));
+    } finally {
+      this.malwareSaving.set(false);
     }
   }
 
