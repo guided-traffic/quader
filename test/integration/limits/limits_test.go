@@ -44,6 +44,8 @@ type envOptions struct {
 	role   string
 	seed   func(st *testenv.Stack)
 	env    []string
+	// readable are further repositories (made by seed) the reader reads
+	readable []string
 }
 
 func newEnvWith(t *testing.T, o envOptions) *env {
@@ -57,11 +59,11 @@ func newEnvWith(t *testing.T, o envOptions) *env {
 	e.admin = st.Token(ada, scope.Scope{Inherit: true, Admin: true})
 	e.reader = st.Token(reader, scope.Default())
 	st.Repository(rFiles, "local", "generic", `{}`)
-	st.Policy("readers", []string{"read"}, []string{rFiles}, reader)
-	st.Policy("writers", []string{"read", "deploy"}, []string{rFiles}, ada)
 	if o.seed != nil {
 		o.seed(st)
 	}
+	st.Policy("readers", []string{"read"}, append([]string{rFiles}, o.readable...), reader)
+	st.Policy("writers", []string{"read", "deploy"}, []string{rFiles}, ada)
 	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: o.role, Env: o.env})
 	e.file = bytes.Repeat([]byte("q"), fileSize)
 	e.filePath = "/files/it/" + rFiles + "/a.bin"
