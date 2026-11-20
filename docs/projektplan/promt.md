@@ -2067,6 +2067,18 @@ agent** is not decided until the owner has said so.
     **twice**, once from a GitHub-hosted job (zstd) and once from a self-hosted one (gzip, no `zstd` in the runners'
     image), 165 and 161 MB for the modules, 136 and 121 MB for the npm clients. With all five clients images that is
     nearer 6 GB than the estimated 4; `zstd` in the runners' image would halve it.
+- **F-163 · The capacity test of npm met its own callers' limit in Enforce** (the full nightly on the download limits,
+  44625277245 of 2026-11-19, `e2e (npm-ha-soak)`, `TestNPMPerf` P-8: of 1,000 requests a second for a cached 50 KiB
+  tarball over 20 technical tokens, 1,922 were answered `429`; the replicas' logs name `limits.parallelDownloads` of the
+  rule for every technical token). At saturation the answers take seconds, so one token holds more than the 50 parallel
+  downloads of the profile Technical; a further download waits ten seconds and is refused. The limits did what they are
+  for; the test measures the replica and expected 200 or `503 server_busy` only. **Changed:** the test gives its tokens
+  the rule Unlimited at the instance, as an administrator does for a load generator (not run: the kind cluster; the next
+  nightly shows it). The other figures of that run, for the comparison with the night's baseline: P-1 p99 18.3 ms, P-3
+  6.6 ms, P-5 6.4 ms at 50 requests a second; P-7 at 2,000 a second served 402 a second, the rest shed. **What it shows
+  about the product:** under overload a caller at its parallel figure waits ten seconds for a refusal, where the server's
+  own shedding answers at once; whether a limit should answer faster when the replica is already shedding is a question
+  for the walkthrough, not decided.
 - **F-162 · `quader admin token create` refused a second run and named a way on that needs a token** (found by the full
   nightly on the download limits, 44625277245 of 2026-11-19, `e2e (backup)`, step `backup-pitr`: the second set on one cluster
   bootstraps its administrator again and got `technical_token_active`). Since the technical tokens the command issues a
