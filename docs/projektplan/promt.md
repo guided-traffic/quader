@@ -702,8 +702,8 @@ runs are in `git log`; this section holds the current state.
   remote `platform/debian` the copy button beside each fingerprint of an upstream key stands 3.5 px above the
   fingerprint's line, at all three widths. The component (`web/src/app/features/repositories/deb-upstream-keys.ts`) is
   old and never had data in the renders; since package 1 the Debian preset carries the archive's keys, so the seeded
-  remote shows nine fingerprints for the first time. A builder fixes it (below). At 19:20 the three integration
-  shards and `e2e (vuln)` of that run were still going; every other job is green.
+  remote shows nine fingerprints for the first time. A builder fixes it (below). The run ended at 19:22 with that one job red; every other job is green, the three
+  integration shards and `e2e (vuln)` among them.
 - **In work** (19:20), three builders:
   - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
     two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
