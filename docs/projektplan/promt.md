@@ -566,11 +566,18 @@ runs are in `git log`; this section holds the current state.
 - **Red on `main`, not gating** (Test and Release 44715970992 of b74d0e98, read at 12:15): `UI layout checks` (the screen
   `setup-deb`: the label of a fold on two lines at 390 px) and `e2e (access-long)` (journey `20-ansible` expects the guide's
   first section open) come from W-27, a builder fixes both; `integration (shard c)` is `TestR_DEB_025` of section 12 D.
-- **In work:** the fix above. Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
+- **In work:** the fix above (built, lands after the release of the limits' push); a 429 no longer counting toward the block
+  (the owner's decision on Q-LIM-58). Two planners write the specification, each on a branch of its own that the builders build
+  on (nothing of it is on `main`): the built-in project `upstream` with the product's well-known repositories, and the
+  role `scanner` with the analyser's database in `upstream/scanner-trivy`. Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
   (larger default bursts from a measurement of one pull; a refused request is not counted in the request windows; the
   manual names the job's timeout for podman).
-- **Waits for the owner:** which of the measurement's candidates is cut first (section 12 A); put to him: whether a format's
-  e2e leg runs on a push only when that format changed.
+- **Decided by the owner on 2026-11-20** ("1 B", the development agent of the same view): a format's e2e leg runs on a push
+  only when that format's code changed; shared code runs the reference client, npm (the development agent's choice: its leg
+  already holds the behaviour that is the same for every format); every client runs in the nightly. A builder changes the
+  workflows and evens out the integration shards (shard b at 40.9 of 45 minutes). The next candidates of section 12 A (the
+  fixed cost of a kind leg, the fault scenarios repeated per client, the behaviour repeated inside the formats' legs) are
+  not decided.
 - **Decided, not built now:** W-12, an invitation by e-mail, later ("Option c, aber erst später", 2026-11-20;
   [FULL.md](FULL.md#m9--automation-and-integration), M9).
 - **To check first:** F-165 in the next full nightly; then section 12.
@@ -581,9 +588,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 **Questions he has not answered**
 
-- **Q-HA-293**, to be discussed, not decided: a replica whose first Valkey attempts get no answer becomes ready degraded (Q-HA-13
-  (d)), so a wrong password behind an unanswered first attempt is noticed only later. Should the first readiness wait for a verdict?
-  Waiting would stall a replica started during a Valkey failover, which Q-HA-13 (c) rejected ([ha-and-helm.md](../spec/ha-and-helm.md)).
+- **Q-HA-293**, **decided by the owner on 2026-11-20** ("okay c"): a replica waits for a verdict of Valkey before its first
+  readiness, for a bounded time, and becomes ready degraded after it as today (Q-HA-13 (d)). So a wrong password shows before
+  the first request in nearly every case, a start during a failover loses seconds, and a Valkey that is away for longer
+  holds no start. The bound is derived from the measured failover times. Not built: the next free builder.
 - **H-812** ([image-scanning.md](../security/image-scanning.md)), **decided by the owner on 2026-11-20** ("Perfekt, machen wir wie
   du analysiert hast", after he asked for a look at how Harbor's scanner adapter does it): the analysis of an image moves into
   a role `scanner` of the same binary with a Deployment of its own and no secret of the database, the object store or Valkey.
@@ -666,9 +674,11 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   windows are decided and counted by one script in the round trip of before, so **Quader's Valkey user needs `EVALSHA` and
   `EVAL`** (Q-LIM-57; his installation runs as the operator's `default` user, H-72, and is not affected); every rate limit
   of the installation counts nothing when it refuses (Q-LIM-61); waiting downloads may hold a quarter of a replica's request
-  slots, 1,024 of 4,096 (Q-LIM-60). **To put to him as a question of its own:** a 429 of a request figure now counts toward
-  `refusedPerHour` and its block of 15 minutes (Q-LIM-58), which a client with many connections reaches in one overflow
-  (Anonymous: 60 refusals an hour); the development agent had told him, wrongly, that this was already so.
+  slots, 1,024 of 4,096 (Q-LIM-60). **Decided by the owner on 2026-11-20** ("Option B: Ein 429 zählt nicht zur Sperre"): a 429 of a
+  request figure is not a refused request, as before the package; the builder had made it one (Q-LIM-58) on the development
+  agent's wrong word that it already was, and a client with many connections would have reached the block of 15 minutes in
+  one overflow. A caller that keeps sending is held to its figure's rate and nothing more; the block stays for the refusals
+  it was built for. A builder takes it back.
 - The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
   well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
   repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).

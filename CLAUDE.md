@@ -26,6 +26,10 @@ By the owner's decisions of 2026-11-10 ([releasing.md](docs/developer/releasing.
 - Tests run before a release. Nothing runs against published artifacts (Q-HA-281): a failure there would come too late.
 - Job and step names say what they do: no requirement codes such as `(E0.1)`, no tool versions, no "on kind". An e2e job is `e2e (<set>)`.
 - An e2e set is cut by what it tests, not by feature: what a format does belongs to that format's set.
+- A format's e2e leg runs on a push only when that format's own code changed. A change of shared code runs the tiers below
+  and the leg of one reference client (npm); every format's client runs in the nightly (owner, 2026-11-20, after the measurement
+  of [test-cost.md](docs/developer/test-cost.md): a push that started every format's leg would cost about 939 runner minutes
+  with 25 formats). What only another format's client shows of a change of shared code is found in the nightly.
 
 The full gate returns with the first stable release.
 
