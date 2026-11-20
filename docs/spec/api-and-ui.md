@@ -5603,7 +5603,7 @@ specific criteria:
 | 2.1.1 Keyboard | Tree, member editor, reordering, file selection ("Choose files" button) and action menus work by keyboard |
 | 2.1.4 Character key shortcuts | Single-key shortcuts (`/`, R-UI-095) are on by default and turned off in the profile (`keyboardShortcuts`, R-API-021); they never act while the focus is in a text field ([Q-UI-401](#q-ui-401--slash-focuses-the-field-and-is-on-by-default-the-preference-turns-it-off)) |
 | 2.2.1 Timing adjustable; 2.2.2 Pause | Session expiry warning (R-UI-002); auto-refresh can be paused (R-UI-038) |
-| 2.4.2 Page titled; 2.4.3 Focus order | Title per route; focus moves to the new `h1` on navigation and into dialogs on open, and returns to the trigger on close |
+| 2.4.2 Page titled; 2.4.3 Focus order | Title per route; focus moves to the new `h1` on navigation to another screen and into dialogs on open, and returns to the trigger on close; a navigation that changes only the query or the fragment (a list's filter writing `?q=` while one types, a tab) leaves it where it is |
 | 2.4.11 Focus not obscured | `scroll-padding-top` keeps focused elements clear of the sticky header |
 | 2.5.7 Dragging movements | Every drag interaction has a button alternative (R-UI-022) |
 | 2.5.8 Target size | Interactive targets at least 24 × 24 CSS px |
