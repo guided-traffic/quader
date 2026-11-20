@@ -472,10 +472,19 @@ async function* technicalTokens(page: Page): AsyncGenerator<string> {
   yield 'new-token';
 }
 
+/**
+ * A section of a settings page by its own head, not by its text: a filter on the text takes every fold that holds the words, a
+ * closed one too, and the level Internal's sentence in the fold Wiki visibility names service accounts. The head is the label of
+ * the section's toggle; a note after it ("2 rules") does not change it.
+ */
+function sectionHeaded(page: Page, heading: string): { readonly section: Locator; readonly toggle: Locator } {
+  const toggle = page.locator('main quader-disclosure .toggle').filter({ has: page.getByText(heading, { exact: true }) });
+  return { section: toggle.locator('xpath=ancestor::quader-disclosure[1]'), toggle };
+}
+
 /** A repository's settings with its section Service accounts open, then its create dialog with the rights (R-UI-181). */
 async function* repositoryAccounts(page: Page): AsyncGenerator<string> {
-  const section = page.locator('main quader-disclosure').filter({ hasText: 'Service accounts' }).first();
-  const toggle = section.locator('.toggle').first();
+  const { section, toggle } = sectionHeaded(page, 'Service accounts');
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(section.locator('quader-repository-service-accounts tbody tr').first()).toBeVisible();
@@ -489,7 +498,7 @@ async function* repositoryAccounts(page: Page): AsyncGenerator<string> {
 /** The closed Visibility section of a project's settings page, opened: where the level of a project is chosen (R-UI-054). */
 async function* visibilityOpen(page: Page): AsyncGenerator<string> {
   yield '';
-  await page.locator('main quader-disclosure').filter({ hasText: 'Visibility' }).first().getByRole('button').first().click();
+  await sectionHeaded(page, 'Visibility').toggle.click();
   await expect(page.locator('main quader-visibility-level').first()).toBeVisible();
   yield 'visibility';
 }
@@ -934,9 +943,9 @@ async function* usageDetailWalk(page: Page): AsyncGenerator<string> {
 /** The section **Download limits** of a settings page opened (R-UI-180), then the rule dialog of an Owner. */
 async function* limitsSectionOpen(page: Page): AsyncGenerator<string> {
   yield '';
-  const section = page.locator('main quader-disclosure').filter({ hasText: 'Download limits' }).first();
-  await section.locator('.toggle').click();
-  await expect(section.locator('.toggle')).toHaveAttribute('aria-expanded', 'true');
+  const { section, toggle } = sectionHeaded(page, 'Download limits');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   yield 'limits';
   const add = section.getByRole('button', { name: 'Add rule' });
   if ((await add.count()) === 0) return;
