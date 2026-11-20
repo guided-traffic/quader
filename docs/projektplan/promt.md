@@ -1328,6 +1328,42 @@ agent** is not decided until the owner has said so.
   question exists in OCI alone: in the other formats a version is one file, and a probe of a Debian file names its
   architecture. Still to decide: the bound for the work a request can start, and with it whether a repository can turn the
   behaviour off.
+  **Built in the night of 2026-11-19, after the download limits** (R-REPO-065, INV-11 and R-REPO-024 rewritten, the format
+  contract at version 7 with `Descriptor.Probes`, ADR-207, migration 00083; 984 requirements, 685 MVP, 258 P1).
+  - **What a user has:** a client that asks a remote repository about one version without downloading it (the manifest
+    of an image's tag, `npm view pkg@1.2.3`, a NuGet registration leaf or `.nuspec`, an Ansible version document, a `HEAD`
+    of a file in every format) makes the repository download that version in the background, as a job of the worker
+    (`remote-background-download`, on the Jobs tab). The version is listed once it is stored, with W-24's true rows
+    ("Last download never, 0 downloads", the size of what is stored, marked partial). It is charged to the client that
+    asked, as R-LIM-037 says, and shows in its usage. Of an image index the platforms of the repository's list are
+    fetched; the list stands in the OCI settings with `linux/amd64` and `linux/arm64` as its value and is the one the
+    mirror reads (`oci.platforms`, the mirror's default changed with it).
+  - **Decided by the development agent, for the owner's walkthrough:** a repository can switch it off, a checkbox "Start
+    the download when a version is asked for" in the upstream details, on by default (Q-REPO-360; the decision "whether
+    a repository can turn the behaviour off" above was open and the owner away); the bound of one download besides the
+    budget is 1,000 files and the repository's `limits.maxArtifactBytes` per version and `limits.maxConcurrentFetches`
+    queued or running per repository (Q-REPO-363); the include and exclude patterns hold for every background fill, a
+    mirror pass included (Q-REPO-365). **A probe through a virtual repository** started nothing as first built
+    (H-1016); that is the common setup, and the owner's Q-LIM-2 already says where such a request is charged, so the
+    development agent had it built as a second commit instead of leaving it for a decision (in work when this was
+    written).
+  - **What a protocol does not carry** (the builder's table, on the format pages): the clients of npm, NuGet and Debian
+    read package or index documents and then fetch the content themselves, so the rule fires seldom there (`apt-get`
+    never sends a `HEAD` of a pool file); a pull by digest is no probe; an OCI layer with foreign `urls` is skipped;
+    generic has no remote class.
+  - **Open, for the owner:** Docker Hub counts a manifest `GET` as a pull, so a probe of a two-platform tag can cost two
+    pulls besides its own (H-1017; the switch or a ceiling stops it); an index whose platform manifests are stored and
+    some of whose layers are not is not completed in the background (H-1018).
+  - **Looked at by the development agent:** the version page of an image that arrived by a background download
+    (≥5.0 MiB, amd64 and arm64 with their sizes, s390x "Not fetched"), the repository's page with its note, the settings
+    with the checkbox and the platform list. Full render set on a new database: 378 of 378, no layout finding. The first
+    attempt stopped in the builder's seed (the package of the remote's pulls does not exist yet when the seed looks it up
+    on a new database; the builder had rendered on a filled one, again): the seed waits now. **The same mistake three
+    times in one night** (the write budget, this lookup, and the migration checksum before them): a builder cannot
+    create a new UI database because `make ui-dev-down` is forbidden to it, and CI always has one. The brief has to
+    give builders a way to render on a new database, or the landing has to keep doing it.
+  - **Not verified:** no e2e set ran (the kind cluster is not the builder's); `test/e2e/oci_closing_test.go` was changed
+    for the new key without a run; the background path's own pattern refusal is exercised through one case only.
   **The third decision became a subject of its own.** To the proposal of one budget per repository the owner asked
   (2026-11-19): "Macht es nicht Sinn hier eine Unterscheidung zwischen Known und Unknown User zu machen und dafür
   Konfigurationsoptionen in einem Public-Repo zu bieten?", and then: "Ich erwarte von dir bei dieser Frage bitte eine
