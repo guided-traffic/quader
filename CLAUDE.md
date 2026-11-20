@@ -20,14 +20,15 @@ The rule ends with the first stable release; from then on reliability and compat
 
 By the owner's decisions of 2026-11-10 ([releasing.md](docs/developer/releasing.md#until-the-first-stable-release)):
 
-- Only a minimal set of jobs gates Semantic Release (Q-ARCH-457). `integration`, `s3-conformance`, every `e2e` leg and the two
-  coverage jobs that need them still run on every push and hold nothing back.
+- Only a minimal set of jobs gates Semantic Release (Q-ARCH-457). `integration`, `s3-conformance`, the `e2e` legs a change
+  starts and the two coverage jobs that need them run on a push and hold nothing back.
 - Do not hold a release for one of those. A red pipeline is still yours to work on: find the cause and fix it, also after the release is out (owner, 2026-11-10). Run the tests that matter for a change locally.
 - Tests run before a release. Nothing runs against published artifacts (Q-HA-281): a failure there would come too late.
 - Job and step names say what they do: no requirement codes such as `(E0.1)`, no tool versions, no "on kind". An e2e job is `e2e (<set>)`.
 - An e2e set is cut by what it tests, not by feature: what a format does belongs to that format's set.
-- A format's e2e leg runs on a push only when that format's own code changed. A change of shared code runs the tiers below
-  and the leg of one reference client (npm); every format's client runs in the nightly (owner, 2026-11-20, after the measurement
+- A format's e2e leg runs on a push or a pull request only when that format's own code changed. A change of shared code runs
+  the tiers below and the leg of one reference client (npm); a change under `web/` alone starts no format's leg; every
+  format's client runs in the nightly (owner, 2026-11-20, after the measurement
   of [test-cost.md](docs/developer/test-cost.md): a push that started every format's leg would cost about 939 runner minutes
   with 25 formats). What only another format's client shows of a change of shared code is found in the nightly.
 

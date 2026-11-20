@@ -567,17 +567,46 @@ runs are in `git log`; this section holds the current state.
   layout checks` (a fold's label on two lines at 390 px on `setup-deb`) and `e2e (access-long)` (journey `20-ansible`)
   came from W-27 and are fixed; `integration (shard c)` is `TestR_DEB_025` of section 12 D. Read the runs of today's pushes
   in the window from 17:00.
-- **In work:** Two planners write the specification, each on a branch of its own that the builders build
-  on (nothing of it is on `main`): the built-in project `upstream` with the product's well-known repositories, and the
-  role `scanner` with the analyser's database in `upstream/scanner-trivy`. Builders: the format legs of the pipeline and the integration shards; the bounded wait for
-  Valkey's verdict before the first readiness. A designer: candidates for one colour scale of the severities, shown to the
-  owner before anything is built. Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
+- **Specified, not on `main`:** the built-in project `upstream` with the product's well-known repositories, on the local
+  branch `spec/upstream-project` (`a143d01f`, 17 requirements, ADR-209 to 211, the gaps H-1020 to H-1026), cut into three
+  work packages: the project, the reconcile and the admin API (migration 00086); membership across the project line,
+  placeholders and usage (00087); the UI. The builders build on that branch, the contract commit of the first package
+  before the other two. **Decided by the owner on 2026-11-20, which takes the planner's lift (Q-AUTHZ-302, R-AUTHZ-042,
+  ADR-210, H-1020) out again:** "internal sind alle angemeldeten User (auch technische) außer User und seine Tokens die das
+  external-flag tragen. Internal ist einfach eine Sichtbarkeit für ein Projekt. Ist das Projekt privat, braucht man eine
+  spezifische Einladung um das Projekt zu sehen. Ist es intern, kann man es als nicht externer und angemeldeter User direkt
+  sehen und lesen. Für Schreiben braucht es wieder eine gesonderte Berechtigung. Ist es public, darf jeder lesen, auch nicht
+  angemeldete User, Schreiben ist nicht möglich." Today the specification admits only people to `internal` (R-AUTHZ-030,
+  Q-AUTHZ-268, the development agent's choice of 2026-11-11 for his review: no service account, no CI token), so this
+  changes the built rule: a builder changes it on `main`, and the planner takes the lift out of the branch. Put to him with
+  it: whether a project's service account, which is the technical account of a project's external party, is external by
+  default. **Two more of the planner's decisions go to the owner before a builder starts**, one at a time: the Debian and Ubuntu repositories carry their archive keys, so
+  a key change of an archive needs a release (Q-REPO-379); an administrator also sets the settings that narrow what a
+  well-known repository serves, beside the two things the owner named (Q-REPO-378).
+- **Specified, not on `main`:** the role `scanner` and the analyser's database in a repository, on the local branch
+  `spec/scanner-role` (`c059bf74`, ADR-212 to 214), cut into two work packages: the scanner role (no migration), the
+  database in a repository (one migration). To do before a builder starts: the branch is put on top of
+  `spec/upstream-project` once that is amended, the two are reconciled (the image's name at the upstream,
+  `aquasec/trivy-db` at mirror.gcr.io; the cache cleanup and the database's layer; the migration numbers; the requirement
+  count), and what the scanner's planner needed on pages it could not touch is written (endpoints.md: the endpoint `scan`
+  and its listener; authorization.md: the principal kind `system` and the fixed rule of the image scanner). Its planner's
+  least certain decisions, for the owner's walkthrough: a listener of its own on `packages` for the scanner's pull
+  (Q-ARCH-528); mutual TLS between worker and scanner with the chart's certificate, which must allow client authentication
+  (Q-VULN-163, not checked on the owner's installation); the worker writes the scanner's package list anew before its own
+  analyser reads it (Q-VULN-164), whose faithfulness only a test with the real analyser shows, and that test does not run
+  in CI yet: the builder has to give it one that does. A builder: the bounded wait for Valkey's verdict before the first readiness. The candidates for one
+  colour scale of the severities are drawn (`.out/sev/`, not committed) and wait to be shown to the owner. Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
   (larger default bursts from a measurement of one pull; a refused request is not counted in the request windows; the
   manual names the job's timeout for podman).
 - **Decided by the owner on 2026-11-20** ("1 B", the development agent of the same view): a format's e2e leg runs on a push
   only when that format's code changed; shared code runs the reference client, npm (the development agent's choice: its leg
-  already holds the behaviour that is the same for every format); every client runs in the nightly. A builder changes the
-  workflows and evens out the integration shards (shard b at 40.9 of 45 minutes). The next candidates of section 12 A (the
+  already holds the behaviour that is the same for every format); every client runs in the nightly. Built on 2026-11-20 (Q-ARCH-540 to 545): one job at the start
+  of a run decides the legs, a leg that does not apply takes no runner, a pull request is decided like a push, `web/` alone
+  starts no format's leg, the five formats' client sets run in the nightly, and the integration shards are evened out
+  (modelled 37.2, 38.1 and 38.8 minutes; before 34.8, 40.9 and 37.6). A push of shared code alone is about 308 runner
+  minutes instead of 396. **Only a real run shows** that a skipped leg takes no runner, how the shards really run and that
+  the night does not get longer: read in the next runs. **Still open in section 12 A:** each shard has room for about three
+  more formats, so a fourth shard or moving the formats' repeated integration tests into the kit comes next. The next candidates of section 12 A (the
   fixed cost of a kind leg, the fault scenarios repeated per client, the behaviour repeated inside the formats' legs) are
   not decided.
 - **Decided, not built now:** W-12, an invitation by e-mail, later ("Option c, aber erst später", 2026-11-20;
