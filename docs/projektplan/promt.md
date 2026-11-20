@@ -2191,6 +2191,14 @@ agent** is not decided until the owner has said so.
 
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details.
 
+**In work since 2026-11-20, 07:30:** the end-to-end set of the download limits with real clients (R-LIM-039), on the owner's
+yes of that morning ("ja bitte, das klingt sehr sinnvoll!") to the development agent's proposal: six clients against a small
+profile in Audit and Enforce with each client's message asserted; an image push of many layers against the write class of
+the registry, measured; the cases of W-25 in the formats' own sets, also through a virtual repository; the leg
+`e2e (limits)`; what the clients show, in the manual. One builder, which owns the local kind cluster for it (brief:
+`.out/e2e-limits-brief.md` of the checkout; base `11484e74`). Its product fixes land as commits of their own. The owner walks
+the new screens meanwhile; the open decisions of the night are put to him one at a time after it.
+
 **Night of 2026-11-19/20, state at 02:00 local time** (releases v0.64.0 to v0.66.0; `main` at `072f4949`, everything pushed;
 no builder running). The owner left at about 20:05 ("ich bin ab jetzt weg. 22 Uhr ist damit vorgezogen") and ordered a
 check every 30 minutes ("Ich möchte auf keinen Fall morgen aufwachen und du hast vergessen nach dem subagent weiter zu
