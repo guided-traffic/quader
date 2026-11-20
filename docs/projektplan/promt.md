@@ -855,7 +855,16 @@ runs are in `git log`; this section holds the current state.
   (`drain`, `backup`, `bastion`, `alerts`, `upgrade`), F-165, the Valkey start cases, `TestR_DEB_025`. Its longest lane
   takes about four hours. **No code push to `main` beside its kind legs** (the standing rule of the night): package B
   of the scanner, if it reports before the nightly ends, is checked and held on its branch until then; the malware
-  scan lands from its branch after it in any case.
+  scan lands from its branch after it in any case. **Its first red legs, at 23:26, a fifth miss of the scanner's
+  landing:** the four jobs `Platform matrix` (the oldest and the newest supported Kubernetes with Helm 3 and Helm 4)
+  failed at their first value set: the chart's server-side dry run on a plain kind cluster renders the four
+  cert-manager Certificates of the kinds of pod, and those clusters have no cert-manager CRDs ("no matches for kind
+  Certificate in version cert-manager.io/v1"). The landing changed the chart's CI value sets from a named Secret to
+  an issuer and ran the chart tests and the development profile, which installs cert-manager, not the matrix. A
+  builder decides what the matrix tries (the standard path with the CRDs installed, the Secrets per kind once),
+  goes through every value set and every other install of the chart outside the development profile, the set
+  `upgrade-release` among them, and runs two cells on clusters of its own (since 23:27); its commit lands after
+  the nightly, and the matrix is dispatched alone then.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -876,7 +885,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (23:25), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner, sent back once); the builders of packages 1 and 4 have finished:
+- **In work** (23:27), four builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the platform matrix's fix); the builders of packages 1 and 4 have finished:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
