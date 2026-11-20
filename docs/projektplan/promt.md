@@ -625,7 +625,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   for every format, not built yet); a client that retries a second apart is never admitted at a tight request limit because a refused request still counts
   in the window (keep; or do not count refused requests in the request windows: **decided by the owner on 2026-11-20, a
   refused request is not counted**, the block after refused requests is the brake against hammering; not built yet); podman holds a byte-limit refusal for about 16
-  minutes (document; or a short `Retry-After` there); the new client cases run when their format changes, not when only the limits'
+  minutes (document; or a short `Retry-After` there: **decided by the owner on 2026-11-20, it stays and is documented**; the
+  manual is to name the job's timeout as the setting for it); the new client cases run when their format changes, not when only the limits'
   code changes (keep, as the rule has it; or add the limits' paths to the five legs).
 - **Under overload a caller at its parallel figure waits ten seconds for its refusal**, where the server's own shedding answers at
   once (F-163, section 12 B): should a limit answer faster when the replica is already shedding?
