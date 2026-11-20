@@ -586,10 +586,10 @@ runs are in `git log`; this section holds the current state.
   branch `spec/upstream-project` (one commit on `5dffd9bf`; ADR-209 and 211; the gaps H-1021 to H-1026), cut into three
   work packages: the project, the reconcile and the admin API (migration 00086); membership across the project line,
   placeholders and usage (00087); the UI. The lift its planner first specified for CI tokens went with the owner's
-  definition of `internal`. **Two of the planner's decisions go to the owner before a builder starts**, one at a time: the
-  Debian and Ubuntu repositories carry their archive keys, so a key change of an archive needs a release (Q-REPO-379); an
-  administrator also sets the settings that narrow what a well-known repository serves, beside the two things the owner
-  named (Q-REPO-378).
+  definition of `internal`. **Confirmed by the owner on 2026-11-20** ("ja, Schlüssel mitbringen"): the Debian and Ubuntu
+  repositories carry their archive keys, so a key change of an archive needs a release (Q-REPO-379). **One decision of the
+  planner still goes to him before a builder starts:** an administrator also sets the settings that narrow what a
+  well-known repository serves, beside the two things the owner named (Q-REPO-378).
 - **Specified, not on `main`: the role `scanner`** and the analyser's database in a repository, on the local branch
   `spec/scanner-role` (one commit on `5dffd9bf`; ADR-212 to 214), cut into two work packages: the scanner role (no
   migration), the database in a repository (one migration). **To do before a builder starts:** the branch is put on top of
@@ -604,8 +604,13 @@ runs are in `git log`; this section holds the current state.
   one that does.
 - **In work:** the builder for the level `internal`; a builder for the bounded wait for Valkey's verdict before the first
   readiness (Q-HA-293).
-- **Waits to be shown to the owner:** the candidates for one colour scale of the severities (`.out/sev/scale.html`, not
-  committed; the designer recommends the candidate that keeps the bar and moves the trend onto its colours).
+- **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
+  `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
+  its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
+  text's colour, Unknown is the bar's grey hatch everywhere and None a neutral grey, and the usage charts get a token of
+  their own. He asked why the example showed no Critical finding: the mockup's bar had Critical at 0 and its trend at 2 to
+  6 of 500, the development agent's brief had asked for a segment with 0 and the designer put it there; shown again with
+  27. A builder builds it.
 - **Decided, not built now:** W-12, an invitation by e-mail, later; the logos of npm and Ansible Galaxy, he asks their
   owners later; presets of the installation's own registries, after the project `upstream`.
 - **Housekeeping:** nine worktrees are locked by another session of 2026-11-18 that still runs and were left alone.
@@ -674,12 +679,6 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   Built as a small task of its own after the project `upstream`, whose admin page touches the same place; with `upstream` a
   project's own remotes are mostly private registries, which is what changed the development agent's earlier
   recommendation of (a).
-- **Palette** (T-21c), **decided by the owner on 2026-11-20** ("Option b, aber vorher zeigen bitte"): one colour scale for the
-  severities in the vulnerability report, the same in the bar of the counts (`--quader-sev-*`) and in the trend
-  (`--quader-chart-*`), which differ today (Low is pale yellow in the bar and teal in the trend, High red and orange). A
-  designer draws candidates for both schemes and the owner sees them before anything is built; the building goes with the
-  rework of the vulnerability pages.
-
 **Decisions the development agent or a builder took, for his walkthrough** (each decision block says so)
 
 - T-20: Q-UI-274 gives the address field the editable control's fill instead of the read-only grey; not compared with GitLab's
