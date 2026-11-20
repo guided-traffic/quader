@@ -587,8 +587,7 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20** (`main` at `38b1d1ec`).
 
-- **In work** (started 2026-11-20, 09:30, nothing landed yet): the measurement of section 12 A (read from the reports of the
-  runs, no change); W-27, a designer's three variants in the session's scratchpad; a builder for W-14; a builder for W-20 and
+- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27, a designer's three variants in the session's scratchpad; a builder for W-14; a builder for W-20 and
   the wiki's visibility behind a disclosure. W-12 is decided and not built now: the owner chose an invitation by e-mail, later
   ("Option c, aber erst später", 2026-11-20); it stands in [FULL.md](FULL.md#m9--automation-and-integration), M9.
 - **To check first:** F-165 in the next full nightly; then section 12.
@@ -727,17 +726,24 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### A · The shape of the test suite (refactor)
 
-- **What a format costs is not known.** One push to `main` cost 384 runner minutes in 46 minutes of wall clock (Test and
-  Release 44646960056: ten e2e legs 161 minutes, the three integration shards 114); one full nightly 682 runner minutes over
-  27 legs (44625277245). About twenty more formats are planned. **First step, a measurement and no change:** per leg and per
-  test the run time from the reports of the last green runs, each put into one of three classes (what the format's client
-  does; format-independent behaviour repeated per format; infrastructure: the cluster, the images), and from it what a format
-  costs today and what it may cost by the rule. Proposed to the owner on 2026-11-20, not started.
-- **Candidates, named in the runs and not measured:** the load legs repeat the same drain, failover and switchover scenario
-  with npm and with NuGet (`npm-ha`, `nuget-ha`, the drain variants b to e and the pooler variant run both clients); every
-  kind leg brings up a cluster of its own with the whole dev profile (two to three minutes) and loads its client images; the
-  three integration shards each bring up the stack; the render set walks 378 screens in 25 minutes and grows with every
-  screen and every format's settings page.
+- **What a format costs, measured on 2026-11-20** ([test-cost.md](../developer/test-cost.md); two pushes and one full nightly,
+  read from the runs' reports, nothing run for it). A push costs 396.0 runner minutes (Test and Release 44693590111), a full
+  nightly 682.9 (44625277245). One format with a client costs 21.2 to 38.0 runner minutes per push, 28.6 on average: 12.6
+  set-up, 8.7 behaviour that is the same for every format, 7.2 what its own client does. Per nightly npm costs 99.1, NuGet
+  31.4, OCI 13.7, Debian 3.5, Ansible and generic nothing. With today's structure 25 formats would be about 939 runner minutes
+  per push and about 1,244 per nightly (computed from the mean of the five, not measured). **The nearest limit:** integration
+  shard b runs 40.9 of its 45 minutes, and an average format adds 6.0. Not measured: a push that touches one format only (both
+  pushes touched shared code), the unit tests per format, a second nightly.
+- **Where the minutes are, ranked** (the measured minutes of what would move; what a cheaper tier saves is not measured, and
+  nothing is designed): (1) the fixed cost of every kind leg, 95.1 of the 172.6 e2e minutes of a push and 240.6 of 658.1 of a
+  nightly, `make dev-up` alone 154 to 186 s per leg; (2) drain, switchover, failover and pod crash under a client's load,
+  repeated across 12 nightly legs, 331.2 minutes: the four drain-load legs 87.6, `npm-ha` with `nuget-ha` 78.6 (`nuget-ha` runs
+  the three scenarios of `npm-ha` again), `npm-ha-soak` 41.3; (3) behaviour that is the same for every format inside the five
+  formats' e2e legs, 21.0 per push, the mirror's clients-first test alone 11.0 across npm, NuGet and OCI; (4) the formats'
+  integration packages, 30.2 per push; (5) the render set, 32.7 per push, 54.5 % of its shots are screens named after a format,
+  an average format adds 183 s; (6) `vuln-long` and `vuln-pooler`, 50.2 per nightly; (7) client images loaded per leg, 11.9 per
+  push and 24.2 per nightly; (8) the leg `e2e (bastion)` takes a runner for 2.2 minutes when it has nothing to run. Refuted as
+  a large cost: the three integration stacks (3.0 minutes per push). **Next:** the owner decides which of these is cut first.
 - **A builder cannot render on a new UI database**, which CI always has: three landings in one night passed on a filled
   database and stopped on a new one (2026-11-19/20: a migration's checksum, the write budget, a lookup right after a pull;
   a builder may not purge the database, and the development agent's full render set on a new one before the landing found

@@ -64,6 +64,7 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 | [helm-chart.md](helm-chart.md) | The chart: values, rendered objects, validation and the chart tests |
 | [local-profile.md](local-profile.md) | The HA-shaped dev profile on kind, its scripts and its pins |
 | [e2e.md](e2e.md) | The end-to-end suite on the dev cluster: harness, driver, k6 load, tests and open findings; the npm client matrix and its tests (E2.1 to E2.12), the counting npm test upstream and its corpus, the OIDC issuer double of the CI tests, the closing run |
+| [test-cost.md](test-cost.md) | What a format costs in CI: the runner minutes of a push and of a nightly per leg and per test, split into set-up, a format's own client and behaviour repeated per format; a measurement of 2026-11-20, not kept current |
 | [audit.md](audit.md) | Audit trail: registry, recorder, journal row, query, partitions, how to add an event type |
 | [repositories.md](repositories.md) | The repository model: service, snapshot and unknown-key lookup, validation, patterns, deletion job, the format registry and the generic format |
 | [proxy.md](proxy.md) | The pull-through proxy: the upstream clients of remote repositories (settings applied to the outbound client, credentials, secret references, the client cache, the foreign-host check, the upstream test); the engine adds its sections |
