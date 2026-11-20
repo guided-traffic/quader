@@ -93,6 +93,10 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 
 - **One question at a time** (the owner's review of 2026-11-06): a new question during the run is asked one at a time, with
   options and a recommendation, and what depends on it is not built before the answer.
+- **This plan is kept current, always** (owner, 2026-11-20: "halte bitte immer die docs/projektplan/promt.md auf Stand"): every
+  decision of his, every landing, every start and end of a builder's or planner's work and every finding is written into this
+  file in the same step, and what no longer holds is taken out in that step. The file in the checkout is current even while a
+  push has to wait for a release (step 6); it is pushed with the next push that may go.
 - **Housekeeping** (owner, 2026-11-20: "Alte Worktrees die nicht mehr gebraucht werden können abgeräumt werden. Immer.
   Automatisch."): a worktree that is no longer needed is removed without asking, as soon as its work has landed or was given
   up, and the rest is swept at the start and the end of a run. Its local branch goes with it when every commit of it is on
@@ -145,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20): no registry task; the work points of the walk at the end of section 10, the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 14:40): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on branches and being built (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -611,8 +615,11 @@ runs are in `git log`; this section holds the current state.
   installation); the worker writes the scanner's package list anew before its own analyser reads it (Q-VULN-164), whose
   faithfulness only a test with the real analyser shows, and that test does not run in CI yet: the builder has to give it
   one that does.
-- **In work:** nothing. **Next:** `spec/scanner-role` is put on top of `spec/upstream-project` and `main`, the two are
-  reconciled, then the builders start (three packages for `upstream`, two for the scanner).
+- **In work** (14:35): `spec/upstream-project` sits on `main` at `984540a2` with the owner's confirmations; its first
+  builder builds the contract commit of the first package (the project's constants, migration 00086, the facts on a
+  repository, the error codes, the operations of the admin API) and then stops, so that the builders of the second and third
+  package can start on it before it goes on. The scanner's planner puts `spec/scanner-role` on top of
+  `spec/upstream-project`, reconciles the two and writes what it needed on the pages it could not touch.
 - **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
   `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
   its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
@@ -632,20 +639,31 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 **Questions he has not answered**
 
-- **Q-HA-293**, **decided by the owner on 2026-11-20** ("okay c"): a replica waits for a verdict of Valkey before its first
-  readiness, for a bounded time, and becomes ready degraded after it as today (Q-HA-13 (d)). So a wrong password shows before
-  the first request in nearly every case, a start during a failover loses seconds, and a Valkey that is away for longer
-  holds no start. The bound is derived from the measured failover times. Not built: the next free builder.
+- **The binding of a host to a repository of `upstream`** at its root (`docker pull mirror.example.com/library/alpine`, a Docker
+  Engine's `registry-mirrors`; R-EP-006, R-OCI-029): named to him on 2026-11-20 as the second step after the project is
+  built; today it is a configuration at start, not a click of the admin area. An address without the project segment, which
+  he had thought of ("den Root unserer API"), the development agent advised against: the path would be ambiguous between a
+  project's key and a repository's (Q-REPO-212). He did not come back to it.
+- **The next lever of the test suite** (section 12 A): each integration shard has room for about three more formats; a fourth
+  shard, or moving the formats' repeated integration tests into the format contract's kit. And the other candidates of the
+  measurement: the fixed cost of every kind leg, the fault scenarios repeated per client in the nightly, the behaviour
+  repeated inside the formats' e2e legs.
+- **What frees a release once the full gate returns** with the first stable release, when a format's client runs only on its
+  own change and in the nightly (said to him on 2026-11-20 as a question for later; a green nightly on the commit is one way).
+
+**Decided by the owner on 2026-11-20, in work or waiting to be built**
+
 - **H-812** ([image-scanning.md](../security/image-scanning.md)), **decided by the owner on 2026-11-20** ("Perfekt, machen wir wie
   du analysiert hast", after he asked for a look at how Harbor's scanner adapter does it): the analysis of an image moves into
   a role `scanner` of the same binary with a Deployment of its own and no secret of the database, the object store or Valkey.
   The worker keeps the job and calls the scanner over HTTPS with the repository, the digest and a registry token (pull, that
   repository, minutes); the scanner pulls the image through Quader's own registry API, checks the layers as the worker does
   today, runs the analyser and answers the package list. The detection stays in the worker, so the scanner needs neither the
-  vulnerability database nor the internet. To settle first by the builder: a blocked image must still be pulled by the scanner,
-  and its pull is not charged to the download limits. Not built; after the limits' package. Open with it, to be worked out
-  for him: Quader's own repository as the cache of the analyser's database.
-- **A well-known project for the public registries, under discussion, not decided** (owner, 2026-11-20): "ich … hätte irgendwie
+  vulnerability database nor the internet. Specified on the branch `spec/scanner-role` (a blocked or private image is pulled
+  for the scan by a token of minutes for that one manifest, and the pull counts as no download and against no limit); the
+  analyser's database is in the next entry.
+- **The built-in project `upstream` for the public registries** (owner, 2026-11-20; specified on the branch
+  `spec/upstream-project`, in work; his words stay here until the specification is on `main`): "ich … hätte irgendwie
   gerne, dass wir in einem Well-Known 'Projekt' (vielleicht 'common', 'system' oder 'default') für Registry-Typen die wir
   schon implementiert haben über die Admin-Konsole alle Well-Known Repos vorkonfiguriert … konfigurierbar machen. Vielleicht
   nutzen wir für die Abbildung über die API auch einfach den Root unserer API, also /." He names what it reopens himself
@@ -723,6 +741,26 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   agent's wrong word that it already was, and a client with many connections would have reached the block of 15 minutes in
   one overflow. A caller that keeps sending is held to its figure's rate and nothing more; the block stays for the refusals
   it was built for. Taken back on 2026-11-20.
+- The format legs of the pipeline (2026-11-20, beside his decision Q-ARCH-540): npm is the reference client (Q-ARCH-541); what
+  shared code is, as a list, and that a path on no list starts the reference leg (Q-ARCH-542); a change under `web/` alone
+  starts no format's leg; one job at the start decides, and a pull request is decided like a push (Q-ARCH-543); the rule
+  that puts a package into an integration shard (Q-ARCH-544); the formats' client sets in the nightly's third lane
+  (Q-ARCH-545).
+- The first readiness and Valkey (2026-11-20, beside his decision Q-HA-293): the wait stands at step 10 of the start
+  (Q-HA-330); what an answer is: an accepted or refused credential, a missing right on the probe write or the take script,
+  a certificate that is not trusted; what is silence: a deadline, a refused connection, a failover in progress, a host name
+  that does not resolve (Q-HA-331, the gaps H-1050 and H-1051); the bound is the setting `valkey.startup_answer_timeout`,
+  30 s by default (Q-HA-332); a Bastion does not wait (Q-HA-333).
+- The level `internal` (2026-11-20, beside his definition): a Bastion's own registration is not internal (Q-AUTHZ-320); the
+  Bastion's mark is gone from the subject (Q-AUTHZ-321); the sentence of the UI, "Everyone signed in, service accounts and
+  CI jobs included, except external users".
+- The colour scale of the severities (2026-11-20, beside his choice Q-UI-860): a band's edge is drawn on every day with at
+  least one finding, and the heights stay exact (Q-UI-861); at 365 days the hairline between the columns goes (Q-UI-862).
+- The folds of **Set up client** (2026-11-20): a fold's label has at most 32 characters in English and German (Q-UI-810).
+- On the branches of the two specifications, not on `main` yet: the planners' own decisions for the project `upstream`
+  (Q-REPO-374 to 377 and 380 to 389, Q-AUTHZ-300, 301, 303 and 304, Q-API-360 and 361, Q-UI-830 to 836, Q-LIM-62 and 63) and
+  for the role `scanner` (Q-VULN-161 to 174, Q-ARCH-527 to 531, Q-OCI-226 to 230, Q-HA-316 to 322, Q-LIM-66, Q-OPS-215,
+  Q-UI-850); the three its planner is least sure of are in the run record.
 - The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
   well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
   repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).
@@ -836,7 +874,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
   integration packages, 30.2 per push; (5) the render set, 32.7 per push, 54.5 % of its shots are screens named after a format,
   an average format adds 183 s; (6) `vuln-long` and `vuln-pooler`, 50.2 per nightly; (7) client images loaded per leg, 11.9 per
   push and 24.2 per nightly; (8) the leg `e2e (bastion)` takes a runner for 2.2 minutes when it has nothing to run. Refuted as
-  a large cost: the three integration stacks (3.0 minutes per push). **Next:** the owner decides which of these is cut first.
+  a large cost: the three integration stacks (3.0 minutes per push). **Cut first, by the owner's decision of 2026-11-20:** a
+  format's leg runs on a push only when its own code changed (built; a push of shared code alone is about 308 runner
+  minutes instead of 396, about 508 instead of 939 with 25 formats, computed). The rest is not decided.
 - **A builder in a worktree cannot run `make ui-renders`** without replacing the running containers of the UI development
   profile ([web-ui.md](../developer/web-ui.md), found on 2026-11-20): two builders rendered by hand with a dev server of
   their own. Nothing automates it.
@@ -883,8 +923,15 @@ the walk items and the run record); what the code holds beyond the plan has not 
   screen cannot change a technical token's description or delete one (API only); the usage list's cursor is an offset
   (Q-LIM-45).
 
-### C · The walk (W-12 to W-24)
+### C · The walk (W-12 to W-24) and what landed on 2026-11-20
 
+- **The colour scale of the severities:** rendered in Chromium only, not in Firefox or Safari; the seed holds one day of
+  findings, so the trend was judged on fed data; no finding rated None is in the seed, so its badge was not rendered.
+- **The level `internal`:** the e2e case of the Bastion (it now expects 200) and the integration areas other than `ci` were
+  not run by the builder; the first pipeline after the landing shows them.
+- **The first readiness and Valkey:** no real Sentinel failover during a start was run; the 30 s are computed from the
+  Sentinel settings and the measured failovers. The nightly shows the cases its builder read (the drain variant that holds a
+  primary lost, the outage with a replaced pod, the clone without Sentinels).
 - **Set up client (W-27):** the journeys `08-packages` and `09-guides` have new selectors and were not run on a cluster; the
   German page and the Bastion target were not rendered; the renders ran against answers rewritten in the builder's dev
   server, not against the changed backend (its side is unit-tested).
@@ -916,6 +963,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### E · Never run where it matters
 
+- **On the owner's installation, before it takes the releases of 2026-11-20:** whether a CI issuer is public or a mapping
+  admits fork pipelines to read (each of them now reads everything `internal`, H-1052); whether the chart's certificate
+  allows client authentication, which the role `scanner` will need (Q-VULN-163).
 - **On the owner's installation:** the newest release (not reachable from the development machine); an image scan (none seen
   there yet; not run: a push through the whole app with the real binary, a drain or worker loss in a cluster, the release
   image and chart in a cluster).
