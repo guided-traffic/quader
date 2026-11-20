@@ -554,6 +554,30 @@ list [With the owner](#with-the-owner); what is untested is in section 12. Open 
   then leads to "not found".
 - **The power user's screens** (the development agent's own list, after the owner said on 2026-11-18 that "nothing gross struck
   me"): the wiki's visibility behind a disclosure on the repository's settings is not done; it waited for W-11 in the same forms.
+- **W-27 · Set up client is dreary and has too much text** (**owner**, 2026-11-20): "unsere Seiten von 'Set up client' [brauchen]
+  mehr Bilder oder [müssen] etwas farbenfroher aufgebaut werden. Diese Code- oder Text-Blöcke sollten in keinen 'VSCode'-Fenster
+  aufgelistet sein. Das hier ist so trist. Beim drauf schauen auf diese Anleitung hat man überhaupt keine Lust das mitzumachen.
+  Hier muss echt was passieren. Ich wünsche mir, dass ein Subagent der sich damit auskennt, damit mal auseinander setzt." Asked
+  how far the page may leave the palette: "Ne, du sollst schon in der Palette bleiben. Aber so wie es jetzt aussieht, ist es
+  scheiße, ganz einfach. Zu viel Schrift, keine Lust zusehen."
+  - **The owner's frame:** the palette stays (the colours, type and measures of Q-UI-128); less text; more pictures; a
+    subagent that knows the field works on it.
+  - **Seen by the development agent on the renders** (`setup-npm-local`, `setup-oci-local`, `setup-npm-virtual-explained`): the
+    page's only colour is the three step discs and one link; it has no picture, and the format is a small glyph in a badge; a
+    snippet is a grey framed box of monospace text in which a placeholder (`<package>`, `${QUADER_TOKEN}`) looks like the rest,
+    with its copy button outside the box; four controls stand before step 1, and **Create a token** is a default button; nine
+    closed sections follow the steps as a list of lines, and opened the page is 9,332 px high at 1,440 px; the right third of
+    the page is empty at 1,440 px.
+  - **Read by the development agent, not confirmed:** "VSCode-Fenster" means the framed boxes read as an editor's panes.
+  - **How, proposed by the development agent, not confirmed:** a designer (`voltagent-core-dev:ui-designer`) lands nothing; it
+    delivers three variants of the page as renders (npm and OCI, light and dark, 1,440 and 390 px) on one page to compare, the
+    owner chooses, and a builder builds the choice under rule 11. One design for every format: a format adds at most a constant
+    (a picture) and no screen of its own to the render set. Pictures are illustrations or diagrams of our own, because the logos
+    of npm, Ansible Galaxy and Docker need their owners' permission (Q-UI-225 to 227). The token rules stay (R-UI-043); the
+    order and the build of the page may change. The variants show where the explanation goes: on the page, where
+    [ADR-202](../decisions.md#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository) put it, or behind one link.
+  - Not started. It runs beside the measurement of [section 12 A](#a--the-shape-of-the-test-suite-refactor) and the walk's
+    other items.
 
 ## 11 · Run record
 
