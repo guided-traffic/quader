@@ -2198,6 +2198,16 @@ the registry, measured; the cases of W-25 in the formats' own sets, also through
 `e2e (limits)`; what the clients show, in the manual. One builder, which owns the local kind cluster for it (brief:
 `.out/e2e-limits-brief.md` of the checkout; base `11484e74`). Its product fixes land as commits of their own. The owner walks
 the new screens meanwhile; the open decisions of the night are put to him one at a time after it.
+**Its shape was changed by the owner within the hour** (2026-11-20): "Ich sehe schon wieder: 'mit vielen Layern'. Unsere Tests
+dauern im Moment schon sehr sehr lange. Und es kommen noch bestimmt 20 weitere Registry Arten dazu. Du musst die Tests so
+strukturieren, dass es auch ausführbar bleibt. Es kann nicht einfach alles immer fetter werden und mehr und mehr Daten schieben.
+Wir schaffen das einfach von unserer Infrastruktur irgendwann nicht mehr." The development agent's brief had asked for what
+he forbids: a matrix of six clients, every figure, two modes and every subject in a new leg that loads every client image.
+The rule is in `CLAUDE.md` ("Tests stay runnable"); the item now is: **no leg and no set `limits` on the kind cluster**; the
+limits' model where it is missing in the integration set `limits`, in process; what only a real client shows (its reaction
+to one refusal) as one small case in that client's format's own set, with a budget of under two minutes per leg, measured;
+the image push as a measurement of requests with layers of a few bytes, run once; W-25 once per format that can produce a
+probe, the virtual path once. R-LIM-039's e2e bullet is rewritten by the builder.
 
 **Night of 2026-11-19/20, state at 02:00 local time** (releases v0.64.0 to v0.66.0; `main` at `072f4949`, everything pushed;
 no builder running). The owner left at about 20:05 ("ich bin ab jetzt weg. 22 Uhr ist damit vorgezogen") and ordered a

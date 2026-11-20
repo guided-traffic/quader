@@ -29,6 +29,25 @@ By the owner's decisions of 2026-11-10 ([releasing.md](docs/developer/releasing.
 
 The full gate returns with the first stable release.
 
+## Tests stay runnable
+
+By the owner's decision of 2026-11-20: "Unsere Tests dauern im Moment schon sehr sehr lange. Und es kommen noch bestimmt 20
+weitere Registry Arten dazu. Du musst die Tests so strukturieren, dass es auch ausführbar bleibt. Es kann nicht einfach alles
+immer fetter werden und mehr und mehr Daten schieben. Wir schaffen das einfach von unserer Infrastruktur irgendwann nicht mehr."
+
+- **Once, at the cheapest tier.** A behaviour is tested once, at the cheapest tier that can show it: a unit test, the format
+  contract's kit, an integration test in process against the stack, and only then a client on the kind cluster. What is the same
+  for every format is tested without a format's client.
+- **A format adds a constant.** A new format adds a small, constant amount of test time and nothing to another format's leg: one
+  small case per thing its client does differently, in its own set. No end-to-end set or matrix whose cost grows with the number
+  of formats, and no leg that loads the client images of every format.
+- **No more data than the assertion needs.** Payloads are bytes to kilobytes unless size is what is tested. "Many" (layers,
+  versions, packages) means many tiny ones, and only where the count is the point.
+- **A measurement is not a test.** A measurement is run once and its numbers are written down; it becomes a test only if it runs
+  in seconds and asserts something that can regress.
+- **Say what it costs.** A change that adds tests says the tier, the run time and the data of each, and the seconds every CI leg
+  gains. Before a new set or leg is proposed: what does it cost with 25 formats?
+
 ## Product: simple by default, details on demand
 
 By the owner's decisions of 2026-11-12 (T-21 in [promt.md](docs/projektplan/promt.md#owner-task-of-2026-11-12)). Quader is for people who
