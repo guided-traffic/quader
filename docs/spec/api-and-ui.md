@@ -6751,7 +6751,8 @@ line.
 
 - **The project's mark** ([Q-UI-424](#q-ui-424--a-projects-mark-is-one-component-before-its-name-wherever-a-project-is-listed)),
   `<quader-project-mark>` ([project-mark.ts](../../web/src/app/shared/ui/project-mark.ts)): the first letter of its display name
-  (else its key) on a stone of Quader's mark, which turns into the mark's coloured stone while the pointer or the keyboard's focus
+  (else its key), or for the built-in project `upstream` an arrow pointing up
+  ([Q-UI-837](#q-ui-837--the-project-upstream-stands-first-in-a-list-of-projects-and-its-mark-is-an-arrow-pointing-up)), on a stone of Quader's mark, which turns into the mark's coloured stone while the pointer or the keyboard's focus
   is on its row, link or option; decorative. It stands before the name in every list of projects (the start page, the admin
   area's projects, the search's **Projects** tab, the project switcher's lists, at 32 px beside a name with its key under it) and
   wherever a row names its project (the admin area's repository list, the search's repositories and packages, the permission
@@ -8263,7 +8264,10 @@ Priority: **MVP** · Covers: quader-only
 - **Lists.** The project is listed where R-AUTHZ-041 admits the caller, by its mark and display name **Upstream** with the badge
   **Built-in** after the name, its key, its description, the number of repositories the caller reads and no role or members
   ([Q-UI-835](#q-ui-835--the-project-upstream-is-a-project-with-the-badge-built-in-and-no-administration)). The admin area's list of
-  projects shows it with the same badge and no **Delete**.
+  projects shows it with the same badge and no **Delete**. It stands first in every list of projects it is in, above the other
+  projects whatever the list is sorted by (a filter that does not match it takes it out), and its mark carries an arrow pointing
+  up where every other project's carries its initial
+  ([Q-UI-837](#q-ui-837--the-project-upstream-stands-first-in-a-list-of-projects-and-its-mark-is-an-arrow-pointing-up)).
 - **Its side bar**: the switcher, **Repositories**, **Packages**, **Vulnerabilities**; no **Access** group (it has no members,
   policies, service accounts or CI mappings) and no **Settings** entry. Its repository list is the project list of R-UI-020 with the
   state of each repository as a badge (**Off**, **No longer offered**) for a caller with `repositories:read-config`; a caller without
@@ -8279,7 +8283,8 @@ Priority: **MVP** · Covers: quader-only
   mark (R-UI-095, R-UI-167, R-UI-124).
 - **The admin area's repository list** (R-UI-020) shows them with their project and offers no **Delete** and no **Move** for them.
 
-Acceptance criteria (Vitest, about 1 s; rendered under rule 11): the project list shows **Upstream** with **Built-in**; its side bar
+Acceptance criteria (Vitest, about 1 s; rendered under rule 11): the project list shows **Upstream** with **Built-in**, first, above a
+project whose name and key sort before it, also when the list is sorted the other way, and its mark holds an arrow and no letter; its side bar
 has no **Access** and no **Settings**; the settings page of `upstream/npmjs` for an administrator shows **Upstream** read-only with the
 link and the include patterns editable, and no **Delete repository**.
 
@@ -19968,6 +19973,30 @@ Status: **Decided by the development agent** — selected from the options below
 would revisit this if teams ignore the line and the duplicated remotes cost upstream allowance.
 
 **Applied in the spec:** R-UI-191.
+
+### Q-UI-837 · The project `upstream` stands first in a list of projects, and its mark is an arrow pointing up
+
+Status: **Decided by the owner (2026-11-20)**, with a picture of the list **Projects**: "das upstream-Projekt steht immer ganz oben in
+der Liste wenn es zu sehen ist. Andere Projekte tragen den Anfangsbuchstaben im Icon. upstream trägt einen Pfeil nach oben im Icon."
+Which lists that holds for, and where the order is made, is decided by the development agent from the options below; the owner
+reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The API lists it first, and every list of projects the app builds keeps it first whatever the sort; a list ordered by time or by relevance keeps its order (chosen) | `GET /api/v1/projects` returns `upstream` before the other projects; the list **Projects**, the start page, the admin area's projects, the project switcher's matches, the search's project filter and the limits' projects keep it first when a user sorts by a column; **Recently opened**, the switcher's recently visited projects and the search's results stay in their own order | One rule for every client of the API; "immer ganz oben" also holds under a sort | In a sorted list one row stands outside the sort |
+| (b) Only the list **Projects** | The screen of his picture | The smallest change | The start page and the switcher would show it between P and W, so it is not found in one place |
+| (c) First in **Recently opened** and in the search's results as well | "always" taken by the letter | — | A list ordered by time or relevance with a fixed first row says something false about both |
+
+**Choice:** (a). The arrow comes from the app's icon set, in the letter's colour, on the same stone and with the same change while
+the pointer or the focus is on its row (Q-UI-424); the mark stays decorative, so the project's name carries the meaning, with the badge
+**Built-in** (Q-UI-835). It shows wherever the mark does: in the lists of projects, in the switcher's button while the project is
+open, and in every row that names its project (R-UI-102).
+
+**Rationale:** the project is the product's and no team's, and it is in the same place on every installation, so a user finds it
+without reading the list; the arrow says upstream where a letter would say "U" like any project that starts with it. The development
+agent would revisit which lists it holds for if the owner misses it in **Recently opened**, or if a second built-in project appears.
+
+**Applied in the spec:** R-UI-190, R-UI-102; [authorization.md](authorization.md) R-AUTHZ-041.
 
 ### Q-UI-850 · The sources screen names the database's repository, links it, and shows how to fill a local one
 

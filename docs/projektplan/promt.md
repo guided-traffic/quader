@@ -622,7 +622,9 @@ runs are in `git log`; this section holds the current state.
   for the contract commit; package B for a free builder (at most four) and for `upstream/scanner-trivy`. **Numbers the
   builders hold** for decisions and gaps of their own: package 1 from Q-REPO-390, Q-AUTHZ-305, Q-API-362 and H-1053;
   package A from Q-VULN-180, Q-ARCH-550, Q-HA-340, Q-OCI-235, Q-AUTHZ-330, Q-LIM-70, Q-OPS-220, Q-EP-90, H-1070 and
-  ADR-215. The next builder gets ranges above those.
+  ADR-215. The next builder gets ranges above those. **To hand on:** the owner's Q-UI-837 (the project first in a list, an
+  arrow in its mark) was specified after the builder of package 1 had started: the order of `GET /api/v1/projects` goes to
+  it with the message that starts its second stage, the mark and the lists to the builder of package 3 with its brief.
 - **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
   `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
   its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
@@ -677,6 +679,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   repositories of its own project and of `upstream`, and of no other; a reference never protects what it names: a member
   whose repository is off or gone stays as a placeholder and takes effect again when the repository is back. A project's
   own remote repositories stay possible. The Debian and Ubuntu repositories carry their archive keys (Q-REPO-379).
+  **Its place and its mark** (owner, 2026-11-20, 15:20, with a picture of the list **Projects**; Q-UI-837): the project stands
+  first in the list whenever it is to be seen, and its mark carries an arrow pointing up where every other project's carries
+  its initial. The development agent's reading, for his walkthrough: it holds in every list of projects (the API returns it
+  first) and under every sort, and not in the lists ordered by time or relevance (**Recently opened**, the search's results).
   **The analyser's database** lies in `upstream/scanner-trivy`: always private, only for the scanner, not an
   administrator's to switch, in use exactly while the image scanning reads through it; there is no second way that falls
   back to the public source, and an installation without the internet names a local OCI repository of its own in the

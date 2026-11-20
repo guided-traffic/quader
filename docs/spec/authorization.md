@@ -3445,7 +3445,8 @@ administered by the installation's administrators, not by a team.
 - **Its level** ([Q-AUTHZ-301](#q-authz-301--the-project-upstream-is-stored-public-and-seen-by-whoever-reads-one-of-its-repositories)):
   stored `public` and fixed, so that a well-known repository can take any level an administrator chooses (R-AUTHZ-033 rule 2). The
   stored level admits nobody: the project is listed and read by the holders of `projects:read` and by a caller that reads one of its
-  repositories, and its members list is empty. It is not one of the `publicObjects` of `GET /api/v1/settings/visibility`
+  repositories, and its members list is empty. `GET /api/v1/projects` returns it first, before the other projects in the order of
+  their keys ([api-and-ui.md](api-and-ui.md) Q-UI-837, the owner's). It is not one of the `publicObjects` of `GET /api/v1/settings/visibility`
   ([api-and-ui.md](api-and-ui.md) R-API-056); its repositories are, when they are `public`. A repository's levels follow the order
   of R-AUTHZ-038: rule 2 always passes, rules 3 to 5 apply as for any repository.
 - **Findings** ([Q-AUTHZ-304](#q-authz-304--a-finding-of-a-well-known-repository-is-read-through-a-teams-virtual-repository-and-triaged-by-the-triage-capability)):
@@ -3463,7 +3464,8 @@ Acceptance criteria (integration area `upstream`, about 2 s):
 - An administrator's global policy `ci-read-upstream` on the selector `upstream/npmjs` is stored by the repository's ID; a policy of
   project `web` with the selector `upstream/npmjs` answers 422 `invalid_pattern`.
 - An internal user who reads no repository of `upstream` does not find the project in `GET /api/v1/projects` and gets 404 on
-  `GET /api/v1/projects/upstream`; once `upstream/npmjs` is `active` and `internal`, both list and read it.
+  `GET /api/v1/projects/upstream`; once `upstream/npmjs` is `active` and `internal`, both list and read it, and the list names
+  `upstream` first, before a project with the key `alpha`.
 - Reads through a team's virtual repository, by the member's level (project `web`; `npm-all` virtual over `npm-local` and
   `upstream/npmjs`; the CI mapping `web-build` grants `read` on `npm-all` only; Erin is a user flagged external with the role `reader`
   in `web`; the project service account `sa:web/deployer` holds `read` on `npm-all`; `npm-local` holds `@web/ui`, `upstream/npmjs`
