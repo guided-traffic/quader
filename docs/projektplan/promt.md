@@ -93,8 +93,11 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 
 - **One question at a time** (the owner's review of 2026-11-06): a new question during the run is asked one at a time, with
   options and a recommendation, and what depends on it is not built before the answer.
-- **Housekeeping** (owner, 2026-11-11): finished worktrees are removed at the end of a run, with the local branches of work that
-  has landed.
+- **Housekeeping** (owner, 2026-11-20: "Alte Worktrees die nicht mehr gebraucht werden können abgeräumt werden. Immer.
+  Automatisch."): a worktree that is no longer needed is removed without asking, as soon as its work has landed or was given
+  up, and the rest is swept at the start and the end of a run. Its local branch goes with it when every commit of it is on
+  `main`; a branch with commits that are not on `main` stays. A worktree with uncommitted changes, or one locked by another
+  session that still runs, is left alone and named.
 - **The development agent finds such defects itself** (owner, 2026-11-18, about a long repository key that broke away from its
   icon: "Can you not see something like this yourself?"): at every station of a walk the development agent looks at the render
   first and names what it sees before the owner has to.
@@ -583,7 +586,7 @@ list [With the owner](#with-the-owner); what is untested is in section 12. Open 
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 10:45.
+**State on 2026-11-20**, 10:35.
 
 - **Landed on 2026-11-20:** W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
   visibility behind a fold, and the measurement of what a format costs ([test-cost.md](../developer/test-cost.md)).
@@ -618,7 +621,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - **Palette** (T-21c): should the vulnerability report's trend chart and the grade bar share one palette?
 - **What a client does at a limit** (section 12 B), each with the builder's options: docker gives up at once on any 429 where the
   other clients wait (keep; hold a request for seconds on the registry's paths, which changes his decision 4; or larger default
-  bursts); a client that retries a second apart is never admitted at a tight request limit because a refused request still counts
+  bursts: **decided by the owner on 2026-11-20, larger default bursts**, set from a measurement of the requests of one pull,
+  for every format, not built yet); a client that retries a second apart is never admitted at a tight request limit because a refused request still counts
   in the window (keep; or do not count refused requests in the request windows); podman holds a byte-limit refusal for about 16
   minutes (document; or a short `Retry-After` there); the new client cases run when their format changes, not when only the limits'
   code changes (keep, as the rule has it; or add the limits' paths to the five legs).
@@ -718,10 +722,11 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - The runners: `zstd` in the runners' image would make the CI cache entries smaller and faster (every entry exists twice today);
   a registry or a mirror inside the runners' cluster would remove the downloads of the kind node image, the dev profile's images and
   k6 from every leg.
-- Branches, deleted only on his word: the origin branches `p7-*`; the local branches `worktree-agent-a135bce1ea0ac051f` (the
-  clients-first test of the mirror) and `worktree-agent-aa6a3feeee93a6b37` (the slow npm publish test of F-105, a temp sweep and an
-  S3 cleanup of the test stack), each with a WIP commit of work that never landed; the `stab/*` and `night/*` branches and the
-  finished builders' worktrees under `.claude/worktrees`.
+- Branches, deleted only on his word: the origin branches `p7-*`. Local branches whose commits are not on `main` are kept
+  without a worktree (18 on 2026-11-20, among them `stab/oom-2`, `stab/access-long`, `stab/stall-2` and two with work that
+  never landed: `worktree-agent-a135bce1ea0ac051f`, the clients-first test of the mirror, and
+  `worktree-agent-aa6a3feeee93a6b37`, the slow npm publish test of F-105). Nine worktrees are locked by another session of
+  2026-11-18 that still runs and were left alone.
 
 ## 12 · To test and to refactor
 
@@ -791,7 +796,7 @@ the walk items and the run record); what the code holds beyond the plan has not 
 - **Under overload a caller at its parallel figure waits ten seconds for its refusal** while the server sheds at once (F-163):
   not a test, a question for the owner, listed here because the capacity test only passes with its tokens exempted.
 - **The four behaviours of clients the owner has not decided on** (2026-11-20; the builder's options are in
-  [With the owner](#with-the-owner)): docker gives up on any 429;
+  [With the owner](#with-the-owner)): docker gives up on any 429 (decided: larger default bursts, to build);
   a client retrying a second apart is never admitted at a tight request limit; podman's 16 minutes at a byte limit; the
   client cases run on changes of their format only.
 - **Refactor, named by the builders:** the class `package_write` is a stand-in until upload figures exist (Q-LIM-27); a
