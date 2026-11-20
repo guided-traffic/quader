@@ -155,7 +155,7 @@ remote then downloads that version in the background, so that it is stored when 
 | Format | The request | What is downloaded |
 |---|---|---|
 | OCI (Docker) | The manifest of a tag (`GET` or `HEAD`, as `docker manifest inspect`, `crane digest` or `skopeo inspect` send it), a `HEAD` of a manifest by digest, a `HEAD` of a blob | The image: of a multi-platform image the platforms of **Platforms** (`linux/amd64` and `linux/arm64` unless you change them), with their configurations and layers |
-| npm | The document of one version (`npm view lodash@4.17.21`), a `HEAD` of a tarball | The tarball |
+| npm | The document of one version (as a tool that checks a version sends it; `npm view lodash@4.17.21` reads the whole package document and is none), a `HEAD` of a tarball | The tarball |
 | NuGet | The registration leaf of a version, its `.nuspec`, a `HEAD` of the `.nupkg` | The `.nupkg` |
 | Ansible Galaxy | The version document of a collection, a `HEAD` of a collection's or a role's archive | The archive |
 | Debian | A `HEAD` of a package file | The package file |

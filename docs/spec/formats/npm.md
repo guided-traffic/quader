@@ -5167,7 +5167,7 @@ naming exactly one version without fetching it starts its download is the owner'
 [repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-065).
 
 Context: npm's protocol names one version in two requests that fetch none of the tarball: the version document `GET /<name>/<ref>`,
-by number or dist-tag (`npm view lodash@4.17.21`, tools that check a version), and a `HEAD` of the tarball. `npm install` reads the
+by number or dist-tag (tools that check a version; not `npm view lodash@4.17.21`, which reads the package document, Q-NPM-90), and a `HEAD` of the tarball. `npm install` reads the
 package document, which lists every version, and then fetches the tarball itself.
 
 | Option | What it means | For | Against |
@@ -5181,6 +5181,29 @@ the merged document, and a `HEAD` of the tarball are the probes of the member th
 `virtualDocument` and `virtualTarball` in [handlers_virtual.go](../../../internal/formats/npm/handlers_virtual.go). Tests:
 `TestR_REPO_065_WhatAProbeOfNpmIs`, `TestQ_REPO_367_WhatAProbeOfNpmIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/npm/probe_test.go).
+
+### Q-NPM-90 · `npm view` of a version is no probe; the rule fires for tools that ask the version document
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on the
+kind cluster on 2026-11-20, when W-25 was first run with the real client.
+
+Context: Q-NPM-89 named `npm view lodash@4.17.21` as a probe. npm 11.21 sends `GET /<name>` for it, the package document with every
+version, and picks the version itself; the request log of the packages replicas shows no other request of the command, and no
+background download started. No command of the npm client asks for the version document; tools that check one version (a script with
+`curl`, a dependency bot) do. By the owner's rule of W-25 a request that names a package with all its versions starts nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As built: the version document and a `HEAD` of the tarball are the probes; the specification and the manual say that npm's own commands send none (chosen) | A correction of the text, no change of the product | The owner's rule holds as he gave it; the behaviour is what the tests show | npm's users gain nothing from W-25 |
+| (b) Treat a package document that a client asks for with a version in mind as a probe | Not possible: the request names no version | — | The protocol carries no such request |
+| (c) Treat the package document as a probe of its `latest` | Q-NPM-89 (b) | Covers `npm view <pkg>` and an install of the newest version | The owner decided against it: a request that names every version starts nothing |
+
+**Choice:** (a). **Rationale:** the protocol leaves no request of the npm client that names one version without fetching it; the
+remaining probes serve tools that use the registry's version endpoint. Revisit if an npm release asks for the version document.
+
+**Applied in the spec:** Q-NPM-89's context, R-REPO-065's table ([repositories-and-proxy.md](../repositories-and-proxy.md)), the
+manual's table of [Downloads a client only asked about](../../manual/admin/repositories.md#downloads-a-client-only-asked-about). W-25
+runs on the cluster with a real client in the OCI set only (`TestOCIProbe_R_REPO_065_…`).
 
 ## What this does not cover
 
