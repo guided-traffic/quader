@@ -549,6 +549,18 @@ records the recorder that tells such a stall apart).
   same leg had passed an hour before on the same product code. Cause not known: which replica answered it and with
   which code of a 503 (the listener's admission, the collapse's wait, the upstream stub) is the first thing to read
   at a recurrence.
+- **A PostgreSQL connection of a serving pod costs the primary 6 to 8 MiB** (measured in the nightly of 2026-11-20:
+  a `packages` pod with a pool of 20 gave back 120 to 155 MiB at its end). The preflight of R-HA-016 checks the
+  connection budget against `max_connections` and says nothing about memory; the chart's README and the manual
+  give no figure for sizing the database's memory from the budget, and a rollout runs one pod more per role.
+  The development profile was 8 MiB from its limit for at least a day before it was killed.
+- Under the nightly's npm load any hold of the database longer than about 3.3 s puts one of the load's tokens over
+  the 50 parallel downloads of the built-in profile of a technical token, and its requests get 429 after the
+  limit's wait of 10 s (seen in the drain leg on 2026-11-20). A switchover of PostgreSQL holds longer than that;
+  the switchover legs were green on 2026-11-19 with the limit enforced, and why was not looked at.
+- The nightly's legs record the pods' memory but not the primary's connections by application, the memory of a
+  connection or each pool's size, so a growth of the database's memory between two runs cannot be assigned
+  (2026-11-20).
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -891,7 +903,31 @@ runs are in `git log`; this section holds the current state.
   more pods and a drain script that rolls them, the second usage dimension of `upstream`, the join of the malware
   verdict into the download statement) or a starved runner. A builder reads the leg's artifacts and the code for it
   (since 23:50), with one local reproduction allowed and no repetition loop; a fix if it is a defect, a proposal if
-  the limit works as decided and the test's one caller is what it refuses.
+  the limit works as decided and the test's one caller is what it refuses. **Cause found from the leg's artifacts
+  (00:08), one cause for both failures, not a change of the day and not a runner:** the development profile's
+  PostgreSQL primary ran into its memory limit of 1 GiB and was killed (`OOMKilled`, exit 137, at 22:38:50 UTC; 22
+  kills, all in that pod). It had stood at 1,003 to 1,022 MiB for three minutes; the drain of `packages` then ran a
+  fourth `packages` pod beside the three for 20 seconds (the evicted one holds its connections while its replacement
+  is ready), and a `packages` pod's pool costs the primary 120 to 155 MiB (measured at the pods' ends). PostgreSQL
+  took connections again after 2 s, but the Service of the primary had no endpoint until the startup probe's next
+  attempt 10 s later, and commits waited for the synchronous standby until 22:39:06: about 16 s in which every
+  request that reads the database stood, on every replica (the ping that reads no database stayed under 40 ms).
+  **The 429s are the download limit as decided:** all 168 carry the limiter `limits.parallelDownloads` in the mode
+  `cluster` (Valkey answered) under the built-in rule of a technical token; the load's three tokens send 15 tarballs
+  a second each and do not slow down when answers stop, so about 200 downloads of a token were in flight against the
+  50 the built-in profile admits; a request waited for the database, then the 10 s of the limit's wait, then got
+  its 429. They came from all four live `packages` replicas; the test's output had named the first few. The p99 is
+  the stall itself. **Corrected:** the morning's scheduled nightly was no comparison, it had skipped its legs after
+  the dispatch of the night before; the last real run of this leg (2026-11-19) was green with the primary at 1,016
+  MiB at the same step, 8 MiB under the limit. Tonight's private memory was 39 MiB higher; whether a commit of the
+  753 changed files since then or the pools' growth from run to run did that is **not known**, and the run does not
+  record what would tell (the primary's connections by application, the memory of a connection, each pool's size).
+  Ruled out with evidence: a starved runner (15 to 19 of 32 CPUs in use before, 2 to 5 during), the scanner (it
+  holds no database credential), the limits' fallback, a change of the limit. **The fix, one commit of the type
+  `test`, held for the end of the nightly:** the profile's PostgreSQL may use 3 GiB, sized for the connection budget
+  the server admits (323 connections at about 7.75 MiB and the shared buffers, 2.6 GiB); a limit reserves nothing.
+  No limit of the product was touched. **Not proven until a run uses it.** No local reproduction: the machine's
+  load was 30 on 20 CPUs and the evidence settled the cause.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -912,7 +948,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (23:50), four builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's drain leg); held for the end of the nightly: the platform matrix's fix:
+- **In work** (00:08), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once); held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
