@@ -619,8 +619,8 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (16:25), four builders; packages 2 and 3 of `upstream` have reported and each is resumed for a follow-up,
-  nothing of the feature is landed:
+- **In work** (16:40), three builders; package 2 of `upstream` is complete, package 3 has reported and is resumed for a
+  follow-up, nothing of the feature is landed:
   - **Package 1 of `upstream`, second stage.** Its contract commit is `ceca6d08` on its branch, on top of `main` (not
     landed). It builds the reconcile, the refusals, the handlers, the archive keys of Debian and Ubuntu, the order of
     `GET /api/v1/projects` (Q-UI-837) and the integration area `upstream`. **Added on 2026-11-20, 16:20, from the other two
@@ -632,17 +632,22 @@ runs are in `git log`; this section holds the current state.
     It discloses nothing new: package 2's resolution explanation and the warning `member_inactive` already tell whoever
     writes a member list. The builder chooses the shapes and writes the decision blocks. From package 2: its switch
     notifies `repo_config` in its transaction, and its `main_test.go` replaces package 2's.
-  - **Package 2 of `upstream`, reported:** `99daf572` on `ceca6d08`, every gate green (the unit run 2:08, the integration
-    areas `upstream` 3.6 s, `limits` 121 s, `virtual` and `repository` once each because the members' SQL changed).
+  - **Package 2 of `upstream`, complete:** `e391f1256` on `ceca6d08`, every gate green (the unit run 2:29 under load).
     Migration 00087. **What it cost:** unit tests under a second each; one integration test of about 3 s in the area
     `upstream` and one of 2.8 s in `limits`, both in shard b: about 8 s more there (the plan said 12 s). **Outside the
     plan's cut:** the format contract got `VirtualPlan.NotFound` and `VirtualPlan.Unknown`, an addition, so that the
-    404 of an OCI virtual repository can carry the sentence (OCI walks its members itself). **Resumed at 16:20 for
-    H-1080,** which it had found and left because `internal/authz` was closed to it: the grant index names a member of
-    `upstream` in the team's project, so a token whose scope names the virtual repository does not read through the
-    member, an anonymous caller gets no 401 for a member that is not public, and a Bastion takes the virtual repository's
-    reach as partial. It only ever narrowed access, but pipelines with a scoped token are the main use of the central
-    registries, so the feature does not land with it. The fix is amended into the package's commit.
+    404 of an OCI virtual repository can carry the sentence (OCI walks its members itself). **H-1080, found and fixed by
+    it** (it had left the gap because `internal/authz` was closed to it; opened for this at 16:20): the grant index
+    named a member of `upstream` in the team's project. The query `AuthzBuildVirtualMembers` now returns the member's
+    own project and `internal/authz/index.go` names the member `upstream/<key>`. **What a principal reads now that it
+    did not before:** a token whose scope names the team's virtual repository reads through an `upstream` member that
+    admits its owner (the main case: a pipeline's token), and listings through the virtual repository show the member's
+    rows; a Bastion's reach of such a virtual repository is full where the caller reads every member, which makes no
+    item readable that was not; an anonymous caller mostly reads less (a 401 while the member is not public) and more
+    in one case: the old index judged a non-public repository of the team with the member's key in the member's place.
+    A `private` member without a grant and an external user's scoped token stay refused. R-AUTHZ-041's table got the
+    rows 8 and 9 for the scoped token and the anonymous caller. **Not measured:** what the scoped exchange adds to
+    the integration case; the host stood at a load of about 60 while it ran (35.8 s for the area against 3.6 s quiet).
   - **Package 3 of `upstream`, reported:** `8de3769c` on `ceca6d08`: the page **Admin area › Upstream registries** with
     the new switch, a registry's own page, the member picker's group and the placeholder, the built-in project in the
     main area with the arrow in its mark and its first place in every list of projects. Gates green (`make web-test`
