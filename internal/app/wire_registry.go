@@ -23,8 +23,13 @@ import (
 // The OCI data port offers the page of image names the catalog reads (R-OCI-017).
 var _ registry.CatalogStore = (*ocidata.Store)(nil)
 
-// ociUploadStart is the route that starts an upload and may mount a blob (R-OCI-012).
-const ociUploadStart = "oci.upload.start"
+// ociUploadStart is the route that starts an upload and may mount a blob (R-OCI-012); ociManifestByDigest and ociBlobGet are the
+// two routes a scan token reaches (R-OCI-037).
+const (
+	ociUploadStart      = "oci.upload.start"
+	ociManifestByDigest = "oci.manifest.get.digest"
+	ociBlobGet          = "oci.blob.get"
+)
 
 // registerRegistry mounts the registry root on the router of one endpoint and sets rt.registry.
 func (a *App) registerRegistry(rt *endpointRuntime, router *httpserver.Router) error {
@@ -49,6 +54,8 @@ func (a *App) registerRegistry(rt *endpointRuntime, router *httpserver.Router) e
 	enforcer, err := registry.NewEnforcer(registry.EnforcerOptions{
 		Matcher: disp, WriteError: f.WriteError, ValidName: ociformat.ValidName,
 		Log: a.log.With("component", "registry"), MountRoute: ociUploadStart, MountSource: ociformat.MountSource,
+		// The two routes a scan token reaches (R-OCI-037, Q-OCI-227).
+		Pinned: registry.PinnedRoutes{Manifest: ociManifestByDigest, Blob: ociBlobGet},
 	})
 	if err != nil {
 		return err

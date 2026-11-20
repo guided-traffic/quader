@@ -136,29 +136,53 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 **What you see.** `QuaderSpoolNearlyFull` (more than 90 % used for 10 minutes). Uploads answer `503 unavailable` with a sentence about the spool, and clients retry. `quader_spool_used_bytes` and `quader_spool_free_bytes` per replica. A pod that is `Evicted`: `kubectl describe pod` names the emptyDir that passed its limit. A mirror pass waits 5 seconds and repeats the item; an advisory sync that needs the space fails; an image scan waits and is then put off (below).
 
-**What it means.** Every pod has one spool volume (`spool.sizeLimit` 20 GiB by default; `worker.spool.sizeLimit` 8 GiB). The usable budget is the size minus `spool.headroom` (2 GiB), and is held per replica. The worker's budget is shared by the cache fills of jobs, the artifacts of a mirror pass, one advisory archive while a sync runs, and the image scanning.
+**What it means.** Every pod has one spool volume (`spool.sizeLimit` 20 GiB by default; `worker.spool.sizeLimit` 5 GiB; `scanner.spool.sizeLimit` 6 GiB). The usable budget is the size minus `spool.headroom` (2 GiB), and is held per replica. The worker's budget is shared by the cache fills of jobs, the artifacts of a mirror pass, one advisory archive while a sync runs, and the detections of the image scanning.
 
-The working space of an image scan (`vulnerabilities.images.scan_dir`, below the spool) is counted in the same budget: the unpacked advisory database once (about 1.6 GiB on 2026-11-10) and, while a scan runs, the size of its image plus 64 MiB. A scan that does not fit waits two minutes and is then put off with the code `spool_busy` (the image shows `pending_scan`, the scan is tried again after a minute); a scan that cannot fit next to the database even in an empty spool is refused with `spool_too_small` (tried again after an hour), and its reason names the sizes. The chart refuses a budget below `max_image_size` + 2 GiB + 512 MiB for the pool that claims the queue `vuln`. A database that no longer fits ends `vuln-image-scan` with a `skipped` result that says so.
+The image scanning works in two spools. The scanner's holds the analyses: per analysis the size of its image plus 64 MiB; an analysis that does not fit is answered busy, and one that cannot fit even an empty spool `spool_too_small`. The worker's (`vulnerabilities.images.scan_dir`, below the spool) holds the unpacked advisory database once (about 1.6 GiB on 2026-11-10) and 64 MiB per detection. A detection that does not fit waits two minutes and is then put off with the code `spool_busy` (the image shows `pending_scan`, the scan is tried again after a minute); one that cannot fit next to the database even in an empty spool is refused with `spool_too_small` (tried again after an hour), and its reason names the sizes. The chart refuses a scanner budget below `slots` × (`max_image_size` + 64 MiB) and a worker budget below 2 GiB + 512 MiB for the pool that claims the queue `vuln`. A database that no longer fits ends `vuln-image-scan` with a `skipped` result that says so.
 
 **What to do.**
 
 1. Find the replica on `quader_spool_used_bytes`. Look for uploads that do not end (the request log, `quader_http_requests_in_flight`).
 2. Raise the size of the role: `api.spool.sizeLimit`, `packages.spool.sizeLimit`, `worker.spool.sizeLimit`, or `spool.sizeLimit` for all of them, by `helm upgrade`. The chart refuses a size whose budget is below `storage.upload.max_size` and, for a pod that claims the queue `vuln`, below the advisory archive limit.
-3. If the worker is short because of image scans, raise the size of the pool that claims the queue `vuln`, or give the scans a pool of their own with a larger volume, or lower `vulnerabilities.images.max_image_size` (a larger image then shows `scan_failed`); the chart refuses a size that cannot hold the scanning:
+3. If images are put off for lack of room, raise `scanner.spool.sizeLimit` (the analyses) or the size of the worker pool that claims the queue `vuln` (the database and the detections), or lower `vulnerabilities.images.max_image_size` (a larger image then shows `scan_failed`); the chart refuses a size that cannot hold the scanning:
 
    ```yaml
+   scanner:
+     spool:
+       sizeLimit: 8Gi                 # example: at least slots × (max_image_size + 64 MiB) plus spool.headroom
    worker:
      pools:
        - name: vuln                   # example
          queues: [vuln]               # example
          replicaCount: 2              # example
          spool:
-           sizeLimit: 20Gi            # example: at least the largest image plus the database and the budget it needs
+           sizeLimit: 5Gi             # example: at least 2 GiB + 512 MiB plus spool.headroom
    ```
 
 4. A node under disk pressure evicts pods whatever the limit says: that is the platform's.
 
 **When to escalate.** To the platform team for a node that runs out of disk. To the maintainers when a replica's spool fills with no upload in flight: attach the replica's log and the two gauges.
+
+## An image scanner that does not answer
+
+**What you see.** `QuaderVulnerabilityImageScannerUnavailable`; images stay `pending_scan`; `quader_vuln_image_scans_total` counts `scanner_unavailable`, `registry_unavailable` or `pull_refused` and no `scanned`; the scanner pods are not ready, or `quader_scanner_analyses_total` stands still.
+
+**What it means.** The worker calls a scanner pod (`<fullname>-scanner`, port 8080) for every image, and the scanner pulls the image from the scan listener of the main `packages` pods (`<fullname>-packages-scan`, port 8082). Both links are mutual TLS with the certificate of `tls.secretName` and its `ca.crt`. A scan put off for one of these codes spends no attempt and is tried again after one minute (`pull_refused`: five).
+
+| Code | Usual cause |
+|---|---|
+| `scanner_unavailable` | No ready scanner pod; or the worker's certificate lacks the usage `client auth`, so the scanner refuses the handshake (the worker logs "does not allow client authentication") |
+| `registry_unavailable` | The scanner cannot reach port 8082 of the `packages` pods: a NetworkPolicy of the cluster that drops it, the `packages` pods not ready, or the scanner's certificate refused there |
+| `pull_refused` | The scan listener refused the scan token: the worker and `packages` read different key rings, or their clocks differ by more than a minute |
+| `scanner_busy` | Every slot is taken; not an error, but a backlog: raise `scanner.replicaCount` |
+
+**What to do.**
+
+1. `kubectl get pods -l app.kubernetes.io/component=scanner` and `/readyz?verbose=1` on a scanner pod's port 8081: the check `scanner` names the reason: `certificate` (the pair or the internal CA did not load, or the pair does not allow client authentication), `analyser` (the binary does not answer its version), `spool` (the working directory is not writable) or `draining`.
+2. For a certificate refused on a link, check its usages: `openssl x509 -in tls.crt -noout -ext extendedKeyUsage` must list `TLS Web Client Authentication` beside `TLS Web Server Authentication`, or name no usage at all. With cert-manager add `client auth` to `usages` ([TLS and certificates](tls-and-certificates.md#the-links-of-the-image-scanning)).
+3. For `pull_refused`, compare the key ring Secret of the worker and `packages` Deployments and the nodes' clocks.
+
+**When to escalate.** To the maintainers when the scanner pods are ready and the codes persist: attach a scanner's and a worker's log lines of one scan ID (`scan_id`), never a token.
 
 ## A certificate that does not rotate
 
@@ -246,6 +270,7 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderVulnerabilityMaliciousRecordRejected` | critical | A malicious-package record was rejected, so that package is not flagged | The worker log; the entry, by size or by validation |
 | `QuaderVulnerabilityClaimedNameMalicious` | critical | A malicious advisory names a package name you treat as internal | `GET /api/v1/vulnerabilities/claimed-name-matches`; treat it as a dependency-confusion attempt |
 | `QuaderVulnerabilityImageScansFailing` | warning | Images are being scanned and none has finished | The result codes of `quader_vuln_image_scans_total`; the image's `scan_failed` |
+| `QuaderVulnerabilityImageScannerUnavailable` | warning | For half an hour scans were put off because the scanner or its pull could not work, and none finished | [The image scanner](#an-image-scanner-that-does-not-answer) |
 | `QuaderMirrorFailing` | warning | A mirror failed three pass attempts in a row | [Mirror](#a-mirror-that-is-stuck) |
 | `QuaderMirrorStale` | warning | A mirror is over an hour behind its schedule | [Mirror](#a-mirror-that-is-stuck); the queue `mirror` is claimed |
 

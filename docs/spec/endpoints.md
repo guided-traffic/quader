@@ -240,7 +240,7 @@ Priority: **MVP** · Covers: quader-only
   `packages` alone, a `packages` process none whose surface is `api` and `ci_exchange` alone. On the endpoint `customers` with
   the surface `[packages, files, api]` both main Deployments open `:8443`, each with its own families only (`api` serves `api`,
   `packages` serves `packages` and `files`). The development roles `web` and `all`, which the chart never renders, serve every family.
-- **The scan listener** (specified, not built; [architecture.md](architecture.md) R-ARCH-037, ADR-212). A `packages` process, and `all`
+- **The scan listener** ([architecture.md](architecture.md) R-ARCH-037, ADR-212). A `packages` process, and `all`
   and `web`, opens one more listener on `server.scan_listen` when it is set (the chart sets `:8082` on the main `packages` Deployment while
   the image scanning or the malware scanning is on, never on a pool). Its endpoint is the reserved `scan`: built in, never configured, with the surface
   `[packages]`, no host check (no `421`), no rate-limit class of R-EP-015, its own in-flight bound of 64, no exposure rules, the cache-fill

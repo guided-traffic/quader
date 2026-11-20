@@ -56,7 +56,7 @@ selects are never touched.
 
 | Target | Script | What it does |
 |---|---|---|
-| `make dev-up` | `up.sh` | creates the cluster and installs everything; idempotent (a second run takes about 40 s). In the default mode the ID of the loaded Quader image is a pod annotation (`quader-dev/image-id`; the published mode sets none, [below](#environment)), so a newly built image rolls the `api`, `packages` and `worker` pods (the pool inherits the annotation of `worker`) and an unchanged one rolls nothing |
+| `make dev-up` | `up.sh` | creates the cluster and installs everything; idempotent (a second run takes about 40 s). In the default mode the ID of the loaded Quader image is a pod annotation (`quader-dev/image-id`; the published mode sets none, [below](#environment)), so a newly built image rolls the `api`, `packages`, `worker` and `scanner` pods (the pool inherits the annotation of `worker`) and an unchanged one rolls nothing. `QUADER_IMAGE` names the image to load; the chart's `image.repository` stays `guidedtraffic/quader` unless `QUADER_HELM_EXTRA` sets it (an image loaded as `quader-x:dev` is `--set image.repository=library/quader-x`) |
 | `make dev-down` | `down.sh` | deletes the kind cluster `quader` and `.dev/` |
 | `make dev-failover` | `failover.sh [instance]` | PostgreSQL switchover to a ready standby on a schedulable node, waits until the old primary is a standby again and the new one serves `quader-db-rw`. Before it asks it waits up to 180 s for the CloudNativePG operator (a ready pod holds its lease) and a settled cluster (no switchover in flight, every instance ready), and fails naming the precondition it did not see ([Q-HA-126](../spec/ha-and-helm.md#q-ha-126--the-node-clearance-moves-the-primaries-before-the-cordon-and-failoversh-waits-for-what-a-switchover-needs)) |
 | `make dev-valkey-failover` | `valkey-failover.sh` | `SENTINEL FAILOVER quader-valkey`, waits until another pod is primary |
@@ -270,8 +270,9 @@ operator writes the StatefulSets, Services, ConfigMaps, the certificate request 
   values Quader's spec names). After a failover the Sentinels refuse another automatic one for twice the failover
   timeout (120 s); a `SENTINEL FAILOVER` does not wait for that.
 - The operator's NetworkPolicy admits only its own components; `quader-valkey-clients` (in valkey.yaml) admits the pods
-  labelled `app.kubernetes.io/name=quader` and `quader/serve=true` (the chart's `api`, `packages` and `worker` pods, and the e2e driver)
-  on 16379 and 36379. kind's CNI enforces both.
+  labelled `app.kubernetes.io/name=quader` and `quader/serve=true` whose component is `api`, `packages`, `worker` or `e2e-driver`
+  on 16379 and 36379: not the `scanner`, which carries the serve label for the ops Service and holds no Valkey credential
+  (Q-HA-344). kind's CNI enforces both.
 - Pods are spread by zone (`antiAffinity` `hard` on `topology.kubernetes.io/zone`, each StatefulSet repels its own
   kind) and have PodDisruptionBudgets (data `maxUnavailable: 1`, Sentinel `minAvailable` = quorum).
 - `kubectl rollout status` does not work on these StatefulSets (update strategy `OnDelete`): the scripts wait for

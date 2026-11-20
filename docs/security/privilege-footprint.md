@@ -124,7 +124,7 @@ Kubernetes API. The chart cannot set Pod Security Admission labels on a namespac
 
 ## The scanner
 
-Specified, not built ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment),
+Built ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml),
 [R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)). The pod that analyses container
 images, the parser of the most hostile input Quader reads, has the smallest footprint of the release:
 
@@ -134,9 +134,9 @@ images, the parser of the most hostile input Quader reads, has the smallest foot
 | Valkey | nothing: no credential, no connection; Valkey's ingress example of R-HA-042 does not list the component `scanner` |
 | Object store | nothing: no credential, no connection |
 | Key ring | nothing: no key file; it cannot sign or verify a token or open a sealed secret |
-| Kubernetes | nothing: no service-account token, no RBAC |
+| Kubernetes | nothing: no service-account token, no RBAC; the pod names no service account of the chart, which may carry a cloud identity of the object store, and runs under the namespace's `default` ([Q-HA-343](../spec/ha-and-helm.md#q-ha-343--the-scanner-pod-names-no-service-account-of-the-chart), [H-1070](#h-1070--the-scanner-runs-under-the-namespaces-default-service-account)) |
 | The registry | pull, through the scan listener of `packages`, of the one manifest and the blobs of its name that the call's scan token names, for the token's minutes; never fill a remote, never write |
-| The pod | the security context of every pod; one writable spool and `/tmp`; the chart's TLS pair (or its own) and the internal CA |
+| The pod | the security context of every pod; one writable spool and `/tmp`; the chart's TLS pair (or its own) and the internal CA; with `tls.ops.secretName` the pair of the operations listener ([Q-HA-340](../spec/ha-and-helm.md#q-ha-340--with-tlsops-the-scanner-mounts-the-pair-of-its-operations-listener)) |
 
 What an analyser that an image took over can do with this footprint is on [image-scanning.md](image-scanning.md). What it does not bound is
 the network: [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner).
@@ -158,10 +158,10 @@ another, because replicas never talk to each other:
 | Pods | Ingress admitted | Egress |
 |---|---|---|
 | `api`, `packages` and their path pools | `:8080` from `networkPolicy.ingress.http.from` (empty: from anywhere); the port of each further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty: from anywhere); `:8081` from `networkPolicy.ingress.ops.from` (default: the `monitoring` namespace) and `networkPolicy.ingress.probeCIDRs` | not rendered |
-| the main `packages` Deployment, in addition (specified, not built) | `:8082`, the scan listener, from the `scanner` pods only ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart)) | not rendered |
+| the main `packages` Deployment, in addition, while the image scanning is on | `:8082`, the scan listener, from the `scanner` pods only ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart)) | not rendered |
 | the endpoint pools of further endpoints | the endpoint's port, from its `networkPolicy.from`; `:8081` from the ops sources | not rendered |
 | `worker` and its pools | `:8081` only, from the ops sources | not rendered |
-| `scanner` (specified, not built) | `:8080` from the pods of the worker Deployment that claims the queue `vuln` only; `:8081` from the ops sources | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
+| `scanner` ([scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml)) | `:8080` from the pods of the worker Deployment that claims the queue `vuln` only; `:8081` from the ops sources | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
 | malware scanner (specified, not built) | `:8080` from the pods of the worker Deployments that claim the queue `malware` only; `:8081` from the ops sources; the scan listener `:8082` of `packages` also admits it ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
 | migration Job, backup CronJob's pods, restore Job, post-restore Job | nothing (`ingress: []`) | not rendered |
 
@@ -257,3 +257,16 @@ runtime login owns the tables, and the revocation does not apply ([H-71](#h-71--
 Subject: the append-only property of the audit trail against a runtime role.
 
 What makes it real: the audit tables created without the check, or a later `GRANT` that re-opens a write the design revokes.
+
+### H-1070 · The scanner runs under the namespace's `default` service account
+
+Stage: the pod of [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml), which names no service account
+([Q-HA-343](../spec/ha-and-helm.md#q-ha-343--the-scanner-pod-names-no-service-account-of-the-chart)).
+
+Dormant with the chart's defaults: `automountServiceAccountToken: false`, and the chart gives `default` no RBAC and no annotation. Subject:
+whatever a cluster attaches to the namespace's `default` account: an RBAC binding, an image pull secret, or a cloud identity that a
+web-identity webhook injects as a projected token by the account's annotation, which `automountServiceAccountToken: false` does not stop.
+An analyser that an image took over would then hold that identity.
+
+What makes it real: an operator or a platform default that binds a right or a cloud identity to `default` in the release's namespace. Leaving
+`default` bare, or running Quader in a namespace of its own, keeps it dormant; the chart does not check it.

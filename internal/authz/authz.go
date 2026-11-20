@@ -143,6 +143,9 @@ type Subject struct {
 	// MinEpoch is the value of the Quader-Authz-Min-Epoch header (R-AUTHZ-032); zero
 	// when absent.
 	MinEpoch int64
+	// SystemRepo is the repository the credential of a system subject names (Kind system, system.go): the one entry of a
+	// scan token's grant (R-OCI-037). Set by edge.SubjectOf only; zero for every other subject.
+	SystemRepo qname.Repo
 }
 
 // Coordinate is the authorization view of the request descriptor (R-REPO-003).

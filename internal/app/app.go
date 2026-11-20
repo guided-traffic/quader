@@ -186,6 +186,8 @@ type App struct {
 	checkBucket     late[platform.Bucket]
 	// registryMetrics are the counters of the registry token service, shared by every endpoint (wire_registry.go).
 	registryMetrics *registrytoken.Metrics
+	// scannerSrv is the scanner's listener of the roles scanner and all (wire_scanner.go); nil elsewhere.
+	scannerSrv *httpserver.Server
 	// probeState holds the counters of the background downloads a probe starts (wire_background_download.go).
 	probeState
 }
@@ -414,6 +416,13 @@ func (a *App) bootstrap(ctx context.Context) error {
 			return err
 		}
 	}
+	// The scanner's listener (R-ARCH-036), and in the role all the links to the process's own listeners (Q-ARCH-531).
+	if a.sub.Scanner {
+		if err := a.startScanner(); err != nil {
+			return err
+		}
+	}
+	a.linkLoopback()
 
 	// Step 10: the start-up check passes, once Valkey has answered or the bound
 	// has passed (R-HA-008, Q-HA-13).
@@ -430,7 +439,8 @@ func (a *App) bootstrap(ctx context.Context) error {
 // startGauges registers the gauges that read PostgreSQL and starts the loop that
 // refreshes the database gauges.
 func (a *App) startGauges(ctx context.Context) {
-	if !a.sub.Shell {
+	if !a.sub.Shell && a.sub.MainPool {
+		// The gauges read PostgreSQL: the role scanner has no database (R-ARCH-036).
 		a.registerGauges()
 	}
 	a.tele.metrics.DBGauges().SetLogger(a.log)

@@ -34,11 +34,11 @@ func TestTheRegistryMatchIsTheDispatchers(t *testing.T) {
 		{"HEAD", "/v2", qname.Repo{}, route.Target{Route: route.NameVersion}},
 		{"GET", "/v2/_catalog", qname.Repo{}, route.Target{Route: route.NameCatalog}},
 		{"POST", "/v2/_token", qname.Repo{}, route.Target{Route: route.NameToken}},
-		{"GET", "/v2/web/docker-local/library/nginx/manifests/1", qname.Repo{}, route.Target{Route: "oci.manifest.get.tag", Repo: local, Image: "library/nginx"}},
-		{"PUT", "/v2/web/docker-local/library/nginx/manifests/1", qname.Repo{}, route.Target{Route: "oci.manifest.put", Repo: local, Image: "library/nginx"}},
+		{"GET", "/v2/web/docker-local/library/nginx/manifests/1", qname.Repo{}, route.Target{Route: "oci.manifest.get.tag", Repo: local, Image: "library/nginx", Reference: "1"}},
+		{"PUT", "/v2/web/docker-local/library/nginx/manifests/1", qname.Repo{}, route.Target{Route: "oci.manifest.put", Repo: local, Image: "library/nginx", Reference: "1"}},
 		{"POST", "/v2/web/docker-local/app/blobs/uploads/", qname.Repo{}, route.Target{Route: "oci.upload.start", Repo: local, Image: "app"}},
-		{"GET", "/v2/web/docker-hub~cache/library/alpine/blobs/" + digest, qname.Repo{}, route.Target{Route: "oci.blob.get", Repo: hub, Image: "library/alpine", CacheView: true}},
-		{"GET", "/v2/library/alpine/manifests/3", hub, route.Target{Route: "oci.manifest.get.tag", Repo: hub, Image: "library/alpine", Bound: true}},
+		{"GET", "/v2/web/docker-hub~cache/library/alpine/blobs/" + digest, qname.Repo{}, route.Target{Route: "oci.blob.get", Repo: hub, Image: "library/alpine", CacheView: true, Reference: digest}},
+		{"GET", "/v2/library/alpine/manifests/3", hub, route.Target{Route: "oci.manifest.get.tag", Repo: hub, Image: "library/alpine", Bound: true, Reference: "3"}},
 	} {
 		req := httptest.NewRequestWithContext(context.Background(), c.method, c.path, nil)
 		if !c.bound.IsZero() {

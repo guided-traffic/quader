@@ -403,6 +403,14 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 	// The block of the vulnerability scanning comes after the format's own check, so that a version the caller may not
 	// read stays the format's 404 (R-VULN-015); every route that serves a stored item passes here: the format's
 	// downloads, the remote hit and the cache view, and every tier of virtual resolution.
+	if systemRead(rq) {
+		// The image scanning's pull is no delivery (system_read.go): no block gate, no download count; its bytes are recorded
+		// under the subject system of the repository that served (Q-LIM-66).
+		limits.FromContext(ctx).Served(row.RepoID)
+		return edge.ServeItem(w, rq.Request, row,
+			func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) },
+			edge.ServeOptions{Buffer: s.h.o.DownloadBuffer})
+	}
 	if err := s.h.refuseBlocked(ctx, rq, it.Ref.Repo, row); err != nil {
 		bastionmain.NoteUnknown(ctx) // a block is never a negative entry (R-BAS-013)
 		return err
@@ -434,6 +442,9 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 // RecordDownload implements [formats.ItemStore]: the download statistics, the repository's activity and the audit event of a
 // download the format answered itself (R-STOR-015, R-API-079). An item that cannot be read is not counted.
 func (s itemStore) RecordDownload(ctx context.Context, rq *formats.Request, it formats.Item) {
+	if systemRead(rq) {
+		return // the image scanning's pull counts no download (system_read.go)
+	}
 	row, err := s.row(ctx, it)
 	if err != nil {
 		return

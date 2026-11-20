@@ -50,7 +50,7 @@ and it refuses a forward outside `/api/<format>/` and `/files/` before the authe
 ## What runs where
 
 `SubsystemsFor` ([roles.go](../../internal/app/roles.go)) encodes the table of R-ARCH-001 for the roles `api`, `packages`, `worker`,
-`web` and `all`. `api`, `packages` and `web` have a client and an ops listener, the main pool, Valkey, the change poll and the registry;
+`scanner`, `web` and `all`. `api`, `packages` and `web` have a client and an ops listener, the main pool, Valkey, the change poll and the registry;
 `worker` has no client listener, plus the lease pool and the job loops; `all` is both and logs a warning, and `web` (`api` and
 `packages` in one process, the replica of the integration tests, never rendered by the chart) logs one too. A `worker` has no socket on `:8080`; a test proves it (`R-ARCH-001 a worker replica opens no
 client socket`). `Subsystems.Families` is the list of route families the role serves (`config.RoleFamilies`).
@@ -69,6 +69,7 @@ of the client listener are split by route family:
 | `packages` | `packages`, `files` | `limits`, `proxy-engine`, `virtual-engine`, `formathost`, `auth` (tokens only), `endpoints`, `api` | `sessions`, `login`, `ui-assets`, `ci_exchange`, `packages-api`, `vuln-api` |
 | `web`, `all` | all | the union | none |
 | `worker` | none | none | all |
+| `scanner` | none | the area `scanner` alone: no infrastructure area at all | everything else |
 
 The area `mirror` (the mirror's counters and gauges and, at the first job of a process that claims one, the engine, [mirror.md](mirror.md)) is on every role: its gauges are what the alerts read (Q-OPS-171). The area `mirror-engine` (the remote engine and the format host behind `mirror.Host`: the client path's in `all`, an engine of its own in `worker`) is built on `worker` and `all` only, the roles with job loops (Q-ARCH-316).
 
@@ -113,6 +114,15 @@ behind them reaches the format's serve check through the host of `wireServeCheck
 
 A `worker` claims the queues of `jobs.queues`, or all but `jobs.exclude_queues` (R-ARCH-016, built:
 [coordination.md](coordination.md#queues-and-the-queues-a-process-claims)); the advisory sync runs on the queue `vuln`.
+
+**The role `scanner`** (R-ARCH-036, ADR-212) is the one role without data credentials: `SubsystemsFor("scanner")` has the area `scanner`
+(the step `wireScanner`, `onScanner|onAll`, with the blob area optional so that `all` hands its spool over), the ops listener and the
+scanner's listener on `server.listen`, and no main pool, Valkey, registry row or client listener. Its configuration load resolves no secret
+file and validates only the keys it reads (`config.ScannerReads`, Q-ARCH-527). It is the first seam between roles: the worker calls it
+over mutual TLS, and it pulls from the scan listener that `packages`, `web` and `all` open on `server.scan_listen` (the reserved endpoint
+`scan`, R-ARCH-037). In `all` both listeners are on loopback and `linkLoopback` points the process's own links at them after step 9
+(Q-ARCH-531). The request path and the files are in [vulnerabilities.md](vulnerabilities.md#the-role-scanner); the TLS of the links is
+[TLS between Quader's pods](#tls-between-quaders-pods) below.
 
 ## Request path (client listener)
 
@@ -249,6 +259,21 @@ keeps the previous pair, counts `quader_tls_reload_errors_total` and logs an err
 offers ECDHE AEAD suites only, ALPN offers `h2` and `http/1.1`. Each further endpoint listener takes its own block
 the same way, with the reloader label `client:<endpoint>` (R-EP-004, [endpoints.md](endpoints.md#tls)). Details, rotation and
 tests: [tls.md](tls.md).
+
+### TLS between Quader's pods
+
+The two links of the image scanning (R-ARCH-038) are mutual TLS with the pair of `server.tls` on both sides and the trust anchor
+`server.internal_tls.ca_file`, which no other connection reads:
+
+| Side | Built by | What it does |
+|---|---|---|
+| the scanner's listener (`scanner`, `all`), the scan listener (`packages`, `web`, `all`) | `httpserver.NewLinkListenerTLS` ([link_tls.go](../../internal/httpserver/link_tls.go)) | serves the pair, requires a client certificate that chains to the internal CA, whatever `server.tls.client_auth` says; reloads like every listener |
+| the worker's client to the scanner, the scanner's client to the scan listener | `httpserver.NewLinkTLS` and `outbound.LinkClient` ([outbound/link.go](../../internal/outbound/link.go)) | presents the first pair of `server.tls`, verifies the far end against the internal CA under the link's `server_name` (else the URL's host), follows no redirect; one connection per call; the reloader's kind is `client` |
+
+`httpserver.ClientAuthFit` checks that the pair allows client authentication (the extended key usage `client auth`, or none): the worker
+at start and before each call, logging the reason once per loaded pair; the scanner in its readiness, so a scanner whose pair does not stays
+not ready (R-HA-063). Without `server.tls` both links are
+plain HTTP (the chart's `tls.enabled: false`, H-1043). The only place that dials is still the outbound package (R-ARCH-022).
 
 ## Start-up
 

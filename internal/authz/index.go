@@ -85,6 +85,8 @@ type repoInfo struct {
 	deployTarget qname.Repo
 	// cacheFill is the cacheFillAction of a remote repository.
 	cacheFill string
+	// disabled is the repository's switch; the fixed rule of a system subject reads it (system.go).
+	disabled bool
 	// ownership is the packageOwnership of a local repository, "" when the
 	// document has none (R-AUTHZ-018).
 	ownership string
@@ -206,7 +208,10 @@ func (x *Index) Epoch() int64 { return x.label.AuthzEpoch }
 
 func parseRepoConfig(raw []byte) (c struct {
 	HideExistence string `json:"hideExistence"`
-	Remote        struct {
+	// Disabled is read for the fixed rule of the system subjects only (system.go): a client's request on a disabled
+	// repository is answered by the repository layer.
+	Disabled bool `json:"disabled"`
+	Remote   struct {
 		CacheFillAction string `json:"cacheFillAction"`
 	} `json:"remote"`
 	Local struct {
@@ -386,7 +391,7 @@ func (b *builder) addRepositories(rows []q.AuthzBuildRepositoriesRow, members []
 			repoView:  repoView{ID: r.ID, Name: qname.Repo{Project: r.ProjectKey, Key: r.Key}, Class: repository.Class(r.Class), Format: r.Format},
 			artifacts: artifacts, wiki: wiki,
 			hide: cfg.HideExistence, members: members, deployTarget: target,
-			cacheFill: cfg.Remote.CacheFillAction, ownership: cfg.Local.PackageOwnership,
+			cacheFill: cfg.Remote.CacheFillAction, ownership: cfg.Local.PackageOwnership, disabled: cfg.Disabled,
 		}
 		if artifacts == LevelPublic {
 			b.x.publicContent = true

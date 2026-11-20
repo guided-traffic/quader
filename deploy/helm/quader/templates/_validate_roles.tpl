@@ -92,14 +92,13 @@ root context.
 {{- else -}}
 {{- $claimsVuln = not (has "vuln" ($u.excludeQueues | default list)) -}}
 {{- end -}}
-{{- /* The working space of the image scanning is admitted through the same budget (Q-VULN-145): the unpacked database (1.6 GiB on 2026-11-10, allowed 2 GiB: a source that is off leaves the stored one in place), the largest image, and a margin for the other users of the spool. A budget below the sum would refuse the largest images. */ -}}
+{{- /* The working space of the image scanning's detection is admitted through the same budget (Q-VULN-145, Q-HA-318): the unpacked database (1.6 GiB on 2026-11-10, allowed 2 GiB: a source that is off leaves the stored one in place) and a margin for the detections and the other users of the spool. The images themselves are analysed in the scanner's spool (templates/_scanner.tpl). */ -}}
 {{- if and $claimsVuln $imagesOn -}}
-{{- $maxImage := include "quader.bytes" (dig "max_image_size" "3GiB" $images) | int64 -}}
 {{- $database := 2147483648 -}}
 {{- $margin := 536870912 -}}
-{{- $need := add $maxImage $database $margin -}}
+{{- $need := add $database $margin -}}
 {{- if gt $need $budget -}}
-{{- fail (printf "quader: the spool budget of %d bytes of Deployment %s, which claims the queue vuln (spool size minus spool.headroom), cannot hold the image scanning: config.vulnerabilities.images.max_image_size (%v) plus 2GiB for the unpacked vulnerability database plus 512MiB for the other work of the spool is %d bytes; raise worker.spool.sizeLimit or spool.sizeLimit, lower max_image_size, or set config.vulnerabilities.images.enabled: false (Q-VULN-145)" $budget $dep (dig "max_image_size" "3GiB" $images) $need) -}}
+{{- fail (printf "quader: the spool budget of %d bytes of Deployment %s, which claims the queue vuln (spool size minus spool.headroom), cannot hold the image scanning's detection: 2GiB for the unpacked vulnerability database plus 512MiB for the detections and the other work of the spool is %d bytes; raise worker.spool.sizeLimit or spool.sizeLimit, or set config.vulnerabilities.images.enabled: false (Q-HA-318)" $budget $dep $need) -}}
 {{- end -}}
 {{- end -}}
 {{- if and $claimsVuln $osvOn -}}

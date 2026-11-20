@@ -56,6 +56,8 @@ type vulnArea struct {
 	metrics *vmetrics.Metrics
 	// images is the scanning of container images; nil on a replica that runs no jobs, or where the analyser is not installed.
 	images *imagescan.Service
+	// scannerClient is the worker's call of the role scanner (wire_vuln_scanner_call.go); nil where images is.
+	scannerClient *imagescan.Client
 	// dbCommit stores the archive of the vulnerability database of the image scanning; nil where no job runs.
 	dbCommit vsync.DBCommitter
 	// wakeImages enqueues the scan of images in a commit's transaction; nil where no job queue is wired.

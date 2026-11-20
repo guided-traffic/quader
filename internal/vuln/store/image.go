@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
@@ -51,6 +52,8 @@ type ImageDue struct {
 	Name     string
 	Digest   [32]byte
 	Attempts int
+	// Repo is the qualified name of the repository, which the scan token and the call to the scanner name (R-VULN-041).
+	Repo qname.Repo
 }
 
 // Discover adds the scan rows of manifests that have none, at most limit, and reports how many it added.
@@ -72,9 +75,7 @@ func (s *Images) Due(ctx context.Context, dbDigest string, maxAttempts, limit in
 		}
 		out = make([]ImageDue, 0, len(rows))
 		for _, r := range rows {
-			d := ImageDue{RepoID: r.RepoID, Name: r.Name, Attempts: int(r.Attempts)}
-			copy(d.Digest[:], r.Digest)
-			out = append(out, d)
+			out = append(out, imageDue(r.RepoID, r.Name, r.Digest, r.Attempts, r.ProjectKey, r.RepoKey))
 		}
 		return nil
 	})

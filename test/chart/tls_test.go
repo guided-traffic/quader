@@ -170,10 +170,16 @@ func TestTLS(t *testing.T) {
 		if secretVolume(worker, "quader-ops-tls") == nil {
 			t.Error("quader-worker does not mount quader-ops-tls")
 		}
-		for _, s := range []string{"quader-tls", "quader-edge-ca"} {
-			if secretVolume(worker, s) != nil {
-				t.Errorf("quader-worker mounts %s although it serves no listener that loads it", s)
-			}
+		if secretVolume(worker, "quader-edge-ca") != nil {
+			t.Error("quader-worker mounts quader-edge-ca although it serves no listener that loads it")
+		}
+		// The pair reaches the worker only as the identity it presents to the scanner while the image scanning is on (R-HA-066).
+		if secretVolume(worker, "quader-tls") == nil {
+			t.Error("quader-worker does not mount quader-tls, which it presents to the scanner")
+		}
+		_, off := render(t, haIngress(), "config.vulnerabilities.images.enabled=false")
+		if secretVolume(at(find(off, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls") != nil {
+			t.Error("quader-worker mounts quader-tls with the image scanning off, although it serves no listener that loads it")
 		}
 	})
 
@@ -395,10 +401,14 @@ func TestTLSMountsFollowTheListeners(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-030 with tls.ops the worker does not mount the private key of :8080 and the web pods do", func(t *testing.T) {
-		_, docs := render(t, required(), "tls.ops.secretName=quader-ops-tls")
+	t.Run("R-HA-030 R-HA-066 with tls.ops the worker mounts the pair of :8080 only to present it to the scanner, and the web pods do", func(t *testing.T) {
+		_, docs := render(t, required(), "tls.ops.secretName=quader-ops-tls", "config.vulnerabilities.images.enabled=false")
 		if secretVolume(at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls") != nil {
-			t.Error("quader-worker mounts quader-tls")
+			t.Error("quader-worker mounts quader-tls with the image scanning off")
+		}
+		_, on := render(t, required(), "tls.ops.secretName=quader-ops-tls")
+		if secretVolume(at(find(on, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls") == nil {
+			t.Error("quader-worker does not mount quader-tls, which it presents to the scanner")
 		}
 		if secretVolume(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"), "quader-tls") == nil {
 			t.Error("quader-packages does not mount quader-tls")

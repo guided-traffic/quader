@@ -165,6 +165,7 @@ Built (M4b, vulnerability scanning, beta phase 6; [spec](docs/spec/vulnerability
 
 - 🗄️ **Own advisory mirror and offline import.** The `worker` role copies the OSV archives of npm and NuGet (GitHub Advisory Database, OpenSSF malicious packages) and the CISA KEV catalog into PostgreSQL, incrementally every 15 minutes and in full weekly, behind guards for digest, size, shrink and invalid records; an installation without internet access imports the same files from a generic local repository (`mode: repository`). See [advisory sources](docs/manual/admin/vulnerability-sources.md).
 - 🔍 **Matching and findings with triage.** A stored version is matched by name and version, never by its bytes, in its commit and again when the data changes; public advisories never apply to a claimed internal name. A finding is `needs_triage`, `confirmed`, `blocked`, `dismissed` or `resolved`, changed one by one or in bulk by holders of `vulnerabilities:triage`, with history and audit. See [vulnerabilities](docs/manual/user/vulnerabilities.md).
+- 🔬 **Container images analysed in pods without secrets.** The pinned analyser reads an image's layers in the pods of the role `scanner`, which hold no database, object-store, Valkey or key-ring credential; the worker calls them over mutual TLS with a scan token for one manifest, keeps their package list written anew, and detects against the database itself. See [image scanning](docs/security/image-scanning.md).
 - ⛔ **Download blocking.** An open malicious finding blocks its version (`blockMalicious`, on by default); any other finding blocks only when a triager blocks it, and `onMissingData: block` refuses what cannot be evaluated yet (`vulnerability_data_missing`); `403 vulnerability_blocked` on the format routes, `/files/`, the cache view and every virtual tier, and a blocked remote miss is never fetched. `vulnerabilities.enforcement: report` only counts. See [download block](docs/security/vulnerability-scanning.md#download-block).
 - 🧾 **NuGet audit warnings from Quader's data.** `nuget.vulnerabilityInfo` (local by default while scanning is on) lists `VulnerabilityInfo/6.7.0` in the service index and serves `vulnerabilities/index.json` and `quader.json`, so `dotnet restore` reports NU1901 to NU1904; internal names are left out. See [client audits](docs/security/vulnerability-scanning.md#client-audits).
 - 📊 **Vulnerability report and package-page tab.** The Vulnerabilities screen (counts, trend, filters, CSV export, finding, advisory and advisory-source pages), the API under `/api/v1/vulnerabilities/`, and a Vulnerabilities tab on the page of a version, each narrowed to the findings the caller can read. See [vulnerabilities](docs/manual/user/vulnerabilities.md).
@@ -197,8 +198,10 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 | Name | Value | Source |
 |---|---|---|
 | Binary | `quader`, static (`CGO_ENABLED=0`); `make build` writes `bin/quader` | `Makefile`, `cmd/quader` |
-| Roles | `api`, `packages`, `worker`, `web`, `all` (`web` and `all` are for runs outside the chart) | `cmd/quader/serve.go`, `internal/config/process.go` |
+| Roles | `api`, `packages`, `worker`, `scanner`, `web`, `all` (`web` and `all` are for runs outside the chart) | `cmd/quader/serve.go`, `internal/config/process.go` |
 | Default client listener | `:8080` (`server.listen`) | `internal/config/server.go` |
+| Scanner's listener | `:8080` (`server.listen`) of the role `scanner`, route `POST /scan/v1/analyses`, mutual TLS; in `all` a loopback port | `internal/app/wire_scanner.go`, `internal/vuln/scanner` |
+| Scan listener | `server.scan_listen` (the chart: `:8082` on the main `packages` Deployment), the reserved endpoint `scan`, mutual TLS, scan tokens only | `internal/app/wire_scan_listener.go`, `internal/config/server_scanner.go` |
 | Ops listener | `:8081` (`server.ops_listen`) | `internal/config/server.go` |
 | Further endpoint listener | any free port, one per endpoint, name `^[a-z][a-z0-9-]{0,19}$` (`server.endpoints.<name>.listen`) | `internal/config/endpoints.go` |
 | Endpoint name in metrics, logs and spans | `default` for the default endpoint, the configured name otherwise; a name outside the configured set folds into `_other` | `internal/observability` |
@@ -418,6 +421,7 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Job of a backup run | `QUADER_JOB_NAME`, set by the chart on the backup CronJob's pods from the label `job-name` and recorded in `backup_run`: the retry pod of the same Job waits for its predecessor's lease instead of exiting `3` ([R-BAK-010](docs/spec/backup-and-restore.md#r-bak-010--one-target-writing-operation-at-a-time)). Empty outside a Job | yes (`_backup.tpl`, `cmd/quader/backup_create.go`) |
 | Scratch of the backup, restore and post-restore pods | `TMPDIR=/tmp`, an `emptyDir` of `backup.tmpSizeLimit` (the commands use at most 64 MiB of it) | yes (`_backup.tpl`) |
 | Worker queues | `QUADER_JOBS_QUEUES='["vuln"]'` on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES='["index","vuln"]'` on the main worker beside pools (JSON lists) | yes (`_deployment.tpl`) |
+| Scan listener | `QUADER_SERVER_SCAN_LISTEN=:8082`, set by the chart on the main `packages` Deployment while the image scanning is on | yes (`_scanner.tpl`) |
 | Object-store settings from a Secret | `QUADER_STORAGE_S3_BUCKET`, `QUADER_STORAGE_S3_ENDPOINT`, `QUADER_STORAGE_S3_REGION`, each read from a key of `secrets.s3` when that key is set | yes (`deploy/helm/quader/templates/_endpoints.tpl`) |
 | Dev profile | `QUADER_DEV_HTTP_PORT` (edge port, default `8080`), `QUADER_PROFILE` (`default` or `scatter`) | yes (`deploy/dev/`) |
 | M1 settings | `QUADER_<SECTION>_<KEY>` for `auth`, `authz`, `api`, `repositories`, with nested keys joined by `_`: `QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE`, `QUADER_API_RATE_LIMITS_EXEMPT_ADMINS` (the rule of the configuration override above) | yes |
@@ -429,6 +433,8 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Listener certificate mount | `/var/run/secrets/quader/tls/` (`tls.crt`, `tls.key`; only in pods that load the pair, see `tls.ops`) | yes (`_secrets.tpl`) |
 | Listener client CA mount | `/var/run/secrets/quader/tls-client-ca/ca.crt` (the pods that open :8080: `api`, `packages` and their path pools) | yes |
 | Ops listener certificate mount | `/var/run/secrets/quader/tls-ops/` | yes |
+| Internal CA mount | `/var/run/secrets/quader/tls-internal/ca.crt` (`ca.crt` of `tls.secretName`; renders `server.internal_tls.ca_file`): the trust anchor of the links of the image scanning, in the `worker`, main `packages` and `scanner` pods, never in `api` pods | yes (`_scanner.tpl`) |
+| Scanner's own pair | `scanner.tls.secretName`, mounted at `/var/run/secrets/quader/tls/` in the `scanner` pods instead of the pair of `tls.secretName` | yes (`scanner.yaml`) |
 | Endpoint certificate mount | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`tls.crt`, `tls.key`; `n` is the position in `tls.certificates`), client CA at `…/<name>/client-ca/ca.crt` | yes (`_endpoints.tpl`) |
 | PostgreSQL CA and client pair | `/var/run/secrets/quader/database-ca/ca.crt`, `/var/run/secrets/quader/database-client/tls.{crt,key}` | yes |
 | Object-store CA | `/var/run/secrets/quader/s3-ca/ca.crt` (`secrets.s3CA`; renders `storage.s3.ca_file`) | yes |
@@ -579,6 +585,10 @@ The families of the vulnerability scanning (M4b), defined once in [internal/vuln
 | `quader_vuln_downloads_blocked_total` | `format`, `reason` (`malicious`, `triage`, `missing_data`), `mode` (`enforce`, `report`: the would-be refusals of `vulnerabilities.enforcement: report`) |
 | `quader_vuln_audit_requests_total` | `format`, `mode` (`local`, `forward`, `disabled`), `outcome` (`ok`, `refused`, `unavailable`, `error`): the npm bulk audits of every mode ([handlers_audit.go](internal/formats/npm/handlers_audit.go)); the NuGet vulnerability documents are not counted |
 | `quader_vuln_claimed_name_matches` | `ecosystem`, `kind` (`vulnerability`, `malicious`); gauge: public advisories that name a claimed internal name |
+| `quader_vuln_image_scans_total`, `quader_vuln_image_scan_duration_seconds` | `result` (`scanned`, or the code that ended or put off the scan: `scanner_busy`, `scanner_unavailable`, `registry_unavailable`, `pull_refused`, `scanner_lost`, `layer_missing`, …) on the worker |
+| `quader_scanner_analyses_total` | `result` (`analysed`, `cancelled`, or the code the call answered); on the `scanner` pods ([internal/vuln/scanner/metrics.go](internal/vuln/scanner/metrics.go)) |
+| `quader_scanner_analysis_duration_seconds` | `step` (`pull`, `analyse`) |
+| `quader_scanner_slots_busy` | none; gauge: the slots that hold an analysis |
 
 The families of the mirror mode (twelve, phase 6b, [R-REPO-057](docs/spec/repositories-and-proxy.md), defined in [internal/mirror/metrics.go](internal/mirror/metrics.go)); the label `repo` is the repository key, one value per mirrored repository, and no label carries a package name. The counters and `quader_mirror_concurrency` belong to the process that runs the pass and exist from the first pass attempt at 0; the gauges read from PostgreSQL and the interval gauge are exported by every process of every role (the area `mirror` is on all of them), through the database gauge source, once per `metrics.db_gauge_interval`, so that a mirror that nobody runs is still seen.
 
@@ -628,17 +638,17 @@ The label sets of the M1 families are not restated per family in this pass; read
 |---|---|---|
 | Chart | `deploy/helm/quader` | yes |
 | Sizing profiles | `deploy/helm/quader/profiles/small.yaml`, `medium.yaml`, `large.yaml` (R-HA-050), layered before your own values file | yes |
-| Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`) | yes |
+| Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`), `<fullname>-scanner` (`--role scanner`, while the image scanning is on) | yes |
 | Pools | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>` (path pools, with a Service of the same name), `<fullname>-worker-<pool>` (label `quader/pool: <pool>`) | yes (`_units.tpl`) |
 | Endpoint pools | `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>`, label `quader/pool: ep-<name>`, for an endpoint with `endpoints.<name>.pool.enabled` (one per role its surface holds) | yes (`_units.tpl`) |
 | Endpoint objects | `<fullname>-ep-<name>` (and `<fullname>-api-ep-<name>` for a surface over both roles) for the Services and the Ingress of a further endpoint | yes |
 | Disruption budgets, autoscalers | one per Deployment, named as the Deployment | yes |
 | Migration hook Job | `<fullname>-migrate`; not rendered while `restore.enabled`, because the restore applies the migrations itself | yes |
 | ConfigMap | `<fullname>-config`, holding `quader.yaml` | yes |
-| Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port) | yes |
-| Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing) | yes |
+| Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port); `<fullname>-scanner` (8080) and `<fullname>-packages-scan` (8082), always `ClusterIP`, while the image scanning is on | yes |
+| Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing); `<fullname>-scanner` admits 8080 from the worker that claims `vuln`, and `<fullname>-packages` 8082 from the scanner's pods | yes |
 | Edge | per host: `/` and `/api/v1` to `<fullname>-api`; `/api`, `/files`, `/v2`, `/.well-known` to `<fullname>-packages`; the paths of path pools to their Services | yes |
-| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 35 alerts: 29 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
+| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 36 alerts: 30 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
 | Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `quader backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so the render fails when `<fullname>-backup` exceeds 52 characters; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/quader/templates/backup.yaml)) |
 | Restore Job | `<fullname>-restore` with `restore.enabled`, `quader backup restore <restore.backupId>`; an ordinary Job, not a Helm hook | yes ([restore.yaml](deploy/helm/quader/templates/restore.yaml)) |
 | Post-restore Job | `<fullname>-post-restore-<the first 8 hex digits of the SHA-256 of postRestore.restoredTo>` with `postRestore.enabled`, annotation `quader/restored-to`, a `post-install,post-upgrade` hook; one Job per restore point | yes ([post-restore.yaml](deploy/helm/quader/templates/post-restore.yaml)) |
@@ -710,7 +720,10 @@ The label sets of the M1 families are not restated per family in this pass; read
 | Outbound purpose | `vuln_source` | the `kind` label of `quader_outbound_*` and the purpose of the upstream log |
 | Caches | `vuln_source_state` (safety TTL 60 s), `vuln_nuget_page` (the rendered NuGet page, at most four entries, safety TTL 15 min) | per replica; the change area `vuln_data` empties both, `claims` and `repo_config` the page too ([coordination.go](internal/vuln/coordination.go), [audits_pages.go](internal/vuln/store/audits_pages.go)) |
 | NuGet page | `@name` `quader`, at `<feed>/vulnerabilities/quader.json` | the one entry of `<feed>/vulnerabilities/index.json` |
-| Alerts | `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing` | the names `metrics.prometheusRule.disabledAlerts` accepts |
+| Image scanning's subject | `system:image-scanner`: the principal of a scan token on the scan listener; the usage store records it as `system`, credential `image-scanner` | read of the one repository its token names while it is active and not disabled, never fill ([system.go](internal/authz/system.go), [subject.go](internal/limits/subject.go)) |
+| Scan token | a registry token of the kind `scan`: claims `s` (`image-scanner`), `sid` (the scan ID the logs carry), `d` (the manifest's digest); endpoint `scan`; lifetime `vulnerabilities.images.pull_timeout` | [registrytoken/scan.go](internal/auth/registrytoken/scan.go) |
+| Scanner's answer header | `Quader-Analyser-Version` on the scanner's answer; `Quader-Error-Code: populate_not_permitted` on the scan listener's refusal of an uncached remote layer | [scanner.go](internal/vuln/scanner/scanner.go), [errors.go](internal/formats/oci/errors.go) |
+| Alerts | `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing` | the names `metrics.prometheusRule.disabledAlerts` accepts |
 | Tables | `vuln_source_state`, `vuln_advisory`, `vuln_affected`, `vuln_pending_evaluation`, `vuln_kev`, `vuln_claimed_match`, `vuln_finding`, `vuln_finding_event`, `vuln_sync_touched` | migrations 00035 to 00039; `vuln_finding` and `vuln_finding_event` are data in an export, the others transient ([tables_vuln.go](internal/meta/postgres/tables_vuln.go)) |
 
 ### Audit event types
@@ -1212,10 +1225,13 @@ struct tags (for example `database.password_file`) takes a file path only, read 
 
 ```yaml
 process:
-  role: ""                              # no default: api, packages, worker, web or all; required by serve
+  role: ""                              # no default: api, packages, worker, scanner, web or all; required by serve
 server:
-  listen: ":8080"                       # default: the default endpoint's listener
+  listen: ":8080"                       # default: the default endpoint's listener; in the role scanner the scanner's listener
   ops_listen: ":8081"                   # default
+  scan_listen: ""                       # default: none; example ":8082": the scan listener of packages, web and all, which accepts scan tokens only (the chart sets it on the main packages Deployment)
+  internal_tls:
+    ca_file: ""                         # default; example /var/run/secrets/quader/tls-internal/ca.crt: the CA the links of the image scanning verify both sides against; required with server.tls on the scanner, the scan listener and a worker while the image scanning is on (the chart sets it)
   read_header_timeout: 10s              # default; at least 1s
   idle_timeout: 120s                    # default
   transfer_stall_timeout: 60s           # default
@@ -1946,6 +1962,28 @@ vulnerabilities:
     resolved_retention: 9600h           # default (400 days); 1h to 87600h: vuln-findings-retention deletes older resolved findings and their events
   export:
     max_rows: 100000                    # default; at least 1: a larger export answers 422 export_too_large before anything is streamed
+  images:                               # the scanning of container images (R-VULN-033 to R-VULN-043)
+    enabled: true                       # default; false: no scanner, no scan listener, no image scans
+    binary: /usr/local/bin/trivy        # default: the pinned analyser of the image, in the scanner and the worker
+    scan_dir: ""                        # default: <storage.spool.dir>/imagescan; the analyses in the scanner, the detections in the worker
+    concurrency: 2                      # default; 1 to 64: calls one job has in flight; should not exceed the scanners' capacity (replicas x scanner.slots)
+    run_slice: 10m                      # default; 10s to 24h
+    scan_delay: 30s                     # default; 0 to 1h
+    max_attempts: 5                     # default; 1 to 100: attempts of an image before scan_failed; a put-off scan spends none
+    timeout: 15m                        # default; 10s to 24h: one step of the analyser
+    memory_limit: 512MiB                # default; at least 64MiB: the analyser's GOMEMLIMIT
+    max_layers: 256                     # default
+    max_image_size: 3GiB                # default: the compressed size; the scanner's spool holds slots x (this + 64 MiB)
+    max_uncompressed_size: 32GiB        # default
+    max_entries: 5000000                # default
+    pull_timeout: 10m                   # default; 1m to 1h: the scanner's pull, and the lifetime of a scan token
+    scanner:
+      url: ""                           # default; example https://quader-scanner.quader.svc:8080; required in a worker; empty in all = its own scanner over loopback (the chart sets it)
+      server_name: ""                   # default: the host of url; the chart sets <fullname>.<namespace>.svc
+      slots: 1                          # default; 1 to 16: analyses one scanner runs at once (H-1037 above 1)
+    registry:
+      url: ""                           # default; example https://quader-packages-scan.quader.svc:8082; required in the role scanner; empty in all = its own scan listener (the chart sets it)
+      server_name: ""                   # default: the host of url; the chart sets <fullname>.<namespace>.svc
 ```
 
 Security notes:
@@ -2171,6 +2209,8 @@ and the problem details of R-ARCH-023 with the `deb_*` codes of [error codes](#e
 | `bastions.trusted_proxies` | `[]` | The Bastions' egress addresses: their forwarded client address and host count only for a request that carries a valid Bastion token. Listed in `server.trusted_proxies` instead, the address would be believed for any request from it, Bastion token or not. A `/0` prefix is refused. | [Bastion](docs/security/bastion.md), [Q-BAS-116](docs/spec/bastion.md) |
 | `tracing.incoming_context`, `tracing.trusted_peers` | `trusted_peers`, `[]` | No incoming trace context is continued by default; only the listed peers can choose the trace ID. `server.trusted_proxies` grants no trace trust. | [roles and trust boundaries](docs/security/roles-and-trust-boundaries.md), [Q-OPS-32](docs/spec/operations-and-observability.md) |
 | `server.base_url` | empty | Empty is for development only. Set the `https` origin of the edge. | [R-OPS-005](docs/spec/operations-and-observability.md) |
+| `server.internal_tls.ca_file`, Helm `scanner.tls.secretName` | the chart's: `ca.crt` of `tls.secretName`, empty | The links of the image scanning are mutual TLS against this CA; the scanner presents the chart's pair by default, so an analyser that a hostile image took over can read the key the edge trusts. `scanner.tls.secretName` gives the scanner a pair of its own. With `tls.enabled: false` both links are plain HTTP. | [H-1035](docs/security/image-scanning.md#h-1035--the-scanner-holds-the-charts-tls-key-by-default), [H-1043](docs/security/image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated) |
+| `vulnerabilities.images.scanner.slots` | `1` | Above 1, the analyses of one scanner pod share its user: one hostile image can read the others' images and tokens. Raise the scanner's replicas instead. | [H-1037](docs/security/image-scanning.md#h-1037--analyses-that-share-a-scanner-share-its-user) |
 | `system.bootstrap_anonymous_read` | `false` | `true` lets anonymous callers read the installation facts and the replica list on the client port. Startup refuses it with an `https` base URL that is not localhost. | [H-63](docs/security/roles-and-trust-boundaries.md), [Q-API-14](docs/spec/api-and-ui.md) |
 | `metrics.auth` | `none` | With `none`, whoever reaches port 8081 reads the metrics; the chart's NetworkPolicy limits that. `static` requires a bearer token file. | [H-41](docs/spec/operations-and-observability.md), [R-OPS-006](docs/spec/operations-and-observability.md) |
 | `storage.s3.allow_insecure_endpoint`, `storage.s3.ca_file` | `false`, empty | An `http://` object-store endpoint is refused without the first; the second replaces the system roots for the object-store client. | [transport encryption](docs/security/transport-encryption.md), [Q-STOR-14](docs/spec/storage.md) |
@@ -2692,6 +2732,18 @@ worker:
     sizeLimit: 5Gi                      # default
   autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
   pools: []                             # default; example: [{name: vuln, queues: [vuln], replicaCount: 2}]; the main worker claims every queue no pool lists (queues: default, maintenance, index, delivery, mirror, vuln)
+scanner:                                # the analysis of container images, rendered while config.vulnerabilities.enabled and .images.enabled (both default true)
+  replicaCount: 2                       # default; at least 1, 2 with highAvailability.enforce; the capacity is replicas × config.vulnerabilities.images.scanner.slots
+  terminationGracePeriodSeconds: 60     # default; an analysis still running at the shutdown timeout is ended and put off without an attempt
+  spool:
+    sizeLimit: 6Gi                      # default; its budget (minus spool.headroom) must hold slots × (max_image_size + 64 MiB), validated
+  tls:
+    secretName: ""                      # default: the pair of tls.secretName; example: quader-scanner-tls, issued by the CA of tls.secretName's ca.crt for <fullname>.<namespace>.svc with client auth (H-1035)
+  resources: {requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 1Gi}, limits: {memory: 2Gi}}   # default; no CPU limit
+  autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
+  podDisruptionBudget: {enabled: true, maxUnavailable: 1}   # default
+  topologySpread: {enabled: true, nodeTaintsPolicy: Honor}     # default; as api
+  extraEnv: []                          # default; the scanner's own: the shared extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts never reach it
 spool:
   type: emptyDir                        # default: emptyDir | ephemeral
   sizeLimit: 20Gi                       # default; the spool of a role or pool overrides it

@@ -231,7 +231,7 @@ func (x *Index) rolesOf(sub Subject) roleSet {
 	if isBreakGlass(sub) {
 		rs |= RoleAdmin.bit()
 	}
-	if k := kindOf(sub); k == kindCI || k == kindBastion {
+	if k := kindOf(sub); k == kindCI || k == kindBastion || isSystem(sub) {
 		return rs
 	}
 	if sub.ID != "" {
@@ -491,6 +491,10 @@ func (e *Engine) evaluateWith(idx *Index, sub Subject, st *evalState, c Coordina
 	if c.Part == PartWiki && (len(actions) != 1 || first != Read) {
 		// The wiki is read only (R-AUTHZ-034); anything else is a programming error and is refused.
 		return deny(DenyVisible, ReasonWiki, first)
+	}
+	if isSystem(sub) {
+		// A system subject is decided by its fixed rule and nothing else: no exposure, level, scope or grant (system.go).
+		return e.decideSystem(idx, sub, c, actions, epoch)
 	}
 	if d, refused := e.ceilingRefuses(idx, sub, c, actions, epoch); refused {
 		return d

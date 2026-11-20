@@ -2885,11 +2885,12 @@
       "additionalProperties": false,
       "properties": {
         "role": {
-          "description": "Role of this replica: api, packages, worker, web (api and packages in one process, development and tests only) or all (local development only). No default.",
+          "description": "Role of this replica: api, packages, worker, scanner (the analysis of container images, holding no secret of the installation, R-ARCH-036), web (api and packages in one process, development and tests only) or all (local development only). No default.",
           "enum": [
             "api",
             "packages",
             "worker",
+            "scanner",
             "web",
             "all"
           ],
@@ -3249,6 +3250,18 @@
           "x-quader-env": "QUADER_SERVER_IDLE_TIMEOUT",
           "x-quader-type": "duration"
         },
+        "internal_tls": {
+          "additionalProperties": false,
+          "properties": {
+            "ca_file": {
+              "default": "",
+              "description": "PEM bundle of the CA the links between quader's pods verify against, and that a client certificate of the scanner's listener and of the scan listener must chain to (R-ARCH-038). Read again every server.tls.reload_interval. The chart sets /var/run/secrets/quader/tls-internal/ca.crt, the ca.crt of tls.secretName. Needs server.tls.certificates: without TLS the links are plain HTTP.",
+              "type": "string",
+              "x-quader-env": "QUADER_SERVER_INTERNAL_TLS_CA_FILE"
+            }
+          },
+          "type": "object"
+        },
         "listen": {
           "default": ":8080",
           "description": "Client listener: UI, API, package protocols.",
@@ -3364,6 +3377,12 @@
           ],
           "type": "string",
           "x-quader-env": "QUADER_SERVER_REPLICA_HEADER"
+        },
+        "scan_listen": {
+          "default": "",
+          "description": "The scan listener of a packages process (and web and all): the image scanning's pull, with scan tokens only, behind a client certificate of internal_tls.ca_file (R-ARCH-037). Empty opens none; the chart sets :8082 on the main packages Deployment while the image scanning is on.",
+          "type": "string",
+          "x-quader-env": "QUADER_SERVER_SCAN_LISTEN"
         },
         "send_buffer": {
           "default": "128KiB",
@@ -4623,13 +4642,13 @@
           "properties": {
             "binary": {
               "default": "/usr/local/bin/trivy",
-              "description": "The analyser, the one the release image carries at the version of tools/versions.env.",
+              "description": "The analyser, the one the release image carries at the version of tools/versions.env: the scanner runs the analysis with it, the worker the detection (Q-VULN-169).",
               "type": "string",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_BINARY"
             },
             "concurrency": {
-              "default": 1,
-              "description": "Images one job scans at a time.",
+              "default": 2,
+              "description": "Calls to the scanner one job has in flight (R-VULN-041). The default scanner capacity is two replicas of one slot; a call above the capacity is put off with scanner_busy.",
               "maximum": 64,
               "minimum": 1,
               "type": "integer",
@@ -4637,13 +4656,13 @@
             },
             "enabled": {
               "default": true,
-              "description": "false: no image is scanned; a repository's images are not_covered. The findings stay as they are.",
+              "description": "false: no image is scanned; a repository's images are not_covered. The findings stay as they are, and the chart renders no scanner.",
               "type": "boolean",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_ENABLED"
             },
             "max_attempts": {
               "default": 5,
-              "description": "Attempts at a scan that fails for a reason that may pass (a layer that has not arrived, an analyser that was killed).",
+              "description": "Attempts at a scan that fails for a reason that may pass (a layer that has not arrived, an analyser that was killed, a scanner that was lost).",
               "maximum": 100,
               "minimum": 1,
               "type": "integer",
@@ -4658,7 +4677,7 @@
             },
             "max_image_size": {
               "default": "3GiB",
-              "description": "Largest image scanned, compressed, config and layers together. A scan holds the image's size plus 64 MiB of the worker's spool budget while it runs, next to the unpacked database; the chart refuses a budget (worker.spool.sizeLimit minus spool.headroom) below this limit plus 2GiB plus 512MiB. A larger image shows scan_failed.",
+              "description": "Largest image scanned, compressed, config and layers together. An analysis holds the image's size plus 64 MiB of the scanner's spool budget while it runs; the chart refuses a scanner spool budget (scanner.spool.sizeLimit minus spool.headroom) below scanner.slots times this limit plus 64 MiB. A larger image shows scan_failed.",
               "type": [
                 "string",
                 "integer"
@@ -4685,13 +4704,39 @@
             },
             "memory_limit": {
               "default": "512MiB",
-              "description": "Soft limit of the analyser's Go heap. The memory limit of the pod is the hard one.",
+              "description": "Soft limit of the analyser's Go heap. The memory limit of the pod is the hard one: an image that passes the scanner's ends that pod's analysis (scanner_lost).",
               "type": [
                 "string",
                 "integer"
               ],
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_MEMORY_LIMIT",
               "x-quader-type": "bytes"
+            },
+            "pull_timeout": {
+              "default": "10m",
+              "description": "The scanner's pull of one image through the scan listener, and the lifetime of its scan token (R-OCI-037). The worker's call has the deadline pull_timeout plus timeout plus 1m.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_PULL_TIMEOUT",
+              "x-quader-type": "duration"
+            },
+            "registry": {
+              "additionalProperties": false,
+              "properties": {
+                "server_name": {
+                  "default": "",
+                  "description": "The name the scanner verifies in the scan listener's certificate against server.internal_tls.ca_file; empty is the host of url. The chart sets \u003cfullname\u003e.\u003cnamespace\u003e.svc.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_REGISTRY_SERVER_NAME"
+                },
+                "url": {
+                  "default": "",
+                  "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a scanner; empty in the role all, where it means the process's own scan listener. The scanner reads no other address: a call cannot point it elsewhere.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL"
+                }
+              },
+              "type": "object"
             },
             "run_slice": {
               "default": "10m",
@@ -4710,14 +4755,40 @@
               "x-quader-type": "duration"
             },
             "scan_dir": {
-              "default": "/var/lib/quader/spool/imagescan",
-              "description": "Local directory of the working files of the scans and of the unpacked database, below the worker's spool. The spool's budget counts every file in it: the database once, each scan the compressed size of its image plus 64 MiB. Lost with the pod without harm.",
+              "default": "",
+              "description": "Local directory of the working files below the spool of the process: the worker's unpacked database and detections, the scanner's analyses. Empty (the default) is \u003cstorage.spool.dir\u003e/imagescan, so the files lie on the volume whose budget counts them (Q-VULN-184). The spool's budget counts every file in it: in the worker the database once and 64 MiB per detection, in the scanner the compressed size of the image plus 64 MiB per analysis. Lost with the pod without harm.",
               "type": "string",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCAN_DIR"
             },
+            "scanner": {
+              "additionalProperties": false,
+              "properties": {
+                "server_name": {
+                  "default": "",
+                  "description": "The name the worker verifies in the scanner's certificate against server.internal_tls.ca_file; empty is the host of url. The chart sets \u003cfullname\u003e.\u003cnamespace\u003e.svc, the name its certificate carries.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME"
+                },
+                "slots": {
+                  "default": 1,
+                  "description": "Analyses one scanner process runs at a time; a call while every slot holds one is answered 503 scanner_busy. The chart checks the scanner's spool against it (Q-HA-318); more than one slot lets the analyses of one pod reach each other (H-1037), so scale by replicas.",
+                  "maximum": 16,
+                  "minimum": 1,
+                  "type": "integer",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_SLOTS"
+                },
+                "url": {
+                  "default": "",
+                  "description": "The scanner's listener, an origin: https://\u003cfullname\u003e-scanner.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531).",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL"
+                }
+              },
+              "type": "object"
+            },
             "timeout": {
               "default": "15m",
-              "description": "Time limit of one step of the analyser.",
+              "description": "Time limit of one step of the analyser: the scanner's analysis, the worker's detection.",
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_TIMEOUT",

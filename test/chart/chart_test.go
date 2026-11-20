@@ -364,15 +364,15 @@ func TestChart(t *testing.T) {
 		})
 	})
 
-	t.Run("R-HA-002 api, packages and worker Deployments run --role api, --role packages and --role worker, never all", func(t *testing.T) {
+	t.Run("R-HA-002 R-HA-065 api, packages, worker and scanner Deployments run --role api, --role packages, --role worker and --role scanner, never all", func(t *testing.T) {
 		eachSet(t, func(t *testing.T, _ string, out string, docs []doc) {
-			// The three role Deployments, plus the pools of the value set; every Deployment runs the
-			// role its name says, and that role is api, packages or worker.
+			// The role Deployments, plus the pools of the value set; every Deployment runs the
+			// role its name says, and that role is api, packages, worker or scanner.
 			for _, d := range ofKind(docs, "Deployment") {
 				name := strings.TrimPrefix(str(d, "metadata", "name"), "quader-")
 				role, _, _ := strings.Cut(name, "-")
-				if role != "api" && role != "packages" && role != "worker" {
-					t.Errorf("Deployment quader-%s runs the role %q, want api, packages or worker", name, role)
+				if role != "api" && role != "packages" && role != "worker" && role != "scanner" {
+					t.Errorf("Deployment quader-%s runs the role %q, want api, packages, worker or scanner", name, role)
 				}
 				want := "serve --role " + role
 				if got := strings.Join(containerArgs(at(d, "spec", "template", "spec")), " "); got != want {
@@ -513,7 +513,8 @@ func TestChart(t *testing.T) {
 				}
 			}
 			want := map[string]bool{"/tmp": true}
-			if strings.HasSuffix(name, "-api") || strings.HasSuffix(name, "-packages") || strings.HasSuffix(name, "-worker") {
+			if strings.HasSuffix(name, "-api") || strings.HasSuffix(name, "-packages") || strings.HasSuffix(name, "-worker") ||
+				strings.HasSuffix(name, "-scanner") {
 				want["/var/lib/quader/spool"] = true
 			}
 			for p := range mounts {
@@ -840,6 +841,10 @@ func TestChart(t *testing.T) {
 								t.Errorf("%s sets %s, which only a worker Deployment does", name, v)
 							}
 						case "QUADER_STORAGE_S3_BUCKET", "QUADER_STORAGE_S3_REGION", "QUADER_STORAGE_S3_ENDPOINT": // from the S3 Secret
+						case "QUADER_SERVER_SCAN_LISTEN": // the scan listener of the main packages Deployment (R-HA-066)
+							if name != "quader-packages" {
+								t.Errorf("%s sets QUADER_SERVER_SCAN_LISTEN, which only the main packages Deployment does", name)
+							}
 						default:
 							t.Errorf("%s sets %s, which the spec does not list (R-HA-030)", name, v)
 						}
@@ -965,8 +970,14 @@ func TestChart(t *testing.T) {
 				}
 				ports = append(ports, str(p, "name")+"="+strconv.Itoa(at(p, "containerPort").(int)))
 			}
-			if strings.Join(ports, ",") != "http=8080,ops=8081" {
-				t.Errorf("web ports = %v, want http=8080 and ops=8081 only", ports)
+			// The scan listener of R-HA-066 opens on the main packages Deployment while the image
+			// scanning is on, which a scanner Deployment shows.
+			wantPorts := "http=8080,ops=8081"
+			if find(docs, "Deployment", "quader-scanner") != nil {
+				wantPorts = "http=8080,scan=8082,ops=8081"
+			}
+			if strings.Join(ports, ",") != wantPorts {
+				t.Errorf("web ports = %v, want %s only", ports, wantPorts)
 			}
 			worker := at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec", "containers", "0")
 			ports = nil
@@ -984,7 +995,7 @@ func TestChart(t *testing.T) {
 		for role, want := range map[string]struct {
 			seconds int
 			env     string
-		}{"api": {120, "120s"}, "packages": {120, "120s"}, "worker": {300, "300s"}} {
+		}{"api": {120, "120s"}, "packages": {120, "120s"}, "worker": {300, "300s"}, "scanner": {60, "60s"}} {
 			spec := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 			if at(spec, "terminationGracePeriodSeconds") != want.seconds {
 				t.Errorf("quader-%s terminationGracePeriodSeconds = %v, want %d", role, at(spec, "terminationGracePeriodSeconds"), want.seconds)
@@ -1384,6 +1395,11 @@ func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
 								cmd.Env = append(cmd.Env, n+"=test")
 							}
 						}
+						// The role comes from the container's arguments; validate applies its rules, so
+						// the scanner's file is checked as the scanner reads it (R-ARCH-036).
+						if args := containerArgs(pod); len(args) == 3 && args[0] == "serve" && args[1] == "--role" {
+							cmd.Env = append(cmd.Env, "QUADER_PROCESS_ROLE="+args[2])
+						}
 						if name == "migrate" {
 							// validate checks the rules of a serving replica, which want the bucket; the
 							// Job itself needs no object store, so take the packages pod's S3 settings.
@@ -1604,13 +1620,17 @@ func TestNetworkPolicy(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, docs := render(t, append(required(), vals))
-		rules := list(find(docs, "NetworkPolicy", "quader-packages"), "spec", "ingress")
-		_, f0, has0 := portsOf(rules[0])
-		if !has0 || len(f0) != 1 || str(f0[0], "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") != "traefik" {
+		// The rules by their port: the main packages policy also holds the scan listener's 8082 (R-HA-066).
+		fromOf := map[int][]any{}
+		for _, r := range list(find(docs, "NetworkPolicy", "quader-packages"), "spec", "ingress") {
+			if p, from, _ := portsOf(r); len(p) == 1 {
+				fromOf[p[0]] = from
+			}
+		}
+		if f0 := fromOf[8080]; len(f0) != 1 || str(f0[0], "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") != "traefik" {
 			t.Errorf("8080 from = %v, want the traefik namespace", f0)
 		}
-		_, f1, _ := portsOf(rules[1])
-		if len(f1) != 2 || str(f1[0], "podSelector", "matchLabels", "app") != "prometheus" || str(f1[1], "ipBlock", "cidr") != "10.0.0.0/16" {
+		if f1 := fromOf[8081]; len(f1) != 2 || str(f1[0], "podSelector", "matchLabels", "app") != "prometheus" || str(f1[1], "ipBlock", "cidr") != "10.0.0.0/16" {
 			t.Errorf("8081 from = %v, want the prometheus pods and the probe CIDR", f1)
 		}
 

@@ -59,6 +59,10 @@ func SubjectOf(ctx context.Context) authz.Subject {
 	for _, g := range p.Groups {
 		s.Groups = append(s.Groups, principal.GroupRef{ID: g.ID, Name: g.Name})
 	}
+	if p.Kind == httpserver.KindSystem && p.Credential.Registry != nil && len(p.Credential.Registry.Entries) == 1 {
+		// The one repository a scan token names, which the fixed rule of system:image-scanner reads (R-OCI-037, Q-OCI-228).
+		s.SystemRepo = p.Credential.Registry.Entries[0].Repo
+	}
 	if ep := httpserver.EndpointFrom(ctx); ep != nil {
 		// The endpoint's cache-fill policy travels with its name, so the populate
 		// check reads one source (R-EP-019, Q-AUTHZ-153).

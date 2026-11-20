@@ -70,6 +70,8 @@ func startProc(t *testing.T, bin, role string, extra ...string) *proc {
 		"QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s1:26379\"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=quader",
 		"QUADER_STORAGE_S3_BUCKET=blobs", "QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"" + key + "\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
 		"QUADER_POD_NAME=quader-" + role + "-test",
+		// A worker names the scanner it calls while the image scanning is on (R-VULN-041); nothing answers on this port.
+		"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://127.0.0.1:1",
 	}, extra...)
 	p.cmd.Stdout, p.cmd.Stderr = p.out, p.out
 	if err := p.cmd.Start(); err != nil {

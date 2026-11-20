@@ -17,7 +17,7 @@ value crosses a boundary. The code that implements each rule is linked. Open gap
 | `packages` | `quader serve --role packages` | the route families `packages`, `files`; tokens only, a session cookie counts as absent; the ops listener | none; builds no session store, login or CI exchange and reads no login secret | Deployment `<fullname>-packages`, its path pools and endpoint pools |
 | `web` | `quader serve --role web` | every family: `api` and `packages` in one process | none; holds what `api` and `packages` hold ([H-518](#h-518--the-development-roles-web-and-all-hold-both-halves-of-the-cut)) | not rendered by the chart; the replica of the integration tests ([Q-HA-315](../spec/ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests)) |
 | `worker` | `quader serve --role worker` | the ops listener only | the job claim loop, scheduler and reaper; the lease pool | Deployment `<fullname>-worker` |
-| `scanner` (specified, not built) | `quader serve --role scanner` | `POST /scan/v1/analyses` to the worker on `:8080`, mutual TLS; the ops listener | none: no job loop, no lease, no database, Valkey or object-store connection, no key ring; holds the TLS pair, the internal CA and, for one call, a scan token and an image ([R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)) | Deployment `<fullname>-scanner`, while the image scanning is on ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment)) |
+| `scanner` | `quader serve --role scanner` | `POST /scan/v1/analyses` to the worker on `:8080`, mutual TLS; the ops listener | none: no job loop, no lease, no database, Valkey or object-store connection, no key ring; holds the TLS pair, the internal CA and, for one call, a scan token and an image ([R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)) | Deployment `<fullname>-scanner`, while the image scanning is on ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment)) |
 | `scanner` of the kind `malware` (specified, not built) | `quader serve --role scanner`, `process.scanner_kind: malware`, with a container `clamd` beside it | `POST /scan/v1/malware` to the worker on `:8080`, mutual TLS; the ops listener | none: as the image scanner; holds the TLS pair, the internal CA, the loaded signature database and, for one call, a blob token and the blob's bytes ([malware-scanning.md](../spec/malware-scanning.md) R-MAL-007) | Deployment `<fullname>-malware-scanner`, while the malware scanning is on ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) |
 | `all` | `quader serve --role all` | both listeners | both sets | not rendered by the chart; for a local run outside the chart ([spec INV-2](../spec/README.md#design-invariants)) |
 | migration | `quader migrate up` | nothing: no listener | none; after the schema steps it applies the role bindings of `authz.role_bindings` under the migration lock ([permissions](permissions.md#role-bindings-from-the-configuration)) | Job `<fullname>-migrate` ([migrate.yaml](../../deploy/helm/quader/templates/migrate.yaml)) |
@@ -111,7 +111,8 @@ The cut does not narrow the data credentials: [H-517](../spec/architecture.md#h-
 
 ## The scanner: the one role without data credentials
 
-Specified, not built (owner, 2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)).
+Built (owner, 2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret);
+[wire_scanner.go](../../internal/app/wire_scanner.go), [internal/vuln/scanner](../../internal/vuln/scanner/scanner.go)).
 The analysis of container images moves out of the worker into a role that holds nothing of the database, the object store, Valkey or the
 key ring, because the analyser is the largest parser of hostile input in the installation. It is the first network seam between Quader's
 roles:
@@ -128,9 +129,9 @@ roles:
 
 | Property | How | Test |
 |---|---|---|
-| the scanner builds no area that reaches a data store | its role enables the area `scanner` alone; its configuration load resolves no secret file | `TestR_ARCH_036_*` (`internal/app`, `test/integration/roles`) |
+| the scanner builds no area that reaches a data store | its role enables the area `scanner` alone; its configuration load resolves no secret file | `TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute` (`internal/app`), `TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile` (`internal/config`) |
 | the scanner's pod mounts no secret but the TLS pair and the internal CA | the chart's volume list for the role; the shared extras do not reach it | `TestR_HA_065_*` (`test/chart`) |
-| a scan token reads one image and works only on the scan listener | the claims' rule, the endpoint `scan`, the digest pin of the enforcement point | `TestR_OCI_037_*` (`internal/auth/registrytoken`, `internal/api/registry`) |
+| a scan token reads one image and works only on the scan listener | the claims' rule, the endpoint `scan`, the digest pin of the enforcement point, the fixed rule of the decision point | `TestR_OCI_037_*` (`internal/auth/registrytoken`, `internal/api/registry`, `internal/authz`), `TestR_EP_010_TheScanListenerAcceptsAScanTokenAndNothingElse` (`internal/auth`) |
 | what the scanner answers cannot steer the worker's analyser | the worker decodes it under limits and writes it anew | `TestR_VULN_043_*` (`internal/vuln/imagescan`) |
 
 ## Client address

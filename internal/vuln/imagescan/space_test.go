@@ -170,7 +170,7 @@ func TestQ_VULN_145_TheRoomOfTheBlobsIsAdmittedBeforeTheFirstOneIsWritten(t *tes
 	}
 	t.Run("the admission sees the compressed size of the config and the layers", func(t *testing.T) {
 		var got int64
-		err := buildLayout(context.Background(), m, ImageRef{}, t.TempDir(), lims(), func(n int64) error { got = n; return nil })
+		err := BuildLayout(context.Background(), m, ImageRef{}, t.TempDir(), lims(), func(n int64) error { got = n; return nil })
 		if err != nil || got != total {
 			t.Fatalf("%v: admitted %d, the blobs are %d", err, got, total)
 		}
@@ -178,7 +178,7 @@ func TestQ_VULN_145_TheRoomOfTheBlobsIsAdmittedBeforeTheFirstOneIsWritten(t *tes
 	t.Run("a refusal ends the build before a file exists", func(t *testing.T) {
 		dir := t.TempDir()
 		refused := &ScanError{Code: CodeSpoolBusy, Defer: time.Minute}
-		err := buildLayout(context.Background(), m, ImageRef{}, dir, lims(), func(int64) error { return refused })
+		err := BuildLayout(context.Background(), m, ImageRef{}, dir, lims(), func(int64) error { return refused })
 		if !errors.Is(err, refused) {
 			t.Fatalf("%v", err)
 		}
@@ -190,7 +190,7 @@ func TestQ_VULN_145_TheRoomOfTheBlobsIsAdmittedBeforeTheFirstOneIsWritten(t *tes
 		l := lims()
 		l.MaxImageBytes = 10
 		asked := false
-		err := buildLayout(context.Background(), m, ImageRef{}, t.TempDir(), l, func(int64) error { asked = true; return nil })
+		err := BuildLayout(context.Background(), m, ImageRef{}, t.TempDir(), l, func(int64) error { asked = true; return nil })
 		wantScanError(t, err, CodeImageTooLarge)
 		if asked {
 			t.Fatal("asked for room for an image that is refused")

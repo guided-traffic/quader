@@ -38,18 +38,21 @@ const (
 	CodeReportTooLarge   = "report_too_large"
 )
 
-// ScanError is a scan that did not finish for a reason that belongs to the image or the analyser, not to the worker.
+// ScanError is a scan that did not finish for a reason that belongs to the image or the analyser, or, with Defer, to the installation;
+// never to the worker itself.
 type ScanError struct {
 	Code, Detail string
 	// Terminal says that another attempt on the same bytes cannot succeed.
 	Terminal bool
-	// Defer, when set, says that the scan did not start for lack of room: it is due again after this long and no attempt is spent.
+	// Defer, when set, says that the scan did not start or did not finish for a reason of the installation (no room, no scanner, a
+	// refused pull, R-VULN-034): it is due again after this long and no attempt is spent.
 	Defer time.Duration
 }
 
 func (e *ScanError) Error() string { return e.Code + ": " + e.Detail }
 
-// BlobReader reads the content of an image of a repository from the object store.
+// BlobReader reads the content of an image of a repository: in the scanner, from the scan listener of packages with the call's scan
+// token (internal/vuln/scanner, R-VULN-042).
 type BlobReader interface {
 	// ReadManifest returns the bytes of a manifest, at most limit.
 	ReadManifest(ctx context.Context, ref ImageRef, limit int64) ([]byte, error)
@@ -96,12 +99,12 @@ type imageManifest struct {
 	Layers        []descriptor `json:"layers"`
 }
 
-// buildLayout writes the manifest, its config and its layers as an OCI layout under dir, verifying every blob against its digest and
+// BuildLayout writes the manifest, its config and its layers as an OCI layout under dir, verifying every blob against its digest and
 // checking every layer against the limits before the analyser reads it. A blob the repository does not hold ends the build with
 // [CodeLayerMissing], which is not terminal: a pull of a remote image brings its layers after its manifest. admit, when not nil, is called
 // with the compressed size of the config and the layers once the manifest passed its checks and before the first blob is written; its error
 // ends the build, so the room for the blobs is held before they exist (Q-VULN-145).
-func buildLayout(ctx context.Context, src BlobReader, ref ImageRef, dir string, lim ContentLimits, admit func(total int64) error) error {
+func BuildLayout(ctx context.Context, src BlobReader, ref ImageRef, dir string, lim ContentLimits, admit func(total int64) error) error {
 	raw, err := src.ReadManifest(ctx, ref, maxManifestBytes)
 	if err != nil {
 		return err

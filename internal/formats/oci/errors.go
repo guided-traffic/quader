@@ -11,6 +11,9 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 )
 
+// errorCodeHeader names quader's code of a refusal whose code the scanner's pull reads (Q-VULN-180).
+const errorCodeHeader = "Quader-Error-Code"
+
 // The codes of the distribution specification (R-OCI-008).
 const (
 	codeNameInvalid         = "NAME_INVALID"
@@ -124,6 +127,12 @@ func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	h.Set("Content-Type", "application/json")
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Docker-Distribution-API-Version", "registry/2.0")
+	if p.Code == errs.CodePopulateNotPermitted {
+		// The registry's shape has no member for quader's code: the image scanning's pull tells an uncached layer of a remote from a
+		// refused scan token by this header (vulnerability-scanning.md R-VULN-042, Q-VULN-180). The 403 already says the caller may
+		// read the repository, so the header reveals nothing more.
+		h.Set(errorCodeHeader, p.Code)
+	}
 	switch e.Kind {
 	case errs.Unauthenticated:
 		// The challenge of R-OCI-004 is the stage's: the error carries it.

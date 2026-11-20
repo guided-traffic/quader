@@ -104,6 +104,9 @@ type Subsystems struct {
 	// listeners, the key ring and the authentication stage over an empty token
 	// store, and nothing else.
 	Shell bool
+	// Scanner serves the scanner's listener (R-ARCH-036): server.listen in the role
+	// scanner, a loopback port in the role all (Q-ARCH-531).
+	Scanner bool
 }
 
 // Has reports whether the role enables an area.
@@ -139,9 +142,12 @@ func SubsystemsFor(role string) (Subsystems, error) {
 			Areas: areasFor(onWorker),
 		}, nil
 	case config.RoleAll:
-		listener.LeasePool, listener.JobLoops = true, true
+		listener.LeasePool, listener.JobLoops, listener.Scanner = true, true, true
 		listener.Areas = areasFor(onAll)
 		return listener, nil
+	case config.RoleScanner:
+		// No infrastructure area, no pool, no Valkey, no registry row (R-ARCH-036, Q-ARCH-527, Q-OPS-215).
+		return Subsystems{OpsListener: true, Scanner: true, Areas: areasFor(onScanner)}, nil
 	}
 	return Subsystems{}, fmt.Errorf("%s (got %q)", config.RoleError, role)
 }

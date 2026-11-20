@@ -28,6 +28,8 @@ func endpointRules(rt *endpointRuntime) auth.EndpointRules {
 		TokenTypes:      types,
 		BoundTokensOnly: rt.cfg.BoundTokensOnly,
 		Anonymous:       rt.cfg.Anonymous,
+		// The scan listener's endpoint accepts scan tokens only (R-ARCH-037, wire_scan_listener.go).
+		ScanOnly: rt.cfg.Name == config.ScanEndpoint,
 	}
 }
 
@@ -62,6 +64,8 @@ func principalFromResult(r auth.Result) httpserver.Principal {
 			BasicUsername:    r.Credential.BasicUsername,
 			Scope:            r.Credential.Scope,
 			Registry:         registryGrant(r.Credential.Registry),
+			// The scan's ID of a scan token, for the request log of the scan listener (R-OCI-037).
+			ScanID: r.Credential.ScanID,
 		},
 	}
 	for _, g := range r.Groups {
@@ -80,7 +84,7 @@ func registryGrant(g *registrytoken.Grant) *httpserver.RegistryGrant {
 	if g == nil {
 		return nil
 	}
-	out := &httpserver.RegistryGrant{Catalog: g.Catalog}
+	out := &httpserver.RegistryGrant{Catalog: g.Catalog, Digest: g.Digest}
 	for _, e := range g.Entries {
 		out.Entries = append(out.Entries, httpserver.RegistryEntry{
 			Repo: e.Repo, Name: e.Name,

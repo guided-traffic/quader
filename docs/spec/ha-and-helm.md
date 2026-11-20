@@ -6,7 +6,7 @@ This page specifies how Quader stays available, scales out and is deployed. It c
 
 - The replica model: identical, interchangeable replicas per role, with `api`, `packages` and `worker` as
   separate Deployments (the task areas of ADR-153 and ADR-155, specified for phase 6a; built today: `web` and `worker`),
-  `scanner` as the Deployment of the image analysis without secrets (ADR-212, specified, not built),
+  `scanner` as the Deployment of the image analysis without secrets (ADR-212),
   pools of a role by path prefix or queue, `backup` as a CronJob (INV-2), and how replicas
   coordinate through PostgreSQL and Valkey without talking to each other (INV-3, INV-12, INV-18).
 - The failure contract of every component: pod crash, node drain and node loss, PostgreSQL failover
@@ -391,12 +391,15 @@ database, the object store or Valkey. What it serves and holds is [architecture.
   `true` (the defaults), and nothing of it otherwise. Its container runs `quader serve --role scanner` and opens `:8080` (the scanner's
   listener) and `:8081` (the operations listener).
 - **Pod.** The security context of R-HA-033: user and group 65532, `readOnlyRootFilesystem`, no privilege escalation, every capability
-  dropped, seccomp `RuntimeDefault`; `automountServiceAccountToken: false`; no RBAC. The scanner's process is the first process of its
+  dropped, seccomp `RuntimeDefault`; `automountServiceAccountToken: false`; no RBAC; and not the chart's service account, which may carry
+  a cloud identity of the object store ([Q-HA-343](#q-ha-343--the-scanner-pod-names-no-service-account-of-the-chart)). The scanner's process is the first process of its
   container (no shell, no init), which Q-ARCH-530 relies on. `shareProcessNamespace` is never set.
 - **Volumes, and nothing else** (R-HA-061): the spool `emptyDir` at `/var/lib/quader/spool` with `scanner.spool.sizeLimit` (the one
   writable volume besides `/tmp`; the analyses work below `scan_dir` in it), `/tmp`, the configuration file, the TLS pair of
   `scanner.tls.secretName` (else `tls.secretName`) at `/var/run/secrets/quader/tls/`, and `ca.crt` of `tls.secretName` at
-  `/var/run/secrets/quader/tls-internal/ca.crt`. The chart mounts no key of the key ring, no database, Valkey or object-store credential
+  `/var/run/secrets/quader/tls-internal/ca.crt`; with `tls.ops.secretName`, a sixth: that pair at `/var/run/secrets/quader/tls-ops/`, which
+  its operations listener serves like every other pod's ([Q-HA-340](#q-ha-340--with-tlsops-the-scanner-mounts-the-pair-of-its-operations-listener)).
+  The chart mounts no key of the key ring, no database, Valkey or object-store credential
   or CA, no login secret, no trusted CA bundle of R-HA-043 (the scanner opens no connection that it would verify), and none of the shared
   `extraVolumes`, `extraVolumeMounts`, `extraEnv`, `extraEnvFrom`, `initContainers` and `sidecars` (Q-HA-321); `scanner.extraEnv` is its own.
   A chart test lists the pod's volumes and environment and fails for any other.
@@ -416,7 +419,7 @@ database, the object store or Valkey. What it serves and holds is [architecture.
   group and answered `503` `scanner_draining`; the worker puts either off without an attempt.
 - **No registry row** ([operations-and-observability.md](operations-and-observability.md) R-OPS-003, Q-OPS-215): the scanner has no
   database connection. Its replicas show as the Deployment's, as the series of the ServiceMonitor (the Service `<fullname>-ops` selects its
-  pods on `8081`) and through the worker's codes and `QuaderVulnerabilityImageScannerUnavailable` (R-VULN-024).
+  pods on `8081` by their label `quader/serve`, which no Valkey policy admits by itself, Q-HA-344) and through the worker's codes and `QuaderVulnerabilityImageScannerUnavailable` (R-VULN-024).
 - **Chart checks** (R-HA-029): the scanner's spool budget (`scanner.spool.sizeLimit` minus `spool.headroom`) at least
   `slots × (max_image_size + 64 MiB)`, the failure naming the three values (Q-HA-318); `scanner.replicaCount` at least 1, and at least 2 with
   `highAvailability.enforce`; `scanner.tls.secretName` only with `tls.enabled`.
@@ -428,8 +431,9 @@ Acceptance criteria:
   `automountServiceAccountToken: false`; `--set config.vulnerabilities.images.enabled=false` renders no scanner object; `--set
   scanner.spool.sizeLimit=4Gi` fails and names `scanner.spool.sizeLimit`, `spool.headroom` and `max_image_size`; a shared `extraEnvFrom`
   does not reach the scanner's container.
-- End to end (set `vuln`, R-VULN-046): `kubectl exec` into a scanner pod lists no file below `/var/run/secrets/quader/` but `tls/tls.crt`,
-  `tls/tls.key` and `tls-internal/ca.crt`, and `/var/run/secrets/kubernetes.io/` does not exist.
+- End to end (set `vuln`, R-VULN-046): the running scanner pod holds no file below `/var/run/secrets/quader/` but `tls/tls.crt`,
+  `tls/tls.key` and `tls-internal/ca.crt`, and nothing at `/var/run/secrets/kubernetes.io/`; the image has no shell and no `ls`, so the test
+  reads the live pod's volumes and mounts ([Q-HA-342](#q-ha-342--the-end-to-end-case-reads-the-scanner-pods-files-from-its-live-spec)).
 
 ### R-HA-066 · The links of the image scanning inside the chart
 Priority: **P1** · Covers: HA-018
@@ -473,7 +477,9 @@ Priority: **P1** · Covers: quader-only
   network, or a local repository of the profile for a run without the internet.
 - **The UI development profile** (`make ui-dev-backend`, the role `all`, Q-ARCH-531): one process holds the worker, `packages` and the
   scanner; the worker calls its own scanner listener over loopback, and the scanner pulls from its own scan listener, through the same
-  client, listener, token and checks as in the chart. The unset `scanner.url` and `registry.url` mean exactly that in `all`.
+  client, listener, token and checks as in the chart. The unset `scanner.url` and `registry.url` mean exactly that in `all`. The scanner's readiness check is reported there, not
+  gating, so a development process without the analyser binary stays ready
+  ([architecture.md](architecture.md#q-arch-551--in-the-role-all-the-scanners-check-is-reported-not-gating) Q-ARCH-551).
 - **The integration stack** (`test/integration/testenv`): the stack starts a replica of the role `scanner` in process beside `web` and
   `worker`, with the stack's TLS pair and CA, and the `web` replica opens the scan listener; the scanning's tests replace the analyser at the
   seam in the scanner replica and the worker replica, as they do today, so the stack needs no analyser binary and no database download
@@ -3748,8 +3754,10 @@ Priority: **MVP** · Covers: HA-033, HA-035, HA-036, HA-037, HA-053
     `jobs.queues` and `jobs.exclude_queues` ([architecture.md](architecture.md) R-ARCH-016);
   - `QUADER_STORAGE_SPOOL_MAX_BYTES` per Deployment, derived from the role's spool size when
     `config.storage.spool.max_bytes` is unset (R-HA-035);
+  - `QUADER_SERVER_SCAN_LISTEN=:8082` on the main `packages` Deployment while the image scanning is on, the scan listener of
+    R-HA-066;
   - `GOMAXPROCS` (R-HA-036);
-  - in every Quader pod (`api`, `packages`, `worker`, `web`, backup, restore, migration and post-restore), from the
+  - in every Quader pod (`api`, `packages`, `worker`, `scanner`, `web`, backup, restore, migration and post-restore), from the
     downward API: `QUADER_POD_NAME` (`fieldRef: metadata.name`), `QUADER_POD_NAMESPACE`
     (`metadata.namespace`) and `QUADER_NODE_NAME` (`spec.nodeName`). R-OPS-028 reserves these
     names. They feed the replica registry, including its `node` column that the status screen
@@ -4006,7 +4014,7 @@ worker:
       maxUnavailable: 0
   terminationGracePeriodSeconds: 300    # jobs persist their cursor before exit
   spool:
-    sizeLimit: 8Gi                      # also the working space of the image scanning below this spool (vulnerability-scanning.md R-VULN-036, Q-VULN-145), admitted through the budget (sizeLimit minus spool.headroom), validated for the pool that claims the queue vuln: the unpacked database (2 GiB allowed), the largest image (3 GiB by default) and 512 MiB. With the scanner of R-HA-065 the images leave this spool, the check becomes 2 GiB and 512 MiB and the default 5Gi, in the change that builds it (Q-HA-318). Workers spool only cache fills of jobs and, from P1, the nuget-symbol-index job's one extracted PDB at a time (formats/nuget.md)
+    sizeLimit: 5Gi                      # also the working space of the image scanning's detection (config.vulnerabilities.images.scan_dir below this spool), admitted through the spool budget (sizeLimit minus spool.headroom): the unpacked database (1.6 GiB on 2026-11-10, validated with 2 GiB) and 512 MiB for the rest, validated for the pool that claims the queue vuln; the images are analysed in the scanner's spool (Q-HA-318). Workers spool only cache fills of jobs, the artifacts of a mirror pass (at most the background share B of a repository at a time, each up to the repository maxArtifactBytes), one advisory archive while a sync runs (config.vulnerabilities.sources.osv.max_archive_size, validated) and, from P1, the nuget-symbol-index job's one extracted PDB at a time (formats/nuget.md)
   resources:
     requests:
       cpu: 500m
@@ -4827,7 +4835,7 @@ Every volume the chart renders:
 | every Quader pod | `/tmp` | `emptyDir` with `tmp.sizeLimit` (backup and restore pods: `backup.tmpSizeLimit`, because they stream, R-BAK-012) | node-local | the pod |
 | every Quader pod | `/etc/quader/quader.yaml` | ConfigMap | read-only projection | — |
 | every Quader pod but `scanner` | `/var/run/secrets/quader/…`, `/etc/quader/ca/` | Secret or ConfigMap projections (R-HA-030) | read-only projection | — |
-| `scanner` | `/var/run/secrets/quader/tls/` (the pair of `scanner.tls.secretName`, else `tls.secretName`) and `/var/run/secrets/quader/tls-internal/ca.crt`, nothing else | Secret projections (R-HA-065) | read-only projection | — |
+| `scanner` | `/var/run/secrets/quader/tls/` (the pair of `scanner.tls.secretName`, else `tls.secretName`), `/var/run/secrets/quader/tls-internal/ca.crt` and, with `tls.ops.secretName`, `/var/run/secrets/quader/tls-ops/` (Q-HA-340); nothing else | Secret projections (R-HA-065) | read-only projection | — |
 
 - The chart renders no PersistentVolumeClaim, no StatefulSet and no `volumeClaimTemplates`. A
   generic ephemeral volume is a claim that Kubernetes creates for one pod and deletes with it
@@ -5344,7 +5352,7 @@ Acceptance criteria:
 ### R-HA-043 · Trusted CA bundles
 Priority: **MVP** · Covers: HA-019
 
-**Status.** Built: the values `trustedCA.*` (with their schema), the mount in every pod of the release and the two config paths
+**Status.** Built: the values `trustedCA.*` (with their schema), the mount in every pod of the release but the scanner's (R-HA-065) and the two config paths
 ([_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl), [_helpers.tpl](../../deploy/helm/quader/templates/_helpers.tpl),
 [_validate.tpl](../../deploy/helm/quader/templates/_validate.tpl)), tested by `TestR_HA_043_TrustedCA`
 ([trustedca_test.go](../../test/chart/trustedca_test.go)); the dev profile's Keycloak CA and the restore drill's CA go through it
@@ -5389,8 +5397,8 @@ Priority: **MVP** · Covers: HA-055
 **Status.** The PrometheusRule is rendered by the main chart with `metrics.prometheusRule.{enabled,labels,disabledAlerts,extraRules}`
 (`disabledAlerts` refuses a name that is no alert), checked by `promtool check rules` and tested by `promtool test rules`
 ([deploy/helm/quader/tests/rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml), `make chart-test`), one test in which the alert fires and one in
-which it stays silent per alert. It carries the six alerts of the vulnerability scanning ([vulnerability-scanning.md](vulnerability-scanning.md)
-R-VULN-024, Q-VULN-55, Q-VULN-122): `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected` (warning), `QuaderVulnerabilityRecordsInvalid` (warning), `QuaderVulnerabilityMaliciousRecordRejected` (critical) and `QuaderVulnerabilityClaimedNameMalicious`; the two of the
+which it stays silent per alert. It carries the eight alerts of the vulnerability scanning ([vulnerability-scanning.md](vulnerability-scanning.md)
+R-VULN-024, Q-VULN-55, Q-VULN-122): `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected` (warning), `QuaderVulnerabilityRecordsInvalid` (warning), `QuaderVulnerabilityMaliciousRecordRejected` (critical), `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing` and `QuaderVulnerabilityImageScannerUnavailable` (warning, R-VULN-041); the two of the
 mirror mode (R-OPS-046); `QuaderBlobMissing` (severity `critical`, summed over the replicas, [storage.md](storage.md)
 Q-STOR-152); and these sixteen rows of the table below: `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`,
 `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`,
@@ -5449,7 +5457,7 @@ templates over metrics the MVP already exports, so the change adds no backend wo
 
 | Alert | Expression (sketch) | For | Severity |
 |---|---|---|---|
-| `QuaderReplicasNotReady` | `min by (deployment) (kube_deployment_status_replicas_available{deployment=~"<fullname>-(api\|packages\|worker)(-.*)?"}) < 2`, per Deployment, so one role or pool without replicas fires while the others are healthy (the Deployments are `<fullname>-<role>` and `<fullname>-<role>-<pool>` for the roles `api`, `packages` and `worker`, R-HA-062; needs kube-state-metrics) | 5m | critical |
+| `QuaderReplicasNotReady` | `min by (deployment) (kube_deployment_status_replicas_available{deployment=~"<fullname>-(api\|packages\|worker\|scanner)(-.*)?"}) < 2`, per Deployment, so one role or pool without replicas fires while the others are healthy (the Deployments are `<fullname>-<role>` and `<fullname>-<role>-<pool>` for the roles `api`, `packages` and `worker`, R-HA-062, and `<fullname>-scanner`, R-HA-065, [Q-HA-341](#q-ha-341--quaderreplicasnotready-covers-the-scanner-deployment); needs kube-state-metrics) | 5m | critical |
 | `QuaderDatabaseUnreachable` | `sum(rate(quader_db_retries_total{kind="connection"}[1m])) > 0 and sum(rate(quader_http_requests_total{code="503"}[1m])) > 0` | 2m | critical |
 | `QuaderObjectStoreUnreachable` | `min(quader_storage_s3_circuit_open) == 1` (all replicas) | 2m | critical |
 | `QuaderObjectStoreUnreachableSingleReplica` | `max(quader_storage_s3_circuit_open) == 1 and min(quader_storage_s3_circuit_open) == 0` | 5m | warning |
@@ -11154,6 +11162,102 @@ before its mistake shows; a Bastion does that whatever the answer, by R-BAS-034.
 to be held on a Valkey configuration error; the wait of Q-HA-330 then applies to it unchanged.
 
 **Applied:** nothing in [bastion.md](bastion.md); [valkey.md](../developer/valkey.md#start-up) says which clients run the script.
+
+### Q-HA-340 · With `tls.ops`, the scanner mounts the pair of its operations listener
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-HA-065 lists the scanner's volumes as five and nothing else. With `tls.ops.secretName` the configuration file names the
+operations listener's own pair (`server.ops_tls`, R-HA-063), and the ServiceMonitor verifies every pod behind `<fullname>-ops` against that
+Secret's CA under `<fullname>-ops.<namespace>.svc`; the scanner's pods are behind that Service.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The scanner mounts the ops pair, as every other pod does with `tls.ops` (chosen) | A sixth volume, only with `tls.ops.secretName` | The scrape of the scanner verifies like every other; one rendered configuration file serves every role | One more key in the scanner's pod, of a listener that admits probes and scrapers only |
+| (b) The scanner's operations listener inherits the client pair | Five volumes always | The list of R-HA-065 holds | The ServiceMonitor fails to verify the scanner's pods when the two pairs come from different CAs; the scanner needs a configuration file of its own |
+| (c) No scrape of the scanner | — | — | Its series (`quader_scanner_*`) and its alert's evidence are gone |
+
+**Choice:** (a) ([scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml), `TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation`
+in `test/chart`). **Rationale:** the pair of the operations listener is the one every pod serves to probes and scrapers; it grants nothing on
+the image scanning's links. The development agent would revisit this if the operations listener of the scanner moves to plain HTTP.
+
+**Applied in the spec:** R-HA-061, R-HA-065.
+
+### Q-HA-341 · `QuaderReplicasNotReady` covers the scanner Deployment
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The role regex of the alert gains `scanner` (chosen) | `<fullname>-scanner` with fewer than two available replicas fires after 5 minutes, critical | A scanner fleet that is down shows at once, without waiting for the half hour of `QuaderVulnerabilityImageScannerUnavailable`; the scanner has no registry row (H-1042), so the Deployment is the place to see it | A single-replica scanner fires it, as a single-replica role does |
+| (b) Only the alert of R-VULN-024 | No change | — | The scanners' state shows only through the codes of the scans, after half an hour |
+
+**Choice:** (a) ([_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), `TestR_HA_045_PrometheusRule`). **Rationale:** the scanner is
+a Deployment of the release like the roles the alert already covers. The development agent would revisit this if the scanner's replica count
+becomes optional (for example a scanner of one replica in a small profile).
+
+**Applied in the spec:** R-HA-045.
+
+### Q-HA-342 · The end-to-end case reads the scanner pod's files from its live spec
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-HA-065's end-to-end criterion lists the files below `/var/run/secrets/` with `kubectl exec`. The image is distroless: the binary
+and the analyser, no shell and no `ls`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read the running pod's volumes, their items and the container's mounts with `kubectl get pod -o json` (chosen) | The files the kubelet projects are exactly the items of the pod's Secret volumes | No change to the image; the live spec includes whatever an admission webhook added, which is what the criterion guards against | The files themselves are not listed |
+| (b) `kubectl debug` with an ephemeral busybox container | A shell beside the scanner | Lists the files | The namespace's Pod Security level and the scanner's user decide whether it may read them; a second image to pin |
+| (c) A `quader` subcommand that lists a directory | A list from inside | Lists the files | A command in the product for a test |
+
+**Choice:** (a) (`TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod`, `test/e2e/vuln_scanner_test.go`). **Rationale:**
+what the kubelet mounts is what the pod spec projects; reading the spec after admission is the faithful check without a tool in the image.
+The development agent would revisit this if the image gains a shell for another reason.
+
+**Applied in the spec:** R-HA-065.
+
+### Q-HA-343 · The scanner pod names no service account of the chart
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The scanner's pod sets no `serviceAccountName` and `automountServiceAccountToken: false` (chosen) | It runs under the namespace's `default` account and mounts no token | The chart's account may carry a cloud identity of the object store (IRSA, workload identity); a pod that holds no secret should not hold that either | An operator who restricts the namespace's `default` account sees the scanner use it |
+| (b) The chart's service account, with the token not mounted | As the other pods | One account | The cloud identity is bound to the account, not to the token mount: a web-identity webhook injects its own projected token by the account's annotation |
+| (c) An account of its own (`scanner.serviceAccount`) | A new object and value | Explicit | A value and an object for an account that needs no right |
+
+**Choice:** (a) ([scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml), `TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation`).
+**Rationale:** the scanner calls no API, so the account it runs under matters only for what an injection could attach to it, and `default`
+carries nothing the chart added. The development agent would revisit this if a cluster's policy refuses pods of the `default` account; the
+value of option (c) then follows.
+
+**Applied in the spec:** R-HA-065; [security/privilege-footprint.md](../security/privilege-footprint.md) and its gap
+[H-1070](../security/privilege-footprint.md#h-1070--the-scanner-runs-under-the-namespaces-default-service-account).
+
+### Q-HA-344 · The scanner carries the serve label; the Valkey policy of the local profile names Valkey's clients
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the pods of the chart's serving Deployments carry `quader/serve: "true"`, which the Service `<fullname>-ops` selects (and with it
+the ServiceMonitor), and which the local profile's Valkey policy (`deploy/dev/valkey.yaml`, `quader-valkey-clients`) and the dev scripts
+(`drain.sh`, `valkey-credential.sh`) read as "Quader's pods". R-HA-065 wants the scanner behind `<fullname>-ops`; the security pages say
+that Valkey's ingress example does not admit the scanner. With the label on the scanner, the profile's policy admitted it to Valkey.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The scanner keeps the label; the Valkey policies of the profile (`valkey.yaml`, `restore-ns.yaml`) admit the components `api`, `packages`, `worker` and `e2e-driver` by name (chosen) | An allow-list on the side that needs one | The ops Service and the ServiceMonitor see the scanner as R-HA-065 says; a component added later reaches Valkey only when named | The policy repeats the list of roles |
+| (b) No serve label on the scanner | The scanner outside every selector of the label | No policy change | A second ops Service or a second ServiceMonitor endpoint for one Deployment; the label's one meaning ("served by the ops Service") breaks |
+| (c) The label, and `NotIn [scanner]` in the policies | A deny-list | One line | A future component that holds no Valkey credential is admitted by default |
+
+**Choice:** (a). `drain.sh` evicts the scanner's pods with the release's, as it always did by the release's labels, and now waits for the
+scanner's rollout too; the drain tests of the nightly watch the replicas of `api`, `packages` and `worker` (`selQuader`) and neither pick
+a node by the scanner nor check its pods, which is right for a pod that serves no client and keeps no job. `valkey-credential.sh` closes the
+Valkey connections of every serving pod's address; the scanner has none, so it is not affected. **Rationale:** the label says what the
+ops Service selects; who may reach Valkey is said where Valkey is. The development agent would revisit this if the chart rendered Valkey's
+policy itself.
+
+**Applied in the spec:** R-HA-065; [local-profile.md](../developer/local-profile.md), [e2e.md](../developer/e2e.md#the-driver).
 
 ### Q-HA-360 · `clamd` runs in a container of the official image beside the scanner
 

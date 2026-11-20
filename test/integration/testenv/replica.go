@@ -41,7 +41,7 @@ type ReplicaOptions struct {
 	// Name is the replica's instance name (QUADER_POD_NAME); it must be unique in
 	// the stack.
 	Name string
-	// Role is web (default), worker or all.
+	// Role is web (default), worker, scanner or all.
 	Role string
 	// Env is appended to the stack's environment for this replica only.
 	Env []string
@@ -97,6 +97,12 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 	environ := append(append([]string{}, s.base...), "QUADER_POD_NAME="+o.Name, "QUADER_SERVER_OPS_LISTEN="+FreeAddr(tb))
 	if o.Endpoints != "" {
 		environ = append(environ, "QUADER_SERVER_ENDPOINTS="+o.Endpoints)
+	}
+	if o.Role == "worker" {
+		// A worker calls the scanner while the image scanning is on (R-VULN-041) and must name it; nothing answers on this port, so
+		// a call is put off with scanner_unavailable. The suite of the image scanning starts a scanner replica and names it in Env.
+		// The role all leaves it empty: its worker calls its own scanner over loopback (Q-ARCH-531).
+		environ = append(environ, "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=http://127.0.0.1:1")
 	}
 	environ = append(environ, o.Env...)
 	loaded, err := config.Load(config.Options{Environ: environ, Flags: map[string]string{"process.role": o.Role}, Command: config.CommandServe})
@@ -154,14 +160,41 @@ func (r *Replica) Addr(endpoint string) string { return r.App.EndpointAddr(endpo
 // OpsAddr is the address of the ops listener.
 func (r *Replica) OpsAddr() string { return r.App.OpsAddr().String() }
 
+// ScannerAddr is the address of the scanner's listener of a replica of the role scanner (R-ARCH-036); empty for every other.
+func (r *Replica) ScannerAddr() string {
+	if a := r.App.ScannerAddr(); a != nil {
+		return a.String()
+	}
+	return ""
+}
+
+// Origin is the origin of a listener address of the replica's stack: https on a stack with TLS, http otherwise.
+func (s *Stack) Origin(addr string) string {
+	if s.tls {
+		return "https://" + addr
+	}
+	return "http://" + addr
+}
+
+// client is the harness's client of the stack: Client, or one that verifies against the stack's CA on a stack with TLS.
+func (s *Stack) client() *http.Client {
+	if !s.tls {
+		return Client
+	}
+	return &http.Client{
+		Transport: &http.Transport{DisableKeepAlives: true, MaxIdleConnsPerHost: -1, TLSClientConfig: TLSConfig(s.tb)},
+		Timeout:   Client.Timeout,
+	}
+}
+
 // Metrics reads the replica's /metrics.
 func (r *Replica) Metrics(tb testing.TB) string {
 	tb.Helper()
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+r.OpsAddr()+"/metrics", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, r.stack.Origin(r.OpsAddr())+"/metrics", nil)
 	if err != nil {
 		tb.Fatal(err)
 	}
-	res, err := Client.Do(req)
+	res, err := r.stack.client().Do(req)
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -275,7 +308,7 @@ func (s *Stack) DoAt(addr, host, method, path, token string, body any, hdr ...st
 	if raw != nil {
 		rd = bytes.NewReader(raw)
 	}
-	req, err := http.NewRequestWithContext(context.Background(), method, "http://"+addr+path, rd)
+	req, err := http.NewRequestWithContext(context.Background(), method, s.Origin(addr)+path, rd)
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -289,7 +322,7 @@ func (s *Stack) DoAt(addr, host, method, path, token string, body any, hdr ...st
 	for i := 0; i+1 < len(hdr); i += 2 {
 		req.Header.Set(hdr[i], hdr[i+1])
 	}
-	res, err := Client.Do(req)
+	res, err := s.client().Do(req)
 	if err != nil {
 		tb.Fatalf("%s %s: %v", method, path, err)
 	}

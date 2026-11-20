@@ -378,6 +378,10 @@ func addWindow(take *cluster.LimitOp, ctr, bucket string, w time.Duration, at ti
 // figures refuse is not a refused request of R-LIM-008 (Q-LIM-58). In enforce the block and the request figures refuse; in audit
 // they are recorded as would_limit and nothing refuses (Q-LIM-4: no class is in force).
 func (e *Engine) Check(ctx context.Context, c *Charge, at time.Time, class ClassCheck) Stage {
+	if c != nil && c.Subject.Kind == KindSystem {
+		// The image scanning's pull is system work: counted in the usage store, checked against nothing (Q-LIM-66).
+		return Stage{}
+	}
 	if at.IsZero() {
 		at = e.now()
 	}
@@ -517,8 +521,8 @@ func markerRemaining(v string, now time.Time) (time.Duration, bool) {
 // windows and a parallel lease, in one round trip, before the status line. A request that holds a lease already (a miss that
 // took it at step 9a) passes without a second check. In audit nothing is refused and a would-limit is recorded.
 func (e *Engine) Admit(ctx context.Context, c *Charge) error {
-	if c == nil || c.bg {
-		return nil
+	if c == nil || c.bg || c.Subject.Kind == KindSystem {
+		return nil // no figure and no parallel lease for system work (Q-LIM-66)
 	}
 	c.download.Store(true)
 	c.mu.Lock()

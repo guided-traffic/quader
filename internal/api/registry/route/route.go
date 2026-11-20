@@ -40,6 +40,9 @@ type Target struct {
 	// CacheView and Bound only shape the scope a challenge names, so the client asks for the name it addressed.
 	CacheView bool
 	Bound     bool
+	// Reference is the route's reference parameter as the request named it: the tag or digest of a manifest, the digest of a
+	// blob or of a referrers request; empty for a route without one. The digest pin of a scan token reads it (R-OCI-037).
+	Reference string
 }
 
 // Matcher is the dispatcher's match of a request below /v2/ (dispatch.Dispatcher.RegistryTarget): the one function that says

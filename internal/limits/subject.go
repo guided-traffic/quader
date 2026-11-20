@@ -49,7 +49,8 @@ type Subject struct {
 	// Ref is the principal ID of a user, the technical token's ID, "<issuer ID>:<project ID>" of a CI project, the address
 	// prefix of an anonymous caller, or "system".
 	Ref string
-	// Credential is "session" or the personal token's ID for a user, empty for every other kind.
+	// Credential is "session" or the personal token's ID for a user, ScanCredential for the image scanning's pull of the
+	// subject system, empty for every other kind.
 	Credential string
 	// Groups are the group IDs the authentication stage resolved for a user, or the groups of a technical token's account;
 	// a group rule matches through them (R-LIM-013 step 3.2).
@@ -82,13 +83,19 @@ const (
 	CallerCI             CallerKind = "ci"
 	CallerBreakGlass     CallerKind = "break_glass"
 	CallerBastion        CallerKind = "bastion"
+	// CallerSystem is a system subject on a request: system:image-scanner, a scan token on the scan listener (R-OCI-037).
+	CallerSystem CallerKind = "system"
 )
 
 // KnownCallerKinds lists the kinds the table of R-LIM-001 names: a test compares it with the principal kinds of
 // internal/httpserver, so a new kind fails until it is named here.
 func KnownCallerKinds() []CallerKind {
-	return []CallerKind{CallerAnonymous, CallerUser, CallerServiceAccount, CallerCI, CallerBreakGlass, CallerBastion}
+	return []CallerKind{CallerAnonymous, CallerUser, CallerServiceAccount, CallerCI, CallerBreakGlass, CallerBastion, CallerSystem}
 }
+
+// ScanCredential is the credential column of the requests of the image scanning's pull, charged to the subject system
+// (Q-LIM-66): the usage store shows what the scanner read per repository.
+const ScanCredential = "image-scanner"
 
 // Caller is what the authentication stage decided about a request, as plain values (the edge converts its principal).
 type Caller struct {
@@ -141,6 +148,12 @@ func SubjectOf(c Caller) (Subject, bool) {
 		return Subject{Kind: KindCI, Ref: c.CIIssuerID + ":" + c.CIProjectID}, true
 	case CallerAnonymous:
 		return anon, true
+	case CallerSystem:
+		// The image scanning's pull is the installation's own work: recorded under the repository, limited by nothing, and it
+		// takes no parallel lease (Q-LIM-66).
+		s := System()
+		s.Credential = ScanCredential
+		return s, true
 	}
 	return anon, false
 }

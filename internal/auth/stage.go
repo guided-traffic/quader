@@ -118,6 +118,9 @@ func New(o Options) *Stage {
 
 // Authenticate implements [Authenticator].
 func (s *Stage) Authenticate(r *http.Request, ep EndpointRules) (Result, error) {
+	if ep.ScanOnly {
+		return s.byScanToken(r, ep)
+	}
 	p, raw := rulePaths(r, ep)
 	if isExchangeRoute(r.Method, raw) || raw == registrytoken.TokenPath {
 		// The ID token in the Authorization header of an exchange is not a
@@ -737,6 +740,10 @@ func (c Presented) SecretSHA256() [32]byte { return token.Hash(c.value()) }
 // credential, the anonymous principal where the endpoint and R-AUTH-037 allow it. A registry token is no credential here:
 // it fails the syntax step of a quader token, so a registry token cannot renew itself. The 401 carries Basic realm="quader".
 func (s *Stage) AuthenticateTokenRequest(r *http.Request, ep EndpointRules, c Presented) (Result, error) {
+	if ep.ScanOnly {
+		// The scan listener issues no token: its one credential is a scan token, which no token request yields (R-ARCH-037).
+		return s.fail(c.method, "type_not_accepted", errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid."))
+	}
 	p, raw := rulePaths(r, ep)
 	switch c.method {
 	case MethodNone:

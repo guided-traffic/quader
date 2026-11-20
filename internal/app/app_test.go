@@ -87,6 +87,8 @@ func baseEnv(t *testing.T, extra map[string]string) []string {
 		"QUADER_VALKEY_SENTINEL_ADDRESSES": `["s1:26379"]`, "QUADER_VALKEY_SENTINEL_PRIMARY_NAME": "quader",
 		"QUADER_STORAGE_S3_BUCKET": "blobs", "QUADER_SECRETS_ENCRYPTION_KEY_FILES": fmt.Sprintf(`[%q]`, keyFile(t)),
 		"QUADER_SECRETS_ACTIVE_KEY_ID": "2026-10", "QUADER_SERVER_BASE_URL": "https://quader.example.com",
+		// A worker calls the scanner while the image scanning is on (R-VULN-041); nothing answers on this port.
+		"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL": "https://127.0.0.1:1",
 	}
 	for k, v := range extra {
 		env[k] = v

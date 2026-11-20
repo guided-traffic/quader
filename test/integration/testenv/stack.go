@@ -45,17 +45,25 @@ type StackOptions struct {
 	// Env is appended to the environment of every replica after the harness's own
 	// settings, so it wins: the QUADER_* settings a whole suite changes.
 	Env []string
+	// TLS serves every listener of every replica with the stack's server pair and
+	// makes the stack's CA the trust anchor of the links between the replicas
+	// (server.internal_tls.ca_file, R-ARCH-038): the links of the image scanning
+	// are then mutual TLS, as in the chart. The harness's requests go over https
+	// and verify against the stack's CA.
+	TLS bool
 }
 
 // Stack is one installation under test.
 type Stack struct {
-	tb      testing.TB
-	name    string
-	dir     string
-	base    []string
-	sealed  string // the key file of the default key ring
-	pg      config.Database
-	valkey  bool
+	tb     testing.TB
+	name   string
+	dir    string
+	base   []string
+	sealed string // the key file of the default key ring
+	pg     config.Database
+	valkey bool
+	// tls is StackOptions.TLS: the replicas serve https and the harness verifies against the stack's CA.
+	tls     bool
 	adminMu sync.Mutex // the admin connection is not safe for concurrent use
 	admin   *pgx.Conn
 	val     *apitest.Validator
@@ -143,7 +151,7 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 		tb.Fatal(err)
 	}
 
-	s := &Stack{tb: tb, name: name, dir: dir, pg: cfg, valkey: o.Valkey, admin: conn, val: apitest.New(tb, v1.EmbeddedYAML())}
+	s := &Stack{tb: tb, name: name, dir: dir, pg: cfg, valkey: o.Valkey, tls: o.TLS, admin: conn, val: apitest.New(tb, v1.EmbeddedYAML())}
 	// Registered before any replica starts, so it runs after every replica has stopped (F-113).
 	RemoveObjectsAtCleanup(tb, S3Config(tb).BlobsBucket, s.ObjectPrefix())
 	var pooler []string
@@ -160,6 +168,12 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 	}
 	s.sealed = WriteFile(tb, dir, "2026-10.key", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{42}, 32)))
 	s.base = append(s.environ(host, port, name, userFile, passFile), pooler...)
+	if o.TLS {
+		// The stack's server pair carries localhost and 127.0.0.1 and both usages, server and client authentication
+		// (test/integration/certs.sh), so it serves every listener and authenticates every link (R-ARCH-038).
+		pair := strconv.Quote(filepath.Join(CertDir(tb), "server.crt")) + `,"key_file":` + strconv.Quote(filepath.Join(CertDir(tb), "server.key"))
+		s.base = append(s.base, `QUADER_SERVER_TLS_CERTIFICATES=[{"cert_file":`+pair+`}]`, "QUADER_SERVER_INTERNAL_TLS_CA_FILE="+CAFile(tb))
+	}
 	s.base = append(s.base, o.Env...)
 	s.Project(DefaultProject)
 	return s
@@ -361,7 +375,7 @@ func (s *Stack) Replicas() []*Replica {
 func (s *Stack) Pick() *Replica {
 	var web []*Replica
 	for _, r := range s.Replicas() {
-		if r.Role != "worker" {
+		if r.Role != "worker" && r.Role != "scanner" {
 			web = append(web, r)
 		}
 	}

@@ -1675,6 +1675,272 @@
       },
       "additionalProperties": false
     },
+    "scanner": {
+      "type": "object",
+      "properties": {
+        "replicaCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minReadySeconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revisionHistoryLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "strategy": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "RollingUpdate",
+                "Recreate"
+              ]
+            },
+            "rollingUpdate": {
+              "type": "object",
+              "properties": {
+                "maxSurge": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                },
+                "maxUnavailable": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "terminationGracePeriodSeconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "spool": {
+          "type": "object",
+          "properties": {
+            "sizeLimit": {
+              "type": [
+                "string",
+                "integer"
+              ],
+              "description": "Kubernetes quantity"
+            }
+          },
+          "additionalProperties": false
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "secretName": {
+              "type": "string",
+              "description": "a pair of the scanner's own, issued by the CA of tls.secretName's ca.crt; empty = tls.secretName (Q-HA-317)"
+            }
+          },
+          "additionalProperties": false
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "description": "Kubernetes quantity"
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "description": "Kubernetes quantity"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "podDisruptionBudget": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "maxUnavailable": {
+              "type": [
+                "string",
+                "integer",
+                "null"
+              ]
+            },
+            "minAvailable": {
+              "type": [
+                "string",
+                "integer",
+                "null"
+              ]
+            },
+            "unhealthyPodEvictionPolicy": {
+              "type": "string",
+              "enum": [
+                "AlwaysAllow",
+                "IfHealthyBudget"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "topologySpread": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "nodeTaintsPolicy": {
+              "type": "string",
+              "enum": [
+                "Honor",
+                "Ignore"
+              ]
+            },
+            "zone": {
+              "type": "object",
+              "properties": {
+                "maxSkew": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "whenUnsatisfiable": {
+                  "type": "string",
+                  "enum": [
+                    "DoNotSchedule",
+                    "ScheduleAnyway"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "host": {
+              "type": "object",
+              "properties": {
+                "maxSkew": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "whenUnsatisfiable": {
+                  "type": "string",
+                  "enum": [
+                    "DoNotSchedule",
+                    "ScheduleAnyway"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "nodeFailureTolerationSeconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "affinity": {
+          "type": "object"
+        },
+        "nodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tolerations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "priorityClassName": {
+          "type": "string"
+        },
+        "schedulerName": {
+          "type": "string"
+        },
+        "podAnnotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "podLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "extraEnv": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "autoscaling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "minReplicas": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maxReplicas": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "targetCPUUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "targetMemoryUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "behavior": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "The Deployment of the role scanner (R-HA-065): rendered while config.vulnerabilities.enabled and config.vulnerabilities.images.enabled are true"
+    },
     "config": {
       "type": "object",
       "description": "Rendered to /etc/quader/quader.yaml. Free-form until the binary emits internal/config/schema.json; the chart-owned parts are typed below.",

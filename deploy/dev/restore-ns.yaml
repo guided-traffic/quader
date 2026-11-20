@@ -155,6 +155,10 @@ spec:
             matchLabels:
               app.kubernetes.io/name: quader
               quader/serve: "true"
+            # Valkey's clients by name: the scanner carries the serve label too (the ops Service selects it) and holds no Valkey
+            # credential; it is not admitted (R-HA-065, Q-HA-344).
+            matchExpressions:
+              - {key: app.kubernetes.io/component, operator: In, values: [api, packages, worker, e2e-driver]}
       ports:
         - {port: 16379, protocol: TCP}
         - {port: 36379, protocol: TCP}

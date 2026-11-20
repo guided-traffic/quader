@@ -231,6 +231,10 @@ func (a *App) wireAuth(_ context.Context, id identityArea, lim limitsArea, ss se
 		if signer, err = registrytoken.NewSigner(ring, a.cfg.OCI.TokenLifetime); err != nil {
 			return authArea{}, err
 		}
+		// The scan listener verifies the worker's scan tokens, which live as long as the scanner's pull may take (R-OCI-037).
+		if signer, err = signer.ForScans(a.cfg.Vulnerabilities.Images.PullTimeout); err != nil {
+			return authArea{}, err
+		}
 	}
 	stage := auth.New(auth.Options{
 		Tokens: id.tokens, Sessions: sessions, Principals: id.principals, Limiter: lim.failures,

@@ -73,7 +73,7 @@ func TestRolesDeployments(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := []string{
 			"quader-api", "quader-api-admin", "quader-api-ep-customers", "quader-packages", "quader-packages-ep-customers",
-			"quader-packages-npm", "quader-worker", "quader-worker-bulk", "quader-worker-vuln",
+			"quader-packages-npm", "quader-scanner", "quader-worker", "quader-worker-bulk", "quader-worker-vuln",
 		}
 		if got := deploymentNames(docs); !equalStrings(got, want) {
 			t.Fatalf("Deployments = %v, want %v", got, want)
@@ -118,7 +118,12 @@ func TestRolesDeployments(t *testing.T) {
 			if got := str(labels, "app.kubernetes.io/component"); got != role {
 				t.Errorf("%s component = %q, want %q", name, got, role)
 			}
-			if v, ok := at(labels, "quader/pool").(string); !ok || v != wantPool[name] {
+			if role == "scanner" {
+				// The scanner has no pools; quader/pool belongs to the serving roles only (R-HA-028, R-HA-065).
+				if at(labels, "quader/pool") != nil {
+					t.Errorf("%s carries quader/pool = %v, which only the pods of api, packages and worker do", name, at(labels, "quader/pool"))
+				}
+			} else if v, ok := at(labels, "quader/pool").(string); !ok || v != wantPool[name] {
 				t.Errorf("%s quader/pool = %v, want %q", name, at(labels, "quader/pool"), wantPool[name])
 			}
 			if str(labels, "quader/serve") != "true" {
@@ -229,6 +234,8 @@ func TestRolesServices(t *testing.T) {
 			"quader-packages-npm":     {"quader-packages-npm"},
 			"quader-ep-customers":     {"quader-packages-ep-customers"},
 			"quader-api-ep-customers": {"quader-api-ep-customers"},
+			"quader-scanner":          {"quader-scanner"},
+			"quader-packages-scan":    {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
 			"quader-ops":              deploymentNames(docs),
 		}
 		for _, s := range ofKind(docs, "Service") {
@@ -270,8 +277,8 @@ func TestRolesServices(t *testing.T) {
 	t.Run("R-HA-028 containers open exactly the ports of their role, pool and endpoints", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := map[string][]int{
-			"quader-api": {8080, 8081}, "quader-packages": {8080, 8081}, "quader-api-admin": {8080, 8081}, "quader-packages-npm": {8080, 8081},
-			"quader-worker": {8081}, "quader-worker-vuln": {8081}, "quader-worker-bulk": {8081},
+			"quader-api": {8080, 8081}, "quader-packages": {8080, 8082, 8081}, "quader-api-admin": {8080, 8081}, "quader-packages-npm": {8080, 8081},
+			"quader-worker": {8081}, "quader-worker-vuln": {8081}, "quader-worker-bulk": {8081}, "quader-scanner": {8080, 8081},
 			"quader-api-ep-customers": {8443, 8081}, "quader-packages-ep-customers": {8443, 8081},
 		}
 		for n, ports := range want {
@@ -479,7 +486,9 @@ func TestRolesNetworkPolicy(t *testing.T) {
 	t.Run("R-HA-042 each policy admits the ports its pods open and no other, a pool's own 8080 and an endpoint pool's none", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := map[string][]int{
-			"quader-api": {8080, 8081}, "quader-packages": {8080, 8081}, "quader-api-admin": {8080, 8081}, "quader-packages-npm": {8080, 8081},
+			// The main packages pods open the scan listener's 8082, admitted from the scanner's pods only; the scanner's own policy
+			// admits its 8080 from one sender too: TestR_HA_042_TheLinksAdmitTheirOneSender.
+			"quader-api": {8080, 8081}, "quader-packages": {8080, 8082, 8081}, "quader-api-admin": {8080, 8081}, "quader-packages-npm": {8080, 8081},
 			"quader-worker": {8081}, "quader-worker-vuln": {8081}, "quader-worker-bulk": {8081},
 			"quader-api-ep-customers": {8443, 8081}, "quader-packages-ep-customers": {8443, 8081},
 			"quader-migrate": nil,
@@ -502,6 +511,10 @@ func TestRolesNetworkPolicy(t *testing.T) {
 					if has {
 						t.Errorf("%s: 8080 has a from, want from anywhere by default", n)
 					}
+				case len(p) == 1 && p[0] == 8082:
+					if !has || len(from) != 1 || str(from[0], "podSelector", "matchLabels", "app.kubernetes.io/component") != "scanner" {
+						t.Errorf("%s: 8082 from %v, want the scanner's pods only", n, from)
+					}
 				}
 			}
 			if len(got) != len(ports) {
@@ -516,14 +529,14 @@ func TestRolesNetworkPolicy(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-042 the policies of the default render are api, packages, worker and migrate, and backup with the backup on", func(t *testing.T) {
+	t.Run("R-HA-042 the policies of the default render are api, packages, worker, scanner and migrate, and backup with the backup on", func(t *testing.T) {
 		_, docs := render(t, required())
 		var got []string
 		for _, np := range ofKind(docs, "NetworkPolicy") {
 			got = append(got, str(np, "metadata", "name"))
 		}
 		sort.Strings(got)
-		if want := []string{"quader-api", "quader-migrate", "quader-packages", "quader-worker"}; !equalStrings(got, want) {
+		if want := []string{"quader-api", "quader-migrate", "quader-packages", "quader-scanner", "quader-worker"}; !equalStrings(got, want) {
 			t.Errorf("policies = %v, want %v", got, want)
 		}
 		if _, d := render(t, required(), backupSets()...); find(d, "NetworkPolicy", "quader-backup") == nil {

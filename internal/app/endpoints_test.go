@@ -307,7 +307,8 @@ func TestEndpointProcesses(t *testing.T) {
 
 	t.Run("R-EP-002 the development role all opens every listener, a worker none", func(t *testing.T) {
 		h := startEndpoints(t, "all", pooled(anyPort, nil))
-		if got := h.app.EndpointNames(); len(got) != 2 || !listening(h.app.EndpointAddr("customers")) {
+		// The role all also opens the scan listener on loopback, for its own scanner (R-ARCH-037, Q-ARCH-531).
+		if got := h.app.EndpointNames(); len(got) != 3 || !listening(h.app.EndpointAddr("customers")) || !listening(h.app.EndpointAddr("scan")) {
 			t.Fatalf("all: %v", got)
 		}
 		w := startEndpoints(t, "worker", pooled(heldPort(t), map[string]string{"QUADER_SERVER_LISTEN": heldPort(t)}))

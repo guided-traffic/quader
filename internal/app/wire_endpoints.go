@@ -79,7 +79,7 @@ func (a *App) planEndpoints() error {
 		return fmt.Errorf("role %s, pool %q serves no endpoint: no server.endpoints entry names the pool with a route family of the role (%s), and the endpoints without a pool belong to the main Deployment of the role",
 			a.id.Role, a.id.Pool, strings.Join(a.sub.Families, ", "))
 	}
-	return nil
+	return a.planScanListener() // the scan listener of packages (wire_scan_listener.go)
 }
 
 // warnEndpoint logs what the configuration validation allows but an operator
@@ -123,6 +123,14 @@ func (a *App) startEndpointTLS() error {
 			rt.tls = a.clientTLS
 			continue
 		}
+		if isScanListener(rt) {
+			l, err := a.scanListenerTLS()
+			if err != nil {
+				return err
+			}
+			rt.tls = l
+			continue
+		}
 		name := "client:" + rt.cfg.Name
 		l, err := httpserver.NewListenerTLS(name, rt.cfg.TLS, a.tlsOptions(name)...)
 		if err != nil {
@@ -152,7 +160,7 @@ func (a *App) startEndpoint(rt *endpointRuntime, router *httpserver.Router) erro
 	if err != nil {
 		return fmt.Errorf("endpoint %s: %w", rt.cfg.Name, err)
 	}
-	handler := httpserver.Chain{
+	chain := httpserver.Chain{
 		Router: router, Log: a.log, Endpoint: rt.ep, Events: endpointEvents{m: a.tele.metrics},
 		Trace: trace, TraceID: observabilityRequestID, AccessLog: reqLog,
 		OnRequest: label, MaxInFlight: rt.ep.MaxInFlight(), Resolver: resolver, Annotate: annotate,
@@ -161,12 +169,16 @@ func (a *App) startEndpoint(rt *endpointRuntime, router *httpserver.Router) erro
 		Draining:   a.health.Draining,
 		ExpectMark: blob.WithAwaitedBody,
 		AuthFailed: a.limitsFailedCredential(),
-	}.Handler()
-
+	}
 	name := "client"
-	if !rt.cfg.Default {
+	switch {
+	case isScanListener(rt):
+		// The scan listener counts no refused credential of an address: its one client is the scanner (R-AUTH-038, Q-LIM-66).
+		chain.AuthFailed, name = nil, "scan"
+	case !rt.cfg.Default:
 		name = "client:" + rt.cfg.Name
 	}
+	handler := chain.Handler()
 	srv, err := a.newServer(name, rt.cfg.Listen, handler, rt.tls)
 	if err != nil {
 		return err
@@ -194,6 +206,9 @@ func (a *App) clientServers() []*httpserver.Server {
 		if rt.srv != nil {
 			out = append(out, rt.srv)
 		}
+	}
+	if a.scannerSrv != nil {
+		out = append(out, a.scannerSrv) // the scanner's listener drains like a client listener (wire_scanner.go)
 	}
 	return out
 }
@@ -223,6 +238,9 @@ func endpointNames(cfg *config.Config) []string {
 	var out []string
 	for _, e := range cfg.Server.ResolveEndpoints() {
 		out = append(out, e.Name)
+	}
+	if cfg.Server.ScanListen != "" {
+		out = append(out, config.ScanEndpoint) // the scan listener's series carry endpoint="scan" (R-EP-002)
 	}
 	slices.Sort(out)
 	return out

@@ -28,6 +28,7 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	github.com/valkey-io/valkey-go v1.0.79
 	github.com/yuin/goldmark v1.8.7
+	go.etcd.io/bbolt v1.5.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.47.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.47.0

@@ -64,6 +64,10 @@ func actionStrings(c Coordinate) []string {
 // Allowed reads are recorded only with reads: all. An allowed write is recorded
 // by the writer in the transaction of the change (see [Engine.RecordAllowed]).
 func (e *Engine) audit(ctx context.Context, sub Subject, c Coordinate, d Decision) {
+	if isSystem(sub) {
+		// A system subject reads for the installation's own records; no event per request (R-OCI-037 "Audit").
+		return
+	}
 	read := readType(c)
 	reads := e.o.Config.Audit.Reads
 	switch d.Outcome {

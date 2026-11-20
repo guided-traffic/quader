@@ -199,7 +199,7 @@ The grant is a ceiling: `push` covers `overwrite`, and the decision point still 
 
 ## Scan tokens
 
-Specified, not built ([R-OCI-037](../spec/formats/oci.md#r-oci-037--scan-tokens-the-registry-token-of-the-image-scannings-pull),
+Built ([R-OCI-037](../spec/formats/oci.md#r-oci-037--scan-tokens-the-registry-token-of-the-image-scannings-pull), [scan.go](../../internal/auth/registrytoken/scan.go),
 [ADR-213](../decisions.md#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener)). The
 image scanning's worker signs a registry token of a second kind for each manifest it has the scanner analyse, with the same key as the token
 service; the scanner, which holds no key, receives it with the call and pulls the image with it
@@ -324,12 +324,12 @@ What makes it real: running the sets on a cluster that is not a throwaway (nothi
 ### H-1041 · A scan token is a bearer credential for one image until it runs out
 
 Stage: the scan token of [R-OCI-037](../spec/formats/oci.md#r-oci-037--scan-tokens-the-registry-token-of-the-image-scannings-pull), from the
-worker that signs it through the scanner that uses it to the scan listener that verifies it. Specified, not built.
+worker that signs it through the scanner that uses it to the scan listener that verifies it.
 
 Subject: the one image a token names: its manifest by digest, the blobs of its name, in its repository whatever the repository's visibility,
 blocked or not.
 
-Live once R-OCI-037 is built. A scan token is accepted until its expiry (`vulnerabilities.images.pull_timeout`, 10 minutes by default) by
+Live. A scan token is accepted until its expiry (`vulnerabilities.images.pull_timeout`, 10 minutes by default) by
 anyone who presents it on the scan listener, and nothing revokes it sooner but the removal of its key from the ring. The scanner, which
 receives every token of the calls it serves, is the party that holds them: an analyser that an image took over can read the token of its own
 call and, with more than one slot, of the other calls of its pod ([H-1037](image-scanning.md#h-1037--analyses-that-share-a-scanner-share-its-user)),

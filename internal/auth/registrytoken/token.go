@@ -87,6 +87,11 @@ type Claims struct {
 	IssuedAt  time.Time
 	ExpiresAt time.Time
 	Grant     Grant
+	// System, ScanID and Digest are set on a scan token only (R-OCI-037, scan.go): the system subject that uses it, the scan's ID
+	// and the digest of the one manifest it reaches. A token without System carries neither of the others.
+	System string
+	ScanID string
+	Digest string
 }
 
 // wire is the JSON of the claims. The names are short because the token travels in every request.
@@ -102,6 +107,10 @@ type wire struct {
 	ExpiresAt int64       `json:"exp"`
 	Grant     []wireEntry `json:"g,omitempty"`
 	Catalog   bool        `json:"c,omitempty"`
+	// The members of a scan token (R-OCI-037).
+	System string `json:"s,omitempty"`
+	ScanID string `json:"sid,omitempty"`
+	Digest string `json:"d,omitempty"`
 }
 
 type wireEntry struct {
@@ -119,6 +128,8 @@ func bindable(typ string) bool { return typ == "pat" || typ == "sat" || typ == "
 type Signer struct {
 	keys     *secrets.DerivedKeys
 	lifetime time.Duration
+	// scanLifetime is vulnerabilities.images.pull_timeout, the bound of a scan token (Q-OCI-229); 0 issues and accepts none.
+	scanLifetime time.Duration
 }
 
 // NewSigner derives the MAC keys from every key of the ring (R-ARCH-021, info [KeyInfo]): the active key's derivation
@@ -150,14 +161,15 @@ func (s *Signer) Issue(c Claims) (string, error) {
 	if err := c.check(); err != nil {
 		return "", err
 	}
-	if c.ExpiresAt.Sub(c.IssuedAt) > s.lifetime {
+	if c.ExpiresAt.Sub(c.IssuedAt) > s.boundOf(c) {
 		return "", fmt.Errorf("%w: %s", ErrLifetime, c.ExpiresAt.Sub(c.IssuedAt))
 	}
 	w := wire{
 		Anonymous: c.Anonymous, Kind: c.PrincipalKind, Principal: c.PrincipalID, Endpoint: c.Endpoint,
 		IssuedAt: c.IssuedAt.Unix(), ExpiresAt: c.ExpiresAt.Unix(), Catalog: c.Grant.Catalog,
+		System: c.System, ScanID: c.ScanID, Digest: c.Digest,
 	}
-	if !c.Anonymous {
+	if !c.Anonymous && c.System == "" {
 		w.TokenID, w.TokenType = c.Binding.TokenID, c.Binding.TokenType
 		w.TokenHash = base64.RawURLEncoding.EncodeToString(c.Binding.SecretSHA256[:])
 	}
@@ -216,7 +228,7 @@ func (s *Signer) Verify(raw, endpoint string, now time.Time) (Claims, error) {
 	if !now.Before(c.ExpiresAt) {
 		return Claims{}, ErrExpired
 	}
-	if c.IssuedAt.After(now.Add(MaxClockSkew)) || c.ExpiresAt.Sub(c.IssuedAt) > s.lifetime {
+	if c.IssuedAt.After(now.Add(MaxClockSkew)) || c.ExpiresAt.Sub(c.IssuedAt) > s.boundOf(c) {
 		return Claims{}, ErrLifetime
 	}
 	if c.Endpoint != endpoint {
@@ -245,6 +257,7 @@ func decode(kid string, body []byte) (Claims, error) {
 		KeyID: kid, Anonymous: w.Anonymous, PrincipalKind: w.Kind, PrincipalID: w.Principal, Endpoint: w.Endpoint,
 		IssuedAt: time.Unix(w.IssuedAt, 0), ExpiresAt: time.Unix(w.ExpiresAt, 0),
 		Binding: Binding{TokenID: w.TokenID, TokenType: w.TokenType}, Grant: Grant{Catalog: w.Catalog},
+		System: w.System, ScanID: w.ScanID, Digest: w.Digest,
 	}
 	if w.TokenHash != "" {
 		h, err := base64.RawURLEncoding.Strict().DecodeString(w.TokenHash)
@@ -277,6 +290,12 @@ func (c Claims) check() error {
 		return fmt.Errorf("%w: the lifetime is not between 1 s and %s", ErrMalformed, MaxLifetime)
 	case len(c.Grant.Entries) > MaxEntries:
 		return fmt.Errorf("%w: more than %d grant entries", ErrMalformed, MaxEntries)
+	}
+	if c.System != "" {
+		return c.checkScan()
+	}
+	if c.ScanID != "" || c.Digest != "" {
+		return fmt.Errorf("%w: a token without a system subject carries no scan ID and no digest", ErrMalformed)
 	}
 	if c.Anonymous {
 		if c.PrincipalID != "" || c.Binding != (Binding{}) {

@@ -153,11 +153,11 @@ func TestProcessRole(t *testing.T) {
 			Environ: minimalEnv(), Command: CommandServe,
 		})
 		msgs := issuesOf(t, err)
-		containsAll(t, msgs, "process.role must be api, packages, worker, web or all")
+		containsAll(t, msgs, "process.role must be api, packages, worker, scanner, web or all")
 	})
 	t.Run("R-ARCH-001 an invalid role is rejected", func(t *testing.T) {
 		_, err := Load(Options{Environ: servableEnv("QUADER_PROCESS_ROLE=backup"), Command: CommandServe, ReadFile: fakeFS(nil)})
-		containsAll(t, issuesOf(t, err), "process.role must be one of api, packages, worker, web, all")
+		containsAll(t, issuesOf(t, err), "process.role must be one of api, packages, worker, scanner, web, all")
 	})
 	t.Run("R-ARCH-001 the role flag overrides the file and the environment", func(t *testing.T) {
 		l := mustLoad(t, Options{

@@ -1,0 +1,349 @@
+{{- /*
+The role scanner (R-HA-065, R-HA-066, ADR-212): <fullname>-scanner runs "quader serve --role scanner" and analyses container images
+for the worker. It holds no secret of PostgreSQL, the object store or Valkey and no key of the key ring: its volumes are the spool,
+/tmp, the configuration file, the TLS pair it serves and presents and the internal CA, and nothing else; none of the shared extras
+(extraEnv, extraEnvFrom, extraVolumes, extraVolumeMounts) reaches it (Q-HA-321). It uses no service account of the chart: that one
+may carry a cloud identity of the object store, and the scanner calls no API (automountServiceAccountToken false, no RBAC).
+
+Beside the Deployment: its PodDisruptionBudget and autoscaler, the two ClusterIP Services of the links (<fullname>-scanner on 8080,
+<fullname>-packages-scan on 8082 of the main packages pods, Q-HA-319), and its NetworkPolicy of ingress rules only (ADR-154): the
+scanner admits 8080 from the worker Deployment that claims the queue vuln (Q-HA-320) and 8081 from the ops peers. The rule of the
+main packages pods that admits 8082 from the scanner's pods is one rule more of their own policy (templates/networkpolicy.yaml,
+quader.scanListenRule). Nothing is rendered while the image scanning is off.
+*/ -}}
+{{- if include "quader.scannerOn" . }}
+{{- $ := . }}
+{{- $r := .Values.scanner }}
+{{- $fullname := include "quader.fullname" . }}
+{{- $ctx := dict "root" $ "role" "scanner" "r" $r "pool" "" }}
+{{- $tlsSecret := include "quader.scannerTLSSecret" . }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-scanner
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" "scanner") | nindent 4 }}
+  {{- with (include "quader.commonAnnotations" $) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not $r.autoscaling.enabled }}
+  replicas: {{ $r.replicaCount }}
+  {{- else }}
+  {{- $live := lookup "apps/v1" "Deployment" $.Release.Namespace (printf "%s-scanner" $fullname) }}
+  {{- if $live }}
+  replicas: {{ int (dig "spec" "replicas" 1 $live) }}
+  {{- end }}
+  {{- end }}
+  minReadySeconds: {{ $r.minReadySeconds }}
+  revisionHistoryLimit: {{ $r.revisionHistoryLimit }}
+  strategy:
+    {{- toYaml $r.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "quader.selectorLabels" (dict "root" $ "component" "scanner") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include "quader.config" $ | sha256sum }}
+        {{- with $r.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "quader.labels" (dict "root" $ "component" "scanner") | nindent 8 }}
+        quader/serve: "true"
+        {{- with $r.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ $r.terminationGracePeriodSeconds }}
+      {{- include "quader.imagePullSecrets" $ | nindent 6 }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- with $r.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- with $r.schedulerName }}
+      schedulerName: {{ . }}
+      {{- end }}
+      {{- with $r.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $r.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      tolerations:
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: {{ $r.nodeFailureTolerationSeconds }}
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: {{ $r.nodeFailureTolerationSeconds }}
+        {{- with $r.tolerations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- include "quader.topologySpread" $ctx | nindent 6 }}
+      containers:
+        {{- /* The scanner is the first process of its container: no shell, no init, which the reaper of Q-ARCH-530 relies on. */}}
+        - name: quader
+          image: {{ include "quader.image" $ | quote }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args:
+            - serve
+            - --role
+            - scanner
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          ports:
+            - name: https
+              containerPort: 8080
+              protocol: TCP
+            - name: ops
+              containerPort: 8081
+              protocol: TCP
+          env:
+            {{- include "quader.podEnv" $ | nindent 12 }}
+            - name: QUADER_RUNTIME_MEMORY_LIMIT_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+                  divisor: "1"
+            - name: QUADER_RUNTIME_TERMINATION_GRACE_PERIOD
+              value: {{ printf "%ds" (int64 $r.terminationGracePeriodSeconds) | quote }}
+            - name: QUADER_STORAGE_SPOOL_MAX_BYTES
+              value: {{ sub (include "quader.bytes" (include "quader.spoolSize" $ctx) | int64) (include "quader.bytes" $.Values.spool.headroom | int64) | quote }}
+            {{- if not (dig "limits" "cpu" "" $r.resources) }}
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  resource: requests.cpu
+                  divisor: "1"
+            {{- end }}
+            - name: TMPDIR
+              value: /tmp
+            {{- with $r.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- include "quader.probes" $ | nindent 10 }}
+          resources:
+            {{- toYaml $r.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/quader/quader.yaml
+              subPath: quader.yaml
+              readOnly: true
+            - name: spool
+              mountPath: /var/lib/quader/spool
+            - name: tmp
+              mountPath: /tmp
+            {{- if $.Values.tls.enabled }}
+            - name: secret-tls
+              mountPath: /var/run/secrets/quader/tls
+              readOnly: true
+            - name: secret-tls-internal
+              mountPath: /var/run/secrets/quader/tls-internal
+              readOnly: true
+            {{- if $.Values.tls.ops.secretName }}
+            {{- /* The operations listener's own pair, which the probes and the scrape see (R-HA-063). */}}
+            - name: secret-tls-ops
+              mountPath: /var/run/secrets/quader/tls-ops
+              readOnly: true
+            {{- end }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $fullname }}-config
+        - name: spool
+          {{- /* The spool follows spool.type like every role's (R-HA-061): an emptyDir, or a generic ephemeral volume of one claim per pod. */}}
+          {{- if eq $.Values.spool.type "ephemeral" }}
+          ephemeral:
+            volumeClaimTemplate:
+              metadata:
+                labels:
+                  {{- include "quader.labels" (dict "root" $ "component" "scanner") | nindent 18 }}
+              spec:
+                accessModes:
+                  {{- toYaml $.Values.spool.ephemeral.accessModes | nindent 18 }}
+                {{- with $.Values.spool.ephemeral.storageClassName }}
+                storageClassName: {{ . }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ $.Values.spool.ephemeral.size }}
+          {{- else }}
+          emptyDir:
+            sizeLimit: {{ include "quader.spoolSize" $ctx }}
+            {{- with $.Values.spool.medium }}
+            medium: {{ . }}
+            {{- end }}
+          {{- end }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ $.Values.tmp.sizeLimit }}
+        {{- if $.Values.tls.enabled }}
+        - name: secret-tls
+          secret:
+            secretName: {{ $tlsSecret }}
+            defaultMode: 0440
+            items:
+              - key: {{ $.Values.tls.certKey }}
+                path: tls.crt
+              - key: {{ $.Values.tls.keyKey }}
+                path: tls.key
+        - name: secret-tls-internal
+          secret:
+            secretName: {{ $.Values.tls.secretName }}
+            defaultMode: 0440
+            items:
+              - key: ca.crt
+                path: ca.crt
+        {{- if $.Values.tls.ops.secretName }}
+        - name: secret-tls-ops
+          secret:
+            secretName: {{ $.Values.tls.ops.secretName }}
+            defaultMode: 0440
+            items:
+              - key: {{ $.Values.tls.ops.certKey }}
+                path: tls.crt
+              - key: {{ $.Values.tls.ops.keyKey }}
+                path: tls.key
+        {{- end }}
+        {{- end }}
+{{- if $r.podDisruptionBudget.enabled }}
+{{- include "quader.pdb" (dict "root" $ "unit" (dict "name" "scanner" "role" "scanner" "pool" "" "r" $r)) | nindent 0 }}
+{{- end }}
+{{- with $r.autoscaling }}
+{{- if .enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $fullname }}-scanner
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" "scanner") | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $fullname }}-scanner
+  minReplicas: {{ .minReplicas }}
+  maxReplicas: {{ .maxReplicas }}
+  metrics:
+    {{- if .targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .targetMemoryUtilizationPercentage }}
+    {{- end }}
+    {{- with .metrics }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .behavior }}
+  behavior:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- /* The two links get ClusterIP Services of their own, never the client Services (Q-HA-319): no value exposes them. */}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-scanner
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" "scanner") | nindent 4 }}
+  {{- with (include "quader.commonAnnotations" $) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: https
+      port: 8080
+      targetPort: https
+      protocol: TCP
+      {{- if $.Values.tls.enabled }}
+      appProtocol: https
+      {{- end }}
+  selector:
+    {{- include "quader.selectorLabels" (dict "root" $ "component" "scanner") | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-packages-scan
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" "packages" "pool" "") | nindent 4 }}
+  {{- with (include "quader.commonAnnotations" $) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: scan
+      port: 8082
+      targetPort: scan
+      protocol: TCP
+      {{- if $.Values.tls.enabled }}
+      appProtocol: https
+      {{- end }}
+  selector:
+    {{- include "quader.selectorLabels" (dict "root" $ "component" "packages" "pool" "") | nindent 4 }}
+{{- if .Values.networkPolicy.enabled }}
+{{- $np := .Values.networkPolicy }}
+{{- $ops := list }}
+{{- range $np.ingress.ops.from }}{{ $ops = append $ops . }}{{- end }}
+{{- range $np.ingress.probeCIDRs }}{{ $ops = append $ops (dict "ipBlock" (dict "cidr" .)) }}{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-scanner
+  labels:
+    {{- include "quader.labels" (dict "root" $ "component" "scanner") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "quader.selectorLabels" (dict "root" $ "component" "scanner") | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080
+      from:
+        - podSelector:
+            matchLabels:
+              {{- include "quader.selectorLabels" (dict "root" $ "component" "worker" "pool" (include "quader.vulnWorkerPool" $)) | nindent 14 }}
+    {{- if $ops }}
+    - ports:
+        - protocol: TCP
+          port: 8081
+      from:
+        {{- toYaml $ops | nindent 8 }}
+    {{- end }}
+{{- end }}
+{{- end }}

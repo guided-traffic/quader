@@ -146,6 +146,11 @@ func (d *Dispatcher) matchRegistry(r *http.Request) (matched, error) {
 	if rt.PackageParam != "" {
 		m.target.Image = params[rt.PackageParam]
 	}
+	// The reference the route names, for the digest pin of a scan token (R-OCI-037).
+	m.target.Reference = params["reference"]
+	if m.target.Reference == "" {
+		m.target.Reference = params["digest"]
+	}
 	return m, nil
 }
 

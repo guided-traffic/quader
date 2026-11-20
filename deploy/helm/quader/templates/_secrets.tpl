@@ -127,7 +127,7 @@ that loads none of them does not get the private key.
 {{- $role := .role | default "" -}}
 {{- $pool := .pool | default "" -}}
 {{- $client := include "quader.opensDefault" (dict "role" $role "pool" $pool) | eq "true" -}}
-{{- $mainPair := or $client (not $t.ops.secretName) -}}
+{{- $mainPair := or $client (not $t.ops.secretName) (include "quader.linkNeedsPair" (dict "root" .root "role" $role) | eq "true") -}}
 {{- if and (ne $role "worker") (not $mainPair) -}}
 {{- range $name := include "quader.unitEndpoints" (dict "root" .root "role" $role "pool" $pool) | fromYamlArray -}}
 {{- $e := include "quader.endpoint" (dict "root" $.root "name" $name) | fromYaml -}}
@@ -145,6 +145,8 @@ that loads none of them does not get the private key.
 {{- if $t.ops.secretName -}}
 {{- $out = append $out (dict "name" "tls-ops" "secret" $t.ops.secretName "path" "/var/run/secrets/quader/tls-ops" "items" (list (dict "key" $t.ops.certKey "path" "tls.crt") (dict "key" $t.ops.keyKey "path" "tls.key"))) -}}
 {{- end -}}
+{{- /* The internal CA of the links of the image scanning (R-HA-066, templates/_scanner.tpl). */ -}}
+{{- $out = concat $out (include "quader.scannerLinkMounts" (dict "root" .root "role" $role "pool" $pool) | fromYamlArray) -}}
 {{- end -}}
 {{- /* The Secrets of the endpoints this pod serves (R-EP-004, R-EP-008); worker pods and the Job serve none. */ -}}
 {{- $out = concat $out (include "quader.endpointSecretMounts" (dict "root" .root "role" (.role | default "") "pool" (.pool | default "")) | fromYamlArray) -}}

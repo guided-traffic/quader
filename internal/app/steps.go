@@ -70,6 +70,8 @@ const (
 	onWeb
 	onAll
 	onShell
+	// onScanner is the role scanner: its one area and nothing of the infrastructure (R-ARCH-036).
+	onScanner
 
 	// everyRole is a serving role of any kind; withListener is a role that opens a
 	// client listener. web is the union of api and packages, and all enables every
@@ -223,6 +225,7 @@ func wiringSteps() []step {
 		newStep(AreaEndpoints, withListener, (*App).wireEndpoints),
 		newStep(AreaAPI, withListener, (*App).wireAPI),
 		newStep(AreaCIExchange, onManagement, (*App).wireCIExchange),
+		newStep(AreaScanner, onScanner|onAll, (*App).wireScanner, withOptional(blobArea{})),
 		newStep(AreaShell, onShell, (*App).wireShell),
 	}
 }

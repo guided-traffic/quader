@@ -213,6 +213,18 @@ type api struct {
 	minEpoch string
 	// writes guards the write class of the token (withWriteBudget); nil guards nothing
 	writes *writeBudget
+	// paced makes a setup's client wait out the write class (withPacedWrites): a 429 of a request whose body can be sent
+	// again is sent again after its Retry-After, a few times. Never set on a client whose test asserts a 429.
+	paced bool
+}
+
+// withPacedWrites returns a copy of the client for an environment's setup, which sends its writes as fast as the host runs:
+// on an idle host of many cores the setup of the set vuln sent more than the burst of the write class (R-API-016: 50, then
+// 10 a second) and met a 429 that no test was about. The copy waits as the answer says instead.
+func (a *api) withPacedWrites() *api {
+	b := *a
+	b.paced = true
+	return &b
 }
 
 // writeBudget is the guard of a test that spends the write class of its token (R-API-016, Q-AUTH-188). It counts the
@@ -395,6 +407,23 @@ func unsafeMethod(m string) bool {
 // send performs a request; body is nil, []byte, string, io.Reader or a value that is sent as JSON. h holds
 // header name and value pairs. A path starting with https:// is used as it is.
 func (a *api) send(method, path string, body any, h ...string) (reply, error) {
+	if !a.paced {
+		return a.sendOnce(method, path, body, h...)
+	}
+	if _, stream := body.(io.Reader); stream {
+		return a.sendOnce(method, path, body, h...)
+	}
+	for attempt := 0; ; attempt++ {
+		r, err := a.sendOnce(method, path, body, h...)
+		if err != nil || r.Status != http.StatusTooManyRequests || attempt == 5 {
+			return r, err
+		}
+		wait, _ := strconv.Atoi(r.Header.Get("Retry-After"))
+		time.Sleep(time.Duration(min(max(wait, 1), 10)) * time.Second)
+	}
+}
+
+func (a *api) sendOnce(method, path string, body any, h ...string) (reply, error) {
 	var rd io.Reader
 	ctype := ""
 	switch b := body.(type) {

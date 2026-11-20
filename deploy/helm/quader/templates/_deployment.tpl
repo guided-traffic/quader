@@ -113,6 +113,9 @@ spec:
             - containerPort: {{ $port }}
               protocol: TCP
             {{- end }}
+            {{- with (include "quader.scanListenPort" $ctx) }}
+            {{- . | nindent 12 }}
+            {{- end }}
             - name: ops
               containerPort: 8081
               protocol: TCP
@@ -132,6 +135,9 @@ spec:
               value: {{ $unit.excludeQueues | toJson | quote }}
             {{- end }}
             {{- with (include "quader.s3EnvFromSecret" $) }}
+            {{- . | nindent 12 }}
+            {{- end }}
+            {{- with (include "quader.scanListenEnv" $ctx) }}
             {{- . | nindent 12 }}
             {{- end }}
             - name: QUADER_RUNTIME_MEMORY_LIMIT_BYTES

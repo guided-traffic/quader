@@ -157,7 +157,8 @@ func buildVulnEnv(t testing.TB) (*vulnEnv, error) {
 	b := make([]byte, 3)
 	_, _ = rand.Read(b)
 	e := &vulnEnv{run: hex.EncodeToString(b), npmTri: map[string]string{}, nugetTri: map[string]string{}, advisoryOf: map[string]string{}}
-	e.adm = adminAPI(t)
+	// The setup sends its writes at the host's pace and waits out the write class where it meets it (withPacedWrites).
+	e.adm = adminAPI(t).withPacedWrites()
 
 	// The three upstreams start clean: the dataset of the advisory source back to its fixture, the counters and the
 	// modes of the npm and NuGet upstreams.

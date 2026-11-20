@@ -12,6 +12,8 @@ import (
 const (
 	ReasonAllowGrant = "allow.grant"
 	ReasonAllowRole  = "allow.role"
+	// ReasonAllowSystem: the fixed rule of a system subject admitted it (R-AUTHZ-002, system.go).
+	ReasonAllowSystem = "allow.system"
 	// ReasonAllowVisibility: a visibility level admitted the read (R-AUTHZ-035 rule 9); ReasonWiki: the wiki read was refused
 	// where the artifacts read is allowed (R-AUTHZ-034).
 	ReasonAllowVisibility         = "allow.visibility"

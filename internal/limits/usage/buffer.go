@@ -125,7 +125,8 @@ func (b *Buffer) Add(d limits.UsageDelta) {
 	}
 	start := bucket5m(d.At)
 	k := key{start: start, kind: d.Subject.Kind, ref: d.Subject.Ref, credential: d.Subject.Credential, place: d.Place.Key(), repo: d.RepoID, via: d.ViaRepoID}
-	if d.Subject.Kind != limits.KindUser {
+	if d.Subject.Kind != limits.KindUser && d.Subject.Kind != limits.KindSystem {
+		// A user's row names the session or the token; the system's names the work (image-scanner, Q-LIM-66); no other kind has one.
 		k.credential = ""
 	}
 	b.mu.Lock()

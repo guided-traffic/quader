@@ -56,17 +56,7 @@ func (c *Config) Validate(r *Report) {
 		r.Add("database.preflight.expected_web_replicas", "(%d) is the deprecated name of expected_serving_replicas (%d) and the two differ: set only expected_serving_replicas (Q-HA-77)",
 			p.ExpectedWebReplicas, p.ExpectedServingReplicas)
 	}
-	if grace := c.Runtime.TerminationGracePeriod; grace > 0 {
-		fixed := c.Health.ShutdownDrainDelay + ShutdownMargin
-		switch t := c.Server.ShutdownTimeout; {
-		case t == 0 && grace-fixed < minShutdownTimeout:
-			r.Add("runtime.termination_grace_period", "%s leaves no shutdown time after health.shutdown_drain_delay (%s) and the %s margin",
-				grace, c.Health.ShutdownDrainDelay, ShutdownMargin)
-		case t > 0 && fixed+t > grace:
-			r.Add("server.shutdown_timeout", "%s plus health.shutdown_drain_delay (%s) plus the %s margin exceeds runtime.termination_grace_period (%s); the kubelet would kill the process mid-drain",
-				t, c.Health.ShutdownDrainDelay, ShutdownMargin, grace)
-		}
-	}
+	c.validateShutdownBudget(r)
 	if c.System.BootstrapAnonymousRead {
 		// Every endpoint's origin counts: the bridge is checked against the origins
 		// that reach the edge, not only the default one (SA3).
@@ -81,6 +71,23 @@ func (c *Config) Validate(r *Report) {
 				r.Add("system.bootstrap_anonymous_read", "must not be true while %s is an https origin other than localhost: it opens system.read to everyone who reaches the edge", key)
 			}
 		}
+	}
+}
+
+// validateShutdownBudget checks the shutdown budget against the pod's grace period (R-HA-011).
+func (c *Config) validateShutdownBudget(r *Report) {
+	grace := c.Runtime.TerminationGracePeriod
+	if grace <= 0 {
+		return
+	}
+	fixed := c.Health.ShutdownDrainDelay + ShutdownMargin
+	switch t := c.Server.ShutdownTimeout; {
+	case t == 0 && grace-fixed < minShutdownTimeout:
+		r.Add("runtime.termination_grace_period", "%s leaves no shutdown time after health.shutdown_drain_delay (%s) and the %s margin",
+			grace, c.Health.ShutdownDrainDelay, ShutdownMargin)
+	case t > 0 && fixed+t > grace:
+		r.Add("server.shutdown_timeout", "%s plus health.shutdown_drain_delay (%s) plus the %s margin exceeds runtime.termination_grace_period (%s); the kubelet would kill the process mid-drain",
+			t, c.Health.ShutdownDrainDelay, ShutdownMargin, grace)
 	}
 }
 
@@ -106,6 +113,7 @@ func localOrigin(raw string) bool {
 func (c *Config) Finalize(sources map[string]Source) {
 	c.Storage.finalizeEndpoints(sources)
 	c.Server.fillEndpointDefaults()
+	c.Vulnerabilities.Images.finalizeScanDir(c.Storage.Spool.Dir, sources)
 	if c.Server.ShutdownTimeout != 0 {
 		return
 	}

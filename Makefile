@@ -449,6 +449,13 @@ $(TRIVY_BIN):
 .PHONY: trivy
 trivy: $(TRIVY_BIN) ## Fetch Trivy at its pin into .bin/trivy-<version> (CI: container-scan puts the directory on PATH)
 
+# The fidelity of the rewritten analysis (R-VULN-043, Q-VULN-176): the pinned analyser analyses a fixed image of kilobytes, and its
+# detections of its own document and of the worker's rewrite against the fixture database of internal/vuln/imagescan/testdata are
+# equal. The one test of the unit tier that needs the binary; without QUADER_TEST_TRIVY_BIN it is skipped.
+.PHONY: test-analyser
+test-analyser: $(TRIVY_BIN) ## The rewritten analysis against the pinned analyser (TestQ_VULN_164, about 2 s plus the test's build; CI: container-scan)
+	QUADER_TEST_TRIVY_BIN=$(abspath $(TRIVY_BIN)) go test -count=1 -v -run '^TestQ_VULN_164_' ./internal/vuln/imagescan/
+
 .PHONY: chart-test
 chart-test: $(PROMTOOL_BIN) ## Chart render assertions of E0.7 and the promtool rule tests of the PrometheusRule (test/chart/test.sh); .out/test-chart.json
 	QUADER_PROMTOOL=$(abspath $(PROMTOOL_BIN)) test/chart/test.sh

@@ -211,6 +211,9 @@ func TestR_OCI_008_WriteErrorMapsEveryRowOfTheTable(t *testing.T) {
 			map[string]string{"WWW-Authenticate": `Bearer realm="https://quader.example.com/v2/_token"`},
 		},
 		{"denied", errs.E(errs.Forbidden, errs.CodeForbidden, "x"), 403, "DENIED", nil},
+		// The one refusal whose quader code travels in a header: the image scanning's pull tells an uncached layer of a remote
+		// from a refused scan token by it (R-VULN-042, Q-VULN-180).
+		{"populate not permitted", errs.E(errs.Forbidden, errs.CodePopulateNotPermitted, "x"), 403, "DENIED", map[string]string{"Quader-Error-Code": "populate_not_permitted"}},
 		{"not offered", errs.E(errs.Invalid, errs.CodeOCIUnsupported, "x"), 400, "UNSUPPORTED", nil},
 		{"method not allowed", errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "x", errs.WithAllow("GET", "HEAD")), 405, "UNSUPPORTED", map[string]string{"Allow": "GET, HEAD"}},
 		{"rate limit", errs.E(errs.RateLimited, errs.CodeRateLimited, "x", errs.WithRetryAfter(3*time.Second)), 429, "TOOMANYREQUESTS", map[string]string{"Retry-After": "3"}},
@@ -254,6 +257,9 @@ func TestR_OCI_008_WriteErrorMapsEveryRowOfTheTable(t *testing.T) {
 				if got := w.Header().Get(k); got != v {
 					t.Errorf("%s = %q, want %q", k, got, v)
 				}
+			}
+			if _, want := tc.header["Quader-Error-Code"]; !want && w.Header().Get("Quader-Error-Code") != "" {
+				t.Errorf("Quader-Error-Code = %q on a refusal that does not carry it", w.Header().Get("Quader-Error-Code"))
 			}
 		})
 	}

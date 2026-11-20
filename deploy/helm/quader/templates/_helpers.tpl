@@ -368,5 +368,7 @@ The trusted CA bundle (R-HA-043): its files are added to proxy.outbound.tls.ca_f
 {{- $_ := set $st "s3" $s3 -}}
 {{- end -}}
 {{- end -}}
+{{- /* The links of the image scanning (R-HA-066, templates/_scanner.tpl). */ -}}
+{{- include "quader.scannerManagedConfig" (dict "root" . "managed" $managed) -}}
 {{- $managed | mergeOverwrite (deepCopy .Values.config) | toYaml -}}
 {{- end -}}

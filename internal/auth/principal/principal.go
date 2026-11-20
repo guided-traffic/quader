@@ -28,6 +28,10 @@ const (
 	// row whose origin is break-glass; it is a separate kind here because
 	// authorization treats it differently (R-AUTHZ-010).
 	KindBreakGlass Kind = "break_glass"
+	// KindSystem is work of the product itself (R-AUTHZ-002): never a row of the principal table, a grant, a role, a
+	// membership or an owner record. The one system subject a request carries is image-scanner, the subject of a scan
+	// token on the scan listener (R-OCI-037); the decision point decides it by a fixed rule (internal/authz system.go).
+	KindSystem Kind = "system"
 )
 
 // Status is the lifecycle state of a principal. Authentication refuses the

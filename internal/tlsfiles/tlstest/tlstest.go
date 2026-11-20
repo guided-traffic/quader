@@ -79,6 +79,8 @@ type Options struct {
 	NotBefore time.Time
 	// RSA uses a 2048-bit RSA key instead of ECDSA P-256.
 	RSA bool
+	// ExtKeyUsage replaces the extended key usages serverAuth and clientAuth, for a leaf of one usage only.
+	ExtKeyUsage []x509.ExtKeyUsage
 }
 
 // Leaf is an issued certificate with its key.
@@ -139,6 +141,9 @@ func (ca *CA) Issue(tb testing.TB, o Options) *Leaf {
 		DNSNames: o.DNSNames, IPAddresses: o.IPs, NotBefore: notBefore, NotAfter: o.NotAfter,
 		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+	}
+	if o.ExtKeyUsage != nil {
+		tmpl.ExtKeyUsage = o.ExtKeyUsage
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, ca.Cert, key.Public(), ca.Key)
 	if err != nil {

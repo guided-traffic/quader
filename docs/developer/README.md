@@ -25,7 +25,9 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 - **Roles, one binary** ([R-ARCH-001](../spec/architecture.md)). `web` answers HTTP and never claims a job or
   holds a lease. `worker` claims jobs, holds leases and serves only the ops listener. `all` combines both
   for a local run outside the chart. `bastion` is the read-only cache of phase 5b with a configuration tree of its own and
-  no PostgreSQL ([bastion.md](bastion.md)). `backup` is a command of the binary, not a serving role ([backup.md](backup.md)).
+  no PostgreSQL ([bastion.md](bastion.md)). `scanner` analyses container images for the worker and holds no secret of the
+  database, the object store, Valkey or the key ring ([vulnerabilities.md](vulnerabilities.md#the-role-scanner)). `backup` is a command
+  of the binary, not a serving role ([backup.md](backup.md)).
 - **PostgreSQL decides, Valkey accelerates.** State whose loss would corrupt data lives in PostgreSQL,
   including every mutual exclusion whose failure would corrupt data. Valkey holds shared ephemeral state and
   never the only copy of anything. Only `internal/cluster` talks to Valkey, and every key expires.

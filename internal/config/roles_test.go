@@ -7,9 +7,13 @@ import (
 )
 
 func TestR_ARCH_001_ProcessRoles(t *testing.T) {
-	t.Run("R-ARCH-001 serve accepts api, packages, worker, web and all", func(t *testing.T) {
-		for _, role := range []string{"api", "packages", "worker", "web", "all"} {
-			if _, err := Load(Options{Environ: servableEnv("QUADER_PROCESS_ROLE=" + role), Command: CommandServe, ReadFile: fakeFS(nil)}); err != nil {
+	t.Run("R-ARCH-001 serve accepts api, packages, worker, scanner, web and all", func(t *testing.T) {
+		links := []string{
+			"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://quader-scanner.quader.svc:8080",
+			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=https://quader-packages-scan.quader.svc:8082",
+		}
+		for _, role := range []string{"api", "packages", "worker", "scanner", "web", "all"} {
+			if _, err := Load(Options{Environ: servableEnv(append(links, "QUADER_PROCESS_ROLE="+role)...), Command: CommandServe, ReadFile: fakeFS(nil)}); err != nil {
 				t.Errorf("%s: %v", role, err)
 			}
 		}
@@ -17,11 +21,11 @@ func TestR_ARCH_001_ProcessRoles(t *testing.T) {
 	t.Run("R-ARCH-001 a role outside the set is refused, naming the set", func(t *testing.T) {
 		for _, role := range []string{"fetch", "bastion", "backup", "Web"} {
 			_, err := Load(Options{Environ: servableEnv("QUADER_PROCESS_ROLE=" + role), Command: CommandServe, ReadFile: fakeFS(nil)})
-			containsAll(t, issuesOf(t, err), "process.role must be one of api, packages, worker, web, all")
+			containsAll(t, issuesOf(t, err), "process.role must be one of api, packages, worker, scanner, web, all")
 		}
 	})
-	t.Run("R-ARCH-001 the message of a missing role names the five roles", func(t *testing.T) {
-		if RoleError != "process.role must be api, packages, worker, web or all" {
+	t.Run("R-ARCH-001 the message of a missing role names the six roles", func(t *testing.T) {
+		if RoleError != "process.role must be api, packages, worker, scanner, web or all" {
 			t.Errorf("RoleError = %q", RoleError)
 		}
 	})

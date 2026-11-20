@@ -1,10 +1,13 @@
 // Package imagescan scans the container images quader stores for known vulnerabilities (docs/spec/vulnerability-scanning.md R-VULN-033 to
-// R-VULN-037). A scan has two steps, kept apart on purpose:
+// R-VULN-037, R-VULN-041 to R-VULN-043). A scan has two steps, kept apart on purpose, and the cut between them is the cut between two
+// roles (ADR-212):
 //
 //	analysis   the layers of a manifest are read by the analyser and reduced to the list of what the image contains. It needs no database,
-//	           runs at most once per manifest digest and analyser version, and its result is kept (vuln_image_sbom).
-//	detection  the list is compared with the vulnerability database through the [Database] seam, again whenever the database changes. It
-//	           reads no layer.
+//	           runs at most once per manifest digest and analyser version, in the role scanner (internal/vuln/scanner), which pulls the
+//	           image through the scan listener of packages with a scan token; the worker calls it ([Client]) and keeps its answer,
+//	           written anew ([Rewrite]), in vuln_image_sbom.
+//	detection  the list is compared with the vulnerability database through the [Database] seam, in the worker, again whenever the
+//	           database changes. It reads no layer.
 //
 // The result enters the lifecycle of findings through the evaluation (evaluate.Service.ApplyImage), so an image's finding has the
 // statuses, triage, report and blocking of a package's. Work lives in the table vuln_image_scan, not in a job's arguments, so a coalesced
@@ -26,8 +29,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/advisory"
 	"github.com/guided-traffic/quader/internal/vuln/evaluate"
@@ -39,10 +44,9 @@ import (
 const (
 	discoverBatch  = 1000
 	orphanBatch    = 1000
-	maxSBOMBytes   = int64(256) << 20
+	maxSBOMBytes   = MaxAnalysisBytes
 	maxSBOMStored  = 64 << 20
 	maxReportBytes = int64(512) << 20
-	stderrBytes    = 16 << 10
 	// retryBackoff is the wait before the first retry of a scan that failed; it doubles per attempt.
 	retryBackoff = time.Minute
 	maxBackoff   = 6 * time.Hour
@@ -56,27 +60,35 @@ type Run interface {
 
 var _ Run = (*jobs.Run)(nil)
 
+// ScanTokens issues the scan token of one manifest (formats/oci.md R-OCI-037): registrytoken.Signer.IssueScan.
+type ScanTokens interface {
+	IssueScan(repo qname.Repo, name, digest string, now time.Time) (registrytoken.ScanToken, string, error)
+}
+
 // Options configure [New].
 type Options struct {
 	DB       meta.Runner
 	Images   *store.Images
 	Evaluate *evaluate.Service
-	Blobs    BlobReader
-	// Analyser and Database are the two halves of a scan; Database is the seam of Q-VULN-137.
+	// Scanner is the call of the role scanner, which analyses an image (R-VULN-041); Tokens signs the scan token of each call.
+	Scanner Scanner
+	Tokens  ScanTokens
+	// Analyser runs the detection and names the analyser version whose analyses the worker keeps; Database is the seam of
+	// Q-VULN-137.
 	Analyser Analyser
 	Database Database
 	// States answers whether the database is complete, from the replica's cache.
 	States vuln.States
 	// Enqueue wakes the job; it runs in the caller's transaction.
 	Enqueue func(ctx context.Context, tx meta.Tx) error
-	// ScratchDir is the root of the working directories of the scans, on the worker's local disk.
+	// ScratchDir is the root of the working directories of the detections, on the worker's local disk.
 	ScratchDir string
-	// Space is the worker's spool; the room of every scan is taken from it before the scan writes a file (Q-VULN-145).
+	// Space is the worker's spool; the room of every detection is taken from it before the detection writes a file (Q-VULN-145).
 	Space Space
-	// SpaceWait is how long a scan waits for room before it is put off (2 minutes by default), and SpacePoll how often it asks again
-	// meanwhile (half a second by default).
+	// SpaceWait is how long a detection waits for room before it is put off (2 minutes by default), and SpacePoll how often it asks
+	// again meanwhile (half a second by default).
 	SpaceWait, SpacePoll time.Duration
-	// Concurrency is the number of images scanned at a time by one job.
+	// Concurrency is the number of calls to the scanner one job has in flight (R-VULN-041).
 	Concurrency int
 	// RunSlice is how long one job keeps its slot before it hands the rest to the next run, so that an advisory sync waiting on the same
 	// queue gets its turn.
@@ -84,8 +96,8 @@ type Options struct {
 	// MaxAttempts bounds the retries of a scan that failed for a reason that may pass.
 	MaxAttempts int
 	// Delay postpones a new manifest, so that a pull of a remote image has brought its layers.
-	Delay   time.Duration
-	Content ContentLimits
+	Delay time.Duration
+	// Run bounds the analyser's detection.
 	Run     Limits
 	Metrics *vmetrics.Metrics
 	Log     *slog.Logger
@@ -103,8 +115,8 @@ func New(o Options) (*Service, error) {
 	switch {
 	case o.DB == nil || o.Images == nil || o.Evaluate == nil:
 		return nil, errors.New("imagescan: the database and the evaluation are required")
-	case o.Analyser == nil || o.Database == nil || o.Blobs == nil:
-		return nil, errors.New("imagescan: the analyser, the database and the blob reader are required")
+	case o.Analyser == nil || o.Database == nil || o.Scanner == nil || o.Tokens == nil:
+		return nil, errors.New("imagescan: the analyser, the database, the scanner and the scan tokens are required")
 	case o.Space == nil:
 		return nil, errors.New("imagescan: the spool is required")
 	}
@@ -141,8 +153,9 @@ func (s *Service) RunScan(ctx context.Context, run Run) error {
 	}
 	access, err := s.o.Database.Acquire(ctx)
 	if errors.Is(err, ErrNoDatabase) {
+		// The analysis does not wait for the database (Q-VULN-168): what has no analysis is analysed, and the rows stay pending.
 		s.count("no_database")
-		return run.SetResult(map[string]string{"skipped": "no vulnerability database has been imported yet"})
+		return s.analyseOnly(ctx, run)
 	}
 	if errors.Is(err, ErrNoSpace) {
 		// The images stay as they are; the task asks again at its next slot, when the other work of the spool may have ended.
@@ -182,13 +195,60 @@ func (s *Service) RunScan(ctx context.Context, run Run) error {
 			return err
 		}
 	}
-	// The slice ended with work left: a job of its own continues it after whatever waits on the queue.
+	return s.continued(ctx, run, map[string]any{"done": done, "database": access.Digest, "continued": true})
+}
+
+// continued hands the rest of the work to a job of its own once the slice ended, after whatever waits on the queue.
+func (s *Service) continued(ctx context.Context, run Run, result map[string]any) error {
 	if s.o.Enqueue != nil {
 		if err := s.o.DB.InTx(ctx, func(tx meta.Tx) error { return s.o.Enqueue(ctx, tx) }); err != nil {
 			return err
 		}
 	}
-	return run.SetResult(map[string]any{"done": done, "database": access.Digest, "continued": true})
+	return run.SetResult(result)
+}
+
+// analyseOnly is a run without a database (Q-VULN-168): the scanner analyses what has no analysis yet and the rows stay pending, so the
+// first database detects without a layer read and nothing reads as clean meanwhile.
+func (s *Service) analyseOnly(ctx context.Context, run Run) error {
+	deadline := s.o.Now().Add(s.o.RunSlice)
+	seen := map[[32]byte]bool{}
+	var done int64
+	for s.o.RunSlice <= 0 || s.o.Now().Before(deadline) {
+		if err := ctx.Err(); err != nil {
+			return context.Cause(ctx)
+		}
+		due, err := s.o.Images.Unanalysed(ctx, s.o.Analyser.Version(), s.o.MaxAttempts, s.o.Concurrency+len(seen))
+		if err != nil {
+			return err
+		}
+		var batch []store.ImageDue
+		for _, d := range due {
+			if !seen[d.Digest] && len(batch) < s.o.Concurrency {
+				seen[d.Digest] = true
+				batch = append(batch, d)
+			}
+		}
+		if len(batch) == 0 {
+			// An analysis that a scanner of another analyser version answered is stored under that version; this run does not take
+			// its row again.
+			return run.SetResult(map[string]any{"analysed": done, "skipped": "no vulnerability database has been imported yet; the detection waits for it"})
+		}
+		if err := s.each(batch, func(d store.ImageDue) error {
+			if _, err := s.analyse(ctx, imageRefOf(d), d.Repo); err != nil {
+				return s.record(ctx, d, err)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		done += int64(len(batch))
+	}
+	return s.continued(ctx, run, map[string]any{"analysed": done, "continued": true})
+}
+
+func imageRefOf(d store.ImageDue) ImageRef {
+	return ImageRef{RepoID: d.RepoID, Repo: d.Repo.String(), Name: d.Name, Digest: d.Digest}
 }
 
 func (s *Service) discover(ctx context.Context) error {
@@ -224,6 +284,12 @@ func (s *Service) resolveOrphans(ctx context.Context) error {
 // scanBatch scans the manifests in parallel. An image whose scan fails is recorded and the run goes on; only an error of the worker's own
 // (the database, a released context) ends it.
 func (s *Service) scanBatch(ctx context.Context, due []store.ImageDue, access DatabaseAccess) error {
+	return s.each(due, func(d store.ImageDue) error { return s.scanOne(ctx, d, access) })
+}
+
+// each runs fn for every manifest of a batch at once, so that the batch's calls to the scanner are in flight together
+// (vulnerabilities.images.concurrency), and returns the first error.
+func (s *Service) each(due []store.ImageDue, fn func(store.ImageDue) error) error {
 	var (
 		wg       sync.WaitGroup
 		mu       sync.Mutex
@@ -233,7 +299,7 @@ func (s *Service) scanBatch(ctx context.Context, due []store.ImageDue, access Da
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := s.scanOne(ctx, d, access); err != nil {
+			if err := fn(d); err != nil {
 				mu.Lock()
 				if firstErr == nil {
 					firstErr = err
@@ -250,14 +316,20 @@ func (s *Service) scanBatch(ctx context.Context, due []store.ImageDue, access Da
 // manifest that could not be scanned must never read as clean.
 func (s *Service) scanOne(ctx context.Context, d store.ImageDue, access DatabaseAccess) error {
 	started := s.o.Now()
-	ref := ImageRef{RepoID: d.RepoID, Name: d.Name, Digest: d.Digest}
-	err := s.detect(ctx, ref, access)
-	var se *ScanError
-	switch {
-	case err == nil:
+	err := s.detect(ctx, imageRefOf(d), d.Repo, access)
+	if err == nil {
 		s.count("scanned")
 		s.observe(started)
 		return nil
+	}
+	return s.record(ctx, d, err)
+}
+
+// record records a scan that did not finish: put off for a reason of the installation, failed for a reason of the image, or failed for a
+// reason the worker's log names. An ended context ends the run instead.
+func (s *Service) record(ctx context.Context, d store.ImageDue, err error) error {
+	var se *ScanError
+	switch {
 	case ctx.Err() != nil:
 		return context.Cause(ctx)
 	case errors.As(err, &se) && se.Defer > 0:
@@ -268,7 +340,7 @@ func (s *Service) scanOne(ctx context.Context, d store.ImageDue, access Database
 		return s.recordFailure(ctx, d, se.Code, se.Detail, se.Terminal)
 	}
 	s.count("error")
-	s.log.ErrorContext(ctx, "an image could not be scanned", "repository", d.RepoID, "name", d.Name, "digest", ref.DigestString(), "error", err)
+	s.log.ErrorContext(ctx, "an image could not be scanned", "repository", d.Repo.String(), "name", d.Name, "digest", imageRefOf(d).DigestString(), "error", err)
 	return s.recordFailure(ctx, d, "scan_error", "the scan failed; the worker's log has the cause", false)
 }
 
@@ -278,14 +350,14 @@ func (s *Service) recordFailure(ctx context.Context, d store.ImageDue, code, det
 	if terminal {
 		backoff = 100 * maxBackoff
 	}
-	s.log.WarnContext(ctx, "an image could not be scanned", "repository", d.RepoID, "name", d.Name, "code", code)
+	s.log.WarnContext(ctx, "an image could not be scanned", "repository", d.Repo.String(), "name", d.Name, "code", code)
 	return s.o.Images.Failed(ctx, d.RepoID, d.Name, d.Digest, code, detail, backoff)
 }
 
-// recordDeferred records a scan that did not start for lack of room in the spool: the row says why, stays pending and is due again after
-// the wait, with its attempts untouched, because nothing about the image failed.
+// recordDeferred records a scan that did not start or did not finish for a reason of the installation (R-VULN-034, Q-VULN-162): the row
+// says why, stays pending and is due again after the wait, with its attempts untouched, because nothing about the image failed.
 func (s *Service) recordDeferred(ctx context.Context, d store.ImageDue, se *ScanError) error {
-	s.log.WarnContext(ctx, "an image scan was put off: the spool has no room", "repository", d.RepoID, "name", d.Name, "code", se.Code, "detail", se.Detail)
+	s.log.WarnContext(ctx, "an image scan was put off for a reason of the installation", "repository", d.Repo.String(), "name", d.Name, "code", se.Code, "detail", se.Detail)
 	return s.o.Images.Deferred(ctx, d.RepoID, d.Name, d.Digest, se.Code, se.Detail, se.Defer)
 }
 
@@ -302,10 +374,10 @@ func (s *Service) observe(started time.Time) {
 }
 
 // detect is one manifest: the analysis, once, and the detection.
-func (s *Service) detect(ctx context.Context, ref ImageRef, access DatabaseAccess) error {
-	// The room of the scan is held from the moment its files start to exist until they are gone: the deferred calls run in the
+func (s *Service) detect(ctx context.Context, ref ImageRef, repo qname.Repo, access DatabaseAccess) error {
+	// The room of the detection is held from the moment its files start to exist until they are gone: the deferred calls run in the
 	// opposite order, so the scratch directory is removed first and the room is given back after it, and every exit (a failure, a cancelled
-	// run, a drain) passes through both.
+	// run, a drain) passes through both. The image itself is the scanner's to hold: the worker holds the analysis and the report.
 	var held lease
 	defer held.Release()
 	if err := os.MkdirAll(s.o.ScratchDir, 0o700); err != nil {
@@ -325,8 +397,11 @@ func (s *Service) detect(ctx context.Context, ref ImageRef, access DatabaseAcces
 		// change of the setting re-arms the row.
 		return s.recordDetection(ctx, ref, Detection{}, 0, access, false)
 	}
+	if err := s.admit(ctx, &held, scanMargin, access.Held); err != nil {
+		return err
+	}
 	sbomPath := filepath.Join(scratch, "sbom.json")
-	if err := s.analysis(ctx, ref, sbomPath, scratch, &held, access.Held); err != nil {
+	if err := s.analysis(ctx, ref, repo, sbomPath); err != nil {
 		return err
 	}
 	reportPath := filepath.Join(scratch, "report.json")
@@ -354,41 +429,60 @@ func (s *Service) scoped(ctx context.Context, ref ImageRef) (bool, error) {
 	return ok, err
 }
 
-// analysis puts the list of what the image holds at sbomPath: from the stored analysis when one exists for this manifest and analyser, else
-// by building a layout from the object store and running the analyser, then storing the result.
-func (s *Service) analysis(ctx context.Context, ref ImageRef, sbomPath, scratch string, held *lease, dbHeld int64) error {
+// analysis puts the list of what the image holds at sbomPath: from the stored analysis when one exists for this manifest and analyser,
+// else by calling the scanner, which pulls the image and runs the analyser (R-VULN-041), writing its answer anew and storing it
+// (R-VULN-043).
+func (s *Service) analysis(ctx context.Context, ref ImageRef, repo qname.Repo, sbomPath string) error {
 	stored, found, err := s.o.Images.SBOM(ctx, ref.Digest, s.o.Analyser.Version())
 	if err != nil {
 		return err
 	}
 	if found {
-		// No layer is read: the list and the report are all the scan writes.
-		if err := s.admit(ctx, held, scanMargin, dbHeld); err != nil {
-			return err
-		}
+		// No layer is read: the list and the report are all the detection writes.
 		return gunzipTo(stored, sbomPath)
 	}
-	layout := filepath.Join(scratch, "layout")
-	if err := os.MkdirAll(layout, 0o700); err != nil {
-		return err
-	}
-	admit := func(total int64) error { return s.admit(ctx, held, total+scanMargin, dbHeld) }
-	if err := buildLayout(ctx, s.o.Blobs, ref, layout, s.o.Content, admit); err != nil {
-		return err
-	}
-	if err := s.o.Analyser.Analyse(ctx, layout, sbomPath, scratch, s.o.Run); err != nil {
-		return err
-	}
-	_ = os.RemoveAll(layout)
-	gz, err := gzipFile(sbomPath, maxSBOMBytes)
+	doc, err := s.analyse(ctx, ref, repo)
 	if err != nil {
 		return err
 	}
-	if int64(len(gz)) > maxSBOMStored {
-		s.log.WarnContext(ctx, "the analysis of an image is too large to keep; the next detection reads the layers again", "digest", ref.DigestString(), "bytes", len(gz))
-		return nil
+	return os.WriteFile(sbomPath, doc, 0o600)
+}
+
+// analyse calls the scanner for one manifest and keeps its answer written anew: the stored analysis is the document the detection reads
+// (R-VULN-043). The call is logged with the repository, the image, the digest, the code and the scan ID, never the token (R-VULN-041).
+func (s *Service) analyse(ctx context.Context, ref ImageRef, repo qname.Repo) ([]byte, error) {
+	digest := ref.DigestString()
+	tok, sid, err := s.o.Tokens.IssueScan(repo, ref.Name, digest, s.o.Now())
+	if err != nil {
+		return nil, fmt.Errorf("the scan token of %s@%s: %w", ref.Name, digest, err)
 	}
-	return s.o.Images.PutSBOM(ctx, ref.Digest, s.o.Analyser.Version(), gz)
+	call := Call{Repository: repo, Name: ref.Name, Digest: digest, Token: tok, ScanID: sid}
+	a, err := s.o.Scanner.Analyse(ctx, call)
+	if err != nil {
+		var se *ScanError
+		if errors.As(err, &se) {
+			s.log.InfoContext(ctx, "the scanner did not analyse an image", "call", call, "code", se.Code)
+		}
+		return nil, err
+	}
+	doc, err := Rewrite(a.Document)
+	if err != nil {
+		s.log.WarnContext(ctx, "the scanner's analysis of an image was refused", "call", call, "error", err)
+		return nil, err
+	}
+	s.log.DebugContext(ctx, "the scanner analysed an image", "call", call, "analyser", a.AnalyserVersion, "bytes", len(doc))
+	gz, err := gzipBytes(doc)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(gz)) > maxSBOMStored {
+		s.log.WarnContext(ctx, "the analysis of an image is too large to keep; the next detection calls the scanner again", "digest", digest, "bytes", len(gz))
+		return doc, nil
+	}
+	if err := s.o.Images.PutSBOM(ctx, ref.Digest, a.AnalyserVersion, gz); err != nil {
+		return nil, err
+	}
+	return doc, nil
 }
 
 // recordDetection applies a detection in one transaction: the advisories, the findings and the scan row.
@@ -473,15 +567,10 @@ func microsOf(t time.Time) int64 {
 	return t.UnixMicro()
 }
 
-func gzipFile(path string, limit int64) ([]byte, error) {
-	f, err := os.Open(path) //nolint:gosec // a path under the scan's own scratch directory
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = f.Close() }()
+func gzipBytes(b []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
-	if _, err := io.Copy(zw, io.LimitReader(f, limit)); err != nil {
+	if _, err := zw.Write(b); err != nil {
 		return nil, err
 	}
 	if err := zw.Close(); err != nil {

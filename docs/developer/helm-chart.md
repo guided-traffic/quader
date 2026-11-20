@@ -142,9 +142,11 @@ deploy/helm/quader/
 |---|---|---|
 | Deployment | `<fullname>-api`, `<fullname>-packages` | `quader serve --role api` / `--role packages`; ports `http` 8080 and `ops` 8081 (and the ports of the further endpoints they serve) |
 | Deployment | `<fullname>-worker` | `quader serve --role worker`; port `ops` 8081 only |
+| Deployment, PodDisruptionBudget, autoscaler (optional), NetworkPolicy | `<fullname>-scanner` | `quader serve --role scanner`, while `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled` (the defaults); ports `https` 8080 (the scanner's listener) and `ops` 8081; [The scanner](#the-scanner) below (R-HA-065) |
+| Service | `<fullname>-scanner`, `<fullname>-packages-scan` | the links of the image scanning, always `ClusterIP`: 8080 of the scanner pods, 8082 (the scan listener) of the main `packages` pods (R-HA-066, Q-HA-319) |
 | Deployment, Service (path pools only) | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>`, `<fullname>-worker-<pool>` | per entry of `api.pools`, `packages.pools`, `worker.pools` |
 | Service | `<fullname>-api`, `<fullname>-packages` | port `http` 8080, select the main pods of their role only, `sessionAffinity: None` |
-| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `quader/serve: "true"` (`api`, `packages`, `worker`) |
+| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `quader/serve: "true"` (`api`, `packages`, `worker`, `scanner`) |
 | ConfigMap | `<fullname>-config` | `quader.yaml`, mounted at `/etc/quader/quader.yaml` |
 | ServiceAccount | `<fullname>` | `automountServiceAccountToken: false` |
 | PodDisruptionBudget | one per Deployment, named as it | `maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow` |
@@ -380,6 +382,27 @@ shows the key names of one provisioner (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_
 `S3_ENDPOINT`). Its endpoint is a host without a scheme, which the binary treats as https. The migration Job does not
 read these variables (it uses no object store).
 
+## The scanner
+
+[scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml) renders the role `scanner` beside the units of `_units.tpl`, from the
+helpers of [_scanner.tpl](../../deploy/helm/quader/templates/_scanner.tpl) (R-HA-065, R-HA-066). It shares the pod pieces (probes, topology
+spread, the security context) and none of the secrets, the shared extras (`extraEnv`, `extraEnvFrom`, `extraVolumes`, `extraVolumeMounts`,
+`initContainers`, `sidecars`, Q-HA-321) or the service account (Q-HA-343) of the other Deployments.
+
+| Piece | Where | What |
+|---|---|---|
+| when | `quader.scannerOn` | `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled`, both default `true`; off renders no object of the scanner, no scan listener, no internal CA |
+| volumes | `scanner.yaml` | `config`, `spool` (an `emptyDir` of `scanner.spool.sizeLimit`, 6Gi, or with `spool.type: ephemeral` a claim of `spool.ephemeral.size`, as every role's), `tmp`, `secret-tls` (the pair of `scanner.tls.secretName`, else `tls.secretName`), `secret-tls-internal` (`ca.crt` of `tls.secretName`); `secret-tls-ops` with `tls.ops.secretName` (Q-HA-340) |
+| environment | `scanner.yaml` | the downward API, the runtime and spool variables, `scanner.extraEnv`; nothing from a Secret |
+| managed keys | `quader.scannerManagedConfig`, `quader.scannerManagedPaths` | `vulnerabilities.images.scanner.url` = `https://<fullname>-scanner.<namespace>.svc:8080`, `vulnerabilities.images.registry.url` = `https://<fullname>-packages-scan.<namespace>.svc:8082`, both `server_name`s = `<fullname>.<namespace>.svc`, `server.internal_tls.ca_file`; set by hand they fail the render |
+| the other pods | `quader.scannerLinkMounts`, `quader.linkNeedsPair`, `quader.scanListenEnv`, `quader.scanListenPort` | `secret-tls-internal` in every `worker` pod and the main `packages` pods; the pair in every `worker` pod (the identity it presents); `QUADER_SERVER_SCAN_LISTEN=:8082` and the port `scan` on the main `packages` Deployment only |
+| checks | `quader.validateScanner`, `quader.validateRoles` | the spools of Q-HA-318, the replicas, the own pair only with TLS |
+| alert | [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) | `QuaderVulnerabilityImageScannerUnavailable`; `QuaderReplicasNotReady` covers `<fullname>-scanner` (Q-HA-341) |
+
+The tests are [scanner_test.go](../../test/chart/scanner_test.go) (about 2 s together on a quiet machine, measured on 2026-11-20) and the scanner's rows of
+`roles_test.go`, `chart_test.go`, `tls_test.go`, `trustedca_test.go` and `prometheusrule_test.go`; the rule tests of the alert are in
+`tests/rules_test.yaml`.
+
 ## Network policy
 
 `networkPolicy.enabled` (default `true`, R-HA-042) renders one policy per Deployment, named as the Deployment and selecting its pods by
@@ -393,9 +416,12 @@ exactly one port.
 | `<fullname>-api`, `<fullname>-packages`, each path pool | TCP 8080 from `networkPolicy.ingress.http.from` (empty = from anywhere, so any ingress controller works wherever it runs); the port of every further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty = from anywhere); TCP 8081 only from `networkPolicy.ingress.ops.from` (default: namespace `monitoring`) and `networkPolicy.probeCIDRs` |
 | each endpoint pool (`<fullname>-packages-ep-<name>`, `<fullname>-api-ep-<name>`) | the endpoint's port as above and 8081; no 8080 |
 | `<fullname>-worker`, each worker pool | TCP 8081 as above; a worker listens on no client port |
+| `<fullname>-packages` (the main Deployment), one rule more while the image scanning is on | TCP 8082, the scan listener, from the scanner's pods only (`quader.scanListenRule` of [_scanner.tpl](../../deploy/helm/quader/templates/_scanner.tpl)) |
+| `<fullname>-scanner` | TCP 8080 from the pods of the worker Deployment that claims the queue `vuln` (the pool that lists it, else the main worker; `quader.vulnWorkerPool`); TCP 8081 as above |
 | `<fullname>-migrate` | nothing; `ingress: []` |
 
-No rule admits one Quader pod from another: replicas never talk to each other and the cut adds no seam between roles. A caller in
+No rule admits one Quader pod from another but the two of the image scanning's seam (ADR-212): replicas never talk to each other, and
+the worker's call to the scanner and the scanner's pull from the scan listener are the one seam between roles. A caller in
 another namespace that addresses a role Service directly (a Bastion) reaches 8080 only when `networkPolicy.ingress.http.from` admits it.
 
 With neither an `ops.from` peer nor a `probeCIDRs` entry, the 8081 rule is left out rather than rendered with an
@@ -441,7 +467,10 @@ tests in `chart_test.go` assert both, row by row.
 | `config.metrics.auth: static` without `secrets.metricsToken` | implemented |
 | `spool.headroom` not smaller than the spool; sizes that are not quantities | implemented |
 | the spool budget of a worker Deployment that claims the queue `vuln` (the main worker unless a pool lists it, or that pool) below `config.vulnerabilities.sources.osv.max_archive_size` while `config.vulnerabilities.enabled` (default true) and the OSV mode (default `online`) is not `off` (R-VULN-025) | implemented, naming the archive limit and `worker.spool.sizeLimit` |
-| the spool budget of a worker Deployment that claims the queue `vuln` below `config.vulnerabilities.images.max_image_size` + 2 GiB (the unpacked database) + 512 MiB while `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled` (both default true) (Q-VULN-145) | implemented, naming the image limit and `worker.spool.sizeLimit` |
+| the spool budget of a worker Deployment that claims the queue `vuln` below 2 GiB (the unpacked database) + 512 MiB while `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled` (both default true) (Q-HA-318) | implemented, naming the Deployment, `worker.spool.sizeLimit` and `spool.headroom` |
+| the scanner's spool budget (`scanner.spool.sizeLimit` minus `spool.headroom`) below `config.vulnerabilities.images.scanner.slots` × (`max_image_size` + 64 MiB) while the image scanning is on (Q-HA-318) | implemented, naming the three values |
+| `scanner.replicaCount` below 1, or below 2 with `highAvailability.enforce`; `scanner.tls.secretName` without `tls.enabled` (R-HA-065) | implemented |
+| a chart-managed key of the links set under `config`: `vulnerabilities.images.scanner.url`, `.server_name`, `vulnerabilities.images.registry.url`, `.server_name`, `server.internal_tls`, `server.scan_listen` (R-HA-066) | implemented, naming the key |
 | a name in `metrics.prometheusRule.disabledAlerts` that is no alert of the chart | implemented, listing the names |
 | `tls.enabled` without `tls.secretName` (names the key and the opt-out); `ingress.enabled` with TLS and verification but no `caSecret` (haproxy, ingress-nginx) or `serversTransport` (traefik); `tls.clientCA` with haproxy and no `clientCertSecret`; the same three rules for the merged `ingress.backendTLS` of each further endpoint with `ingress.enabled` (`endpoints.<name>.ingress.backendTLS.caSecret`, `.serversTransport`, `.clientCertSecret` with the endpoint's `tls.clientCaSecret`); `tls.clientCA`, `tls.ops`, `tls.backendTLSPolicy` without `tls.enabled`; `tls.backendTLSPolicy.enabled` without `caConfigMapName` | implemented |
 | `backup.enabled` (or `restore.enabled`) without `config.backup.target.bucket`; a CronJob name over 52 characters | implemented, naming the value (and `fullnameOverride`) |

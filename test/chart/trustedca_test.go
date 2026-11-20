@@ -15,6 +15,13 @@ func trustedCAPods(t *testing.T, sets ...string) map[string]any {
 	pods := map[string]any{}
 	_, docs := render(t, required(), append(backupSets(), sets...)...)
 	for name, pod := range podSpecs(docs) {
+		if name == "quader-scanner" {
+			// The scanner opens no connection that it would verify with the bundle and mounts none (R-HA-065).
+			if volumeNamed(pod, "secret-trusted-ca") != nil {
+				t.Errorf("quader-scanner mounts the trusted CA bundle")
+			}
+			continue
+		}
 		pods[name] = pod
 	}
 	pods["quader-backup"] = cronJobPod(docs)
@@ -29,8 +36,8 @@ func trustedCAPods(t *testing.T, sets ...string) map[string]any {
 	return pods
 }
 
-// TestR_HA_043_TrustedCA (R-HA-043, R-REPO-035): the chart mounts the CA bundle of a Secret or a ConfigMap at /etc/quader/ca/ in
-// every pod of the release, lists its files in proxy.outbound.tls.ca_files, and keeps PostgreSQL's CA apart from it.
+// TestR_HA_043_TrustedCA (R-HA-043, R-REPO-035, R-HA-065): the chart mounts the CA bundle of a Secret or a ConfigMap at
+// /etc/quader/ca/ in every pod of the release but the scanner's, lists its files in proxy.outbound.tls.ca_files, and keeps PostgreSQL's CA apart from it.
 func TestR_HA_043_TrustedCA(t *testing.T) {
 	t.Run("R-HA-043 without a source nothing is mounted and the configuration names no bundle", func(t *testing.T) {
 		_, docs := render(t, required())

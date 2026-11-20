@@ -80,6 +80,10 @@ type EnforcerOptions struct {
 	// Log records a stripped mount at debug level; nil is slog.Default.
 	Log         *slog.Logger
 	MountSource func(from string, bound qname.Repo) (repo qname.Repo, image string, cache, ok bool)
+	// Pinned names the two routes a scan token reaches (R-OCI-037, Q-OCI-227, scan_pin.go): the manifest by its digest and the
+	// blob. A token whose grant carries a digest pin is admitted on GET and HEAD of these two and refused everywhere else; with
+	// the names empty it is refused everywhere.
+	Pinned PinnedRoutes
 }
 
 // Enforcer is the enforcement point. Routes are mounted at start-up; it is safe for concurrent use.
@@ -429,6 +433,9 @@ func (e *Enforcer) decide(r *http.Request, g *httpserver.RegistryGrant, t route.
 	e.mu.RUnlock()
 	if !ok {
 		return e.insufficient(r, "")
+	}
+	if g.Digest != "" {
+		return e.decidePinned(r, g, rt, t)
 	}
 	switch rt.Kind {
 	case RouteVersion:

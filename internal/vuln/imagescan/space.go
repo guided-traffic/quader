@@ -60,14 +60,15 @@ func (l *lease) Release() {
 	}
 }
 
-// admit takes n bytes for a scan, waiting for them up to the service's wait. dbHeld is what the database holds of the budget: a scan that
-// cannot fit next to it even in an empty spool is refused at once, because waiting would not help.
+// admit takes n bytes for a detection, waiting for them up to the service's wait. dbHeld is what the database holds of the budget: a
+// detection that cannot fit next to it even in an empty spool is refused at once, because waiting would not help. The image itself is
+// held in the scanner's spool, not here (Q-VULN-145, revisited).
 func (s *Service) admit(ctx context.Context, l *lease, n, dbHeld int64) error {
 	if budget := s.o.Space.Budget(); n+dbHeld > budget {
 		return &ScanError{
 			Code: CodeSpoolTooSmall, Defer: refusedBackoff,
-			Detail: fmt.Sprintf("the scan needs %d bytes of the spool next to the %d bytes of the database, and the budget of the spool is %d; "+
-				"raise the spool size of the worker that claims the queue vuln, or lower vulnerabilities.images.max_image_size", n, dbHeld, budget),
+			Detail: fmt.Sprintf("the detection needs %d bytes of the spool next to the %d bytes of the database, and the budget of the spool is %d; "+
+				"raise the spool size of the worker that claims the queue vuln (worker.spool.sizeLimit, at least 2 GiB + 512 MiB above spool.headroom)", n, dbHeld, budget),
 		}
 	}
 	timer := time.NewTimer(s.o.SpaceWait)

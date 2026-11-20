@@ -20,13 +20,17 @@ type Server struct {
 	ShutdownTimeout      time.Duration `yaml:"shutdown_timeout" default:"0s" validate:"min=0s" doc:"Bound for in-flight requests and running work at SIGTERM. 0 derives it: runtime.termination_grace_period minus health.shutdown_drain_delay minus 5 s, or 25 s when the grace period is unknown. An explicit value must fit the grace period."`
 	TLS                  ServerTLS     `yaml:"tls" doc:"TLS of the client listener (R-ARCH-035)."`
 	OpsTLS               ServerOpsTLS  `yaml:"ops_tls" doc:"TLS of the ops listener (Q-ARCH-33)."`
-	ContentBaseURL       string        `yaml:"content_base_url" default:"" doc:"Separate content origin (P1); empty means one origin."`
-	ContentURLTTL        time.Duration `yaml:"content_url_ttl" default:"300s" doc:"Lifetime of a signed content URL."`
-	BaseURL              string        `yaml:"base_url" default:"" doc:"Canonical external origin; empty is allowed for development only."`
-	TrustedProxies       []string      `yaml:"trusted_proxies" default:"[]" doc:"Addresses or CIDRs of the edge that sets the forwarding header. A /0 prefix is refused."`
-	ForwardedHeader      string        `yaml:"forwarded_header" default:"x-forwarded-for" validate:"oneof=x-forwarded-for|forwarded" doc:"The one header family the edge rewrites: X-Forwarded-* or Forwarded (RFC 7239). The other is never read."`
-	AdditionalBaseURLs   []string      `yaml:"additional_base_urls" default:"[]"`
-	ReplicaHeader        string        `yaml:"replica_header" default:"authenticated" validate:"oneof=authenticated|always|never"`
+	// The scan listener of packages and the trust anchor of the links between quader's pods (R-ARCH-037, R-ARCH-038):
+	// server_scanner.go.
+	ScanListen         string            `yaml:"scan_listen" default:"" doc:"The scan listener of a packages process (and web and all): the image scanning's pull, with scan tokens only, behind a client certificate of internal_tls.ca_file (R-ARCH-037). Empty opens none; the chart sets :8082 on the main packages Deployment while the image scanning is on."`
+	InternalTLS        ServerInternalTLS `yaml:"internal_tls" doc:"The trust anchor of the links between quader's pods (R-ARCH-038)."`
+	ContentBaseURL     string            `yaml:"content_base_url" default:"" doc:"Separate content origin (P1); empty means one origin."`
+	ContentURLTTL      time.Duration     `yaml:"content_url_ttl" default:"300s" doc:"Lifetime of a signed content URL."`
+	BaseURL            string            `yaml:"base_url" default:"" doc:"Canonical external origin; empty is allowed for development only."`
+	TrustedProxies     []string          `yaml:"trusted_proxies" default:"[]" doc:"Addresses or CIDRs of the edge that sets the forwarding header. A /0 prefix is refused."`
+	ForwardedHeader    string            `yaml:"forwarded_header" default:"x-forwarded-for" validate:"oneof=x-forwarded-for|forwarded" doc:"The one header family the edge rewrites: X-Forwarded-* or Forwarded (RFC 7239). The other is never read."`
+	AdditionalBaseURLs []string          `yaml:"additional_base_urls" default:"[]"`
+	ReplicaHeader      string            `yaml:"replica_header" default:"authenticated" validate:"oneof=authenticated|always|never"`
 	// Endpoints names the further client listeners and optionally tunes the
 	// default endpoint (R-EP-001). The map is one key; in the environment it is
 	// JSON (QUADER_SERVER_ENDPOINTS).
@@ -57,6 +61,7 @@ func (s *Server) Validate(r *Report) {
 	}
 	checkTrustedProxies(r, "trusted_proxies", s.TrustedProxies)
 	s.validateEndpoints(r)
+	s.validateLinks(r)
 }
 
 // checkTrustedProxies requires every entry to be an address or a CIDR and refuses a /0 prefix, which would

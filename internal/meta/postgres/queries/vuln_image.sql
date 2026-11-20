@@ -17,19 +17,42 @@ SELECT m.repo_id, m.name, m.digest, now() + make_interval(secs => sqlc.arg(delay
 ON CONFLICT DO NOTHING;
 
 -- name: VulnImageDue :many
--- The next manifests to work on: never scanned or to retry and due, or scanned against another database than the current one.
-SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts
+-- The next manifests to work on: never scanned or to retry and due, or scanned against another database than the current one. The rows
+-- of a repository that is disabled or being deleted are not due (R-VULN-042): the scanner's pull could not address it. The qualified
+-- name of the repository is what the scan token and the call to the scanner name (R-VULN-041).
+SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts,
+       p.key::text AS project_key, r.key::text AS repo_key
   FROM vuln_image_scan s
- WHERE (s.state = 'pending' AND s.not_before <= now())
-    OR (s.state = 'failed' AND s.not_before <= now() AND s.attempts < sqlc.arg(max_attempts)::int)
-    OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM sqlc.arg(db_digest)::text)
+  JOIN repositories r ON r.id = s.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
+   AND ((s.state = 'pending' AND s.not_before <= now())
+     OR (s.state = 'failed' AND s.not_before <= now() AND s.attempts < sqlc.arg(max_attempts)::int)
+     OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM sqlc.arg(db_digest)::text))
  ORDER BY s.not_before, s.repo_id, s.name, s.digest
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: VulnImageDueCount :one
 SELECT count(*)::bigint
   FROM vuln_image_scan s
- WHERE s.state IN ('pending', 'failed') OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM sqlc.arg(db_digest)::text);
+  JOIN repositories r ON r.id = s.repo_id
+ WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
+   AND (s.state IN ('pending', 'failed') OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM sqlc.arg(db_digest)::text));
+
+-- name: VulnImageUnanalysed :many
+-- The due manifests that have no analysis by the analyser version yet (Q-VULN-168): without a database the job has the scanner analyse
+-- them and leaves the rows pending, so the first database detects without reading a layer. A row whose analysis is stored is not taken
+-- again, so the run ends.
+SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts,
+       p.key::text AS project_key, r.key::text AS repo_key
+  FROM vuln_image_scan s
+  JOIN repositories r ON r.id = s.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
+   AND s.state IN ('pending', 'failed') AND s.not_before <= now() AND s.attempts < sqlc.arg(max_attempts)::int
+   AND NOT EXISTS (SELECT 1 FROM vuln_image_sbom b WHERE b.digest = s.digest AND b.analyser = sqlc.arg(analyser)::text)
+ ORDER BY s.not_before, s.repo_id, s.name, s.digest
+ LIMIT sqlc.arg(max_rows)::int;
 
 -- name: VulnImageScanned :exec
 -- The record of a finished detection.

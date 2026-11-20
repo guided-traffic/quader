@@ -161,8 +161,8 @@ func (h *Host) WaitProbes() {
 // returned.
 func (r *remote) Probed(ctx context.Context, rq *formats.Request, p formats.Probe) {
 	h := r.h
-	if h.o.Downloads == nil || rq == nil || rq.Repo == nil {
-		return
+	if h.o.Downloads == nil || rq == nil || rq.Repo == nil || systemRead(rq) {
+		return // the image scanning's pull is no probe (system_read.go)
 	}
 	format := rq.Repo.Format
 	virtual := rq.Repo.Class == repository.Virtual

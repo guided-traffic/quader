@@ -36,7 +36,9 @@ func roleTable() map[string][]Area {
 		"packages": join(common, listener, filling),
 		"worker":   join(common, jobs),
 		"web":      join(common, listener, filling, management),
-		"all":      join(common, listener, filling, management, jobs),
+		"all":      join(common, listener, filling, management, jobs, []Area{AreaScanner}),
+		// The role scanner builds its one area and nothing of the infrastructure (R-ARCH-036, Q-ARCH-527).
+		"scanner": {AreaScanner},
 	}
 }
 

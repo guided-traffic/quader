@@ -56,6 +56,8 @@ type Credential struct {
 	// and Scope are those of the quader token it was issued for (nothing for an anonymous one), and ExpiresAt is the registry
 	// token's expiry.
 	Registry *registrytoken.Grant
+	// ScanID is the scan's ID of a scan token (R-OCI-037), for the request log; empty for every other credential.
+	ScanID string
 }
 
 // Result is what the stage yields for an authenticated or anonymous request. A
@@ -122,6 +124,10 @@ type EndpointRules struct {
 	// records token.rejected with reason endpoint_not_accepted (R-EP-009). The
 	// answer is the 401 of an unknown token or of a missing credential either way.
 	Refused func(r *http.Request, f Refusal)
+	// ScanOnly marks the endpoint of the scan listener (R-ARCH-037, R-EP-010): it accepts a scan token below /v2/ and nothing
+	// else, the anonymous request included, with 401 and no challenge, and counts nothing towards the failed-credential
+	// throttle (R-AUTH-038). scan.go.
+	ScanOnly bool
 }
 
 // The reasons of an endpoint's refusal, the values of the reason label of

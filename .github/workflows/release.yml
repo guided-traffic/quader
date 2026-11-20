@@ -974,6 +974,13 @@ jobs:
           make trivy
           echo "$PWD/.bin/trivy-${TRIVY_VERSION}" >> "$GITHUB_PATH"
 
+      # The worker writes the scanner's analysis anew before its detection reads it (R-VULN-043): with the pinned analyser, the
+      # detections of a fixed image of kilobytes from the analyser's own document and from the rewrite must be equal. The one
+      # job that installs the analyser runs it; it gates the release like every unit test.
+      - name: Test the rewritten analysis against the pinned analyser
+        timeout-minutes: 5
+        run: make test-analyser
+
       # .trivyignore.yaml: the findings accepted for a time, each with its path in the image and the day it ends.
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.36.0

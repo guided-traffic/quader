@@ -181,6 +181,7 @@ fixes the form, so every term is a number and a unit.
 {{- if $t.enabled -}}
 {{- $managedPaths = concat $managedPaths (list "server.tls" "server.ops_tls") -}}
 {{- end -}}
+{{- $managedPaths = concat $managedPaths (include "quader.scannerManagedPaths" . | fromYamlArray) -}}
 {{- range $path := $managedPaths -}}
 {{- $cur := $cfg -}}
 {{- $found := true -}}
@@ -197,6 +198,7 @@ fixes the form, so every term is a number and a unit.
 {{- end -}}
 
 {{- include "quader.validateRoles" . -}}
+{{- include "quader.validateScanner" . -}}
 
 {{- /* The PrometheusRule (R-HA-045): a name in disabledAlerts that is no alert is a typo. */ -}}
 {{- $alertNames := include "quader.rules.names" . | fromJsonArray -}}

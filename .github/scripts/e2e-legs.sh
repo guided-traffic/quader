@@ -205,9 +205,15 @@ EOF
 # paths a blocked download goes through, its queries, its API, its test advisory source and e2e profile, the e2e harness, the
 # NuGet clients its set uses, its screens and browser journeys, its spec. Two patterns of the old list matched no file
 # (queries/vuln_ was anchored at the root; internal/api/v1/vuln_api names no file); they stand here as the paths they meant.
+# The role scanner's paths outside internal/vuln/ follow it, each the scanner's alone, so that no shared path starts the leg
+# (R-VULN-046): the wiring of the role and of the scanning, the scan token's file, the scanner's chart templates and its chart test.
 vuln_paths() {
   cat <<'EOF'
 ^internal/vuln/
+^internal/app/wire_(scanner|vuln)
+^internal/auth/registrytoken/scan
+^deploy/helm/quader/templates/(scanner|_scanner)
+^test/chart/scanner_
 ^internal/formats/(npm|nuget)/(vuln|handlers_audit|errors)
 ^internal/formathost/
 ^internal/items/

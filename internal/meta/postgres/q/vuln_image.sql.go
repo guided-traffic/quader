@@ -172,11 +172,15 @@ func (q *Queries) VulnImageDiscover(ctx context.Context, arg VulnImageDiscoverPa
 }
 
 const vulnImageDue = `-- name: VulnImageDue :many
-SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts
+SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts,
+       p.key::text AS project_key, r.key::text AS repo_key
   FROM vuln_image_scan s
- WHERE (s.state = 'pending' AND s.not_before <= now())
-    OR (s.state = 'failed' AND s.not_before <= now() AND s.attempts < $1::int)
-    OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $2::text)
+  JOIN repositories r ON r.id = s.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
+   AND ((s.state = 'pending' AND s.not_before <= now())
+     OR (s.state = 'failed' AND s.not_before <= now() AND s.attempts < $1::int)
+     OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $2::text))
  ORDER BY s.not_before, s.repo_id, s.name, s.digest
  LIMIT $3::int
 `
@@ -188,13 +192,17 @@ type VulnImageDueParams struct {
 }
 
 type VulnImageDueRow struct {
-	RepoID   int64
-	Name     string
-	Digest   []byte
-	Attempts int32
+	RepoID     int64
+	Name       string
+	Digest     []byte
+	Attempts   int32
+	ProjectKey string
+	RepoKey    string
 }
 
-// The next manifests to work on: never scanned or to retry and due, or scanned against another database than the current one.
+// The next manifests to work on: never scanned or to retry and due, or scanned against another database than the current one. The rows
+// of a repository that is disabled or being deleted are not due (R-VULN-042): the scanner's pull could not address it. The qualified
+// name of the repository is what the scan token and the call to the scanner name (R-VULN-041).
 func (q *Queries) VulnImageDue(ctx context.Context, arg VulnImageDueParams) ([]VulnImageDueRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageDue, arg.MaxAttempts, arg.DbDigest, arg.MaxRows)
 	if err != nil {
@@ -209,6 +217,8 @@ func (q *Queries) VulnImageDue(ctx context.Context, arg VulnImageDueParams) ([]V
 			&i.Name,
 			&i.Digest,
 			&i.Attempts,
+			&i.ProjectKey,
+			&i.RepoKey,
 		); err != nil {
 			return nil, err
 		}
@@ -223,7 +233,9 @@ func (q *Queries) VulnImageDue(ctx context.Context, arg VulnImageDueParams) ([]V
 const vulnImageDueCount = `-- name: VulnImageDueCount :one
 SELECT count(*)::bigint
   FROM vuln_image_scan s
- WHERE s.state IN ('pending', 'failed') OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $1::text)
+  JOIN repositories r ON r.id = s.repo_id
+ WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
+   AND (s.state IN ('pending', 'failed') OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $1::text))
 `
 
 func (q *Queries) VulnImageDueCount(ctx context.Context, dbDigest string) (int64, error) {
@@ -815,6 +827,64 @@ func (q *Queries) VulnImageSetComponents(ctx context.Context, arg VulnImageSetCo
 		arg.AdvisoryID,
 	)
 	return err
+}
+
+const vulnImageUnanalysed = `-- name: VulnImageUnanalysed :many
+SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts,
+       p.key::text AS project_key, r.key::text AS repo_key
+  FROM vuln_image_scan s
+  JOIN repositories r ON r.id = s.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
+   AND s.state IN ('pending', 'failed') AND s.not_before <= now() AND s.attempts < $1::int
+   AND NOT EXISTS (SELECT 1 FROM vuln_image_sbom b WHERE b.digest = s.digest AND b.analyser = $2::text)
+ ORDER BY s.not_before, s.repo_id, s.name, s.digest
+ LIMIT $3::int
+`
+
+type VulnImageUnanalysedParams struct {
+	MaxAttempts int32
+	Analyser    string
+	MaxRows     int32
+}
+
+type VulnImageUnanalysedRow struct {
+	RepoID     int64
+	Name       string
+	Digest     []byte
+	Attempts   int32
+	ProjectKey string
+	RepoKey    string
+}
+
+// The due manifests that have no analysis by the analyser version yet (Q-VULN-168): without a database the job has the scanner analyse
+// them and leaves the rows pending, so the first database detects without reading a layer. A row whose analysis is stored is not taken
+// again, so the run ends.
+func (q *Queries) VulnImageUnanalysed(ctx context.Context, arg VulnImageUnanalysedParams) ([]VulnImageUnanalysedRow, error) {
+	rows, err := q.db.Query(ctx, vulnImageUnanalysed, arg.MaxAttempts, arg.Analyser, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []VulnImageUnanalysedRow{}
+	for rows.Next() {
+		var i VulnImageUnanalysedRow
+		if err := rows.Scan(
+			&i.RepoID,
+			&i.Name,
+			&i.Digest,
+			&i.Attempts,
+			&i.ProjectKey,
+			&i.RepoKey,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const vulnImageUpsertAdvisory = `-- name: VulnImageUpsertAdvisory :exec

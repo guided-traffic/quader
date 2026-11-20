@@ -124,8 +124,9 @@ func TestEndpoints(t *testing.T) {
 				byPort[p[0]] = from
 			}
 		}
-		if len(order) != 4 || order[0] != 8080 || !hasInt(order, 8443) || !hasInt(order, 8444) || order[3] != 8081 {
-			t.Errorf("packages policy ports = %v, want 8080, both endpoint ports and 8081", order)
+		// The main packages pods also open the scan listener's 8082, admitted from the scanner's pods only (R-HA-066).
+		if len(order) != 5 || order[0] != 8080 || order[1] != 8082 || !hasInt(order, 8443) || !hasInt(order, 8444) || order[4] != 8081 {
+			t.Errorf("packages policy ports = %v, want 8080, the scan listener's 8082, both endpoint ports and 8081", order)
 		}
 		if from := byPort[8443]; len(from) != 1 || str(from[0], "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") != "ingress-external" {
 			t.Errorf("customers rule from %v, want the ingress-external namespace", from)
@@ -432,7 +433,8 @@ func TestEndpoints(t *testing.T) {
 		if n := len(ofKind(docs, "Ingress")); n != 0 {
 			t.Errorf("%d Ingresses rendered without ingress.enabled", n)
 		}
-		if n := len(ofKind(docs, "Service")); n != 3+16 {
+		// The three Services of every render, the two of the image scanning's links (R-HA-066) and one per endpoint.
+		if n := len(ofKind(docs, "Service")); n != 3+2+16 {
 			t.Errorf("%d Services", n)
 		}
 	})

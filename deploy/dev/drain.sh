@@ -100,8 +100,9 @@ for i in "${!pids[@]}"; do
   wait "${pids[$i]}" || { log "the drain of ${names[$i]} failed"; failed=1; }
 done
 [ "$failed" = 0 ] || die "a drain of $node failed"
-# every Deployment of the roles, the worker pools of the profile in use included (vuln in the default profile, mirror in the `mirror` one)
-for d in $(kn get deployments -l "app.kubernetes.io/instance=quader,app.kubernetes.io/component in (api,packages,worker)" -o name); do kn rollout status "$d" --timeout=5m; done
+# every Deployment of the roles, the worker pools of the profile in use included (vuln in the default profile, mirror in the `mirror` one),
+# and the scanner, whose pods the drain evicts with the release's (they carry quader/serve for the ops Service, R-HA-065)
+for d in $(kn get deployments -l "app.kubernetes.io/instance=quader,app.kubernetes.io/component in (api,packages,worker,scanner)" -o name); do kn rollout status "$d" --timeout=5m; done
 log "pods after the drain"
 kn get pods -l "$sel" -o wide
 k uncordon "$node"

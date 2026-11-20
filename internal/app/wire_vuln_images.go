@@ -11,11 +11,8 @@ import (
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/blob"
-	"github.com/guided-traffic/quader/internal/errs"
-	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
-	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
@@ -74,16 +71,18 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 	if override != nil && override.ImageDatabase != nil {
 		database = override.ImageDatabase
 	}
-	reader := imageBlobReader{
-		repos: func() repository.Reader { return part[repositoryArea](a.parts).reader },
-		items: func() *items.Store { s, _ := a.itemStore.get(); return s },
+	// >>> the role scanner (R-VULN-041, ADR-212): the call of the scanner and the scan token of each call (wire_vuln_scanner_call.go)
+	call, tokens, err := a.scannerCall(ctx, in, log)
+	if err != nil {
+		return fmt.Errorf("the image scanning: %w", err)
 	}
+	out.scannerClient = call
+	// <<< the role scanner
 	svc, err := imagescan.New(imagescan.Options{
-		DB: in.db, Images: rows, Evaluate: evaluation, Blobs: reader, Analyser: analyser, Database: database,
+		DB: in.db, Images: rows, Evaluate: evaluation, Scanner: call, Tokens: tokens, Analyser: analyser, Database: database,
 		States: out.states, Enqueue: out.wakeImages, ScratchDir: images.ScanDir, Space: space, Concurrency: images.Concurrency, RunSlice: images.RunSlice,
 		MaxAttempts: images.MaxAttempts, Delay: images.ScanDelay, Metrics: m, Log: log,
-		Content: imagescan.ContentLimits{MaxLayers: images.MaxLayers, MaxImageBytes: int64(images.MaxImageSize), MaxUncompressedBytes: int64(images.MaxUncompressedSize), MaxEntries: images.MaxEntries},
-		Run:     imagescan.Limits{Timeout: images.Timeout, MemoryBytes: int64(images.MemoryLimit), OutputBytes: imageOutputBytes, StderrBytes: 16 << 10},
+		Run: imagescan.Limits{Timeout: images.Timeout, MemoryBytes: int64(images.MemoryLimit), OutputBytes: imageOutputBytes, StderrBytes: 16 << 10},
 	})
 	if err != nil {
 		return fmt.Errorf("the image scanning: %w", err)
@@ -121,58 +120,6 @@ func cleanScanDir(ctx context.Context, dir string, log *slog.Logger) {
 			remove(filepath.Join(dir, "db", e.Name()))
 		}
 	}
-}
-
-// imageBlobReader reads the manifests and blobs of an image from the item store of the repository that holds it.
-type imageBlobReader struct {
-	repos func() repository.Reader
-	items func() *items.Store
-}
-
-func (r imageBlobReader) ref(ctx context.Context, ref imagescan.ImageRef) (items.RepoRef, *items.Store, error) {
-	repo, err := r.repos().ByID(ctx, ref.RepoID)
-	if err != nil {
-		return items.RepoRef{}, nil, err
-	}
-	store := r.items()
-	if store == nil {
-		return items.RepoRef{}, nil, errs.E(errs.Unavailable, errs.CodeInternal, "The item store is not wired yet.")
-	}
-	return items.RepoOf(repo), store, nil
-}
-
-// ReadManifest implements [imagescan.BlobReader].
-func (r imageBlobReader) ReadManifest(ctx context.Context, ref imagescan.ImageRef, limit int64) ([]byte, error) {
-	rc, _, found, err := r.open(ctx, ref, ref.Name+"/_manifests/"+ref.DigestString())
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, &imagescan.ScanError{Code: imagescan.CodeLayerMissing, Detail: "the repository does not hold the manifest any more"}
-	}
-	defer func() { _ = rc.Close() }()
-	return io.ReadAll(io.LimitReader(rc, limit))
-}
-
-// OpenBlob implements [imagescan.BlobReader].
-func (r imageBlobReader) OpenBlob(ctx context.Context, ref imagescan.ImageRef, digest string) (io.ReadCloser, int64, bool, error) {
-	return r.open(ctx, ref, ref.Name+"/_blobs/"+digest)
-}
-
-func (r imageBlobReader) open(ctx context.Context, ref imagescan.ImageRef, path string) (io.ReadCloser, int64, bool, error) {
-	repo, st, err := r.ref(ctx, ref)
-	if err != nil {
-		return nil, 0, false, err
-	}
-	it, found, err := st.Live(ctx, repo, path)
-	if err != nil || !found || it.Kind != items.KindFile {
-		return nil, 0, false, err
-	}
-	rc, err := st.Open(ctx, it, nil)
-	if err != nil {
-		return nil, 0, false, err
-	}
-	return rc, it.Size, true, nil
 }
 
 // spoolSpace is the worker's spool as the image scanning sees it: the room of the unpacked database and of every scan is taken from the

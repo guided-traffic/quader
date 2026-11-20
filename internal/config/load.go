@@ -373,7 +373,8 @@ func (l *loader) resolveSecrets() {
 			l.fail("%s and %s are both set; set exactly one (%s or %s)", valuePath, fk.Path, vk.Env, fk.Env)
 			continue
 		}
-		if file == "" || l.opts.SkipSecretFiles {
+		if file == "" || l.opts.SkipSecretFiles || l.role() == RoleScanner {
+			// The role scanner resolves no secret file (R-ARCH-036, Q-ARCH-527): it has none mounted and needs none.
 			continue
 		}
 		data, err := l.opts.ReadFile(file)
@@ -400,8 +401,12 @@ func (l *loader) role() string {
 
 // validate runs the tag rules, the section validators and the command checks.
 func (l *loader) validate() {
+	scanner := l.role() == RoleScanner
 	for _, k := range l.schema.Keys {
 		if !l.opts.Command.needsDatabase() && strings.HasPrefix(k.Path, "database.") {
+			continue
+		}
+		if scanner && !scannerReads(k.Path) {
 			continue
 		}
 		for _, msg := range k.check(l.field(k)) {
@@ -422,6 +427,12 @@ func (l *loader) validate() {
 		}
 		ptr := sec.Addr().Interface()
 		rep := &Report{prefix: prefix, issues: &l.issues, role: l.role()}
+		if scanner && !scannerReads(s.Path) {
+			if v, ok := ptr.(scannerValidator); ok {
+				v.validateForScanner(rep)
+			}
+			continue
+		}
 		if v, ok := ptr.(Validator); ok {
 			v.Validate(rep)
 		}

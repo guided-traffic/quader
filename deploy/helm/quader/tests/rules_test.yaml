@@ -202,6 +202,32 @@ tests:
     alert_rule_test:
       - {eval_time: 150m, alertname: QuaderVulnerabilityImageScansFailing, exp_alerts: []}
 
+  # --- QuaderVulnerabilityImageScannerUnavailable ----------------------------------------------------------
+  - name: QuaderVulnerabilityImageScannerUnavailable fires when scans are put off for the installation and none finishes
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_image_scans_total{namespace="default",result="scanner_unavailable",pod="w1"}', values: '0+1x200'}
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: QuaderVulnerabilityImageScannerUnavailable
+        exp_alerts: []
+      - eval_time: 60m
+        alertname: QuaderVulnerabilityImageScannerUnavailable
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: Image scans are put off because the scanner or its pull cannot work, and none finishes.
+              description: For half an hour scans were put off for a reason of the installation, not of an image, and no scan finished (R-VULN-041, Q-VULN-162). A put-off scan spends no attempt, so it never shows as scan_failed. scanner_unavailable is no ready scanner pod or a refused handshake (the worker's certificate must allow client authentication); registry_unavailable is a scanner that cannot reach the scan listener of packages on 8082; pull_refused is a scan token the scan listener refused (a key ring that differs between the worker and packages, or a clock more than a minute off).
+
+  - name: QuaderVulnerabilityImageScannerUnavailable stays silent while scans finish, and on a code of the image
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_image_scans_total{namespace="default",result="pull_refused",pod="w1"}', values: '0+1x200'}
+      - {series: 'quader_vuln_image_scans_total{namespace="default",result="scanned",pod="w1"}', values: '0+5x200'}
+      - {series: 'quader_vuln_image_scans_total{namespace="default",result="analyser_failed",pod="w2"}', values: '0+1x200'}
+    alert_rule_test:
+      - {eval_time: 150m, alertname: QuaderVulnerabilityImageScannerUnavailable, exp_alerts: []}
+
   # --- QuaderVulnerabilityClaimedNameMalicious -------------------------------------------------------------
   - name: QuaderVulnerabilityClaimedNameMalicious fires on a malicious match and not on a vulnerability match
     interval: 1m

@@ -1,0 +1,91 @@
+package app
+
+import (
+	"fmt"
+
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+)
+
+// The scan listener of packages (R-ARCH-037, R-EP-002, Q-ARCH-528): one more listener of a packages process (and of web and all), on
+// server.scan_listen, whose endpoint is the reserved scan. It is built like a client endpoint - its own router of the family packages,
+// its own chain with the endpoint bound - and differs in what the endpoint says: no host check, no rate-limit class, an in-flight bound of
+// 64, no cache fill, a stage that accepts a scan token and nothing else, and a listener that requires a client certificate of the
+// internal CA (R-ARCH-038). The image scanning's pull is its one client.
+
+// imageScanningOn reports whether the configuration scans images: the scanning and its image half are on.
+func (a *App) imageScanningOn() bool {
+	v := a.cfg.Vulnerabilities
+	return v.Enabled && v.Images.Enabled
+}
+
+// scanListenAddr is the address of the scan listener this process opens, "" for none: server.scan_listen on the main Deployment of
+// packages (never a pool) and on web; in all, server.scan_listen or a loopback port while the image scanning is on, so that its own
+// scanner pulls from it (Q-ARCH-531).
+func (a *App) scanListenAddr() string {
+	addr := a.cfg.Server.ScanListen
+	switch a.id.Role {
+	case config.RolePackages, config.RoleWeb:
+		if a.id.Pool != "" {
+			return ""
+		}
+		return addr
+	case config.RoleAll:
+		if addr == "" && a.imageScanningOn() {
+			return "127.0.0.1:0"
+		}
+		return addr
+	}
+	return ""
+}
+
+// planScanListener adds the scan listener's endpoint to the endpoints this process opens.
+func (a *App) planScanListener() error {
+	addr := a.scanListenAddr()
+	if addr == "" {
+		return nil
+	}
+	r := config.ResolvedEndpoint{
+		Name: config.ScanEndpoint, Listen: addr, Surface: []string{config.SurfacePackages}, MaxInFlight: config.ScanMaxInFlight,
+		Exposure: config.ExposureAll, ReplicaHeader: "never",
+	}
+	ep, err := httpserver.NewEndpoint(r, nil, httpserver.ForRoleFamilies(a.sub.Families))
+	if err != nil {
+		return fmt.Errorf("the scan listener: %w", err)
+	}
+	a.eps = append(a.eps, &endpointRuntime{cfg: r, ep: ep})
+	return nil
+}
+
+// isScanListener reports whether an endpoint is the scan listener's.
+func isScanListener(rt *endpointRuntime) bool { return rt.cfg.Name == config.ScanEndpoint }
+
+// scanListenerTLS is the TLS of the scan listener: the pair of server.tls and a required client certificate of the internal CA,
+// whatever server.tls.client_auth says about the client listener (R-ARCH-037). Nil without TLS.
+func (a *App) scanListenerTLS() (*httpserver.ListenerTLS, error) {
+	return httpserver.NewLinkListenerTLS(httpserver.LinkScan, a.cfg.Server, a.tlsOptions(httpserver.LinkScan)...)
+}
+
+// linkLoopback points the role all's links at its own listeners once step 9 has bound them (Q-ARCH-531): the worker calls its own
+// scanner and the scanner pulls from its own scan listener, over the same client, token and checks as in the chart. Another role
+// has its peers' addresses in its configuration.
+func (a *App) linkLoopback() {
+	if a.id.Role != config.RoleAll {
+		return
+	}
+	tls := a.cfg.Server.TLS.Enabled()
+	if s, ok := lookup[scannerArea](a.parts); ok && s.svc != nil && a.cfg.Vulnerabilities.Images.Registry.URL == "" {
+		if addr := a.EndpointAddr(config.ScanEndpoint); addr != "" {
+			s.svc.SetRegistryURL(loopbackOrigin(stringAddr(addr), tls))
+		}
+	}
+	if c := part[vulnArea](a.parts).scannerClient; c != nil && a.cfg.Vulnerabilities.Images.Scanner.URL == "" && a.scannerSrv != nil {
+		c.SetURL(loopbackOrigin(a.scannerSrv.Addr(), tls))
+	}
+}
+
+// stringAddr is a net.Addr of an address already rendered.
+type stringAddr string
+
+func (s stringAddr) Network() string { return "tcp" }
+func (s stringAddr) String() string  { return string(s) }

@@ -39,6 +39,9 @@ const (
 	// request whose Bastion token the recognition stage checked. It holds no grant and is no subject of a
 	// decision; the request log and the rate limits name it.
 	KindBastion PrincipalKind = "bastion"
+	// KindSystem is work of the product itself (R-AUTHZ-002): the subject image-scanner of a scan token on the scan
+	// listener (R-OCI-037). It has no ID; the decision point decides it by a fixed rule.
+	KindSystem PrincipalKind = "system"
 )
 
 // AuthMethod is the credential source that proved the principal (R-AUTH-001).
@@ -112,6 +115,9 @@ type Credential struct {
 	// the decision point. With it, TokenID, TokenType and Scope are those of the
 	// quader token the registry token was issued for (none for an anonymous one).
 	Registry *RegistryGrant
+	// ScanID is the scan's ID of a scan token (R-OCI-037): what joins the request log of
+	// the scan listener with the worker's and the scanner's log lines. It is no secret.
+	ScanID string
 }
 
 // RegistryGrant is the grant of a registry token as the edge carries it: at most
@@ -122,6 +128,10 @@ type RegistryGrant struct {
 	Entries []RegistryEntry
 	// Catalog is the grant registry:catalog:* (R-OCI-017).
 	Catalog bool
+	// Digest pins the grant of a scan token to one manifest (R-OCI-037, Q-OCI-227):
+	// the enforcement point admits that manifest by its digest and the blobs of the
+	// entry's name, nothing else. Empty for a client's registry token.
+	Digest string
 }
 
 // RegistryEntry is one entry of a [RegistryGrant]: the repository and the image

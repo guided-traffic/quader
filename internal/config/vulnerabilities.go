@@ -44,19 +44,24 @@ type VulnerabilityTrivy struct {
 
 // VulnerabilityImages configures the scanning of container images (R-VULN-033 to R-VULN-036).
 type VulnerabilityImages struct {
-	Enabled             bool          `yaml:"enabled" default:"true" doc:"false: no image is scanned; a repository's images are not_covered. The findings stay as they are."`
-	Binary              string        `yaml:"binary" default:"/usr/local/bin/trivy" doc:"The analyser, the one the release image carries at the version of tools/versions.env."`
-	ScanDir             string        `yaml:"scan_dir" default:"/var/lib/quader/spool/imagescan" doc:"Local directory of the working files of the scans and of the unpacked database, below the worker's spool. The spool's budget counts every file in it: the database once, each scan the compressed size of its image plus 64 MiB. Lost with the pod without harm."`
-	Concurrency         int           `yaml:"concurrency" default:"1" validate:"min=1,max=64" doc:"Images one job scans at a time."`
+	Enabled             bool          `yaml:"enabled" default:"true" doc:"false: no image is scanned; a repository's images are not_covered. The findings stay as they are, and the chart renders no scanner."`
+	Binary              string        `yaml:"binary" default:"/usr/local/bin/trivy" doc:"The analyser, the one the release image carries at the version of tools/versions.env: the scanner runs the analysis with it, the worker the detection (Q-VULN-169)."`
+	ScanDir             string        `yaml:"scan_dir" default:"" doc:"Local directory of the working files below the spool of the process: the worker's unpacked database and detections, the scanner's analyses. Empty (the default) is <storage.spool.dir>/imagescan, so the files lie on the volume whose budget counts them (Q-VULN-184). The spool's budget counts every file in it: in the worker the database once and 64 MiB per detection, in the scanner the compressed size of the image plus 64 MiB per analysis. Lost with the pod without harm."`
+	Concurrency         int           `yaml:"concurrency" default:"2" validate:"min=1,max=64" doc:"Calls to the scanner one job has in flight (R-VULN-041). The default scanner capacity is two replicas of one slot; a call above the capacity is put off with scanner_busy."`
 	RunSlice            time.Duration `yaml:"run_slice" default:"10m" validate:"min=10s,max=24h" doc:"How long one job keeps its slot on the queue vuln before the rest of the work goes to the next job, so that an advisory sync gets its turn."`
 	ScanDelay           time.Duration `yaml:"scan_delay" default:"30s" validate:"min=0,max=1h" doc:"Delay before a new manifest is scanned, so that a pull of a remote image has brought its layers."`
-	MaxAttempts         int           `yaml:"max_attempts" default:"5" validate:"min=1,max=100" doc:"Attempts at a scan that fails for a reason that may pass (a layer that has not arrived, an analyser that was killed)."`
-	Timeout             time.Duration `yaml:"timeout" default:"15m" validate:"min=10s,max=24h" doc:"Time limit of one step of the analyser."`
-	MemoryLimit         ByteSize      `yaml:"memory_limit" default:"512MiB" validate:"min=64MiB" doc:"Soft limit of the analyser's Go heap. The memory limit of the pod is the hard one."`
+	MaxAttempts         int           `yaml:"max_attempts" default:"5" validate:"min=1,max=100" doc:"Attempts at a scan that fails for a reason that may pass (a layer that has not arrived, an analyser that was killed, a scanner that was lost)."`
+	Timeout             time.Duration `yaml:"timeout" default:"15m" validate:"min=10s,max=24h" doc:"Time limit of one step of the analyser: the scanner's analysis, the worker's detection."`
+	MemoryLimit         ByteSize      `yaml:"memory_limit" default:"512MiB" validate:"min=64MiB" doc:"Soft limit of the analyser's Go heap. The memory limit of the pod is the hard one: an image that passes the scanner's ends that pod's analysis (scanner_lost)."`
 	MaxLayers           int           `yaml:"max_layers" default:"256" validate:"min=1" doc:"Images with more layers are not scanned and show scan_failed."`
-	MaxImageSize        ByteSize      `yaml:"max_image_size" default:"3GiB" validate:"min=1MiB" doc:"Largest image scanned, compressed, config and layers together. A scan holds the image's size plus 64 MiB of the worker's spool budget while it runs, next to the unpacked database; the chart refuses a budget (worker.spool.sizeLimit minus spool.headroom) below this limit plus 2GiB plus 512MiB. A larger image shows scan_failed."`
+	MaxImageSize        ByteSize      `yaml:"max_image_size" default:"3GiB" validate:"min=1MiB" doc:"Largest image scanned, compressed, config and layers together. An analysis holds the image's size plus 64 MiB of the scanner's spool budget while it runs; the chart refuses a scanner spool budget (scanner.spool.sizeLimit minus spool.headroom) below scanner.slots times this limit plus 64 MiB. A larger image shows scan_failed."`
 	MaxUncompressedSize ByteSize      `yaml:"max_uncompressed_size" default:"32GiB" validate:"min=1MiB" doc:"Largest size the layers of an image may decompress to together; a larger image is treated as a decompression bomb."`
 	MaxEntries          int64         `yaml:"max_entries" default:"5000000" validate:"min=1" doc:"Largest number of file entries in the layers of an image."`
+
+	// The role scanner and its two links (R-VULN-041, R-VULN-042, ADR-212): vulnerabilities_scanner.go.
+	PullTimeout time.Duration            `yaml:"pull_timeout" default:"10m" validate:"min=1m,max=1h" doc:"The scanner's pull of one image through the scan listener, and the lifetime of its scan token (R-OCI-037). The worker's call has the deadline pull_timeout plus timeout plus 1m."`
+	Scanner     VulnerabilityScannerLink `yaml:"scanner" doc:"The worker's side of the call to the scanner (R-VULN-041)."`
+	Registry    VulnerabilityPullLink    `yaml:"registry" doc:"The scanner's side of the pull from the scan listener of packages (R-VULN-042)."`
 }
 
 // VulnerabilityOSV configures the OSV source (R-VULN-003 to R-VULN-006).
@@ -154,6 +159,7 @@ func (v *Vulnerabilities) Validate(r *Report) {
 	if v.Sources.EPSS.Mode != "off" {
 		r.Add("sources.epss.mode", "is %q: the exploit-probability enrichment is not built in this release (R-VULN-030, P1); only off is accepted", v.Sources.EPSS.Mode)
 	}
+	v.validateScannerLink(r)
 	for format, hosts := range v.Matching.PublicUpstreams {
 		for _, h := range hosts {
 			if strings.TrimSpace(h) == "" || strings.ContainsAny(h, "/ ") {

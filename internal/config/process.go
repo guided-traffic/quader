@@ -15,6 +15,9 @@ const (
 	RoleWeb = "web"
 	// RoleAll is every role but the Bastion in one process, for local development.
 	RoleAll = "all"
+	// RoleScanner analyses container images for the worker and holds no secret of the database, the object store or Valkey
+	// (R-ARCH-036, ADR-212): it serves the scanner's listener and the ops listener and nothing else.
+	RoleScanner = "scanner"
 )
 
 // ValidRole reports whether role is one of the values a replica registers with, the value of --role, of the replica
@@ -22,7 +25,7 @@ const (
 // vocabulary for all of them.
 func ValidRole(role string) bool {
 	switch role {
-	case RoleAPI, RolePackages, RoleWorker, RoleWeb, RoleAll:
+	case RoleAPI, RolePackages, RoleWorker, RoleWeb, RoleAll, RoleScanner:
 		return true
 	}
 	return false
@@ -32,11 +35,11 @@ func ValidRole(role string) bool {
 type Process struct {
 	// Role has no default: the chart sets it per Deployment and `quader serve
 	// --role` overrides it.
-	Role string `yaml:"role" validate:"oneof=api|packages|worker|web|all" doc:"Role of this replica: api, packages, worker, web (api and packages in one process, development and tests only) or all (local development only). No default."`
+	Role string `yaml:"role" validate:"oneof=api|packages|worker|scanner|web|all" doc:"Role of this replica: api, packages, worker, scanner (the analysis of container images, holding no secret of the installation, R-ARCH-036), web (api and packages in one process, development and tests only) or all (local development only). No default."`
 }
 
 // RoleError is the message `quader serve` prints when no valid role is set.
-const RoleError = "process.role must be api, packages, worker, web or all"
+const RoleError = "process.role must be api, packages, worker, scanner, web or all"
 
 // ServesClients reports whether a role opens client listeners: every role but worker.
 func ServesClients(role string) bool {
@@ -53,7 +56,7 @@ func (p *Process) ValidateFor(cmd Command, r *Report) {
 		return
 	}
 	switch p.Role {
-	case RoleAPI, RolePackages, RoleWorker, RoleWeb, RoleAll:
+	case RoleAPI, RolePackages, RoleWorker, RoleScanner, RoleWeb, RoleAll:
 	default:
 		r.Raw(RoleError)
 	}

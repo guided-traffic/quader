@@ -10,6 +10,7 @@ Every connection Quader accepts or makes can be encrypted. The listeners serve p
 |---|---|---|---|
 | Clients to the client listener (`:8080`) and each endpoint listener | `server.tls`, `server.endpoints.<name>.tls` | plain HTTP until certificates are set; the chart sets them | every `reload_interval` (10 s) |
 | Probes and monitoring to the ops listener (`:8081`) | `server.ops_tls` | the client listener's certificate, no client certificate | with the listener |
+| `worker` to the scanner (`:8080` of the role `scanner`) and the scanner to the scan listener of `packages` (`:8082`) | `server.tls`, `server.internal_tls.ca_file`, `vulnerabilities.images.scanner`, `vulnerabilities.images.registry` | mutual TLS with the listener's pair on both sides; the chart sets it | for the next handshake |
 | `api`, `packages` and `worker` to PostgreSQL | `database.ssl_mode` and the `ssl_*` files | `verify-full` | on each new connection |
 | `api`, `packages` and `worker` to Valkey and the Sentinels | `valkey.tls`, `valkey.sentinel.tls` | `verify-full`, system roots without a CA file | on each handshake |
 | `api`, `packages` and `worker` to the object store | `storage.s3.endpoint`, `storage.s3.ca_file` | `https`, the outbound trust store | on use, at most every 10 s |
@@ -46,7 +47,7 @@ The chart never creates a Secret. Create each Secret before the install, for exa
 ```yaml
 tls:
   enabled: true                         # default; false = plain HTTP inside the cluster
-  secretName: quader-tls                 # example; required while enabled; keys tls.crt and tls.key
+  secretName: quader-tls                 # example; required while enabled; keys tls.crt, tls.key and ca.crt
   certKey: tls.crt                      # default
   keyKey: tls.key                       # default
   minVersion: "1.2"                     # default: 1.2 | 1.3
@@ -69,12 +70,26 @@ Set `tls.ops.secretName` when you run worker replicas or endpoint pools: without
 
 The ingress controller connects to Quader over HTTPS. With HAProxy Ingress the chart has the controller verify Quader's certificate for the name `<fullname>.<namespace>.svc`, so that name must be in the certificate; an endpoint's Ingress verifies `<fullname>-ep-<name>.<namespace>.svc` against the endpoint's certificate. A cert-manager Secret carries `ca.crt`, so `caSecret` can name the same Secret as `tls.secretName`.
 
+### The links of the image scanning
+
+While the image scanning is on (`config.vulnerabilities.images.enabled`, the default), the worker calls the scanner and the scanner pulls the image from the scan listener of `packages`. Both links run inside the cluster over mutual TLS with the pair of `tls.secretName`: each side serves it, presents it as its client certificate, and verifies the other side against `ca.crt` of the same Secret for the name `<fullname>.<namespace>.svc`. That makes three demands on the certificate of `tls.secretName`:
+
+- It allows client authentication: the extended key usage `client auth` next to `server auth`, or no extended key usage at all. cert-manager issues `server auth` and `client auth` only when `usages` lists both, as the example below does. A worker or scanner whose certificate lacks it logs the reason at start; the scanner stays not ready, and scans are put off with `scanner_unavailable` (alert `QuaderVulnerabilityImageScannerUnavailable`).
+- It carries `<fullname>.<namespace>.svc`, the name the ingress controller verifies already.
+- The Secret holds `ca.crt`, the CA that issued it. The chart mounts only that key, at `/var/run/secrets/quader/tls-internal/ca.crt`, in the `worker`, the main `packages` and the `scanner` pods, never in `api` pods.
+
+`scanner.tls.secretName` gives the scanner a pair of its own. It must be issued by the CA in `ca.crt` of `tls.secretName` and carry the same name and usages. With `tls.enabled: false` both links run in plain HTTP; the scan token and the NetworkPolicies are then what protects them.
+
+A rotated Secret reaches every side without a restart: the worker opens a new connection for every call, and each handshake uses the files as they are.
+
 <details>
 <summary>Secrets and where the pods see them</summary>
 
 | Chart value | Keys read | Mounted at | Used for |
 |---|---|---|---|
-| `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` | client listener, and the ops listener while it inherits |
+| `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` | client listener, the ops listener while it inherits, and the identity the `worker`, the main `packages` and the `scanner` pods present on the links of the image scanning |
+| `tls.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-internal/ca.crt` | `server.internal_tls.ca_file`: the CA the links of the image scanning verify with (`worker`, main `packages` and `scanner` pods only) |
+| `scanner.tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` in the `scanner` pods | the scanner's own pair, instead of the one of `tls.secretName` |
 | `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/ca.crt` | client certificates on `:8080` (main `api` and `packages` pods only) |
 | `tls.ops.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls-ops/` | ops listener |
 | `endpoints.<name>.tls.existingSecret`, `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`n` = position) | endpoint listener |
@@ -183,7 +198,7 @@ spec:
     algorithm: ECDSA                    # example
     size: 256                           # example
     rotationPolicy: Always              # example: a renewal also changes the key
-  usages: [digital signature, key encipherment, server auth]   # example
+  usages: [digital signature, key encipherment, server auth, client auth]   # example; client auth for the links of the image scanning
   dnsNames:
     - quader.example.com                 # example: the host of server.base_url
     - quader.quader.svc                   # example: <fullname>.<namespace>.svc, verified by HAProxy Ingress
@@ -210,3 +225,5 @@ cert-manager renews the Secret before it expires; Quader picks up the new pair w
 | Connections to PostgreSQL or Valkey fail with a certificate error | `verify-full` against the system roots for a server with a private CA, or a host name the certificate does not hold | Set `secrets.databaseCA` or `secrets.valkeyCA`; connect by a name in the certificate |
 | The object store fails after `secrets.s3CA` was set | That file replaces every other trusted root for the object store | Put the full CA chain of the object store into it |
 | The render fails with `tls.clientCA` and HAProxy Ingress | The controller needs a certificate to present | Set `ingress.backendTLS.clientCertSecret` |
+| The scanner pods stay unready and image scans show `scanner_unavailable` | The certificate of `tls.secretName` lacks `client auth` | Add `client auth` to the certificate's usages |
+| The `worker`, `packages` or `scanner` pods hang in `ContainerCreating` with a mount error naming `ca.crt` | The Secret of `tls.secretName` has no `ca.crt` | Let the issuer write `ca.crt` into the Secret, or add it |

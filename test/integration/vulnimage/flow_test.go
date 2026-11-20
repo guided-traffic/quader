@@ -1,9 +1,11 @@
 //go:build integration
 
-// Package vulnimage is the integration tier's flow of the scanning of container images (R-VULN-033 to R-VULN-037): a push through the
-// registry protocol, the job on a worker, the findings through the package API, and the block of a pull in the registry's own error shape.
-// Everything runs against the integration stack except the analyser and its database, which are replaced at the seam so that the tier needs
-// neither the binary nor the published database; the real binary has a test of its own (internal/vuln/imagescan).
+// Package vulnimage is the integration tier's flow of the scanning of container images (R-VULN-033 to R-VULN-037, R-VULN-041, R-VULN-042):
+// a push through the registry protocol, the job on a worker, its call over mutual TLS to a replica of the role scanner, the scanner's pull
+// through the scan listener of a web replica, the findings through the package API, and the block of a pull in the registry's own error
+// shape. Everything runs against the integration stack, with the stack's pair and CA on every listener and link, except the analyser and its
+// database, which are replaced at the seam in the scanner and the worker so that the tier needs neither the binary nor the published
+// database; the real binary has a test of its own (internal/vuln/imagescan).
 package vulnimage
 
 import (
@@ -45,17 +47,29 @@ const (
 		`"vuln-image-scan":{"enabled":false,"schedule":"*/5 * * * *"}}`
 )
 
-// fakeAnalyser is the analyser behind the seam: it counts how often the layers are read and answers one advisory for the package xz.
+// fakeAnalyser is the analyser behind the seam, in the scanner replica (the analysis) and the worker replica (the detection): it counts
+// how often the layers are read and answers one advisory for the package xz.
 type fakeAnalyser struct {
-	analyses, detections atomic.Int64
+	// started counts the analyses that began; analyses those that read the layout and wrote their list.
+	started, analyses, detections atomic.Int64
 	// report is the JSON report the detection leaves.
 	report atomic.Pointer[string]
 	fail   atomic.Pointer[imagescan.ScanError]
+	// hold, while set, keeps every analysis waiting until it is closed or the analysis's context ends.
+	hold atomic.Pointer[chan struct{}]
 }
 
 func (a *fakeAnalyser) Version() string { return "0.0.0-test" }
 
-func (a *fakeAnalyser) Analyse(_ context.Context, layout, sbom, _ string, _ imagescan.Limits) error {
+func (a *fakeAnalyser) Analyse(ctx context.Context, layout, sbom, _ string, _ imagescan.Limits) error {
+	a.started.Add(1)
+	if h := a.hold.Load(); h != nil {
+		select {
+		case <-*h:
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		}
+	}
 	if e := a.fail.Load(); e != nil {
 		return e
 	}
@@ -64,6 +78,22 @@ func (a *fakeAnalyser) Analyse(_ context.Context, layout, sbom, _ string, _ imag
 		return errors.New("the analyser got no OCI layout")
 	}
 	return os.WriteFile(sbom, []byte(`{"bomFormat":"CycloneDX","components":[{"type":"library","name":"xz"},{"type":"operating-system","name":"alpine"}]}`), 0o600)
+}
+
+// holdAnalyses makes every analysis wait until the returned function is called; the test's cleanup calls it too.
+func (a *fakeAnalyser) holdAnalyses(t *testing.T) func() {
+	t.Helper()
+	ch := make(chan struct{})
+	a.hold.Store(&ch)
+	var once atomic.Bool
+	release := func() {
+		if once.CompareAndSwap(false, true) {
+			a.hold.Store(nil)
+			close(ch)
+		}
+	}
+	t.Cleanup(release)
+	return release
 }
 
 func (a *fakeAnalyser) Detect(_ context.Context, _, out, _ string, db imagescan.DatabaseAccess, _ imagescan.Limits) error {
@@ -142,13 +172,16 @@ func newImage(t *testing.T) image {
 }
 
 type flow struct {
-	t      *testing.T
-	st     *testenv.Stack
-	api    *testenv.Replica
-	adm    string
-	an     *fakeAnalyser
-	worker *testenv.Replica
-	db     *fakeDatabase
+	t       *testing.T
+	st      *testenv.Stack
+	api     *testenv.Replica
+	scanner *testenv.Replica
+	adm     string
+	an      *fakeAnalyser
+	worker  *testenv.Replica
+	db      *fakeDatabase
+	o       options
+	ov      *app.VulnOverride
 }
 
 func v2(name string) string { return "/v2/" + testenv.DefaultProject + "/" + repoKey + "/" + name }
@@ -159,10 +192,20 @@ type options struct {
 	trivy []string
 	// realDatabase leaves the database seam to the client mode, reading what the sync imported.
 	realDatabase bool
+	// noDatabase keeps the database seam but publishes no database: Acquire answers ErrNoDatabase.
+	noDatabase bool
 	// mirror creates the generic local repository of mode repository.
 	mirror bool
 	// workerEnv is added to the environment of the worker.
 	workerEnv []string
+	// stackEnv is added to the environment of every replica, webEnv to the web replica's.
+	stackEnv, webEnv []string
+	// dial is the web replica's dial override: the names of an upstream stub.
+	dial map[string]string
+	// laterWorker leaves the start of the worker to the test (startWorker), so that what a test sets up before is not scanned yet.
+	laterWorker bool
+	// seed writes rows into the stack before any replica starts: a repository a replica must see from its start.
+	seed func(st *testenv.Stack)
 }
 
 func newFlow(t *testing.T) *flow { return newFlowWith(t, options{}) }
@@ -174,12 +217,14 @@ func newFlowWith(t *testing.T, o options) *flow {
 	if len(trivy) == 0 {
 		trivy = []string{"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=off"}
 	}
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnimage", Env: append([]string{
+	// The stack serves every listener with its pair and makes its CA the internal CA: the worker's call to the scanner and the scanner's
+	// pull from the scan listener are mutual TLS, as in the chart (R-HA-066).
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnimage", TLS: true, Env: append(append([]string{
 		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
 		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + dir, "QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=0s",
 		"QUADER_MAINTENANCE_TASKS=" + taskOff, "QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
-	}, trivy...)})
-	f := &flow{t: t, st: st, an: &fakeAnalyser{}, db: &fakeDatabase{}}
+	}, trivy...), o.stackEnv...)})
+	f := &flow{t: t, st: st, an: &fakeAnalyser{}, db: &fakeDatabase{}, o: o}
 	rita := st.User("rita")
 	st.Bind("admin", rita)
 	f.adm = st.Token(rita, scope.Scope{Inherit: true, Admin: true})
@@ -187,15 +232,37 @@ func newFlowWith(t *testing.T, o options) *flow {
 	if o.mirror {
 		st.Repository(mirrorKey, "local", "generic", "{}")
 	}
+	if o.seed != nil {
+		o.seed(st)
+	}
 	f.setReport(reportWith("5.6.1-r2"))
 	ov := &app.VulnOverride{ImageAnalyser: f.an}
 	if !o.realDatabase {
-		f.setDB("sha256:db1")
+		if !o.noDatabase {
+			f.setDB("sha256:db1")
+		}
 		ov.ImageDatabase = f.db
 	}
-	f.api = st.Start(t, testenv.ReplicaOptions{Name: "web", Role: "web"})
-	f.worker = st.Start(t, testenv.ReplicaOptions{Name: "worker", Role: "worker", Vuln: ov, Env: o.workerEnv})
+	f.ov = ov
+	// The web replica opens the scan listener beside its client listener (R-ARCH-037); the scanner pulls from it, with a spool and a
+	// working directory of its own, as its pod has (R-HA-065).
+	f.api = st.Start(t, testenv.ReplicaOptions{Name: "web", Role: "web", DialOverride: o.dial, Env: append([]string{"QUADER_SERVER_SCAN_LISTEN=127.0.0.1:0"}, o.webEnv...)})
+	own := t.TempDir()
+	f.scanner = st.Start(t, testenv.ReplicaOptions{Name: "scanner", Role: "scanner", Vuln: &app.VulnOverride{ImageAnalyser: f.an}, Env: []string{
+		"QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=" + st.Origin(f.api.Addr("scan")),
+		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + filepath.Join(own, "scan"), "QUADER_STORAGE_SPOOL_DIR=" + filepath.Join(own, "spool"),
+	}})
+	if !o.laterWorker {
+		f.startWorker()
+	}
 	return f
+}
+
+// startWorker starts the worker, which calls the stack's scanner.
+func (f *flow) startWorker() {
+	f.t.Helper()
+	env := append([]string{"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=" + f.st.Origin(f.scanner.ScannerAddr())}, f.o.workerEnv...)
+	f.worker = f.st.Start(f.t, testenv.ReplicaOptions{Name: "worker", Role: "worker", Vuln: f.ov, Env: env})
 }
 
 func (f *flow) setDB(d string) {
@@ -630,8 +697,9 @@ func spoolEnv(bytes int64) []string {
 	return []string{"QUADER_STORAGE_SPOOL_MAX_BYTES=" + strconv.FormatInt(bytes, 10)}
 }
 
-// Q-VULN-145: the working space of a scan is admitted through the spool's budget. A budget that cannot hold the scan's margin next to
-// the scan refuses it with a reason on the row, spends no attempt, never reads the layers and never reports the image as clean.
+// Q-VULN-145: the working space of a detection is admitted through the worker's spool budget, before the scanner is called. A budget that
+// cannot hold the detection's margin refuses it with a reason on the row, spends no attempt, never reads the layers and never reports the
+// image as clean.
 func TestQ_VULN_145_AScanThatCannotFitTheSpoolIsPutOffWithAReasonAndNeverReadAsClean(t *testing.T) {
 	f := newFlowWith(t, options{workerEnv: spoolEnv(32 << 20)})
 	f.push("app", "1.0", newImage(t))
@@ -645,7 +713,7 @@ func TestQ_VULN_145_AScanThatCannotFitTheSpoolIsPutOffWithAReasonAndNeverReadAsC
 	if got := f.st.Text(`SELECT state FROM vuln_image_scan`); got != "pending" {
 		t.Fatalf("state %q", got)
 	}
-	if detail := f.st.Text(`SELECT error_detail FROM vuln_image_scan`); !strings.Contains(detail, "spool") || !strings.Contains(detail, "max_image_size") {
+	if detail := f.st.Text(`SELECT error_detail FROM vuln_image_scan`); !strings.Contains(detail, "spool") || !strings.Contains(detail, "worker.spool.sizeLimit") {
 		t.Fatalf("the reason does not say what to change: %q", detail)
 	}
 	if f.an.analyses.Load() != 0 || f.an.detections.Load() != 0 {
@@ -656,7 +724,7 @@ func TestQ_VULN_145_AScanThatCannotFitTheSpoolIsPutOffWithAReasonAndNeverReadAsC
 	}
 }
 
-// Q-VULN-145: a budget that holds the margin of one scan and a small image scans image after image, so the room of a finished scan is
+// Q-VULN-145: a worker budget that holds the margin of one detection scans image after image, so the room of a finished detection is
 // given back; a leak would leave the second scan waiting for room that never returns.
 func TestQ_VULN_145_TheRoomOfAFinishedScanIsGivenBack(t *testing.T) {
 	f := newFlowWith(t, options{workerEnv: spoolEnv(72 << 20)})

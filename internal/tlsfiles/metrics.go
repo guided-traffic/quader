@@ -34,6 +34,9 @@ const (
 	KindValkey      = "valkey"
 	KindObjectStore = "objectstore"
 	KindOutbound    = "outbound"
+	// KindClient is the pair a process presents and the CA it verifies against on a link between quader's pods (R-ARCH-038);
+	// the listener label names the link's far end: scanner or scan.
+	KindClient = "client"
 )
 
 // Metrics are the three families, registered once per process and shared by

@@ -25,7 +25,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 */}}
 {{- define "quader.rules.all" -}}
 {{- $ns := printf "namespace=%q" .Release.Namespace -}}
-{{- $roles := printf "%s-(api|packages|worker)(-.*)?" (include "quader.fullname" .) -}}
+{{- $roles := printf "%s-(api|packages|worker|scanner)(-.*)?" (include "quader.fullname" .) -}}
 {{- $stale := include "quader.seconds" (dig "vulnerabilities" "stale_after" "24h" .Values.config) -}}
 {{- $interval := include "quader.seconds" (dig "backup" "expected_interval" "24h" .Values.config) -}}
 - alert: QuaderReplicasNotReady
@@ -162,6 +162,14 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
   annotations:
     summary: Container images are being scanned without one scan finishing.
     description: Images whose scan does not finish show the evaluation scan_failed and are not reported as clean (R-VULN-034). The codes are the results of quader_vuln_image_scans_total; a repository page names the code per image in GET /api/v1/packages/{packageId}/versions/{version}/vulnerabilities.
+- alert: QuaderVulnerabilityImageScannerUnavailable
+  expr: sum(increase(quader_vuln_image_scans_total{ {{ $ns }},result=~"scanner_unavailable|registry_unavailable|pull_refused" }[30m])) > 0 and (sum(increase(quader_vuln_image_scans_total{ {{ $ns }},result="scanned" }[30m])) or vector(0)) == 0
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: Image scans are put off because the scanner or its pull cannot work, and none finishes.
+    description: For half an hour scans were put off for a reason of the installation, not of an image, and no scan finished (R-VULN-041, Q-VULN-162). A put-off scan spends no attempt, so it never shows as scan_failed. scanner_unavailable is no ready scanner pod or a refused handshake (the worker's certificate must allow client authentication); registry_unavailable is a scanner that cannot reach the scan listener of packages on 8082; pull_refused is a scan token the scan listener refused (a key ring that differs between the worker and packages, or a clock more than a minute off).
 - alert: QuaderMirrorFailing
   expr: max by (repo) (quader_mirror_consecutive_failures{ {{ $ns }} }) >= 3
   labels:
@@ -303,5 +311,5 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader.rules.names" -}}
-{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
+{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
 {{- end -}}

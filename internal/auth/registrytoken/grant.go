@@ -69,6 +69,10 @@ type Grant struct {
 	Entries []Entry
 	// Catalog is the grant registry:catalog:* (R-OCI-017).
 	Catalog bool
+	// Digest pins the grant to one manifest: the claim d of a scan token (R-OCI-037, Q-OCI-227), set by the stage of the scan
+	// listener from the verified claims. It travels with the grant to the enforcement point; it is never a member of the wire's
+	// grant.
+	Digest string
 }
 
 // Allows reports whether the grant holds the action for the image name of the repository: the check of R-OCI-005 "Use"

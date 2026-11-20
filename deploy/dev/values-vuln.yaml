@@ -15,6 +15,10 @@ config:
       kev:
         mode: online
         url: https://osvstub.quader.svc/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    # An image pushed by a test is scanned at the next job, not 30 s later: the delay waits for the layers of a remote image's pull,
+    # and the case of the scanner (vuln_scanner_test.go) pushes to a local repository and asks within a minute (R-HA-066).
+    images:
+      scan_delay: 0s
     matching:
       public_upstreams:
         npm: [registry.npmjs.org, npmstub.quader.svc]

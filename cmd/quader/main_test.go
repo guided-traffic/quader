@@ -20,6 +20,8 @@ func baseEnv(extra ...string) []string {
 		"QUADER_DATABASE_HOST=db.example", "QUADER_DATABASE_NAME=quader",
 		"QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s1:26379\"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=quader",
 		"QUADER_STORAGE_S3_BUCKET=blobs",
+		// A worker names the scanner it calls while the image scanning is on (R-VULN-041).
+		"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://127.0.0.1:1",
 		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/keys/2026-10.key\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
 	}, extra...)
 }
@@ -31,7 +33,7 @@ func TestServe(t *testing.T) {
 	t.Run("R-ARCH-001 serve without --role and without process.role prints the role message", func(t *testing.T) {
 		cfg := writeConfig(t, "log:\n  level: info\n")
 		code, _, stderr := runCmd(t, baseEnv(ephemeral...), "serve", "--config", cfg)
-		if code != 1 || !strings.Contains(stderr, "process.role must be api, packages, worker, web or all") {
+		if code != 1 || !strings.Contains(stderr, "process.role must be api, packages, worker, scanner, web or all") {
 			t.Fatalf("code %d stderr %q", code, stderr)
 		}
 	})

@@ -600,9 +600,9 @@ Acceptance criteria:
 
 - Unit (`internal/app`, under a second): `SubsystemsFor("scanner")` is the area `scanner` alone, and `planSteps` accepts it; the role table
   test of R-ARCH-001 holds the new row.
-- Integration (`test/integration/roles`, about 2 s): a replica started with `--role scanner` and a configuration whose database, Valkey and
-  object-store files do not exist becomes ready; the statement counter of the stack's PostgreSQL records no connection from it, and `ss`
-  shows only `:8080` and `:8081` bound by it.
+- Unit (`internal/app`, about a second): a replica started with `--role scanner` and a configuration whose database, Valkey and key-ring
+  files do not exist becomes ready; it builds no database pool, Valkey client or blob store, binds the scanner's listener and the ops
+  listener and no endpoint, and answers its one route ([Q-ARCH-550](#q-arch-550--the-scanner-starts-without-the-infrastructure-at-the-unit-tier)).
 
 ### R-ARCH-037 · The scan listener of `packages`
 Priority: **P1** · Covers: quader-only
@@ -11264,6 +11264,47 @@ for them (and for `e2e-oci`, which was missing from their needs). About 230 minu
 more formats of the mean size before a night grows.
 
 **Applied:** [performance.yml](../../.github/workflows/performance.yml); [releasing.md](../developer/releasing.md#order-and-wall-time).
+
+### Q-ARCH-550 · The scanner starts without the infrastructure at the unit tier
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-ARCH-036 asked for an integration test in `test/integration/roles`: a scanner replica becomes ready while the files of the
+database, Valkey and the object store do not exist, PostgreSQL's statement counter records no connection from it, and `ss` shows its two
+listeners only. A replica of the role builds no area that reaches the stack, so the stack can show nothing the process does not show itself.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The unit tier of `internal/app` starts the replica in process with the files missing and asserts the areas built (no pool, no Valkey client, no blob store), the listeners bound (the scanner's and the ops listener, no endpoint) and the readiness (chosen) | No stack | About a second; the absence of a connection is shown by the absence of the object that would make it, which is stronger than a counter that a later change could miss; no new area in a shard | No observation from outside the process |
+| (b) The integration test as specified | The stack's PostgreSQL counts | An outside observer | A shard gains a test whose stack plays no part; `ss` on a developer's machine and in CI differ |
+
+**Choice:** (a): `TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute` (`internal/app`). The scanner replica of the
+image scanning's integration flow (`test/integration/vulnimage`) starts against the stack too. **Rationale:** the owner's rule that each
+behaviour is tested once at the cheapest tier that can show it. The development agent would revisit this if the role gains an area that
+reaches the stack for a reason of its own.
+
+**Applied in the spec:** R-ARCH-036.
+
+### Q-ARCH-551 · In the role `all` the scanner's check is reported, not gating
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-HA-065 makes a scanner pod not ready while its analyser does not answer its version or its pair does not allow client
+authentication. The role `all` builds the same scanner (Q-ARCH-531), and its process also serves every route: the UI development profile
+(`make ui-dev-backend`) runs it, its render script waits for `/readyz`, and a developer's machine usually has no analyser at
+`vulnerabilities.images.binary`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The check `scanner` gates readiness in the role `scanner` and is a reported check in `all` (chosen) | `all` stays ready without the analyser; `/readyz?verbose=1` lists `scanner` as degraded with its reason | The API and the registry of a development process do not go down with one analyser; the scanner's own role keeps the rule of R-HA-065 | In `all` a call reaches a scanner that cannot analyse, which answers `analyser_failed` and spends the image's attempt, as the in-worker analysis did before |
+| (b) The check gates in `all` too | One rule | Symmetry | Every development process without the binary stays unready, and the UI renders wait for ever |
+| (c) `all` builds no scanner without the binary | No call | No failed attempt | A configuration-dependent area set, which Q-ARCH-209 rules out |
+
+**Choice:** (a) ([wire_scanner.go](../../internal/app/wire_scanner.go), `TestR_HA_067_TheRoleAllStaysReadyWithoutTheAnalyser` in
+`test/integration/vulnimage`). **Rationale:** readiness says whether a replica may take traffic; in `all` most of that traffic is not the
+scanner's. The development agent would revisit this if the role `all` were ever rendered for an installation.
+
+**Applied in the spec:** R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-067.
 
 ### Q-ARCH-560 · A scanner is of a kind, image or malware, chosen by configuration
 

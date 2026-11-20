@@ -32,6 +32,7 @@ func alertSeverities() []alertSeverity {
 		{"QuaderVulnerabilityMaliciousRecordRejected", "critical"},
 		{"QuaderVulnerabilityClaimedNameMalicious", "critical"},
 		{"QuaderVulnerabilityImageScansFailing", "warning"},
+		{"QuaderVulnerabilityImageScannerUnavailable", "warning"},
 		{"QuaderMirrorFailing", "warning"},
 		{"QuaderMirrorStale", "warning"},
 
@@ -155,7 +156,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 				continue
 			}
 			found = true
-			want := `deployment=~"acme-quader-(api|packages|worker)(-.*)?"`
+			want := `deployment=~"acme-quader-(api|packages|worker|scanner)(-.*)?"`
 			if !strings.Contains(str(r, "expr"), want) {
 				t.Errorf("expr = %q, want it to contain %s", str(r, "expr"), want)
 			}
