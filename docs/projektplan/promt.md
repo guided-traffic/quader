@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 15:45): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 16:20): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -503,6 +503,8 @@ records the recorder that tells such a stall apart).
 - `api-and-ui.md` has Q-API-260 to 263 after its first `## What this does not cover` and a second such heading after them.
 - R-UI-002 and `_shell.scss` cite UI-A-48, an item of the T-21 audit that no longer exists.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
+- The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
+  page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 
 **Phase 7, not closed** (BETA.md stays 🟡): E5.9, E5.10 and E5.5 need green runs, E5.1 a run of the nightly job on a fresh cluster (the
 drill with the new commands passed on kind on 2026-11-10, Q-HA-289), H-798 is unexplained (drained pods killed after their grace
@@ -562,7 +564,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 15:45.
+**State on 2026-11-20**, 16:20.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -617,31 +619,69 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (15:45), four builders, each in a worktree of its own:
+- **In work** (16:20), three builders; packages 2 and 3 of `upstream` have reported, nothing of the feature is landed:
   - **Package 1 of `upstream`, second stage.** Its contract commit is `ceca6d08` on its branch, on top of `main` (not
-    landed): the package `internal/wellknown`, migration 00086 with the project's row, the table of the well-known
-    repositories and the database's guards, the kind and state of a well-known repository on every read, the error codes,
-    the ten operations of the admin API in the API document (their handlers answer 501). It now builds the reconcile, the
-    refusals, the handlers, the archive keys of Debian and Ubuntu, the order of `GET /api/v1/projects` (Q-UI-837) and the
-    integration area `upstream`.
-  - **Package 2 of `upstream`** (membership across the project line, placeholders, the usage row with migration 00087),
-    started on `ceca6d08`. No authorization code: the level `internal` already decides who reads a member.
-  - **Package 3 of `upstream`** (the UI: the admin page with the new switch, a registry's page, the member picker's group
-    and the placeholder, the built-in project in the main area, the arrow in its mark and its first place in the lists),
-    started on `ceca6d08`; it renders with a dev server of its own against fixtures and writes nothing to the running
-    UI stack.
+    landed). It builds the reconcile, the refusals, the handlers, the archive keys of Debian and Ubuntu, the order of
+    `GET /api/v1/projects` (Q-UI-837) and the integration area `upstream`. **Added on 2026-11-20, 16:20, from the other two
+    packages' reports,** two changes of the API's shape that the UI showed missing: (a) the item of R-REPO-073 says who
+    lists a registry as a number only, where R-UI-187's question before a switch-off names "3 virtual repositories in 2
+    projects" and R-UI-188 lists them by name: the item gets the number of projects and, on the read of one registry, the
+    names; (b) no read tells the Owner of a team's project the state or the level of a well-known repository, which the
+    member picker of R-UI-189 shows: a read of its own for a signed-in caller, without address, account or who lists it.
+    It discloses nothing new: package 2's resolution explanation and the warning `member_inactive` already tell whoever
+    writes a member list. The builder chooses the shapes and writes the decision blocks. From package 2: its switch
+    notifies `repo_config` in its transaction, and its `main_test.go` replaces package 2's.
+  - **Package 2 of `upstream`, reported:** `99daf572` on `ceca6d08`, every gate green (the unit run 2:08, the integration
+    areas `upstream` 3.6 s, `limits` 121 s, `virtual` and `repository` once each because the members' SQL changed).
+    Migration 00087. **What it cost:** unit tests under a second each; one integration test of about 3 s in the area
+    `upstream` and one of 2.8 s in `limits`, both in shard b: about 8 s more there (the plan said 12 s). **Outside the
+    plan's cut:** the format contract got `VirtualPlan.NotFound` and `VirtualPlan.Unknown`, an addition, so that the
+    404 of an OCI virtual repository can carry the sentence (OCI walks its members itself). **Resumed at 16:20 for
+    H-1080,** which it had found and left because `internal/authz` was closed to it: the grant index names a member of
+    `upstream` in the team's project, so a token whose scope names the virtual repository does not read through the
+    member, an anonymous caller gets no 401 for a member that is not public, and a Bastion takes the virtual repository's
+    reach as partial. It only ever narrowed access, but pipelines with a scoped token are the main use of the central
+    registries, so the feature does not land with it. The fix is amended into the package's commit.
+  - **Package 3 of `upstream`, reported:** `8de3769c` on `ceca6d08`: the page **Admin area › Upstream registries** with
+    the new switch, a registry's own page, the member picker's group and the placeholder, the built-in project in the
+    main area with the arrow in its mark and its first place in every list of projects. Gates green (`make web-test`
+    1,771 tests 54.8 s, `make web-lint`, `make ui-layout-test`, `make web-embed`). **What it cost:** about 4 s of
+    component tests, no browser journey, no leg. Built against fixtures of its own, because the handlers answered 501:
+    **not yet run against the real API**, and the line in `web/e2e/renders/screens.ts` is missing for the same reason.
+    Not built: the sentence of **Set up client** for `scanner-trivy` (R-UI-190). **Rendered and looked at by the
+    development agent** (rule 11; 210 pictures of 29 screens, both schemes, 1440, 1024 and 390 px, four roles): the
+    screens hold together. What goes back to the builder, with the two shape changes once package 1 has them:
+    1. the project `upstream` shows **Public** in the lists of projects and a globe beside its name in the side bar,
+       because that is the stored level (Q-AUTHZ-301); by the owner's definition Public means everyone reads, which is
+       not true of this project. It gets an en dash and no level icon (the development agent's);
+    2. on a registry's page the heads of the sections (State and visibility, Address, Account) are as large as the
+       labels of the fields under them;
+    3. the settings page of `scanner-trivy` says "Only members of the project and the principals a policy names" and
+       "Managed in Admin area", where the level is fixed and the project has no members;
+    4. a well-known repository's settings page shows the fold **Wiki visibility**, which R-REPO-069 does not name;
+    5. the archive keys' fingerprints stand in the browser's own monospace face, not the product's;
+    6. in the picture of a filter without a match the page's title carries the focus ring: whether the page takes the
+       focus from the filter while one types has to be checked;
+    7. **Explain a path** says "Disabled, so not asked" for a placeholder; package 2's `upstreamState` says why.
+    Seen and left: the groups stand in the order of the format catalog, Ansible Galaxy first and OCI last (alphabetical
+    by display name, as the specification says); the project switcher lists Upstream under **Your projects**; the
+    shared error notice's **Retry** sits 5.5 px off its line in every list (not this package's, section 8).
   - **Package A of the scanner**, in two stages: everything up to the integration tier and the chart tests with the e2e
     case written, then, when the host is quiet and it is told to, the one run of that case on a kind cluster of its own.
-  **Waiting:** package B of the scanner, for a free builder (at most four) and for `upstream/scanner-trivy`. **Cut between
-  package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
+  **Waiting:** package B of the scanner, for `KindSystem` of package A's first stage and for `upstream/scanner-trivy`.
+  **Cut between package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
   `scanner-trivy` (its 48 hours, its include pattern, the 404 for every client) and leaves the "in use" function empty,
   so the admin page says "Not in use" until package B supplies it; the system's own reading through the repository, the
-  actor of its fills and the cleanup's exemption for the layer in use are package B's. **The integration area `upstream`**
-  is written by packages 1 and 2 at once: package 1 owns its `main_test.go`, package 2's is dropped at landing.
-  **Numbers the builders hold** for decisions and gaps of their own: package 1 Q-REPO-390, Q-AUTHZ-305 to 309, Q-API-363,
-  H-1053 to H-1069, ADR-217, SQLSTATE AI011; package 2 Q-REPO-400, Q-AUTHZ-310, Q-LIM-75, H-1080, SQLSTATE AI015;
-  package 3 Q-UI-838 to 849, H-1090; package A Q-VULN-180, Q-ARCH-550, Q-HA-340, Q-OCI-235, Q-AUTHZ-330, Q-LIM-70,
-  Q-OPS-220, Q-EP-90, H-1070, ADR-215. The next builder gets ranges above those.
+  actor of its fills and the cleanup's exemption for the layer in use are package B's. **Landing the three packages:**
+  the development agent merges them on one branch in the order 1, 2, 3; both package 1 and package 3 wrote
+  `docs/manual/admin/upstream-registries.md`, and four spec and documentation pages are touched by more than one package.
+  On the merged tree a builder replaces package 2's SQL helper `virtSwitchOn` by package 1's operation, adds the case
+  that lists `upstream/debian` (refused with `deb_member_unverified` until the presets carry package 1's keys), and the
+  UI builder runs its screens against the real API and adds the render line; then the full gates, then `main`.
+  **Numbers the builders hold** for decisions and gaps of their own: package 1 Q-REPO-390, Q-AUTHZ-305 to 309, Q-API-363
+  to 369, H-1053 to H-1069, ADR-217, SQLSTATE AI011; package 2 Q-REPO-400 onward, Q-AUTHZ-310, Q-LIM-75, H-1080 onward,
+  SQLSTATE AI015; package 3 Q-UI-838 to 849, H-1090; package A Q-VULN-180, Q-ARCH-550, Q-HA-340, Q-OCI-235, Q-AUTHZ-330,
+  Q-LIM-70, Q-OPS-220, Q-EP-90, H-1070, ADR-215. The next builder gets ranges above those.
 - **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
   `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
   its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
@@ -769,7 +809,16 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   contract commit (not on `main` yet): a caller without the right gets 403 on the admin API's list and on a single
   registry, not 404, because the keys are the same in every installation and a 404 would hide nothing (Q-API-362); the
   well-known repositories are declared in the order of the format registry (Ansible Galaxy, Debian, npm, NuGet, OCI),
-  and the admin page orders its groups itself.
+  and the admin page orders its groups itself. Package 2's (not on `main` yet): the 404's sentence with several
+  placeholders, none of it on an endpoint with exposure rules, and OCI's own codes kept (Q-REPO-400); a member list
+  may not hold `npmjs` and `upstream/npmjs` at once, because Debian's member paths, Ansible's role ids and OCI's merged
+  tag list name a member by its key (Q-REPO-401); the usage row names the team's virtual repository only for a
+  request a member of `upstream` served (Q-LIM-75). Package 3's (not on `main` yet): the entry's icon in the admin
+  area's side bar (Q-UI-838); a row's level as a select with the level's icon beside it (Q-UI-839); what a team
+  learns of a registry's state without the admin read (Q-UI-840) and "Listed by" as a number (Q-UI-841), both until
+  package 1's two shape changes replace them; which settings of a well-known repository have a field on its settings
+  page (Q-UI-842: the vulnerability settings and the cache-fill action stay with the API); the creation form opens
+  at the class its address names (Q-UI-843).
 - The role `scanner` and the analyser's database (2026-11-20, its planner's decisions beside the owner's): Q-VULN-161 to 176,
   Q-ARCH-527 to 531, Q-OCI-226 to 230, Q-HA-316 to 322, Q-LIM-66, Q-OPS-215, Q-UI-850. The ones to look at first: a listener
   of its own on `packages` for the scanner's pull (Q-ARCH-528); mutual TLS between worker and scanner with the chart's
