@@ -1,16 +1,12 @@
-// The explanation below the snippets (R-UI-125): open sections with a heading, the rest folded; the prose keeps a measure.
-// Not encapsulated, like the README view it holds: the HTML is bound at run time and carries no scope attribute, so every rule
-// is scoped by the component's element.
+// The explanation below the snippets (R-UI-125, Q-UI-805): every section a closed row; the prose keeps a measure. Not
+// encapsulated, like the README view it holds: the HTML is bound at run time and carries no scope attribute, so every rule is
+// scoped by the component's element.
 quader-guide-view {
   display: block;
 
-  .guide-open {
-    margin-block: 0 var(--quader-space-3);
-
-    > h2 {
-      margin-block: 0 var(--quader-space-2);
-      font: var(--quader-type-title-medium);
-    }
+  // The rows of the list are closer than the sections of a settings page: a list of headings to choose from.
+  .guide-more .disclosure {
+    padding-block: var(--quader-space-2);
   }
 
   // A line of prose reads at some 70 characters; a table or a code block may use the column's width.

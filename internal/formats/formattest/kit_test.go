@@ -306,6 +306,32 @@ func TestR_ARCH_010_KitChecksCatchTheirDefects(t *testing.T) {
 			}
 		}
 	})
+	t.Run("R-ARCH-010 R-API-030 check 8: an example the text does not write, or a package example off an install template, fails", func(t *testing.T) {
+		rc := formats.SetupTemplate{ID: "tf.rc.configure", Client: "tf", Section: "configure", Lang: "ini", Template: "x\n"}
+		install := formats.SetupTemplate{ID: "tf.install", Client: "tf", Section: "install", Lang: "shell", Template: "tf install " + formats.SetupPackageRef + "\n"}
+		cases := map[string][]formats.SetupTemplate{
+			"which its text does not write": {
+				rc, install, {ID: "tf.publish", Client: "tf", Section: "publish", Lang: "shell", Template: "tf publish ./app.tgz\n", Examples: []string{"./other.tgz"}},
+			},
+			"has a PackageExample and is no install template": {
+				{ID: "tf.rc.configure", Client: "tf", Section: "configure", Lang: "ini", Template: "x\n", PackageExample: "app"}, install,
+			},
+		}
+		for want, ts := range cases {
+			got := messages(formattest.Evaluate(override{Format: testformat.New(), templates: ts}, fx), formattest.CheckSetup)
+			if !strings.Contains(got, want) {
+				t.Errorf("%q does not say %q", got, want)
+			}
+		}
+		ok := []formats.SetupTemplate{
+			rc,
+			{ID: "tf.install", Client: "tf", Section: "install", Lang: "shell", Template: install.Template, PackageExample: "app:1.0"},
+			{ID: "tf.publish", Client: "tf", Section: "publish", Lang: "shell", Template: "tf publish ./app.tgz\n", Examples: []string{"./app.tgz"}},
+		}
+		if got := messages(formattest.Evaluate(override{Format: testformat.New(), templates: ok}, fx), formattest.CheckSetup); got != "" {
+			t.Fatalf("refused: %q", got)
+		}
+	})
 	t.Run("R-ARCH-010 R-UI-049 check 8: a guide section that breaks a rule of the guide fails", func(t *testing.T) {
 		with := func(change func(*formats.GuideSection)) []formats.GuideSection {
 			out := append([]formats.GuideSection(nil), testformat.New().Guide()...)

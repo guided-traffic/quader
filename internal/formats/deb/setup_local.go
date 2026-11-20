@@ -57,7 +57,7 @@ deb [signed-by=` + tplKeyFile + `] {{.RegistryURL}} ` + tplSuite + ` main
 		{ID: "apt.shell.configure", Client: ClientAPT, Section: "configure", Lang: "shell", Template: configure},
 		{ID: "apt.list.configure", Client: ClientAPT, Section: "configure", Lang: "ini", Template: list},
 		{ID: "apt.install", Client: ClientAPT, Section: "install", Lang: "shell", Template: install, VersionSpec: "=" + formats.SetupVersionRef},
-		{ID: "apt.curl.publish", Client: ClientAPT, Section: "publish", Lang: "shell", Template: publish},
+		{ID: "apt.curl.publish", Client: ClientAPT, Section: "publish", Lang: "shell", Template: publish, Examples: []string{"hello_1.0_amd64.deb"}},
 	}
 	return append(out, f.remoteSetupTemplates()...)
 }

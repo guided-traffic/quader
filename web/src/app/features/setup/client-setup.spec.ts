@@ -110,21 +110,24 @@ describe('Set up client', () => {
     const explanation = r.root.querySelector('quader-guide-view')!;
     const lastStep = [...r.root.querySelectorAll('section.step')].at(-1)!;
     expect(lastStep.compareDocumentPosition(explanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(text(explanation.querySelector('section.guide-open > h2')!)).toBe('What a virtual repository is');
+    // Under the heading Guide every section is a closed row, the first one, what the class is, too (Q-UI-805).
+    expect(text(r.root.querySelector('section.explanation > h2')!)).toBe('Guide');
     const folded = [...explanation.querySelectorAll<HTMLElement>('quader-disclosure.guide-more')].map((d) => d.dataset['section']);
-    expect(folded).toEqual(['npm.configure', 'npm.authenticate', 'npm.install', 'npm.publish', 'npm.troubleshooting']);
+    expect(folded[0]).toMatch(/\.what$/);
+    expect(folded.slice(1)).toEqual(['npm.configure', 'npm.authenticate', 'npm.install', 'npm.publish', 'npm.troubleshooting']);
     expect(explanation.querySelectorAll('quader-disclosure button[aria-expanded="true"]').length).toBe(0);
     // No boxed table of contents above everything.
     expect(r.root.querySelector('nav.toc')).toBeNull();
-    // Each snippet keeps the sentence that says what it does.
-    expect(text(r.root)).toContain('Save this as .npmrc in your project.');
+    // A snippet keeps only the sentence its window does not say; the install command needs none (Q-UI-804).
+    expect(text(r.root.querySelector('section[aria-labelledby="step-configure"] quader-setup-snippet .why')!)).toBe('Save as .npmrc in your project.');
+    expect(r.root.querySelector('section[aria-labelledby="step-install"] .why')).toBeNull();
   });
 
   it('R-UI-016 acceptance: the default produces a .npmrc with the literal ${QUADER_TOKEN} and shows no secret', async () => {
     const r = await open();
     expect(snippets(r, 'configure')[0]).toContain('//quader.example.net/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}');
     expect(text(r.root)).not.toMatch(/qdr_(pat|sat|cit)_/);
-    expect(text(r.root)).toContain('The snippets read your token from the variable QUADER_TOKEN.');
+    expect(text(r.root.querySelector('.credential')!)).toContain('The snippets read it from QUADER_TOKEN.');
   });
 
   describe('the client (Q-UI-482)', () => {
@@ -157,15 +160,18 @@ describe('Set up client', () => {
 
   it('R-UI-016 R-UI-125 each snippet shows its file and has a copy button; a file can be downloaded; a long line wraps inside its block', async () => {
     const r = await open();
-    const first = r.root.querySelector('quader-setup-snippet')!;
-    expect(text(first.querySelector('.target')!)).toBe('File: .npmrcDownload');
-    expect(first.querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy snippet');
-    expect(text(first)).toContain('Download');
+    // A file is an editor window: its tab names the file, Download and the copy button stand in its bar (Q-UI-801).
+    const first = r.root.querySelector('quader-setup-snippet quader-code-window')!;
+    expect(first.classList).toContain('editor');
+    expect(text(first.querySelector('.tab-title')!)).toBe('.npmrc');
+    expect(first.querySelector('.bar quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy snippet');
+    expect(first.querySelector('.bar button.download')?.getAttribute('aria-label')).toBe('Download .npmrc');
     // One element per line: a long line wraps with an indented continuation instead of being cut off (Q-UI-486).
     expect(first.querySelectorAll('pre .line').length).toBe(2);
-    const cli = [...r.root.querySelectorAll('quader-setup-snippet')].find((s) => text(s).includes('npm config set'))!;
-    expect(cli.querySelector('.target')).toBeNull();
-    expect(text(cli)).not.toContain('Download');
+    // A command is a terminal window, without Download.
+    const cli = [...r.root.querySelectorAll('quader-code-window')].find((s) => text(s).includes('npm config set'))!;
+    expect(cli.classList).toContain('terminal');
+    expect(cli.querySelector('button.download')).toBeNull();
   });
 
   it('R-UI-016 R-UI-043 a download goes through a Blob URL that is revoked right after the click', async () => {
@@ -179,7 +185,7 @@ describe('Set up client', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     try {
       const r = await open();
-      button(r.root.querySelector('quader-setup-snippet')!, 'Download').click();
+      r.root.querySelector<HTMLButtonElement>('quader-setup-snippet button.download')!.click();
       expect(created).toHaveLength(1);
       expect(await created[0]!.text()).toContain('${QUADER_TOKEN}');
       expect(click).toHaveBeenCalledOnce();
@@ -200,7 +206,7 @@ describe('Set up client', () => {
       expect(request.description).toMatch(/^Client setup: npm, web\/npm-all, \d{4}-\d{2}-\d{2}$/);
       expect(request.ttlSeconds).toBe(2_592_000);
       expect(request.scope).toEqual({ repositories: [{ repositories: ['web/npm-all'], actions: ['read'] }] });
-      const shown = r.root.querySelector('.token-value')?.textContent ?? '';
+      const shown = r.root.querySelector<HTMLInputElement>('.token-value input')?.value ?? '';
       expect(shown).toMatch(/^qdr_pat_/);
       expect(text(r.root)).toContain('This token is shown once.');
       expect(text(r.root)).toContain(READ_TOKEN_COMMAND);
@@ -234,7 +240,7 @@ describe('Set up client', () => {
       const r = await open();
       button(r.root, 'Create a token').click();
       await settle(r.fixture);
-      const token = r.root.querySelector('.token-value')!.textContent!;
+      const token = r.root.querySelector<HTMLInputElement>('.token-value input')!.value;
       expect(storedText()).not.toContain('qdr_');
       expect(location.href).not.toContain('qdr_');
 
@@ -245,7 +251,7 @@ describe('Set up client', () => {
 
       button(r.root, 'Create a token').click();
       await settle(r.fixture);
-      const second = r.root.querySelector('.token-value')!.textContent!;
+      const second = r.root.querySelector<HTMLInputElement>('.token-value input')!.value;
       const held = r.fixture.componentInstance as unknown as { createdToken: () => string | null };
       expect(held.createdToken()).toBe(second);
       r.fixture.destroy();
@@ -379,13 +385,31 @@ describe('Set up client', () => {
     it('R-UI-123 an anonymous visitor of a public repository gets snippets without credentials, no token line and no More options', async () => {
       const r = await open({ project: 'web', key: 'npm-all' }, { anonymous: true });
       expect(r.setup.calls.at(-1)?.query.credentials).toBe('none');
-      expect(text(r.root)).toContain('You are not signed in.');
+      expect(text(r.root)).toContain('You are not signed in: the snippets hold no credentials.');
       expect(r.root.querySelector('input[name="credentials"]')).toBeNull();
       expect(text(r.root)).not.toContain('Create a token');
       expect(text(r.root)).not.toContain('More options');
       expect(snippets(r).join('\n')).not.toContain('_authToken');
       expect(stepHeadings(r)).toEqual(['1Configure', '2Install']);
       await expectAccessible(r.root);
+    });
+
+    it('R-UI-123 an anonymous visitor of a public image is not asked to sign in to pull, and gets no pull secret', async () => {
+      const r = await open({ project: 'web', key: 'oci-local' }, { anonymous: true });
+      const configure = r.root.querySelector('section[aria-labelledby="step-configure"]')!;
+      expect(text(configure)).toContain('Not needed to pull: this repository can be read without signing in.');
+      expect(text(configure)).not.toContain('Sign in once');
+      expect(text(configure)).not.toContain('For a Kubernetes cluster');
+      // The pull names the image the push names (Q-UI-802), marked as the reader's.
+      const pull = r.root.querySelector('section[aria-labelledby="step-install"] pre')!;
+      expect(pull.textContent).toContain('/myapp:1.0');
+      expect(text(pull.querySelector('.k-value')!)).toBe('myapp:1.0');
+
+      const member = await open({ project: 'web', key: 'oci-local' });
+      const fold = member.root.querySelector('section[aria-labelledby="step-configure"] quader-disclosure.second-way')!;
+      expect(text(fold.querySelector('button')!)).toContain('For a Kubernetes cluster');
+      expect(fold.querySelector('button')?.getAttribute('aria-expanded')).toBe('false');
+      expect(fold.querySelector('pre')?.textContent).toContain('kubectl create secret');
     });
 
     it('R-UI-123 a virtual repository without a deployment target tells who can change it why there is nothing to publish, and links its settings', async () => {

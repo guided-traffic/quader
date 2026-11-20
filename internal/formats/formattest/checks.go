@@ -752,6 +752,16 @@ func (r *run) versionSpec(t formats.SetupTemplate) {
 	case !strings.Contains(t.VersionSpec, formats.SetupVersionRef):
 		r.failf("setup template %q has a VersionSpec that does not place %s", t.ID, formats.SetupVersionRef)
 	}
+	switch {
+	case t.PackageExample == "":
+	case t.Section != "install" || !strings.Contains(t.Template, formats.SetupPackageRef):
+		r.failf("setup template %q has a PackageExample and is no install template that places %s", t.ID, formats.SetupPackageRef)
+	}
+	for _, e := range t.Examples {
+		if strings.TrimSpace(e) == "" || !strings.Contains(t.Template, e) {
+			r.failf("setup template %q names the example %q, which its text does not write", t.ID, e)
+		}
+	}
 }
 
 // revision is check 9: a change leaves the affected package's rev_seq higher.

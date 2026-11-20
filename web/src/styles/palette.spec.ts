@@ -148,6 +148,13 @@ const surfaces: Record<string, string | readonly [string, string]> = {
   'low segment': '--quader-sev-low',
   'unknown stripe': '--quader-sev-unknown',
   'unknown light stripe': '--quader-sev-unknown-light',
+  // A snippet's window (Q-UI-801): its text area, its bar, a button under the pointer on the bar, the token's chip and the tint of
+  // what the reader replaces.
+  'code window': '--quader-code-bg',
+  'code bar': '--quader-code-bar',
+  'code bar hover': ['--quader-code-hover', '--quader-code-bar'],
+  'token chip': ['--quader-code-token-bg', '--quader-code-bg'],
+  'reader mark': ['--quader-code-mark-bg', '--quader-code-bg'],
 };
 
 function surface(name: string, scheme: Scheme): Rgba {
@@ -244,6 +251,13 @@ const textPairs: readonly (readonly [string, string])[] = [
   ['--quader-sev-ink', 'low segment'],
   ['--quader-on-surface', 'unknown stripe'],
   ['--quader-on-surface', 'unknown light stripe'],
+  // The text of a snippet's window in both schemes (Q-UI-801): every syntax colour, the line numbers and prompts, the comments, the
+  // tab and the buttons of the bar, the token's chip and the reader's marks.
+  ...['fg', 'dim', 'gutter', 'key', 'url', 'string', 'command', 'flag', 'punct'].map((c): [string, string] => [`--quader-code-${c}`, 'code window']),
+  ['--quader-code-fg', 'code bar'],
+  ['--quader-code-fg', 'code bar hover'],
+  ['--quader-code-token-fg', 'token chip'],
+  ['--quader-code-mark-fg', 'reader mark'],
 ];
 
 // Marks: WCAG 1.4.11, 3:1 (focus ring, tab underline, checkbox, the navigation's bar and icon).
@@ -282,6 +296,10 @@ const markPairs: readonly (readonly [string, string])[] = [
   ['--quader-mark-letter', 'project mark'],
   ['--quader-mark-letter', 'project mark lit'],
   // The marks of the vulnerability trend (R-VULN-022), on the page and on the raised surface the chart sits on.
+  // The focus ring inside a snippet's window, and the dashed line under what the reader replaces (Q-UI-801).
+  ['--quader-code-focus', 'code window'],
+  ['--quader-code-focus', 'code bar'],
+  ['--quader-code-mark-line', 'reader mark'],
   ...['critical', 'high', 'medium', 'low', 'none', 'unknown'].flatMap((s): [string, string][] => [
     [`--quader-chart-${s}`, 'page'],
     [`--quader-chart-${s}`, 'raised'],

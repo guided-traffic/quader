@@ -249,13 +249,32 @@ white OCI icon, NuGet's white mono PNG), switched by `.logo-on-light` and `.logo
 to 2.3:1. [Q-UI-226](../spec/api-and-ui.md#q-ui-226--a-logo-is-an-image-of-the-owners-file-and-the-dark-scheme-shows-the-owners-light-variant-or-a-plate)
 has the measurements and the options.
 
+## Pictures
+
+The owner on 2026-11-20: "Bilder haben keine Einschränkungen der Palette" ([Q-UI-800](../spec/api-and-ui.md#q-ui-800--set-up-client-takes-variant-a-snippets-are-windows-the-page-has-pictures-and-less-text)).
+A picture may carry colours of its own; the page's controls and text keep the palette above. Two kinds exist, both tokens of
+`_tokens.scss` with a light and a dark value:
+
+- **A snippet's window** (`--quader-code-*`, [Q-UI-801](../spec/api-and-ui.md#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)):
+  light paper (`#fbfafd`) in the light scheme, dark ink (`#0f1015`) in the dark one, a bar a step darker or lighter, and one syntax
+  colour per kind of piece: command (violet, bold), flag (pink), string (brown or yellow), key and variable (blue), address (teal,
+  past the hue of the positive green), punctuation (grey), comment (the muted tone, italic). Where the token goes is an orange chip,
+  what the reader replaces a yellow tint with a dashed line and italics. Every text colour keeps 4.5:1 on the window and the marks
+  on their tints; `palette.spec.ts` computes them.
+- **The flow of Set up client** (`--quader-art-*`): the machine in the window's colours, the lanes, the token's disc and key in
+  the colour of the mark's coloured stone, the repository as a piece of Quader's wall (`--quader-mark-stone`,
+  `--quader-mark-accent`), and the parcels in the format's accent (`--quader-format-accent-<format>`,
+  [Q-UI-803](../spec/api-and-ui.md#q-ui-803--a-format-adds-one-accent-pair-for-its-pictures-a-format-without-one-takes-the-neutral-pair),
+  `formatAccent` of [format-accent.ts](../../web/src/app/shared/format-accent.ts)), with a shade for their tape. The accent is
+  decoration, never text and never a control.
+
 ## Where the values live
 
 | File | What it holds |
 |---|---|
 | [web/src/styles/main.scss](../../web/src/styles/main.scss) | The partials in order, the CDK's overlay structure (`cdk.overlay()`, which dialogs, menus and tooltips open in), the body type and the page title |
 | [web/angular.json](../../web/angular.json) | `@fontsource-variable/inter/wght.css` ahead of `main.scss` in the build's styles: Inter as one variable font (weights 100 to 900) in unicode-range subsets, so a page in Latin script loads the 48 KB Latin file; OFL-1.1, its licence in the build's `3rdpartylicenses.txt` |
-| [web/src/styles/_tokens.scss](../../web/src/styles/_tokens.scss) | Quader's own properties: the page palette (`--quader-surface`, `--quader-on-surface`, `--quader-border`, `--quader-text-muted`, `--quader-accent`, `--quader-dialog-bg`, `--quader-error*`, `--quader-inverse-*`, `--quader-banner-*`), the type (`--quader-font-*`, `--quader-text-*`, `--quader-heading-*`, `--quader-type-*` as font shorthands), the radii (`--quader-radius-s` to `-full`), the link, the heading colour, the focus ring, the raised surface, the card, the table head, the frame (`--quader-nav-*`, the panel's radius and gap, the breadcrumb bar's height), the search field, the menus, the status colours, the plate behind a format logo (`--quader-logo-plate`), the mark's colours (`--quader-mark-stone`, `--quader-mark-accent`) |
+| [web/src/styles/_tokens.scss](../../web/src/styles/_tokens.scss) | Quader's own properties: the page palette (`--quader-surface`, `--quader-on-surface`, `--quader-border`, `--quader-text-muted`, `--quader-accent`, `--quader-dialog-bg`, `--quader-error*`, `--quader-inverse-*`, `--quader-banner-*`), the type (`--quader-font-*`, `--quader-text-*`, `--quader-heading-*`, `--quader-type-*` as font shorthands), the radii (`--quader-radius-s` to `-full`), the link, the heading colour, the focus ring, the raised surface, the card, the table head, the frame (`--quader-nav-*`, the panel's radius and gap, the breadcrumb bar's height), the search field, the menus, the status colours, the plate behind a format logo (`--quader-logo-plate`), the mark's colours (`--quader-mark-stone`, `--quader-mark-accent`), the pictures (`--quader-code-*`, `--quader-art-*`, `--quader-format-accent*`, [Pictures](#pictures)) |
 | [web/src/styles/_controls.scss](../../web/src/styles/_controls.scss) | The controls of the table above, from the `--quader-control-*`, `--quader-accent-fill`, `--quader-btn-*` and `--quader-danger-*` tokens |
 | [web/src/styles/_dialog.scss](../../web/src/styles/_dialog.scss) | The dialog panel: backdrop, container, title, body, actions |
 | [web/src/styles/_shell.scss](../../web/src/styles/_shell.scss) | How the frame uses them: the sidebar's blocks under their context titles (R-UI-168), its entries (28 px, 8 px round, a 16 px icon in a 24 px box), the current entry, the entries of **Recently opened** (the project's small mark and the key, R-UI-167), the project switcher on top of a project's sidebar (a 40 px button with the project's mark, `<quader-project-mark size="medium">`: its initial in a 32 px rounded square on `--quader-accent-fill`, drawn by `_list-screens.scss` as in every list of projects (R-UI-102), a panel on the menu's fill whose projects carry the small mark, [Q-UI-129](../spec/api-and-ui.md#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)), the panel, the breadcrumb bar (40 px), the top bar's actions and the avatar (32 px round on `--quader-surface-variant`, holding the user's generated Bottts robot of `<quader-avatar>` instead of a letter, owner 2026-11-07, Q-UI-168; the SVG is transparent, so the fill follows the theme), the menus |

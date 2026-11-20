@@ -40,10 +40,11 @@ The trailing slash belongs to the address of npm, Debian, Ansible Galaxy and gen
 The page belongs to one repository: its address is `…/projects/<project>/repositories/<repository>/setup`, and its header names the repository, the package type and the class, with the address your client uses and its copy button. It asks for nothing the repository already decides. From top to bottom:
 
 1. **Client**, only where the package type has several: **npm**, **pnpm**, **Yarn Berry (2 and later)** or **Yarn Classic (1.x)** for npm, **.NET CLI (dotnet)**, **nuget.exe** or **Visual Studio 2022** for NuGet, **Docker CLI (with Buildx)** or **Podman** for OCI (Docker). Debian (APT), Ansible Galaxy and generic repositories have one client each, and the page does not ask.
-2. One line says how the snippets sign in: they read your token from the variable `QUADER_TOKEN`. **Create a token** beside it creates one without leaving the page (next section). Signed out, the line says that the snippets hold no credentials, which works for a repository whose artifacts are public.
-3. **More options**, closed: a token written into the snippets, and, where a Bastion can be chosen, **Install from**.
-4. The steps **1 Configure**, **2 Install** and, if you may publish, **3 Publish**, each with its snippets. Every snippet says in one sentence what it does, names its file, and has **Copy snippet**; a whole configuration file also has **Download**. A line too long for the page continues on the next line, indented, so a long repository key never hides the end of an address; the copy button copies the snippet unchanged.
-5. The guide below the steps (see [What the guide on the page adds](#what-the-guide-on-the-page-adds)).
+2. **Token**, one framed row: the snippets read your token from the variable `QUADER_TOKEN`. **Create a token** beside it creates one without leaving the page (next section). **More options**, closed, inside the row: a token written into the snippets, and, where a Bastion can be chosen, **Install from**. Signed out, one line says that the snippets hold no credentials, which works for a repository whose artifacts are public.
+3. The steps **1 Configure**, **2 Install** and, if you may publish, **3 Publish**, each with its snippets. A configuration file is shown as an editor window: its name on the tab, its lines numbered, **Download** and **Copy snippet** in its bar. A command is shown as a terminal window with its prompt and **Copy snippet**. What you replace with your own value (`<package>`, an example such as `myapp:1.0`) is tinted and underlined with a dashed line; where your token goes is an orange chip. A line too long for the page continues on the next line, indented, so a long repository key never hides the end of an address; the copy button copies the snippet unchanged, without prompts or line numbers. A sentence above a window says only what the window does not, such as where to save the file. A second way of the same step, such as the image pull secret for a Kubernetes cluster or the same command in PowerShell, is a closed fold after the step's own snippets.
+4. **Guide** below the steps (see [What the guide on the page adds](#what-the-guide-on-the-page-adds)).
+
+Where the window is wide enough, a small picture beside the title shows the flow: your machine, the token, and the repository.
 
 **Publish** shows how to publish through this repository, once for your client: `npm publish --registry <address>`, `pnpm publish --registry <address>`, `yarn publish --registry <address>` for Yarn Classic, `npmPublishRegistry: "<address>"` in `.yarnrc.yml` for Yarn Berry, `dotnet nuget push` and `nuget push` with the service index of the repository as the source and the token as the API key for NuGet (Visual Studio has no push), `docker push`, `docker buildx build --push` and `podman push` of an image tagged with the repository's address for OCI, or the `curl --upload-file` of a `.deb` to `upload/<file>?distribution=<suite>` for Debian. For a virtual repository the publish reaches its default deployment target. There is no **Publish** step when you cannot publish: for a remote repository, for a Bastion, and when you do not hold the deploy permission on the target; the guide then leaves publishing out too. For a virtual repository without a default deployment target, people who may change the repository see the step with the reason and a link to its settings.
 
@@ -51,7 +52,7 @@ The page belongs to one repository: its address is `…/projects/<project>/repos
 
 **Create a token** creates a personal token with the description `Client setup: <client>, <repository>, <date>` that may read this repository. Where you may publish, tick **It may also publish** first to let it publish to the repository that receives your uploads. It lives 30 days unless an administrator configured another period, and it appears under your [personal tokens](access-tokens.md), where you revoke it. Creating it can ask you to [sign in again](troubleshooting.md#session-ended-and-re-authentication).
 
-The page shows the token once, with a copy button and the command that puts it into the variable:
+The page shows the token once, in a field with a copy button, and the command that puts it into the variable:
 
 ```shell
 read -rs QUADER_TOKEN && export QUADER_TOKEN
@@ -202,11 +203,11 @@ The integrity and hash values stay valid because a version's bytes never change 
 
 ## Sign in container clients
 
-For an OCI (Docker) repository the **Configure** step holds the login of the Docker CLI or Podman, which reads the token from `QUADER_TOKEN` on standard input, and, for the Docker CLI client, a `kubectl` command that creates a Kubernetes image pull secret from the same variable. **Install** pulls an image by its tag, **Publish** tags and pushes one, and for the Docker CLI builds and pushes a multi-platform image with Buildx. [Container images with Docker and Podman](container-images.md) explains the login, the permissions, multi-platform images, virtual repositories and Kubernetes.
+For an OCI (Docker) repository the **Configure** step holds the login of the Docker CLI or Podman, which reads the token from `QUADER_TOKEN` on standard input, and, for the Docker CLI client, behind **For a Kubernetes cluster**, a `kubectl` command that creates a Kubernetes image pull secret from the same variable. Without a package named, the pull and the push name the example image `myapp:1.0`, which you replace with yours. **Install** pulls an image by its tag, **Publish** tags and pushes one, and for the Docker CLI builds and pushes a multi-platform image with Buildx. [Container images with Docker and Podman](container-images.md) explains the login, the permissions, multi-platform images, virtual repositories and Kubernetes.
 
 ## Configure APT
 
-For a Debian (APT) repository the **Configure** step installs the repository's public key from `signing-key.asc` as `/etc/apt/keyrings/quader-<project>-<repository>.asc`, writes the source as `/etc/apt/sources.list.d/quader-<project>-<repository>.sources` with that key in `Signed-By`, and writes the token into `/etc/apt/auth.conf.d/quader-<project>-<repository>.conf`, a file only root can read, never into the source line. A one-line `.list` form is shown as well, and for a remote repository without upstream keys a source that names the archive's own keyring instead of a key of Quader's. **Install** runs `apt-get update` and `apt-get install`, **Publish** uploads a package with `curl`. [Debian packages with APT](apt-packages.md) explains the suites, the upload, the index wait, key rotation and the client's error messages.
+For a Debian (APT) repository the **Configure** step installs the repository's public key from `signing-key.asc` as `/etc/apt/keyrings/quader-<project>-<repository>.asc`, writes the source as `/etc/apt/sources.list.d/quader-<project>-<repository>.sources` with that key in `Signed-By`, and writes the token into `/etc/apt/auth.conf.d/quader-<project>-<repository>.conf`, a file only root can read, never into the source line. A one-line `.list` form, and for a remote repository without upstream keys a source that names the archive's own keyring instead of a key of Quader's, are closed folds of the step. **Install** runs `apt-get update` and `apt-get install`, **Publish** uploads a package with `curl`. [Debian packages with APT](apt-packages.md) explains the suites, the upload, the index wait, key rotation and the client's error messages.
 
 ## Download and upload files with curl
 
@@ -239,12 +240,12 @@ A Bastion decides what you may read by asking this installation with your token,
 
 ## What the guide on the page adds
 
-This manual page explains the concepts; the guide below the steps of **Set up client** gives the exact text for your repository and client:
+This manual page explains the concepts; the guide below the steps of **Set up client** gives the exact text for your repository and client. Every section is a closed row under the heading **Guide**; open the one you need:
 
-- what a repository of its class is: its introduction open below the steps, the rest under **More about this**;
+- what a repository of its class is, the first of its sections;
 - the addresses of the endpoint you are using, the repository's project and key, and its deployment target where you may publish there;
-- sections that depend on the class and the client, each closed under its heading until you open it, and only the ones that apply to you: an anonymous reader gets no sign-in steps, and a reader who may not publish gets no publishing;
-- the section **On this endpoint**, open and shown only on an endpoint with exposure rules, which says what such an endpoint hides and refuses;
+- sections that depend on the class and the client, and only the ones that apply to you: an anonymous reader gets no sign-in steps, and a reader who may not publish gets no publishing;
+- the section **On this endpoint**, shown only on an endpoint with exposure rules, which says what such an endpoint hides and refuses;
 - a **Troubleshooting** table with the error codes of the protocol and what to do about each.
 
 Every code block of the guide has a copy button.

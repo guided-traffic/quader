@@ -723,22 +723,16 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 	return out, nil
 }
 
-// snippetLanguage is the language the document reports for a template language. The enum of
-// ClientSnippet is frozen by R-ARCH-025 (a value added to a response enum breaks a client written
-// against the last release), so the command-line languages that the templates distinguish for
-// their quoting (powershell, cmd; Q-API-189) are reported as shell, the one a client shows
-// them in (Q-API-191).
-func snippetLanguage(lang string) gen.ClientSnippetLanguage {
-	switch lang {
-	case "powershell", "cmd":
-		return gen.Shell
-	}
-	return gen.ClientSnippetLanguage(lang)
-}
-
-// clientSnippet is the representation of a rendered snippet.
+// clientSnippet is the representation of a rendered snippet. Its language is the template's: the command-line languages
+// (shell, powershell, cmd) tell a screen which prompt and which syntax a command has (Q-UI-801).
 func clientSnippet(sn snippet) gen.ClientSnippet {
-	cs := gen.ClientSnippet{Id: sn.ID, Tab: gen.ClientSnippetTab(sn.Tab), Language: snippetLanguage(sn.Language), Content: sn.Content}
+	cs := gen.ClientSnippet{
+		Id: sn.ID, Tab: gen.ClientSnippetTab(sn.Tab), Language: gen.ClientSnippetLanguage(sn.Language), Content: sn.Content,
+		Marks: make([]gen.SnippetMark, 0, len(sn.Marks)),
+	}
+	for _, m := range sn.Marks {
+		cs.Marks = append(cs.Marks, gen.SnippetMark{Text: m.Text, Kind: gen.SnippetMarkKind(m.Kind)})
+	}
 	if sn.FileName != "" {
 		fn := sn.FileName
 		cs.FileName = &fn

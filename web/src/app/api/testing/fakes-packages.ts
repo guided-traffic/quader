@@ -639,6 +639,61 @@ export class FakePackagesApi extends PackagesApi {
   }
 }
 
+/** The examples each template declares (`Examples`, `PackageExample` of the Go templates, ADR-208), by snippet id. */
+const SNIPPET_EXAMPLES: Readonly<Record<string, readonly string[]>> = {
+  'docker.install': ['myapp:1.0'],
+  'podman.install': ['myapp:1.0'],
+  'docker.publish': ['myapp:1.0'],
+  'docker.publish.buildx': ['myapp:1.0'],
+  'podman.publish': ['myapp:1.0'],
+  'dotnet.publish.shell': ['bin/Release/Acme.Widgets.1.2.3.nupkg'],
+  'dotnet.publish.powershell': ['bin/Release/Acme.Widgets.1.2.3.nupkg'],
+  'nuget.publish.cmd': ['Acme.Widgets.1.2.3.nupkg'],
+  'nuget.publish.powershell': ['Acme.Widgets.1.2.3.nupkg'],
+  'ansible-galaxy.publish.collection': ['./acme-tools-1.0.0.tar.gz'],
+  'curl.install': ['<path>'],
+  'curl.publish': ['<file>', '<path>'],
+};
+
+/** The languages of the templates that are no POSIX shell (Q-UI-801), by snippet id. */
+const SNIPPET_LANGUAGES: Readonly<Record<string, ClientSnippet['language']>> = {
+  'dotnet.configure.powershell': 'powershell',
+  'dotnet.publish.powershell': 'powershell',
+  'nuget.configure.cmd': 'cmd',
+  'nuget.configure.powershell': 'powershell',
+  'nuget.install': 'cmd',
+  'nuget.publish.cmd': 'cmd',
+  'nuget.publish.powershell': 'powershell',
+  'ansible-galaxy.configure.token-env-powershell': 'powershell',
+  'ansible-galaxy.configure.token-env-cmd': 'cmd',
+};
+
+/**
+ * The marks of a snippet as `snippetMarks` of internal/api/v1/setup_snippets.go names them (R-API-030): the token reference the
+ * credential mode wrote, the placeholders of the core, the template's examples; each once, in the order it first stands.
+ */
+export function marksOf(id: string, content: string): ClientSnippet['marks'] {
+  const candidates: ClientSnippet['marks'] = [
+    ...['${QUADER_TOKEN}', '%QUADER_TOKEN%', '$env:QUADER_TOKEN', '{{token}}'].map((text) => ({ text, kind: 'token' as const })),
+    ...['<package>', '<version>', '<project>', '<repository>', ...(SNIPPET_EXAMPLES[id] ?? [])].map((text) => ({ text, kind: 'value' as const })),
+  ];
+  return candidates
+    .filter((m, i) => content.includes(m.text) && candidates.findIndex((o) => o.text === m.text) === i)
+    .sort((a, b) => content.indexOf(a.text) - content.indexOf(b.text));
+}
+
+/** Every snippet of a fake answer gets the language and the marks the server sends. */
+export function finishSetup(answer: RawSetup): ClientSetup {
+  return {
+    ...answer,
+    snippets: answer.snippets.map((sn) => ({ ...sn, language: SNIPPET_LANGUAGES[sn.id] ?? sn.language, marks: marksOf(sn.id, sn.content) })),
+  };
+}
+
+/** A snippet and an answer as the builders below write them; `finishSetup` adds what the server derives. */
+type RawSnippet = Omit<ClientSnippet, 'marks'>;
+type RawSetup = Omit<ClientSetup, 'snippets'> & { snippets: RawSnippet[] };
+
 /** Single-quotes a value for a shell unless it is plain (R-API-030). */
 export function shellQuote(value: string): string {
   return /^[A-Za-z0-9@/._+:=-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
@@ -665,6 +720,10 @@ export class FakeClientSetupApi extends ClientSetupApi {
       this.failure = null;
       throw e;
     }
+    return finishSetup(this.answer(repository, query));
+  }
+
+  private answer(repository: string, query: ClientSetupQuery): RawSetup {
     if (repository === refOf(GENERIC_REPOSITORY)) {
       return curlSetup(repository, query, !this.readOnly.has(repository), this.ttl);
     }
@@ -703,7 +762,7 @@ export class FakeClientSetupApi extends ClientSetupApi {
           : repository;
     const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
     const auth = (line: string): string => (token === null ? '' : line.replace('TOKEN', token));
-    const snippets: ClientSnippet[] = [];
+    const snippets: RawSnippet[] = [];
     const yarnBerry = query.client === 'yarn';
     const client = query.client;
     if (!['npm', 'pnpm', 'yarn', 'yarn-classic'].includes(client)) {
@@ -789,7 +848,7 @@ export class FakeClientSetupApi extends ClientSetupApi {
  * credential mode; with `none` the lines that hold a token go. The user name is the fixed `quader`.
  * A virtual repository publishes through itself, so the push names the repository the caller chose.
  */
-function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): ClientSetup {
+function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): RawSetup {
   const clients = ['dotnet', 'nuget', 'visual-studio'];
   if (!clients.includes(query.client)) {
     throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
@@ -806,7 +865,7 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
   const auth = credentials !== 'none';
   const pkg = query.package ?? '<package>';
   const withVersion = query.package && query.version ? query.version : null;
-  const snippets: ClientSnippet[] = [];
+  const snippets: RawSnippet[] = [];
   const add = (id: string, tab: ClientSnippet['tab'], language: ClientSnippet['language'], content: string, fileName: string | null = null): void => {
     snippets.push({ id, tab, fileName, language, content });
   };
@@ -888,7 +947,7 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
  * the way the API does (`applyCredentials` of internal/api/v1/setup_snippets.go): the placeholder, the variable, or the line dropped.
  * `PowerShell` and `cmd` are reported as `shell`, the one language the document knows for them (Q-API-191).
  */
-function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): ClientSetup {
+function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): RawSetup {
   if (query.client !== 'ansible-galaxy') {
     throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
   }
@@ -913,7 +972,7 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
     return content.split(sh).join('{{token}}').split(cmd).join('{{token}}').split(ps).join('{{token}}');
   };
   const pkg = query.package ? shellQuote(query.package) : null;
-  const snippets: ClientSnippet[] = [];
+  const snippets: RawSnippet[] = [];
   const add = (id: string, tab: ClientSnippet['tab'], language: ClientSnippet['language'], content: string, fileName: string | null = null): void => {
     snippets.push({ id, tab, fileName, language, content: credential(content) });
   };
@@ -977,7 +1036,7 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
  * the registry URL. With a credential the login reads the token from standard input; without one it is the interactive login and the
  * pull secret is a comment that asks for the snippet with a credential (the API drops the lines that hold the token reference).
  */
-function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): ClientSetup {
+function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): RawSetup {
   if (!['docker', 'podman'].includes(query.client)) {
     throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
   }
@@ -987,9 +1046,10 @@ function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean
   const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
   const target = mayPublish ? refOf(repo) : null;
   const tool = query.client;
-  const pkg = query.package ? shellQuote(query.package) : '<package>';
+  // Without a package asked for, the pull names the image the push names (PackageExample, Q-UI-802).
+  const pkg = query.package ? shellQuote(query.package) : 'myapp:1.0';
   const spec = query.package && query.version ? `${pkg}:${shellQuote(query.version)}` : pkg;
-  const snippets: ClientSnippet[] = [];
+  const snippets: RawSnippet[] = [];
   const add = (id: string, tab: ClientSnippet['tab'], content: string): void => {
     snippets.push({ id, tab, fileName: null, language: 'shell', content });
   };
@@ -1032,7 +1092,7 @@ function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean
 }
 
 /** The curl snippets of a generic repository: the function of the configure tab and its calls. */
-function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: boolean, ttl: number): ClientSetup {
+function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: boolean, ttl: number): RawSetup {
   if (query.client !== 'curl') {
     throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
   }
@@ -1040,7 +1100,7 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
   const registryUrl = `${BASE}/files/${repository}/`;
   const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
   const header = token === null ? '' : `header = "Authorization: Bearer ${token}"\n`;
-  const snippets: ClientSnippet[] = [
+  const snippets: RawSnippet[] = [
     {
       id: 'curl.configure.function',
       tab: 'configure',

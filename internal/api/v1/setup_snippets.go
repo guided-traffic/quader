@@ -62,6 +62,26 @@ type snippet struct {
 	FileName string
 	Language string
 	Content  string
+	// Marks are the parts of Content that are the reader's (R-API-030): the
+	// reference to the token, and the placeholders and examples the reader replaces.
+	Marks []snippetMark
+}
+
+// The kinds of a mark (R-API-030).
+const (
+	// markToken is the reference to the credential, or the placeholder the browser
+	// fills: the place the token goes.
+	markToken = "token"
+	// markValue is a part the reader replaces with their own value: a placeholder
+	// such as <package>, or an example such as myapp:1.0.
+	markValue = "value"
+)
+
+// snippetMark is one part of a snippet that is the reader's, by its literal text: a
+// screen marks every place the text stands in the snippet.
+type snippetMark struct {
+	Text string
+	Kind string
 }
 
 // setupClients returns the clients the templates serve, sorted.
@@ -129,6 +149,7 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 				content = substitutePackage(content, t, in.Package, in.Version)
 			}
 			s := snippet{ID: snippetID(t, scope != ""), Tab: t.Section, FileName: t.File, Language: t.Lang, Content: content}
+			s.Marks = snippetMarks(content, t, in)
 			out = append(out, s)
 		}
 	}
@@ -280,6 +301,10 @@ func applyCredentials(content string, in setupInput) string {
 // way the template says (formats.SetupTemplate.VersionSpec, default "@<version>").
 func substitutePackage(content string, t formats.SetupTemplate, pkg, version string) string {
 	if pkg == "" {
+		if t.PackageExample != "" {
+			// The example the format's other snippets write, so one thing has one word on the page.
+			return strings.ReplaceAll(content, formats.SetupPackageRef, t.PackageExample)
+		}
 		return content
 	}
 	quote := quoterFor(t.Lang)
@@ -292,6 +317,38 @@ func substitutePackage(content string, t formats.SetupTemplate, pkg, version str
 		}
 	}
 	return strings.ReplaceAll(content, formats.SetupPackageRef, spec)
+}
+
+// snippetMarks names the parts of a rendered snippet that are the reader's, in the
+// order they first stand in it: the reference to the token in the spelling the
+// credential mode wrote, the placeholders of the core (the package, the version, and
+// the project and the repository of the guide of a class) and the examples of the
+// template. A part that does not stand in the snippet is not named.
+func snippetMarks(content string, t formats.SetupTemplate, in setupInput) []snippetMark {
+	var cands []snippetMark
+	switch in.Credentials {
+	case credEnv:
+		for _, ref := range []string{"${" + in.TokenEnvVar + "}", "%" + in.TokenEnvVar + "%", "$env:" + in.TokenEnvVar} {
+			cands = append(cands, snippetMark{Text: ref, Kind: markToken})
+		}
+	case credPlaceholder:
+		cands = append(cands, snippetMark{Text: tokenPlaceholder, Kind: markToken})
+	}
+	values := []string{formats.SetupPackageRef, formats.SetupVersionRef, formats.GuideProjectPlaceholder, formats.GuideRepositoryPlaceholder}
+	if t.Section == "install" && in.Package == "" && t.PackageExample != "" {
+		values = append(values, t.PackageExample)
+	}
+	for _, v := range append(values, t.Examples...) {
+		cands = append(cands, snippetMark{Text: v, Kind: markValue})
+	}
+	var out []snippetMark
+	for _, c := range cands {
+		if c.Text != "" && strings.Contains(content, c.Text) && !slices.ContainsFunc(out, func(m snippetMark) bool { return m.Text == c.Text }) {
+			out = append(out, c)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return strings.Index(content, out[i].Text) < strings.Index(content, out[j].Text) })
+	return out
 }
 
 // quoterFor returns the quoting of a language for a value placed in a command or an

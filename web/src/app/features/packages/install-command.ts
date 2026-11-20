@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, model, resource, signal, untracked } from '@angular/core';
 import { ClientSetupApi } from '../../api/packages-api';
 import { AddressField } from '../../shared/address-field';
-import { CopyButton } from '../../shared/copy-button';
+import { CodeWindow } from '../../shared/code/code-window';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { ClientChoice, clientsOf } from '../setup/clients';
@@ -17,7 +17,7 @@ export const COLLAPSE_AFTER_LINES = 3;
  */
 @Component({
   selector: 'quader-install-command',
-  imports: [AddressField, CopyButton, ErrorNotice],
+  imports: [AddressField, CodeWindow, ErrorNotice],
   templateUrl: './install-command.html',
   styleUrl: './install-panel.scss',
 })
@@ -55,9 +55,8 @@ export class InstallCommand {
       }),
   });
 
-  protected readonly command = computed(
-    () => valueOf(this.answer)?.snippets.find((s) => s.tab === 'install')?.content.trimEnd() ?? '',
-  );
+  protected readonly snippet = computed(() => valueOf(this.answer)?.snippets.find((s) => s.tab === 'install') ?? null);
+  protected readonly command = computed(() => this.snippet()?.content.trimEnd() ?? '');
   protected readonly lines = computed(() => this.command().split('\n'));
   protected readonly collapsible = computed(() => this.lines().length > COLLAPSE_AFTER_LINES);
   /** How many lines the command shows; the height follows it with the animation of the style guide. */
@@ -68,7 +67,7 @@ export class InstallCommand {
     const e = this.answer.error();
     return e ? asApiError(e) : null;
   });
-  /** A command of one line is shown as one copyable field (Q-UI-320); a longer one keeps its code block. */
+  /** A command of one line is shown as one copyable field (Q-UI-320); a longer one is the snippet's window (Q-UI-801). */
   protected readonly oneLine = computed(() => !this.command().includes('\n'));
   protected readonly commandLabel = $localize`:@@pkg.install.command:Install command`;
   protected readonly copyLabel = $localize`:@@pkg.install.copy:Copy install command`;

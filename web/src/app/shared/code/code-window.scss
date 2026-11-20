@@ -1,0 +1,206 @@
+// A snippet's window (Q-UI-801): the colours are the picture tokens --quader-code-* of _tokens.scss, the accent over the tab the
+// format's (--quader-art-accent, set by the page; the neutral pair elsewhere). Not encapsulated, so the shared copy button inside
+// takes the window's colours; every rule is scoped by the component's element.
+quader-code-window {
+  display: block;
+  container-type: inline-size;
+
+  .window {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--quader-code-edge);
+    border-radius: var(--quader-radius-l);
+    background: var(--quader-code-bg);
+    color: var(--quader-code-fg);
+  }
+
+  // The bar: one tab that names the file or the command line, and the window's own buttons at its end.
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--quader-space-2);
+    min-block-size: 40px;
+    border-block-end: 1px solid var(--quader-code-line);
+    background: var(--quader-code-bar);
+  }
+
+  .tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    gap: var(--quader-space-2);
+    min-inline-size: 0;
+    padding-inline: var(--quader-space-3);
+    background: var(--quader-code-bg);
+    color: var(--quader-code-fg);
+    font: var(--quader-type-label-medium);
+    white-space: nowrap;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto;
+      block-size: 2px;
+      background: var(--quader-art-accent, var(--quader-format-accent));
+    }
+
+    .material-icons {
+      font-size: 1rem;
+      color: var(--quader-code-dim);
+    }
+  }
+
+  &.editor .tab-title {
+    font-family: var(--quader-font-mono);
+  }
+
+  .actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    padding-inline-end: var(--quader-space-1);
+
+    // The window's buttons take its colours: the app's quiet button on the window's bar.
+    .btn {
+      border-color: transparent;
+      background: transparent;
+      color: var(--quader-code-fg);
+    }
+
+    .btn:hover {
+      background: var(--quader-code-hover);
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--quader-code-focus);
+      outline-offset: -2px;
+    }
+
+    .download {
+      gap: var(--quader-space-1);
+      padding-inline: var(--quader-space-2);
+      font: var(--quader-type-body-small);
+
+      .material-icons {
+        font-size: 1.125rem;
+      }
+    }
+  }
+
+  // Narrow: Download keeps its icon; its name stays its accessible name.
+  @container (max-width: 28rem) {
+    .download .btn-label {
+      display: none;
+    }
+  }
+
+  // The text: one element per line, so a long line wraps with an indent of two characters under itself (Q-UI-486) and the number
+  // or the prompt stands before its first line only. The line breaks between the elements are text, collapsed here.
+  .code {
+    margin: 0;
+    padding: var(--quader-space-3) var(--quader-space-3) var(--quader-space-3) 0;
+    font-family: var(--quader-font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    white-space: normal;
+    counter-reset: code-line;
+
+    &:focus-visible {
+      outline: 2px solid var(--quader-code-focus);
+      outline-offset: -2px;
+    }
+  }
+
+  // Folded to a number of lines, its height follows the number with the animation of the style guide.
+  .code.folding {
+    max-block-size: calc(var(--lines) * 1lh + 2 * var(--quader-space-3));
+    overflow: hidden auto;
+    transition: max-block-size var(--quader-motion-duration) var(--quader-motion-easing);
+  }
+
+  .line {
+    position: relative;
+    display: block;
+    min-block-size: 1lh;
+    padding-inline-start: calc(var(--code-gutter) + 2ch);
+    text-indent: -2ch;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    counter-increment: code-line;
+
+    &::before {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-start: 0;
+      inline-size: var(--code-number);
+      color: var(--quader-code-gutter);
+      text-align: end;
+      text-indent: 0;
+      user-select: none;
+    }
+  }
+
+  &.editor .line::before {
+    content: counter(code-line);
+  }
+
+  &.terminal .line[data-prompt]::before {
+    content: attr(data-prompt);
+  }
+
+  .keep {
+    white-space: nowrap;
+  }
+
+  .k-command {
+    color: var(--quader-code-command);
+    font-weight: 600;
+  }
+
+  .k-flag {
+    color: var(--quader-code-flag);
+  }
+
+  .k-string {
+    color: var(--quader-code-string);
+  }
+
+  .k-key,
+  .k-variable {
+    color: var(--quader-code-key);
+  }
+
+  .k-url {
+    color: var(--quader-code-url);
+  }
+
+  .k-punct {
+    color: var(--quader-code-punct);
+  }
+
+  .k-comment {
+    color: var(--quader-code-dim);
+    font-style: italic;
+  }
+
+  // Where the token goes: a chip.
+  .k-token {
+    padding: 1px var(--quader-space-1);
+    border-radius: var(--quader-radius-s);
+    background: var(--quader-code-token-bg);
+    color: var(--quader-code-token-fg);
+  }
+
+  // What the reader replaces: tinted, a dashed line under it and italic, so it is not told by colour alone.
+  .k-value {
+    padding: 1px var(--quader-space-1);
+    border-block-end: 1px dashed var(--quader-code-mark-line);
+    border-radius: var(--quader-radius-s) var(--quader-radius-s) 0 0;
+    background: var(--quader-code-mark-bg);
+    color: var(--quader-code-mark-fg);
+    font-style: italic;
+  }
+}

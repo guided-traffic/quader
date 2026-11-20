@@ -1839,6 +1839,12 @@ type SetupTemplate struct {
 	// VersionSpec is how an install template attaches the version after the package when the request names one,
 	// SetupVersionRef standing for it: "" is "@<version>" (npm), " --version <version>" is dotnet (Q-API-188).
 	VersionSpec string
+	// PackageExample is what an install template shows in place of SetupPackageRef when the request names no package, the
+	// example the format's other snippets write ("myapp:1.0"); "" keeps the placeholder (ADR-208).
+	PackageExample string
+	// Examples are the literal values of the template the reader replaces (a file to publish, an image); the API names each
+	// one that stands in a snippet as a mark of the reader's (api-and-ui.md R-API-030, ADR-208).
+	Examples []string
 }
 
 // SetupData: RegistryURL, Repository, Project and Key (the two halves of Repository, Q-ARCH-420), Endpoint, Variant (the variant of a configure snippet the request asked for, in the
@@ -2371,7 +2377,9 @@ own tests:
    whose cases only refuse (an operation not built yet, a refusal by design) is listed in the fixture's `NoContent` with
    the reason, and an entry for a route that a case serves fails (Q-ARCH-281).
 8. Every client in `Descriptor().Clients` has `configure` and `install` templates. No template
-   contains a token placeholder that the server would fill. The format's guide (`Guide()`, Q-ARCH-236)
+   contains a token placeholder that the server would fill. Every example a template declares (`Examples`) stands in its text,
+   and a `PackageExample` belongs to an install template that places the package
+   ([ADR-208](../decisions.md#adr-208--a-setup-snippet-names-the-parts-that-are-the-readers-and-a-template-declares-its-examples)). The format's guide (`Guide()`, Q-ARCH-236)
    covers every class of `Classes` for every client with the topics `what`, `configure`,
    `authenticate`, `install` and `troubleshooting`, each saying something for every reader the kit
    tries (a named repository and none, one who may publish and one who may not, signed in and

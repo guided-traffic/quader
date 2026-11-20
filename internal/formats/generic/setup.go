@@ -25,7 +25,7 @@ EOF
 `
 	return []formats.SetupTemplate{
 		{ID: "curl.function.configure", Client: ClientCurl, Section: "configure", Lang: "shell", Template: function},
-		{ID: "curl.install", Client: ClientCurl, Section: "install", Lang: "shell", Template: CurlFunction + ` --fail --remote-name "{{.RegistryURL}}<path>"` + "\n"},
-		{ID: "curl.publish", Client: ClientCurl, Section: "publish", Lang: "shell", Template: CurlFunction + ` --fail --upload-file <file> "{{.RegistryURL}}<path>"` + "\n"},
+		{ID: "curl.install", Client: ClientCurl, Section: "install", Lang: "shell", Template: CurlFunction + ` --fail --remote-name "{{.RegistryURL}}<path>"` + "\n", Examples: []string{"<path>"}},
+		{ID: "curl.publish", Client: ClientCurl, Section: "publish", Lang: "shell", Template: CurlFunction + ` --fail --upload-file <file> "{{.RegistryURL}}<path>"` + "\n", Examples: []string{"<file>", "<path>"}},
 	}
 }

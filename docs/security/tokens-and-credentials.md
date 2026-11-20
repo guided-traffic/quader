@@ -238,7 +238,7 @@ token value it did not just receive from the creating call.
   `credentials` (R-API-030). The templates have no field a token could come from (`formats.SetupData`), a `package`, `version` or `scope` in the
   shape of a token is refused with `400` instead of being echoed, and every snippet is checked for `qdr_(pat|sat|cit)_` before it is sent
   ([packages_api.go](../../internal/api/v1/packages_api.go); `TestR_API_030_ClientSetupNeverHoldsAToken`, 144 answers over every client, mode and
-  caller). The addresses are built on the configured base URL, never on the `Host` of the request: without a base URL the operation answers `503`. The browser replaces the placeholder in the component (`fillToken`, a literal replacement) and nowhere else.
+  caller). The addresses are built on the configured base URL, never on the `Host` of the request: without a base URL the operation answers `503`. The browser replaces the placeholder in the component (`fillToken`, a literal replacement; `fillSnippet` does the same for the snippet's `marks`, which name the placeholder's place and are substrings of the checked content) and nowhere else.
 - **One owner, no copy.** A created or pasted value is a private signal of the page component. It is in no service, no URL and no
   `localStorage`, `sessionStorage` or IndexedDB (`client-setup.spec.ts` scans both storage areas); another repository or another client,
   and leaving the route, set it to `null`, and a creation whose answer arrives after such a change is revoked.

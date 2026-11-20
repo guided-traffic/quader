@@ -71,8 +71,11 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 `
 	nugetPS := "nuget sources add -Name quader -Source {{powershell " + sourceURL + "}}{{if .RequiresAuth}} `\n" +
 		"  -Username " + user + ` -Password "` + formats.SetupTokenRefPS + `"{{end}}` + "\n"
-	const dotnetPush = "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source "
-	const nugetPush = "nuget push Acme.Widgets.1.2.3.nupkg -Source "
+	// The package file of a push is the reader's (R-API-030).
+	const dotnetPackage = "bin/Release/Acme.Widgets.1.2.3.nupkg"
+	const nugetPackage = "Acme.Widgets.1.2.3.nupkg"
+	const dotnetPush = "dotnet nuget push " + dotnetPackage + " --source "
+	const nugetPush = "nuget push " + nugetPackage + " -Source "
 	return []formats.SetupTemplate{
 		{ID: "dotnet.shell.configure", Client: ClientDotnet, Section: "configure", Lang: "shell", Template: dotnetShell},
 		{ID: "dotnet.powershell.configure", Client: ClientDotnet, Section: "configure", Lang: "powershell", Template: dotnetPS},
@@ -89,19 +92,19 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 		{ID: "visual-studio.packagereference.install", Client: ClientVisualStudio, Section: "install", Lang: "xml", Template: "<PackageReference Include=\"<package>\" />\n", VersionSpec: "\" Version=\"" + formats.SetupVersionRef},
 
 		{
-			ID: "dotnet.shell.publish", Client: ClientDotnet, Section: "publish", Lang: "shell",
+			ID: "dotnet.shell.publish", Client: ClientDotnet, Section: "publish", Lang: "shell", Examples: []string{dotnetPackage},
 			Template: dotnetPush + `{{shell ` + sourceURL + `}} --api-key "` + formats.SetupTokenRef + `"` + "\n",
 		},
 		{
-			ID: "dotnet.powershell.publish", Client: ClientDotnet, Section: "publish", Lang: "powershell",
+			ID: "dotnet.powershell.publish", Client: ClientDotnet, Section: "publish", Lang: "powershell", Examples: []string{dotnetPackage},
 			Template: dotnetPush + `{{powershell ` + sourceURL + `}} --api-key "` + formats.SetupTokenRefPS + `"` + "\n",
 		},
 		{
-			ID: "nuget.cmd.publish", Client: ClientNuGet, Section: "publish", Lang: "cmd",
+			ID: "nuget.cmd.publish", Client: ClientNuGet, Section: "publish", Lang: "cmd", Examples: []string{nugetPackage},
 			Template: nugetPush + `{{cmd ` + sourceURL + `}} -ApiKey ` + formats.SetupTokenRefWin + "\n",
 		},
 		{
-			ID: "nuget.powershell.publish", Client: ClientNuGet, Section: "publish", Lang: "powershell",
+			ID: "nuget.powershell.publish", Client: ClientNuGet, Section: "publish", Lang: "powershell", Examples: []string{nugetPackage},
 			Template: nugetPush + `{{powershell ` + sourceURL + `}} -ApiKey "` + formats.SetupTokenRefPS + `"` + "\n",
 		},
 	}

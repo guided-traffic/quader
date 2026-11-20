@@ -1712,8 +1712,9 @@ naming the clients the format serves, Q-UI-77),
 `credentials` (`placeholder`, the default, `env` or `none`), `package` and `version` (the install snippets name
 them), `scope` (an npm scope; adds the scoped registry variant). The answer holds `repository`, `format`,
 `client`, `credentials`, `registryUrl`, `endpointPath`, `username`, `publishTarget`, `tokenTtlSeconds` and
-`snippets` of `{id, tab, fileName, language, content}`, `tab` being `configure`, `install` or `publish`
-(Q-API-160). This page owns the endpoint; the format registry of R-ARCH-010 in
+`snippets` of `{id, tab, fileName, language, content, marks}`, `tab` being `configure`, `install` or `publish`
+(Q-API-160), `language` the syntax of the content (`ini`, `yaml`, `json`, `xml`, `text` for a file; `shell`, `powershell` or
+`cmd` for the command line a command is written for, [Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)). This page owns the endpoint; the format registry of R-ARCH-010 in
 [architecture.md](architecture.md) feeds it, and the format pages contribute the templates. Rules the UI relies
 on:
 
@@ -1739,6 +1740,14 @@ on:
   credential line that binds to a host name alone, such as a `~/.netrc` line; Q-ANS-48). An install template may carry a `VersionSpec`, the
   form in which the version follows the package (default `@<version>`, dotnet ` --version <version>`; Q-API-188). Its
   language fixes the quoting of what the API substitutes: `shell`, `powershell`, `cmd` or `xml` (Q-API-189).
+- `marks` names the parts of a snippet that are the reader's, each `{text, kind}` by its literal text, in the order they
+  first stand in it ([ADR-208](../decisions.md#adr-208--a-setup-snippet-names-the-parts-that-are-the-readers-and-a-template-declares-its-examples),
+  [Q-UI-802](#q-ui-802--the-server-names-the-readers-parts-of-a-snippet-and-an-image-has-one-word)): `token` is where the credential goes, the
+  reference the credential mode wrote (`${QUADER_TOKEN}`, `%QUADER_TOKEN%`, `$env:QUADER_TOKEN`) or `{{token}}`; `value` is a part the reader
+  replaces: `<package>`, `<version>`, the `<project>` and `<repository>` of the guide of a class, and the examples a template declares
+  (`Examples`: an image `myapp:1.0`, a file to publish). An install template may declare a `PackageExample`, which it shows in place of
+  `<package>` when the request names no package: the OCI pull names `myapp:1.0`, the image its push names. A part that does not stand in
+  the snippet is not named.
   A `package`, `version` or `scope` above 256 bytes, with a control character or in the shape of a token is
   refused with `400`, and so is a `package` or `version` that starts with `-` (a client reads it as an option,
   quoted or not) and a `package` that the format's name rule does not take; the snippet holds the normalized
@@ -1780,6 +1789,8 @@ Acceptance criteria:
   `qdr_(pat|sat|cit)_` (R-ARCH-010 kit check 8).
 - The npm install snippet for version `1.0.0` of a legacy remote package named `a(b)` reads
   `npm install 'a(b)@1.0.0'`.
+- The OCI answer without a package names `myapp:1.0` in the pull and in the push, each with the mark `value`; `credentials=env` names
+  `${QUADER_TOKEN}` as the mark `token`, `credentials=none` no token mark (`setup_marks_test.go`).
 
 ### R-API-065 · When a client last downloaded a version
 Priority: **P1** · Covers: quader-only
@@ -4137,8 +4148,10 @@ Priority: **MVP** · Covers: UI-021, UI-022, UI-023
   snippets under **More options**, checked in the browser and sent nowhere.
 - The browser replaces `{{token}}` in the component only; the composed text is never stored in a service, browser storage or
   the URL and is discarded when the route is left (R-UI-043).
-- Each snippet shows its target file name and has a copy button; whole configuration files (`.npmrc`, `nuget.config`) can be
-  downloaded through a Blob URL that is revoked right after the click.
+- Each snippet is a window (R-UI-121, [Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)):
+  a file is an editor window whose tab names the file and whose bar has **Download**, through a Blob URL that is revoked right
+  after the click, and the copy button; a command is a terminal window with the copy button. The copy button copies the snippet
+  unchanged.
 - For npm, the Publish step also holds the GitLab CI snippet in its two labelled variants (R-UI-017), for who may publish.
 
 Acceptance criteria:
@@ -6831,11 +6844,35 @@ Acceptance criteria:
 ### R-UI-121 · The job first, the explanation after
 Priority: **MVP** · Covers: quader-only
 
-- The page reads from top to bottom: the header (R-UI-120); the client; the credential in one line (R-UI-122); **More options**,
-  closed; the steps **1 Configure**, **2 Install** and, for who may publish, **3 Publish** (R-UI-123), each a short heading with the
-  snippets of the client setup's tab of that name (R-API-030); then the explanation (R-UI-125).
-- Each snippet has the sentence its `id` names (the UI's text, R-UI-045), its file name where it is a file, a copy button and,
-  for a file, **Download**.
+The owner chose the design on 2026-11-20 (W-27, [Q-UI-800](#q-ui-800--set-up-client-takes-variant-a-snippets-are-windows-the-page-has-pictures-and-less-text)):
+"Variante A ist am besten und gefällt mir."
+
+- The page reads from top to bottom: the header (R-UI-120), with a picture of the flow at its right end where the content is at
+  least 55 rem wide (a window of about 1,200 px with the side bar); the client; the credential, one framed row with **More
+  options**, closed, inside it (R-UI-122); the steps **1 Configure**, **2 Install** and, for who may publish, **3 Publish** (R-UI-123),
+  joined by a rail from one number to the next, each a short heading with the snippets of the client setup's tab of that name
+  (R-API-030); then the explanation under the heading **Guide** (R-UI-125). Below 36 rem of content the rail goes and the number
+  stands before the heading.
+- **Less text** ([Q-UI-804](#q-ui-804--a-snippet-says-only-what-its-window-does-not-and-a-second-way-of-a-step-is-a-fold)): a snippet
+  has at most one short sentence, by its `id` (the UI's text, R-UI-045), and only what its window does not say already (the window
+  names the file and shows the command; an install command has none). A name of a file, a setting or a command in it is code. A
+  second way of a step (an image pull secret for a Kubernetes cluster, the same command in PowerShell or cmd, a `nuget.config`
+  beside the command, a one-line `.list` file, a `requirements.yml`, the `~/.netrc` line of roles, the scoped variant) stands after
+  the step's own snippets behind an inline fold titled with the way. A snippet that only works with a credential (the pull secret,
+  the token variable in PowerShell and cmd, the `~/.netrc` line) is not shown to an anonymous visitor.
+- **A snippet is a window** ([Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)):
+  a file (its `fileName`) is an editor window, its tab the file's name, its lines numbered, **Download** and the copy button in its
+  bar; a command is a terminal window, its tab the command line (`shell`, `PowerShell`, `cmd`), each command after its prompt (`$`,
+  `PS>`, `>`), none on a line that continues the one before, a here-document or a block. The window is light in the light scheme
+  and dark in the dark one, with syntax colours keyed by the snippet's `language`, never by its format, so a new format adds no
+  highlighter. The parts the server names as the reader's (`marks`, R-API-030) are marked: where the token goes as a chip, what
+  the reader replaces tinted, dashed underneath and in italics, each with a title. A long line wraps with an indent of two
+  characters under itself (Q-UI-486) and never inside a flag, a mark or a token's reference (up to 32 characters each); an address
+  breaks after its slashes. Nothing in a window scrolls sideways at 390 px. The copy button copies the text exactly; the numbers
+  and the prompts are no part of it. A window shows no window controls and no name or logo of an editor or a terminal product.
+- The pictures (the flow, a window's tab line) may take the format's accent
+  ([Q-UI-803](#q-ui-803--a-format-adds-one-accent-pair-for-its-pictures-a-format-without-one-takes-the-neutral-pair)); the
+  page's own controls and text keep the app's palette.
 - The snippets are `GET …/client-setup` for the repository and the client (`credentials=env`, `none` for an anonymous caller,
   `placeholder` while a token is to be written into them, R-UI-122); the explanation is the repository's guide (R-API-053) for the
   same client. With a Bastion chosen the snippets are the Bastion's and the page shows no explanation: the guide describes this
@@ -6843,25 +6880,36 @@ Priority: **MVP** · Covers: quader-only
 
 Acceptance criteria:
 
-- Unit tests: the steps are Configure, Install, Publish in that order, each with its snippets; the explanation follows the last
-  step; no contents box stands above the page.
+- Unit tests (`client-setup.spec.ts`): the steps are Configure, Install, Publish in that order, each with its snippets; the
+  explanation follows the last step; no contents box stands above the page; the npm configure snippet says "Save as `.npmrc` in your
+  project." and the install command nothing; a file is an editor window with its name, **Download** and **Copy snippet**, a command a
+  terminal window without **Download**; the pull secret of OCI is a closed fold **For a Kubernetes cluster**.
+- Unit tests (`code-window.spec.ts`, `code-syntax.spec.ts`): the window's text is the snippet's exactly and the copy button copies
+  it; the marks are laid over the colours wherever their text stands; a terminal prompts a command once; the wrap rule keeps a
+  flag, a mark and a token's reference whole and breaks an address after its slashes; `clients.spec.ts`: every snippet id the API
+  renders is known to the page, no sentence is longer than 20 words.
+- Renders (rule 11): the screens `setup-*` at 1440, 1024 and 390 px, light and dark, as each kind of user, with no layout finding
+  and nothing that scrolls sideways.
 
 ### R-UI-122 · The token without leaving the page
 Priority: **MVP** · Covers: quader-only
 
-- A signed-in reader sees one line: "The snippets read your token from the variable QUADER_TOKEN." with **Create a token** beside
-  it (Q-UI-483). The button creates a personal token (R-API-032) described as "Client setup: <client>, <repository>, <date>",
+- A signed-in reader sees one framed row (Q-UI-800): a key, **Token** and "The snippets read it from `QUADER_TOKEN`.", **Create a
+  token** beside them, the page's one confirm button, on the line of **Token** (R-UI-175), and **More options** inside the row
+  (Q-UI-483). The button creates a personal token (R-API-032) described as "Client setup: <client>, <repository>, <date>",
   scoped to the repository with `read`, plus `read` and `deploy` on the setup answer's `publishTarget` when the reader ticks
   **It may also publish**, which is shown only while the answer names a target; it expires after `tokenTtlSeconds` of the setup
   answer (`ui.client_setup.token_ttl`). Recent authentication applies.
-- The created token is shown once, with what it may do, its copy button, and the command `read -rs QUADER_TOKEN && export
-  QUADER_TOKEN` with its own copy button: run in bash or zsh, it reads the pasted token into the variable without echo and without
-  an entry in the shell's history. A sentence names the CI way: a masked variable of that name. The snippets keep the reference.
+- The created token is shown once, with what it may do, in an address field with its copy button (R-UI-065), then "Run this, paste
+  the token, press Enter. The shell keeps it out of its history." and the command `read -rs QUADER_TOKEN && export QUADER_TOKEN` in
+  a terminal window `bash, zsh` with its own copy button: run in bash or zsh, it reads the pasted token into the variable without
+  echo and without an entry in the shell's history. A line names the CI way: a masked variable of that name. The snippets keep the
+  reference.
 - **More options** holds **Token in the snippets**: **Read it from the variable QUADER_TOKEN** (the default) or **Write a token into
   the snippets**, a password field with a reveal toggle; the value is checked in the browser for its prefix, length, alphabet and
   CRC-32 (INV-8, R-AUTH-022), the check that failed is named, only a value that passes is written into the snippets, and it is
-  sent nowhere. Until one passes, the snippets show `{{token}}` and a note says so. **More options** also holds **Install from**
-  where a Bastion can be chosen (R-BAS-007, Q-BAS-96).
+  sent nowhere. Until one passes, the snippets show `{{token}}` and a note says so; a token written in stays marked where it
+  stands. **More options** also holds **Install from** where a Bastion can be chosen (R-BAS-007, Q-BAS-96); it has no hint line.
 - Secrets (R-UI-043): the created and the pasted token live in signals of the page only; another repository or another client
   discards both, leaving the page discards both; an answer of the creation that arrives after the repository or the client changed
   is revoked and never shown; a double click creates one token.
@@ -6880,7 +6928,7 @@ Priority: **MVP** · Covers: quader-only
 | A reader who may not publish (the plain user `sam`) | Configure, Install | The line with **Create a token**; **More options** | Without publishing and its upkeep (R-API-070) |
 | A member who may publish (`deploy` on the target) | Configure, Install, Publish | As above, and **It may also publish** | With publishing |
 | A caller who can read the configuration of a virtual repository without a deployment target | Configure, Install, and Publish with the reason and a link to the repository's settings | As above | Without publishing |
-| An anonymous visitor of a repository whose artifacts are `public` | Configure, Install | "You are not signed in. This repository can be read without signing in, so the snippets hold no credentials."; no **More options** | Without credential steps and publishing |
+| An anonymous visitor of a repository whose artifacts are `public` | Configure, Install, without the snippets that need a credential (R-UI-121); the sign-in of an image says it is not needed to pull | "You are not signed in: the snippets hold no credentials."; no **More options** unless a Bastion can be chosen | Without credential steps and publishing |
 
 A Bastion target has no Publish step; its banner says that a Bastion is read only (R-BAS-007). An anonymous visitor of a
 repository that is not public gets the `404` of R-UI-120.
@@ -6888,7 +6936,9 @@ repository that is not public gets the `404` of R-UI-120.
 Acceptance criteria:
 
 - Unit tests: `web/npm-remote` has Configure and Install; an anonymous visitor gets `credentials=none`, no token line and no More
-  options; `web/npm-readonly` shows the reason to a holder of `repositories:read-config` and no Publish step to a reader.
+  options; an anonymous visitor of `web/oci-local` reads "Not needed to pull: this repository can be read without signing in." and
+  no fold **For a Kubernetes cluster**; `web/npm-readonly` shows the reason to a holder of `repositories:read-config` and no Publish
+  step to a reader.
 
 ### R-UI-124 · Guides: the formats as tiles, a format's repositories, the guide of a class
 Priority: **MVP** · Covers: quader-only
@@ -6919,21 +6969,20 @@ Acceptance criteria:
 ### R-UI-125 · The explanation reads like a page, not like a reference
 Priority: **MVP** · Covers: quader-only
 
-- Below the steps (Q-UI-485): the sections of the topics `what` and `endpoint` stand open, each under its heading (`h2`), with their
-  introduction, the text before the section's first subheading; the rest of such a section is a closed **More about this**. Every
-  other section is a closed disclosure (Q-UI-322) titled with the section's heading, in the server's topic order. The headings are
-  the contents: no contents box stands above the page.
+- Below the steps, under the heading **Guide** (`h2`): every section of the guide is a closed row titled with the section's heading
+  (a `<quader-disclosure>` with an `h3`), in the server's topic order; the first one, what a repository of the class is,
+  is closed too ([Q-UI-805](#q-ui-805--the-guide-is-a-list-of-closed-rows-under-one-heading), revising Q-UI-485). The headings are the
+  contents: no contents box stands above the page.
 - A line of the prose (paragraphs, lists, the prose's own headings) is at most 70 characters wide; a table or a code block may
   take the page's column, which is the settings measure (56 rem).
-- Every code block of the prose has a copy button (**Copy code**). A line too long for its block wraps instead of being cut off;
-  in a snippet a wrapped line continues indented by two characters, so it does not read as a line of its own (Q-UI-486). The copy
-  buttons copy the text unchanged.
+- Every code block of the prose has a copy button (**Copy code**). A line too long for its block wraps instead of being cut off.
+  The copy buttons copy the text unchanged.
 - The format's text carries `lang="en"`; the frame is translated (Q-UI-86).
 
 Acceptance criteria:
 
-- Unit tests: the open and the folded sections by topic; a code block of the prose has **Copy code**; a snippet's lines are one
-  element each.
+- Unit tests (`guides.spec.ts`): every section is a closed row in the server's order, the first one too, with no second fold; a
+  code block of the prose has **Copy code**; `client-setup.spec.ts`: the heading **Guide**, the class's section first and closed.
 - Renders (rule 11): `setup-long-key` and `setup-deb` (`debian-internal-packages-for-bookworm-and-trixie`) at 390 px show every
   address of their snippets whole.
 
@@ -10874,6 +10923,8 @@ Context: the repository document has one member per format that has settings, na
 ### Q-API-191 · The command-line languages of the templates are reported as shell, because the snippet enum is frozen
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded by [Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)**
+(2026-11-20): the freeze of R-ARCH-025 does not apply before the first stable release, and a terminal window needs the command line.
 
 Context: Q-API-189 gave the setup templates the languages `powershell` and `cmd` for their quoting. The `language` of a `ClientSnippet` is an enum of the OpenAPI document (`ini`, `yaml`, `json`, `shell`, `xml`, `text`) and the NuGet snippets use both new values. R-ARCH-025 fails the compatibility check for a value added to a response enum, and for an enum that becomes extensible, against the last release (oasdiff `response-property-enum-value-added`, `response-property-became-not-enum`).
 
@@ -16235,6 +16286,8 @@ explains publishing. The development agent revisits it if readers ask for the pu
 ### Q-UI-485 · The explanation follows the snippets: what the class is stands open, the rest is folded under its headings
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised by [Q-UI-805](#q-ui-805--the-guide-is-a-list-of-closed-rows-under-one-heading)** (2026-11-20): the owner's variant A closes
+the first section too.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -19354,6 +19407,150 @@ same rule.
 [formats/nuget.md](formats/nuget.md) R-NUGET-012. Code: [ratelimit.go](../../internal/api/v1/ratelimit.go) (`Challenged`,
 `ChallengedByLevels`), [wire_api.go](../../internal/app/wire_api.go). Tests: `TestRateLimitStage`,
 `TestR_API_016_ChallengedByLevels`; `e2e (nuget)` `TestNuGetCollapse`, `TestNuGetMirror_R_REPO_055_ClientsFirst`.
+
+### Q-UI-800 · Set up client takes variant A: snippets are windows, the page has pictures and less text
+
+Status: **Decided by the owner on 2026-11-20** (W-27).
+
+Context: the owner on today's page: "Das hier ist so trist. Beim drauf schauen auf diese Anleitung hat man überhaupt keine Lust das
+mitzumachen. ... Zu viel Schrift." The page's own controls and text stay in the app's palette; "Bilder haben keine Einschränkungen
+der Palette. Wenn du also einen Text, anstatt in einer schnöden Box in einem schicken […] Texteditor darstellst, ist das in
+Ordnung." A designer drew three variants as a static mockup, npm and OCI, light and dark, as each kind of user.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Variant A, calm: today's order and column; a snippet a window; a picture of the flow in the header and a rail along the steps; the credential one framed row; the sentences cut to what the window does not say; the guide a list of closed rows under **Guide** (chosen) | The page the owner knows, lighter | Nothing moves that readers learnt; the words up to the end of step 2 fell from 72 to 38 (npm) and from 157 to 45 (OCI) in the mockup | Less of a picture than the others |
+| (b) Variant B, illustrated: a picture per step, the guide in a drawer | Pictures lead | The most inviting | The guide off the page, against ADR-202 |
+| (c) Variant C, workbench: the values to replace in a side column, the snippets as panes of one window | A tool | Live values in the snippets | A second way of working on a page for plain users |
+
+**Choice:** (a). The owner: "Variante A ist am besten und gefällt mir."
+
+**Rationale:** the owner's decision. The development agent records no revisit condition; the choice is the owner's. What the
+development agent decided in building it is Q-UI-801 to Q-UI-805 and
+[ADR-208](../decisions.md#adr-208--a-setup-snippet-names-the-parts-that-are-the-readers-and-a-template-declares-its-examples).
+
+**Applied in the spec:** R-UI-016, R-UI-121 to R-UI-123, R-UI-125. Code:
+[client-setup.html](../../web/src/app/features/setup/client-setup.html), [setup-flow-art.ts](../../web/src/app/features/setup/setup-flow-art.ts),
+[code-window.ts](../../web/src/app/shared/code/code-window.ts).
+
+### Q-UI-801 · A snippet's window is an editor for a file and a terminal for a command, coloured by its language
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: variant A (Q-UI-800) draws a file as an editor window and a command as a terminal window, with syntax colours. Something
+has to decide which a snippet is, how it is coloured and how its long lines wrap, for every format, including those to come.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The window's kind from `fileName` (a file or a command), the colours from `language`, a small tokenizer of Quader's own per language, `powershell` and `cmd` sent as themselves (chosen) | The server's facts decide | A new format adds no highlighter and no case; the prompt of PowerShell and cmd is right; no dependency | The tokenizer knows the handful of shapes the templates write, not the whole of each language |
+| (b) A highlighting library | Full grammars | Exact for any text | A dependency and its weight in the bundle for six short shapes |
+| (c) Colours per format | Each format styles its snippets | Freedom | A new format adds code to the UI; two formats of one language look different |
+
+**Choice:** (a). The window is `<quader-code-window>` ([code-window.ts](../../web/src/app/shared/code/code-window.ts)), the
+tokenizer, the marks, the prompts and the wrap rule are pure functions of [code-syntax.ts](../../web/src/app/shared/code/code-syntax.ts).
+A wrapped line keeps the indent of Q-UI-486; a flag, a mark and a token's reference of up to 32 characters never break, a longer
+one (a token of 57 characters written into the snippet) may, so a window never scrolls sideways at 390 px; an address breaks after
+its slashes. The colours are tokens `--quader-code-*` with a light and a dark value; palette.spec.ts holds each text colour at 4.5:1
+on the window. The install panel's command of several lines is the same window (one look for a snippet); one of one line stays the
+address field of Q-UI-320. Q-API-191 is superseded.
+
+**Rationale:** the facts that decide a window are the server's, so the page stays format-free (FMT-001). The development agent
+revisits it if a snippet's language needs more than its shapes (a long script), when a library may pay for itself.
+
+**Applied in the spec:** R-UI-016, R-UI-121, R-API-030 (the languages). Code: [code-window.ts](../../web/src/app/shared/code/code-window.ts),
+[code-syntax.ts](../../web/src/app/shared/code/code-syntax.ts), [install-command.html](../../web/src/app/features/packages/install-command.html),
+[packages_api.go](../../internal/api/v1/packages_api.go) `clientSnippet`, [_tokens.scss](../../web/src/styles/_tokens.scss).
+
+### Q-UI-802 · The server names the reader's parts of a snippet, and an image has one word
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the window marks what the reader replaces and where the token goes. The mockup found them by pattern, and its OCI pull said
+`<package>` where the push said `myapp:1.0`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The answer names them: `marks` of `{text, kind}` per snippet, from the token reference the credential mode wrote, the core's placeholders and the examples a template declares; the OCI pull shows the push's `myapp:1.0` when no package is asked (chosen) | The format declares, the UI shows | No guess; examples without brackets are found; a new format declares its own | A field in the answer and two in the format contract |
+| (b) The UI guesses by pattern (`<…>`, `${…}`) | No API change | Cheap | Marks the tags of a `nuget.config`, misses `./acme-tools-1.0.0.tar.gz` |
+| (c) The OCI push says `<package>` too | One word, no API change | Cheap | A shell reads `<package>` as a redirection; the push would not work as pasted even after a name was typed into one of two places |
+
+**Choice:** (a), recorded as [ADR-208](../decisions.md#adr-208--a-setup-snippet-names-the-parts-that-are-the-readers-and-a-template-declares-its-examples).
+The page writes a pasted token into the marks too, so it stays marked where it stands.
+
+**Rationale:** the cheapest correct way: the template that writes an example is the one place that knows it is one. The development
+agent revisits it if a mark's text also stands where it is not the reader's.
+
+**Applied in the spec:** R-API-030, R-UI-121. Code: [setup_snippets.go](../../internal/api/v1/setup_snippets.go) `snippetMarks`,
+[oci/setup.go](../../internal/formats/oci/setup.go), [client-setup.ts](../../web/src/app/features/setup/client-setup.ts) `fillSnippet`.
+
+### Q-UI-803 · A format adds one accent pair for its pictures; a format without one takes the neutral pair
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner wants one design for every format; the mockup coloured npm's pictures coral and OCI's sky blue.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One pair per format in the UI's catalog of format facts (`formatAccent` beside `formatIcon`), each a token of `_tokens.scss` with a light and a dark value, a neutral pair for any other format (chosen) | A fact of the format, in the pictures only | A format adds one line and one token; a new format looks right without one | The UI names the formats it has accents for, as it does for their logos |
+| (b) The accent in the format's Go descriptor, sent by `GET /api/v1/formats` | The format owns it entirely | No UI change for a new format | A colour in the API; its contrast is outside palette.spec.ts |
+| (c) No accent | One look | Simplest | The flow of every format looks the same, which the mockup the owner chose did not |
+
+**Choice:** (a). npm coral `#e5535f` / `#f0717b`, OCI sky `#2f9fd6` / `#4db5e8` (the mockup's), NuGet violet `#7a5ad8` / `#a58ff2`,
+Debian raspberry `#b8336a` / `#e9799f`, Ansible teal `#17998b` / `#45c7b7` (past the hue of the positive green), generic amber
+`#c98a12` / `#e8b04a`; neutral `#8f97ad` / `#a9b1c4`. The accent fills the parcels and the glyph of the flow (a stack of layers for
+OCI, a parcel for every other format) and the line over a window's tab; it is decoration, never text, never a control. No logo of
+npm, Ansible Galaxy or Docker (Q-UI-225 to Q-UI-227).
+
+**Rationale:** a picture may carry colour (the owner); a token keeps it reviewable in one place. The development agent revisits a
+pair the owner objects to, and the place if formats come with brand colours of their own owners' terms.
+
+**Applied in the spec:** R-UI-121. Code: [format-accent.ts](../../web/src/app/shared/format-accent.ts),
+[_tokens.scss](../../web/src/styles/_tokens.scss), [setup-flow-art.ts](../../web/src/app/features/setup/setup-flow-art.ts).
+
+### Q-UI-804 · A snippet says only what its window does not, and a second way of a step is a fold
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the designer cut npm's and OCI's sentences ("Save as .npmrc in your project.", no sentence for an install). Every other
+format and client was left to the builder, by the same rule.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One short sentence per snippet id, none where the window says it all; a second way of a step behind an inline fold after the step's own snippets; the sentence of an image's sign-in depends on the reader (chosen) | Less text, the plain path in view | One rule for every format: the words from the title to the end of step 2 fall by half or more | A fact the old sentence carried is now in the guide (why `ansible.cfg` holds no token, how a key rotation reaches a machine) |
+| (b) Keep today's sentences, shorter | Less change | Every fact stays | Still two lines over every window |
+| (c) No sentences at all | The windows alone | The least text | A file's place (next to the solution, in the home directory) is not in the window |
+
+**Choice:** (a). The folds: **For a Kubernetes cluster** (OCI), **In PowerShell** and **In cmd** (NuGet, Ansible), **As a
+nuget.config file** (.NET CLI, NuGet CLI), **As a one-line .list file** and **For a remote repository without upstream keys**
+(APT), **To install roles** and **With a requirements.yml** (Ansible), **For one scope only** (npm). A snippet that only works with
+a credential is not shown to an anonymous visitor, and an anonymous visitor of a public image reads "Not needed to pull: this
+repository can be read without signing in." instead of being asked to sign in. Measured from the `h1` to the end of step 2 without
+code, as the mockup counted, as the power user: see the table in [web-ui.md](../developer/web-ui.md#set-up-client-and-the-guides).
+
+**Rationale:** what the window shows needs no sentence; what a plain user needs is the first way, what an expert needs is a fold
+away (CLAUDE.md). The development agent revisits a sentence readers miss.
+
+**Applied in the spec:** R-UI-121, R-UI-123. Code: [clients.ts](../../web/src/app/features/setup/clients.ts) `snippetText`.
+
+### Q-UI-805 · The guide is a list of closed rows under one heading
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Variant A
+(Q-UI-800) closes the first section too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The heading **Guide** (`h2`) and every section a closed disclosure with an `h3` title, in the server's order (chosen) | One list | The owner's variant; the headings in order under one heading | What the class is is one click away |
+| (b) The first section open as before (Q-UI-485) | Unchanged | The class explained at once | Not what the owner chose |
+
+**Choice:** (a). The disclosure takes a heading level (`level`, 2 by default). A closed disclosure took the room of its body's
+padding (12 px, 8 px inline): the padding now belongs to an element inside the folded one, so a closed section, here and on every
+screen, takes no room beyond its heading. **More about this** is gone with the open sections.
+
+**Rationale:** the owner's choice of variant A; the level keeps the outline of the page right for a screen reader. The development
+agent revisits it if readers open the first row on most visits.
+
+**Applied in the spec:** R-UI-125. Code: [guide-view.ts](../../web/src/app/features/guides/guide-view.ts),
+[disclosure.ts](../../web/src/app/shared/ui/disclosure.ts).
 
 ## What this does not cover
 

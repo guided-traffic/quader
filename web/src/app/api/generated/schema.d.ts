@@ -9410,9 +9410,28 @@ export interface components {
             tab: "configure" | "install" | "publish";
             /** @description The file the snippet belongs in (`.npmrc`, `.yarnrc.yml`); null for a command. */
             fileName: string | null;
-            /** @enum {string} */
-            language: "ini" | "yaml" | "json" | "shell" | "xml" | "text";
+            /**
+             * @description The syntax of the content: a file's format, or the command line a command is written for (`shell` is a POSIX
+             *     shell, `powershell` PowerShell, `cmd` the Windows command prompt).
+             * @enum {string}
+             */
+            language: "ini" | "yaml" | "json" | "shell" | "powershell" | "cmd" | "xml" | "text";
             content: string;
+            /**
+             * @description The parts of `content` that are the reader's, each by its literal text, in the order they first stand in it
+             *     (R-API-030): the reference to the token in the spelling of the credential mode, and the placeholders and
+             *     examples the reader replaces with their own values. A screen marks every place a text stands in the content.
+             */
+            marks: components["schemas"]["SnippetMark"][];
+        };
+        SnippetMark: {
+            /** @description The literal text, as it stands in the snippet's content. */
+            text: string;
+            /**
+             * @description `token`: where the credential goes (a reference to the variable, or the placeholder the browser fills). `value`: a placeholder or an example the reader replaces.
+             * @enum {string}
+             */
+            kind: "token" | "value";
         };
         ClientSetup: {
             repository: string;
@@ -20723,14 +20742,21 @@ export interface operations {
                      *           "tab": "configure",
                      *           "fileName": ".npmrc",
                      *           "language": "ini",
-                     *           "content": "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken={{token}}\n"
+                     *           "content": "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken={{token}}\n",
+                     *           "marks": [
+                     *             {
+                     *               "text": "{{token}}",
+                     *               "kind": "token"
+                     *             }
+                     *           ]
                      *         },
                      *         {
                      *           "id": "npm.install",
                      *           "tab": "install",
                      *           "fileName": null,
                      *           "language": "shell",
-                     *           "content": "npm install @team-a/ui@1.4.0"
+                     *           "content": "npm install @team-a/ui@1.4.0",
+                     *           "marks": []
                      *         }
                      *       ]
                      *     }
@@ -20787,7 +20813,13 @@ export interface operations {
                      *           "tab": "configure",
                      *           "fileName": ".npmrc",
                      *           "language": "ini",
-                     *           "content": "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}\n"
+                     *           "content": "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}\n",
+                     *           "marks": [
+                     *             {
+                     *               "text": "${QUADER_TOKEN}",
+                     *               "kind": "token"
+                     *             }
+                     *           ]
                      *         }
                      *       ],
                      *       "sections": [

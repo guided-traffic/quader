@@ -28,10 +28,18 @@
         [copyLabel]="copyLabel"
       />
     } @else {
-      <div class="command">
-        <pre class="code-block folding" translate="no" tabindex="0" [style.--lines]="shownLines()">{{ command() }}</pre>
-        <quader-copy-button [value]="command()" [label]="copyLabel" />
-      </div>
+      <!-- A command of several lines is the window of Set up client, one look for a snippet everywhere (Q-UI-801). -->
+      @if (snippet(); as sn) {
+        <quader-code-window
+          [content]="command()"
+          [language]="sn.language"
+          [fileName]="sn.fileName"
+          [marks]="sn.marks"
+          [copyLabel]="copyLabel"
+          [downloadable]="false"
+          [shownLines]="shownLines()"
+        />
+      }
     }
     @if (collapsible()) {
       <button

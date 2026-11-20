@@ -7,7 +7,8 @@ import { AddressField } from '../address-field';
  * Set up client (`addresses`, R-UI-169), and the page's own actions as buttons at the right end (projected with `actions`: at
  * most one `btn btn-confirm`, `btn btn-default` beside it), which go under the rest where the page is narrow. Views of the same
  * object are the page's tabs, under the header; a way up to a list is the breadcrumb. A list's page may show its number of
- * entries after the heading (`count`).
+ * entries after the heading (`count`). A picture of the page (projected with `art`, the flow on Set up client, Q-UI-800) stands at the
+ * row's end and decides itself where it shows.
  */
 @Component({
   selector: 'quader-page-header',
@@ -30,6 +31,7 @@ import { AddressField } from '../address-field';
       <div class="page-header-actions">
         <ng-content select="[actions]" />
       </div>
+      <ng-content select="[art]" />
     </header>
   `,
   styles: `

@@ -307,8 +307,8 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
 
 - **When.** The address a client puts into its configuration: a repository's base URL or registry host with a path, a Bastion's
   repository address, an exposure rule's address; and a command of one line (the install command of a package, labelled
-  **Install command**). A configuration file or a snippet of several lines keeps the code block with its copy button
-  ([Q-UI-272](../spec/api-and-ui.md#q-ui-272--an-address-field-holds-one-address-multi-line-snippets-stay-code-blocks-and-the-bastion-address-becomes-a-field), Q-UI-320).
+  **Install command**). A configuration file or a snippet of several lines is a [code window](#code-windows)
+  ([Q-UI-272](../spec/api-and-ui.md#q-ui-272--an-address-field-holds-one-address-multi-line-snippets-stay-code-blocks-and-the-bastion-address-becomes-a-field), Q-UI-320, Q-UI-801).
   A hash (digest, fingerprint) is not an address either: `<code>` with its short form and the full text as `title`.
 - **A repository's address on Set up client only** ([R-UI-169](../spec/api-and-ui.md#r-ui-169--a-repositorys-address-stands-in-a-field-on-set-up-client-only),
   the owner's rule of W-20). The header of the page Set up client shows the client address, beside the snippets that use it. The
@@ -338,6 +338,37 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
     attached. Never an ellipsis.
 - **Behaviour.** Focus or click selects the whole address; copy uses `quader-copy-button` (clipboard, polite status, alert on failure).
   The address is the input's value, so a test reads `.value`, not the text content.
+
+## Code windows
+
+A snippet a reader copies into a client is a window, never a grey box ([Q-UI-801](../spec/api-and-ui.md#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language),
+the owner's choice of [Q-UI-800](../spec/api-and-ui.md#q-ui-800--set-up-client-takes-variant-a-snippets-are-windows-the-page-has-pictures-and-less-text)):
+`<quader-code-window>` ([code-window.ts](../../web/src/app/shared/code/code-window.ts)).
+
+```html
+<quader-code-window [content]="sn.content" [language]="sn.language" [fileName]="sn.fileName" [marks]="sn.marks" [snippetId]="sn.id" />
+```
+
+| Input | Meaning |
+|---|---|
+| `content` (required) | The text, exactly as it is copied |
+| `fileName` | The file it belongs in: an editor window, its tab the name, its lines numbered, **Download** in its bar. `null`: a command, a terminal window with a prompt per command |
+| `language` | The syntax (`ini`, `yaml`, `json`, `xml`, `text`, `shell`, `powershell`, `cmd`), the API's `language`: it picks the colours and the prompt, never the format |
+| `marks` | The parts that are the reader's, the API's `marks`: `token` a chip, `value` tinted, dashed and italic, each with a title |
+| `label` | A terminal's title in place of its command line's name (`bash, zsh` for the command that reads a token) |
+| `copyLabel`, `downloadable`, `shownLines`, `snippetId` | The copy button's name (**Copy snippet**), whether a file offers **Download**, a fold to a number of lines (the install panel), the `data-snippet` of the text |
+
+- **When.** A snippet of several lines, a configuration file, a command a reader runs: the snippets of **Set up client**, the command
+  of several lines of the install panel, the command that reads a created token. A value of one line to copy stays the address
+  field below (Q-UI-320). A JSON document, a request body, a public key or a log line is no snippet and keeps `pre.code-block`.
+- **The look.** The window's colours are the picture tokens `--quader-code-*` ([design-language.md](design-language.md#pictures));
+  the line over the tab is the format's accent where the page sets `--quader-art-accent`, the neutral one elsewhere. No window
+  dots, no name or logo of an editor or a terminal product.
+- **Wrapping.** A long line wraps with an indent of two characters under itself and never inside a flag, a mark or a token's
+  reference; an address breaks after its slashes. Nothing in a window scrolls sideways, at 390 px either. The tab and the buttons
+  stand centred in the bar, so a button's middle is the middle of the tab's line (R-UI-175).
+- **Words.** At most one sentence over a window, only what the window does not say; a file name, a setting or a command in it is
+  code (in a sentence of `clients.ts`, between backticks).
 
 ## Vulnerability grade
 

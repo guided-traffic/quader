@@ -41,19 +41,6 @@
   font-size: 0.875rem;
 }
 
-.command {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--quader-space-2);
-
-  pre {
-    flex: 1 1 auto;
-    min-inline-size: 0;
-    margin: 0;
-    overflow-x: auto;
-  }
-}
-
 .expander,
 .setup-link {
   margin-block: var(--quader-space-2) 0;

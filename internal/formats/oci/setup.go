@@ -23,6 +23,9 @@ func clients() []formats.Client {
 // another repository of the same host replaces the first).
 const loginTarget = `{{shell .ImagePrefix}}`
 
+// exampleImage is the image the snippets name where the reader names theirs: a name and a tag (R-API-030).
+const exampleImage = "myapp:1.0"
+
 // The user name of a login. The token service records it and ignores it (R-OCI-004, INV-8), so the instructions use a fixed one.
 const loginUser = "quader"
 
@@ -46,7 +49,7 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	}
 	pull := func(tool string) string { return tool + " pull " + loginTarget + "/" + formats.SetupPackageRef + "\n" }
 	push := func(tool string) string {
-		return tool + " tag myapp:1.0 " + loginTarget + "/myapp:1.0\n" + tool + " push " + loginTarget + "/myapp:1.0\n"
+		return tool + " tag " + exampleImage + " " + loginTarget + "/" + exampleImage + "\n" + tool + " push " + loginTarget + "/" + exampleImage + "\n"
 	}
 	// An image pull secret is how Kubernetes signs in; its password is a quader token (R-OCI-004). The server is the image prefix, so
 	// the kubelet sends the credential for the images below it only. The token reaches kubectl through a file it reads from standard
@@ -62,15 +65,17 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 		{ID: "podman.shell.configure", Client: ClientPodman, Section: "configure", Lang: "shell", Template: login("podman")},
 
 		// The version of an image is its tag, written after a colon; the quoted segments of a shell word join into one reference.
-		{ID: "docker.install", Client: ClientDocker, Section: "install", Lang: "shell", Template: pull("docker"), VersionSpec: ":" + formats.SetupVersionRef},
-		{ID: "podman.install", Client: ClientPodman, Section: "install", Lang: "shell", Template: pull("podman"), VersionSpec: ":" + formats.SetupVersionRef},
+		// Without a package asked for, a pull names the image the push names, so the page has one word for it (Q-UI-802).
+		{ID: "docker.install", Client: ClientDocker, Section: "install", Lang: "shell", Template: pull("docker"), VersionSpec: ":" + formats.SetupVersionRef, PackageExample: exampleImage},
+		{ID: "podman.install", Client: ClientPodman, Section: "install", Lang: "shell", Template: pull("podman"), VersionSpec: ":" + formats.SetupVersionRef, PackageExample: exampleImage},
 
-		{ID: "docker.publish", Client: ClientDocker, Section: "publish", Lang: "shell", Template: push("docker")},
+		{ID: "docker.publish", Client: ClientDocker, Section: "publish", Lang: "shell", Template: push("docker"), Examples: []string{exampleImage}},
 		{
 			ID: "docker.buildx.publish", Client: ClientDocker, Section: "publish", Lang: "shell",
-			Template: "docker buildx build --platform linux/amd64,linux/arm64 --tag " + loginTarget + "/myapp:1.0 --push .\n",
+			Template: "docker buildx build --platform linux/amd64,linux/arm64 --tag " + loginTarget + "/" + exampleImage + " --push .\n",
+			Examples: []string{exampleImage},
 		},
-		{ID: "podman.publish", Client: ClientPodman, Section: "publish", Lang: "shell", Template: push("podman")},
+		{ID: "podman.publish", Client: ClientPodman, Section: "publish", Lang: "shell", Template: push("podman"), Examples: []string{exampleImage}},
 	}
 }
 

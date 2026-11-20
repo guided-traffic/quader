@@ -205,6 +205,7 @@ checked every earlier decision against them:
 | [ADR-205](#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5) | The format contract declares what a fetch of a version is, and a size may be partial or not known; the contract is at version 5 | Accepted (owner decision of 2026-11-19); the contract change decided by the development agent — owner review at the walkthrough |
 | [ADR-206](#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce) | Download limits: budgets per caller and repository, technical tokens on three levels, Audit and Enforce | Accepted (owner decisions of 2026-11-19); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) | A probe starts the download of its version in the background; the format contract is at version 7 | Accepted (owner decisions of 2026-11-19); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-208](#adr-208--a-setup-snippet-names-the-parts-that-are-the-readers-and-a-template-declares-its-examples) | A setup snippet names the parts that are the reader's, and a template declares its examples | Decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1199,6 +1200,41 @@ remote; the storage quota of R-STOR-029.
 R-ARCH-008, R-ARCH-025; [api-and-ui.md](spec/api-and-ui.md) R-API-081, R-UI-082, Q-UI-766 to Q-UI-768; [formats/oci.md](spec/formats/oci.md)
 Q-OCI-223, Q-OCI-224; [formats/npm.md](spec/formats/npm.md) Q-NPM-89; [formats/nuget.md](spec/formats/nuget.md) Q-NUGET-124;
 [formats/ansible.md](spec/formats/ansible.md) Q-ANS-80; [formats/debian.md](spec/formats/debian.md) Q-DEB-122.
+
+### ADR-208 · A setup snippet names the parts that are the reader's, and a template declares its examples
+
+**Status:** Decided by the development agent — owner review at the walkthrough. Part of the redesign of **Set up client** the owner chose on
+2026-11-20 (W-27, [Q-UI-800](spec/api-and-ui.md#q-ui-800--set-up-client-takes-variant-a-snippets-are-windows-the-page-has-pictures-and-less-text)).
+
+**Context.** The page marks what the reader must replace (`<package>`, an example such as `myapp:1.0`) and where the token goes. A screen that
+guessed these by pattern would mark the tags of a `nuget.config` (`<configuration>` reads like `<package>`), miss every example that has no
+brackets (`./acme-tools-1.0.0.tar.gz`), and need a list per format. The OCI pull said `<package>` where the push said `myapp:1.0`: two words for
+one image.
+
+**Decision.**
+- `ClientSnippet` carries `marks`: each part of its content that is the reader's, by its literal text, with the kind `token` (the reference to
+  the credential in the spelling the credential mode wrote, or the placeholder the browser fills) or `value` (a placeholder of the core:
+  `<package>`, `<version>`, `<project>`, `<repository>`; or an example of the template) ([api-and-ui.md](spec/api-and-ui.md) R-API-030,
+  [Q-UI-802](spec/api-and-ui.md#q-ui-802--the-server-names-the-readers-parts-of-a-snippet-and-an-image-has-one-word)).
+- `formats.SetupTemplate` gains two fields, an addition that keeps `ContractVersion` at 7: `Examples`, the literal values of the template the
+  reader replaces, and `PackageExample`, what an install template shows in place of `<package>` when the request names no package. Kit check 8
+  refuses an example the template does not write and a package example off an install template that places the package. OCI names `myapp:1.0`
+  for both, so the pull and the push say the same thing; NuGet names its package files, Ansible its archive, Debian its `.deb`, generic `<path>`
+  and `<file>`.
+- `language` lists `powershell` and `cmd` as themselves; Q-API-191 mapped them to `shell` for a freeze that does not apply before the first stable
+  release ([Q-UI-801](spec/api-and-ui.md#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)).
+
+**Consequences.** A format that adds an example declares it once, beside the text; the UI knows no format. A format that writes an example
+without declaring it leaves it unmarked, which a reader of its renders sees.
+
+**Alternatives considered.** Patterns in the UI (wrong for XML, blind to examples); ranges instead of texts (wrong as soon as the browser writes
+a token into the snippet); a template function that writes and marks an example (no list to keep, but a second way to place the package and a
+change of the template language every format reads).
+
+**Revisit condition:** an example that also stands in the snippet where it is not the reader's (a mark in the wrong place).
+
+**Spec:** [api-and-ui.md](spec/api-and-ui.md) R-API-030, Q-UI-801, Q-UI-802; [architecture.md](spec/architecture.md) R-ARCH-009 (the written
+contract of `SetupTemplate`), R-ARCH-010 check 8.
 
 ## Design invariants
 

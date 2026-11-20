@@ -46,6 +46,17 @@ type SetupTemplate struct {
 	// that names no version leaves the package alone. VersionSpec is meaningful for an
 	// install template only (kit check 8).
 	VersionSpec string
+	// PackageExample is what an install template shows in place of
+	// [SetupPackageRef] when the request names no package: an example the reader
+	// replaces, the same one the format's other snippets write ("myapp:1.0" for an
+	// image). "" keeps the placeholder. Meaningful for an install template that
+	// places the package only (kit check 8).
+	PackageExample string
+	// Examples are the literal values of the template that the reader replaces with
+	// their own: a file to publish, an image name, a path. The API names each one
+	// that stands in a rendered snippet, so that a screen can mark it (R-API-030);
+	// every example stands in the template's text (kit check 8).
+	Examples []string
 }
 
 // SetupTokenRef is how a setup template spells the reference to the token, exactly:

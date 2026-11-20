@@ -19,6 +19,9 @@ const tokenEnv = "ANSIBLE_GALAXY_SERVER_QUADER_TOKEN" //nolint:gosec // the name
 func optionNames() []string { return []string{tokenEnv, "--token", "password"} }
 
 // anonymousNote is what the snippets that carry a credential say when the repository needs none.
+// exampleArchive is the collection archive the publish snippet names where the reader names theirs (R-API-030).
+const exampleArchive = "./acme-tools-1.0.0.tar.gz"
+
 const anonymousNote = "This repository is open to anonymous readers: no credential is needed to install from it."
 
 // SetupTemplates are the client setup snippets of R-ANS-025 and R-UI-018 (Q-ANS-22, Q-ANS-48): the server in an ansible.cfg, the token
@@ -58,7 +61,7 @@ collections:
 # roles:
 #   - name: <owner>.<role>
 `
-	publish := `ansible-galaxy collection publish ./acme-tools-1.0.0.tar.gz --server {{shell .RegistryURL}} --token=` + formats.SetupTokenRef + "\n"
+	publish := `ansible-galaxy collection publish ` + exampleArchive + ` --server {{shell .RegistryURL}} --token=` + formats.SetupTokenRef + "\n"
 	return []formats.SetupTemplate{
 		{ID: "ansible-galaxy.ansible-cfg.configure", Client: ClientGalaxy, Section: "configure", Lang: "ini", File: "ansible.cfg", Template: cfg},
 		{ID: "ansible-galaxy.token-env.configure", Client: ClientGalaxy, Section: "configure", Lang: "shell", Template: envShell},
@@ -75,6 +78,6 @@ collections:
 			Template: requirements, VersionSpec: "\n    version: \"" + formats.SetupVersionRef + "\"",
 		},
 
-		{ID: "ansible-galaxy.collection.publish", Client: ClientGalaxy, Section: "publish", Lang: "shell", Template: publish},
+		{ID: "ansible-galaxy.collection.publish", Client: ClientGalaxy, Section: "publish", Lang: "shell", Template: publish, Examples: []string{exampleArchive}},
 	}
 }

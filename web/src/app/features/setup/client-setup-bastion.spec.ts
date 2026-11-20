@@ -48,7 +48,6 @@ describe('Set up client for a Bastion (R-BAS-007, R-API-030)', () => {
     expect(r.setup.calls.at(-1)?.query.bastion).toBeUndefined();
     const more = r.root.querySelector('quader-disclosure.more-options')!;
     expect(text(more)).toContain('Install from');
-    expect(text(more)).toContain('where to install from');
     await expectAccessible(r.root);
   });
 
@@ -90,7 +89,7 @@ describe('Set up client for a Bastion (R-BAS-007, R-API-030)', () => {
   it('R-BAS-007 a caller without endpoints:read gets no choice, and a Bastion named in the query still works', async () => {
     const plain = await openSetup({}, ['repositories:read-config']);
     expect(plain.root.querySelector('input[name="target"]')).toBeNull();
-    expect(text(plain.root.querySelector('quader-disclosure.more-options')!)).not.toContain('where to install from');
+    expect(text(plain.root.querySelector('quader-disclosure.more-options')!)).not.toContain('Install from');
     const linked = await openSetup({ bastion: 'partners' }, ['repositories:read-config']);
     expect(target(linked.root, 'partners')?.checked).toBe(true);
     expect(linked.setup.calls.at(-1)?.query.bastion).toBe('partners');

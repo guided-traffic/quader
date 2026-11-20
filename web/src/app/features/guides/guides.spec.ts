@@ -65,7 +65,7 @@ describe('Guides', () => {
     expect(text(r.root)).toContain('This installation has no guide for this package type.');
   });
 
-  it('R-UI-125 the explanation: what the class is and the endpoint note stand open, the rest are closed disclosures, and code is copyable', async () => {
+  it('R-UI-125 the explanation: every section is a closed row titled with its heading, in the server\'s order, and code is copyable', async () => {
     const html = (body: string) => body;
     const r = await renderScreen(GuideView, {
       inputs: {
@@ -77,20 +77,22 @@ describe('Guides', () => {
         ],
       },
     });
-    expect([...r.root.querySelectorAll('section.guide-open > h2')].map((h) => text(h))).toEqual(['What a local repository is', 'On this endpoint']);
-    expect([...r.root.querySelectorAll<HTMLElement>('quader-disclosure.guide-more')].map((d) => d.dataset['section'])).toEqual([
-      'npm.configure',
-      'npm.troubleshooting',
+    const rows = [...r.root.querySelectorAll<HTMLElement>('quader-disclosure.guide-more')];
+    expect(rows.map((d) => d.dataset['section'])).toEqual(['npm.local.what', 'npm.configure', 'npm.endpoint', 'npm.troubleshooting']);
+    expect(rows.map((d) => text(d.querySelector('h3 button span:last-child')!))).toEqual([
+      'What a local repository is',
+      'Point the client at the repository',
+      'On this endpoint',
+      'Troubleshooting',
     ]);
-    // An open section shows its introduction; the text from its first subheading folds under More about this.
-    const what = r.root.querySelector('[data-section="npm.local.what"]')!;
-    expect(text(what.querySelector(':scope > quader-package-readme')!)).toBe('A local repository holds what you publish.');
-    expect(text(what.querySelector('quader-disclosure.guide-rest')!)).toContain('More about this');
-    expect(text(what.querySelector('quader-disclosure.guide-rest')!)).toContain('Published versions never change');
+    // Closed, the first one too; the whole section is inside its row, with no second fold.
+    expect(r.root.querySelectorAll('button[aria-expanded="true"]').length).toBe(0);
+    expect(r.root.querySelector('section.guide-open, quader-disclosure.guide-rest')).toBeNull();
+    expect(text(rows[0]!)).toContain('Published versions never change');
     const code = r.root.querySelector('[data-section="npm.configure"] .prose-code')!;
     expect(code.querySelector('pre')).toBeTruthy();
     expect(code.querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy code');
-    expect(r.root.querySelector('section.guide-open')?.getAttribute('lang') ?? r.root.querySelector('section.guide-open > h2')?.getAttribute('lang')).toBe('en');
+    expect(rows[0]!.getAttribute('lang')).toBe('en');
     await expectAccessible(r.root);
   });
 });

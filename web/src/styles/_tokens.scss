@@ -235,6 +235,53 @@
   --quader-sev-unknown-light: light-dark(#e0e3e6, #26303c);
   --quader-banner-bg: light-dark(#ecdcff, #5f00c0);
   --quader-banner-fg: light-dark(#5f00c0, #ecdcff);
+
+  // Pictures (the owner, 2026-11-20: "Bilder haben keine Einschränkungen der Palette"; Q-UI-800). A snippet is a window of an
+  // editor or a terminal (shared/code/code-window.ts): light paper in the light scheme, dark ink in the dark one, with syntax
+  // colours of its own. Every text colour keeps 4.5:1 on the window and the marks on their tints (palette.spec.ts). Green stays
+  // the positive status's: the teal of an address is past its hue.
+  --quader-code-bg: light-dark(#fbfafd, #0f1015);
+  --quader-code-bar: light-dark(#f0eff3, #1b1c24);
+  --quader-code-line: light-dark(#dcdcde, #2e2f3b);
+  --quader-code-edge: light-dark(#dcdcde, #3d3d4a);
+  --quader-code-fg: light-dark(#28272d, #e8eaf2);
+  --quader-code-dim: light-dark(#626168, #a9b1c4);
+  --quader-code-gutter: light-dark(#6a6970, #8f97ad);
+  --quader-code-key: light-dark(#0b5cad, #84c9ff);
+  --quader-code-url: light-dark(#0a6b64, #72e0d1);
+  --quader-code-string: light-dark(#8a4a00, #ffd58c);
+  --quader-code-command: light-dark(#6a3cc2, #cbb4ff);
+  --quader-code-flag: light-dark(#a8246b, #f7a9d0);
+  --quader-code-punct: light-dark(#55535b, #b9c0d4);
+  // Where the token goes: an orange chip. What the reader replaces: a yellow tint with a dashed line and italics, so it is not
+  // told by colour alone.
+  --quader-code-token-fg: light-dark(#933608, #ffc49a);
+  --quader-code-token-bg: light-dark(#fde9d6, rgb(255 160 90 / 18%));
+  --quader-code-mark-fg: light-dark(#5a4000, #ffe38f);
+  --quader-code-mark-bg: light-dark(#fff1b8, rgb(255 220 100 / 15%));
+  --quader-code-mark-line: light-dark(#9a7400, #e2c152);
+  --quader-code-focus: light-dark(#2f68b4, #9dc7f1);
+  --quader-code-hover: light-dark(rgb(5 5 6 / 8%), rgb(255 255 255 / 10%));
+  // The picture of the flow on Set up client (features/setup/setup-flow-art.ts): the machine in the window's colours, the lanes,
+  // the token's disc and key; the repository is a piece of Quader's wall (--quader-mark-stone, --quader-mark-accent).
+  --quader-art-machine: light-dark(#fbfafd, #0f1015);
+  --quader-art-machine-edge: light-dark(#bfbfc3, #4c4b51);
+  --quader-art-bar: light-dark(#ececef, #22232d);
+  --quader-art-tab: light-dark(#bfbfc3, #3d3f4f);
+  --quader-art-line: light-dark(#89888d, #8f8e95);
+  --quader-art-paper: light-dark(#ffffff, #28272d);
+  --quader-art-key: light-dark(#b4690e, #e9a13b);
+  // The tape across a parcel: a shade over the format's accent.
+  --quader-art-shade: rgb(0 0 0 / 22%);
+  // A format's accent (shared/format-accent.ts, Q-UI-803): one pair per format, used only inside its pictures (the parcels and
+  // the glyph of the flow, the line over a window's tab). A format without one takes the neutral pair.
+  --quader-format-accent: light-dark(#8f97ad, #a9b1c4);
+  --quader-format-accent-npm: light-dark(#e5535f, #f0717b);
+  --quader-format-accent-oci: light-dark(#2f9fd6, #4db5e8);
+  --quader-format-accent-nuget: light-dark(#7a5ad8, #a58ff2);
+  --quader-format-accent-deb: light-dark(#b8336a, #e9799f);
+  --quader-format-accent-ansible: light-dark(#17998b, #45c7b7);
+  --quader-format-accent-generic: light-dark(#c98a12, #e8b04a);
 }
 
 // An explicit user choice (R-API-021) overrides prefers-color-scheme by setting data-theme on

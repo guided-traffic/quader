@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
@@ -9,8 +10,10 @@ import { RepositoriesApi, isConsumerView, repoRef } from '../../api/repositories
 import { CreateTokenRequest, TokensApi } from '../../api/tokens-api';
 import { repositoryCommands } from '../../core/project-links';
 import { SessionStore } from '../../core/session-store';
-import { CopyButton } from '../../shared/copy-button';
+import { AddressField } from '../../shared/address-field';
+import { CodeWindow } from '../../shared/code/code-window';
 import { ErrorNotice } from '../../shared/error-notice';
+import { formatAccent } from '../../shared/format-accent';
 import { FormatIconView } from '../../shared/format-icon';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { Disclosure } from '../../shared/ui/disclosure';
@@ -19,7 +22,8 @@ import { VisibilityIcon } from '../../shared/ui/visibility-level';
 import { GuideView } from '../guides/guide-view';
 import { classIcon, classLabel } from '../repositories/repository-class';
 import { reportedBastions } from './bastion-targets';
-import { snippetExplanation } from './clients';
+import { SnippetText, snippetText } from './clients';
+import { SetupFlowArt } from './setup-flow-art';
 import { SetupSnippet } from './setup-snippet';
 import { checkTokenShape, TokenShape } from './token-shape';
 
@@ -34,6 +38,19 @@ export function fillToken(content: string, token: string | null): string {
   return token === null ? content : content.split(TOKEN_PLACEHOLDER).join(token);
 }
 
+/**
+ * A snippet with a token written into it: its text, and its marks, whose placeholder now stands for the token (R-API-030), so the
+ * window still marks where the token is.
+ */
+export function fillSnippet(sn: ClientSnippet, token: string | null): ClientSnippet {
+  if (token === null) return sn;
+  return {
+    ...sn,
+    content: fillToken(sn.content, token),
+    marks: sn.marks.map((m) => (m.kind === 'token' ? { ...m, text: fillToken(m.text, token) } : m)),
+  };
+}
+
 /** The command that puts a token into the variable without the shell's history seeing it (R-UI-122). */
 export const READ_TOKEN_COMMAND = 'read -rs QUADER_TOKEN && export QUADER_TOKEN';
 
@@ -44,9 +61,9 @@ type Step = 'configure' | 'install' | 'publish';
  * Set up client (R-UI-120 to R-UI-123, ADR-202): the client setup and the guide of a repository as one page. It opens from the
  * repository (`/projects/<project>/repositories/<key>/setup`), so the format, the class and the repository are known and asked
  * for nowhere; the client is one control where the format has several, and none where it has one. The job comes first: the
- * address, the token in one line with **Create a token** in place, then the snippets of Configure, Install and, for who may
- * publish, Publish. The explanation follows them: what a repository of the class is, then the format's sections folded
- * (R-UI-125). The same page without a repository is the guide of a class (`/guides/<format>/<class>`), whose addresses show
+ * address and the picture of the flow, the token in one framed row with **Create a token** in place and **More options**, then the
+ * snippets of Configure, Install and, for who may publish, Publish on a rail, each a window (Q-UI-800, Q-UI-801). The explanation
+ * follows them under **Guide**, every section a closed row (R-UI-125). The same page without a repository is the guide of a class (`/guides/<format>/<class>`), whose addresses show
  * `<project>` and `<repository>`.
  *
  * Secrets (R-UI-043): the server never fills a token. A pasted token lives in a component signal, is written into the snippets
@@ -55,9 +72,24 @@ type Step = 'configure' | 'install' | 'publish';
  */
 @Component({
   selector: 'quader-client-setup',
-  imports: [RouterLink, PageHeader, ErrorNotice, Disclosure, VisibilityIcon, FormatIconView, CopyButton, SetupSnippet, GuideView],
+  imports: [
+    NgTemplateOutlet,
+    RouterLink,
+    PageHeader,
+    ErrorNotice,
+    Disclosure,
+    VisibilityIcon,
+    FormatIconView,
+    AddressField,
+    CodeWindow,
+    SetupSnippet,
+    SetupFlowArt,
+    GuideView,
+  ],
   templateUrl: './client-setup.html',
   styleUrl: './client-setup.scss',
+  // The format's accent, for the pictures of the page only: the flow and the line over a window's tab (Q-UI-803).
+  host: { '[style.--quader-art-accent]': 'accent()' },
 })
 export class ClientSetupPage {
   private readonly setupApi = inject(ClientSetupApi);
@@ -84,7 +116,7 @@ export class ClientSetupPage {
   protected readonly readCommand = READ_TOKEN_COMMAND;
   protected readonly copyTokenLabel = $localize`:@@setup.copy-token:Copy token`;
   protected readonly copyCommandLabel = $localize`:@@setup.copy-command:Copy command`;
-  protected readonly explanation = snippetExplanation;
+  protected readonly tokenLabel = $localize`:@@setup.token.label:Token`;
 
   /** The repository of the page, `<project>/<key>`; null for the guide of a class. */
   protected readonly ref = computed(() => {
@@ -101,6 +133,7 @@ export class ClientSetupPage {
   });
   protected readonly repository = computed(() => valueOf(this.loaded)?.value);
   protected readonly formatName = computed(() => (this.ref() ? this.repository()?.format : this.format()) ?? null);
+  protected readonly accent = computed(() => formatAccent(this.formatName()));
   protected readonly descriptor = computed(
     () => (valueOf(this.formats) ?? []).find((f) => f.name === this.formatName() && f.clients.length > 0) ?? null,
   );
@@ -141,13 +174,6 @@ export class ClientSetupPage {
   protected readonly mode = signal<CredentialMode>('env');
   /** Whether More options is open; a choice inside it keeps it open while the page lives. */
   protected readonly moreOpen = signal(false);
-  protected readonly moreHint = computed(() =>
-    this.anonymous()
-      ? $localize`:@@setup.more.hint-anonymous:Where to install from.`
-      : this.showTarget()
-        ? $localize`:@@setup.more.hint-target:A token written into the snippets, and where to install from.`
-        : $localize`:@@setup.more.hint:A token written into the snippets.`,
-  );
   protected readonly offerMore = computed(() => this.ref() !== null && (!this.anonymous() || this.showTarget()));
 
   protected readonly credentials = computed<'none' | 'env' | 'placeholder'>(() =>
@@ -224,13 +250,21 @@ export class ClientSetupPage {
     const s = this.setup();
     if (!s) return [];
     const token = this.mode() === 'paste' && !this.anonymous() ? this.pastedToken() : null;
-    return s.snippets.map((x) => ({ ...x, content: fillToken(x.content, token) }));
+    return s.snippets.map((x) => fillSnippet(x, token));
   });
-  protected readonly byStep = computed<Record<Step, readonly ClientSnippet[]>>(() => ({
-    configure: this.snippets().filter((s) => s.tab === 'configure'),
-    install: this.snippets().filter((s) => s.tab === 'install'),
-    publish: this.snippets().filter((s) => s.tab === 'publish'),
-  }));
+  /** What the page says about a snippet (Q-UI-804): its sentence, the fold of a second way, whether it needs a credential. */
+  protected textOf(sn: ClientSnippet): SnippetText | null {
+    return snippetText(sn.id, { anonymous: this.anonymous() });
+  }
+  /** The snippets of each step; one that only makes sense with a credential is not shown to an anonymous visitor (R-UI-123). */
+  protected readonly byStep = computed<Record<Step, readonly ClientSnippet[]>>(() => {
+    const shown = this.snippets().filter((s) => !(this.anonymous() && this.textOf(s)?.signedIn));
+    return {
+      configure: shown.filter((s) => s.tab === 'configure'),
+      install: shown.filter((s) => s.tab === 'install'),
+      publish: shown.filter((s) => s.tab === 'publish'),
+    };
+  });
   protected readonly needsToken = computed(() => !this.anonymous() && this.mode() === 'paste' && this.pastedToken() === null);
   protected readonly publishTarget = computed(() => this.setup()?.publishTarget ?? null);
   protected readonly canReadConfig = computed(() => this.session.has('repositories:read-config'));

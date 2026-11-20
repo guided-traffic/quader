@@ -460,9 +460,11 @@ formats.SetupData: field RequiresAuth bool
 formats.SetupData: field Username string
 formats.SetupData: field Variant string
 formats.SetupTemplate: field Client string
+formats.SetupTemplate: field Examples []string
 formats.SetupTemplate: field File string
 formats.SetupTemplate: field ID string
 formats.SetupTemplate: field Lang string
+formats.SetupTemplate: field PackageExample string
 formats.SetupTemplate: field Section string
 formats.SetupTemplate: field Template string
 formats.SetupTemplate: field VersionSpec string

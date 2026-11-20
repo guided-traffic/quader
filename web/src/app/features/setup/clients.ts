@@ -39,108 +39,153 @@ export function clientsOf(format: string): readonly ClientChoice[] {
   return FORMAT_CLIENTS[format] ?? [];
 }
 
+/** Who reads the page, as far as the words of a snippet depend on it (R-UI-123). */
+export interface SnippetReader {
+  /** Signed out, on a repository whose artifacts are public: the snippets hold no credential. */
+  readonly anonymous: boolean;
+}
+
 /**
- * The explanation of a snippet, by its stable id (R-API-030: the server sends ids, the text is the
- * UI's and is translated, R-UI-045). An id without an entry shows the snippet without a sentence.
+ * What the page says about a snippet (R-UI-121, Q-UI-804): at most one short sentence of what its window does not say already
+ * (the window names the file and shows the command; a name of a file, a setting or a command stands between backticks and is shown
+ * as code), and, for a second way of the same step, the heading of the inline fold it
+ * sits behind (the image pull secret of a Kubernetes cluster, the same command in PowerShell). `signedIn` is a snippet that only
+ * makes sense with a credential: an anonymous visitor does not see it.
  */
-export function snippetExplanation(id: string): string | null {
+export interface SnippetText {
+  readonly caption: string | null;
+  readonly fold: string | null;
+  readonly signedIn: boolean;
+}
+
+const text = (caption: string | null, fold: string | null = null, signedIn = false): SnippetText => ({ caption, fold, signedIn });
+
+/**
+ * The words of a snippet, by its stable id (R-API-030: the server sends ids, the text is the UI's and is translated, R-UI-045).
+ * `null` is an id the page does not know: it shows the snippet without a sentence, and `clients.spec.ts` fails for every id the
+ * API renders that is not here.
+ */
+export function snippetText(id: string, reader: SnippetReader = { anonymous: false }): SnippetText | null {
+  const inPowerShell = $localize`:@@setup.fold.powershell:In PowerShell`;
   switch (id) {
     case 'npm.configure.npmrc':
-    case 'pnpm.configure.npmrc':
     case 'yarn-classic.configure.npmrc':
-      return $localize`:@@setup.snippet.npmrc:Save this as .npmrc in your project. It sends every request for packages to this repository and signs in with the token.`;
+      return text($localize`:@@setup.caption.npmrc:Save as \`.npmrc\` in your project.`);
+    case 'pnpm.configure.npmrc':
+      return text($localize`:@@setup.caption.npmrc-home:Save in your home directory: pnpm reads a token variable only there.`);
     case 'npm.configure.npmrc-scoped':
     case 'pnpm.configure.npmrc-scoped':
     case 'yarn-classic.configure.npmrc-scoped':
-      return $localize`:@@setup.snippet.npmrc-scoped:Use this variant to take only the packages of one scope from this repository. All other packages still come from npm's default registry.`;
     case 'yarn.configure.yarnrc-scoped':
-      return $localize`:@@setup.snippet.yarnrc-scoped:Add this to .yarnrc.yml to take only the packages of one scope from this repository. All other packages still come from npm's default registry.`;
+      return text(
+        $localize`:@@setup.caption.scoped:Takes only the packages of one scope from this repository.`,
+        $localize`:@@setup.fold.scoped:For one scope only`,
+      );
     case 'npm.configure.cli':
-      return $localize`:@@setup.snippet.npm-cli:Writes the same settings into your user configuration file ~/.npmrc. Your shell fills in the token, so it is stored in that file.`;
+      return text(
+        $localize`:@@setup.caption.npm-cli:Writes the settings into \`~/.npmrc\`, where your shell stores the token.`,
+        $localize`:@@setup.fold.npm-cli:For every project`,
+      );
     case 'yarn.configure.yarnrc':
-      return $localize`:@@setup.snippet.yarnrc:Save this as .yarnrc.yml in your project. Yarn fills in the token variable itself.`;
+      return text($localize`:@@setup.caption.yarnrc:Save as \`.yarnrc.yml\` in your project.`);
     case 'npm.install':
     case 'pnpm.install':
     case 'yarn.install':
     case 'yarn-classic.install':
-      return $localize`:@@setup.snippet.install:Installs a package through this repository once the client is configured.`;
+    case 'dotnet.install':
+    case 'nuget.install':
+    case 'docker.install':
+    case 'podman.install':
+    case 'curl.install':
+    case 'apt.install':
+    case 'ansible-galaxy.install.collection':
+    case 'dotnet.publish.shell':
+    case 'nuget.publish.cmd':
+      return text(null);
     case 'npm.publish':
     case 'pnpm.publish':
     case 'yarn-classic.publish':
-      return $localize`:@@setup.snippet.publish-flag:Publishes the package in the current directory to the repository that receives uploads.`;
+      return text($localize`:@@setup.caption.publish-dir:Run in the directory of the package.`);
     case 'yarn.publish':
-      return $localize`:@@setup.snippet.publish-berry:Add this to .yarnrc.yml, then run yarn npm publish.`;
+      return text($localize`:@@setup.caption.publish-berry:Add to \`.yarnrc.yml\`, then run \`yarn npm publish\`.`);
     case 'npm.publish.gitlab-ci.generic':
-      return $localize`:@@setup.snippet.gitlab-generic:For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job's ID token for a short-lived Quader token and revokes it again as its last step.`;
+      return text($localize`:@@setup.snippet.gitlab-generic:For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job's ID token for a short-lived Quader token and revokes it again as its last step.`);
     case 'npm.publish.gitlab-ci.native':
-      return $localize`:@@setup.snippet.gitlab-native:For npm 11.5.1 and later, pnpm 11 and 12 and Yarn 4. The client exchanges the job's ID token itself.`;
+      return text($localize`:@@setup.snippet.gitlab-native:For npm 11.5.1 and later, pnpm 11 and 12 and Yarn 4. The client exchanges the job's ID token itself.`);
     case 'dotnet.configure.shell':
+      return text($localize`:@@setup.caption.dotnet-source:Adds the source to your user configuration. On Linux and macOS the token is stored there in clear text.`);
+    case 'nuget.configure.cmd':
+      return text($localize`:@@setup.caption.nuget-source:Adds the source to your user configuration.`);
     case 'dotnet.configure.powershell':
-      return $localize`:@@setup.snippet.dotnet-add-source:Adds this repository as a package source of your user configuration. On Linux and macOS the .NET CLI cannot encrypt the password, so it is stored in clear text in that file.`;
+    case 'nuget.configure.powershell':
+    case 'dotnet.publish.powershell':
+    case 'nuget.publish.powershell':
+      return text(null, inPowerShell);
     case 'dotnet.configure.nugetconfig':
     case 'nuget.configure.nugetconfig':
+      return text($localize`:@@setup.caption.nuget-config:Save next to your solution. Every package then comes through this repository.`, $localize`:@@setup.fold.nuget-config:As a nuget.config file`);
     case 'visual-studio.configure.nugetconfig':
-      return $localize`:@@setup.snippet.nuget-config:Save this as nuget.config next to your solution. It removes all other package sources, so every package comes through this repository, and it reads the token from the environment variable.`;
-    case 'nuget.configure.cmd':
-    case 'nuget.configure.powershell':
-      return $localize`:@@setup.snippet.nuget-sources-add:Adds this repository as a package source of your user configuration with nuget.exe.`;
-    case 'dotnet.install':
-      return $localize`:@@setup.snippet.dotnet-install:Adds the package to the project in the current directory and restores it through the configured sources.`;
-    case 'nuget.install':
-      return $localize`:@@setup.snippet.nuget-install:Installs the package into the current directory through this repository.`;
+      return text($localize`:@@setup.caption.nuget-config:Save next to your solution. Every package then comes through this repository.`);
     case 'visual-studio.install.packagereference':
-      return $localize`:@@setup.snippet.vs-packagereference:Add this line to the project file inside an ItemGroup, then restore. Or choose this source in the NuGet package manager of Visual Studio and install the package there.`;
-    case 'dotnet.publish.shell':
-    case 'dotnet.publish.powershell':
-    case 'nuget.publish.cmd':
-    case 'nuget.publish.powershell':
-      return $localize`:@@setup.snippet.nuget-publish:Pushes the package to the repository that receives uploads. The token travels as the API key.`;
+      return text($localize`:@@setup.caption.vs-packagereference:Add to the project file inside an \`ItemGroup\`, then restore.`);
     case 'curl.configure.function':
-      return $localize`:@@setup.snippet.curl-function:Paste this into the shell or the CI script that runs curl. It defines quader_curl, which hands curl the credential on standard input, so the token never appears on curl's command line.`;
-    case 'curl.install':
-      return $localize`:@@setup.snippet.curl-install:Downloads a file of this repository with quader_curl. Replace <path> with the path of the file in the repository.`;
+      return text($localize`:@@setup.caption.curl-function:Paste into the shell or the CI script that runs curl. The token stays off curl's command line.`);
     case 'curl.publish':
-      return $localize`:@@setup.snippet.curl-publish:Uploads a file to the path you give. Replacing a file with other bytes also needs the overwrite permission.`;
+      return text($localize`:@@setup.caption.curl-publish:Replacing a file also needs the overwrite permission.`);
     case 'docker.configure.shell':
     case 'podman.configure.shell':
-      return $localize`:@@setup.snippet.oci-login:Signs the client in to this repository. A token is read from standard input, so it appears neither in the process list nor in the shell history; without a token the client asks for the password. The images of this repository begin with the address in the login.`;
+      // A pull of a public repository needs no credential: the page does not ask a visitor to sign in for it.
+      return text(
+        reader.anonymous
+          ? $localize`:@@setup.caption.oci-login-anonymous:Not needed to pull: this repository can be read without signing in.`
+          : $localize`:@@setup.caption.oci-login:Sign in once on each machine.`,
+      );
     case 'docker.configure.kubernetes':
-      return $localize`:@@setup.snippet.oci-pull-secret:For a Kubernetes cluster: creates an image pull secret that holds the token. A snippet without a token is only a comment, because a secret needs a credential. Name the secret under imagePullSecrets of the pods that pull images of this repository.`;
-    case 'docker.install':
-    case 'podman.install':
-      return $localize`:@@setup.snippet.oci-pull:Pulls an image of this repository by its tag. Replace <package> with the image name. Use the digest instead of the tag to pull exactly these bytes.`;
+      return text(
+        $localize`:@@setup.caption.oci-pull-secret:Creates an image pull secret. Name it under \`imagePullSecrets\` of your pods.`,
+        $localize`:@@setup.fold.kubernetes:For a Kubernetes cluster`,
+        true,
+      );
     case 'docker.publish':
     case 'podman.publish':
-      return $localize`:@@setup.snippet.oci-push:Names a local image below this repository and pushes it to the repository that receives uploads.`;
+      return text($localize`:@@setup.caption.oci-push:Name a local image below this repository, then push it.`);
     case 'docker.publish.buildx':
-      return $localize`:@@setup.snippet.oci-buildx:Builds the image for two platforms from the Dockerfile in the current directory and pushes the result as one multi-platform image.`;
+      return text($localize`:@@setup.caption.oci-buildx:Or build for two platforms and push in one go.`);
     case 'apt.configure.shell':
     case 'apt.configure.shell-scoped':
-      return $localize`:@@setup.snippet.apt-configure:Installs the repository's signing key as a key file and adds the repository as an APT source that is verified against that key. The credentials go into a file that only root can read, never into the source URL. The key file is replaced by running the key command again, which is also how a key rotation reaches this machine.`;
+      return text($localize`:@@setup.caption.apt-configure:Installs the signing key and adds the repository as a verified source. Run it again after a key rotation.`);
     case 'apt.configure.shell.configure':
     case 'apt.configure.shell.configure-scoped':
-      return $localize`:@@setup.snippet.apt-configure-upstream:For a remote repository without upstream keys: adds the repository as an APT source that is verified against the archive's own keyring, which Debian and Ubuntu install on every system. No key of Quader's is installed, and verification stays on.`;
+      return text(
+        $localize`:@@setup.caption.apt-upstream:Verifies against the archive's own keyring instead of a key of Quader's.`,
+        $localize`:@@setup.fold.apt-upstream:For a remote repository without upstream keys`,
+      );
     case 'apt.configure.list':
     case 'apt.configure.list-scoped':
-      return $localize`:@@setup.snippet.apt-list:The same source as one line, for systems that prefer a .list file. Install the key file as above first.`;
-    case 'apt.install':
-      return $localize`:@@setup.snippet.apt-install:Reads the repository's indexes and installs the package through APT. Replace the package name with yours.`;
+      return text($localize`:@@setup.caption.apt-list:Install the key file as above first.`, $localize`:@@setup.fold.apt-list:As a one-line .list file`);
     case 'apt.publish.curl':
-      return $localize`:@@setup.snippet.apt-publish:Uploads a .deb file to the repository that receives uploads, into the suite and component named in the address. An index that lists the package follows within moments.`;
+      return text($localize`:@@setup.caption.apt-publish:The package is in the index within moments.`);
     case 'ansible-galaxy.configure.ansible-cfg':
-      return $localize`:@@setup.snippet.ansible-cfg:Save this as ansible.cfg next to your playbooks, or as ~/.ansible.cfg for the whole machine. It names this repository as the server quader. The token is not written into the file, because ansible.cfg does not expand variables: set it in the environment as shown below.`;
+      return text($localize`:@@setup.caption.ansible-cfg:Save next to your playbooks, or as \`~/.ansible.cfg\`.`);
     case 'ansible-galaxy.configure.token-env':
+      return text(reader.anonymous ? null : $localize`:@@setup.caption.ansible-token-env:\`ansible.cfg\` does not expand variables, so the token comes from this one.`);
     case 'ansible-galaxy.configure.token-env-powershell':
+      return text(null, inPowerShell, true);
     case 'ansible-galaxy.configure.token-env-cmd':
-      return $localize`:@@setup.snippet.ansible-token-env:ansible-galaxy reads the token of the server quader from this environment variable. Set it in the shell or the CI job that runs the command, and keep it out of version control.`;
+      return text(null, $localize`:@@setup.fold.cmd:In cmd`, true);
     case 'ansible-galaxy.configure.netrc':
-      return $localize`:@@setup.snippet.ansible-netrc:Needed to install roles: the client downloads a role archive without its token header and falls back to ~/.netrc. This command appends the line to your ~/.netrc, in a file only you can read, and your shell fills in the token. One line serves every repository on this host, and the client then uses it for every request to the host, so keep the token in it valid.`;
-    case 'ansible-galaxy.install.collection':
-      return $localize`:@@setup.snippet.ansible-install:Installs a collection through this repository once the client is configured. Replace the collection name with yours.`;
+      return text(
+        $localize`:@@setup.caption.ansible-netrc:A role download falls back to \`~/.netrc\`. One line serves every repository on this host.`,
+        $localize`:@@setup.fold.roles:To install roles`,
+        true,
+      );
     case 'ansible-galaxy.install.requirements':
-      return $localize`:@@setup.snippet.ansible-requirements:A requirements.yml for ansible-galaxy collection install -r requirements.yml. Roles are served by remote and virtual repositories of a Galaxy only and are installed with ansible-galaxy role install -r.`;
+      return text(
+        $localize`:@@setup.caption.ansible-requirements:Install it with \`ansible-galaxy collection install -r requirements.yml\`.`,
+        $localize`:@@setup.fold.requirements:With a requirements.yml`,
+      );
     case 'ansible-galaxy.publish.collection':
-      return $localize`:@@setup.snippet.ansible-publish:Publishes a collection archive built with ansible-galaxy collection build to the repository that receives uploads. The archive names its own namespace, name and version.`;
+      return text($localize`:@@setup.caption.ansible-publish:Publishes an archive built with \`ansible-galaxy collection build\`.`);
     default:
       return null;
   }

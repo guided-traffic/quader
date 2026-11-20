@@ -843,20 +843,26 @@ func (e ClientSetupCredentials) Valid() bool {
 
 // Defines values for ClientSnippetLanguage.
 const (
-	Ini   ClientSnippetLanguage = "ini"
-	Json  ClientSnippetLanguage = "json"
-	Shell ClientSnippetLanguage = "shell"
-	Text  ClientSnippetLanguage = "text"
-	Xml   ClientSnippetLanguage = "xml"
-	Yaml  ClientSnippetLanguage = "yaml"
+	Cmd        ClientSnippetLanguage = "cmd"
+	Ini        ClientSnippetLanguage = "ini"
+	Json       ClientSnippetLanguage = "json"
+	Powershell ClientSnippetLanguage = "powershell"
+	Shell      ClientSnippetLanguage = "shell"
+	Text       ClientSnippetLanguage = "text"
+	Xml        ClientSnippetLanguage = "xml"
+	Yaml       ClientSnippetLanguage = "yaml"
 )
 
 // Valid indicates whether the value is a known member of the ClientSnippetLanguage enum.
 func (e ClientSnippetLanguage) Valid() bool {
 	switch e {
+	case Cmd:
+		return true
 	case Ini:
 		return true
 	case Json:
+		return true
+	case Powershell:
 		return true
 	case Shell:
 		return true
@@ -3298,6 +3304,24 @@ func (e SessionAuthMethod) Valid() bool {
 	case SessionAuthMethodBreakGlass:
 		return true
 	case SessionAuthMethodOidc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SnippetMarkKind.
+const (
+	SnippetMarkKindToken SnippetMarkKind = "token"
+	SnippetMarkKindValue SnippetMarkKind = "value"
+)
+
+// Valid indicates whether the value is a known member of the SnippetMarkKind enum.
+func (e SnippetMarkKind) Valid() bool {
+	switch e {
+	case SnippetMarkKindToken:
+		return true
+	case SnippetMarkKindValue:
 		return true
 	default:
 		return false
@@ -7228,13 +7252,22 @@ type ClientSnippet struct {
 	Content string `json:"content"`
 
 	// FileName The file the snippet belongs in (`.npmrc`, `.yarnrc.yml`); null for a command.
-	FileName *string               `json:"fileName"`
-	Id       string                `json:"id"`
+	FileName *string `json:"fileName"`
+	Id       string  `json:"id"`
+
+	// Language The syntax of the content: a file's format, or the command line a command is written for (`shell` is a POSIX
+	// shell, `powershell` PowerShell, `cmd` the Windows command prompt).
 	Language ClientSnippetLanguage `json:"language"`
-	Tab      ClientSnippetTab      `json:"tab"`
+
+	// Marks The parts of `content` that are the reader's, each by its literal text, in the order they first stand in it
+	// (R-API-030): the reference to the token in the spelling of the credential mode, and the placeholders and
+	// examples the reader replaces with their own values. A screen marks every place a text stands in the content.
+	Marks []SnippetMark    `json:"marks"`
+	Tab   ClientSnippetTab `json:"tab"`
 }
 
-// ClientSnippetLanguage defines model for ClientSnippet.Language.
+// ClientSnippetLanguage The syntax of the content: a file's format, or the command line a command is written for (`shell` is a POSIX
+// shell, `powershell` PowerShell, `cmd` the Windows command prompt).
 type ClientSnippetLanguage string
 
 // ClientSnippetTab defines model for ClientSnippet.Tab.
@@ -10851,6 +10884,18 @@ type SessionList struct {
 	// NextCursor Always `null`: a user holds at most `auth.sessions.max_per_user` sessions.
 	NextCursor *string `json:"nextCursor"`
 }
+
+// SnippetMark defines model for SnippetMark.
+type SnippetMark struct {
+	// Kind `token`: where the credential goes (a reference to the variable, or the placeholder the browser fills). `value`: a placeholder or an example the reader replaces.
+	Kind SnippetMarkKind `json:"kind"`
+
+	// Text The literal text, as it stands in the snippet's content.
+	Text string `json:"text"`
+}
+
+// SnippetMarkKind `token`: where the credential goes (a reference to the variable, or the placeholder the browser fills). `value`: a placeholder or an example the reader replaces.
+type SnippetMarkKind string
 
 // Stamp defines model for Stamp.
 type Stamp struct {

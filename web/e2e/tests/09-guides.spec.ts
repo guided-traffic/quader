@@ -58,11 +58,12 @@ test('E2.13 R-UI-049 R-UI-124 Guides lead from a tile to the page Set up client 
     for (const label of ['npm', 'pnpm', 'Yarn Berry (2 and later)', 'Yarn Classic (1.x)']) {
       await expect(client.getByRole('option', { name: label, exact: true })).toBeAttached();
     }
-    await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable QUADER_TOKEN.');
+    await expect(page.locator('.credential')).toContainText('The snippets read it from QUADER_TOKEN.');
     const configure = page.locator('section[aria-labelledby="step-configure"] quader-setup-snippet pre').first();
     await expect(configure).toContainText(`/api/npm/${e2eProject}/${virtualKey}/:_authToken=\${QUADER_TOKEN}`);
-    await expect(page.getByRole('heading', { name: 'What a virtual repository is', level: 2 })).toBeVisible();
-    await page.getByRole('button', { name: 'More about this' }).click();
+    // The explanation is the heading Guide over closed rows, the first one too (R-UI-125).
+    await expect(page.getByRole('heading', { name: 'Guide', level: 2 })).toBeVisible();
+    await page.getByRole('button', { name: 'What a virtual repository is' }).click();
     await expect(page.getByText(new RegExp(`For (${e2eProject}/)?${virtualKey} that is (${e2eProject}/)?${localKey}\\.`))).toBeVisible();
     await expectAccessible(page, 'set up client');
 

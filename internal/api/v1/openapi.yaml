@@ -11073,11 +11073,14 @@ paths:
                     fileName: .npmrc
                     language: ini
                     content: "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken={{token}}\n"
+                    marks:
+                      - {text: "{{token}}", kind: token}
                   - id: npm.install
                     tab: install
                     fileName: null
                     language: shell
                     content: npm install @team-a/ui@1.4.0
+                    marks: []
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -11159,6 +11162,8 @@ paths:
                     fileName: .npmrc
                     language: ini
                     content: "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}\n"
+                    marks:
+                      - {text: "${QUADER_TOKEN}", kind: token}
                 sections:
                   - id: npm.configure
                     topic: configure
@@ -21451,7 +21456,7 @@ components:
       description: |
         One snippet. The `id` is stable and names the explanation the UI shows
         (`<client>.<tab>.<name>`, for example `npm.configure.npmrc`); the text is the UI's.
-      required: [id, tab, fileName, language, content]
+      required: [id, tab, fileName, language, content, marks]
       properties:
         id:
           type: string
@@ -21464,9 +21469,31 @@ components:
           description: The file the snippet belongs in (`.npmrc`, `.yarnrc.yml`); null for a command.
         language:
           type: string
-          enum: [ini, yaml, json, shell, xml, text]
+          enum: [ini, yaml, json, shell, powershell, cmd, xml, text]
+          description: |
+            The syntax of the content: a file's format, or the command line a command is written for (`shell` is a POSIX
+            shell, `powershell` PowerShell, `cmd` the Windows command prompt).
         content:
           type: string
+        marks:
+          type: array
+          description: |
+            The parts of `content` that are the reader's, each by its literal text, in the order they first stand in it
+            (R-API-030): the reference to the token in the spelling of the credential mode, and the placeholders and
+            examples the reader replaces with their own values. A screen marks every place a text stands in the content.
+          items:
+            $ref: "#/components/schemas/SnippetMark"
+    SnippetMark:
+      type: object
+      required: [text, kind]
+      properties:
+        text:
+          type: string
+          description: The literal text, as it stands in the snippet's content.
+        kind:
+          type: string
+          enum: [token, value]
+          description: "`token`: where the credential goes (a reference to the variable, or the placeholder the browser fills). `value`: a placeholder or an example the reader replaces."
     ClientSetup:
       type: object
       required: [repository, format, client, credentials, registryUrl, endpointPath, username, publishTarget, tokenTtlSeconds, snippets]

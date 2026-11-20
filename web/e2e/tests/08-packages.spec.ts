@@ -200,7 +200,7 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await page.getByRole('link', { name: 'Set up client', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Set up client', level: 1 })).toBeVisible();
     // The credential is one line, the environment variable by default (R-UI-122).
-    await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable QUADER_TOKEN.');
+    await expect(page.locator('.credential')).toContainText('The snippets read it from QUADER_TOKEN.');
     const port = new URL(baseURL ?? '').port;
     const clientControl = page.getByRole('combobox', { name: 'Client', exact: true });
     for (const client of clients) {
@@ -209,7 +209,7 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
       const file = new RegExp(`^${expected.file.replace(/[.~/]/g, '\\$&')}$`);
       const snippet = page
         .locator('section[aria-labelledby="step-configure"] quader-setup-snippet')
-        .filter({ has: page.locator('p.target code', { hasText: file }) });
+        .filter({ has: page.locator('quader-code-window .tab-title', { hasText: file }) });
       await expect(snippet, `${client.id}: the snippet for ${expected.file}`).toHaveCount(1);
       await expect
         .poll(() => snippet.locator('pre').textContent(), { message: `${client.id} snippet` })

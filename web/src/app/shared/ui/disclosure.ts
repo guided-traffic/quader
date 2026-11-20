@@ -35,6 +35,8 @@ let nextDisclosureId = 1;
     <div class="disclosure">
       @if (inline()) {
         <ng-container [ngTemplateOutlet]="toggle" />
+      } @else if (level() === 3) {
+        <h3 class="heading"><ng-container [ngTemplateOutlet]="toggle" /></h3>
       } @else {
         <h2 class="heading"><ng-container [ngTemplateOutlet]="toggle" /></h2>
       }
@@ -42,7 +44,8 @@ let nextDisclosureId = 1;
         <p class="hint">{{ hint() }}</p>
       }
       <div class="collapse-region" [class.open]="expanded()" [id]="bodyId">
-        <div class="body"><ng-content /></div>
+        <!-- The padding is the inner element's: the element the region folds takes no room when closed, a padding of it would. -->
+        <div><div class="body"><ng-content /></div></div>
       </div>
     </div>
   `,
@@ -129,6 +132,8 @@ export class Disclosure {
   readonly expanded = model(false);
   /** A fold inside a section or a cell: the toggle without a heading, a rule or room around it (Q-UI-552). */
   readonly inline = input(false);
+  /** The level of the heading: 3 for the sections under a heading of their own (the **Guide** of Set up client, Q-UI-805). */
+  readonly level = input<2 | 3>(2);
 
   protected readonly bodyId = `quader-disclosure-${nextDisclosureId++}`;
 }
