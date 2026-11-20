@@ -2487,8 +2487,9 @@ decision point and the same index of the request:
 - **Hidden existence holds.** `hideExistence` (R-AUTHZ-017) changes only the status of a refused read. A repository with
   `hideExistence: false` that the caller cannot read is suggested no more than any other. A virtual repository is suggested by its own
   gate (R-AUTHZ-009 rule 1); its members are not suggested through it.
-- **Levels, users and tokens.** The level `internal` admits an internal subject only (R-AUTHZ-030): a user flagged external, a
-  service account, a CI token and a request through a Bastion get what grants, roles and `public` give them. A token's scope narrows
+- **Levels, users and tokens.** The level `internal` admits every internal subject (R-AUTHZ-030): every authenticated caller - a
+  user, a service account's technical token, a CI token, through a Bastion as at the main door - but a user flagged external and
+  that user's tokens, which get what grants, roles and `public` give them. A token's scope narrows
   what grants and `internal` give, not what `public` gives (R-AUTHZ-035 rule 3).
 - **A project is named by its key** in a repository's or a package's entry
   ([Q-API-277](#q-api-277--an-entry-names-the-project-of-a-repository-or-a-package-by-its-key)). Its display name appears only in a
@@ -4691,7 +4692,7 @@ Priority: **MVP** · Covers: UI-039, UI-040
   errors, warnings. An error of a field shows once the field holds a value or a save was tried, as next to the field, and names
   the field by its label ("Name: …"), never its JSON pointer. "Try it" answers from the draft alone; its **Explain** is a
   secondary button that says what is missing when a principal or a repository is not named yet; the answer adds what the repository's visibility level gives the principal
-  (`internal` covers users who are not external, never service accounts, CI identities or anonymous; R-AUTHZ-030,
+  (`internal` covers users who are not flagged external, service accounts and CI identities, never anonymous; R-AUTHZ-030,
   R-AUTHZ-035), and says so.
 - The one-line help of the actions says what each covers; `manage` is the administration of content
   (package owners, the override of the shadowing check, namespace claims, cache operations), and
@@ -5168,8 +5169,8 @@ public base URL, with its own **Save changes**, reading and writing `/api/v1/set
 
 - **Default project visibility** is a radio group of the three levels, each with its icon and one muted sentence
   ([Q-UI-228](#q-ui-228--a-level-is-chosen-in-a-radio-group-of-three-each-with-its-icon-and-a-sentence)): Private ("Only
-  members and the principals a policy names read new projects."), Internal ("Every signed-in user who is not external reads
-  new projects."), Public ("Anyone, also without signing in, reads new projects."). The help line under the group says that a new
+  members and the principals a policy names read new projects."), Internal ("Everyone signed in, service accounts and CI jobs
+  included, reads new projects; external users do not."), Public ("Anyone, also without signing in, reads new projects."). The help line under the group says that a new
   project takes the level, that it also bounds new repositories, and that existing projects and repositories keep their levels.
 - **Restricted visibility levels** follow it (R-UI-140).
 - While `publicAvailable` is false, the option Public is shown disabled, muted, with the sentence "The installation's

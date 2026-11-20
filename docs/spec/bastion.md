@@ -248,9 +248,11 @@ Priority: **MVP** · Covers: DIST-025
   `bastion:<name>`, name `^[a-z][a-z0-9-]{0,19}$` ([authorization.md](authorization.md) R-AUTHZ-002). It holds no grants, no
   roles, no group memberships and no package ownership: a policy entry, a role binding, an owner record or a membership that
   names it answers `422 principal_not_allowed` ([Q-BAS-60](#q-bas-60--a-bastion-registration-is-refused-by-every-write-path-with-one-top-level-422-principal_not_allowed)).
-  It is never internal ([authorization.md](authorization.md) R-AUTHZ-030): its token is refused by every route that could admit it,
-  and the decision point gives the kind `bastion` an empty principal set (no grant, no role, no level but `public`), should any
-  route ever decide for it. At most
+  It is not internal ([authorization.md](authorization.md) R-AUTHZ-030,
+  [Q-AUTHZ-320](authorization.md#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)):
+  a Bastion reads nothing on its own credential, only for the callers it forwards for. Its token is refused by every route that
+  could admit it, and the decision point gives the kind `bastion` an empty principal set (no grant, no role, no level but
+  `public`), should any route ever decide for it. At most
   `bastions.max_registrations` registrations exist. A registration can be disabled, which refuses its tokens like a disabled
   service account's ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-020), and deleted, which revokes
   them.
@@ -452,11 +454,12 @@ installation's ingress or its Service.
   marking is added. A request whose Bastion token is invalid answers `401 bastion_token_invalid`; one whose interface version
   differs answers `400 bastion_interface_mismatch` (R-BAS-009). Both are problem details of the management API, also on a
   package route, because they concern the Bastion, never the caller; the Bastion never passes them on (R-BAS-027).
-- **A recognized forward is never internal.** The recognition marks the request, and the subject the decision point decides on
-  carries `ViaBastion: true` (set by the one conversion of the edge, like the endpoint); the check of R-BAS-011 decides its
-  caller with the same mark. Such a subject never reads by the level `internal`, whoever its user is: it reads what its grants
-  and roles give and what is `public` ([authorization.md](authorization.md) R-AUTHZ-030,
-  [Q-BAS-148](#q-bas-148--a-request-through-a-bastion-never-reads-by-the-level-internal)).
+- **A recognized forward is decided as any other request.** The subject of a forward, and the caller the check of R-BAS-011
+  decides, is the caller's own subject, the one the same request at the main installation's own door has: an internal caller
+  reads by the level `internal` through a Bastion, a user flagged external does not, and the anonymous caller reads what is
+  `public` ([authorization.md](authorization.md) R-AUTHZ-030,
+  [Q-BAS-148](#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)). The subject carries no mark of the channel
+  ([authorization.md](authorization.md) Q-AUTHZ-321).
 - `Quader-Bastion-Authorization` is redacted like `Authorization` in every log, span and support bundle (R-OPS-013), and the
   main installation never echoes a `Quader-Bastion-*` request header.
 - The operations are in the OpenAPI document under the tag `bastion`, marked `x-quader-bastion-interface: <n>` and declared
@@ -779,7 +782,7 @@ the content events below ([Q-BAS-29](#q-bas-29--the-feed-reads-the-journals-even
 | `group.deleted`, `authz.role.unbound` of a group, `authz.policy.deleted`, `authz.policy.updated`, `authz.settings.changed`, the `ci.issuer.*` and `ci.mapping.*` disables, deletions and updates, `endpoint.exposure.deleted` and `.updated` of the default endpoint | `{"kind": "grants"}`: every permission answer of every caller; `authz.settings.changed` that changed `visibility.artifacts` yields `settings` as well; one whose changed members are levels only (`visibility.artifacts`, `visibility.wiki`) and none of them lower than before yields no `grants`: a raise opens reads and makes no kept answer wrong |
 | `settings.auth.changed` | `{"kind": "settings"}` |
 | `authz.project.visibility_changed` | `{"kind": "settings"}`, so the Bastion asks the handshake for `anonymousReads` again, and `grants` when the level was lowered ([authorization.md](authorization.md) R-AUTHZ-036) |
-| `user.external_changed` | `principal` with the user when the flag was set: a request through a Bastion never reads by `internal` (Q-BAS-148), so this only drops answers that a later change of that rule would make wrong |
+| `user.external_changed` | `principal` with the user when the flag was set: the user read by `internal` through a Bastion as at the main installation (Q-BAS-148), and the flag ends that, so every answer the Bastion keeps for the user's credentials goes; clearing the flag only widens and yields none |
 | `npm.unpublish`, `package.deleted` | `{"kind": "content", "repositories": [<projectKey>/<repoKey>, …]}`: the repository and every virtual repository that includes it, recursively, at the time the feed is read, by their qualified names |
 | from M4b: `vulnerability.finding.status_changed` and `vulnerability.finding.reopened` with `block: set` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013) | `content` for the finding's repository and its virtual repositories |
 | `repository.moved` | `grants`: the repository left its project's roles and policies behind and changed its address ([Q-BAS-120](#q-bas-120--unassigning-a-repository-from-a-project-drops-every-permission-answer-and-every-journaled-event-is-classified), [repositories-and-proxy.md](repositories-and-proxy.md#r-repo-060--move-a-repository-to-another-project)) |
@@ -5387,25 +5390,29 @@ this if an operator needs the number of writes to unrouted paths; it would be a 
 
 **Applied in the spec:** R-BAS-040; code: `engine.countReadOnly`, `TestR_BAS_040_AFreshAndAReplayedProbeAnswerRaiseTheSameReadOnlyCounter`.
 
-### Q-BAS-148 · A request through a Bastion never reads by the level `internal`
+### Q-BAS-148 · A request through a Bastion is decided as any other
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
-owner's task T-18 (2026-11-11) leaves open whether the Bastion's partners count as external.
+Status: **Decided by the owner on 2026-11-20** — option (b), replacing the development agent's choice (a) of 2026-11-11.
+
+The owner rejected the rule that a request through a Bastion never reads by `internal`: an internal token reads internal projects
+through the Bastion, "natürlich"; the Bastion is a channel, and a subject's rights are the same through it
+([authorization.md](authorization.md) Q-AUTHZ-268).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A recognized forward and the check's caller carry `ViaBastion`, and the decision point never reads by `internal` for them (chosen) | The partners read what names them and what is `public`; an employee's personal token through the Bastion reads what names it and what is `public` | The internet-facing door never serves the organization's internal content to a token that a grant does not name; a leaked personal token is worth on the internet only what names its user; a Bastion's shared documents never mix internal readers with partners | An employee outside reads internal content only through the main installation's own door |
-| (b) Judge the caller as on the main installation | The Bastion is a channel | Employees read everything from outside | A leaked personal token reads every internal repository through an internet-facing cache |
+| (a) A recognized forward and the check's caller carry `ViaBastion`, and the decision point never reads by `internal` for them (built until 2026-11-20) | The partners read what names them and what is `public`; an employee's personal token through the Bastion reads what names it and what is `public` | The internet-facing door never serves internal content to a token that a grant does not name | Not the owner's model: the Bastion would change who the caller is, and an internal caller reads less through it than at the main door |
+| (b) Judge the caller as on the main installation (chosen, owner) | The Bastion is a channel | One rule at every door; the Bastion caches and serves what the caller reads at the main installation | A leaked token of an internal caller (a person's, a technical or a CI token) reads every `internal` repository through the internet-facing Bastion as well (H-1050 in [security/visibility.md](../security/visibility.md)) |
 | (c) A setting per Bastion registration | Choose per door | Flexible | A third input of "internal" and a setting nobody reviews |
 
-**Choice:** (a). The partners' own credentials are service-account tokens of their projects (R-BAS-004's fixtures), which are never
-internal anyway ([authorization.md](authorization.md) Q-AUTHZ-268).
+**Choice:** (b), the owner's. What was built went because it made the channel decide what a caller reads; the mark on the subject
+went with it ([authorization.md](authorization.md) Q-AUTHZ-321). The answers a Bastion keeps follow the same rule: a check answers
+`full` or `partial` for an internal caller on an `internal` repository as for a caller with a grant (R-BAS-012), and flagging a user
+external drops what the Bastion keeps for it (`user.external_changed`, R-BAS-015). The Bastion's own registration is not internal
+([authorization.md](authorization.md) Q-AUTHZ-320).
 
-**Rationale:** the Bastion exists to give external parties read access from the internet (R-BAS-001). "Internal" means everyone
-inside the organization, which is the audience a Bastion is not for. The mark costs one field on the subject set where the endpoint
-is set. The development agent would revisit this if the owner wants employees to use a Bastion for internal content.
-
-**Applied in the spec:** R-BAS-008, R-BAS-004; [authorization.md](authorization.md) R-AUTHZ-030.
+**Applied in the spec:** R-BAS-004, R-BAS-008, R-BAS-015; [authorization.md](authorization.md) R-AUTHZ-030; code:
+[visibility.go](../../internal/authz/visibility.go), [subject.go](../../internal/api/edge/subject.go),
+[bastion_check_api.go](../../internal/api/v1/bastion_check_api.go).
 
 ### Q-BAS-149 · A full read shape includes the wiki, so a shared document never carries a README to a caller without it
 
@@ -5445,6 +5452,9 @@ condition.
 ### Q-BAS-151 · The mark `ViaBastion` is set where the request is recognized and where the check decides its caller
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded by [Q-AUTHZ-321](authorization.md#q-authz-321--the-subject-carries-no-mark-of-a-bastion)** on 2026-11-20: the owner's
+decision Q-BAS-148 needs no mark, so the subject carries none and the check sets none. What this decision also said about the shape
+`full` (it needs the wiki as well, Q-BAS-149) stays.
 
 | Option | What it means | For | Against |
 |---|---|---|---|

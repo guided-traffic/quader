@@ -1,5 +1,7 @@
 package authz
 
+import "github.com/guided-traffic/quader/internal/auth/principal"
+
 // Level is a visibility level (R-AUTHZ-033), ordered from the most restrictive. A level names who reads a part of a repository
 // besides the members of its project and the principals a grant names; it never grants a write, a role, a capability or an
 // owner record (R-AUTHZ-033 rule 6).
@@ -9,7 +11,7 @@ type Level uint8
 const (
 	// LevelPrivate admits nobody besides members and grants.
 	LevelPrivate Level = iota
-	// LevelInternal admits every internal subject (R-AUTHZ-030).
+	// LevelInternal admits every internal subject: every authenticated subject but an external user (R-AUTHZ-030).
 	LevelInternal
 	// LevelPublic admits every request, also one without a credential (R-AUTHZ-003).
 	LevelPublic
@@ -60,12 +62,14 @@ func (p Part) String() string {
 	return "artifacts"
 }
 
-// Internal reports R-AUTHZ-030: a user (a user or the break-glass administrator) with a session or a personal token, not
-// flagged external and not through a Bastion. Service accounts, CI tokens, Bastion registrations and the anonymous subject
-// are never internal.
+// Internal reports R-AUTHZ-030: every authenticated subject - a user (or the break-glass administrator) through a session or
+// a personal token, a service account's technical token (of the instance, a project or a repository), a CI token - except a
+// user flagged external, whose tokens carry the flag with it. The anonymous subject is not internal, and neither is a Bastion
+// registration, which reads nothing on its own credential (Q-AUTHZ-320). The channel plays no part: a request through a
+// Bastion is decided as any other.
 func (s Subject) Internal() bool {
-	if s.Anonymous || s.External || s.ViaBastion {
+	if s.Anonymous || s.Kind == principal.KindAnonymous || s.External {
 		return false
 	}
-	return kindOf(s) == kindUser
+	return kindOf(s) != kindBastion
 }

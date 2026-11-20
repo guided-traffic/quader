@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/auth/scope"
 	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -101,7 +102,7 @@ func TestR_BAS_012_ShapeAgreesWithTheDecisionPoint(t *testing.T) {
 		"session bot":              session(botSub),
 		"external carol":           external(carolSub),
 		"external alice":           external(aliceSub),
-		"carol through a bastion":  viaBastion(carolSub),
+		"ci":                       ciSub,
 		"scoped carol":             tokenScop(carolSub, scope.Scope{Repositories: []scope.Grant{{Repositories: []string{"it/npm-b"}, Actions: []string{"read"}}}}),
 	}
 	keys := []string{"npm-a", "npm-b", "npm-strict", "npmjs", "npm-frozen", "npm-v", "npm-v2", "npm-vb", "npm-empty", "npm-pub", "npm-open", "npm-int", "npm-vpub", "npm-vmix", "ghost"}
@@ -263,10 +264,11 @@ func TestR_BAS_012_Shapes(t *testing.T) {
 			want(t, got, k, ReachNone, DenyUnauthenticated)
 		}
 	})
-	t.Run("an internal user reads an internal repository, an external one and one through a Bastion do not", func(t *testing.T) {
+	t.Run("an internal user, a service account and a CI token read an internal repository, an external user does not", func(t *testing.T) {
 		want(t, reach(t, on, carolSub), "npm-int", ReachFull, Allow)
+		want(t, reach(t, on, Subject{Kind: principal.KindServiceAccount, ID: "sa-partner", Name: "it/partner"}), "npm-int", ReachFull, Allow)
+		want(t, reach(t, on, ciSub), "npm-int", ReachFull, Allow)
 		want(t, reach(t, on, external(carolSub)), "npm-int", ReachNone, DenyHidden)
-		want(t, reach(t, on, viaBastion(carolSub)), "npm-int", ReachNone, DenyHidden)
 		want(t, reach(t, on, external(carolSub)), "npm-open", ReachFull, Allow)
 		want(t, reach(t, on, external(carolSub)), "npm-pub", ReachPartial, Allow)
 		want(t, reach(t, on, carolSub), "npm-pub", ReachFull, Allow) // internal wiki: an internal user reads it
@@ -292,5 +294,4 @@ func TestR_BAS_012_Shapes(t *testing.T) {
 	})
 }
 
-func external(s Subject) Subject   { s.External = true; return s }
-func viaBastion(s Subject) Subject { s.ViaBastion = true; return s }
+func external(s Subject) Subject { s.External = true; return s }

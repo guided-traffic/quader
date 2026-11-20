@@ -123,7 +123,7 @@ function sentence(subject: VisibilitySubject, level: VisibilityLevel): string {
         case 'private':
           return $localize`:@@visibility.new-projects.private:Only members and the principals a policy names read new projects.`;
         case 'internal':
-          return $localize`:@@visibility.new-projects.internal:Every signed-in user who is not external reads new projects.`;
+          return $localize`:@@visibility.new-projects.internal:Everyone signed in, service accounts and CI jobs included, reads new projects; external users do not.`;
         case 'public':
           return $localize`:@@visibility.new-projects.public:Anyone, also without signing in, reads new projects.`;
       }
@@ -133,7 +133,7 @@ function sentence(subject: VisibilitySubject, level: VisibilityLevel): string {
         case 'private':
           return $localize`:@@visibility.project.private:Only members and the principals a policy names read the project's repositories.`;
         case 'internal':
-          return $localize`:@@visibility.project.internal:Every signed-in user who is not external can find the project and read what its repositories make internal.`;
+          return $localize`:@@visibility.project.internal:Everyone signed in, service accounts and CI jobs included, can find the project and read what its repositories make internal; external users cannot.`;
         case 'public':
           return $localize`:@@visibility.project.public:Anyone, also without signing in, can find the project and read what its repositories make public.`;
       }
@@ -143,7 +143,7 @@ function sentence(subject: VisibilitySubject, level: VisibilityLevel): string {
         case 'private':
           return $localize`:@@visibility.artifacts.private:Only members of the project and the principals a policy names.`;
         case 'internal':
-          return $localize`:@@visibility.artifacts.internal:Every signed-in user who is not external.`;
+          return $localize`:@@visibility.artifacts.internal:Everyone signed in, service accounts and CI jobs included, except external users.`;
         case 'public':
           return $localize`:@@visibility.artifacts.public:Anyone, also without signing in.`;
       }
@@ -153,7 +153,7 @@ function sentence(subject: VisibilitySubject, level: VisibilityLevel): string {
         case 'private':
           return $localize`:@@visibility.wiki.private:Only members of the project and the principals a policy names.`;
         case 'internal':
-          return $localize`:@@visibility.wiki.internal:Every signed-in user who is not external.`;
+          return $localize`:@@visibility.wiki.internal:Everyone signed in, service accounts and CI jobs included, except external users.`;
         case 'public':
           return $localize`:@@visibility.wiki.public:Anyone, also without signing in.`;
       }

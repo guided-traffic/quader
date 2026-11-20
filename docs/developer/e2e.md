@@ -2419,7 +2419,7 @@ different web replicas. Verified on the dev cluster (linux/arm64, .NET SDK of `E
   turned and nothing is put back. The repositories of every suite stay private, the default level, unless a test creates them with
   `createRepoAt` ([visibility_env_test.go](../../test/e2e/visibility_env_test.go): it makes the project `e2e` public, so no level is above
   the project's). The rows of T-18 are `TestNPMVisibility_R_AUTHZ_034` and `TestNPMExternalUser_R_AUTHZ_030` (set `npm`),
-  `TestNuGetVisibility_R_AUTHZ_034` (set `nuget`), `TestBastion_R_BAS_008_NeverReadsByInternal` (set `bastion`),
+  `TestNuGetVisibility_R_AUTHZ_034` (set `nuget`), `TestBastion_R_BAS_008_ReadsByInternalAsTheMainInstallationDoes` (set `bastion`),
   `TestExternalUser_R_AUTHZ_030_SeesNothingInternal` (sets `access-long` and `access`) and `TestAnsibleDocsWiki_R_ANS_046` (set `ansible`).
 - **A revoked token** is revoked through `DELETE /api/v1/tokens/{id}`, then refused by all three replicas (nine requests, three replicas seen)
   before the client runs; the revocation bound of R-AUTHZ-028 would otherwise make the scenario flaky.

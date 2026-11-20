@@ -2,9 +2,9 @@
 
 package e2e
 
-// A request through a Bastion never reads by the level internal (R-BAS-008, Q-BAS-148, T-18): an internal user's token gets 404 for an
-// internal repository through the Bastion and 200 at the main installation, while the public repository is read through the Bastion by
-// that user and by a request without a credential.
+// A request through a Bastion is decided as any other (R-BAS-008, R-AUTHZ-030, T-18): an internal user's token reads an internal
+// repository through the Bastion as it does at the main installation, the public repository is read through the Bastion by that user and
+// by a request without a credential, and a request without a credential does not read the internal one.
 
 import (
 	"net/http"
@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func TestBastion_R_BAS_008_NeverReadsByInternal(t *testing.T) {
+func TestBastion_R_BAS_008_ReadsByInternalAsTheMainInstallationDoes(t *testing.T) {
 	env := basFx(t)
 	pubRepo, intRepo := "bas-npm-pub-"+env.run, "bas-npm-int-"+env.run
 	createRepoAt(t, env.adm, map[string]any{"key": pubRepo, "class": "local", "format": "npm"}, map[string]any{"artifacts": "public", "wiki": "public"})
@@ -40,8 +40,8 @@ func TestBastion_R_BAS_008_NeverReadsByInternal(t *testing.T) {
 			site.api(t, "").get(publicDoc).want(t, "a request without a credential reads the public package through the Bastion", 200)
 			for range 3 { // the replicas of the Bastion and of the main installation differ from request to request
 				got := site.api(t, tok).get(internalDoc)
-				if got.Status != 404 {
-					t.Fatalf("an internal user's token through %s for the internal package: %s, want 404 (a Bastion never reads by internal)", site.release, got)
+				if got.Status != 200 {
+					t.Fatalf("an internal user's token through %s for the internal package: %s, want 200 (the Bastion is a channel)", site.release, got)
 				}
 				direct().get(internalDoc).want(t, "the same token at the main installation", 200)
 			}

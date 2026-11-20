@@ -13,7 +13,6 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
-	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
@@ -56,7 +55,6 @@ func SubjectOf(ctx context.Context) authz.Subject {
 		AuthMethod: string(p.Credential.Method),
 		MinEpoch:   p.MinEpoch,
 		External:   p.External,
-		ViaBastion: viaBastion(ctx),
 	}
 	for _, g := range p.Groups {
 		s.Groups = append(s.Groups, principal.GroupRef{ID: g.ID, Name: g.Name})
@@ -67,15 +65,4 @@ func SubjectOf(ctx context.Context) authz.Subject {
 		s.Endpoint, s.CacheFill = ep.Name(), ep.CacheFill()
 	}
 	return s
-}
-
-// viaBastion reports whether the request reached the main installation through a Bastion: a forward the recognition stage recognized
-// (the interface routes decide no caller), or the caller of a check, which the check marks (httpserver.WithBastionForward). Such a
-// subject never reads by the level internal, whoever its user is (R-BAS-010, Q-BAS-148).
-func viaBastion(ctx context.Context) bool {
-	if httpserver.BastionForward(ctx) {
-		return true
-	}
-	rec, ok := bastionmain.RecognitionFrom(ctx)
-	return ok && !rec.Route
 }

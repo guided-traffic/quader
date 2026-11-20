@@ -20,9 +20,10 @@ what the browser keeps.
     avatar, which every authenticated caller may read anyway; a service account its description and project. These three kinds are
     also the source of every field of the admin area that names a principal (R-UI-150, R-API-078): that field reads nothing its
     caller could not list through `GET /api/v1/users`, `/groups` and `/service-accounts`, and less of each (no e-mail address).
-- T-18's rules hold as on the lists: `internal` admits an internal subject only, so a user flagged external, a service account, a
-  CI token and a request through a Bastion get what grants, roles and `public` give them; a token's scope narrows grants and
-  `internal`, not `public`; an endpoint's exposure rules narrow every caller on it.
+- T-18's rules hold as on the lists: `internal` admits an internal subject, every authenticated caller but a user flagged external
+  (a person, a service account's technical token, a CI token, through a Bastion as at the main door; R-AUTHZ-030), so a user flagged
+  external gets what grants, roles and `public` give it; a token's scope narrows grants and `internal`, not `public`; an endpoint's
+  exposure rules narrow every caller on it.
 - The suggestions are filtered before they are ranked and cut ([search_match.go](../../internal/api/v1/search_match.go)
   `cutRanked` receives readable matches only), and `more` reports only a readable match the answer left out. A repository the
   caller does not read at all contributes no row to any statement, so a name added to it or removed from it changes neither the

@@ -6140,8 +6140,9 @@ type AuthzMe struct {
 	Capabilities []string `json:"capabilities"`
 	Epoch        int64    `json:"epoch"`
 
-	// Internal The caller is an internal subject (R-AUTHZ-030): a user through a session or a personal access token who is not
-	// flagged external and did not come through a Bastion. The level `internal` admits exactly these callers.
+	// Internal The caller is an internal subject (R-AUTHZ-030): every authenticated caller - a user through a session or a
+	// personal access token, a service account's technical token, a CI token - except a user flagged external and that
+	// user's tokens. The level `internal` admits exactly these callers.
 	Internal bool `json:"internal"`
 
 	// Principals The references the caller acts as; it never lists other principals.

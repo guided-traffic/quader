@@ -37,8 +37,8 @@ claims). It also covers the permission entries of
 | Term | Meaning on this page |
 |---|---|
 | Principal | Something a grant can name: a user, a group, a service account or a CI identity mapping (R-AUTHZ-002). Principals live in the `principal` table of [identity-and-authentication.md](identity-and-authentication.md) (R-AUTH-016). A request without a credential runs as the subject `anonymous` (R-AUTHZ-003), which no grant names. |
-| Visibility level | `private`, `internal` or `public`: who reads besides the members of the project and the principals a grant names. A default of the installation, a level of each project, and two levels of each repository, one for its artifacts and one for its wiki; the only way to open content to every internal user or to everyone (R-AUTHZ-033, R-AUTHZ-035). |
-| Internal user | A user acting through a UI session or a personal access token who is not flagged external and whose request did not come through a Bastion (R-AUTHZ-030). Service accounts, CI tokens, Bastion registrations and the anonymous subject are never internal. |
+| Visibility level | `private`, `internal` or `public`: who reads besides the members of the project and the principals a grant names. A default of the installation, a level of each project, and two levels of each repository, one for its artifacts and one for its wiki; the only way to open content to every internal subject or to everyone (R-AUTHZ-033, R-AUTHZ-035). |
+| Internal subject | Every authenticated subject - a user through a UI session or a personal access token, a service account's technical token (of the instance, a project or a repository), a CI token - except a user flagged external and that user's tokens (R-AUTHZ-030). The anonymous subject is not internal, and neither is a Bastion registration, which reads nothing on its own credential. The channel plays no part: a request through a Bastion is decided as any other. |
 | Artifacts, wiki | The two parts of a repository: what package clients resolve, install and download, and the documentation of its packages that Quader serves or shows apart from their files (R-AUTHZ-034). A coordinate names its part (`Part`). |
 | Subject | What authentication hands to authorization for one request: the principal set, the system roles the credential may exercise, whether the credential carries project roles (a UI session or a personal access token, Q-AUTHZ-215), the token scope and, for CI tokens, the frozen inline grants and the job's project identity. |
 | Permission policy | A named, stored object: one resource set, and entries that give actions on that resource set to principals (R-AUTHZ-021). |
@@ -72,9 +72,9 @@ Decisions this page takes:
 | 401, 403 or 404? | 401 for callers without a credential; 404 for reads the caller may not make; 403 for refused writes and management operations. | R-AUTHZ-016 |
 | Does the endpoint a request arrives on change its rights? | Only downwards: an endpoint with exposure rules is a ceiling for every subject, administrators included, and answers hidden reads with 404 ([endpoints.md](endpoints.md) Q-EP-4, Q-EP-12). | R-AUTHZ-015, R-AUTHZ-016 |
 | Can a token scope grant rights? | Never; it only narrows. Its repository part uses the policy resource set; its resource types are repository content, system capabilities and, from P1, build records (Q-AUTHZ-9, Q-AUTHZ-10). | R-AUTHZ-013 |
-| How do "all signed-in people" or everyone get read access? | Through a visibility level, never a policy entry: `internal` reads for every internal user, `public` for every request. The anonymous switch, the principal `authenticated` and `requireAuthentication` are gone (Q-AUTHZ-263, [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated)). | R-AUTHZ-033, R-AUTHZ-035 |
+| How do "all signed-in people" or everyone get read access? | Through a visibility level, never a policy entry: `internal` reads for every internal subject, `public` for every request. The anonymous switch, the principal `authenticated` and `requireAuthentication` are gone (Q-AUTHZ-263, [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated)). | R-AUTHZ-033, R-AUTHZ-035 |
 | How do the installation, a project and a repository combine? | The installation's default is copied when a project or repository is created; a repository is never more open than its project and its wiki never more open than its artifacts; lowering a project lowers its repositories (Q-AUTHZ-264 to Q-AUTHZ-266). | R-AUTHZ-033 |
-| Who is internal? | A user through a session or a personal token who is not flagged external by an administrator and does not come through a Bastion; never a service account, a CI token or a Bastion registration (Q-AUTHZ-268). | R-AUTHZ-030 |
+| Who is internal? | Every authenticated subject - users, the service accounts of the instance, of a project and of a repository, CI tokens - except a user an administrator flagged external, through its session and its tokens; a request through a Bastion is decided as any other (owner, Q-AUTHZ-268). | R-AUTHZ-030 |
 | Can an administrator keep a level to administrators? | Yes: the installation's restricted levels. Whoever does not hold `security-settings:write` cannot choose them for a project or a repository; an object that has one keeps it (Q-AUTHZ-283 to Q-AUTHZ-288). | R-AUTHZ-037, R-AUTHZ-038 |
 | What is the wiki, and what does a caller get who reads the artifacts but not the wiki? | The documentation Quader serves or shows apart from the files; a route that serves only wiki content refuses the read, a document that embeds it leaves the members out (Q-AUTHZ-270, Q-AUTHZ-271). | R-AUTHZ-034 |
 | Who may publish the next version of a package? | Its owners, or a holder of `manage` on it. The grants that allowed the first publish decide the owners. Ownership is enforced by default in new npm and NuGet local repositories (Q-AUTHZ-2). | R-AUTHZ-018 |
@@ -152,7 +152,7 @@ Principal kinds and their reference syntax in this page's API:
 - `anonymous`, the subject of a request without a credential (R-AUTHZ-003), and `authenticated` are no principals a
   policy entry, a role binding, a project membership or an owner record can name: such a reference answers 422
   `principal_not_allowed` with a detail that names the visibility levels of R-AUTHZ-033, the one way to give everyone or
-  every internal user `read` ([Q-AUTHZ-279](#q-authz-279--a-policy-entry-a-binding-a-membership-or-an-owner-record-that-names-anonymous-or-authenticated-is-refused)).
+  every internal subject `read` ([Q-AUTHZ-279](#q-authz-279--a-policy-entry-a-binding-a-membership-or-an-owner-record-that-names-anonymous-or-authenticated-is-refused)).
   The principal kind `authenticated` and its built-in row no longer exist; the built-in row of `anonymous` stays as the actor
   of a request without a credential and is refused by every table that grants
   ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-016).
@@ -168,8 +168,8 @@ Principal kinds and their reference syntax in this page's API:
 |---|---|
 | UI session of user `u` | `user:u` plus every group of `u`; carries the project roles of `u`; internal unless `u` is flagged external (R-AUTHZ-030) |
 | Personal access token (`qdr_pat_`) of `u` | the same, resolved when the token is used; carries the project roles of `u` within its scope |
-| Service-account token (`qdr_sat_`) of `s` | `sa:s` plus every group of `s` (a project's account has none). Never internal (R-AUTHZ-030), never a project role. |
-| CI token (`qdr_cit_`) | `ci:<issuer>/<m>` for every mapping `m` recorded as the token's mapping at exchange, plus the groups those mappings list (R-CI-013); the token additionally carries its frozen inline grants and, from P1, the service accounts of R-CI-024. For a cross-project subject token, a matched mapping without the `read_only` opt-in contributes nothing and is not recorded ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-012), so policies naming it never reach that token. Never internal. |
+| Service-account token (`qdr_sat_`) of `s` | `sa:s` plus every group of `s` (a project's account has none). Internal (R-AUTHZ-030); never a project role. |
+| CI token (`qdr_cit_`) | `ci:<issuer>/<m>` for every mapping `m` recorded as the token's mapping at exchange, plus the groups those mappings list (R-CI-013); the token additionally carries its frozen inline grants and, from P1, the service accounts of R-CI-024. For a cross-project subject token, a matched mapping without the `read_only` opt-in contributes nothing and is not recorded ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-012), so policies naming it never reach that token. Internal (R-AUTHZ-030). |
 | No credential | none: the subject `anonymous`, which reads only what a `public` level admits, on an endpoint that admits requests without a credential (R-AUTHZ-003) |
 
 - "Every group of `u`" means the local groups `u` belongs to plus the groups synchronized from
@@ -181,9 +181,10 @@ Principal kinds and their reference syntax in this page's API:
   (R-AUTHZ-026), resolved like its groups when the request is evaluated. Only a UI session and a personal access token
   carry them; a service-account token and a CI token never do
   ([Q-AUTHZ-215](#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)).
-- There are no transient users. A CI token never stands for a user account, never picks up
-  auto-join groups (R-AUTH-019, R-CI-013) and never counts as internal (R-AUTHZ-030), which
-  removes the catalog's widening of CI tokens through default groups (TOK-015, CIOIDC-014).
+- There are no transient users. A CI token never stands for a user account and never picks up
+  auto-join groups (R-AUTH-019, R-CI-013), which removes the catalog's widening of CI tokens through default groups (TOK-015,
+  CIOIDC-014). It is internal (R-AUTHZ-030): it reads what a level `internal` opens, as every authenticated subject but an
+  external user does.
 - A disabled or deleted principal's credentials are refused by authentication
   ([identity-and-authentication.md](identity-and-authentication.md)); authorization never sees them.
 - A job that continues a request after it ended (the delete job of [storage.md](storage.md) R-STOR-018) carries the
@@ -197,8 +198,9 @@ Acceptance criteria:
 - Alice is in IdP group `team-web`, synchronized to Quader group `team-web`, which holds `read`
   on `web/npm-internal`. After the IdP removes her from `team-web` and she logs in again, her existing
   personal access token no longer reads `npm-internal`, within the latency bound of R-AUTH-023.
-- Group `everyone` is auto-join and holds `read` on `web/npm-all`, and the artifacts of `web/npm-all` are `internal`
-  (R-AUTHZ-033). A CI token whose mappings list no groups and name no policy covering `npm-all` gets 404 on `npm-all`.
+- Group `everyone` is auto-join and holds `read` on `web/npm-all`, and the artifacts of `web/npm-all` are `private`
+  (R-AUTHZ-033). A CI token whose mappings list no groups and name no policy covering `npm-all` gets 404 on `npm-all`. Once
+  its artifacts are `internal`, the same token reads `npm-all` by the level (R-AUTHZ-030).
 - `POST /api/v1/permission-policies` with an entry for `authenticated` or for `anonymous` answers 422
   `principal_not_allowed`.
 - User `bob` is deleted, and a new user `bob` (different OIDC `sub`) logs in.
@@ -238,27 +240,43 @@ Acceptance criteria:
 - With `endpoints.default.auth.anonymous: false`, the anonymous `npm view` of the first criterion gets `E401`, and
   `PUT /api/v1/projects/web/visibility` with `{"level": "public"}` answers 409 `public_not_allowed`.
 
-### R-AUTHZ-030 · Internal and external users
+### R-AUTHZ-030 · Internal subjects and external users
 Priority: **MVP** · Covers: quader-only
 
-The level `internal` admits every *internal* subject, the people of the organization that runs Quader, as GitLab's internal
-level admits every signed-in user who is not external (owner, 2026-11-11). A subject is internal exactly when all of the
-following hold ([Q-AUTHZ-268](#q-authz-268--a-subject-is-internal-when-it-is-a-user-through-a-session-or-a-personal-token-not-flagged-external-and-not-through-a-bastion)):
+The owner (2026-11-20): "internal sind alle angemeldeten User (auch technische) außer User und seine Tokens die das
+external-flag tragen. Internal ist einfach eine Sichtbarkeit für ein Projekt. Ist das Projekt privat, braucht man eine
+spezifische Einladung um das Projekt zu sehen. Ist es intern, kann man es als nicht externer und angemeldeter User direkt sehen
+und lesen. Für Schreiben braucht es wieder eine gesonderte Berechtigung. Ist es public, darf jeder lesen, auch nicht angemeldete
+User, Schreiben ist nicht möglich." Internal is every signed-in caller, technical ones included, except a user who carries the
+external flag and that user's tokens; a private project needs an invitation, an internal one is seen and read by every such
+caller, and writing needs a permission of its own. The level `internal` admits every *internal* subject
+([Q-AUTHZ-268](#q-authz-268--every-authenticated-subject-is-internal-except-a-user-flagged-external-and-that-users-tokens)):
 
-1. it acts as a user through a UI session or a personal access token (R-AUTHZ-002);
-2. the user is not flagged `external` ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-044), as the
-   authentication stage resolved the flag for the request, with the user's status and groups;
-3. the request did not reach the main installation through a Bastion (`Subject.ViaBastion`, [bastion.md](bastion.md)
-   R-BAS-008, [Q-BAS-148](bastion.md#q-bas-148--a-request-through-a-bastion-never-reads-by-the-level-internal)).
+| Subject (R-AUTHZ-002) | Internal |
+|---|---|
+| A user through a UI session | yes, unless the user is flagged `external` ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-044), as the authentication stage resolved the flag for the request, with the user's status and groups |
+| A user through a personal access token | the same: the token carries its user's flag, resolved when it is used |
+| The break-glass administrator | yes (it is never external) |
+| A technical token (`qdr_sat_`, R-AUTH-045) of a service account of the instance, of a project or of a repository | yes |
+| A CI token | yes |
+| The anonymous subject | no |
+| A Bastion registration (`bastion:<name>`) | no: it reads nothing on its own credential ([Q-AUTHZ-320](#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)) |
 
-- Never internal: a service-account token, a project's service accounts included (the technical accounts of a project's
-  external parties, Q-AUTHZ-169), a CI token, a Bastion registration and the anonymous subject. They read what their grants
-  give (a CI token also its inline grants) and what is `public`. This keeps the rule that the rights of every non-human
-  credential trace back to a grant that names it, its groups or its CI mapping (R-AUTH-019, R-CI-013).
+- **The channel plays no part.** A request a Bastion forwards, and the caller a Bastion check decides, is decided on the
+  caller's own subject, as the same request at the main installation's own door ([bastion.md](bastion.md) R-BAS-008,
+  [Q-BAS-148](bastion.md#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)). The subject carries no mark of the
+  channel ([Q-AUTHZ-321](#q-authz-321--the-subject-carries-no-mark-of-a-bastion)).
+- **The external flag is a user's.** It is the only thing that keeps an authenticated subject from `internal`; a service account,
+  a CI mapping and a Bastion registration carry none (R-AUTH-044). A service account's rights are what it is granted, and it reads
+  what `internal` opens like every signed-in caller; nothing makes one service account external and another internal.
+- **Read only.** `internal` gives `read` on the part of the repository its level opens, never a write, a role, a capability or an
+  owner record (R-AUTHZ-033 rule 6). A write needs a grant, a project role or a capability of its own.
 - An external user reads what its grants and its project roles give and what is `public`: it sees only what it is a member of
   or what is public (owner, 2026-11-11). A membership gives it the project's repositories with its role like any member.
-- The token scope applies to a read by `internal` like to a grant (R-AUTHZ-013): a personal access token whose scope does not
-  admit a repository does not read it by its level either.
+- The token scope applies to a read by `internal` like to a grant (R-AUTHZ-013): a personal access token, a technical token or a
+  CI token whose scope does not admit a repository does not read it by its level either.
+- What an endpoint serves is bounded by its exposure rules ([endpoints.md](endpoints.md) R-EP-012, R-EP-013), for a read by a
+  level as for a read by a grant (R-AUTHZ-035 rule 2).
 - `GET /api/v1/authz/me` reports `"internal": true` or `false` for the caller (R-AUTHZ-022); the principal list no longer holds
   `authenticated`.
 
@@ -266,12 +284,14 @@ Acceptance criteria:
 
 - The artifacts of `web/npm-internal` are `internal`. A user who has just logged in through OIDC, belongs to no group and
   holds no grant runs `npm view @web/button --registry https://quader.example.com/api/npm/web/npm-internal/` with a personal
-  access token and succeeds. The same command with a token of `sa:web/partner`, which has no grant, gets `E404`, and so does a
-  CI token whose mappings grant nothing on `npm-internal`.
+  access token and succeeds. The same command with a technical token of `sa:web/partner`, which has no grant, succeeds as well,
+  and so does a CI token whose mappings grant nothing on `npm-internal`; `npm publish` with either gets `E403`.
 - An administrator flags that user external (`PATCH /api/v1/users/alice` with `{"external": true}`). Within
   `auth.revocation_bound` her next `npm view` with the same token gets `E404` on every replica, also with Valkey stopped,
   and `GET /api/v1/repositories` no longer lists `web/npm-internal`. Made a `reader` of `web`, she reads it again.
-- Through a Bastion, the internal user's token reads `web/npm-public` and gets `404` for `web/npm-internal`.
+- Through a Bastion, an internal user's token reads `web/npm-internal` and `web/npm-public`, the token of a user flagged external
+  reads `web/npm-public` and gets `404` for `web/npm-internal`, and a request without a credential gets `401` for
+  `web/npm-internal`.
 
 ### R-AUTHZ-033 · Visibility levels of the installation, a project and a repository
 Priority: **MVP** · Covers: IAM-062
@@ -480,7 +500,7 @@ func leveled(sub Subject, idx *Index, a Action, c Coordinate) bool {
 
 Worked rows, in project `web` (`public`): `npm-public` (artifacts `public`, wiki `internal`), `npm-internal` (both `internal`),
 `npm-private` (both `private`), the virtual `npm-all` (`internal`) over all three; Erin is a user flagged external with
-`read` on `npm-private`; Frank is an internal user without grants; `sa:web/partner` holds nothing:
+`read` on `npm-private`; Frank is an internal user without grants; `sa:web/partner` holds nothing and is internal (R-AUTHZ-030):
 
 | # | Subject | Request | Steps | Result |
 |---|---|---|---|---|
@@ -489,7 +509,7 @@ Worked rows, in project `web` (`public`): `npm-public` (artifacts `public`, wiki
 | 3 | Frank | `npm view @web/button` via `npm-all` | gate by `internal`; `npm-public` and `npm-internal` read, `npm-private` skipped | 200, with `readme` |
 | 4 | Erin | `npm view @web/lib` via `npm-private` | grant | 200 |
 | 5 | Erin | `npm view @web/button` via `npm-internal` | external, no grant | 404 |
-| 6 | `sa:web/partner` | `npm view @web/button` via `npm-public` | artifacts `public` | 200, no `readme` |
+| 6 | `sa:web/partner` | `npm view @web/button` via `npm-public` | artifacts `public`; wiki `internal`, the account is internal | 200, with `readme` |
 | 7 | Frank, token scoped to `mobile/*` | `npm view @web/button` via `npm-internal` | `internal`, the scope refuses | 404 |
 | 8 | Frank, token scoped to `mobile/*` | `npm view @web/button` via `npm-public` | `public`, no scope consulted | 200, no `readme` |
 
@@ -2346,7 +2366,7 @@ Priority: **P1** · Covers: IAM-029
   It can neither widen its own rights, also not indirectly through one of its groups, nor lock
   itself out.
 - A delegated manager MUST NOT add `anonymous` or `authenticated`: nobody can (422 `principal_not_allowed`, Q-AUTHZ-279).
-  Opening content to every internal user or to everyone is a visibility level (R-AUTHZ-033), and the catalog's finer control
+  Opening content to every internal subject or to everyone is a visibility level (R-AUTHZ-033), and the catalog's finer control
   over anonymous grants by non-administrators (IAM-034) stays P2.
 - For the previous two rules, its own principal set also contains every service account it owns
   or may create tokens for (R-AUTH-020, P1) and every CI mapping in a CI delegation whose delegate
@@ -6592,30 +6612,33 @@ owner asked for that setting on 2026-11-18 (W-11): it is R-AUTHZ-037, beside thi
 **Applied in the spec:** R-AUTHZ-033 (the table, rule 4), R-AUTHZ-026 (the Owner's table); [api-and-ui.md](api-and-ui.md)
 R-API-007, R-API-056, R-API-057.
 
-### Q-AUTHZ-268 · A subject is internal when it is a user through a session or a personal token, not flagged external and not through a Bastion
+### Q-AUTHZ-268 · Every authenticated subject is internal, except a user flagged external and that user's tokens
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
-The user flag is the owner's (2026-11-11); the task leaves open whether a project's technical accounts of external parties and
-the Bastion's partners count as external.
+Status: **Decided by the owner on 2026-11-20** — option (d), replacing the development agent's choice (a) of 2026-11-11.
+
+The owner, on who is internal: "internal sind alle angemeldeten User (auch technische) außer User und seine Tokens die das
+external-flag tragen. Internal ist einfach eine Sichtbarkeit für ein Projekt." On a request through a Bastion, rejecting the rule
+that it never reads by `internal`: an internal token reads internal projects through the Bastion, "natürlich"; the Bastion is a
+channel. On service accounts, rejecting the idea that a project's service accounts are the accounts of external parties and need
+a flag: "Ein Service-Account für ein Projekt ist IMMER ein direkter Zugang zum Projekt. Mit genau den Berechtigungen die der
+Service-Account hat."
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Users through a session or a PAT, without the flag, not through a Bastion (chosen) | Service accounts, project service accounts, CI tokens, Bastion registrations and the anonymous subject are never internal; a request through a Bastion never reads by `internal` | Every non-human credential reads only what names it or what is public, as `authenticated` did; the internet-facing door never serves the organization's internal content to a leaked user token | An employee who uses the Bastion from outside reads only what names him |
-| (b) Project service accounts external, other service accounts internal | Only the partners' accounts are external | Instance automation reads internal content without a grant | A monitoring or SCIM token reads every internal package (the reason of Q-AUTHZ-3 (c)) |
-| (c) As (a), but a request through a Bastion is judged by its user | The Bastion is only a channel | Employees read internal content from outside | A leaked personal token reads everything internal from the internet through a cache shared with partners |
+| (a) Users through a session or a PAT, without the flag, not through a Bastion (built until 2026-11-20) | Service accounts, project service accounts, CI tokens, Bastion registrations and the anonymous subject are never internal; a request through a Bastion never reads by `internal` | Every non-human credential reads only what names it or what is public, as `authenticated` did | Not the owner's meaning of `internal`: a technical caller of the organization needs a grant for what every person reads, and an employee's token reads less through the Bastion than at the main door |
+| (b) Project service accounts external, other service accounts internal | Only the partners' accounts are external | Instance automation reads internal content without a grant | A project's service account is a direct access to its project with exactly its rights, not an external party's account (owner) |
+| (c) As (a), but a request through a Bastion is judged by its user | The Bastion is only a channel | Employees read internal content from outside | Leaves service accounts and CI tokens out |
+| (d) Every authenticated subject but a user flagged external and its tokens; the channel plays no part (chosen, owner) | Users, service accounts of every level, CI tokens; through every door, the Bastion included | The owner's definition: `internal` is a visibility of a project, "signed in and not external" | A leaked technical or CI token reads everything `internal`, and through every door that accepts it (H-1050 in [security/visibility.md](../security/visibility.md)) |
 
-**Choice:** (a). The technical accounts of a project's external parties (phase 5a) are service accounts and never internal; the
-Bastion's partners present service-account tokens of their projects (R-BAS-004's fixture), and a user who presents a personal
-token through a Bastion reads there what names it and what is public ([bastion.md](bastion.md)
-[Q-BAS-148](bastion.md#q-bas-148--a-request-through-a-bastion-never-reads-by-the-level-internal)).
+**Choice:** (d), the owner's. What was built went because it read `internal` as "the organization's people at their own doors",
+a reading the owner did not share: `internal` is a visibility of a project, not a class of credential, and a technical caller
+signs in as a person does. The Bastion part went with it: the Bastion carries a caller's request, it does not change who the caller
+is ([bastion.md](bastion.md) Q-BAS-148). The external flag stays a flag of a user (R-AUTH-044). The anonymous subject is not
+internal, and a Bastion registration is not internal either (Q-AUTHZ-320).
 
-**Rationale:** "internal" is the organization's own people at their own doors. A service account is created for one purpose and
-its token is the credential most often stored elsewhere, which is why `authenticated` never covered it; the same reason holds for
-`internal`. The Bastion exists to serve external parties on the internet, so the level that means "everyone inside" does not
-reach through it. The development agent would revisit the Bastion part if the owner wants employees to read internal content
-through it.
-
-**Applied in the spec:** R-AUTHZ-030, R-AUTHZ-002; [bastion.md](bastion.md) R-BAS-004, R-BAS-008.
+**Applied in the spec:** R-AUTHZ-030, R-AUTHZ-002, R-AUTHZ-035 (the worked rows); [bastion.md](bastion.md) R-BAS-004, R-BAS-008,
+R-BAS-015; [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-019, R-AUTH-044; code:
+[visibility.go](../../internal/authz/visibility.go) (`Subject.Internal`).
 
 ### Q-AUTHZ-269 · A level reads beside the grants; the token scope narrows `internal`, and nothing narrows `public` but the endpoint
 
@@ -7086,6 +7109,53 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). `security-admin` reads both and writes none: raising a limit is the instance administrator's (owner, decision 14).
 **Applied in the spec:** R-AUTHZ-040, R-AUTHZ-010.
+
+### Q-AUTHZ-320 · A Bastion registration is not internal; a Bastion reads for the caller it forwards for
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's rule makes every authenticated subject internal but a user flagged external (Q-AUTHZ-268), and calls the
+Bastion a channel. A Bastion registration is authenticated too: its `bst` token proves it on the Bastion interface
+([bastion.md](bastion.md) R-BAS-004, R-BAS-005). Read as a technical subject like any other, it would be internal. Today its token is
+refused by type on every route but the interface (`TestR_BAS_005_ABastionTokenIsNoCredentialOnAnyOtherRoute`), the interface routes
+decide no read for the registration (handshake, check, feed, download intake), and on a forwarded request only the caller's
+credential decides.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Not internal; the decision point gives the kind `bastion` an empty principal set and no level but `public` (chosen) | The Bastion reads nothing on its own credential beyond what it does today; what it serves is decided on the caller it forwards for | "A channel" in the owner's sense: the caller's rights pass through it, the Bastion adds none of its own; a stolen `bst` token stays worth only the interface | One more exception to "every authenticated subject" |
+| (b) Internal like every technical subject | The kind `bastion` reads by `internal` in the decision point | One rule with no exception | Dormant today (no route decides for the kind), but the first route that does would serve every `internal` repository on the Bastion's own credential, independent of any caller - the opposite of a channel |
+
+**Choice:** (a). It is the open point of this rule for the owner: if he means the registration to count as a technical subject
+like any other, (b) is one line in `Subject.Internal` and the test of R-BAS-004.
+
+**Rationale:** the Bastion holds no grant, role, membership or ownership by design (R-BAS-004), so that what reaches the internet
+through it is always some caller's right. The development agent would revisit this if the owner wants the registration internal.
+
+**Applied in the spec:** R-AUTHZ-030; [bastion.md](bastion.md) R-BAS-004; code: [visibility.go](../../internal/authz/visibility.go)
+(`Subject.Internal`), `TestR_BAS_004_ABastionRegistrationIsNeverInternal`.
+
+### Q-AUTHZ-321 · The subject carries no mark of a Bastion
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the rule of 2026-11-11 needed a mark on the subject (`Subject.ViaBastion`), set by the edge from the recognition of a
+forward and by the check for its caller ([bastion.md](bastion.md) Q-BAS-151). The owner's rule (Q-AUTHZ-268) no longer reads it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Remove the mark, the context value the check set and the code that read them (chosen) | The edge builds the same subject for a forward and for a direct request | Nothing can make the channel matter again by accident; no unused field on the type every decision takes | A later rule that needs the channel adds it again |
+| (b) Keep the mark unread | — | Ready for a later rule | A field no decision reads, which a later change could read without a requirement |
+
+**Choice:** (a). The recognition result stays in the request's context for the Bastion's own needs (the admission of an interface
+route, the handshake, the download intake, the marking of a forwarded answer), none of which decides what a caller reads.
+
+**Rationale:** the subject is what authorization decides on; what it does not decide on does not belong on it. The development agent
+records no revisit condition.
+
+**Applied in the spec:** R-AUTHZ-030; [bastion.md](bastion.md) R-BAS-008, R-BAS-011, Q-BAS-151; code:
+[authz.go](../../internal/authz/authz.go) (`Subject`), [subject.go](../../internal/api/edge/subject.go) (`SubjectOf`),
+[bastion_check_api.go](../../internal/api/v1/bastion_check_api.go).
 
 ## What this does not cover
 

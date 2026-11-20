@@ -24,21 +24,41 @@ A level is `private`, `internal` or `public`. A project has one; a repository ha
 (R-AUTHZ-033). A level only adds `read`; grants, project roles and capabilities add what they add, and nothing takes away what
 another source gives (R-AUTHZ-035).
 
+The owner's rule (2026-11-20, [Q-AUTHZ-268](../spec/authorization.md#q-authz-268--every-authenticated-subject-is-internal-except-a-user-flagged-external-and-that-users-tokens)):
+`internal` admits every authenticated caller, technical ones included, except a user flagged external and that user's tokens.
+
 | Caller | `private` | `internal` | `public` |
 |---|---|---|---|
 | No credential (the anonymous subject), on an endpoint whose `auth.anonymous` is `true` | — | — | reads |
 | No credential, on an endpoint whose `auth.anonymous` is `false` | — | — | — (401) |
 | User through a UI session or a personal token, not flagged external | — | reads, within the token's scope | reads |
-| User flagged external (R-AUTH-044) | — | — | reads |
-| Any user through a Bastion (Q-BAS-148) | — | — | reads |
-| Service-account token, a project's included | — | — | reads |
-| CI token | — | — | reads |
-| Bastion registration | — | — | reads (no route admits it) |
+| User flagged external (R-AUTH-044), through its session and every one of its tokens | — | — | reads |
+| Technical token of a service account of the instance, of a project or of a repository | — | reads, within the token's scope | reads |
+| CI token | — | reads, within the token's scope | reads |
+| Any of these through a Bastion ([Q-BAS-148](../spec/bastion.md#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)) | as at the main door | as at the main door | as at the main door |
+| Bastion registration | — | — | reads (no route admits it; [Q-AUTHZ-320](../spec/authorization.md#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)) |
 
 "—" means: only what a grant, a project role or a capability gives. Every row is bounded by the exposure of the endpoint the
 request arrived on, which binds a read by a level as it binds a read by a grant (R-EP-013). A `public` read is not narrowed by the
 token scope or by the caps of a CI token, because it needs no credential at all; an invalid credential is still refused with 401 and
 never read as anonymous (R-AUTH-001).
+
+## What a leaked credential reads
+
+Per credential, what its holder reads besides what its grants and project roles give, and through which doors. A level never gives a
+write: a write is always a grant's, a role's or a capability's (R-AUTHZ-033 rule 6).
+
+| Credential | Reads by a level | Doors | Ends |
+|---|---|---|---|
+| Personal access token of a user not flagged external | every `internal` and `public` artifact, and every wiki whose level is `internal` or `public`, within the token's scope | the default endpoint; every further endpoint whose `auth.token_types` admit personal tokens and whose binding the token meets; every Bastion | revocation, within `auth.revocation_bound` at the main installation and the feed's poll interval at a Bastion (R-BAS-026); setting the external flag, within the same bounds |
+| Technical token of a service account (instance, project or repository) | the same as a personal token | the same, for the token type `sat` | revocation, the token's expiry, disabling the account |
+| CI token | the same, within the token's stored scope | the same, for the token type `cit` | its lifetime (R-CI-016), revocation |
+| Token of a user flagged external | `public` only | every door that accepts it | — |
+| Bastion token | nothing: it is refused by type on every route but the Bastion interface | the interface | revocation, expiry |
+| Session cookie of a user not flagged external | as a personal token, without a scope | every endpoint that accepts the session cookie; never through a Bastion, which forwards no cookie (R-BAS-003) | sign-out, session end |
+
+Every row is bounded by the exposure rules of the endpoint the request arrives on (R-EP-013). H-884 and H-1050 below say what makes
+a row real.
 
 ## Who decides
 
@@ -133,13 +153,14 @@ Component: the levels of R-AUTHZ-033. Subject: content that was readable by a le
 what clients downloaded stays in their caches, lockfiles and mirrors outside Quader; a Bastion keeps serving what it holds until its
 feed applies the `grants` entry (R-BAS-026). What makes it real: content that was opened by mistake and read before it was closed.
 
-### H-884 · `internal` is a property of the user, not of the network
+### H-884 · `internal` is a property of the caller, not of the network
 
 Component: the internal subject of R-AUTHZ-030. Subject: personal access tokens and sessions of users who are not external. Live: a
-leaked personal token of an internal user reads every `internal` repository from wherever it reaches the default endpoint or a
-further endpoint that accepts personal tokens; only the Bastion refuses `internal` reads (Q-BAS-148). The token's scope narrows it
-(R-AUTHZ-013); revoking the token ends it within the revocation bound. What makes it real: a leaked personal token and a default
-endpoint reachable from where it leaked.
+leaked personal token of an internal user reads every `internal` repository from wherever it reaches the default endpoint, a further
+endpoint that accepts personal tokens, or a Bastion, which since the owner's decision of 2026-11-20 decides it as the main
+installation does (Q-BAS-148): a Bastion on the internet is a door to every `internal` repository for such a token. The token's scope
+narrows it (R-AUTHZ-013); revoking the token ends it within the revocation bound and, at a Bastion, the feed's poll interval. What
+makes it real: a leaked personal token and a door reachable from where it leaked.
 
 ### H-885 · The installation's default level is not journaled
 
@@ -162,3 +183,25 @@ Component: `restrictedLevels` of `/api/v1/settings/visibility` (R-API-075). Subj
 until a restore goes back to a point before a level was restricted: the restored settings restrict less, and until an administrator
 restricts the level again, Owners may choose it. Nothing opens by the restore itself; what an Owner opens in between stays open
 (H-1001).
+
+### H-1050 · A technical token or a CI token reads every `internal` repository, not only what it was made for
+
+Component: the internal subject of R-AUTHZ-030 ([Q-AUTHZ-268](../spec/authorization.md#q-authz-268--every-authenticated-subject-is-internal-except-a-user-flagged-external-and-that-users-tokens)).
+Subject: the technical tokens of service accounts of every level and CI tokens. Live on every installation with an `internal`
+repository since the owner's decision of 2026-11-20. A service account is created for one purpose - a monitoring check, a project's
+partner, a repository's deployer - and its token is the credential most often stored outside Quader (a CI variable, a partner's
+system); it now reads every `internal` repository of every project, and through every door that accepts its type, a Bastion included.
+A CI mapping makes every job it matches internal:
+
+- On a CI issuer with `public_issuer: true` the pinning rule of R-CI-005 bounds which projects match; a mapping pinned to a namespace
+  makes every project of it read everything `internal`.
+- A mapping with `cross_project_source: read_only` (R-CI-012) gives fork code running in the parent pipeline a token that reads every
+  `internal` repository, where it read only the mapping's capped grants before.
+- On a GitLab older than 18.4, a fork's pipeline that matches a mapping without a pin on the parent gets such a token as well.
+
+What bounds it: the token's scope (a technical token issued with a scope naming its repositories reads by `internal` only there); the
+endpoint binding of a token and the exposure rules of an endpoint; a CI token's lifetime; revocation. A CI job cannot narrow its token
+to an `internal` repository that no grant of its mappings names: the exchange refuses such a scope item (`scope_not_granted`,
+R-CI-007), so a job that wants a narrow token reads by an unnarrowed one or by a grant. What makes it real: a leaked technical or CI
+token, or a fork pipeline under a mapping with the `read_only` opt-in, on an installation that keeps content `internal` that such a
+caller should not read; that content belongs `private`, granted to the groups of the people who read it.

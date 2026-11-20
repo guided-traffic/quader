@@ -35,32 +35,68 @@ func TestR_AUTHZ_033_TheLevelOrder(t *testing.T) {
 	}
 }
 
-// TestR_AUTHZ_030_WhoIsInternal: a user through a session or a personal token who is not flagged external and did not come
-// through a Bastion; never a service account, a CI token, a Bastion registration or the anonymous subject.
-func TestR_AUTHZ_030_WhoIsInternal(t *testing.T) {
-	user := Subject{Kind: principal.KindUser, ID: "u1", Name: "alice"}
-	external, viaBastion := user, user
-	external.External = true
-	viaBastion.ViaBastion = true
-	for _, c := range []struct {
-		name string
-		sub  Subject
-		want bool
-	}{
-		{"a user", user, true},
+// TestR_AUTHZ_030_WhoReadsByEachLevel: the level internal admits every authenticated subject - a user through a session or a
+// personal token, a service account's technical token of the instance, of a project or of a repository, a CI token - except a
+// user flagged external, through its session and through each of its tokens. The anonymous subject and a Bastion registration
+// are not internal. private admits none of them without a grant, public every one, and no level gives a write. The subject
+// carries no channel: a request through a Bastion is the same subject (TestR_BAS_008_AForwardAndACheckAreDecidedOnTheCallersSubject
+// in internal/api/edge), so this table is its answer as well.
+func TestR_AUTHZ_030_WhoReadsByEachLevel(t *testing.T) {
+	user := Subject{Kind: principal.KindUser, ID: "user-dana", Name: "dana"}
+	flagged := user
+	flagged.External = true
+	f := newFixture().repo("npm-private", "local", "npm", "").repo("npm-internal", "local", "npm", "").repo("npm-public", "local", "npm", "")
+	f.levels("npm-private", "private", "private").levels("npm-internal", "internal", "internal").levels("npm-public", "public", "public")
+	e := newTestEngine(t, f, nil)
+
+	type row struct {
+		name     string
+		sub      Subject
+		internal bool
+	}
+	rows := []row{
 		{"a user through a session", session(user), true},
 		{"a user through a personal token", bearer(user), true},
 		{"the break-glass administrator", Subject{Kind: principal.KindBreakGlass, ID: "bg", Name: "root"}, true},
-		{"a user flagged external", external, false},
-		{"a user through a Bastion", viaBastion, false},
-		{"a service account", Subject{Kind: principal.KindServiceAccount, ID: "s1", Name: "bot"}, false},
-		{"a CI token", Subject{Kind: principal.KindCI, Mappings: []string{"ci:gitlab/acme"}}, false},
+		{"an external user through a session", session(flagged), false},
+		{"an external user through a personal token", bearer(flagged), false},
+		{"a technical token of an instance service account", bearer(Subject{Kind: principal.KindServiceAccount, ID: "sa-1", Name: "monitor"}), true},
+		{"a technical token of a project service account", bearer(Subject{Kind: principal.KindServiceAccount, ID: "sa-2", Name: "web/partner"}), true},
+		{"a technical token of a repository service account", bearer(Subject{Kind: principal.KindServiceAccount, ID: "sa-3", Name: "web/npm-other/deployer"}), true},
+		{"a CI token", Subject{Kind: principal.KindCI, Name: "ci", Mappings: []string{"ci:gitlab/acme"}, TokenID: "cit-1", AuthMethod: "bearer"}, true},
 		{"a Bastion registration", Subject{Kind: principal.KindBastion, ID: "b1", Name: "dmz"}, false},
-		{"the anonymous subject", Subject{Anonymous: true, Kind: principal.KindAnonymous}, false},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			if got := c.sub.Internal(); got != c.want {
-				t.Errorf("Internal() = %v, want %v", got, c.want)
+		{"the anonymous subject", anonSub, false},
+	}
+	for _, c := range rows {
+		t.Run("R-AUTHZ-030 "+c.name, func(t *testing.T) {
+			if c.sub.Kind == principal.KindBreakGlass {
+				// The break-glass administrator reads every repository by content:bypass; only whether it is internal is asked.
+				if !c.sub.Internal() {
+					t.Fatal("the break-glass administrator is not internal")
+				}
+				return
+			}
+			if got := c.sub.Internal(); got != c.internal {
+				t.Fatalf("Internal() = %v, want %v", got, c.internal)
+			}
+			refused := DenyHidden
+			if c.sub.Anonymous {
+				refused = DenyUnauthenticated
+			}
+			for _, lv := range []struct {
+				repo  string
+				reads bool
+			}{{"npm-private", false}, {"npm-internal", c.internal}, {"npm-public", true}} {
+				d := e.Decide(t.Context(), c.sub, read(lv.repo, "@web/button", ""))
+				if lv.reads && (d.Outcome != Allow || d.Reason != ReasonAllowVisibility) {
+					t.Errorf("%s: %+v, want a read by the level", lv.repo, d)
+				}
+				if !lv.reads && d.Outcome != refused {
+					t.Errorf("%s: %+v, want the refusal %d", lv.repo, d, refused)
+				}
+				if w := e.Decide(t.Context(), c.sub, write(lv.repo, "@web/button", "", Deploy)); w.Allowed() {
+					t.Errorf("%s: a level gave a write: %+v", lv.repo, w)
+				}
 			}
 		})
 	}
@@ -235,7 +271,8 @@ func TestR_AUTHZ_034_TheWikiHasALevelOfItsOwn(t *testing.T) {
 	if d := e.DecideOn(t.Context(), idx, who["frank"], wiki(c)); d.Outcome != Allow || d.Reason != ReasonAllowVisibility {
 		t.Errorf("Frank wiki: %+v", d)
 	}
-	for sub, want := range map[string]bool{"anonymous": false, "frank": true, "erin": false, "partner": false, "scoped frank": false} {
+	// The service account without a grant is internal and reads the internal wiki like Frank (R-AUTHZ-030).
+	for sub, want := range map[string]bool{"anonymous": false, "frank": true, "erin": false, "partner": true, "scoped frank": false} {
 		if got := e.WikiReadableOn(idx, who[sub], c); got != want {
 			t.Errorf("WikiReadableOn(%s) = %v, want %v", sub, got, want)
 		}
@@ -254,9 +291,10 @@ func TestR_AUTHZ_034_TheWikiHasALevelOfItsOwn(t *testing.T) {
 func TestR_AUTHZ_035_AReadShapeAllNeverMeetsARefusedRead(t *testing.T) {
 	levels := []string{"private", "internal", "public"}
 	subjects := map[string]Subject{
-		"anonymous": anonSub, "internal": aliceSub, "external": external(aliceSub), "bastion": viaBastion(aliceSub), "bot": botSub,
-		"scoped":     tokenScop(aliceSub, scope.Scope{Repositories: []scope.Grant{{Repositories: []string{"it/other"}, Actions: []string{"read"}}}}),
-		"inheriting": tokenScop(aliceSub, scope.Scope{Inherit: true}), "ci": ciSub,
+		"anonymous": anonSub, "internal": aliceSub, "external": external(aliceSub), "bot": botSub,
+		"registration": {Kind: principal.KindBastion, ID: "b1", Name: "dmz"},
+		"scoped":       tokenScop(aliceSub, scope.Scope{Repositories: []scope.Grant{{Repositories: []string{"it/other"}, Actions: []string{"read"}}}}),
+		"inheriting":   tokenScop(aliceSub, scope.Scope{Inherit: true}), "ci": ciSub,
 	}
 	for _, a := range levels {
 		for _, w := range levels {

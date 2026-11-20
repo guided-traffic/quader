@@ -41,6 +41,7 @@ before using a new term in a German text.
 | group claim | Gruppen-Claim |
 | client address | Client-Adresse |
 | job, maintenance task | Job, Wartungsaufgabe |
+| CI job (a pipeline job that signs in with a CI token) | CI-Job |
 | upload, folder | Upload (hochladen), Ordner |
 | exposure (mode, rule) | Freigabe (Modus, Regel) |
 | surface (of an endpoint) | angebotene Routen |

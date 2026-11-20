@@ -1925,7 +1925,7 @@ export interface paths {
          *     `errors` (`unknown_principal`, `unknown_repository`, `unknown_format`, `invalid_pattern`, `invalid_action`,
          *     `duplicate_principal`, `virtual_action_not_applicable`, `action_not_allowed`, `principal_outside_project`). An entry
          *     for `anonymous` or `authenticated` answers `422 principal_not_allowed`: a visibility level opens content to everyone
-         *     or to every internal user (R-AUTHZ-003, R-AUTHZ-033). A policy of a project is created
+         *     or to every internal subject (R-AUTHZ-003, R-AUTHZ-033). A policy of a project is created
          *     under `/api/v1/projects/{projectKey}/policies`.
          */
         post: operations["createPermissionPolicy"];
@@ -8278,8 +8278,9 @@ export interface components {
         AuthzMe: {
             roles: components["schemas"]["RoleName"][];
             /**
-             * @description The caller is an internal subject (R-AUTHZ-030): a user through a session or a personal access token who is not
-             *     flagged external and did not come through a Bastion. The level `internal` admits exactly these callers.
+             * @description The caller is an internal subject (R-AUTHZ-030): every authenticated caller - a user through a session or a
+             *     personal access token, a service account's technical token, a CI token - except a user flagged external and that
+             *     user's tokens. The level `internal` admits exactly these callers.
              */
             internal: boolean;
             /** @description The system capabilities the credential exercises (R-AUTHZ-010), for example `settings:read`. */

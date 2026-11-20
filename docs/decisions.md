@@ -1640,13 +1640,13 @@ System administration is a separate role, not a repository action. Every decisio
 narrowing an allow. Actions do not imply each other ([ADR-051](#adr-051--actions-are-explicit-and-a-token-scope-only-narrows)). A decision explainer is part of
 the API ([R-AUTHZ-024](spec/authorization.md#r-authz-024--effective-permissions-and-decision-explanation)). Decided ([Q-AUTHZ-3](spec/authorization.md#q-authz-3--built-in-principal-for-all-authenticated-users), option (d), MVP): a built-in principal
 `authenticated` covers every user, through a UI session or a personal access token, and never a
-service account or a CI token ([R-AUTHZ-030](spec/authorization.md#r-authz-030--internal-and-external-users)). Its entries may hold only `read`. It takes no roles and no
+service account or a CI token ([R-AUTHZ-030](spec/authorization.md#r-authz-030--internal-subjects-and-external-users)). Its entries may hold only `read`. It takes no roles and no
 ownership, and delegated managers and project administrators cannot grant to it. A deny-by-default
 installation thereby works on day one without an all-employees group claim. Every right of a
 non-human credential still traces back to a grant that names it, its groups or its CI mapping.
 Like `anonymous`, it refines INV-9 as an implicit group. Superseded in this part by
 [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated): the level `internal`
-of a project or a repository reads for every internal user, and no policy names `anonymous` or `authenticated`.
+of a project or a repository reads for every internal subject, and no policy names `anonymous` or `authenticated`.
 
 **Alternatives considered.** Allow and deny rules with precedence: more expressive, but the outcome
 depends on evaluation order and is hard to review. Fixed per-repository roles (reader, writer,
@@ -1654,7 +1654,7 @@ admin): cannot narrow by package name, which CI grants need. A general policy la
 but not something repository administrators can review in a form.
 
 **Spec:** [INV-9](spec/README.md#design-invariants), [R-AUTHZ-001](spec/authorization.md#r-authz-001--deny-by-default-allow-only-grants), [R-AUTHZ-006](spec/authorization.md#r-authz-006--repository-actions),
-[R-AUTHZ-013](spec/authorization.md#r-authz-013--token-scope-as-a-ceiling), [R-AUTHZ-015](spec/authorization.md#r-authz-015--evaluation-algorithm), [R-AUTHZ-030](spec/authorization.md#r-authz-030--internal-and-external-users); decided: [Q-AUTHZ-3](spec/authorization.md#q-authz-3--built-in-principal-for-all-authenticated-users).
+[R-AUTHZ-013](spec/authorization.md#r-authz-013--token-scope-as-a-ceiling), [R-AUTHZ-015](spec/authorization.md#r-authz-015--evaluation-algorithm), [R-AUTHZ-030](spec/authorization.md#r-authz-030--internal-subjects-and-external-users); decided: [Q-AUTHZ-3](spec/authorization.md#q-authz-3--built-in-principal-for-all-authenticated-users).
 
 ### ADR-021 · GitLab CI identity through ID-token exchange (INV-10)
 
@@ -7008,9 +7008,11 @@ wiki level apart from the artifacts, and a user flag `external`.
   its wiki never more open than its artifacts; lowering a project lowers its repositories in the same transaction; raising lowers
   nothing back. An administrator sets a project's level, its Owner its repositories' levels within it
   ([spec/authorization.md](spec/authorization.md) R-AUTHZ-033, Q-AUTHZ-263 to Q-AUTHZ-267).
-- A level is a source of `read` beside grants and roles: `public` for every request, `internal` for every internal subject (a user
-  through a session or a personal token, not flagged external, not through a Bastion), narrowed by the token scope; nothing but
-  the endpoint's exposure narrows `public` (R-AUTHZ-030, R-AUTHZ-035, Q-AUTHZ-268, Q-AUTHZ-269).
+- A level is a source of `read` beside grants and roles: `public` for every request, `internal` for every internal subject,
+  narrowed by the token scope; nothing but the endpoint's exposure narrows `public` (R-AUTHZ-030, R-AUTHZ-035, Q-AUTHZ-268,
+  Q-AUTHZ-269). Amended by the owner on 2026-11-20: an internal subject is every authenticated subject - users, service accounts'
+  technical tokens, CI tokens - except a user flagged external and that user's tokens, through every door, a Bastion included; the
+  rule built until then (a user through a session or a personal token, not flagged external, not through a Bastion) is gone.
 - The wiki is the documentation Quader serves or shows apart from the files; one coordinate part decides it, asked through
   `formats.Route.Wiki`, `Host.WikiReadable`, `x-quader-part: wiki` and `authz.ReadScope.MayReadWiki`; a caller who reads the
   artifacts but not the wiki gets the refusal of a read on a wiki route and documents without the wiki members (R-AUTHZ-034,
@@ -7025,8 +7027,8 @@ wiki level apart from the artifacts, and a user flag `external`.
 
 **Consequences.** The grant index reads the levels in its snapshot, the stage resolves the flag with the user's status and groups,
 and both reach every replica within the existing bounds (R-AUTHZ-036). The Bastion's interface rises to version 2: its handshake
-reports `anonymousReads`, its feed carries the level changes, and a request through it never reads by `internal`
-([spec/bastion.md](spec/bastion.md) Q-BAS-148 to Q-BAS-150). Every test and fixture that switched anonymous access on or set
+reports `anonymousReads`, its feed carries the level changes, and a request through it is decided as the same request at the main
+installation's door (owner, 2026-11-20; [spec/bastion.md](spec/bastion.md) Q-BAS-148 to Q-BAS-150). Every test and fixture that switched anonymous access on or set
 `requireAuthentication` changes. The wiki
 level cannot hide documentation shipped inside an artifact (H-880 in [security/visibility.md](security/visibility.md)).
 
@@ -8130,7 +8132,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-AUTHZ-265](spec/authorization.md#q-authz-265--a-repository-is-never-more-open-than-its-project-and-lowering-a-project-lowers-its-repositories) | May a repository be more open than its project, and what does lowering a project do? Decided by the development agent | (a) never more open; lowering cascades in one transaction, raising does not | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-AUTHZ-266](spec/authorization.md#q-authz-266--the-wiki-of-a-repository-is-never-more-open-than-its-artifacts) | May the wiki be more open than the artifacts? Decided by the development agent | (a) no: the wiki at most the artifacts | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-AUTHZ-267](spec/authorization.md#q-authz-267--an-administrator-sets-the-level-of-a-project-its-owner-sets-the-levels-of-its-repositories-within-it) | Who sets the levels? Decided by the development agent | (a) the project's by `projects:write`, a repository's by its Owner or `repositories:write-config` within the project, the default by `security-settings:write` | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
-| [Q-AUTHZ-268](spec/authorization.md#q-authz-268--a-subject-is-internal-when-it-is-a-user-through-a-session-or-a-personal-token-not-flagged-external-and-not-through-a-bastion) | Who is internal; do a project's technical accounts and the Bastion's partners count as external? Decided by the development agent | (a) a user through a session or a personal token, not flagged external, not through a Bastion; service accounts and Bastion requests never internal | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
+| [Q-AUTHZ-268](spec/authorization.md#q-authz-268--every-authenticated-subject-is-internal-except-a-user-flagged-external-and-that-users-tokens) | Who is internal; do a project's technical accounts and the Bastion's partners count as external? Decided by the owner on 2026-11-20 | (d) every authenticated subject - users, service accounts of every level, CI tokens - except a user flagged external and its tokens; the channel plays no part | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-AUTHZ-269](spec/authorization.md#q-authz-269--a-level-reads-beside-the-grants-the-token-scope-narrows-internal-and-nothing-narrows-public-but-the-endpoint) | How do levels compose with grants, the token scope and the endpoint? Decided by the development agent | (a) a read source in the union; the scope narrows `internal`, nothing but the endpoint narrows `public` | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-AUTHZ-270](spec/authorization.md#q-authz-270--the-wiki-is-the-documentation-quader-serves-or-shows-apart-from-the-files-never-a-file-inside-an-artifact) | What is the wiki per format? Decided by the development agent | (a) what Quader serves or shows apart from the files: npm `readme`, NuGet README route, the README operation, T-19's documentation | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-AUTHZ-271](spec/authorization.md#q-authz-271--a-caller-who-reads-the-artifacts-but-not-the-wiki-gets-the-refusal-of-a-read-on-a-wiki-route-and-documents-without-the-wiki-members) | What does a caller get who reads the artifacts but not the wiki? Decided by the development agent | (a) a wiki route refuses as a read; embedded members absent; the UI tab absent | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
@@ -9324,7 +9326,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-BAS-144](spec/bastion.md#q-bas-144--the-links-state-under-maintenance-is-judged-by-the-alerts-condition) | How is the link judged under maintenance? | (a) by the alerts' conditions: never a mismatch, never all replicas unreachable for 2 minutes | — |
 | [Q-BAS-145](spec/bastion.md#q-bas-145--a-disabled-or-deleted-registration-is-journaled-and-replayed-as-disabled) | Are a registration's disable and deletion journaled? | (a) yes: `bastion.disabled` and `bastion.deleted` carry `{principalId, name}`, the replay disables the registration; supersedes Q-BAS-61 in part | — |
 | [Q-BAS-146](spec/bastion.md#q-bas-146--a-content-narrowing-and-a-claim-of-scope-members-yield-a-content-entry-a-global-claim-yields-grants) | Which feed entries do `repository.narrowed` and `repository.claims_changed` yield? | (b) `content` for the repository and its virtual repositories; `grants` for a `global` claim; none for a removal only | — |
-| [Q-BAS-148](spec/bastion.md#q-bas-148--a-request-through-a-bastion-never-reads-by-the-level-internal) | Do the Bastion's callers read by `internal`? Decided by the development agent | (a) never: a request through a Bastion reads what names it and what is public | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
+| [Q-BAS-148](spec/bastion.md#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other) | Do the Bastion's callers read by `internal`? Decided by the owner on 2026-11-20 | (b) as at the main installation: the Bastion is a channel | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-BAS-149](spec/bastion.md#q-bas-149--a-full-read-shape-includes-the-wiki-so-a-shared-document-never-carries-a-readme-to-a-caller-without-it) | Does a full read shape include the wiki? Decided by the development agent | (a) yes; artifacts without the wiki are partial | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-BAS-150](spec/bastion.md#q-bas-150--the-handshake-reports-whether-the-main-installation-serves-anonymous-reads-at-all) | What replaces `anonymousAccess` in the handshake? Decided by the development agent | (a) `anonymousReads`; the interface rises to version 2 | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-ROAD-1](coverage/roadmap.md#q-road-1--generic-local-repositories-in-m1) | Generic local repositories in M1? | (a) the local class of the generic format is built in M1 as MVP, from a new spec page `formats/generic.md`; remote and virtual generic stay P1 | — |

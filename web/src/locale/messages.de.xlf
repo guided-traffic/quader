@@ -8017,8 +8017,8 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:79</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external can find the project and read what its repositories make internal.</source>
-        <target>Jeder angemeldete Benutzer, der nicht extern ist, findet das Projekt und liest, was seine Repositories intern machen.</target>
+        <source>Everyone signed in, service accounts and CI jobs included, can find the project and read what its repositories make internal; external users cannot.</source>
+        <target>Alle Angemeldeten, auch Servicekonten und CI-Jobs, finden das Projekt und lesen, was seine Repositories intern machen; externe Benutzer nicht.</target>
       </segment>
     </unit>
     <unit id="mirror.paused">
@@ -14887,8 +14887,8 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:89</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external.</source>
-        <target>Jeder angemeldete Benutzer, der nicht extern ist.</target>
+        <source>Everyone signed in, service accounts and CI jobs included, except external users.</source>
+        <target>Alle Angemeldeten, auch Servicekonten und CI-Jobs, außer externen Benutzern.</target>
       </segment>
     </unit>
     <unit id="ci.test.label">
@@ -18090,8 +18090,8 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:69</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external reads new projects.</source>
-        <target>Jeder angemeldete Benutzer, der nicht extern ist, liest neue Projekte.</target>
+        <source>Everyone signed in, service accounts and CI jobs included, reads new projects; external users do not.</source>
+        <target>Alle Angemeldeten, auch Servicekonten und CI-Jobs, lesen neue Projekte; externe Benutzer nicht.</target>
       </segment>
     </unit>
     <unit id="tokens-admin.state.expired">
@@ -25425,8 +25425,8 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:99</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external.</source>
-        <target>Jeder angemeldete Benutzer, der nicht extern ist.</target>
+        <source>Everyone signed in, service accounts and CI jobs included, except external users.</source>
+        <target>Alle Angemeldeten, auch Servicekonten und CI-Jobs, außer externen Benutzern.</target>
       </segment>
     </unit>
     <unit id="vuln.grade.count.critical">

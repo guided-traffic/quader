@@ -34143,7 +34143,7 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:126</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external reads new projects.</source>
+        <source>Everyone signed in, service accounts and CI jobs included, reads new projects; external users do not.</source>
       </segment>
     </unit>
     <unit id="visibility.new-projects.public">
@@ -34167,7 +34167,7 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:136</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external can find the project and read what its repositories make internal.</source>
+        <source>Everyone signed in, service accounts and CI jobs included, can find the project and read what its repositories make internal; external users cannot.</source>
       </segment>
     </unit>
     <unit id="visibility.project.public">
@@ -34191,7 +34191,7 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:146</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external.</source>
+        <source>Everyone signed in, service accounts and CI jobs included, except external users.</source>
       </segment>
     </unit>
     <unit id="visibility.artifacts.public">
@@ -34215,7 +34215,7 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:156</note>
       </notes>
       <segment>
-        <source>Every signed-in user who is not external.</source>
+        <source>Everyone signed in, service accounts and CI jobs included, except external users.</source>
       </segment>
     </unit>
     <unit id="visibility.wiki.public">

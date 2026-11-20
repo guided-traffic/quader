@@ -272,7 +272,7 @@ GitLab gives a job one ID token per `id_tokens` entry for its whole run, and doc
 
 ## What the token can do
 
-A pipeline reads what the grants of its mappings give and what is **Public**; it never reads a repository merely because it is **Internal**, because a CI token is not an internal user, so grant the read in a mapping. The token works like any token on the package protocols (npm, NuGet, the OCI registry, APT), on `/files/…`, and on the operations of the API that read or change repository content: as a bearer token, as the password of HTTP Basic authentication with any user name (unless an administrator switched Basic authentication off), and as the NuGet API key. It acts as the mappings that granted it, never as a person: it holds no system role, cannot create tokens and gets `403` `ci_token_restricted` on every management operation except `GET` and `DELETE /api/v1/tokens/current`.
+A pipeline reads what the grants of its mappings give and, like everyone signed in, what is **Internal** or **Public**; to read a **Private** repository, or to publish anywhere, it needs a grant of its mapping. The token works like any token on the package protocols (npm, NuGet, the OCI registry, APT), on `/files/…`, and on the operations of the API that read or change repository content: as a bearer token, as the password of HTTP Basic authentication with any user name (unless an administrator switched Basic authentication off), and as the NuGet API key. It acts as the mappings that granted it, never as a person: it holds no system role, cannot create tokens and gets `403` `ci_token_restricted` on every management operation except `GET` and `DELETE /api/v1/tokens/current`.
 
 ## What never to do
 

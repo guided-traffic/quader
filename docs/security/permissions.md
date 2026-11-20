@@ -435,14 +435,16 @@ any grant does (the principal hook notifies the authorization area).
 
 A Bastion registration ([R-BAS-004](../spec/bastion.md#r-bas-004--bastion-registrations-and-the-bastion-token-on-the-main-installation)) is a
 principal of the kind `bastion`, and no decision of this page is ever made about it: its token is refused by type on every route but the
-Bastion interface, and the interface admits the recognition stage's proof, not a grant (`{bastion: true}`). It is never internal
-([visibility.md](visibility.md)), because no request of it reaches the decision point. The rule is held three times:
+Bastion interface, and the interface admits the recognition stage's proof, not a grant (`{bastion: true}`). It is not internal
+([visibility.md](visibility.md), [Q-AUTHZ-320](../spec/authorization.md#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)):
+every other authenticated subject is, but a Bastion reads only for the callers it forwards for, and no request of the registration
+reaches the decision point. The rule is held three times:
 
 | Line | What refuses | Answer |
 |---|---|---|
 | The writes | a policy entry and its validation, a role binding, an owner record, a group member and a project member that names `bastion:<name>` ([Q-BAS-60](../spec/bastion.md#q-bas-60--a-bastion-registration-is-refused-by-every-write-path-with-one-top-level-422-principal_not_allowed)) | `422 principal_not_allowed`; `TestR_BAS_004_ABastionHoldsNoGrant` and the unit tests next to each path |
 | The database | the guards of `authz_role_binding` and `group_membership` name the kinds they admit (`AI001`) | the row is refused; the same test writes around the API |
-| The decision point | the kind `bastion` has an empty principal set and is never internal: no own ID, no role, no capability ([decide.go](../../internal/authz/decide.go), [index.go](../../internal/authz/index.go)) | every decision refuses it, should a route ever ask; `TestR_BAS_004_ABastionRegistrationIsNeverInternal` |
+| The decision point | the kind `bastion` has an empty principal set and is not internal: no own ID, no role, no capability, no level but `public` ([decide.go](../../internal/authz/decide.go), [index.go](../../internal/authz/index.go)) | every decision refuses it, should a route ever ask; `TestR_BAS_004_ABastionRegistrationIsNeverInternal` |
 
 Managing registrations needs `endpoints:read` and `endpoints:write`, and revoking one Bastion token `tokens:revoke` as well
 ([Q-BAS-24](../spec/bastion.md#q-bas-24--bastion-registrations-are-managed-with-the-endpoint-capabilities)): `security-admin` holds all three,

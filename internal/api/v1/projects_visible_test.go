@@ -8,15 +8,14 @@ import (
 )
 
 // TestR_AUTHZ_035_TheProjectsACallerSees: a holder of projects:read sees every project, a member its own, any caller the projects its
-// level admits (internal for an internal subject, public for every request); membership keeps the caller's own (R-AUTHZ-035 rule 8,
+// level admits (internal for every authenticated subject but an external user, public for every request); membership keeps the caller's own (R-AUTHZ-035 rule 8,
 // R-API-057).
 func TestR_AUTHZ_035_TheProjectsACallerSees(t *testing.T) {
 	user := authz.Subject{Kind: "user", ID: "u1", Name: "alice"}
 	external := user
 	external.External = true
-	viaBastion := user
-	viaBastion.ViaBastion = true
 	service := authz.Subject{Kind: "service_account", ID: "s1", Name: "bot"}
+	ci := authz.Subject{Kind: "ci", Name: "ci", Mappings: []string{"ci:gitlab/acme"}}
 	anonymous := authz.Subject{Anonymous: true}
 
 	priv := project.Project{Key: "shut", Visibility: "private"}
@@ -40,8 +39,9 @@ func TestR_AUTHZ_035_TheProjectsACallerSees(t *testing.T) {
 		{"a holder of projects:read sees every project", user, priv, nil, true, false, true},
 		{"an external user is not admitted by internal", external, inner, nil, false, false, false},
 		{"an external user sees a public project", external, open, nil, false, false, true},
-		{"a request through a Bastion is not internal", viaBastion, inner, nil, false, false, false},
-		{"a service account is never internal", service, inner, nil, false, false, false},
+		{"a service account is internal and sees an internal project", service, inner, nil, false, false, true},
+		{"a CI token is internal and sees an internal project", ci, inner, nil, false, false, true},
+		{"a service account does not see a private project", service, priv, nil, false, false, false},
 		{"an anonymous caller sees a public project", anonymous, open, nil, false, false, true},
 		{"an anonymous caller does not see an internal one", anonymous, inner, nil, false, false, false},
 		{"membership keeps the memberships", user, priv, member, false, true, true},

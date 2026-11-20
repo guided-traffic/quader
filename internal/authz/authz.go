@@ -137,12 +137,9 @@ type Subject struct {
 	// api_key), for the actor of an audit event; empty when unknown.
 	AuthMethod string
 	// External is the user's external flag as the authentication stage resolved it with the status and the groups
-	// (R-AUTH-044); it makes a user subject not internal (R-AUTHZ-030). Set by edge.SubjectOf only.
+	// (R-AUTH-044); it makes a user subject, through its session and through each of its tokens, not internal (R-AUTHZ-030).
+	// Set by edge.SubjectOf only.
 	External bool
-	// ViaBastion says the request reached the main installation through a recognized Bastion forward or the Bastion check
-	// (R-BAS-008, Q-BAS-148); such a request never reads by the level internal. Set by edge.SubjectOf only, as Endpoint is;
-	// the architecture test refuses any other writer.
-	ViaBastion bool
 	// MinEpoch is the value of the Quader-Authz-Min-Epoch header (R-AUTHZ-032); zero
 	// when absent.
 	MinEpoch int64

@@ -7,9 +7,10 @@ import (
 )
 
 // TestR_BAS_004_ABastionRegistrationIsNeverInternal: a subject of the kind bastion - the principal an interface request
-// of a Bastion is admitted as - has an empty principal set. It is never internal (R-AUTHZ-030), holds no role and no
-// capability, and a read that a grant opens to a group of users is refused to it. The kind is dormant (no route decides
-// for it today); the rule keeps it so if one ever does.
+// of a Bastion is admitted as - has an empty principal set. It is not internal (R-AUTHZ-030): every other authenticated
+// subject is, but a registration reads nothing on its own credential, and what a Bastion serves is decided on the caller it
+// forwards for. It holds no role and no capability, and a read that a grant opens to a group of users is refused to it. The
+// kind is dormant (no route decides for it today); the rule keeps it so if one ever does.
 func TestR_BAS_004_ABastionRegistrationIsNeverInternal(t *testing.T) {
 	const idBastion = "0192f1c4-0000-7000-8000-0000000000b1"
 	f := newFixture().repo("generic-local", "local", "generic", "")

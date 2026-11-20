@@ -130,8 +130,9 @@ func (s *Server) ListProjects(w http.ResponseWriter, r *http.Request, _ gen.List
 	WritePage(w, r, MapPage(page, func(p project.Project) gen.Project { return toProject(p, roles[p.Key]) }))
 }
 
-// levelAdmits reports whether a project's level admits the caller: internal for an internal subject, public for every request
-// (R-AUTHZ-035 rule 8). The token scope does not narrow it: the project is named, its content is decided repository by repository.
+// levelAdmits reports whether a project's level admits the caller: internal for an internal subject (every authenticated subject
+// but an external user, R-AUTHZ-030), public for every request (R-AUTHZ-035 rule 8). The token scope does not narrow it: the
+// project is named, its content is decided repository by repository.
 func levelAdmits(sub authz.Subject, p project.Project) bool {
 	switch p.Visibility {
 	case "public":

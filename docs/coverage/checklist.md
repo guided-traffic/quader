@@ -3088,7 +3088,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ARCH-023 (implemented) | Error model | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-027 (implemented) | Performance targets | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-028 (implemented) | Resource limits for untrusted package content | MVP | [architecture.md](../spec/architecture.md) |
-| R-AUTHZ-030 (implemented) | Internal and external users | MVP | [authorization.md](../spec/authorization.md) |
+| R-AUTHZ-030 (implemented) | Internal subjects and external users | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-034 | The wiki of a repository | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-036 | Visibility changes: operations, audit, journal and propagation | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-037 | Restricted visibility levels | MVP | [authorization.md](../spec/authorization.md) |

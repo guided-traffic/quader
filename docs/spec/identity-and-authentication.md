@@ -1532,8 +1532,12 @@ what it is a member of, what a grant names and what is `public`; the level `inte
   installation's `newUsersExternal` (R-AUTH-040, default `false`) as it stood when the user was created
   ([Q-AUTH-231](#q-auth-231--a-new-user-takes-the-installations-newusersexternal-whatever-created-it)). Changing the
   setting changes no existing user.
-- **Only users.** Service accounts, CI mappings and Bastion registrations carry no flag: they are never internal anyway
-  (R-AUTHZ-030). A group carries no flag; GitLab's flag is per user, and a group of external people is their memberships.
+- **Only users.** Service accounts, CI mappings and Bastion registrations carry no flag (owner, 2026-11-20): a service account's
+  technical token and a CI token are internal like every signed-in caller, and a Bastion registration is not internal, since it
+  reads nothing on its own credential ([authorization.md](authorization.md) R-AUTHZ-030, Q-AUTHZ-268, Q-AUTHZ-320). A group
+  carries no flag; GitLab's flag is per user, and a group of external people is their memberships.
+- **The user and its tokens.** The flag acts on every credential of the user: its sessions and each of its personal access
+  tokens, as the authentication stage resolves it for the request.
 - **Where it acts.** The authentication stage resolves the flag with the user's status and groups for every request of a UI
   session or a personal access token, from the principal cache of R-AUTH-023, and hands it to authorization in the subject;
   a job that continues a request reads it again before each step, as it reads the groups
@@ -1704,9 +1708,10 @@ Priority: **P1** · Covers: IAM-015
   409 `auto_join_member_conflict` and names the projects; the member write refuses an auto-join group with 422 `principal_not_allowed`.
 - CI tokens never pick up auto-join groups. Their principal is a CI mapping, not a user, so the
   catalog's widening of CI tokens through default groups (TOK-015) cannot occur.
-- The visibility level `internal` ([authorization.md](authorization.md) R-AUTHZ-030, R-AUTHZ-033) draws the same line:
-  like auto-join groups, it covers users only, never service accounts or CI identities, and no user flagged external
-  (R-AUTH-044). It is how an installation gives `read` to every signed-in person of the organization.
+- The visibility level `internal` ([authorization.md](authorization.md) R-AUTHZ-030, R-AUTHZ-033) draws a wider line than
+  auto-join groups: it admits every authenticated caller - users, service accounts' technical tokens, CI tokens - except a user
+  flagged external (R-AUTH-044) and that user's tokens. It is how an installation gives `read` to every signed-in caller of the
+  organization; an auto-join group still covers users only.
 
 Acceptance criteria:
 
@@ -3358,8 +3363,8 @@ Priority: **MVP** · Covers: IAM-005, AUTHN-036, PKG-NUGET-016
 **The anonymous subject.** A request that presents no credential at all runs as `anonymous`. A built-in principal row of the
 kind `anonymous` exists as its actor; it cannot be deleted, cannot hold tokens or sessions, cannot be a group member, and no
 policy entry, role binding, project membership or owner record may name it ([authorization.md](authorization.md)
-R-AUTHZ-003, Q-AUTHZ-279). There is no principal `authenticated` any more: the level `internal` reads for every internal user
-(R-AUTHZ-030).
+R-AUTHZ-003, Q-AUTHZ-279). There is no principal `authenticated` any more: the level `internal` reads for every internal subject, every authenticated caller
+but a user flagged external (R-AUTHZ-030).
 
 **What it reads.** Exactly what a `public` visibility level admits ([authorization.md](authorization.md) R-AUTHZ-033,
 R-AUTHZ-035). There is no runtime switch and no YAML ceiling of its own: the switch `anonymousAccess`, its ceiling

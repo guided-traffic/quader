@@ -294,24 +294,32 @@ func TestR_CI_013_AJobInstallsThroughItsPolicyAndPublishesItsOwnPackage(t *testi
 	})
 }
 
-// R-AUTHZ-002: group everyone is auto-join and reads npm-loose, and the artifacts of npm-loose are internal, so every internal user
-// reads it as well (R-AUTHZ-030, R-AUTHZ-033; the principal authenticated is gone, ADR-192); a CI token whose mapping lists no group
-// and that no policy covering npm-loose names gets 404 there, because it is never internal and never in an auto-join group.
-func TestR_AUTHZ_002_ACITokenIsNeitherInternalNorInAnAutoJoinGroup(t *testing.T) {
+// R-AUTHZ-030, R-AUTHZ-002: a CI token is internal, so it reads the internal repository npm-inner of the project other, which
+// grants it nothing, and a level gives it no write there (403). It is in no auto-join group: group everyone is auto-join and reads
+// the private npm-loose, which a member of the group reads and the CI token, whose mapping lists no group and that no policy
+// covering npm-loose names, gets 404 for.
+func TestR_AUTHZ_030_ACITokenReadsWhatIsInternalAndIsInNoAutoJoinGroup(t *testing.T) {
 	e := newCIEnv(t, false, "acme-release")
 	m := e.maps["acme-release"]
 	everyone := e.text(`INSERT INTO principal (id, kind, name) VALUES (gen_random_uuid(), 'group', 'everyone') RETURNING id::text`)
 	e.exec(`INSERT INTO user_group (principal_id, origin, auto_join) VALUES ($1::uuid, 'admin', true)`, everyone)
 	e.policy("everyone-reads", []string{"read"}, []string{"npm-loose"}, nil, everyone)
 	// A repository is never more open than its project: the project first. The replica below starts with these levels in its index.
-	e.exec(`UPDATE project SET visibility = 'internal' WHERE id = (SELECT project_id FROM repositories WHERE key = 'npm-loose')`)
-	e.exec(`UPDATE repositories SET visibility_artifacts = 'internal' WHERE key = 'npm-loose'`)
-	reader := e.stack.User("reader")
+	e.stack.RepositoryIn("other", "npm-inner", "local", "npm", `{"local":{"packageOwnership":"off"}}`)
+	e.exec(`UPDATE project SET visibility = 'internal' WHERE key = 'other'`)
+	e.exec(`UPDATE repositories SET visibility_artifacts = 'internal' WHERE key = 'npm-inner'`)
+	reader := e.stack.User("reader", "everyone") // a member of the auto-join group, as its first login makes it
 	readerTok := e.stack.Token(reader, scope.Default())
 	a := e.web("web-a")
 	tok := e.issue(a, e.bundle("4711", "acme/web/frontend", m.contribution(nil, grant([]string{"it/npm-internal"}, []string{"@acme/*"}, claims.Read))), job{"1", "2"}, 10*time.Minute)
+	if r := e.stack.Do(a, "GET", "/api/npm/other/npm-inner/-/whoami", tok.secret, nil); r.Status != 200 {
+		t.Fatalf("the CI token cannot see the internal npm-inner: %d %s", r.Status, r.Body)
+	}
+	if r := e.publish(a, "other/npm-inner", tok.secret, "@acme/x", "1.0.0"); r.Status != 403 {
+		t.Fatalf("the CI token publishes to npm-inner, which grants it nothing: %d %s", r.Status, r.Body)
+	}
 	if r := e.stack.Do(a, "GET", "/api/npm/it/npm-loose/-/whoami", readerTok, nil); r.Status != 200 {
-		t.Fatalf("the user cannot see npm-loose: %d", r.Status)
+		t.Fatalf("the user cannot see npm-loose through the auto-join group: %d", r.Status)
 	}
 	if r := e.stack.Do(a, "GET", "/api/npm/it/npm-loose/-/whoami", tok.secret, nil); r.Status != 404 {
 		t.Fatalf("the CI token sees npm-loose: %d %s", r.Status, r.Body)
