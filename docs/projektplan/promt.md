@@ -545,10 +545,6 @@ agent** is not decided until the owner has said so.
 W-1 to W-26 are built and on `main`; their decisions are in the specification. What the owner has to decide or look at is in the
 list [With the owner](#with-the-owner); what is untested is in section 12. Open as work:
 
-- **W-14, from the builder's report:** the spec calls two more events warnings that are not written as one: a result of a group
-  rule that violates the group-name rule is "skipped with a warning event" (R-AUTH-008), but only logged
-  ([claims.go](../../internal/auth/oidc/claims.go)); `system.backup.completed` with `completed_with_warnings` is written as success.
-  R-AUTH-041 calls the break-glass events' severity "high", which the model cannot say.
 - **W-20:** a repository deleted during a session stays in **Recently opened** until the next sign-in or change of permissions and
   then leads to "not found".
 - **The power user's screens** (the development agent's own list, after the owner said on 2026-11-18 that "nothing gross struck
@@ -591,7 +587,7 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20** (`main` at `38b1d1ec`).
 
-- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: a builder builds variant A, the owner's choice; a builder for W-14; a builder for W-20 and
+- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: a builder builds variant A, the owner's choice; a builder for W-20 and
   the wiki's visibility behind a disclosure. W-12 is decided and not built now: the owner chose an invitation by e-mail, later
   ("Option c, aber erst später", 2026-11-20); it stands in [FULL.md](FULL.md#m9--automation-and-integration), M9.
 - **To check first:** F-165 in the next full nightly; then section 12.
