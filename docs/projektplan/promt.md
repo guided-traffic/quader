@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 18:05): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers and being specified ([With the owner](#with-the-owner)); the role `scanner`, built and waiting on its branch for a certificate for each kind of pod, which the owner decided that day, and after it the analyser's database in a repository (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 19:20): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers, specified, and in work in the first of four packages ([With the owner](#with-the-owner)); the role `scanner`, built and waiting on its branch for a certificate for each kind of pod, which the owner decided that day, and after it the analyser's database in a repository (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -577,9 +577,9 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 18:40, after the landing of the project `upstream`.
+**State on 2026-11-20**, 19:20, after the release of the project `upstream` and the landing of the malware scan's specification.
 
-- **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
+- **Landed and released on 2026-11-20** (the last release cut is the one of `c77c2bc17`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
   **Recently opened**); the wiki's visibility behind a fold; W-27 (**Set up client** in variant A) with the fix of the two
   jobs it turned red; the limits' package (the built-in profiles from a measurement, a refused request not counted, waiting
@@ -625,7 +625,7 @@ runs are in `git log`; this section holds the current state.
   [visibility.md](../security/visibility.md): a technical or CI token reads every `internal` repository at every door; live
   where a CI issuer is public, where a mapping admits fork pipelines to read, and for forks on a GitLab older than 18.4.
   **To check before the owner's installation takes the release:** whether one of the three is configured there.
-- **The built-in project `upstream`, landed on 2026-11-20 at 18:40** in four commits
+- **The built-in project `upstream`, landed on 2026-11-20 at 18:40 and released at 18:53** in four commits
   ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, ADR-209 and ADR-211):
   - **Package 1** (migration 00086): the project with its fixed id, one repository per upstream preset of the format
     catalog, brought in line at every migration (created off and Internal, an administrator's address kept, a dropped
@@ -678,7 +678,7 @@ runs are in `git log`; this section holds the current state.
   `docs/security/visibility.md` say at the switch what it opens: everyone signed in who is not external, pipelines and
   service accounts included, directly and through every virtual repository that lists it (H-1052). **On the owner's
   installation:** the release creates the 13 repositories, twelve off and Internal and `scanner-trivy` Private; it
-  holds no project yet (read on the cluster), so no key collides. **Seen and left for the walkthrough:** the groups stand in
+  holds no project yet (read on the cluster), so no key collides. **Read on the cluster at 19:20:** the installation took the release (its HelmRelease is ready on the new chart), `quader migrate` applied the two migrations and created the 13 repositories; twelve are Internal and were never switched on, `scanner-trivy` is Private. **Seen and left for the walkthrough:** the groups stand in
   the order of the format catalog, Ansible Galaxy first and OCI last; the project switcher lists Upstream under **Your
   projects**; in German the side-bar entry "Berechtigungsrichtlinien" reaches the side bar's edge (not this feature's).
 - **The role `scanner` and the analyser's database in a repository, specified on `main`** on 2026-11-20
@@ -688,7 +688,8 @@ runs are in `git log`; this section holds the current state.
   [authorization.md](../spec/authorization.md), the endpoint `scan` and its listener in
   [endpoints.md](../spec/endpoints.md); the specification counts 1,013 requirements. **Built in two work packages:** (A) the
   scanner role with its token, its listener, its chart and its tests (no migration, nothing of `upstream`); (B) the
-  database in a repository (migration 00088, the task that fetches it, the sources screen), which needs
+  database in a repository (a migration, the task that fetches it, the sources screen; the number 00088 it was
+  planned with went to the malware scan's first package on 2026-11-20, so it takes the next free one at its start), which needs
   `upstream/scanner-trivy` of package 1. **Order of landing:** migration numbers run without a gap
   (`internal/meta/postgres/steps.go`), so package 1, then 2, then B; a package that lands out of this order takes the next
   free number. **Checked by the development agent of what the planner could not verify** (2026-11-20): Docker Hub serves
@@ -696,8 +697,23 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (18:40), one builder (package A's, for the certificates) and a planner (the malware scan's specification,
-  [With the owner](#with-the-owner)):
+- **The pipeline of the landing** (run 44785358679): the release was cut at 18:53; **one job red, `UI layout
+  checks`**, with one of 381 cases and a defect of the product, not of the check: on the settings of the Debian
+  remote `platform/debian` the copy button beside each fingerprint of an upstream key stands 3.5 px above the
+  fingerprint's line, at all three widths. The component (`web/src/app/features/repositories/deb-upstream-keys.ts`) is
+  old and never had data in the renders; since package 1 the Debian preset carries the archive's keys, so the seeded
+  remote shows nine fingerprints for the first time. A builder fixes it (below). At 19:20 the three integration
+  shards and `e2e (vuln)` of that run were still going; every other job is green.
+- **In work** (19:20), three builders:
+  - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
+    two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
+    start on its branch; then the gate in the two serve points, the fills of remote repositories, virtual
+    repositories, the walk of an OCI virtual repository, the repository's stricter-only setting, the audit events, the
+    Bastion feed and the backup. It has to be landable alone: before a scanner exists, an installation behaves by
+    default as it does today.
+  - **The copy button beside a Debian upstream key's fingerprint** (since 19:15, the builder of the `upstream` screens
+    in its worktree, on a branch from `main`): the row by the convention of R-UI-175 and R-UI-176, a look for the same
+    markup elsewhere without data in the renders, the screen rendered in both schemes and three widths.
   - **Package A of the scanner, first stage reported:** `0f23ad8ed` on `7fe52214` (143 files), the role `scanner`
     with its token, its listener on `packages`, the chart's objects and the tests up to the integration tier; no
     migration. Gates green but one: `make versions-check` fails on this machine's Docker buildx (F-17, the owner's
@@ -813,10 +829,32 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   (11 a). A refusal ends a virtual repository's resolution, a later find goes to the Bastions at once, and the
   window of up to 10 minutes after switching on is stated (12 a). A page **Admin area › Settings › Malware scanning**,
   the status at file and version, a malware view in the security dashboard (13 a). The scanning is on in the chart,
-  the switch off (14 a). **In work since 18:45:** the planner writes the specification on a branch of its own; the
-  build follows in four work packages, of which the gate and the verdicts need nothing but `main`, and the scanner's
-  side and the database need the scanner role on `main`. What the planner had established, read in the code and in
-  ClamAV's own documentation:
+  the switch off (14 a). **Specified on 2026-11-20 at 19:15** (`c5463eced`): a page of its own,
+  [malware-scanning.md](../spec/malware-scanning.md) (R-MAL-001 to R-MAL-031, his answers as Q-MAL-1 to Q-MAL-15, the
+  planner's decisions as Q-MAL-20 to Q-MAL-36, the gap H-1100), with R-REPO-075 (`upstream/scanner-clamav`), R-HA-068
+  (the malware scanner's Deployment) and R-HA-069 (the `freshclam` container), amendments where another page owns the
+  mechanism, a security page ([malware-scanning.md](../security/malware-scanning.md), H-1101 to H-1113) and ADR-220 to
+  ADR-222; the specification counts 1,047 requirements. Gates on the commit: the coverage tool's tests, links (0 broken)
+  and check, the full unit run and the chart tests by the planner, the white-label scan. **Built in four work packages:**
+  (1) the gate and the verdicts (migration 00088, the store, the join into the download statement, the gate in the two
+  serve points, remote fills, virtual repositories, the OCI walk, the repository's setting, the API, the audit events,
+  the Bastion feed, backups), which needs nothing but `main` and lands first, **in work since 19:20**; (2) the scanning
+  side (the job `malware-scan`, discovery and rescans, the call, the blob token, the scan listener's routes, the scanner
+  kind `malware` with its unpacking and a `clamd` client, metrics), which needs the scanner role on `main` and package
+  1's store; (3) the database and the chart (the task `malware-sync-db`, `freshclam`, `upstream/scanner-clamav`, the
+  malware scanner's Deployment with `clamd`, the pinned ClamAV image, the CI job on the same pin, the end-to-end case),
+  which needs the certificate for each kind of pod and package 2's database route; (4) the screens (**Admin area ›
+  Settings › Malware scanning**, the security dashboard's malware view, the status at file and version, the section in
+  a repository's settings), which starts on package 1's API contract. **What the planner could not verify:** the 25 s
+  wait rests on apt's timeout of 30 s, which is a maintainer's statement on Debian's list and not the manual, and apt's
+  handling of a 503 is not known; whether the official ClamAV image runs as an unprivileged user on a read-only root
+  file system; `clamd`'s memory with today's database; whether `clamd` checks a `.cld` file against the publisher's
+  signature (H-1107); whether `freshclam` keeps the `.sign` files; any terms for passing the signatures on; pulls
+  through containerd's image store; every test time is an estimate. **Where the code contradicted the planner's first
+  report:** the generic virtual engine already ends its walk on a 403 but goes on after a 503, so the pending answer
+  got a rule of its own; a well-known repository had no class, every one being a remote (the declaration gets a
+  `Class` member, Q-REPO-411). What the planner had established before, read in the code and in ClamAV's own
+  documentation:
   - **One place every download passes** (`itemStore.Serve` in `internal/formathost/ingest.go`, where the block of the
     vulnerability scanning sits; `/files/` has a copy), and it reads the blob's row in the same statement: a verdict per
     blob costs no query there and holds for every format and class, also those to come.
@@ -974,6 +1012,18 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   fill the cache, answers 403 `populate_not_permitted`, which the scanner reports as `layer_missing`; an installation that
   wants the database from another registry under another image name sets up a remote in a project of its own and names
   repository and image in the configuration file (R-VULN-044).
+- The malware scanning (2026-11-20, its planner's decisions beside the owner's fifteen): Q-MAL-20 to Q-MAL-36, Q-REPO-410
+  and 411, Q-OCI-240, Q-ARCH-560, Q-EP-95, Q-AUTHZ-340, Q-LIM-80, Q-HA-360 to 362, Q-BAS-164, Q-API-370, Q-UI-870 to 872.
+  The ones to look at first: who releases a find (Q-MAL-21: `vulnerabilities:triage` together with
+  `content:metadata-read`, so the instance auditor and the administrator, and not the security administrator, who reads
+  no repository; it is the reading of the owner's note at decision 5); a virtual repository is strict when it or the
+  member that holds the item is (Q-MAL-32); switching a repository's setting off is a weakening an Owner cannot do
+  (Q-MAL-31); no report mode and no serving when the scanner is down, switching off is the way out (Q-MAL-36); under
+  the switch every remote fill is stored and scanned before it is served (Q-MAL-30); what is not scanned: generated
+  items, a remote's metadata documents, the system repositories of `upstream`, blobs without an item (Q-MAL-22). Marked
+  unsure by the planner: the scanner loads its database through a route that admits it by its certificate's name
+  (Q-MAL-27, which rests on the certificate for each kind of pod); the ClamAV image of the feature line and not the
+  long-term one (Q-MAL-33); the sizes of the malware scanner (Q-HA-360 to 362: two replicas of two slots).
 - The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
   well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
   repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).
