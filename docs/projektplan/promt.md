@@ -596,7 +596,15 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   (Q-AUTHZ-206, every repository in one project). Read for the discussion: the formats' catalog holds twelve upstream presets
   with IDs (OCI four, npm one, NuGet one, Debian five, Ansible Galaxy one); a virtual repository lists only repositories of
   its own project (Q-REPO-212); a host can be bound to one repository at its root (R-EP-006, R-OCI-029), by configuration at
-  start; quick setup (R-UI-023) is specified and not built. Parked with it, on his word ("Das stellen wir kurz zurück"): in
+  start; quick setup (R-UI-023) is specified and not built. **Decided so far** (owner, 2026-11-20): a virtual repository may
+  list repositories of its own project and of the well-known project, and of no other ("Ich bin gerne bei Option B"); a
+  project's own remote repositories stay possible beside the central ones; and a reference never protects what it names:
+  "Ein virtuelles Repo, das auf unser zentrales zeigt, kann keine Deaktivierung durch einen Admin verhindern. Allgemein kann
+  das Hinzufügen eines Remote-Repos zu einem virtuellen nicht dafür genutzt werden, dass das Remote nicht gelöscht werden
+  kann. Das musst du besser lösen als das Remote zu sperren." Read for it: resolution already drops a member that is disabled
+  or being deleted (R-REPO-019), and a delete with `detach=true` already takes a repository out of every member list in its
+  transaction (R-REPO-013), today inside one project. Open: the project's key, the binding of a host, the page of the admin
+  area. Parked with it, on his word ("Das stellen wir kurz zurück"): in
   which repository the analyser's database lies when Quader's own repository is its cache.
 - **Format logos** (Q-UI-225 to 227): npm, Ansible Galaxy and the Docker whale may be shown only with their owners' permission, so
   npm and Ansible Galaxy keep the neutral glyph (and Guides show it on the tiles of Ansible Galaxy, Generic and npm). To show them,
