@@ -2154,11 +2154,10 @@ agent** is not decided until the owner has said so.
   the 65 integration packages, not the conformance suite, which has a build tag of its own and runs in CI only; and the
   rule "a decision taken at one format holds for every format" was not applied to a decision that predates it. The kind
   legs in Enforce were all green in that run (ten of ten), and the UI layout checks.
-  - **Open, for the owner:** the class `package_write` (10 unsafe requests a second, burst 50 per caller) now also holds on
-    the registry's paths in Enforce, where no general class held before the limits (F-155). An image push sends at least
-    three unsafe requests per layer; a push of many layers in parallel may meet it. Not observed: `e2e (oci)` and
-    `e2e (push)` were green in Enforce with their small images. The upload figures that would replace the class do not
-    exist yet (Q-LIM-27).
+  - **Was open, measured on 2026-11-20:** the class `package_write` (10 unsafe requests a second, burst 50 per caller) held
+    on the registry's paths in Enforce and refused every `docker push` of more than about 16 layers; the default burst is
+    400 now (Q-LIM-56, see the run record of that morning). The upload figures that would replace the class do not exist
+    yet (Q-LIM-27).
 - **F-160 · `drain-load-e` failed its latency condition in the night's baseline run, with every functional condition held**
   (nightly 44595121737 of 2026-11-19, dispatched 19:08 UTC on the code of `ad01d57e`, the seven legs the night before had
   not run; the first nightly on the runners' own image and with the CI caches, and the last before the download limits).
@@ -2191,23 +2190,48 @@ agent** is not decided until the owner has said so.
 
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details.
 
-**In work since 2026-11-20, 07:30:** the end-to-end set of the download limits with real clients (R-LIM-039), on the owner's
-yes of that morning ("ja bitte, das klingt sehr sinnvoll!") to the development agent's proposal: six clients against a small
-profile in Audit and Enforce with each client's message asserted; an image push of many layers against the write class of
-the registry, measured; the cases of W-25 in the formats' own sets, also through a virtual repository; the leg
-`e2e (limits)`; what the clients show, in the manual. One builder, which owns the local kind cluster for it (brief:
-`.out/e2e-limits-brief.md` of the checkout; base `11484e74`). Its product fixes land as commits of their own. The owner walks
-the new screens meanwhile; the open decisions of the night are put to him one at a time after it.
-**Its shape was changed by the owner within the hour** (2026-11-20): "Ich sehe schon wieder: 'mit vielen Layern'. Unsere Tests
-dauern im Moment schon sehr sehr lange. Und es kommen noch bestimmt 20 weitere Registry Arten dazu. Du musst die Tests so
-strukturieren, dass es auch ausführbar bleibt. Es kann nicht einfach alles immer fetter werden und mehr und mehr Daten schieben.
-Wir schaffen das einfach von unserer Infrastruktur irgendwann nicht mehr." The development agent's brief had asked for what
-he forbids: a matrix of six clients, every figure, two modes and every subject in a new leg that loads every client image.
-The rule is in `CLAUDE.md` ("Tests stay runnable"); the item now is: **no leg and no set `limits` on the kind cluster**; the
-limits' model where it is missing in the integration set `limits`, in process; what only a real client shows (its reaction
-to one refusal) as one small case in that client's format's own set, with a budget of under two minutes per leg, measured;
-the image push as a measurement of requests with layers of a few bytes, run once; W-25 once per format that can produce a
-probe, the virtual path once. R-LIM-039's e2e bullet is rewritten by the builder.
+**Built on 2026-11-20, morning: the download limits with real clients, in the shape of the owner's rule "Tests stay
+runnable"** (`CLAUDE.md`; his objection to the first brief is quoted there). The development agent's first brief asked for a
+cross-format end-to-end set (six clients, every figure, two modes, a new leg loading every client image, a push "mit vielen
+Layern"); he stopped it within the hour. What was built instead:
+
+- **The model once, in process:** six tests in the integration set `limits` (47 s, files of 64 KiB at most): the day's volume
+  and the hour's requests; a download slowed to the floor while a parallel one is refused; the block (a token's refused
+  writes block that token alone, a reader's misses block nothing, lifting works, Audit sets none); every subject spends its
+  own budget (two personal tokens share the user's, two technical tokens of one account have two, on all three levels, an
+  address and an IPv6 /64); the anonymous ceiling; the switch reaches the second replica in 19 and 34 ms.
+- **One case per client, in its format's own set**, Enforce only, payloads of bytes: the legs gain 33 s (npm), 59 s
+  (NuGet), 63 s (OCI), 40 s (Debian), 36 s (Ansible), measured on the development machine. No new leg, no set `limits` on
+  the cluster. R-LIM-039's e2e bullet is rewritten to this shape.
+- **What the clients do at a refusal** (asserted, and in the manual under "What your client shows"): npm waits and
+  succeeds at a request limit and fails with the limit's sentence at a byte limit; `dotnet restore` retries about a second
+  apart and fails with "429 (Too Many Requests)" and no reason; `docker pull` fails at once on any 429 and prints the
+  limit's sentence (on a refused `HEAD` only the status); `podman pull` waits and succeeds at a request limit and holds a
+  byte-limit refusal for about 16 minutes before it fails (measured once); `apt-get update` waits and succeeds, `apt-get
+  download` fails with the status and no reason; `ansible-galaxy` fails with the status and no reason. The protocol gap "no
+  reason shown" of the specification also holds for ansible-galaxy and for docker on a `HEAD`.
+- **Two defects of the limits, found by it and fixed:** (1) the class `package_write` refused every `docker push` of an
+  image with more than about 16 layers in Enforce: a push of 40 layers of a few bytes sent 60 unsafe requests in 0.4 s, the
+  51st was refused and docker exits without a retry. The default burst is 400 now, the rate stays 10 a second (Q-LIM-56;
+  this answers the open point at F-161); a push of 40 tiny layers stays as a test of 13 s. (2) A push into a public
+  repository spent the anonymous budget of the pushing machine's address, because docker pushes there without its
+  credential first; an unsafe request without a credential on the registry's paths is the challenge and is not charged
+  (Q-OCI-225, the sibling of F-161). And the user manual said a new installation starts in Audit.
+- **W-25 with real clients:** OCI ran on the cluster (`docker manifest inspect` through a virtual repository had the blobs
+  at the remote member within a second; the pull afterwards asked the upstream for nothing). **No other format's client can
+  produce a probe:** `npm view pkg@1.0.0` requests the whole package document (the specification and the manual said
+  otherwise and are corrected, Q-NPM-90); NuGet, APT and ansible-galaxy have no command that asks about one version
+  without fetching it. So with today's clients the owner's wish is fulfilled for images, and for the other formats by a
+  `HEAD` or the version document from a script only.
+- **For the owner, each with the builder's options, to be put to him one at a time:** docker gives up at once on any 429
+  where the other clients wait (keep; hold a request for seconds on the registry's paths, which changes his decision 4; or
+  larger default bursts); a client that retries a second apart is never admitted at a tight request limit because a
+  refused request still counts in the window (keep; or do not count refused requests in the request windows); podman's
+  16 minutes at a byte limit (document; or a short `Retry-After` there); the new client cases run when their format
+  changes, not when only the limits' code changes (keep, as the rule has it; or add the limits' paths to the five legs).
+- **Not covered, said by the builder:** a CI token on the request path (the integration stack has no issuer; its subject
+  is unit-tested); a crashed replica's leases; a multi-platform push. **Not run:** anything on `linux/amd64` or in CI; the
+  first pipeline shows it.
 
 **Night of 2026-11-19/20, state at 02:00 local time** (releases v0.64.0 to v0.66.0; `main` at `072f4949`, everything pushed;
 no builder running). The owner left at about 20:05 ("ich bin ab jetzt weg. 22 Uhr ist damit vorgezogen") and ordered a
