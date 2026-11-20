@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 19:20): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers, specified, and in work in the first of four packages ([With the owner](#with-the-owner)); the role `scanner`, landed that day with a certificate for each kind of pod, and after it the analyser's database in a repository, in work (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 21:14): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers, specified, its tables and API landed, and in work in three of four packages ([With the owner](#with-the-owner)); the role `scanner`, landed that day with a certificate for each kind of pod, and after it the analyser's database in a repository, in work (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -516,6 +516,18 @@ records the recorder that tells such a stall apart).
 - An opened audit event at 390 px breaks its **Time** over two lines (the layout check's "a time in 2 lines", seen on
   2026-11-20 with a probe; not fixed). **No render opens an audit event**, so its facts never pass the layout check:
   the copy buttons of its two IDs stood 6 px off their line until 2026-11-20. A walk that opens one event closes it.
+- **A push to `main` cancels the run of the push before it** (seen on 2026-11-20 at 20:38): what that run had not
+  finished is not run again when the next change starts fewer legs. The release of the first run was cut, so the
+  rule "no push before the release of the run before" held and still lost six end-to-end legs. Until the workflow
+  changes, the development agent looks before a code push at what the run before it has not finished and whether
+  the next change starts those jobs again; if it does not, the push waits for them.
+- `TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath` (integration, area `files`) failed once under host load with
+  "deadlock detected (SQLSTATE 40P01)" and passed alone (2026-11-20): it deadlocks on purpose and passes only when
+  PostgreSQL aborts the deploy, which is retried; under load the test's own DELETE starts waiting later than
+  `deadlock_timeout` after the deploy and is the one aborted. A test that depends on which of two transactions the
+  deadlock check picks; not fixed.
+- The settings answer of the malware scanning counts the unchecked blobs over all items at every read
+  (`backlog.unchecked`), costly on a large installation (its builder's note, 2026-11-20; not measured).
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -580,7 +592,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 20:19, after the landing of the role `scanner` with a certificate for each kind of pod.
+**State on 2026-11-20**, 21:14, after the landing of the role `scanner` with a certificate for each kind of pod and of the malware scan's tables and API.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `252a0a2d0`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -736,18 +748,58 @@ runs are in `git log`; this section holds the current state.
   unit run, lint with the integration build tag, links, the white-label scan, `shellcheck`; the writer run on a copy
   of the state (the only difference to the file in use is the new block), a handshake of both links with the
   profile's certificate, and a start of the role `all` in process that failed without the CA and answered ready
-  with it. **Not verified at the landing:** the start against the profile's services without the environment variable
-  (the development agent's restart of the owner's backend, right after); the path of a fresh state in the job `UI
-  layout checks`; `TestListenerRotation` itself. **A consequence the developer page now states:** on these loopback links any certificate of the profile's
+  with it. **Verified by the development agent before the push** (20:36): the owner's backend restarted from the main
+  checkout without the environment variable answers ready, its `quader.yaml` carries the new block, the UI and the
+  sign-in provider answer. **Not verified at the landing:** the path of a fresh state in the job `UI layout checks`;
+  `TestListenerRotation` itself. **The rule taken from it:** after the local merge and before the push the
+  development agent restarts the UI development backend from the main checkout; a start that fails is fixed before
+  anything is pushed. **A consequence the developer page now states:** on these loopback links any certificate of the profile's
   CA is admitted, the ones of its PostgreSQL and object store among them.
-- **In work** (20:19), two builders:
+- **The pipelines of the evening.** The scanner landing's run (44801198840) cut its release at 20:34 and was
+  **cancelled at 20:38 by the push of the fix** for the UI development backend: a push to `main` cancels the run
+  before it, so its three integration shards and its six end-to-end legs (`npm`, `push`, `oci`, `access-long`, `vuln`,
+  `bastion`) ended without a result; red in it was `UI layout checks` alone, with the start failure above. The fix's
+  run (44803754281) cut its release at 20:51 and, its change being scripts, one test and documentation, started one
+  end-to-end leg, `push`, **which failed at 21:04 on `TestE12Valkey`**: both cases in which a new replica with a wrong
+  primary name or a wrong password must stay not ready saw `no_sentinel` in three of three attempts. **Cause, found by
+  reading:** the scanner landing made the development profile's NetworkPolicies for Valkey name its clients by their
+  component (`api`, `packages`, `worker`, `e2e-driver`), because scanner pods carry the serve label too and are no
+  client of Valkey (Q-HA-344); the extra replicas that test starts carry the component `e2e-replica`, which the list
+  does not hold, so they reach no Sentinel. A change of the landing, so fixed at once by a builder of its own
+  (below), who also goes through every other pod the suite and the profile create. **Not verified in CI of the
+  scanner landing because of the cancelled run:** the legs `npm`, `oci`, `access-long`, `vuln` and `bastion` and the
+  three integration shards on that commit; its builder ran `e2e (vuln)` twice on a cluster of its own and five
+  integration areas; the nightly of tonight runs every leg.
+- **In work** (21:14), four builders, the most that run at once:
+  - **The Valkey policies of the development profile and the test's extra replicas** (since 21:12): the fix, the look
+    at every other pod of the suite and the profile for the same miss, `TestE12Valkey` on a kind cluster of its own, and
+    how tonight's failure relates to the older finding about the Valkey start cases.
+  - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
+    that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
+    at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
+    cases with seeded verdicts of every state. It changes files under `web/` and the screens' documentation only; a
+    shape the API does not give goes back to package 1's builder.
+  - **The state cell of a replica on Admin area › System** (since 21:14): the fix's run showed, with the backend
+    starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
+    shows "Ready" and a warning with the check's name in its state cell, and the cell's first line stands 20 px below
+    the replica's name. Since the scanner landing the role `all` reports the check `scanner` that way wherever the
+    analyser is not installed (Q-ARCH-551), which is every render and the owner's UI stack; the cell never had a
+    warning in a render before.
+  **Waiting for a free builder, both ready to start on `main`:** package 2 of the malware scan, the scanning side
+  (the job `malware-scan`, discovery and rescans, the call to the scanner, the blob token, the scan listener's routes
+  for a blob and for the database, the scanner kind `malware` with its unpacking and a `clamd` client behind an
+  in-process fake, the configuration and the metrics; a worker that claims the queue `malware` without a scanner's
+  address must not refuse a default or a local start, which package 1's builder saw the planned check would), and
+  package B of the scanner (the next entry).
   - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
     two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
     start on its branch; then the gate in the two serve points, the fills of remote repositories, virtual
     repositories, the walk of an OCI virtual repository, the repository's stricter-only setting, the audit events, the
     Bastion feed and the backup. It has to be landable alone: before a scanner exists, an installation behaves by
     default as it does today.
-    **First stage reported at 20:19** (one commit on its branch, not landed yet): the migration 00088 with five
+    **First stage reported at 20:19 and landed at 21:14** (one commit, "an installation keeps a malware verdict for
+    every stored file and offers the switch, the finds and the release of a file over the API"); the second stage,
+    the gate itself, is in work since then. The first stage: the migration 00088 with five
     tables (the verdict of a blob keyed by its digest, the release, the settings with the switch off, the signature
     database in use, what the job last saw of the scanners), all registered for backup; the store behind one
     interface of 17 methods, the one writer of verdicts, releases and the switch (Q-MAL-40); the join of verdict and
@@ -760,9 +812,12 @@ runs are in `git log`; this section holds the current state.
     find lists at most 100 items and 100 repositories with counts) and that `malware_verdict` is a signal and not a
     change area (Q-MAL-44). **Gates, each exit 0:** build, the full unit run, generate-check, lint, cyclo, gosec,
     links and check, the white-label scan, and under the stack's lock the integration areas `postgres`, `repository`,
-    `files`, `packages`, the new `malware` and the Bastion feed. **Not run yet:** the areas `api`, `proxy`, `virtual`,
-    OCI and the other formats, though the download statement changed for all of them; the builder runs them, rebased
-    on `main`, before the stage lands. **What it cost:** about ten unit tests of milliseconds; a new integration area
+    `files`, `packages`, the new `malware` and the Bastion feed. **Rebased on `main` without a conflict, and run before the
+    landing because the download statement changed for every format:** every gate again with exit 0, the chart
+    tests among them, and under the stack's lock the areas `api`, `proxy`, `virtual`, the four of OCI, `registry`,
+    `npm`, `nuget`, the four of Debian, the three of Ansible, `transfer`, `vulnimage`, `limits` and `malware`, all
+    passing; in `files` one test failed once under load and passed alone (section 8). By the development agent on
+    the commit as landed: build, the full unit run, generate-check, links and check. **What it cost:** about ten unit tests of milliseconds; a new integration area
     `malware` of two tests, 5.1 s together with five files of 8 bytes, which falls into shard b; nothing end to end.
     **Landable alone, shown by two tests:** with the scanning on, the switch off and no setting on a repository the
     gate is strict nowhere, and without a verdict nothing is refused. **What an administrator gets who turns the
@@ -773,7 +828,8 @@ runs are in `git log`; this section holds the current state.
     scanner's address, which with the scanning on by default may refuse a default or local start unless the default
     queues leave `malware` out; the count of unchecked blobs is computed over all items at every read of the
     settings, costly on a large installation.
-  - **Package B of the scanner, the analyser's database in a repository** (since 20:19, on `main` with package A):
+  - **Package B of the scanner, the analyser's database in a repository** (waiting for a free builder; on `main` with
+    package A and the malware scan's migration, so that its own takes 00089 without a gap):
     the task that fetches the database into `upstream/scanner-trivy`, the system's own reading through that
     repository, the actor of its fills, the cleanup's exemption for the layer in use, the "in use" line of the admin
     page and the sources screen; a migration with the next free number after the malware scan's 00088.
