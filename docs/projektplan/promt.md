@@ -129,9 +129,11 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   zu checken dass auch wirklich noch gearbeitet wird. Teilweise hören deine Watches auf zu funktionieren, wenn der Cache Cold
   wird. Ich möchte auf keinen Fall morgen aufwachen und du hast vergessen nach dem subagent weiter zu machen." Each check looks
   itself (the builders' worktrees, the pipeline, the nightly) and does not rely on a watcher; it ends when nothing is open.
-- **The walk's items are built by subagents of the largest model at high effort, at most four at a time, each in its own
-  worktree, with no review agent after them** (the owner's frame for the walk of 2026-11-18, with rule 10); the development
-  agent looks at every screen itself before it lands.
+- **The walk's items are built by subagents at high effort or above, at most four at a time, each in its own worktree, with
+  no review agent after them** (the owner's frame for the walk of 2026-11-18, with rule 10); the development agent looks at
+  every screen itself before it lands. **Which model a subagent runs on is the owner's to say** (2026-11-20: not the largest
+  one; a subagent that has just started on another is stopped and started again, one that is nearly done may finish). Rule 1
+  keeps the model's name out of the repository; it stands in the development agent's notes.
 - **The repository of the runners' image takes no commit without the owner's word** (`container-images`, its own `CLAUDE.md`;
   he released one commit and push for the image on 2026-11-19): ask again each time.
 
@@ -587,7 +589,7 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20** (`main` at `38b1d1ec`).
 
-- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: a builder builds variant A, the owner's choice; a builder for W-20 and
+- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: a builder builds variant A, the owner's choice (started a second time at 10:00, on the model the owner named); a builder for W-20 and
   the wiki's visibility behind a disclosure. W-12 is decided and not built now: the owner chose an invitation by e-mail, later
   ("Option c, aber erst später", 2026-11-20); it stands in [FULL.md](FULL.md#m9--automation-and-integration), M9.
 - **To check first:** F-165 in the next full nightly; then section 12.
