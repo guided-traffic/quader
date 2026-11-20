@@ -563,13 +563,15 @@ runs are in `git log`; this section holds the current state.
 - **Landed on 2026-11-20:** the limits' package (the built-in profiles from a measurement, a refused request not counted,
   waiting downloads capped), W-27 (**Set up client** in variant A), W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
   visibility behind a fold, and the measurement of what a format costs ([test-cost.md](../developer/test-cost.md)).
-- **Red on `main`, not gating** (Test and Release 44715970992 of b74d0e98, read at 12:15): `UI layout checks` (the screen
-  `setup-deb`: the label of a fold on two lines at 390 px) and `e2e (access-long)` (journey `20-ansible` expects the guide's
-  first section open) come from W-27, a builder fixes both; `integration (shard c)` is `TestR_DEB_025` of section 12 D.
-- **In work:** the fix above (built, lands after the release of the limits' push); a 429 no longer counting toward the block
-  (the owner's decision on Q-LIM-58). Two planners write the specification, each on a branch of its own that the builders build
+- **Red on `main` at 12:15, fixed and to be confirmed by the next run** (Test and Release 44715970992 of b74d0e98): `UI
+  layout checks` (a fold's label on two lines at 390 px on `setup-deb`) and `e2e (access-long)` (journey `20-ansible`)
+  came from W-27 and are fixed; `integration (shard c)` is `TestR_DEB_025` of section 12 D. Read the runs of today's pushes
+  in the window from 17:00.
+- **In work:** Two planners write the specification, each on a branch of its own that the builders build
   on (nothing of it is on `main`): the built-in project `upstream` with the product's well-known repositories, and the
-  role `scanner` with the analyser's database in `upstream/scanner-trivy`. Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
+  role `scanner` with the analyser's database in `upstream/scanner-trivy`. Builders: the format legs of the pipeline and the integration shards; the bounded wait for
+  Valkey's verdict before the first readiness. A designer: candidates for one colour scale of the severities, shown to the
+  owner before anything is built. Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
   (larger default bursts from a measurement of one pull; a refused request is not counted in the request windows; the
   manual names the job's timeout for podman).
 - **Decided by the owner on 2026-11-20** ("1 B", the development agent of the same view): a format's e2e leg runs on a push
@@ -684,7 +686,7 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   request figure is not a refused request, as before the package; the builder had made it one (Q-LIM-58) on the development
   agent's wrong word that it already was, and a client with many connections would have reached the block of 15 minutes in
   one overflow. A caller that keeps sending is held to its figure's rate and nothing more; the block stays for the refusals
-  it was built for. A builder takes it back.
+  it was built for. Taken back on 2026-11-20.
 - The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
   well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
   repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).
