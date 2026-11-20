@@ -821,6 +821,20 @@ runs are in `git log`; this section holds the current state.
   UI profile, the TLS integration test, the Valkey policy, this one): each is a start or a pod outside the chart that
   the landing's own tests did not exercise; a landing that adds a rule to the configuration or to a policy runs every
   integration area and starts the local UI profile before it lands, which costs minutes against an evening of fixes.
+  **The fourth fix, reported at 22:10 and pushed with the other three:** the area `server` builds its processes'
+  environment itself and not through the shared harness, which the landing had given the address; one builder of the
+  environment for both ways the area starts a process now names for a worker a scanner's address nothing listens on,
+  as the shared harness does. Not for the role `all`, which would stop calling its own scanner; and not by switching
+  the image scanning off, because a worker with it on is what the chart runs. A worker whose scanner cannot be
+  reached starts and is ready; a due scan is put off for a minute with `scanner_unavailable`. **A second defect of
+  the same test, older than the landing:** under the race detector, which the developer page's command for the area
+  uses and CI's does not, a subtest read a process's state while another goroutine wrote it; it learns of the exit
+  through a channel now. The area passed with the race detector in 52 s. **Every other start of a single role
+  without the chart, read against the landing's rules:** the shared harness and the command's tests have the address
+  since the landing; the TLS stack sets its CA, its names and the scan clients; the area `tls` starts the role `all`;
+  the overload area's process opens no scan listener; the configuration loads of migrate, admin and backup name no
+  role; the profiles go through the chart. Nothing else fails. `process.scanner_kind` is specified and not in the
+  configuration yet. **Not run:** CI's own form of the shard, with coverage and without the race detector.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -841,7 +855,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (21:59), four builders, the most that run at once:
+- **In work** (22:10), three builders:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -888,8 +902,6 @@ runs are in `git log`; this section holds the current state.
     and an in-process fake of it, the metrics. Bound by this evening's lessons: no default or local start may be
     refused for a missing scanner's address; anything under `web/` gets the UI tests; a check that fails without
     gating gets a name and a sentence for the System page.
-  - **The server integration tests' worker** (since 21:59, above): one commit of tests, held for by the push of the
-    evening's three fixes.
   **Waiting for a free builder:** package 3 of the malware scan (the database and the chart), which also waits for
   package 2's first stage.
   **How the malware scan lands from here** (the development agent's, 2026-11-20): its first stage is on `main`; what
