@@ -455,7 +455,10 @@ type RemoteFetcher interface {
 	// [Descriptor.Probes] declares, which succeeded. The host decides, on the request, whether the background download of the
 	// version starts: the repository's switch, its patterns, the caller's populate permission, what is stored, the limits of
 	// the caller (usage-and-limits.md R-LIM-037). It never fails, delays or changes the answer: the decision runs after the
-	// call returns. A format calls it once per probe, after the answer was decided.
+	// call returns. A format calls it once per probe, after the answer was decided, on a remote repository and on a virtual one
+	// alike: for a request addressed to a virtual repository the host finds the member that serves the probe's content and
+	// decides on that member, with the probe's charge (Q-REPO-367). A handler that answered from one member's own handler (a
+	// request derived through [Request.Member]) calls it with that request, which is the same.
 	Probed(ctx context.Context, rq *Request, p Probe)
 }
 

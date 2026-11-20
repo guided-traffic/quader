@@ -1590,7 +1590,9 @@ W-25 (a probe starts the download in the background) is built after this page; i
 nothing of it:
 
 - The decision is taken **when the probe is answered**, on the probe's request: its subject, its place and budget key, and the
-  remote's ceiling for its class. A background download starts only if step 9a (R-LIM-022) would admit an upstream request for the
+  remote's ceiling for its class. A probe through a virtual repository is decided as Q-LIM-2 decides every request through one: the
+  place and budget key of the virtual repository the client addressed, the ceiling of the remote member that serves the version
+  ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-367), the usage recorded at that member. A background download starts only if step 9a (R-LIM-022) would admit an upstream request for the
   probe's caller at that moment; then the upstream request is counted, for the budget key and the ceiling, at that moment. If it
   would not, no background download starts and the probe is answered as it would have been.
 - The background download's uncached bytes are charged to the probe's budget key and to the ceiling at the flush after they were
@@ -1735,7 +1737,8 @@ rules decide is a second question: the request figures are decided at stage 7, b
 explanation stays one answer. The development agent would revisit this if Owners expect a member's rule to hold through the virtual
 repository (the explanation would then name both).
 
-**Applied in the spec:** R-LIM-006, R-LIM-013.
+**Applied in the spec:** R-LIM-006, R-LIM-013, R-LIM-037 (a probe through a virtual repository: the budget key at the virtual
+repository, the member's ceiling, the usage at the member; [repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-367).
 
 ### Q-LIM-3 · Protocol paths are counted by the figures; the management API keeps its classes
 

@@ -2284,7 +2284,10 @@ Context: which requests of the distribution specification name exactly one image
 
 **Choice:** (a). The probe of a tag names the manifest under its digest and what the stored manifest names, so that the decision reads
 what is stored without a request (Q-REPO-364); the probe of a `HEAD` by digest names the manifest, which `ProbeContent` reads. A remote OCI
-tag is listed once its background download stored the whole content (R-API-081). **Applied in the spec:** [repositories-and-proxy.md](../repositories-and-proxy.md)
+tag is listed once its background download stored the whole content (R-API-081). Through a virtual repository the walk of R-OCI-027
+answers a manifest or a blob from a remote member's own handler, which tells the host of the probe with the member's request: the
+member's `oci.platforms` and settings decide ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367).
+**Applied in the spec:** [repositories-and-proxy.md](../repositories-and-proxy.md)
 R-REPO-065, [api-and-ui.md](../api-and-ui.md) R-API-081. Tests: `TestR_REPO_065_WhatAProbeOfTheRegistryIs`,
 `TestQ_OCI_223_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList`, `TestR_REPO_065_TheContentOfAProbedVersion` in
 [probe_test.go](../../../internal/formats/oci/probe_test.go).

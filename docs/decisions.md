@@ -1175,11 +1175,16 @@ and that the download limits bound it; the charge was fixed beforehand in R-LIM-
 - The format contract is at version 7: `Descriptor.Probes` (or `NoProbe` with the reason) is required of a format with the class remote,
   `RemoteAdapter.ProbeContent` names a probed version's content, and `RemoteFetcher.Probed` is how a handler tells the host of a probe it
   answered; `formats/all` pins every format's probes ([architecture.md](spec/architecture.md) R-ARCH-008, R-ARCH-025).
+- A probe through a virtual repository is the probe of the member that serves the version, found by the tiers of R-REPO-019 without an
+  upstream; the member's settings decide and the charge is the probe's, as Q-LIM-2 places every figure (Q-REPO-367). `Probed` takes a
+  request of either class and a probe route may serve the class virtual; the contract stays at 7, since both were added before version 7
+  was released.
 - A remote OCI tag is listed once a background download stored its content (R-API-081, migration 00083).
 
 **Consequences.** A `docker pull` that asks the tag's manifest first races its own background download; the flights of R-REPO-026
 collapse the two and the client's fetch pre-empts a background request. An upstream that counts manifest requests counts the background
-download's (H-1017). A probe through a virtual repository starts nothing (H-1016). No new table: the job and the usage store carry what a
+download's (H-1017). A NuGet probe through a virtual repository with several remote members may start at a member that lacks the
+version (H-1019). No new table: the job and the usage store carry what a
 user sees.
 
 **Alternatives considered.** A detached fetch on the probe's replica (lost on a drain, invisible); marking the version for the next mirror
@@ -1189,7 +1194,7 @@ platform of an index, or none (the owner's options b and c).
 **Revisit condition:** probes counted as `busy` or `queue_full` under normal load; operators turning the switch off for every Docker Hub
 remote; the storage quota of R-STOR-029.
 
-**Spec:** [repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-024, R-REPO-065, Q-REPO-360 to Q-REPO-366, H-1016 to H-1018;
+**Spec:** [repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-024, R-REPO-065, Q-REPO-360 to Q-REPO-367, H-1017 to H-1019;
 [spec/README.md](spec/README.md) INV-11; [usage-and-limits.md](spec/usage-and-limits.md) R-LIM-037, Q-LIM-54; [architecture.md](spec/architecture.md)
 R-ARCH-008, R-ARCH-025; [api-and-ui.md](spec/api-and-ui.md) R-API-081, R-UI-082, Q-UI-766 to Q-UI-768; [formats/oci.md](spec/formats/oci.md)
 Q-OCI-223, Q-OCI-224; [formats/npm.md](spec/formats/npm.md) Q-NPM-89; [formats/nuget.md](spec/formats/nuget.md) Q-NUGET-124;

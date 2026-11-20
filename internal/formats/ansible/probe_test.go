@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -48,6 +49,35 @@ func TestR_REPO_065_WhatAProbeOfTheGalaxyIs(t *testing.T) {
 			t.Errorf("%s %s (%d) is no probe and told the host of %+v", tc.method, tc.path, resp.Code, got)
 		case tc.want != nil && (resp.Code != http.StatusOK || len(got) != 1 || !reflect.DeepEqual(got[0], *tc.want)):
 			t.Errorf("%s %s: %d %s, probes %+v, want %+v", tc.method, tc.path, resp.Code, resp.Body.String(), got, *tc.want)
+		}
+	}
+}
+
+// TestQ_REPO_367_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository: the version document and a HEAD of a collection's archive are probes
+// through a virtual repository, told to the host with the request addressed to the virtual repository, which finds the member that
+// serves the archive. A GET of an archive and a version no member holds are not.
+func TestQ_REPO_367_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository(t *testing.T) {
+	w := newWorld(t, local("loc", 1, 0), remote("rem", 2, 1))
+	w.doc("collections/acme/tools/1.0.0.json", "rem", upstreamVersion("acme", "tools", "1.0.0", "upstream.example", sha(3)))
+	collection := "virt acme.tools 1.0.0 " + ArtifactPath("acme", "tools", "1.0.0")
+	for _, tc := range []struct {
+		method, path string
+		want         string
+	}{
+		{http.MethodGet, versionsPath + "1.0.0/", collection},
+		{http.MethodHead, versionsPath + "1.0.0/", collection},
+		{http.MethodGet, versionsPath + "3.0.0/", ""},
+		{http.MethodGet, "v3/artifacts/collections/acme-tools-1.0.0.tar.gz", ""},
+		{http.MethodHead, "v3/artifacts/collections/acme-tools-1.0.0.tar.gz", collection},
+	} {
+		w.rem.probes = nil
+		r, err := w.h.Serve(context.Background(), tc.method, tc.path, nil, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := strings.Join(w.rem.probes, "; ")
+		if got != tc.want {
+			t.Errorf("%s %s (%d): probes %q, want %q", tc.method, tc.path, r.Code, got, tc.want)
 		}
 	}
 }

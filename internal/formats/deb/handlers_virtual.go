@@ -26,7 +26,19 @@ func (f *Format) handleVirtualPool(ctx context.Context, rq *formats.Request, w h
 	if err := rq.Host.Authorize(ctx, rq, target); err != nil {
 		return err
 	}
-	return rq.Host.Resolver().Artifact(ctx, rq, rq.Path, info, immutableWriter{ResponseWriter: w, mediaType: MediaType})
+	if err := rq.Host.Resolver().Artifact(ctx, rq, rq.Path, info, immutableWriter{ResponseWriter: w, mediaType: MediaType}); err != nil {
+		return err
+	}
+	probeFile(ctx, rq, rq.Path, info)
+	return nil
+}
+
+// probeFile tells the host of a HEAD of a package file (R-REPO-065, Q-DEB-122): through a virtual repository the host finds the
+// member that serves it (Q-REPO-367); by a member's path it is that member's probe.
+func probeFile(ctx context.Context, rq *formats.Request, p formats.Path, info formats.PathInfo) {
+	if rq.Method == http.MethodHead && info.Package != "" {
+		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: info.Package, Version: info.Version, Files: []formats.Path{p}})
+	}
 }
 
 // handleMember is GET members/<memberKey>/<path>: a package file of one member, the one whose paragraph the client read (R-DEB-027). The
@@ -92,7 +104,11 @@ func (f *Format) handleMember(ctx context.Context, rq *formats.Request, w http.R
 		return rq.Host.Items().Serve(ctx, mrq, out, it, formats.ServeStored)
 	}
 	if pm.MayFill {
-		return rq.Host.Remote().Artifact(ctx, mrq, mp, formats.Digests{}, out)
+		if err := rq.Host.Remote().Artifact(ctx, mrq, mp, formats.Digests{}, out); err != nil {
+			return err
+		}
+		probeFile(ctx, mrq, mp, info)
+		return nil
 	}
 	it, ok, err := rq.Host.Remote().Cached(ctx, mrq, mp)
 	if err != nil {

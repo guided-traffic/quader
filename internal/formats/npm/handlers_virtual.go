@@ -48,7 +48,15 @@ func (f *Format) virtualDocument(ctx context.Context, rq *formats.Request, w htt
 	if err != nil {
 		return err
 	}
-	return f.serveFull(ctx, rq, w, n, src)
+	if err := f.serveFull(ctx, rq, w, n, src); err != nil {
+		return err
+	}
+	if fm == formVersion {
+		// The version document of a virtual repository is a probe as a remote's is; the host finds the member that serves the
+		// version's tarball (R-REPO-065, Q-REPO-367).
+		f.probeVersion(ctx, rq, n, ref, src)
+	}
+	return nil
 }
 
 // virtualTarball serves a tarball through a virtual repository: the tiers of
@@ -62,7 +70,14 @@ func (f *Format) virtualTarball(ctx context.Context, rq *formats.Request, w http
 		return err
 	}
 	p := formats.Path{Path: TarballPath(n, version)}
-	return rq.Host.Resolver().Artifact(ctx, rq, p, f.Classify(p), immutableWriter{w})
+	if err := rq.Host.Resolver().Artifact(ctx, rq, p, f.Classify(p), immutableWriter{w}); err != nil {
+		return err
+	}
+	if rq.Method == http.MethodHead {
+		// A HEAD of the tarball through a virtual repository is a probe of the member that serves it (R-REPO-065, Q-REPO-367).
+		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: n.String(), Version: version, Files: []formats.Path{p}})
+	}
+	return nil
 }
 
 // virtualWriteDocument is GET {name}?write=true on a virtual repository (R-NPM-029): the

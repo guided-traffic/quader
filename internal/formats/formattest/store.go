@@ -883,18 +883,28 @@ type MemRemote struct {
 	Exchanges func(ctx context.Context, rq *formats.Request, x formats.Exchange) (*http.Response, error)
 	// Queries answers Query; nil answers it with [formats.ErrOffline].
 	Queries func(ctx context.Context, rq *formats.Request, q formats.Query) (*formats.QueryResult, error)
-	// Probes are the probes the format told the fake of (Probed), in order (R-REPO-065).
-	Probes []formats.Probe
+	// Probes are the probes the format told the fake of (Probed), in order (R-REPO-065); ProbedOn the repositories of their
+	// requests, the addressed one or the member a request was derived for (Q-REPO-367).
+	Probes   []formats.Probe
+	ProbedOn []formats.RepoRef
 
 	note func([]byte)
 	mu   sync.Mutex
 }
 
 // Probed records the probe (R-REPO-065): the fake starts no background download.
-func (m *MemRemote) Probed(_ context.Context, _ *formats.Request, p formats.Probe) {
+func (m *MemRemote) Probed(_ context.Context, rq *formats.Request, p formats.Probe) {
 	m.mu.Lock()
 	m.Probes = append(m.Probes, p)
+	m.ProbedOn = append(m.ProbedOn, rq.RepoRef())
 	m.mu.Unlock()
+}
+
+// ProbedOnSeen returns a copy of the repositories of the probes recorded so far.
+func (m *MemRemote) ProbedOnSeen() []formats.RepoRef {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]formats.RepoRef(nil), m.ProbedOn...)
 }
 
 // ProbesSeen returns a copy of the probes recorded so far.

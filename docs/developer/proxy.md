@@ -500,10 +500,15 @@ A cached item whose object is gone from the store, or failed verification, is a 
 A request that names exactly one version or file of a remote without fetching its content (R-REPO-065, W-25) runs this path:
 
 ```text
-format handler (a declared probe, answered with success)
+format handler (a declared probe, answered with success; remote or virtual)
   └─ rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name, Version, Files, Document, Digest})      returns at once
        formathost/probe.go  precheck: remote, not disabled, downloadOnProbe, may contact the upstream, request mode normal
-       └─ goroutine (at most 16 per replica, 10 s each)                                               decide
+                            (a virtual repository: enabled, a resolver, request mode normal)
+       └─ goroutine (at most 16 per replica, 10 s each)                                               decideFor
+            virtual only: servingMember ─ Resolver.Plan for the first file ─ a local member holds it: local
+            ─ the first remote member whose cache holds it ─ else the first fillable member whose gate (CacheView) announces it,
+            else the first the gate does not refuse ─ rq.Member(member) ─ precheck on the member
+            decide (on the member's request for a virtual repository)
             patterns and claims per file ─ MayPopulateOn (question) ─ Cached per file until one is missing
             ─ BackgroundDownloads.Busy (the job's dedup key, the repository's count < maxConcurrentFetches)
             ─ limits.Charge.StartBackground (step 9a for the probe's caller) ─ BackgroundDownloads.Enqueue
@@ -520,11 +525,18 @@ job remote-background-download (queue default, exclusive per version)          a
   background downloads alike (Q-REPO-365).
 - **The listing.** A completed download whose probe was answered from a metadata entry sets `remote_cache_entries.background_sha256` to the
   digest the entry held (`ProxyMarkBackgroundDownloaded`); the view `oci_remote_tags` lists such a tag (migration 00083, R-API-081).
-- **Metrics.** `quader_remote_background_downloads_total{format,outcome}` (`ProbeMetrics`, one family per process).
+- **Through a virtual repository** (Q-REPO-367). The decision runs on the request derived for the member (`Request.Member`), so the member's
+  settings decide and the job is the member's; the charge in the context is the probe's, whose place and budget key stage 7 resolved at
+  the virtual repository, and `Charge.StartBackground(memberID)` counts the member's ceiling and records the usage at the member. The
+  member search asks no upstream: the gate runs on a copy of the member request with `CacheView` set.
+- **Metrics.** `quader_remote_background_downloads_total{format,outcome}` (`ProbeMetrics`, one family per process); `local` is a probe through
+  a virtual repository whose local member holds the version.
 - **Tests.** The format's probes: `TestR_REPO_065_*` in each format's `probe_test.go`, with `formattest.MemRemote.ProbesSeen`; the table of every
   format in [all_test.go](../../internal/formats/all/all_test.go); the charge in [background_test.go](../../internal/limits/background_test.go);
   the whole path against the OCI stub in [probe_test.go](../../test/integration/ociremote/probe_test.go) (a replica of the role `all`, which runs
-  the job).
+  the job); the member search in [probe_test.go](../../internal/formathost/probe_test.go); through a virtual repository against the stubs in
+  [probe_virtual_test.go](../../test/integration/ociremote/probe_virtual_test.go) and
+  [remote_probe_virtual_test.go](../../test/integration/npm/remote_probe_virtual_test.go).
 
 ### Wiring
 

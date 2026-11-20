@@ -303,7 +303,13 @@ func (f *Format) virtualVersion(ctx context.Context, rq *formats.Request, w http
 	if m.CacheStatus != "" {
 		w.Header().Set("Cache-Status", m.CacheStatus)
 	}
-	return writeDocument(rq, w, galaxydoc.RenderVersion(v, addrOf(rq)))
+	if err := writeDocument(rq, w, galaxydoc.RenderVersion(v, addrOf(rq))); err != nil {
+		return err
+	}
+	// The version document of a virtual repository is a probe as a remote's is; the host finds the member that serves the archive
+	// (R-REPO-065, Q-REPO-367).
+	rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: pkg, Version: ver, Files: []formats.Path{{Path: ArtifactPath(ns, name, ver)}}})
+	return nil
 }
 
 // virtualArtifact serves the archive of the first member that holds it (R-ANS-023): the tiers of R-REPO-019 step 6, with the headers
@@ -318,7 +324,14 @@ func (f *Format) virtualArtifact(ctx context.Context, rq *formats.Request, w htt
 		return err
 	}
 	p := formats.Path{Path: path}
-	return rq.Host.Resolver().Artifact(ctx, rq, p, f.Classify(p), w)
+	if err := rq.Host.Resolver().Artifact(ctx, rq, p, f.Classify(p), w); err != nil {
+		return err
+	}
+	if rq.Method == http.MethodHead {
+		// A HEAD of the archive through a virtual repository is a probe of the member that serves it (R-REPO-065, Q-REPO-367).
+		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: ns + "." + name, Version: ver, Files: []formats.Path{p}})
+	}
+	return nil
 }
 
 // virtualRoot is the discovery document (R-ANS-003): it lists v1 when the upstream of any remote member does (R-ANS-022).

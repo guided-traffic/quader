@@ -1709,7 +1709,8 @@ Priority: **MVP** · Covers: RMT-001, RMT-002, RMT-004, RMT-015
 
 A remote repository proxies exactly one upstream and caches what clients ask for. In the default mode `pullThrough` it
 fetches the content of a version when a client fetches it, or, when a client only probes the version (names exactly that version
-or file without fetching it), in the background right after the probe, charged to that client's upstream budget (R-REPO-065,
+or file without fetching it, directly or through a virtual repository the remote serves it for, Q-REPO-367), in the background right
+after the probe, charged to that client's upstream budget (R-REPO-065,
 [usage-and-limits.md](usage-and-limits.md) R-LIM-037, INV-11); `downloadOnProbe: false` turns the second off, and nothing else is
 fetched ahead. In the mode `mirror` background passes also store what the upstream offers within the remote's patterns and bounds,
 before a client asks (R-REPO-050 to R-REPO-059). Clients cannot deploy into it. Every setting below is a member of the
@@ -3408,13 +3409,28 @@ with the class remote declares at least one or says why its protocol has none, a
 (`formats.RemoteFetcher.Probed`), whether the answer came from the cache or from the upstream; the content of the version is what
 the format's `RemoteAdapter.ProbeContent` names.
 
+**Through a virtual repository** ([Q-REPO-367](#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it)):
+the same requests addressed to a virtual repository are probes too, of the member that serves the version's content. The decision
+finds that member by the tiers of R-REPO-019 step 6 for the probe's file, among the members the virtual repository's plan keeps for the
+caller (its patterns, pin rules and claims, the caller's read, nested virtual repositories expanded by R-REPO-018), and asks no
+upstream for it: a local member that holds the file starts nothing, the version is there; else the first remote member whose cache
+holds the file; else, among the remote members the caller may fill, the first whose format's gate finds the version in the member's
+stored documents (the documents a merge read it from), and where the gate reads none (NuGet), the first. The decision below then runs
+on that member as if the probe had been addressed to it: the member's switch, patterns, `oci.platforms` and bounds, one background
+download per version of the member, the content stored in the member. The charge stays the probe's (R-LIM-037,
+[usage-and-limits.md](usage-and-limits.md) Q-LIM-2): the caller's budget key decided at the virtual repository, the member's ceiling,
+the usage recorded at the member. A format whose virtual handler answers from a member's own handler (an OCI manifest or blob, an
+Ansible role's archive, a Debian package file by its member path) tells the host of the probe with that member's request, which is
+the same. Every format with the classes remote and virtual answers its probes through a virtual address;
+`TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo` (`internal/formats/all`) pins it.
+
 | Format | Probes (the route's request) | What is downloaded | What the protocol leaves out |
 |---|---|---|---|
 | OCI | `GET` and `HEAD` of the manifest of a tag; `HEAD` of a manifest by digest; `HEAD` of a blob | the manifest; of an index the manifests of the platforms of `oci.platforms` with their attestations; of each image its config and its layers ([Q-OCI-224](formats/oci.md#q-oci-224--the-probes-of-the-registry-and-the-content-of-an-image)) | A pull by digest fetches its own content. A layer with foreign `urls` is fetched by the client from there and not downloaded |
 | npm | `GET` and `HEAD` of the version document, by its number or a dist-tag; `HEAD` of the tarball | the tarball ([Q-NPM-89](formats/npm.md#q-npm-89--the-version-document-and-a-head-of-the-tarball-are-probes)) | `npm install` reads the package document with every version and fetches the tarball itself: the rule fires for `npm view <pkg>@<v>` and tools that ask one version |
 | NuGet | `GET` and `HEAD` of the registration leaf; `GET` and `HEAD` of the `.nuspec`; `HEAD` of the `.nupkg` | the `.nupkg` ([Q-NUGET-124](formats/nuget.md#q-nuget-124--the-registration-leaf-the-nuspec-and-a-head-of-the-package-are-probes)) | `dotnet restore` reads the flat container's version list and the registration index, which name every version |
 | Ansible Galaxy | `GET` and `HEAD` of a collection's version document; `HEAD` of a collection's or a role's archive | the archive ([Q-ANS-80](formats/ansible.md#q-ans-80--the-version-document-and-a-head-of-an-archive-are-probes)) | `ansible-galaxy` reads the version document and then fetches the archive itself: the download overlaps the client's own fetch |
-| Debian | `HEAD` of a package file in the pool or of a flat repository | the package file ([Q-DEB-122](formats/debian.md#q-deb-122--a-head-of-a-package-file-is-the-one-probe-of-apt)) | APT reads the indexes of whole components and fetches the files itself; a HEAD of a package file is the only request that names one |
+| Debian | `HEAD` of a package file in the pool or of a flat repository; through a virtual repository also by the member path of its index | the package file ([Q-DEB-122](formats/debian.md#q-deb-122--a-head-of-a-package-file-is-the-one-probe-of-apt)) | APT reads the indexes of whole components and fetches the files itself; a HEAD of a package file is the only request that names one |
 | generic | none: no class remote | — | — |
 
 **The decision**, taken on the probe's request when it was answered, in this order; the first that refuses starts nothing and the
@@ -3455,7 +3471,7 @@ usage overview counts it in `background_fetches` of the probe's caller (R-LIM-02
 **Audit and metrics** ([Q-REPO-366](#q-repo-366--a-background-download-is-audited-by-its-fills-and-counted-by-one-metric-family)): no
 audit event of its own; each file it stores records the populate event of a fill (R-AUTHZ-029) with the actor
 `system:background-download` and the reason `background-download`. `quader_remote_background_downloads_total{format,outcome}` counts
-the decisions (`started`, `off`, `stored`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`) and the ends of the
+the decisions (`started`, `off`, `stored`, `local`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`) and the ends of the
 jobs (`completed`, `bounded`, `failed_download` per failed attempt); it carries no repository and no subject (R-OPS-007).
 
 Acceptance criteria:
@@ -3469,7 +3485,12 @@ Acceptance criteria:
   downloaded; in `audit` it is downloaded and the overview records `would_limit`.
 - Integration: with `downloadOnProbe: false`, and for a tag whose image the exclude patterns refuse, a probe stores nothing.
 - Unit, per format: the requests of the table call `Probed` with the files named there, and the package documents, the version lists
-  and a GET of a version's file do not.
+  and a GET of a version's file do not; through a virtual repository the same (`TestQ_REPO_367_*`).
+- Integration (`ociremote`, `TestQ_REPO_367_*`): a `HEAD` of a tag through a virtual repository whose member is the remote stores the
+  image at the member; the usage row of the background download names the caller's place at the virtual repository and the member;
+  the member's switch off starts nothing; the member's ceiling used up by the probe starts nothing.
+- Integration (`npm`, `TestQ_REPO_367_*`): the version document through a virtual repository over a local and a remote member stores
+  the tarball at the remote member, charged at the virtual repository; a version the local member holds starts nothing.
 
 ## Mirror mode
 
@@ -8772,6 +8793,36 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Applied in the spec:** R-REPO-065, [authorization.md](authorization.md) R-AUTHZ-029. Code: `BackgroundDownloadActor` in
 [populate.go](../../internal/authz/populate.go), `ProbeMetrics` in [probe.go](../../internal/formathost/probe.go).
 
+### Q-REPO-367 · A probe through a virtual repository starts the download at the member that serves it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Decided in
+the night of 2026-11-19, while the owner was away; it replaces the gap H-1016, recorded when R-REPO-065 was built.
+
+Context: clients address a virtual repository in the common setup, so a probe that started nothing there left the owner's wish
+("wenn jemand … nur einen Probe auf ein Image macht … sollte Quader pro-aktiv den Download im Hintergrund schon starten") for the
+uncommon setup only. The charge needs no new rule: Q-LIM-2 (a), confirmed by the owner on 2026-11-19, decides every figure at the
+repository the client addressed, records usage at the serving member and applies the remote member's ceiling always. What was built
+first already did so for OCI (its virtual handler answers from a member's own handler); npm, NuGet, Ansible Galaxy and Debian answer
+from the virtual engine's merge or tiers and told nobody.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A probe through a virtual repository starts nothing | As built first | Nothing to decide | The owner's wish fails where clients usually are |
+| (b) The probe is the probe of the member that serves the version: the format's virtual handler tells the host as a remote's does, the host finds the member by the tiers of R-REPO-019 step 6 without an upstream, the member's settings decide, the charge is the probe's (chosen) | One rule for both addresses | The member's switch, patterns, platforms and bounds hold as on a direct probe; the charge follows Q-LIM-2 with no new rule; the contract stays at 7, `Probed` takes a request of either class | Finding the member costs an item lookup per member and a gate on stored documents; where the gate reads no document (NuGet), the first remote member the caller may fill is taken even when its upstream lacks the version (H-1019) |
+| (c) Only for a member that is the first remote member of the virtual repository | Simple | No member search | A version only a later member holds is downloaded where it is not; a version a local member holds is fetched again |
+
+**Choice:** (b). **Rationale:** a virtual repository serves a version's content from one member; that member is where the content
+belongs, and its owner's settings are the ones that decide. The tiers are the ones the virtual repository serves the content by, and
+the merged documents name a version's entry from the same member (R-REPO-020), so the probe of a document and the probe of a file
+land on the same member. A local member's version is there and starts nothing (outcome `local`). Revisit if the gate's "first remote
+member" for NuGet is wrong in practice: the NuGet gate could read the member's stored version list.
+
+**Applied in the spec:** R-REPO-065, [usage-and-limits.md](usage-and-limits.md) R-LIM-037 and Q-LIM-2, [architecture.md](architecture.md)
+R-ARCH-008, the format pages. Code: `Probed`, `servingMember` and `decideFor` in [probe.go](../../internal/formathost/probe.go), the
+virtual handlers of npm, NuGet, Ansible Galaxy and Debian, `checkProbes` in [formats.go](../../internal/formats/formats.go). Tests:
+`TestQ_REPO_367_*` in `internal/formathost`, `internal/formats/all` and each format, and in `test/integration/ociremote` and
+`test/integration/npm`.
+
 ## What this does not cover
 
 ### H-4 · Malicious content from a legitimate upstream
@@ -8930,16 +8981,6 @@ prefix: an upstream that lists millions of names below `@acme/` makes each pass 
 that upstream only, under the window of R-REPO-054. Live since R-REPO-053 is built (phase 6b). What makes it real: a mirror of an upstream
 that an attacker controls or has compromised, with a broad admitted prefix.
 
-### H-1016 · A probe through a virtual repository starts nothing
-
-Component: the trigger of R-REPO-065. Subject: the remote members of a virtual repository. The format's handler of a remote repository
-tells the host of a probe; a request addressed to a virtual repository is answered by the virtual engine from its members' documents
-and artifacts and reaches no remote handler, so the probe of a version a remote member would serve downloads nothing ahead. Live since
-R-REPO-065 is built. What makes it real: clients that address a virtual repository, the common setup. For the owner to decide:
-(a) as built; (b) the virtual engine tells the remote member that served the probe's answer, with the member's switch and the caller's
-budget at the member (Q-LIM-2 decides at the addressed repository, so the charge would need its own rule); (c) only for a member that is
-the first to serve the name.
-
 ### H-1017 · An upstream that counts manifest requests counts the background download's
 
 Component: R-REPO-065 for OCI. Subject: the pull allowance a registry gives the repository's account or address. Docker Hub counts a
@@ -8954,3 +8995,12 @@ Component: the decision of R-REPO-065 (Q-REPO-364). Subject: the completeness of
 files the answer names, which for an index are the manifests of the listed platforms and not their layers; an interrupted pull that
 stored a platform manifest without all its layers is not completed in the background. Live since R-REPO-065 is built. What makes it
 real: an interrupted pull and no client pulling again; the client's next pull fetches what is missing.
+
+### H-1019 · A NuGet probe through a virtual repository with several remote members may start at a member that lacks the version
+
+Component: the member search of Q-REPO-367. Subject: a NuGet virtual repository with two or more remote members the caller may fill.
+The search asks each remote member's gate whether its stored documents list the version; NuGet's gate reads none, so a version that is
+neither stored nor in a local member starts its download at the first remote member the caller may fill. When that member's upstream
+lacks the version, the job's fill fails, one upstream request is charged to the caller, and the member that has it gets nothing ahead.
+Live since Q-REPO-367 is built. What makes it real: a NuGet virtual repository whose first remote member is not the feed of the
+packages its clients ask about; the client's own download still finds the version at the next member.

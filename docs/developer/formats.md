@@ -106,8 +106,8 @@ for `Lookup` and `List`. It panics on:
   `FetchDocument`; R-API-079, ADR-205), the rule the package view counts a version's downloads and its last download by;
 - a class without its adapter (`Remote` listed and `Remote()` nil) or an adapter without its class;
 - the class `remote` without `Descriptor.Probes` (the requests that name exactly one version or file without fetching it, whose handlers call
-  `Host.Remote().Probed`, R-REPO-065, ADR-207) or a `NoProbe` reason, and a probe on a route the format does not have, that does not serve the
-  class `remote`, whose method is not GET or HEAD or that says nothing of what it names;
+  `Host.Remote().Probed`, R-REPO-065, ADR-207) or a `NoProbe` reason, and a probe on a route the format does not have, that serves neither
+  the class `remote` nor the class `virtual`, whose method is not GET or HEAD or that says nothing of what it names;
 - a `DataPort` that is no interface type;
 - a route set that is not servable: a route without name, method, template, handler, kind, action or example; a name used twice; a route
   that does not match its own example; an example that another route of the same method (and an overlapping class set) also matches; routes under a protocol base
@@ -523,6 +523,9 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    it answered (with the files the answer names), implements `RemoteAdapter.ProbeContent` (`formats.ProbeFiles(p)` when a version is one
    file), adds its row to `TestR_REPO_065_EveryFormatDeclaresItsProbes` in [all_test.go](../../internal/formats/all/all_test.go) and a unit
    test of its probes with `formattest.MemRemote`, whose `ProbesSeen` lists what the handlers told it ([proxy.md](proxy.md#a-probe-starts-the-download)).
+   With the class `virtual` too, its virtual handlers call `Probed` on the same requests with the virtual request (or a member's, when they
+   answered from a member's own handler); `ProbedOnSeen` says which, and `TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo` holds
+   that every probe route serves the class `virtual` (Q-REPO-367).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.
    If it has settings: embed the schema, set `Facts.SettingsSchema`, add the member to `repository.Settings` and to `formatMembers`, the schema to `api/openapi.yaml`
    (`<Format>Settings`, referenced from `Repository`) and read the member with defaults ([Format settings](#format-settings)).

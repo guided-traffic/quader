@@ -224,7 +224,7 @@ func (f *Format) virtualRegistration(ctx context.Context, rq *formats.Request, w
 	case kindLeaf:
 		variant += "/leaf/" + ver
 	}
-	return f.serveVirtual(ctx, rq, w, lowerID, virtualDoc{
+	err := f.serveVirtual(ctx, rq, w, lowerID, virtualDoc{
 		kind: merge.Registration, variant: variant, gzip: hive.Gzipped(),
 		settings: strconv.Itoa(pg.PageSize) + "/" + strconv.Itoa(pg.InlineBelow),
 		render: func(entries []merge.Entry) ([]byte, bool, error) {
@@ -257,6 +257,12 @@ func (f *Format) virtualRegistration(ctx context.Context, rq *formats.Request, w
 			return body, found && err == nil, wrapInternal(err)
 		},
 	})
+	if err == nil && kind == kindLeaf {
+		// The leaf of a virtual repository is a probe as a remote's is; the host finds the member that serves the version's .nupkg
+		// (R-REPO-065, Q-REPO-367).
+		probeVersion(ctx, rq, lowerID, ver)
+	}
+	return err
 }
 
 // virtualFile serves a file of a version through a virtual repository: the tiers of
@@ -271,7 +277,14 @@ func (f *Format) virtualFile(ctx context.Context, rq *formats.Request, w http.Re
 		return errNoSuchResource()
 	}
 	p := formats.Path{Path: path}
-	return rq.Host.Resolver().Artifact(ctx, rq, p, f.Classify(p), mediaTypeWriter{ResponseWriter: w, mediaType: mediaType})
+	if err := rq.Host.Resolver().Artifact(ctx, rq, p, f.Classify(p), mediaTypeWriter{ResponseWriter: w, mediaType: mediaType}); err != nil {
+		return err
+	}
+	if path == NuspecPath(lowerID, ver) || (path == NupkgPath(lowerID, ver) && rq.Method == http.MethodHead) {
+		// The probes of a remote are probes through a virtual repository too (R-REPO-065, Q-REPO-367).
+		probeVersion(ctx, rq, lowerID, ver)
+	}
+	return nil
 }
 
 // wrapInternal wraps the failure of a rendering; nil stays nil.

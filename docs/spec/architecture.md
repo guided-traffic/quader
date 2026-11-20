@@ -1342,10 +1342,11 @@ type Descriptor struct {
 	// VersionFetch says what a fetch of one of the format's versions is: the downloads the package screens count as its downloads
 	// and its last download (api-and-ui.md R-API-079). Required of a format with a package view; Register refuses one without it.
 	VersionFetch VersionFetch
-	// Probes are the requests of the class remote that name exactly one version or one file without fetching its content
-	// (repositories-and-proxy.md R-REPO-065): their handlers call RemoteFetcher.Probed. A format with the class remote declares at
-	// least one, or says in NoProbe why its protocol has none; Register refuses one that does neither, and a probe on a route the
-	// format does not have, that does not serve the class remote, or whose method is not GET or HEAD.
+	// Probes are the requests of the classes remote and virtual that name exactly one version or one file without fetching its
+	// content (repositories-and-proxy.md R-REPO-065, Q-REPO-367): their handlers call RemoteFetcher.Probed. A format with the class
+	// remote declares at least one, or says in NoProbe why its protocol has none; Register refuses one that does neither, and a
+	// probe on a route the format does not have, that serves neither the class remote nor the class virtual, or whose method is
+	// not GET or HEAD.
 	Probes  []ProbeRoute
 	NoProbe string
 }
@@ -1950,7 +1951,8 @@ returns a `QueryResult` (the upstream's answer as received, shared with the cach
 `RemoteFetcher.Probed` takes a `Probe` (the package name, the version, the files of the content the answer names and, for a probe
 answered from a metadata entry, that entry and its digest) once a format answered one of the probes its `Descriptor.Probes` declares;
 it never fails or delays the answer, and the host decides afterwards whether the background download starts
-([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065, ADR-207). `ProbeFiles` is the content of a probe whose files are
+([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065, ADR-207). A format calls it on a virtual repository as on a
+remote one; the host then decides on the member that serves the probe's content (Q-REPO-367). `ProbeFiles` is the content of a probe whose files are
 all of it, which `ProbeContent` returns for the formats whose version is one file, and `MaxProbeFiles` (1,000) bounds the files of one
 background download.
 `Resolver.Plan` returns a `VirtualPlan` of `PlannedMember`s (member, tier, position, whether the caller may fill it);

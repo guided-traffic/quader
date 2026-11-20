@@ -51,7 +51,7 @@ func TestR_REPO_065_EveryFormatDeclaresItsProbes(t *testing.T) {
 		"npm":     {"GET npm.version.get", "HEAD npm.version.get", "HEAD npm.tarball.get"},
 		"nuget":   {"GET nuget.registration.leaf", "HEAD nuget.registration.leaf", "GET nuget.flatcontainer.nuspec", "HEAD nuget.flatcontainer.nuspec", "HEAD nuget.flatcontainer.nupkg"},
 		"ansible": {"GET ansible.version.get", "HEAD ansible.version.get", "HEAD ansible.artifact.get", "HEAD ansible.role.archive"},
-		"deb":     {"HEAD deb.pool.get", "HEAD deb.flat.file"},
+		"deb":     {"HEAD deb.pool.get", "HEAD deb.flat.file", "HEAD deb.members.get"},
 		"oci":     {"GET oci.manifest.get.tag", "HEAD oci.manifest.get.tag", "HEAD oci.manifest.get.digest", "HEAD oci.blob.get"},
 		"generic": nil, // no class remote (R-GENERIC-001)
 	}
@@ -81,6 +81,42 @@ func TestR_REPO_065_EveryFormatDeclaresItsProbes(t *testing.T) {
 	for id := range want {
 		if !seen[id] {
 			t.Errorf("%s is listed and not registered", id)
+		}
+	}
+}
+
+// TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo pins that a format with the classes remote and virtual answers its probes
+// through a virtual address as well: every probe route serves the class virtual, unless this list names why the virtual repository
+// serves that request on another route that is itself a probe. Each format's own test asserts that the virtual handler tells the host.
+func TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo(t *testing.T) {
+	remoteOnly := map[string]string{
+		// A flat repository is an upstream's layout; a virtual repository serves its files by the member path of its index.
+		"deb.flat.file": "deb.members.get",
+	}
+	for _, f := range formats.List() {
+		d := f.Descriptor()
+		if !d.Supports(formats.Remote) || !d.Supports(formats.Virtual) {
+			continue
+		}
+		routes := map[string]*formats.Route{}
+		for _, r := range f.Routes() {
+			routes[r.Name] = &r
+		}
+		probes := map[string]bool{}
+		for _, p := range d.Probes {
+			probes[p.Route] = true
+		}
+		for _, p := range d.Probes {
+			if routes[p.Route].ServesClass(formats.Virtual) {
+				continue
+			}
+			instead, ok := remoteOnly[p.Route]
+			switch {
+			case !ok:
+				t.Errorf("%s: the probe %s %s does not serve the class virtual; a probe through a virtual repository starts the download too (Q-REPO-367)", d.ID, p.Method, p.Route)
+			case !probes[instead] || !routes[instead].ServesClass(formats.Virtual):
+				t.Errorf("%s: %s is answered on %s through a virtual repository, which is no probe of the class virtual", d.ID, p.Route, instead)
+			}
 		}
 	}
 }

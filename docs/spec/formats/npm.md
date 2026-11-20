@@ -5176,7 +5176,10 @@ package document, which lists every version, and then fetches the tarball itself
 | (b) Also the package document, for its `latest` | More downloads | Covers `npm install` of the latest version | Names every version; the owner chose "a request that names a package with all its versions starts nothing" |
 
 **Choice:** (a). A version the endpoint hides is no probe. **Applied in the spec:** R-REPO-065. Code: `probeVersion` and `remoteTarball`
-in [handlers_remote.go](../../../internal/formats/npm/handlers_remote.go). Tests: `TestR_REPO_065_WhatAProbeOfNpmIs` in
+in [handlers_remote.go](../../../internal/formats/npm/handlers_remote.go). Through a virtual repository the version document, cut from
+the merged document, and a `HEAD` of the tarball are the probes of the member that serves the tarball ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367):
+`virtualDocument` and `virtualTarball` in [handlers_virtual.go](../../../internal/formats/npm/handlers_virtual.go). Tests:
+`TestR_REPO_065_WhatAProbeOfNpmIs`, `TestQ_REPO_367_WhatAProbeOfNpmIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/npm/probe_test.go).
 
 ## What this does not cover

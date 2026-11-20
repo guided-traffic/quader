@@ -195,6 +195,18 @@ type fakeRemote struct {
 	mu   sync.Mutex
 	docs map[string][]byte
 	asks []string
+	// probes are the probes the format told of, with the key of their request's repository (R-REPO-065, Q-REPO-367).
+	probes []string
+}
+
+func (r *fakeRemote) Probed(_ context.Context, rq *formats.Request, p formats.Probe) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	files := make([]string, len(p.Files))
+	for i, f := range p.Files {
+		files[i] = f.Path
+	}
+	r.probes = append(r.probes, rq.Repo.Name.Key+" "+p.Name+" "+p.Version+" "+strings.Join(files, ","))
 }
 
 func rkey(member, path, variant string) string { return member + "|" + path + "|" + variant }

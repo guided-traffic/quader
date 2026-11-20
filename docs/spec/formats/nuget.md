@@ -5559,7 +5559,10 @@ index, which name every version, and then fetches the `.nupkg` itself.
 | (b) Also the icon and the license of a version | More probes | — | They are files of the package; a client that reads them reads the package next anyway |
 
 **Choice:** (a). **Applied in the spec:** R-REPO-065. Code: `remoteFile`, `remoteRegistration` and `probeVersion` in
-[handlers_remote.go](../../../internal/formats/nuget/handlers_remote.go). Tests: `TestR_REPO_065_WhatAProbeOfNuGetIs` in
+[handlers_remote.go](../../../internal/formats/nuget/handlers_remote.go). Through a virtual repository the leaf, cut from the merged
+registration, the `.nuspec` and a `HEAD` of the `.nupkg` are the probes of the member that serves the `.nupkg` ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it)
+Q-REPO-367, H-1019): `virtualRegistration` and `virtualFile` in [handlers_virtual.go](../../../internal/formats/nuget/handlers_virtual.go).
+Tests: `TestR_REPO_065_WhatAProbeOfNuGetIs`, `TestQ_REPO_367_WhatAProbeOfNuGetIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/nuget/probe_test.go).
 
 ## What this does not cover

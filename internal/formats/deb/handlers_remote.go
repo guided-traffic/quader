@@ -87,9 +87,7 @@ func (f *Format) serveContent(ctx context.Context, rq *formats.Request, w http.R
 	// A HEAD of a package file names exactly one file of a version - the version of one architecture, the whole of it - and fetches
 	// none of it: a probe (R-REPO-065, Q-DEB-122). The indexes and release documents a client reads first name whole components and
 	// are none; a by-hash file has no package.
-	if info := f.Classify(rq.Path); rq.Method == http.MethodHead && info.Package != "" {
-		rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: info.Package, Version: info.Version, Files: []formats.Path{rq.Path}})
-	}
+	probeFile(ctx, rq, rq.Path, f.Classify(rq.Path))
 	return nil
 }
 

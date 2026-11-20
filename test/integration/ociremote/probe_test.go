@@ -21,6 +21,10 @@ const (
 	rProbe    = "oci-probe"     // the switch on (the default)
 	rProbeOff = "oci-probe-off" // downloadOnProbe false
 	rProbeX   = "oci-probe-x"   // the exclude pattern library/nginx
+	// Virtual repositories over each of them (Q-REPO-367).
+	rProbeV    = "oci-probe-v"
+	rProbeVOff = "oci-probe-voff"
+	rProbeVX   = "oci-probe-vx"
 )
 
 // probeEnv is newEnv with the three repositories and one replica of the role all, which runs the jobs of the background downloads.
@@ -36,8 +40,13 @@ func probeEnv(t *testing.T) (*renv, *testenv.Replica) {
 	} {
 		e.probeRepo(key, extra)
 	}
+	for key, member := range map[string]string{rProbeV: rProbe, rProbeVOff: rProbeOff, rProbeVX: rProbeX} {
+		e.st.Repository(key, "virtual", "oci", "{}")
+		e.st.Exec(`INSERT INTO virtual_members (virtual_id, position, member_id)
+			SELECT v.id, 0, m.id FROM repositories v, repositories m WHERE v.key = $1 AND m.key = $2`, key, member)
+	}
 	reader := testenv.Person{ID: e.st.Text(`SELECT id::text FROM principal WHERE kind = 'user' AND name = 'reader'`), Name: "reader", Kind: "user"}
-	e.st.Policy("probe-readers", []string{"read"}, []string{rProbe, rProbeOff, rProbeX}, reader)
+	e.st.Policy("probe-readers", []string{"read"}, []string{rProbe, rProbeOff, rProbeX, rProbeV, rProbeVOff, rProbeVX}, reader)
 	rep := e.st.Start(t, testenv.ReplicaOptions{
 		Name: "all-1", Role: "all", DialOverride: e.dial, Env: []string{"QUADER_STORAGE_STATS_FLUSH_INTERVAL=1s"},
 	})

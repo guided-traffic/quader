@@ -3003,7 +3003,11 @@ and then fetches the archive itself. A role's archive has no version document; a
 
 **Choice:** (a). The collection document and the version lists name every version and are none. **Applied in the spec:** R-REPO-065.
 Code: `remoteVersion`, `remoteArtifact`, `remoteRoleArchive` in [handlers_remote.go](../../../internal/formats/ansible/handlers_remote.go).
-Tests: `TestR_REPO_065_WhatAProbeOfTheGalaxyIs` in [probe_test.go](../../../internal/formats/ansible/probe_test.go).
+Through a virtual repository the version document and a `HEAD` of a collection's archive are the probes of the member that serves the
+archive, and a `HEAD` of a role's archive the probe of the member its id names ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367): `virtualVersion` and
+`virtualArtifact` in [handlers_virtual.go](../../../internal/formats/ansible/handlers_virtual.go). Tests:
+`TestR_REPO_065_WhatAProbeOfTheGalaxyIs`, `TestQ_REPO_367_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository` in
+[probe_test.go](../../../internal/formats/ansible/probe_test.go).
 
 ## What this does not cover
 

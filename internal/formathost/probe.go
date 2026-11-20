@@ -11,6 +11,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/proxy"
@@ -25,6 +26,11 @@ import (
 //
 // The decision never fails, delays or changes the probe's answer: it runs after Probed returned, at most probeDecisions at once per
 // replica, each within probeDecisionTimeout.
+//
+// A probe a virtual repository answered (Q-REPO-367) is the probe of the member that serves its content: the decision first finds that
+// member by the tiers of R-REPO-019 step 6 (servingMember), then decides on a request derived for it, so that the member's switch,
+// patterns, platforms and bounds apply, while the charge stays the probe's: the budget key resolved at the addressed repository, the
+// member's ceiling, the usage recorded at the member (usage-and-limits.md Q-LIM-2, R-LIM-037).
 
 // The outcomes of a probe's decision and of a background download (the label outcome of quader_remote_background_downloads_total).
 const (
@@ -35,6 +41,8 @@ const (
 	ProbeOff = "off"
 	// ProbeStored: every file the probe named is stored already.
 	ProbeStored = "stored"
+	// ProbeLocal: a local member of the virtual repository the probe addressed holds the version (Q-REPO-367).
+	ProbeLocal = "local"
 	// ProbeNotAdmitted: the repository's patterns, a global claim or the caller's populate permission refuse the content.
 	ProbeNotAdmitted = "not_admitted"
 	// ProbeActive: a background download of the version is queued or running.
@@ -157,7 +165,12 @@ func (r *remote) Probed(ctx context.Context, rq *formats.Request, p formats.Prob
 		return
 	}
 	format := rq.Repo.Format
-	if out := r.precheck(rq, p); out != "" {
+	virtual := rq.Repo.Class == repository.Virtual
+	precheck := r.precheck
+	if virtual {
+		precheck = r.precheckVirtual
+	}
+	if out := precheck(rq, p); out != "" {
 		h.o.ProbeMetrics.count(format, out)
 		return
 	}
@@ -175,12 +188,166 @@ func (r *remote) Probed(ctx context.Context, rq *formats.Request, p formats.Prob
 		defer func() { <-h.pr.sem }()
 		c, cancel := context.WithTimeout(dctx, probeDecisionTimeout)
 		defer cancel()
-		out, err := r.decide(c, rq, p, charge)
+		out, err := r.decideFor(c, rq, p, charge, virtual)
 		if err != nil {
 			h.o.Log.Warn("the decision on a probe failed; no background download starts", "repo", rq.Repo.Name.String(), "error", err)
 		}
 		h.o.ProbeMetrics.count(format, out)
 	}()
+}
+
+// decideFor is the decision on a probe of rq's repository; for a virtual repository, on the member that serves the probe's content.
+func (r *remote) decideFor(ctx context.Context, rq *formats.Request, p formats.Probe, charge *limits.Charge, virtual bool) (string, error) {
+	if !virtual {
+		return r.decide(ctx, rq, p, charge)
+	}
+	mrq, out, err := servingMember(ctx, r, rq, p)
+	if mrq == nil {
+		return out, err
+	}
+	if out := r.precheck(mrq, p); out != "" {
+		return out, nil
+	}
+	return r.decide(ctx, mrq, p, charge)
+}
+
+// precheckVirtual is precheck for a probe a virtual repository answered: the repository is enabled and has a resolver, the request may
+// contact upstreams, the probe names files. The member's own checks follow once it is found.
+func (r *remote) precheckVirtual(rq *formats.Request, p formats.Probe) string {
+	switch {
+	case rq.Repo.Disabled || r.h.o.Resolver == nil:
+		return ProbeOff
+	case modeOf(rq) != proxy.Normal:
+		return ProbeOff
+	case p.Name == "" || len(p.Files) == 0:
+		return ProbeNotAdmitted
+	}
+	return ""
+}
+
+// servingMember finds the member of the virtual repository rq addresses whose content the probe names, by the tiers of R-REPO-019
+// step 6 for the probe's first file, without contacting an upstream (Q-REPO-367): the plan of the virtual repository for the caller
+// (its patterns, pin rules and claims, the caller's read, nested virtual repositories expanded); a local member that holds the file
+// ends the decision, the content is there (outcome local); the first remote member whose cache holds the file is the one; then, among
+// the remote members the caller may fill, the first whose format's gate announces the file's digests from the member's stored
+// documents (the member's upstream lists the version: npm, Ansible Galaxy, Debian), else the first the gate does not refuse (a
+// format whose gate reads no document: NuGet). This is the member the virtual repository serves the version's content from, and the
+// one whose entry a merged document carries for it (R-REPO-020). It returns the request derived for the member, or the outcome of a
+// probe that starts nothing.
+func servingMember(ctx context.Context, t probeTiers, rq *formats.Request, p formats.Probe) (*formats.Request, string, error) {
+	file := p.Files[0]
+	plan, err := t.planFor(ctx, rq, file)
+	switch {
+	case err != nil:
+		return nil, ProbeFailed, err
+	case plan == nil:
+		return nil, ProbeOff, nil
+	case !plan.Admitted:
+		return nil, ProbeNotAdmitted, nil
+	}
+	var remotes []*formats.Request
+	var fill []bool
+	for _, pm := range plan.Members {
+		if pm.Tier == formats.TierLocal {
+			held, err := t.heldLocally(ctx, pm.Member, file)
+			if err != nil {
+				return nil, ProbeFailed, err
+			}
+			if held {
+				return nil, ProbeLocal, nil
+			}
+			continue
+		}
+		mrq, err := memberRequest(rq, pm.Member)
+		if err != nil {
+			return nil, ProbeFailed, err
+		}
+		remotes, fill = append(remotes, mrq), append(fill, pm.MayFill)
+	}
+	for _, mrq := range remotes {
+		cached, err := t.cachedAt(ctx, mrq, file)
+		if err != nil {
+			return nil, ProbeFailed, err
+		}
+		if cached {
+			return mrq, "", nil
+		}
+	}
+	var first *formats.Request
+	for i, mrq := range remotes {
+		if !fill[i] {
+			continue
+		}
+		d, err := t.gateAt(ctx, mrq, file)
+		if e, ok := errs.As(err); ok && e.Kind == errs.NotFound {
+			continue
+		}
+		if err != nil {
+			return nil, ProbeFailed, err
+		}
+		if len(d.SHA256)+len(d.SHA512)+len(d.SHA1)+len(d.MD5) > 0 {
+			return mrq, "", nil
+		}
+		if first == nil {
+			first = mrq
+		}
+	}
+	if first != nil {
+		return first, "", nil
+	}
+	return nil, ProbeNotAdmitted, nil
+}
+
+// probeTiers are what servingMember reads of the host; *remote implements them.
+type probeTiers interface {
+	// planFor is the virtual repository's plan for the file; nil without a resolver or a format with the class remote.
+	planFor(ctx context.Context, rq *formats.Request, file formats.Path) (*formats.VirtualPlan, error)
+	// heldLocally reports whether a local member holds the file.
+	heldLocally(ctx context.Context, member formats.RepoRef, file formats.Path) (bool, error)
+	// cachedAt reports whether a remote member's cache holds the file; a lost object is not held.
+	cachedAt(ctx context.Context, mrq *formats.Request, file formats.Path) (bool, error)
+	// gateAt runs the format's gate for the file on the member's stored documents, without contacting its upstream.
+	gateAt(ctx context.Context, mrq *formats.Request, file formats.Path) (formats.Digests, error)
+}
+
+var _ probeTiers = (*remote)(nil)
+
+func (r *remote) planFor(ctx context.Context, rq *formats.Request, file formats.Path) (*formats.VirtualPlan, error) {
+	f, ok := r.h.o.Formats(rq.Repo.Format)
+	if !ok || f.Remote() == nil || r.h.o.Resolver == nil {
+		return nil, nil
+	}
+	return r.h.o.Resolver.Plan(ctx, rq, file, f.Classify(file))
+}
+
+func (r *remote) heldLocally(ctx context.Context, member formats.RepoRef, file formats.Path) (bool, error) {
+	it, found, err := r.h.Items().Stat(ctx, member, file)
+	return found && !it.Folder, err
+}
+
+func (r *remote) cachedAt(ctx context.Context, mrq *formats.Request, file formats.Path) (bool, error) {
+	_, cached, err := r.Cached(ctx, mrq, file)
+	if proxy.IsLost(err) {
+		return false, nil // a lost item is a miss: the download fills it again (Q-REPO-202)
+	}
+	return cached, err
+}
+
+func (r *remote) gateAt(ctx context.Context, mrq *formats.Request, file formats.Path) (formats.Digests, error) {
+	cv := *mrq
+	cv.CacheView = true
+	return r.gate(ctx, &cv, file)
+}
+
+// memberRequest is the request derived for the member ref of the virtual repository rq addresses.
+func memberRequest(rq *formats.Request, ref formats.RepoRef) (*formats.Request, error) {
+	members := rq.Repo.Members()
+	for i := range members {
+		if members[i].Name == ref.Name {
+			return rq.Member(&members[i])
+		}
+	}
+	return nil, errs.E(errs.Internal, errs.CodeInternal, "A planned member is not a member of the virtual repository.")
 }
 
 // precheck is the part of the decision that reads only the request: a remote repository whose switch is on, that may fetch now, a

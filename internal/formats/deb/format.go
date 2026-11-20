@@ -139,6 +139,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 		Probes: []formats.ProbeRoute{
 			{Route: routePoolGet, Method: http.MethodHead, What: "a HEAD of a package file in the pool"},
 			{Route: routeFlatFile, Method: http.MethodHead, What: "a HEAD of a package file of a flat repository"},
+			{Route: routeMemberGet, Method: http.MethodHead, What: "a HEAD of a package file by the member path of a virtual repository's index"},
 		},
 		Names:            names{},
 		Clients:          clients(),

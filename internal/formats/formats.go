@@ -204,10 +204,11 @@ type Descriptor struct {
 	// VersionFetch says what a fetch of one of the format's versions is: the downloads the package screens count as its
 	// downloads and its last download (R-API-079). Required of a format with a package view; Register refuses one without it.
 	VersionFetch VersionFetch
-	// Probes are the requests of the format's remote class that name exactly one version or one file without fetching its content
-	// (repositories-and-proxy.md R-REPO-065): their handlers call RemoteFetcher.Probed, which may start the background download of
-	// the version. A format with the class remote declares at least one, or says in NoProbe why its protocol has none; Register
-	// refuses one that does neither, so that a format cannot land without the rule (W-25).
+	// Probes are the requests of the format's remote and virtual classes that name exactly one version or one file without fetching
+	// its content (repositories-and-proxy.md R-REPO-065): their handlers call RemoteFetcher.Probed, which may start the background
+	// download of the version, through a virtual repository at the member that serves it (Q-REPO-367). A format with the class
+	// remote declares at least one, or says in NoProbe why its protocol has none; Register refuses one that does neither, so that a
+	// format cannot land without the rule (W-25).
 	Probes []ProbeRoute
 	// NoProbe is the reason a format with the class remote has no probe; empty for a format that declares Probes.
 	NoProbe string
@@ -521,8 +522,8 @@ func checkProbes(f Format, d Descriptor) error {
 			return fmt.Errorf("%q declares a probe on route %q with method %q, not GET or HEAD", d.ID, p.Route, p.Method)
 		case r.Method != http.MethodGet:
 			return fmt.Errorf("%q declares a probe on route %q, whose method is %s", d.ID, p.Route, r.Method)
-		case len(r.Classes) > 0 && !slices.Contains(r.Classes, Remote):
-			return fmt.Errorf("%q declares a probe on route %q, which does not serve the class remote", d.ID, p.Route)
+		case len(r.Classes) > 0 && !slices.Contains(r.Classes, Remote) && !slices.Contains(r.Classes, Virtual):
+			return fmt.Errorf("%q declares a probe on route %q, which serves neither the class remote nor the class virtual", d.ID, p.Route)
 		case p.What == "":
 			return fmt.Errorf("%q declares a probe on route %q without saying what it names", d.ID, p.Route)
 		case seen[p.Route+" "+p.Method]:

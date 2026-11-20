@@ -3782,8 +3782,11 @@ files it needs. The one request that names exactly one version's file of one arc
 | (b) The indexes too | Downloads what an index names | — | An index names a whole component, which the owner's rule excludes |
 
 **Choice:** (a). A by-hash file names no package and is none. **Applied in the spec:** R-REPO-065. Code: `serveContent` in
-[handlers_remote.go](../../../internal/formats/deb/handlers_remote.go). Tests: `TestR_REPO_065_WhatAProbeOfAnAPTArchiveIs` in
-[probe_test.go](../../../internal/formats/deb/probe_test.go).
+[handlers_remote.go](../../../internal/formats/deb/handlers_remote.go). Through a virtual repository a `HEAD` of a package file by its own
+path is the probe of the member that serves it, and by the member path of the merged index (`deb.members.get`, a probe of its own) the
+probe of that member ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367): `handleVirtualPool` and `handleMember` in
+[handlers_virtual.go](../../../internal/formats/deb/handlers_virtual.go). Tests: `TestR_REPO_065_WhatAProbeOfAnAPTArchiveIs`,
+`TestQ_REPO_367_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository` in [probe_test.go](../../../internal/formats/deb/probe_test.go).
 
 ## What this does not cover
 

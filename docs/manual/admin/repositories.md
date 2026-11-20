@@ -179,6 +179,11 @@ so for them the rule seldom changes anything; for a container image it does.
 - **When to turn it off.** Untick **Start the download when a version is asked for** in **Upstream details** for an upstream that counts
   every request it answers against an allowance. Docker Hub counts every download of a manifest as a pull, so the background download of a
   two-platform image costs up to two pulls besides the client's own. Turned off, the remote fetches only what clients download.
+- **Through a virtual repository.** The same requests sent to a virtual repository start the download at the remote member that serves
+  the version: the member whose cache holds it, else the first remote member whose stored documents list it, else (NuGet) the first remote
+  member. That member's switch, patterns, **Platforms** and bounds decide, and the version is stored there. A version a local member holds
+  starts nothing. The client's budget is the one it has at the virtual repository; the member's ceilings apply and the usage is recorded at
+  the member.
 
 ## Mirror
 
