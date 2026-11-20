@@ -587,7 +587,8 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20** (`main` at `38b1d1ec`).
 
-- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27, a designer's three variants in the session's scratchpad; a builder for W-14; a builder for W-20 and
+- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: the designer's three variants exist as a mockup with renders in `.out/w27/` (not committed), the development
+  agent has looked at them, and the owner chooses; a builder for W-14; a builder for W-20 and
   the wiki's visibility behind a disclosure. W-12 is decided and not built now: the owner chose an invitation by e-mail, later
   ("Option c, aber erst später", 2026-11-20); it stands in [FULL.md](FULL.md#m9--automation-and-integration), M9.
 - **To check first:** F-165 in the next full nightly; then section 12.
