@@ -560,15 +560,17 @@ list [With the owner](#with-the-owner); what is untested is in section 12. Open 
   Hier muss echt was passieren. Ich wünsche mir, dass ein Subagent der sich damit auskennt, damit mal auseinander setzt." Asked
   how far the page may leave the palette: "Ne, du sollst schon in der Palette bleiben. Aber so wie es jetzt aussieht, ist es
   scheiße, ganz einfach. Zu viel Schrift, keine Lust zusehen."
-  - **The owner's frame:** the palette stays (the colours, type and measures of Q-UI-128); less text; more pictures; a
-    subagent that knows the field works on it.
+  And on pictures and the blocks: "Bilder haben keine Einschränkungen der Palette. Wenn du also einen Text, anstatt in einer
+  schnöden Box in einem schicken VSCode Texteditor darstellst, ist das in Ordnung."
+  - **The owner's frame:** the page's own controls and text stay in the palette (the colours, type and measures of Q-UI-128);
+    a picture is not bound by the palette, and a snippet drawn as a smart editor window instead of a plain box counts as one;
+    less text; more pictures; a subagent that knows the field works on it.
   - **Seen by the development agent on the renders** (`setup-npm-local`, `setup-oci-local`, `setup-npm-virtual-explained`): the
     page's only colour is the three step discs and one link; it has no picture, and the format is a small glyph in a badge; a
     snippet is a grey framed box of monospace text in which a placeholder (`<package>`, `${QUADER_TOKEN}`) looks like the rest,
     with its copy button outside the box; four controls stand before step 1, and **Create a token** is a default button; nine
     closed sections follow the steps as a list of lines, and opened the page is 9,332 px high at 1,440 px; the right third of
     the page is empty at 1,440 px.
-  - **Read by the development agent, not confirmed:** "VSCode-Fenster" means the framed boxes read as an editor's panes.
   - **How, proposed by the development agent, not confirmed:** a designer (`voltagent-core-dev:ui-designer`) lands nothing; it
     delivers three variants of the page as renders (npm and OCI, light and dark, 1,440 and 390 px) on one page to compare, the
     owner chooses, and a builder builds the choice under rule 11. One design for every format: a format adds at most a constant
@@ -586,7 +588,10 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20** (`main` at `38b1d1ec`).
 
-- **In work:** nothing is unlanded.
+- **In work** (started 2026-11-20, 09:30, nothing landed yet): the measurement of section 12 A (read from the reports of the
+  runs, no change); W-27, a designer's three variants in the session's scratchpad; a builder for W-14; a builder for W-20 and
+  the wiki's visibility behind a disclosure. W-12 is not built: what is open there is a decision of the owner (whether and how
+  a person who has never signed in is invited), to be put to him.
 - **To check first:** F-165 in the next full nightly; then section 12.
 
 ### With the owner
