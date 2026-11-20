@@ -843,11 +843,14 @@ Job `k8s-matrix` of the nightly is the install half of R-HA-049's acceptance ([Q
 four legs on a GitHub-hosted runner (`ubuntu-24.04`), `k8s-min-helm4`, `k8s-min-helm3`, `k8s-max-helm4` and `k8s-max-helm3`, each a one-node kind cluster of its own that
 [deploy/dev/k8s-matrix.sh](../../deploy/dev/k8s-matrix.sh) creates and removes. The oldest Kubernetes is `K8S_MIN_KIND_NODE_IMAGE` (1.34), the newest `DEV_KIND_NODE_IMAGE`
 (1.37, the dev profile's node), Helm 4 is `HELM_VERSION` and Helm 3 `HELM3_VERSION` ([tools/versions.env](../../tools/versions.env); Renovate keeps the minimum on 1.34 and Helm 3 on 3.x).
-A leg checks that the API server and the helm are the versions the leg names, lints the chart, has the API server admit six sets of values (`helm install --dry-run=server`: the roles and pools,
-the three sizing profiles of R-HA-050, the backup), installs the medium profile with the backup on without waiting (the migration hook is off, no database or image is there and no pod starts),
-reads back the fields R-HA-049 names as the reason for Kubernetes 1.31 (PDB `unhealthyPodEvictionPolicy`, `nodeTaintsPolicy`, CronJob `timeZone`, the HPA), upgrades to the small profile
-and uninstalls. `gh workflow run "HA and Performance (nightly)" --ref main -f sets=k8s-matrix` runs the four legs, `-f sets=k8s-min-helm3` one. By hand, with the pinned `kind`, `kubectl` and a Helm of the major asked for:
-`deploy/dev/k8s-matrix.sh "$K8S_MIN_KIND_NODE_IMAGE" 3`. **Not covered:** no pod starts, so the smoke subset of R-HA-052 does not run on these legs; Kubernetes 1.37 with Helm 4 is the only pair the
+A leg checks that the API server and the helm are the versions the leg names and lints the chart. The chart's TLS has two paths ([Q-HA-347](../spec/ha-and-helm.md#q-ha-347--tlscertmanager-issues-a-certificate-per-kind-tlsexistingsecrets-names-a-secret-per-kind-instead)):
+the standard one, `tls.certManager.issuerRef`, renders a cert-manager `Certificate` per kind, and `tls.existingSecrets` names a Secret per kind and needs no CRD. The leg has the API server of the bare cluster admit
+the second path first (`helm install --dry-run=server -f ci/ha-ingress.yaml`), then applies the CRDs of the cert-manager chart the dev profile installs (`DEV_CERT_MANAGER_CHART_VERSION`; the CRDs
+only, no controller and no webhook, which is all a server-side dry run and an install without pods need) and has it admit six sets of values on the standard path (the roles and pools,
+the three sizing profiles of R-HA-050, the backup). It installs the medium profile with the backup on without waiting (the migration hook is off, no database or image is there and no pod starts),
+reads back the fields R-HA-049 names as the reason for Kubernetes 1.31 (PDB `unhealthyPodEvictionPolicy`, `nodeTaintsPolicy`, CronJob `timeZone`, the HPA) and the issuer of the `Certificate` of every kind,
+upgrades to the small profile and uninstalls. A leg takes about 35 s on a laptop with the node image cached; the TLS path without cert-manager and the CRDs add about 2 s. `gh workflow run "HA and Performance (nightly)" --ref main -f sets=k8s-matrix` runs the four legs, `-f sets=k8s-min-helm3` one. By hand, with the pinned `kind`, `kubectl` and a Helm of the major asked for:
+`deploy/dev/k8s-matrix.sh "$K8S_MIN_KIND_NODE_IMAGE" 3` (`QUADER_K8S_MATRIX_CLUSTER` names the cluster instead of `quader-k8s-<minor>-helm<major>`). **Not covered:** no pod starts, so the smoke subset of R-HA-052 does not run on these legs; Kubernetes 1.37 with Helm 4 is the only pair the
 failure suite runs on ([H-805](../spec/ha-and-helm.md#h-805--the-platform-matrix-installs-the-chart-and-starts-no-pod)).
 
 ### Renovate

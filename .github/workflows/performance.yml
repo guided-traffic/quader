@@ -175,8 +175,10 @@ jobs:
   # The platform matrix of R-HA-049 (Q-HA-274, docs/developer/releasing.md#the-platform-matrix): the chart against the API server of the
   # oldest and the newest Kubernetes it is tested on (K8S_MIN_KIND_NODE_IMAGE 1.34, DEV_KIND_NODE_IMAGE 1.37), installed by Helm 4 and by
   # the latest Helm 3. Each leg is a one-node kind cluster of its own on a GitHub-hosted runner (deploy/dev/k8s-matrix.sh): lint, a server-side
-  # dry run of six sets of values, a real install without waiting for pods, the fields named in R-HA-049, an upgrade and an uninstall. No pod
-  # starts, so it is no part of the lanes of Q-ARCH-431 and the perf jobs do not wait for it. It does not run the failure suite (H-805).
+  # dry run of the TLS path without cert-manager on the bare cluster, cert-manager's CRDs (DEV_CERT_MANAGER_CHART_VERSION, no controller), a
+  # server-side dry run of six sets of values on the standard path, a real install without waiting for pods, the fields named in R-HA-049
+  # and the Certificate of every kind, an upgrade and an uninstall. No pod starts, so it is no part of the lanes of Q-ARCH-431 and the perf
+  # jobs do not wait for it. It does not run the failure suite (H-805).
   k8s-matrix:
     name: Platform matrix (${{ matrix.leg }})
     runs-on: ubuntu-24.04
