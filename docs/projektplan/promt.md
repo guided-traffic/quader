@@ -808,7 +808,19 @@ runs are in `git log`; this section holds the current state.
   generated file included, gets `make web-test` and `make web-lint` before the push, whoever built it. The names
   are being added by the builder of the System page's fix (below) and land with it; the stage is released by that
   push. The fix run before it (44803754281) was cancelled by the stage's push with integration shard a green and
-  the shards b and c without a result.
+  the shards b and c without a result. **The stage's run ended at 21:58 and was let run to its end before the next
+  push:** green `e2e (npm)`, `e2e (access-long)`, `e2e (vuln)`, `e2e (bastion)`, `e2e (ci)` and the integration shards
+  a and c, which is the first result of CI for the scanner role's legs; red `web (Angular)` (the names, above), `UI
+  layout checks` (the System page's cell alone, 380 of 381 passing), `e2e (push)` (the Valkey policy) and
+  **`integration (shard b)`: a fourth miss of the scanner landing.** `TestEndpoints` (the case that a worker opens no
+  endpoint listener) and `TestReplicas` of the area `server` start a worker process from a configuration of their
+  own, and since the landing a worker is refused at start without `vulnerabilities.images.scanner.url` while the image
+  scanning is on, which is the default (R-VULN-041; the chart sets it). The rule stays; a builder gives the tests
+  what a real worker has and goes through every other start of a single role without the chart (since 21:59). The
+  landing's builder had run five integration areas, not `server`. **What the four misses have in common** (the local
+  UI profile, the TLS integration test, the Valkey policy, this one): each is a start or a pod outside the chart that
+  the landing's own tests did not exercise; a landing that adds a rule to the configuration or to a policy runs every
+  integration area and starts the local UI profile before it lands, which costs minutes against an evening of fixes.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -829,7 +841,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (21:44), four builders, the most that run at once:
+- **In work** (21:59), four builders, the most that run at once:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -857,8 +869,18 @@ runs are in `git log`; this section holds the current state.
     refused still offers **Download** above the fact that says downloads are refused, and so does the row of a
     version's files. **Render cost:** seven new cases, about 46 s of the job's wall time; the builder also found that
     the render configuration never ran the 11 existing cases of the auditor (the project was missing), which now run,
-    about 50 s more. Its last render run had no failure and no layout finding. **Resumed at 21:39** for that defect
-    and the rebase onto the audit names.
+    about 50 s more. Its last render run had no failure and no layout finding. **Finished at 21:49:** a file the gate
+    refuses offers no download (Q-UI-882: the button is gone on the file's page and the row of a version's files shows
+    a dash, with "Downloads are refused." beside the verdict; the download address stays as a fact, because a client
+    that asks gets the refusal with its reason; a pending, a released and a clean file keep their download), looked at
+    by the development agent at 390 px light and 1440 px dark; the German texts use the glossary's words (a release is
+    "zum Download zulassen", the noun "Zulassung", a find "Malware-Befund"); the render seed's two remotes take the
+    stack's own address; the banner of a version with an infected file is the component a blocked version has and
+    stays amber beside the red verdict, as there. Gates with exit 0: the component tests (1,796), the UI lint, the
+    layout check's tests, the localized build, links and check, the white-label scan; ten render cases without a
+    finding. **Its commit is the first on the branch `feat/malware`** (worktree `.claude/worktrees/malware-landing`).
+    For the walkthrough: at a version the words "not scanned" of the vulnerability scanning stand beside the malware
+    banner, two scans a reader may take for one.
   - **Package 2 of the malware scan, the scanning side** (since 21:36), in two stages: first the two routes of the
     scan listener (a blob for the scanner, the signature database) with their admission, the blob token, the interface
     the database route serves from and the configuration keys, which is what package 3 waits for; then the job
@@ -866,6 +888,8 @@ runs are in `git log`; this section holds the current state.
     and an in-process fake of it, the metrics. Bound by this evening's lessons: no default or local start may be
     refused for a missing scanner's address; anything under `web/` gets the UI tests; a check that fails without
     gating gets a name and a sentence for the System page.
+  - **The server integration tests' worker** (since 21:59, above): one commit of tests, held for by the push of the
+    evening's three fixes.
   **Waiting for a free builder:** package 3 of the malware scan (the database and the chart), which also waits for
   package 2's first stage.
   **How the malware scan lands from here** (the development agent's, 2026-11-20): its first stage is on `main`; what
