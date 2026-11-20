@@ -277,13 +277,13 @@
           <dt i18n="@@audit.detail.event-id">Event ID</dt>
           <dd>
             <code translate="no">{{ e.id }}</code>
-            <quader-copy-button [value]="e.id" [label]="copyId" />
+            <quader-copy-button class="on-line" [value]="e.id" [label]="copyId" />
           </dd>
           @if (e.traceId) {
             <dt i18n="@@audit.detail.trace">Trace ID</dt>
             <dd>
               <code translate="no">{{ e.traceId }}</code>
-              <quader-copy-button [value]="e.traceId" [label]="copyTrace" />
+              <quader-copy-button class="on-line" [value]="e.traceId" [label]="copyTrace" />
             </dd>
           }
         </dl>

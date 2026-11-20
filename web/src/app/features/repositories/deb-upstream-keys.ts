@@ -21,7 +21,7 @@ import { groupedFingerprint } from './deb-signing-keys';
         @for (f of fingerprints(); track f) {
           <li>
             <code translate="no" [attr.title]="f">{{ grouped(f) }}</code>
-            <quader-copy-button [value]="f" [label]="copyLabel" />
+            <quader-copy-button class="on-line" [value]="f" [label]="copyLabel" />
           </li>
         }
       </ul>
@@ -34,6 +34,29 @@ import { groupedFingerprint } from './deb-signing-keys';
     h3 {
       margin-block: 0 var(--quader-space-2);
       font: var(--quader-type-title-small);
+    }
+    .plain {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    /* A fingerprint and its copy button (R-UI-175, R-UI-176): the button stands on the middle of the fingerprint's first line by
+       its margins (on-line), so the row is as high as its text. A fingerprint that wraps at 390 px breaks inside itself and keeps
+       the button on its first line. */
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--quader-space-1);
+    }
+    li + li {
+      margin-block-start: var(--quader-space-2);
+    }
+    code {
+      min-inline-size: 0;
+      overflow-wrap: anywhere;
+    }
+    quader-copy-button {
+      flex: none;
     }
   `,
 })

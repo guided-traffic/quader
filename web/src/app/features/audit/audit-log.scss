@@ -31,6 +31,23 @@
   padding: var(--quader-space-4);
   border: 1px solid var(--quader-border);
   border-radius: var(--quader-radius-l);
+
+  // An ID and its copy button (R-UI-175, R-UI-176): the button stands on the middle of the ID's first line by its margins (on-line),
+  // so the fact is as high as its text; an ID that wraps breaks inside itself and keeps the button on its first line.
+  dd:has(> quader-copy-button) {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--quader-space-1);
+
+    > code {
+      min-inline-size: 0;
+      overflow-wrap: anywhere;
+    }
+
+    > quader-copy-button {
+      flex: none;
+    }
+  }
 }
 
 .detail-head {
