@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 17:25): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 17:50): no registry task; a malware scan of every artifact with ClamAV, asked for by the owner that day and being prepared for him ([With the owner](#with-the-owner)); the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -326,6 +326,9 @@ charged to its own pod, and a neighbour costs a loaded leg about a tenth of its 
 ([Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)
 records the recorder that tells such a stall apart).
 
+- **The setup of an end-to-end set can run into the write class's rate limit** (2026-11-20, `make e2e SET=vuln` on an idle
+  20-core host: `create service account e2e-nuget: 429 rate_limited`, burst 50, then 10 a second). The setup of `vuln`
+  now waits out a 429 by its `Retry-After`; the other sets' setups were not looked at, and a fast runner can hit the same.
 - **Two component tests of the person search wait a fixed 320 ms** (`policy-editor.spec.ts`, "no match "@sam" under
   Principal"; `project-screens.spec.ts`, "Service account of web"): both failed one `make web-test` on 2026-11-20 at a
   host load of 53 and passed when their files ran alone. A fixed wait measures the host; the tests should wait for the
@@ -509,6 +512,11 @@ records the recorder that tells such a stall apart).
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
+- **A repository enabled again can lose one of five scan attempts** (the scanner role, not on `main` yet): for about a
+  second a replica's grant index still shows it disabled, the scanner's pull is refused and the scan ends
+  `layer_missing`; retried after a minute, never read as clean. Written into R-VULN-034 by its builder. A fix is named
+  and not built: the scan listener answers a system subject on a disabled repository with a code of its own, and the
+  scanner puts that off without an attempt.
 - **A list's filter loses the focus while one types** (found on 2026-11-20 in the render of the page **Upstream
   registries**, where the page's title carried the focus ring after a filter text). 250 ms after the last key the list
   navigates to write `?q=`, and `FocusOnNavigation` moves the focus to the screen's `h1` after every navigation, one
@@ -575,7 +583,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 17:25.
+**State on 2026-11-20**, 17:50.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -734,16 +742,36 @@ runs are in `git log`; this section holds the current state.
     Q-HA-340 to 343, the gap H-1070 (the scanner pod names no service account of the chart). **Left in place:** a
     scanner outage also fires `QuaderVulnerabilityImageScansFailing` after an hour, as the specification says; a
     repository enabled again can lose one of five attempts while a replica's grant index still shows it disabled.
-    **Second stage started at 17:00:** the one run of `make e2e SET=vuln` on a kind cluster of its own (Docker used
-    4.6 of 15.8 GiB; the cluster `mko-dev` of another project runs there and is not touched), what only a cluster
-    shows (the analyser in the distroless pod, no service-account token, the NetworkPolicy, readiness under
-    `helm --wait`, whether a scanner pod should carry `quader/serve=true`, which `deploy/dev/drain.sh` selects),
-    then the integration areas `authz`, `limits`, `oci` and `packages`, because the harness changed for every area.
+    **Second stage, done at 17:45:** `9c1925e35` (it replaces `0f23ad8ed`). The end-to-end case passed on a kind
+    cluster of its own in 6.9 s, the analysis stored 6.6 s after the task's run, on the third run of
+    `make e2e SET=vuln`: the first failed on the case itself (a new manifest waits `scan_delay`, 30 s; the profile
+    `vuln` now sets it to 0), the second in the set's setup (its admin writes went past the write class's burst on
+    an idle host, section 8). In the third one journey of another feature failed on leftovers of the two runs
+    before on the same cluster; a fresh cluster in CI shows it. **Seen on the cluster:** the analyser runs in the
+    distroless pod; the pod has no service-account token and no secret of the installation (three files under
+    `/var/run/secrets`: the pair and the internal CA); the NetworkPolicy lets the scanner reach the scan listener and
+    lets only the worker pool of the queue `vuln` reach the scanner; readiness under `helm --wait`. **Two defects
+    the run found, fixed:** the development profile's Valkey policy selected `quader/serve=true` and so admitted
+    the scanner (it names its clients now, Q-HA-344); a replica of the role `all` did not start, because the
+    scanner made its working directory at the chart's absolute path (an empty `scan_dir` now lies under the spool,
+    Q-VULN-184), which would have stopped the UI development backend. The integration areas `authz`, `oci` and
+    `packages` passed, `limits` after that fix. **Not verified:** a scanner pod killed in the middle of a call; the
+    ServiceMonitor's scrape with the ops pair; the step in the job `container-scan`; the nightly's drain sets; the
+    other integration areas. **Not landed, on purpose:** see the order of landing below.
   **Housekeeping at 17:20:** twelve local branches without a worktree and without a commit missing on `main` deleted.
   **Waiting:** package B of the scanner, until `upstream` and package A are both on `main` (it needs `KindSystem` of
   the one and `upstream/scanner-trivy` of the other, and the two change the same files: `internal/authz/index.go`,
-  `internal/limits/usage/buffer.go`, the request path, the specification). **Order of landing:** whichever of `upstream` and package A is ready first; the other is rebased by its own
-  builder. **Housekeeping of 2026-11-20:** `.bin/trivy-v0.76.1` in the main checkout, the analyser of the pin before,
+  `internal/limits/usage/buffer.go`, the request path, the specification). **Order of landing:** `upstream` first, then package A, rebased by its own builder. **Why package A waits,
+  verified on 2026-11-20:** the owner's installation takes every release within a minute (its HelmRelease names the
+  chart version `*`), image scanning is on by the chart's default, and its certificate `quader-tls` allows server
+  authentication only (read from the Secret on the cluster). A scanner pod whose pair does not allow client
+  authentication stays not ready (R-HA-065), so the upgrade to the release with package A would wait ten minutes and
+  fail, and the installation's release would stand as failed; the registry itself would keep serving. The chart of
+  package A renders with the installation's values (24 objects, five of them new: the scanner's Deployment,
+  NetworkPolicy, PodDisruptionBudget and two Services). What is missing is one line in the installation's
+  `Certificate` (`client auth` among its usages), and the rules of that repository forbid a commit by the development
+  agent: put to the owner on 2026-11-20. The cluster's egress rules need nothing: a pod without a label reaches its
+  own namespace, which is all the scanner asks. **Housekeeping of 2026-11-20:** `.bin/trivy-v0.76.1` in the main checkout, the analyser of the pin before,
   removed (the pin is v0.76.2, and the Makefile's path carries the version).
   **Cut between package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
   `scanner-trivy` (its 48 hours, its include pattern, the 404 for every client) and leaves the "in use" function empty,
@@ -775,6 +803,19 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 **Questions he has not answered**
 
+- **A malware scan of every artifact with ClamAV** (2026-11-20, his words): "Kannst du gleich mal mit mir einen ClamAV
+  Scanner nach dem Schema von Trivy vorbereiten. Brauchen wir auch. Alle Artefakte müssen Viren-geprüft werden. Es muss im
+  Admin-Bereich einen Schalter geben, der es ermöglicht, dass nur geprüfte Artefakte gedownloaded werden können." Being
+  prepared since 17:45: a planner reads what the scanner role and the project `upstream` give it, what ClamAV demands (its
+  database and the rules of its distribution, memory, limits, licence) and how a gate covers every format, and comes back
+  with the decisions. They go to him as a working paper he answers in (as the download limits did), not one by one in the
+  chat. Nothing of it is decided or specified.
+- **The certificate of his installation needs `client auth`** before the release with the scanner role reaches it (see
+  the order of landing in the run record): the line is ready for him, the development agent does not commit to that
+  repository.
+- **The scanner's link asks for a certificate that most installations do not have** (the development agent's Q-VULN-163:
+  mutual TLS with the chart's own pair; its own condition for looking again was "if operators' certificates commonly lack
+  client authentication", and the only installation there is lacks it). Stays as built; for the walkthrough.
 - **The binding of a host to a repository of `upstream`** at its root (`docker pull mirror.example.com/library/alpine`, a Docker
   Engine's `registry-mirrors`; R-EP-006, R-OCI-029): named to him on 2026-11-20 as the second step after the project is
   built; today it is a configuration at start, not a click of the admin area. An address without the project segment, which
