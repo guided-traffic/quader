@@ -632,18 +632,24 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   else through: "Nenn es nicht trivy-db sondern 'scanner-trivy', es ist immer private und nur für unseren Scanner. Der Admin
   kann das nicht anpassen. Ansonsten gehe ich voll mit." It is switched on with the image scanning and by nothing else; the
   scanning's setting names the repository the database comes from, `scanner-trivy` by default, and an installation without
-  the internet names a local OCI repository of its own there (which replaces the file in a generic repository of today). The
-  development agent's reading, said to him: what he fixed is the visibility; the upstream address and an account for it stay
-  an administrator's, as for every well-known repository.
-- **Format logos** (Q-UI-225 to 227): npm, Ansible Galaxy and the Docker whale may be shown only with their owners' permission, so
-  npm and Ansible Galaxy keep the neutral glyph (and Guides show it on the tiles of Ansible Galaxy, Generic and npm). To show them,
-  the owner asks npm, Inc. and Red Hat for permission. At the walkthrough: the logos in the running app, light and dark, in Firefox
-  and Safari (only Chrome on a static page was looked at).
-- **Presets of the installation's own registries** (T-21b): should an administrator be able to add the installation's own
-  registries (for example the registry of his GitLab) as preset buttons? (a) No: the formats' public presets only; the own registry
-  is typed once per repository, and **Allow** fixes its token service in one click. (b) Yes: a list per format in the general
-  settings, served with the format's presets. Recommendation: (a) now, (b) as its own task if he wants it.
-- **Palette** (T-21c): should the vulnerability report's trend chart and the grade bar share one palette?
+  the internet names a local OCI repository of its own there (which replaces the file in a generic repository of today). What
+  is fixed is the visibility; the upstream address and an account for it stay an administrator's, as for every well-known
+  repository (the development agent's reading, confirmed by him: "scanner-trivy, genau wie von dir beschrieben").
+- **Format logos** (Q-UI-225 to 227), **decided by the owner on 2026-11-20** ("b, aber das machen wir später"): he asks npm, Inc.
+  and Red Hat for permission to show the logos of npm and Ansible Galaxy, later; the development agent prepares the two
+  texts when he says so, and until an answer both keep the neutral glyph. Still at the walkthrough: the logos in the running
+  app, light and dark, in Firefox and Safari (only Chrome on a static page was looked at).
+- **Presets of the installation's own registries** (T-21b), **decided by the owner on 2026-11-20** ("Auf jeden Fall b"): an
+  administrator keeps a list per format of the installation's own registries (name, address, token service), and the form of
+  a new remote repository offers them as buttons in every project. A preset holds no credential: each project enters its own.
+  Built as a small task of its own after the project `upstream`, whose admin page touches the same place; with `upstream` a
+  project's own remotes are mostly private registries, which is what changed the development agent's earlier
+  recommendation of (a).
+- **Palette** (T-21c), **decided by the owner on 2026-11-20** ("Option b, aber vorher zeigen bitte"): one colour scale for the
+  severities in the vulnerability report, the same in the bar of the counts (`--quader-sev-*`) and in the trend
+  (`--quader-chart-*`), which differ today (Low is pale yellow in the bar and teal in the trend, High red and orange). A
+  designer draws candidates for both schemes and the owner sees them before anything is built; the building goes with the
+  rework of the vulnerability pages.
 
 **Decisions the development agent or a builder took, for his walkthrough** (each decision block says so)
 
