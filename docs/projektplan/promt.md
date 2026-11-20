@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 14:40): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on branches and being built (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 15:00): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -562,7 +562,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 13:30.
+**State on 2026-11-20**, 15:00.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -594,32 +594,31 @@ runs are in `git log`; this section holds the current state.
   [visibility.md](../security/visibility.md): a technical or CI token reads every `internal` repository at every door; live
   where a CI issuer is public, where a mapping admits fork pipelines to read, and for forks on a GitLab older than 18.4.
   **To check before the owner's installation takes the release:** whether one of the three is configured there.
-- **Specified, not on `main`: the built-in project `upstream`** with the product's well-known repositories, on the local
-  branch `spec/upstream-project` (one commit on `5dffd9bf`; ADR-209 and 211; the gaps H-1021 to H-1026), cut into three
-  work packages: the project, the reconcile and the admin API (migration 00086); membership across the project line,
-  placeholders and usage (00087); the UI. The lift its planner first specified for CI tokens went with the owner's
-  definition of `internal`. **Confirmed by the owner on 2026-11-20** ("ja, Schlüssel mitbringen"): the Debian and Ubuntu
-  repositories carry their archive keys, so a key change of an archive needs a release (Q-REPO-379). **And** ("Option B", after he asked what
-  exactly): beside the two things he named, an administrator sets the six settings that only narrow what a well-known
-  repository serves: include and exclude patterns, offline, who may fill the cache, the repository's vulnerability settings
-  and the administrator's note; everything else stays the product's (Q-REPO-378).
-- **Specified, not on `main`: the role `scanner`** and the analyser's database in a repository, on the local branch
-  `spec/scanner-role` (one commit on `5dffd9bf`; ADR-212 to 214), cut into two work packages: the scanner role (no
-  migration), the database in a repository (one migration). **To do before a builder starts:** the branch is put on top of
-  `spec/upstream-project`, the two are reconciled (the image's name at the upstream, `aquasec/trivy-db` at mirror.gcr.io;
-  the cache cleanup and the database's layer; the migration numbers; the requirement count), and what the scanner's planner
-  needed on pages it could not touch is written (endpoints.md: the endpoint `scan` and its listener; authorization.md: the
-  principal kind `system` and the fixed rule of the image scanner). Its planner's least certain decisions, for the owner's
-  walkthrough: a listener of its own on `packages` for the scanner's pull (Q-ARCH-528); mutual TLS between worker and
-  scanner with the chart's certificate, which must allow client authentication (Q-VULN-163, not checked on the owner's
-  installation); the worker writes the scanner's package list anew before its own analyser reads it (Q-VULN-164), whose
-  faithfulness only a test with the real analyser shows, and that test does not run in CI yet: the builder has to give it
-  one that does.
-- **In work** (14:35): `spec/upstream-project` sits on `main` at `984540a2` with the owner's confirmations; its first
-  builder builds the contract commit of the first package (the project's constants, migration 00086, the facts on a
-  repository, the error codes, the operations of the admin API) and then stops, so that the builders of the second and third
-  package can start on it before it goes on. The scanner's planner puts `spec/scanner-role` on top of
-  `spec/upstream-project`, reconciles the two and writes what it needed on the pages it could not touch.
+- **The built-in project `upstream`, specified on `main`** on 2026-11-20
+  ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, ADR-209 and ADR-211, the gaps
+  H-1021 to H-1026), **built in three work packages:** (1) the project, the reconcile and the admin API (migration 00086);
+  (2) membership across the project line, placeholders and usage (migration 00087); (3) the UI (the admin page, the switch,
+  the member picker, the placeholder). The builder of package 1 first builds its contract commit (the project's constants,
+  the migration, the facts on a repository, the error codes, the operations of the admin API) and stops; the builders of
+  packages 2 and 3 start on that commit, and it goes on with the rest of package 1.
+- **The role `scanner` and the analyser's database in a repository, specified on `main`** on 2026-11-20
+  ([vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-041 to R-VULN-046, ADR-212 to ADR-214, the gaps
+  H-1035 to H-1039 and H-1041 to H-1044), reconciled with the project `upstream` by its planner: the database's image is
+  `aquasec/trivy-db` at `mirror.gcr.io`, the cache cleanup never removes the layer in use, the two system subjects stand in
+  [authorization.md](../spec/authorization.md), the endpoint `scan` and its listener in
+  [endpoints.md](../spec/endpoints.md); the specification counts 1,013 requirements. **Built in two work packages:** (A) the
+  scanner role with its token, its listener, its chart and its tests (no migration, nothing of `upstream`); (B) the
+  database in a repository (migration 00088, the task that fetches it, the sources screen), which needs
+  `upstream/scanner-trivy` of package 1. **Order of landing:** migration numbers run without a gap
+  (`internal/meta/postgres/steps.go`), so package 1, then 2, then B; a package that lands out of this order takes the next
+  free number. **Checked by the development agent of what the planner could not verify** (2026-11-20): Docker Hub serves
+  `aquasec/trivy-db` publicly; `mirror.gcr.io/aquasec/trivy-db:2` answers an OCI manifest with one layer of 141,735,981
+  bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
+  Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
+  owner's installation (section 12 E).
+- **In work** (15:00): the builder of package 1 of `upstream` (its contract commit); the builder of package A of the
+  scanner. **Waiting:** packages 2 and 3 for the contract commit; package B for a free builder (at most four) and for
+  `upstream/scanner-trivy`.
 - **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
   `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
   its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
@@ -656,47 +655,28 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - **H-812** ([image-scanning.md](../security/image-scanning.md)), **decided by the owner on 2026-11-20** ("Perfekt, machen wir wie
   du analysiert hast", after he asked for a look at how Harbor's scanner adapter does it): the analysis of an image moves into
   a role `scanner` of the same binary with a Deployment of its own and no secret of the database, the object store or Valkey.
-  The worker keeps the job and calls the scanner over HTTPS with the repository, the digest and a registry token (pull, that
-  repository, minutes); the scanner pulls the image through Quader's own registry API, checks the layers as the worker does
-  today, runs the analyser and answers the package list. The detection stays in the worker, so the scanner needs neither the
-  vulnerability database nor the internet. Specified on the branch `spec/scanner-role` (a blocked or private image is pulled
-  for the scan by a token of minutes for that one manifest, and the pull counts as no download and against no limit); the
-  analyser's database is in the next entry.
-- **The built-in project `upstream` for the public registries** (owner, 2026-11-20; specified on the branch
-  `spec/upstream-project`, in work; his words stay here until the specification is on `main`): "ich … hätte irgendwie
-  gerne, dass wir in einem Well-Known 'Projekt' (vielleicht 'common', 'system' oder 'default') für Registry-Typen die wir
-  schon implementiert haben über die Admin-Konsole alle Well-Known Repos vorkonfiguriert … konfigurierbar machen. Vielleicht
-  nutzen wir für die Abbildung über die API auch einfach den Root unserer API, also /." He names what it reopens himself
-  (Q-AUTHZ-206, every repository in one project). Read for the discussion: the formats' catalog holds twelve upstream presets
-  with IDs (OCI four, npm one, NuGet one, Debian five, Ansible Galaxy one); a virtual repository lists only repositories of
-  its own project (Q-REPO-212); a host can be bound to one repository at its root (R-EP-006, R-OCI-029), by configuration at
-  start; quick setup (R-UI-023) is specified and not built. **Decided so far** (owner, 2026-11-20): a virtual repository may
-  list repositories of its own project and of the well-known project, and of no other ("Ich bin gerne bei Option B"); a
-  project's own remote repositories stay possible beside the central ones; and a reference never protects what it names:
-  "Ein virtuelles Repo, das auf unser zentrales zeigt, kann keine Deaktivierung durch einen Admin verhindern. Allgemein kann
-  das Hinzufügen eines Remote-Repos zu einem virtuellen nicht dafür genutzt werden, dass das Remote nicht gelöscht werden
-  kann. Das musst du besser lösen als das Remote zu sperren." Read for it: resolution already drops a member that is disabled
-  or being deleted (R-REPO-019), and a delete with `detach=true` already takes a repository out of every member list in its
-  transaction (R-REPO-013), today inside one project. **Decided next** (owner, 2026-11-20): a member whose repository is not
-  there stays in the virtual repository as a placeholder and takes effect again when the repository is ("b"); "die well-known
-  Repos werden von uns gepflegt und sind nicht löschbar"; the admin area gets a page of its own on which an administrator
-  switches each one on or off and sets its visibility, with one button that switches all on and one that sets the visibility
-  of all; an administrator may change a repository's upstream address and store an account for it ("um zum Beispiel
-  Rate-Limits zu umgehen oder besser umzugehen"), the address "für solche Fälle …, wo wir eine solche Anpassung übersehen
-  haben und wir nicht schnell genug einen Patch bereitstellen". What follows, the development agent's reading, to be written
-  into the specification by a planner: the project is built in (an amendment of Q-AUTHZ-206, narrow: it holds only the
-  repositories the product defines from the formats' upstream presets, nothing can be created in it, and every one is off
-  until an administrator switches it on); a changed address is marked as differing from the product's and can be reset; a
-  stored credential is entered again when its hosts change, as for every remote (R-REPO-033). The project's key is `upstream` (owner, 2026-11-20: "Okay, lass uns upstream
-  nehmen"). Open: the binding of a host. **The analyser's database** (owner, 2026-11-20, no longer parked): it must not make everybody use a
-  central `ghcr` ("Ich fände es doof, wenn Trivy … dazu führt, dass jeder auch das zentrale ghcr nutzen muss"), and there is
-  no second way that falls back to the public source. One repository of the well-known project holds it and lets nothing
-  else through: "Nenn es nicht trivy-db sondern 'scanner-trivy', es ist immer private und nur für unseren Scanner. Der Admin
-  kann das nicht anpassen. Ansonsten gehe ich voll mit." It is switched on with the image scanning and by nothing else; the
-  scanning's setting names the repository the database comes from, `scanner-trivy` by default, and an installation without
-  the internet names a local OCI repository of its own there (which replaces the file in a generic repository of today). What
-  is fixed is the visibility; the upstream address and an account for it stay an administrator's, as for every well-known
-  repository (the development agent's reading, confirmed by him: "scanner-trivy, genau wie von dir beschrieben").
+  The worker keeps the job and calls the scanner over HTTPS with the repository, the digest and a token of minutes for that
+  one manifest; the scanner pulls the image through a listener of `packages`, checks the layers, runs the analyser and
+  answers the package list. The detection stays in the worker, so the scanner needs neither the vulnerability database nor
+  the internet; the scanner's pull counts as no download and against no limit. Specified on `main`
+  ([vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-041 to R-VULN-046, ADR-212 to ADR-214), being
+  built (run record).
+- **The built-in project `upstream` for the public registries**, **decided by the owner on 2026-11-20** in five answers; his
+  words are in the decision blocks of the specification on `main`
+  ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, ADR-209 and ADR-211), being built
+  (run record). In short: a built-in project with the key `upstream` holds the product's well-known remote repositories, one
+  per upstream preset of the formats' catalog (twelve), each off until an administrator switches it on; they are the
+  product's and cannot be deleted, and nothing can be created in the project. A page of its own in the admin area switches
+  each on or off and sets its visibility, with one button that switches all on and one that sets the visibility of all. An
+  administrator may change a repository's upstream address (marked as differing from the product's, with a reset) and store
+  an account for it, and sets the six settings that only narrow what it serves (Q-REPO-378). A virtual repository may list
+  repositories of its own project and of `upstream`, and of no other; a reference never protects what it names: a member
+  whose repository is off or gone stays as a placeholder and takes effect again when the repository is back. A project's
+  own remote repositories stay possible. The Debian and Ubuntu repositories carry their archive keys (Q-REPO-379).
+  **The analyser's database** lies in `upstream/scanner-trivy`: always private, only for the scanner, not an
+  administrator's to switch, in use exactly while the image scanning reads through it; there is no second way that falls
+  back to the public source, and an installation without the internet names a local OCI repository of its own in the
+  scanning's setting. Open with him: the binding of a host (first list).
 - **Format logos** (Q-UI-225 to 227), **decided by the owner on 2026-11-20** ("b, aber das machen wir später"): he asks npm, Inc.
   and Red Hat for permission to show the logos of npm and Ansible Galaxy, later; the development agent prepares the two
   texts when he says so, and until an answer both keep the neutral glyph. Still at the walkthrough: the logos in the running
@@ -757,10 +737,21 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - The colour scale of the severities (2026-11-20, beside his choice Q-UI-860): a band's edge is drawn on every day with at
   least one finding, and the heights stay exact (Q-UI-861); at 365 days the hairline between the columns goes (Q-UI-862).
 - The folds of **Set up client** (2026-11-20): a fold's label has at most 32 characters in English and German (Q-UI-810).
-- On the branches of the two specifications, not on `main` yet: the planners' own decisions for the project `upstream`
-  (Q-REPO-374 to 377 and 380 to 389, Q-AUTHZ-300, 301, 303 and 304, Q-API-360 and 361, Q-UI-830 to 836, Q-LIM-62 and 63) and
-  for the role `scanner` (Q-VULN-161 to 174, Q-ARCH-527 to 531, Q-OCI-226 to 230, Q-HA-316 to 322, Q-LIM-66, Q-OPS-215,
-  Q-UI-850); the three its planner is least sure of are in the run record.
+- The project `upstream` (2026-11-20, its planner's decisions beside the owner's): Q-REPO-374 to 377 and 380 to 389,
+  Q-AUTHZ-300, 301, 303 and 304, Q-API-360 and 361, Q-UI-830 to 836, Q-LIM-62 and 63.
+- The role `scanner` and the analyser's database (2026-11-20, its planner's decisions beside the owner's): Q-VULN-161 to 176,
+  Q-ARCH-527 to 531, Q-OCI-226 to 230, Q-HA-316 to 322, Q-LIM-66, Q-OPS-215, Q-UI-850. The ones to look at first: a listener
+  of its own on `packages` for the scanner's pull (Q-ARCH-528); mutual TLS between worker and scanner with the chart's
+  certificate, which must allow client authentication (Q-VULN-163; not checked on his installation, section 12 E); the worker
+  writes the scanner's package list anew before its own analyser reads it (Q-VULN-164), and a unit test with the pinned
+  analyser shows in the job `container-scan` that both documents detect the same (Q-VULN-176: about 10 s in a job that gates
+  the release; its fixture database needs a generator and with it a new module, `go.etcd.io/bbolt`, used by that tool and
+  the test only); the database's repository never loses the layer in use and lets the older ones go after 48 hours
+  (Q-VULN-175: about eight older layers, 1.1 GB, at the 142 MB measured on 2026-11-20); the two system subjects
+  `system:image-scanner` and `system:image-database` (R-AUTHZ-002); an uncached layer of a remote, for a reader who may not
+  fill the cache, answers 403 `populate_not_permitted`, which the scanner reports as `layer_missing`; an installation that
+  wants the database from another registry under another image name sets up a remote in a project of its own and names
+  repository and image in the configuration file (R-VULN-044).
 - The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
   well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
   repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).
