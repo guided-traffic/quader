@@ -6420,7 +6420,9 @@ Groups 2 to 4 are not shown to an anonymous caller.
   (non-secret, R-UI-043), one key per signed-in principal ID, `quader.frequent.<principal ID>`: per repository its qualified name,
   per project its key, each with the number of visits and the time of the last one, at most 20 per kind. A visit is the opening of a
   repository's page or content page, or of a project's screen; it counts once per entry in 15 minutes, and every visit is the entry's
-  last one. The order is the number of visits, halved for every 14 days since the last visit, then the last visit. The same store,
+  last one. A repository's visit is recorded when the server answered its page with the repository, and not while the repository is
+  being deleted; the entry of a repository that is gone (deleted or moved by the person, or not found by its own page) is removed
+  from the store (R-UI-167). The order is the number of visits, halved for every 14 days since the last visit, then the last visit. The same store,
   ordered by the last visit, is the side bar's **Recently opened** (its newest five, read with one request of its own, R-UI-167) and the project switcher's
   recent list; the two stores of before are no longer read (no migration before the first stable release). A route under `/admin` is
   never recorded. With storage blocked, groups 2 and 4 are left out.
@@ -7405,6 +7407,17 @@ The owner's decision of 2026-11-18 (W-20, [Q-UI-660](#q-ui-660--recently-opened-
   drawer opened) and the newest five hold a name the session has not asked yet, and asks for those names alone. Navigating asks
   nothing; opening a further repository asks for that one name when the home side bar is shown next; a new authorization epoch
   asks again.
+- **A repository that is gone leaves the group at once**
+  ([Q-UI-769](#q-ui-769--a-repository-that-is-gone-is-removed-from-the-browsers-store-by-the-screen-that-learns-it)), without a
+  request and without a new sign-in. Its entry is removed from the store, and with it from the group and from the search field's
+  frequently visited repositories (R-UI-096), when
+  - the person's deletion of it is accepted, on its settings page or in a list's row, also while the deletion's job still runs;
+  - the person moves it to another project: the name it had is removed, and the page it moves to records the new one;
+  - the repository's own page, its content page or its settings, is answered with 404.
+
+  The stored repository that becomes one of the newest five is asked for alone when the home side bar is shown next, as a newly
+  opened one is. A visit is recorded only when the server answered the page with the repository, and not for a repository that is
+  being deleted, so a page that is not found never puts its name into the store.
 - **Not shown** while no stored repository is confirmed, to an anonymous visitor, and where the browser's storage is not available
   (`FrequentPlaces.available()`).
 - **Narrow and collapsed.** In the drawer below 1024 px the group is a group of the drawer as the others are; the collapsed side
@@ -7417,7 +7430,14 @@ Acceptance criteria:
   five, a name it did not return is left out; an entry's link, mark, key, `title` and accessible name, no field, no button; the
   choice to open it is stored and holds on the next visit; navigating asks nothing again, a newly opened repository is asked alone;
   no group with nothing readable, nothing stored, storage blocked, or anonymous; none in a project's side bar or the admin area;
-  in the drawer the request runs when the drawer opens; no serious axe violation.
+  in the drawer the request runs when the drawer opens; no serious axe violation. A repository removed from the store leaves the
+  group before any answer, the group goes with its last entry, and the stored one that moves up is asked for alone.
+- Unit tests of the screens that learn it: the settings page removes the repository when its deletion is accepted while the job
+  runs, removes the old name after a move, removes a repository it does not find, and records no visit of one that is being deleted
+  (`repository-detail.spec.ts`); the list removes a repository deleted from its row, and opening that row while the job runs
+  records nothing (`repository-list.spec.ts`); the content page records the visit once the repository was read and removes one it
+  does not find (`repository-content.spec.ts`); the store removes one repository and keeps the others and the projects
+  (`frequent-places.spec.ts`).
 - Render: `sidebar-recent` as `plain` and `power`, the group open, with the seed's long key.
 
 ### R-UI-168 · A side bar is made of titled blocks; Security audit is the second title of Your work's side bar
@@ -17950,6 +17970,46 @@ in the measurements of the main area.
 
 **Applied in the spec:** R-UI-167, R-UI-096 (Q-UI-406 holds). Code: [recent-repositories.ts](../../web/src/app/core/recent-repositories.ts),
 [app.ts](../../web/src/app/app.ts).
+
+**Revisited by [Q-UI-769](#q-ui-769--a-repository-that-is-gone-is-removed-from-the-browsers-store-by-the-screen-that-learns-it)**
+(W-20): what stood against (a) is closed for a repository the person deletes or moves, and for one whose own page is not found; the
+one request per session stays.
+
+### Q-UI-769 · A repository that is gone is removed from the browser's store by the screen that learns it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the gap Q-UI-662 (a) left, from the plan (W-20): a repository deleted during a session stayed in **Recently opened** until
+the next sign-in or change of permissions, and its entry led to "not found". The group asks the server once per session
+(Q-UI-662), and that stays: no request per navigation. The same store feeds the search field's frequently visited repositories
+(R-UI-096), which showed the deleted repository as long. The content page recorded a visit as soon as it had its address, before
+the server answered, so the page of a repository that does not exist put its name into the store.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The screen that learns that a repository is gone removes its name from the store (`FrequentPlaces.forgetRepository`): the settings page and the list when the person's deletion is accepted, the settings page after a move, the content page and the settings page when the repository's document is answered with 404; a visit is recorded only after the server answered with the repository, and not for one that is being deleted (chosen) | One write to the browser's store where the fact is already known | No request; the side bar and the search follow at once, because both read the store; the next stored repository moves up into the five; a page that is not found leaves nothing behind | A repository somebody else deleted stays listed until the person opens it once; a repository that was only closed to the person and answers 404 loses its count of visits |
+| (b) Keep the name stored and mark it unreadable in the session's answers | The side bar's answers get a third state | The count of visits survives | The search field keeps its own answers and would need the same; the name keeps one of the five places, so the group shows four; the mark is gone after a reload, the dead entry is back |
+| (c) Ask the server again after a deletion and after a 404 | One more `GET /api/v1/repositories?name=…` | The server's word | A request for what the screen already knows; while the deletion's job runs the server still lists the repository |
+| (d) Ask on every navigation (Q-UI-662 (c)) | Always current | Also finds what others deleted | One request per click, which Q-UI-662 ruled out |
+
+**Choice:** (a). The deletion counts when the server accepted it, not when its job ended: the person typed the key to confirm it,
+and the page that would hear the job's end may be left by then. **Rationale:** the fact is known in the browser at the moment it
+happens, the store is the one source of both readers, and removing the name is what `forgetProject` already does for a deleted
+project. The development agent revisits (d) in a cheaper form (an event from the server, or a check when the group is opened) if
+repositories deleted by other people show as dead entries in the walk.
+
+What it leaves: a repository that another person or an API client deleted stays in the group until its entry is opened once, which
+answers "not found" and removes it, or until the authorization epoch changes. The page **Set up client** removes nothing when it
+does not find its repository. A project the person deletes already leaves the project switcher and the search (the screen removes
+it and reads the projects again); a project somebody else deleted stays in the switcher's recent list and among the search's
+frequently visited projects until the list of projects is read again (the next load of the app, or a project the person creates,
+changes or deletes). A name the server did not list
+when the session asked, and that exists again later, stays out of the group until the next epoch.
+
+**Applied in the spec:** R-UI-167, R-UI-096. Code: [frequent-places.ts](../../web/src/app/core/frequent-places.ts),
+[repository-detail.ts](../../web/src/app/features/repositories/repository-detail.ts),
+[repository-list.ts](../../web/src/app/features/repositories/repository-list.ts),
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts).
 
 ### Q-UI-663 · A side bar is a list of titled blocks
 

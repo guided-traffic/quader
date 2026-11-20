@@ -13,7 +13,22 @@ import { AnsibleApi } from '../../api/ansible-api';
 import { FakeAnsibleApi } from '../../api/testing/fakes-ansible';
 import { DebApi } from '../../api/deb-api';
 import { FakeDebApi } from '../../api/testing/fakes-deb';
-import { addressValues, button, expectAccessible, openSection, renderScreen, saveButton, sectionHeadings, settle, text, type } from '../../testing/screen';
+import { ProjectsApi } from '../../api/projects-api';
+import { FakeProjectsApi, sampleProject } from '../../api/testing/fakes-projects';
+import { FrequentPlaces } from '../../core/frequent-places';
+import {
+  addressValues,
+  browserStorage,
+  button,
+  expectAccessible,
+  openSection,
+  renderScreen,
+  saveButton,
+  sectionHeadings,
+  settle,
+  text,
+  type,
+} from '../../testing/screen';
 import { RepositoryDetail } from './repository-detail';
 
 /** Opens the section of the settings page that holds what a tab held; the standard sections are open already (R-UI-087). */
@@ -416,5 +431,67 @@ describe('Repository edit form', () => {
       expect(text(r.root)).toContain('acme.tools');
       expect([...r.root.querySelectorAll('button')].map((b) => text(b))).not.toContain('Clear');
     });
+  });
+});
+
+describe('A repository that is gone leaves the remembered places (R-UI-167)', () => {
+  /** The store of the fakes' signed-in principal, as the search and the side bar read it. */
+  const STORE = 'quader.frequent.00000000-0000-0000-0000-000000000001';
+  const remember = (...refs: string[]) =>
+    browserStorage.set('local', STORE, JSON.stringify({ repositories: refs.map((id, i) => ({ id, visits: 1, last: 1000 - i })), projects: [] }));
+  const remembered = (r: Awaited<ReturnType<typeof open>>) => r.get(FrequentPlaces).recentRepositories().map((v) => v.id);
+
+  beforeEach(() => browserStorage.clear('local'));
+  afterEach(() => browserStorage.clear('local'));
+
+  it('R-UI-167 the deletion the person confirmed forgets the repository at once, also while its job runs', async () => {
+    const r = await open((fake) => {
+      remember('web/releases');
+      fake.deleteResult = { done: false, job: { id: 'job-1', kind: 'repository-delete', state: 'queued', href: '/api/v1/system/jobs/job-1' } };
+    });
+    // Opening the page recorded the visit.
+    expect(remembered(r)).toEqual(['web/generic-local', 'web/releases']);
+    button(r.root, 'Delete repository').click();
+    await settle(r.fixture);
+    const dialog = r.root.ownerDocument.body.querySelector<HTMLElement>('[role="dialog"]')!;
+    type(dialog.querySelector<HTMLInputElement>('#confirm-name')!, 'generic-local');
+    await settle(r.fixture);
+    button(dialog, 'Delete repository').click();
+    await settle(r.fixture);
+    expect((r.get(RepositoriesApi) as FakeRepositoriesApi).deleteCalls).toHaveLength(1);
+    expect(remembered(r)).toEqual(['web/releases']);
+  });
+
+  it('R-UI-167 a move forgets the name the repository had', async () => {
+    const r = await renderScreen(RepositoryDetail, {
+      inputs: { project: 'web', key: 'generic-local' },
+      setup: (get) => {
+        (get(ProjectsApi) as FakeProjectsApi).projects = [sampleProject(), sampleProject({ key: 'platform', displayName: 'Platform' })];
+      },
+    });
+    expect(remembered(r)).toEqual(['web/generic-local']);
+    const target = r.root.querySelector<HTMLSelectElement>('select[name="moveTarget"]')!;
+    target.value = 'platform';
+    target.dispatchEvent(new Event('change'));
+    await settle(r.fixture);
+    button(r.root, 'Move repository').click();
+    await settle(r.fixture);
+    button(r.root.ownerDocument.body.querySelector<HTMLElement>('[role="dialog"]')!, 'Move repository').click();
+    await settle(r.fixture);
+    expect((r.get(RepositoriesApi) as FakeRepositoriesApi).moves).toEqual([{ ref: 'web/generic-local', project: 'platform' }]);
+    expect(remembered(r)).toEqual([]);
+  });
+
+  it('R-UI-167 a repository its settings page does not find is forgotten, and one that is being deleted is not recorded', async () => {
+    const missing = await open(() => remember('web/missing', 'web/releases'), 'missing');
+    expect(text(missing.root)).not.toContain('Save changes');
+    expect(remembered(missing)).toEqual(['web/releases']);
+
+    browserStorage.clear('local');
+    const deleting = await open((fake) => {
+      fake.repositories[0] = { ...fake.repositories[0]!, lifecycle: 'deleting' };
+    });
+    expect(text(deleting.root)).toContain('This repository is being deleted.');
+    expect(remembered(deleting)).toEqual([]);
   });
 });

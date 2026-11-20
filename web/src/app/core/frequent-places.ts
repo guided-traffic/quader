@@ -82,7 +82,7 @@ export class FrequentPlaces {
   /** The projects by the last visit (the project switcher's recent list). */
   readonly recentProjects = computed(() => byRecency(this.store().projects));
 
-  /** Records the opening of a repository's page or content page. */
+  /** Records the opening of a repository's page or content page, once the server answered it with the repository. */
   visitRepository(project: string, key: string): void {
     this.visit('repositories', `${project}/${key}`);
   }
@@ -94,10 +94,24 @@ export class FrequentPlaces {
 
   /** Forgets a project that no longer exists. */
   forgetProject(key: string): void {
+    this.forget('projects', key);
+  }
+
+  /**
+   * Forgets a repository that is gone under this name (R-UI-167): its deletion was accepted, it was moved to another project, or
+   * its own page was answered with 404. Every reader of the store follows at once: the side bar's **Recently opened** and the
+   * search field's frequently visited repositories.
+   */
+  forgetRepository(project: string, key: string): void {
+    this.forget('repositories', `${project}/${key}`);
+  }
+
+  private forget(kind: keyof Store, id: string): void {
     const storeKey = this.key();
     if (!storeKey) return;
     const current = this.read(storeKey);
-    this.write(storeKey, { ...current, projects: current.projects.filter((v) => v.id !== key) });
+    if (!current[kind].some((v) => v.id === id)) return;
+    this.write(storeKey, { ...current, [kind]: current[kind].filter((v) => v.id !== id) });
   }
 
   private visit(kind: keyof Store, id: string): void {

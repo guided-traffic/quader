@@ -314,6 +314,8 @@ export class RepositoryList {
       try {
         const ref = refOf(row);
         const outcome = await this.api.delete(ref, idempotencyKey, answer.checked);
+        // The deletion is accepted: the repository leaves the remembered places at once, also while its job runs (R-UI-167).
+        this.frequent.forgetRepository(row.project, row.key);
         if (outcome.done) this.gone(ref);
         else this.deleting.update((m) => new Map(m).set(ref, outcome.job));
         return;
@@ -365,8 +367,9 @@ export class RepositoryList {
     else this.deletionFailed(ref);
   }
 
-  protected visit(ref: string): void {
-    const [project = '', key = ''] = ref.split('/');
-    this.frequent.visitRepository(project, key);
+  /** Records the opening of a row's repository; one in deletion is no place to go back to (R-UI-167). */
+  protected visit(row: RepositorySummary): void {
+    if (row.lifecycle === 'deleting' || this.deleting().has(refOf(row))) return;
+    this.frequent.visitRepository(row.project, row.key);
   }
 }

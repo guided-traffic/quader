@@ -33,6 +33,10 @@ interface Confirmed {
  * the session, per principal and authorization epoch, so the request runs once for the names the session has not asked yet: when
  * the home side bar is first shown, and again when a repository the session has not seen becomes one of the five, or the epoch
  * changes. Navigating does not ask again. A name the server did not return is left out and stays stored.
+ *
+ * A repository that is gone leaves the group without a request: the screen that learns it (the deletion or the move the person
+ * confirmed, or the repository's own page answered with 404) removes it from the store (`FrequentPlaces.forgetRepository`), and
+ * the group reads the store. The stored repository that moves up into the five is asked alone, as any new name is.
  */
 @Injectable({ providedIn: 'root' })
 export class RecentRepositories {

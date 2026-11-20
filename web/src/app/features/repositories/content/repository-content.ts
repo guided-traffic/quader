@@ -293,10 +293,17 @@ export class RepositoryContent {
   protected readonly copyPathLabel = $localize`:@@files.copy-path:Copy path`;
 
   constructor() {
+    // The visit counts once the server answered with the repository; one in deletion, and one this page does not find, is no
+    // place to go back to (R-UI-096, R-UI-167).
     effect(() => {
-      const ref = this.ref();
-      const [project = '', key = ''] = ref.split('/');
-      untracked(() => this.frequent.visitRepository(project, key));
+      const project = this.project();
+      const key = this.key();
+      const found = this.repository();
+      const missing = this.failure()?.status === 404;
+      untracked(() => {
+        if (missing) this.frequent.forgetRepository(project, key);
+        else if (found && (isConsumerView(found) || found.lifecycle !== 'deleting')) this.frequent.visitRepository(project, key);
+      });
     });
     effect(() => {
       this.path();

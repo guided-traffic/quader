@@ -179,4 +179,25 @@ describe('Recently opened in the side bar (R-UI-167)', () => {
     expect(named()).toEqual([['web/releases']]);
     expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
   });
+
+  it('R-UI-167 a repository that is gone leaves the group at once, without a new sign-in; the stored one that moves up is asked alone', async () => {
+    const five = ['web/releases', 'web/one', 'web/two', 'web/three', 'web/four'];
+    const { fixture, root, named, toggle } = await render('/projects', { refs: [...five, 'web/generic-local'] });
+    const links = () => [...root.querySelectorAll<HTMLAnchorElement>('a.recent-link')].map((a) => a.getAttribute('href'));
+    expect(named()).toEqual([five]);
+    expect(links()).toEqual(['/projects/web/repositories/releases']);
+
+    // What the settings page, the list and the repository's own page do when the repository is deleted, moved or not found.
+    TestBed.inject(FrequentPlaces).forgetRepository('web', 'releases');
+    fixture.detectChanges();
+    // Its one entry is gone before any answer: the group is not shown.
+    expect(links()).toEqual([]);
+    expect(toggle()).toBeNull();
+
+    await fixture.whenStable();
+    await fixture.whenStable();
+    // The sixth is one of the five now: one request for its name, none for the four already answered.
+    expect(named()).toEqual([five, ['web/generic-local']]);
+    expect(links()).toEqual(['/projects/web/repositories/generic-local']);
+  });
 });

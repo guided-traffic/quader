@@ -304,6 +304,13 @@ export class RepositoryDetail implements HasUnsavedChanges {
       const value = valueOf(this.loaded);
       if (value) untracked(() => this.adopt(value));
     });
+    // A repository its own page does not find is no place to go back to (R-UI-167).
+    effect(() => {
+      if (this.loadFailure()?.status !== 404) return;
+      const project = this.project();
+      const key = this.key();
+      untracked(() => this.frequent.forgetRepository(project, key));
+    });
     // A form that asks for a recent sign-in keeps its non-secret draft across the redirect.
     effect(() => {
       if (!this.session.reauthRequired()) return;
@@ -385,7 +392,10 @@ export class RepositoryDetail implements HasUnsavedChanges {
 
   /** Takes a freshly read representation as the new baseline; a saved draft is restored once. */
   private adopt(value: Versioned<Repository | RepositoryConsumerView>): void {
-    this.frequent.visitRepository(this.project(), this.key());
+    // A repository in deletion is no place to go back to: its visit is not recorded (R-UI-167).
+    if (isConsumerView(value.value) || value.value.lifecycle !== 'deleting') {
+      this.frequent.visitRepository(this.project(), this.key());
+    }
     this.etag = value.etag;
     if (isConsumerView(value.value)) {
       this.consumer.set(value.value);
@@ -736,6 +746,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
     if (answer === null) return;
     try {
       const outcome = await this.api.delete(this.ref(), newIdempotencyKey());
+      // The deletion is accepted: the repository leaves the remembered places at once, also while its job runs (R-UI-167).
+      this.frequent.forgetRepository(this.project(), this.key());
       if (outcome.done) await this.deleted();
       else this.deletion.set(outcome.job);
     } catch (e) {
@@ -780,6 +792,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
     this.advancedFailure.set(null);
     try {
       const moved = await this.api.move(this.ref(), target, newIdempotencyKey());
+      // The name it had is gone; the page it moves to records the new one (R-UI-167).
+      this.frequent.forgetRepository(this.project(), this.key());
       this.notifier.status($localize`:@@repo.move.done:Repository moved to project ${target}:project:.`);
       this.baseline.set(this.form());
       await this.router.navigate(['/projects', target, 'repositories', moved.value.key, 'settings']);

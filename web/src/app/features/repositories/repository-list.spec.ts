@@ -1,7 +1,8 @@
 import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
-import { addressValues, button, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
+import { FrequentPlaces } from '../../core/frequent-places';
+import { addressValues, browserStorage, button, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
 import { RepositoryList } from './repository-list';
 
 describe('Repository list', () => {
@@ -202,5 +203,37 @@ describe('Repository list', () => {
     expect(fake.deleteCalls).toHaveLength(1);
     expect(fake.deleteCalls[0]?.idempotencyKey).toBeTruthy();
     expect(text(root)).toContain('Deleting');
+  });
+
+  it('R-UI-167 a repository deleted from its row leaves the remembered places at once, and opening it while its job runs records nothing', async () => {
+    const store = 'quader.frequent.00000000-0000-0000-0000-000000000001';
+    browserStorage.clear('local');
+    const { root, fixture, get } = await renderScreen(RepositoryList, {
+      setup: (get) => {
+        const entries = ['web/generic-local', 'web/releases'].map((id, i) => ({ id, visits: 1, last: 1000 - i }));
+        browserStorage.set('local', store, JSON.stringify({ repositories: entries, projects: [] }));
+        (get(RepositoriesApi) as FakeRepositoriesApi).deleteResult = {
+          done: false,
+          job: { id: 'job-1', kind: 'repository-delete', state: 'queued', href: '/api/v1/system/jobs/job-1' },
+        };
+      },
+    });
+    const remembered = () => get(FrequentPlaces).recentRepositories().map((v) => v.id);
+    const row = [...root.querySelectorAll('tbody tr')].find((r) => r.textContent?.includes('generic-local'))!;
+    row.querySelector<HTMLButtonElement>('button[aria-label="Actions for generic-local"]')!.click();
+    await settle(fixture);
+    const body = root.ownerDocument.body;
+    button(body.querySelector<HTMLElement>('.menu')!, 'Delete').click();
+    await settle(fixture);
+    type(body.querySelector<HTMLInputElement>('#confirm-name')!, 'generic-local');
+    await settle(fixture);
+    button(body, 'Delete repository').click();
+    await settle(fixture);
+    expect(remembered()).toEqual(['web/releases']);
+
+    row.querySelector<HTMLAnchorElement>('th a')!.click();
+    await settle(fixture);
+    expect(remembered()).toEqual(['web/releases']);
+    browserStorage.clear('local');
   });
 });

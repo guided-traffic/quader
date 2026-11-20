@@ -113,4 +113,19 @@ describe('Frequently visited places (R-UI-096, Q-UI-405)', () => {
     expect(store.available()).toBe(false);
     expect(new BrowserStorage().entries('local').filter(([k]) => k.startsWith('quader.frequent.'))).toEqual([]);
   });
+
+  it('R-UI-167 a repository that is gone is forgotten: it leaves the store and both orders, the other entries and the projects stay', async () => {
+    const store = await places();
+    store.visitRepository('web', 'npm-local');
+    store.visitRepository('web', 'scratch');
+    store.visitProject('web');
+    store.forgetRepository('web', 'scratch');
+    expect(store.recentRepositories().map((v) => v.id)).toEqual(['web/npm-local']);
+    expect(store.frequentRepositories().map((v) => v.id)).toEqual(['web/npm-local']);
+    expect(store.recentProjects().map((v) => v.id)).toEqual(['web']);
+    expect(new BrowserStorage().get('local', 'quader.frequent.00000000-0000-0000-0000-000000000001')).not.toContain('web/scratch');
+    // A name the store does not hold changes nothing.
+    store.forgetRepository('web', 'never-opened');
+    expect(store.recentRepositories().map((v) => v.id)).toEqual(['web/npm-local']);
+  });
 });

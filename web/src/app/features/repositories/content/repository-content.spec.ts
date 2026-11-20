@@ -8,7 +8,8 @@ import { FakeVulnerabilitiesApi, sampleGrade } from '../../../api/testing/fakes-
 import { FilesApi } from '../../../api/files-api';
 import { SessionApi } from '../../../api/session-api';
 import { FakeSessionApi } from '../../../api/testing/fakes';
-import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
+import { FrequentPlaces } from '../../../core/frequent-places';
+import { browserStorage, expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
 import { RepositoryContent } from './repository-content';
 import { RepositoryItems } from './repository-items';
 import { contentShapeOf } from './content-shape';
@@ -337,5 +338,25 @@ describe('Repository content page', () => {
     expect(packages.listFilters.at(-1)).toMatchObject({ q: 'left' });
     const items = r.fixture.debugElement.query((d) => d.componentInstance instanceof RepositoryItems);
     expect(items).toBeTruthy();
+  });
+
+  it('R-UI-096 R-UI-167 the visit counts once the repository was read; a repository its page does not find is forgotten and never recorded', async () => {
+    const store = 'quader.frequent.00000000-0000-0000-0000-000000000001';
+    browserStorage.clear('local');
+    const found = await open(NPM_REPO);
+    const remembered = (r: typeof found) => r.get(FrequentPlaces).recentRepositories().map((v) => v.id);
+    expect(remembered(found)).toEqual(['web/npm-local']);
+
+    // The page of a repository that was deleted since: the entry that led here goes, and the 404 records no visit.
+    const missing = await renderScreen(RepositoryContent, {
+      inputs: { project: 'web', key: 'gone' },
+      setup: () => {
+        const entries = ['web/gone', 'web/npm-local'].map((id, i) => ({ id, visits: 1, last: 1000 - i }));
+        browserStorage.set('local', store, JSON.stringify({ repositories: entries, projects: [] }));
+      },
+    });
+    await settle(missing.fixture);
+    expect(remembered(missing)).toEqual(['web/npm-local']);
+    browserStorage.clear('local');
   });
 });

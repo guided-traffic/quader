@@ -110,7 +110,7 @@
           <span class="icon-name-text">
             <a
               [routerLink]="['/projects', row.project, 'repositories', row.key]"
-              (click)="visit(refOf(row))"
+              (click)="visit(row)"
               translate="no"
               >{{ row.key }}</a
             >
@@ -183,7 +183,7 @@
             @if (canConfigureRow(row)) {
               <a class="menu-item" cdkMenuItem
                 [routerLink]="['/projects', row.project, 'repositories', row.key, 'settings']"
-                (click)="visit(refOf(row))"
+                (click)="visit(row)"
                 i18n="@@repo.action.settings"
                 >Settings</a
               >
