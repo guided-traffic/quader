@@ -544,6 +544,11 @@ records the recorder that tells such a stall apart).
   cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
 - `make lint` ends at once with "parallel golangci-lint is running" while another worktree lints (seen by two
   builders on 2026-11-20); the linter's flag that makes a second run wait would let parallel builders queue.
+- `TestNPMCollapse`, the case "100 concurrent misses over two replicas cause one upstream request" (`e2e (npm)`):
+  one of the 100 requests was answered 503 ("request 53 answered 503") in the run 44818088308 on 2026-11-20; the
+  same leg had passed an hour before on the same product code. Cause not known: which replica answered it and with
+  which code of a 503 (the listener's admission, the collapse's wait, the upstream stub) is the first thing to read
+  at a recurrence.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -836,7 +841,14 @@ runs are in `git log`; this section holds the current state.
   since the landing; the TLS stack sets its CA, its names and the scan clients; the area `tls` starts the role `all`;
   the overload area's process opens no scan listener; the configuration loads of migrate, admin and backup name no
   role; the profiles go through the chart. Nothing else fails. `process.scanner_kind` is specified and not in the
-  configuration yet. **Not run:** CI's own form of the shard, with coverage and without the race detector.
+  configuration yet. **The run of the four fixes (44818088308, pushed at 22:11) showed each of them:** `web
+  (Angular)` green and the release cut at 22:26 with the malware scan's first stage in it; `UI layout checks` green
+  with all 381 cases, the first time since the afternoon; `e2e (push)` green; the three integration shards green,
+  shard b with the area `server` in CI's own form. **One red job in it, not one of the four and not seen as caused
+  by the change:** `e2e (npm)`, `TestNPMCollapse`, the case that 100 concurrent misses over two replicas cause one
+  upstream request: "request 53 answered 503" (section 8). The leg had passed an hour earlier on the commit before,
+  whose product code for that path is the same; the push changed UI files, the development profile's Valkey list and
+  two tests. Re-run once at 22:57 (the first of at most three).
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
