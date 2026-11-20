@@ -89,6 +89,95 @@ function hueOf(c: Rgba): { hue: number; saturation: number } {
   return { hue: (h * 60 + 360) % 360, saturation };
 }
 
+// Colour vision, as the designer measured the severity scale: CIELAB (D65), CIEDE2000, and the dichromacy matrices of Machado,
+// Oliveira and Fernandes (2009) at severity 1.0, applied in linear RGB; the simulated colour is rounded to 8 bits as a screen shows it.
+type Lab = readonly [number, number, number];
+
+const toLinear = (v: number): number => {
+  const s = v / 255;
+  return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+};
+
+const fromLinear = (x: number): number => {
+  const c = Math.min(1, Math.max(0, x));
+  const s = c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055;
+  return Math.min(255, Math.max(0, Math.round(s * 255)));
+};
+
+function lab(c: Rgba): Lab {
+  const [r, g, b] = [toLinear(c[0]), toLinear(c[1]), toLinear(c[2])];
+  const x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+  const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+  const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+  const [fx, fy, fz] = [f(x), f(y), f(z)];
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+
+/** The hue angle of a colour in CIE LCh, in degrees. */
+function lchHue(c: Rgba): number {
+  const [, a, b] = lab(c);
+  return ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
+}
+
+/** CIEDE2000 colour difference. */
+function deltaE2000(c1: Rgba, c2: Rgba): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const deg = (r: number) => ((r * 180) / Math.PI + 360) % 360;
+  const [l1, a1, b1] = lab(c1);
+  const [l2, a2, b2] = lab(c2);
+  const cBar = (Math.hypot(a1, b1) + Math.hypot(a2, b2)) / 2;
+  const g = 0.5 * (1 - Math.sqrt(cBar ** 7 / (cBar ** 7 + 25 ** 7)));
+  const [a1p, a2p] = [(1 + g) * a1, (1 + g) * a2];
+  const [c1p, c2p] = [Math.hypot(a1p, b1), Math.hypot(a2p, b2)];
+  const [h1p, h2p] = [deg(Math.atan2(b1, a1p)), deg(Math.atan2(b2, a2p))];
+  const dLp = l2 - l1;
+  const dCp = c2p - c1p;
+  let dhp = 0;
+  if (c1p * c2p !== 0) dhp = Math.abs(h2p - h1p) <= 180 ? h2p - h1p : h2p - h1p > 180 ? h2p - h1p - 360 : h2p - h1p + 360;
+  const dHp = 2 * Math.sqrt(c1p * c2p) * Math.sin(rad(dhp / 2));
+  const lBarP = (l1 + l2) / 2;
+  const cBarP = (c1p + c2p) / 2;
+  let hBarP = h1p + h2p;
+  if (c1p * c2p !== 0) hBarP = Math.abs(h1p - h2p) <= 180 ? (h1p + h2p) / 2 : h1p + h2p < 360 ? (h1p + h2p + 360) / 2 : (h1p + h2p - 360) / 2;
+  const t =
+    1 -
+    0.17 * Math.cos(rad(hBarP - 30)) +
+    0.24 * Math.cos(rad(2 * hBarP)) +
+    0.32 * Math.cos(rad(3 * hBarP + 6)) -
+    0.2 * Math.cos(rad(4 * hBarP - 63));
+  const dTheta = 30 * Math.exp(-(((hBarP - 275) / 25) ** 2));
+  const rc = 2 * Math.sqrt(cBarP ** 7 / (cBarP ** 7 + 25 ** 7));
+  const sl = 1 + (0.015 * (lBarP - 50) ** 2) / Math.sqrt(20 + (lBarP - 50) ** 2);
+  const sc = 1 + 0.045 * cBarP;
+  const sh = 1 + 0.015 * cBarP * t;
+  const rt = -Math.sin(rad(2 * dTheta)) * rc;
+  return Math.sqrt((dLp / sl) ** 2 + (dCp / sc) ** 2 + (dHp / sh) ** 2 + rt * (dCp / sc) * (dHp / sh));
+}
+
+type Matrix = readonly (readonly [number, number, number])[];
+const dichromacy: Record<'deuteranopia' | 'protanopia', Matrix> = {
+  deuteranopia: [
+    [0.367322, 0.860646, -0.227968],
+    [0.280085, 0.672501, 0.047413],
+    [-0.01182, 0.04294, 0.968881],
+  ],
+  protanopia: [
+    [0.152286, 1.052583, -0.204868],
+    [0.114503, 0.786281, 0.099216],
+    [-0.003882, -0.048116, 1.051998],
+  ],
+};
+
+function simulate(c: Rgba, m: Matrix): Rgba {
+  const v = [toLinear(c[0]), toLinear(c[1]), toLinear(c[2])];
+  const row = (i: number) => {
+    const r = m[i] ?? [0, 0, 0];
+    return fromLinear(r[0] * (v[0] ?? 0) + r[1] * (v[1] ?? 0) + r[2] * (v[2] ?? 0));
+  };
+  return [row(0), row(1), row(2), 1];
+}
+
 // The surfaces an accent sits on; a pair of names is a translucent fill over a surface.
 const surfaces: Record<string, string | readonly [string, string]> = {
   page: '--quader-surface',
@@ -260,6 +349,16 @@ const textPairs: readonly (readonly [string, string])[] = [
   ['--quader-code-mark-fg', 'reader mark'],
 ];
 
+/** The marks of the severity scale, worst first: Critical to Low, then None and Unknown, which are no step of it. */
+const severityMarks = [
+  '--quader-sev-critical-mark',
+  '--quader-sev-high-mark',
+  '--quader-sev-medium-mark',
+  '--quader-sev-low-mark',
+  '--quader-sev-none',
+  '--quader-sev-unknown-mark',
+];
+
 // Marks: WCAG 1.4.11, 3:1 (focus ring, tab underline, checkbox, the navigation's bar and icon).
 const markPairs: readonly (readonly [string, string])[] = [
   ['--quader-accent', 'page'],
@@ -295,15 +394,17 @@ const markPairs: readonly (readonly [string, string])[] = [
   ['--quader-mark-accent', 'switcher panel'],
   ['--quader-mark-letter', 'project mark'],
   ['--quader-mark-letter', 'project mark lit'],
-  // The marks of the vulnerability trend (R-VULN-022), on the page and on the raised surface the chart sits on.
   // The focus ring inside a snippet's window, and the dashed line under what the reader replaces (Q-UI-801).
   ['--quader-code-focus', 'code window'],
   ['--quader-code-focus', 'code bar'],
   ['--quader-code-mark-line', 'reader mark'],
-  ...['critical', 'high', 'medium', 'low', 'none', 'unknown'].flatMap((s): [string, string][] => [
-    [`--quader-chart-${s}`, 'page'],
-    [`--quader-chart-${s}`, 'raised'],
-  ]),
+  // The marks of the one severity scale (R-UI-092, R-VULN-022): a band's edge on the raised surface of the trend, a badge's icon on
+  // the page, a card, the table head and a row under the pointer.
+  ...severityMarks.flatMap((m) => ['page', 'raised', 'card', 'table head', 'row hover'].map((on): [string, string] => [m, on])),
+  // The usage screens' series (R-UI-183, R-UI-184): the history's bars on the page and the raised surface, the meter on its track.
+  ['--quader-chart-usage', 'page'],
+  ['--quader-chart-usage', 'raised'],
+  ['--quader-chart-usage', 'card'],
 ];
 
 function failures(pairs: readonly (readonly [string, string])[], min: number): string[] {
@@ -385,6 +486,38 @@ describe('palette', () => {
     for (const scheme of ['light', 'dark'] as const) {
       for (const name of ['--quader-grade-c', '--quader-grade-d', '--quader-grade-e', '--quader-grade-na']) expect(isGreen(colour(name, scheme)), name).toBe(false);
     }
+  });
+
+  it('R-UI-092 R-VULN-022 neighbouring severities stay apart under deuteranopia and protanopia: a fill and a mark each at least 9 (CIEDE2000)', () => {
+    // Critical, High, Medium, Low and None in the order of the scale; the fills of the bar and the trend, and the marks of the edges and
+    // the badge. A later change of one tone fails here before two steps of the scale look alike to a red-green deficient reader.
+    const fills = ['--quader-sev-critical', '--quader-sev-high', '--quader-sev-medium', '--quader-sev-low', '--quader-sev-none'];
+    const marks = severityMarks.slice(0, 5);
+    const close: string[] = [];
+    for (const scheme of ['light', 'dark'] as const) {
+      for (const [vision, m] of Object.entries(dichromacy)) {
+        for (const names of [fills, marks]) {
+          for (let i = 1; i < names.length; i++) {
+            const [a = '', b = ''] = [names[i - 1], names[i]];
+            const d = deltaE2000(simulate(colour(a, scheme), m), simulate(colour(b, scheme), m));
+            if (d < 9) close.push(`${a} and ${b} (${scheme}, ${vision}): ${d.toFixed(1)}`);
+          }
+        }
+      }
+    }
+    expect(close).toEqual([]);
+  });
+
+  it('R-UI-092 R-VULN-022 a severity\'s mark is a tone of its fill: the same hue within 12 degrees in LCh, in both schemes', () => {
+    const apart: string[] = [];
+    for (const scheme of ['light', 'dark'] as const) {
+      for (const s of ['critical', 'high', 'medium', 'low']) {
+        const d = Math.abs(lchHue(colour(`--quader-sev-${s}-mark`, scheme)) - lchHue(colour(`--quader-sev-${s}`, scheme)));
+        const dh = Math.min(d, 360 - d);
+        if (dh > 12) apart.push(`${s} (${scheme}): ${dh.toFixed(1)} degrees`);
+      }
+    }
+    expect(apart).toEqual([]);
   });
 
   it('R-UI-044 Q-UI-226 the logo plate lifts a dark mark off the dark scheme: the mark reaches 3:1 on it, and the plate stands out from every surface', () => {

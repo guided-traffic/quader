@@ -48,7 +48,8 @@ written into Quader's own tokens.
   headings at 600 with a hair less tracking, page titles 24 to 30 px and section titles 21 to 25 px by the window's width.
   Muted grey (`#626168`, `#bfbfc3`) for secondary text. Upper-case is not used for labels.
 - **Data colours beside the accent.** The screens' charts use green, a muted teal and a violet. Green marks a positive
-  status only (Q-UI-96), so a chart in Quader does not take it for a series; the teal and violet never mark state.
+  status only (Q-UI-96), so a chart in Quader does not take it for a series. Quader's usage charts take the teal; the
+  vulnerability trend takes the severity scale of the bar ([Q-UI-860](../spec/api-and-ui.md#q-ui-860--one-severity-scale-for-the-bar-the-trend-and-the-badge-the-bars-fills-with-a-mark-tone-of-the-same-hue)); neither marks state.
 - **Status as a badge.** A status is an icon and a word ("Active" with a check in a circle) on a pill in the status's
   colour, the reference's badge (Q-UI-128); a line of text that reports a state (a note, a hint) keeps the status colour
   as text.
@@ -81,7 +82,7 @@ written into Quader's own tokens.
 | Entry under the pointer | `#050506` at 6 % | `#ffffff` at 8 % | as measured | as measured | `--quader-nav-hover`, also the top bar's quiet buttons |
 | Search field in the top bar | white, hairline `#050506` at 24 % | `#ffffff` at 8 %, hairline `#ffffff` at 16 % | white, outline `#858489` | as measured, outline `#737278` | `--quader-search-*`, 12 px round; the reference's hairlines are 1.7:1 against the frame, Quader's outline 3.1:1 and 3.1:1 (WCAG 1.4.11) |
 | Positive, warning, error status | `#2f7549`, `#995715`, `#c02f12` | `#52b87a`, `#d99530`, `#f6806d` | as measured | as measured | `--quader-status-ok`, `-warn`, `-bad`: the reference's text colours for success, warning and danger |
-| Data: teal, violet | `#347da0`, `#8577e6` | `#347da0`, `#8577e6` | `#347da0`, `#8577e6` | `#5cb3d6`, `#a99cff` | the vulnerability trend's low and unknown, from the first reference screens (Q-UI-88), unchanged |
+| Data: teal | `#347da0` | `#347da0` | `#347da0` | `#5cb3d6` | `--quader-chart-usage`, the series of the usage screens (Q-UI-88's teal); the violet of the reference is no token since the trend takes the severity scale (Q-UI-860) |
 
 Since Q-UI-127 the top bar and the side bar share one fill; the panel's fill and rounded corners set the content off from
 the frame instead of a step between the two bars.
@@ -115,9 +116,40 @@ How to use the pieces is the style guide's [Vulnerability grade](ui-style-guide.
 
 A severity without findings is its colour at 28 % over the surface, with its 0 in `--quader-on-surface` (at least 4.5:1, a test of
 its own). S, A and B are green on purpose: the good end of the scale is a positive status in Q-UI-96's sense, and the palette test
-admits these tokens (and S's mint letter) beside `--quader-status-ok`; C to E and N/A are never green. The bar does not take the
-trend's `--quader-chart-*` colours, and the trend keeps them: a chart's series are marks against the page (3:1), the bar's Low and
-Medium are not, because the bar carries its counts as text (Q-UI-376).
+admits these tokens (and S's mint letter) beside `--quader-status-ok`; C to E and N/A are never green.
+
+### The severity scale
+
+One severity has one colour in the bar, the trend and the badge, the owner's choice of 2026-11-20 ([Q-UI-860](../spec/api-and-ui.md#q-ui-860--one-severity-scale-for-the-bar-the-trend-and-the-badge-the-bars-fills-with-a-mark-tone-of-the-same-hue)). The fills
+above are the bar's segments, the trend's bands and the legend's swatches. The bar's Medium and Low fills are not marks against the
+page (2.2:1 and 1.4:1 on white), which the bar does not need, because it carries its counts as text; so each severity has a
+**mark tone** of its fill's hue that is: the edge of 1.5 px on top of a band of the trend, a band's swatch's top in the legend,
+and the icon of the severity's badge (`<quader-severity>`), whose word stays in the text colour. None and Unknown are no step of
+the scale: None is a neutral grey, Unknown the bar's hatch everywhere (a pattern in the chart) with the muted grey as its mark.
+
+| Token | Light | Dark | Page (= raised) | Card | Table head | Row hover |
+|---|---|---|---|---|---|---|
+| `--quader-sev-critical-mark` | `#6c0b17` | `#d95853` | 12.4:1 / 4.6:1 | 10.5:1 / 3.0:1 | 11.9:1 / 3.9:1 | 11.0:1 / 3.8:1 |
+| `--quader-sev-high-mark` | `#9c1e18` | `#f6815b` | 8.0:1 / 7.0:1 | 6.8:1 / 4.5:1 | 7.7:1 / 5.8:1 | 7.2:1 / 5.8:1 |
+| `--quader-sev-medium-mark` | `#a15e04` | `#ffb755` | 5.1:1 / 10.3:1 | 4.3:1 / 6.7:1 | 4.9:1 / 8.6:1 | 4.5:1 / 8.5:1 |
+| `--quader-sev-low-mark` | `#a78314` | `#ffe8b0` | 3.6:1 / 14.8:1 | 3.0:1 / 9.6:1 | 3.4:1 / 12.3:1 | 3.2:1 / 12.2:1 |
+| `--quader-sev-none` | `#737278` | `#89888d` | 4.8:1 / 5.1:1 | 4.0:1 / 3.3:1 | 4.6:1 / 4.2:1 | 4.2:1 / 4.2:1 |
+| `--quader-sev-unknown-mark` | `#626168` | `#a4a3a8` | 6.1:1 / 7.1:1 | 5.2:1 / 4.6:1 | 5.9:1 / 5.9:1 | 5.5:1 / 5.9:1 |
+| `--quader-chart-usage` | `#347da0` | `#5cb3d6` | 4.6:1 / 7.5:1 | 3.9:1 / 4.9:1 | 4.4:1 / 6.3:1 (not a pair of the test) | 4.1:1 / 6.2:1 (not a pair of the test) |
+
+Each cell is light / dark, against 3:1 (WCAG 1.4.11); the tightest are the light Low mark on the card (3.02:1) and the dark Critical
+mark on the card (3.01:1). `palette.spec.ts` computes every pair, and two more rules of the scale:
+
+- **Neighbours stay apart.** Critical, High, Medium, Low and None, the fills and the marks each, differ by at least 9 in CIEDE2000
+  between neighbours under the deuteranopia and the protanopia matrices of Machado et al. (2009) at full severity, in linear RGB.
+  The closest: the light marks of Medium and Low under deuteranopia (9.1) and the dark marks of High and Medium under deuteranopia
+  (9.5); the fills, the same in both schemes, at least 11.3 (Medium and Low, deuteranopia). A later change of one tone fails there
+  before two steps look alike to a reader with a red-green deficiency.
+- **A mark is a tone of its fill.** Its hue in CIE LCh is within 12 degrees of its fill's (the widest today: the dark High mark,
+  9.5 degrees), so that a change of one cannot split them.
+
+In the dark scheme the deep Critical band is lit only by its edge: at 390 px a band of two Critical findings is one pixel row of
+`#d95853` between High's fill (about 1.4:1) and the page (4.6:1), visible and faint ([Q-UI-861](../spec/api-and-ui.md#q-ui-861--a-bands-edge-is-drawn-on-every-day-its-severity-has-a-finding-on-the-bands-true-top)).
 
 ## The two-pane browser
 
@@ -274,7 +306,8 @@ A picture may carry colours of its own; the page's controls and text keep the pa
 |---|---|
 | [web/src/styles/main.scss](../../web/src/styles/main.scss) | The partials in order, the CDK's overlay structure (`cdk.overlay()`, which dialogs, menus and tooltips open in), the body type and the page title |
 | [web/angular.json](../../web/angular.json) | `@fontsource-variable/inter/wght.css` ahead of `main.scss` in the build's styles: Inter as one variable font (weights 100 to 900) in unicode-range subsets, so a page in Latin script loads the 48 KB Latin file; OFL-1.1, its licence in the build's `3rdpartylicenses.txt` |
-| [web/src/styles/_tokens.scss](../../web/src/styles/_tokens.scss) | Quader's own properties: the page palette (`--quader-surface`, `--quader-on-surface`, `--quader-border`, `--quader-text-muted`, `--quader-accent`, `--quader-dialog-bg`, `--quader-error*`, `--quader-inverse-*`, `--quader-banner-*`), the type (`--quader-font-*`, `--quader-text-*`, `--quader-heading-*`, `--quader-type-*` as font shorthands), the radii (`--quader-radius-s` to `-full`), the link, the heading colour, the focus ring, the raised surface, the card, the table head, the frame (`--quader-nav-*`, the panel's radius and gap, the breadcrumb bar's height), the search field, the menus, the status colours, the plate behind a format logo (`--quader-logo-plate`), the mark's colours (`--quader-mark-stone`, `--quader-mark-accent`), the pictures (`--quader-code-*`, `--quader-art-*`, `--quader-format-accent*`, [Pictures](#pictures)) |
+| [web/src/styles/_tokens.scss](../../web/src/styles/_tokens.scss) | Quader's own properties: the page palette (`--quader-surface`, `--quader-on-surface`, `--quader-border`, `--quader-text-muted`, `--quader-accent`, `--quader-dialog-bg`, `--quader-error*`, `--quader-inverse-*`, `--quader-banner-*`), the type (`--quader-font-*`, `--quader-text-*`, `--quader-heading-*`, `--quader-type-*` as font shorthands), the radii (`--quader-radius-s` to `-full`), the link, the heading colour, the focus ring, the raised surface, the card, the table head, the frame (`--quader-nav-*`, the panel's radius and gap, the breadcrumb bar's height), the search field, the menus, the status colours, the plate behind a format logo (`--quader-logo-plate`), the mark's colours (`--quader-mark-stone`, `--quader-mark-accent`), the grades and the severity scale (`--quader-grade-*`,
+`--quader-sev-*`, [Vulnerability grades](#vulnerability-grades)), the usage charts' series (`--quader-chart-usage`), the pictures (`--quader-code-*`, `--quader-art-*`, `--quader-format-accent*`, [Pictures](#pictures)) |
 | [web/src/styles/_controls.scss](../../web/src/styles/_controls.scss) | The controls of the table above, from the `--quader-control-*`, `--quader-accent-fill`, `--quader-btn-*` and `--quader-danger-*` tokens |
 | [web/src/styles/_dialog.scss](../../web/src/styles/_dialog.scss) | The dialog panel: backdrop, container, title, body, actions |
 | [web/src/styles/_shell.scss](../../web/src/styles/_shell.scss) | How the frame uses them: the sidebar's blocks under their context titles (R-UI-168), its entries (28 px, 8 px round, a 16 px icon in a 24 px box), the current entry, the entries of **Recently opened** (the project's small mark and the key, R-UI-167), the project switcher on top of a project's sidebar (a 40 px button with the project's mark, `<quader-project-mark size="medium">`: its initial in a 32 px rounded square on `--quader-accent-fill`, drawn by `_list-screens.scss` as in every list of projects (R-UI-102), a panel on the menu's fill whose projects carry the small mark, [Q-UI-129](../spec/api-and-ui.md#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)), the panel, the breadcrumb bar (40 px), the top bar's actions and the avatar (32 px round on `--quader-surface-variant`, holding the user's generated Bottts robot of `<quader-avatar>` instead of a letter, owner 2026-11-07, Q-UI-168; the SVG is transparent, so the fill follows the theme), the menus |
@@ -440,7 +473,9 @@ on it today.
   built stylesheet and the component's styles, at 16, 20 and 32 px, in both themes and with the system's scheme opposite
   to the theme; not in the running app, not in Firefox or Safari. npm and Ansible Galaxy show the glyph until their owners
   allow their logos.
-- The vulnerability trend is the one chart; its series colours are tokens (`--quader-chart-*`). Another chart takes its series from the same family and adds its pairs to `palette.spec.ts`.
+- The vulnerability trend and the usage screens' history are the charts. The trend takes the severity scale (its fills as bands, its
+  marks as edges, [The severity scale](#the-severity-scale)); the usage takes `--quader-chart-usage`. Another chart takes a token of
+  its own, never a severity's colour for something that is no severity, and adds its pairs to `palette.spec.ts`.
 - The dialogs, tabs, checkboxes, menus and tooltips are Quader's own since Q-UI-126 was finished; their measures follow the
   reference's modal and tab strip as far as the development agent measured them, and no screen of the owner has confirmed
   their look yet (the walkthrough does).

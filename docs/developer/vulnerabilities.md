@@ -438,14 +438,14 @@ Q-VULN-52 to Q-VULN-54, H-490. The description of the screens, their files and s
 [docs/manual/README.md](../manual/README.md)); the security view is [security/vulnerability-scanning.md](../security/vulnerability-scanning.md).
 
 - **Files.** `web/src/app/features/vulnerabilities/**`, `web/src/app/api/vulnerabilities-api.ts` (and its spec, and the fake in `api/testing/fakes-vulnerabilities.ts`),
-  `core/http/problem-messages-vulnerability.ts`, `web/src/styles/_vulnerabilities.scss` and the `--quader-chart-*` tokens, the tab, the badge column and the header of
+  `core/http/problem-messages-vulnerability.ts`, `web/src/styles/_vulnerabilities.scss` and the severity tokens (`--quader-sev-*`, one scale with the bar since Q-UI-860), the tab, the badge column and the header of
   `features/packages/package-detail.*`, the links of `features/repositories/repository-list.html` and `repository-detail.html`, the route, navigation, help topic and provider blocks marked
   `>>> M4b vulnerabilities`, the German targets in `web/src/locale/messages.de.xlf`, and `web/e2e/vuln/**`.
 - **What the others rely on.** The generated types of the contract commit (`schema.d.ts`, regenerated with `npm run generate:api`; the UI compiles against them). The UI reads only the
   API: no screen computes a count, a block or a status the API did not send. A replica that has not wired the scanning answers 503; the package page then shows no
   tab, no badge and no banner, and the report shows the error notice with its retry.
-- **Contract changes.** None to the document. Two small additions to shared web code: `ReadOptions.accept` of `ApiClient` (the export asks for `text/csv`), and `quader-chart-*` tokens
-  with their pairs in `palette.spec.ts`. The manual page needed a line in `internal/manual/manual.go` (the contents are fixed there) and in `docs/manual/README.md`.
+- **Contract changes.** None to the document. Two small additions to shared web code: `ReadOptions.accept` of `ApiClient` (the export asks for `text/csv`), and the trend's tokens
+  with their pairs in `palette.spec.ts` (since Q-UI-860 the severity scale's `--quader-sev-*`). The manual page needed a line in `internal/manual/manual.go` (the contents are fixed there) and in `docs/manual/README.md`.
 - **The security dashboard (Q-UI-130, Q-UI-165, R-UI-158, R-UI-159).** `/security` of the main area, under the side bar's second context title **Security audit** (after **Your work**, R-UI-168) for the holder of `content:metadata-read`, mounts the report, finding and advisory screens a second time through
   `security.routes.ts` and `VULN_CONTEXT` (links, the project as the link of each qualified repository name ([Q-UI-380](../spec/api-and-ui.md#q-ui-380--the-reports-list-fits-at-1440-px-the-project-is-the-link-of-the-qualified-name-and-fixed-in-gives-way-below-64-rem)), search); the `project` filter is the API's, a whole advisory identifier in the search is its `advisory` filter and any other text its `q`. Files: `vuln-context.ts`, `security.routes.ts`,
   `vulnerability-report.*`, `report-summary.ts`, `report-trend.ts`, the section in `core/navigation.ts`, the guard in `core/auth-guard.ts`, the topic in `core/help-topics.ts`, the

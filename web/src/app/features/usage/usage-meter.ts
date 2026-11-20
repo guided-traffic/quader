@@ -65,7 +65,7 @@ import { stateTone, stateWord } from './usage-words';
     .fill {
       display: block;
       block-size: 100%;
-      background: var(--quader-chart-low);
+      background: var(--quader-chart-usage);
     }
     .fill.warn {
       background: var(--quader-status-warn);

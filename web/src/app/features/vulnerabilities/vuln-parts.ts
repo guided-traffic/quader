@@ -3,8 +3,9 @@ import { VulnerabilityFinding, VulnerabilitySeverity } from '../../api/vulnerabi
 import { blockReasonLabel, severityClass, severityIcon, severityLabel, statusLabel } from './vuln-labels';
 
 /**
- * A severity as an icon and a word, with the score when there is one (R-VULN-022, R-UI-044): the colour only
- * reinforces them, and the shapes of the icons differ.
+ * A severity as an icon and a word, with the score when there is one (R-VULN-022, R-UI-044): the icon takes the severity's
+ * mark tone of the one scale the bar and the trend use, the word stays in the text colour; the colour only reinforces them,
+ * and the shapes of the icons differ.
  */
 @Component({
   selector: 'quader-severity',

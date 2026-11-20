@@ -1,7 +1,7 @@
 // The vulnerability screens (R-VULN-022, R-VULN-023): the header counts, the severity and status marks, the trend
 // chart, the advisory text and the package tab. Global like the other screen partials, because the data table
 // projects its rows from the screens. Colours and lengths come from the tokens only (R-UI-044). A severity is an
-// icon and a word; the tint below only reinforces them.
+// icon and a word; the colour of the icon only reinforces them.
 
 .sev,
 .fstatus {
@@ -39,19 +39,34 @@
   white-space: nowrap;
 }
 
-.sev-critical,
-.sev-high {
-  color: var(--quader-status-bad);
+// The severity badge (R-VULN-022): the icon in the severity's mark tone, the one scale of the bar and the trend; the word and
+// the score stay in the text around them. Not the status colours: a severity is no error, and Critical and High differ.
+.sev .material-icons {
+  color: var(--sev-mark);
 }
 
-.sev-medium {
-  color: var(--quader-status-warn);
+.sev.sev-critical {
+  --sev-mark: var(--quader-sev-critical-mark);
 }
 
-.sev-low,
-.sev-none,
-.sev-unknown {
-  color: var(--quader-text-muted);
+.sev.sev-high {
+  --sev-mark: var(--quader-sev-high-mark);
+}
+
+.sev.sev-medium {
+  --sev-mark: var(--quader-sev-medium-mark);
+}
+
+.sev.sev-low {
+  --sev-mark: var(--quader-sev-low-mark);
+}
+
+.sev.sev-none {
+  --sev-mark: var(--quader-sev-none);
+}
+
+.sev.sev-unknown {
+  --sev-mark: var(--quader-sev-unknown-mark);
 }
 
 .sev-score {
@@ -143,15 +158,6 @@
   }
 }
 
-.vuln-count.sev-critical .vuln-count-label,
-.vuln-count.sev-high .vuln-count-label {
-  color: var(--quader-status-bad);
-}
-
-.vuln-count.sev-medium .vuln-count-label {
-  color: var(--quader-status-warn);
-}
-
 .vuln-coverage {
   margin: 0 0 var(--quader-space-4);
   color: var(--quader-text-muted);
@@ -213,34 +219,62 @@
   stroke-width: 0.25;
 }
 
+// Columns that touch (365 days) are not parted: the hairline striped bands of 1.6 units (report-trend.ts, `touching`).
+.trend-chart.touching .trend-series {
+  stroke: none;
+}
+
+// One scale with the bar (R-VULN-022): a band takes its severity's fill, and an edge of 1.5 px in its mark tone on top of it keeps
+// a severity visible on a day it has a band thinner than a pixel. None is the neutral grey, its edge the same; Unknown is the
+// bar's hatch (the pattern of report-trend.ts) with the muted grey's edge.
 .trend-critical {
-  fill: var(--quader-chart-critical);
-  background: var(--quader-chart-critical);
+  --trend-fill: var(--quader-sev-critical);
+  --trend-mark: var(--quader-sev-critical-mark);
 }
 
 .trend-high {
-  fill: var(--quader-chart-high);
-  background: var(--quader-chart-high);
+  --trend-fill: var(--quader-sev-high);
+  --trend-mark: var(--quader-sev-high-mark);
 }
 
 .trend-medium {
-  fill: var(--quader-chart-medium);
-  background: var(--quader-chart-medium);
+  --trend-fill: var(--quader-sev-medium);
+  --trend-mark: var(--quader-sev-medium-mark);
 }
 
 .trend-low {
-  fill: var(--quader-chart-low);
-  background: var(--quader-chart-low);
+  --trend-fill: var(--quader-sev-low);
+  --trend-mark: var(--quader-sev-low-mark);
 }
 
 .trend-none {
-  fill: var(--quader-chart-none);
-  background: var(--quader-chart-none);
+  --trend-fill: var(--quader-sev-none);
+  --trend-mark: var(--quader-sev-none);
 }
 
 .trend-unknown {
-  fill: var(--quader-chart-unknown);
-  background: var(--quader-chart-unknown);
+  --trend-mark: var(--quader-sev-unknown-mark);
+}
+
+// Unknown's band is filled by its pattern, whose ID is the chart's own, so the template sets it.
+.trend-series:not(.trend-unknown) {
+  fill: var(--trend-fill);
+}
+
+.trend-edge {
+  fill: none;
+  stroke: var(--trend-mark);
+  stroke-width: 1.5px;
+  stroke-linecap: butt;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-hatch-a {
+  fill: var(--quader-sev-unknown);
+}
+
+.trend-hatch-b {
+  fill: var(--quader-sev-unknown-light);
 }
 
 .trend-legend {
@@ -267,6 +301,12 @@
   inline-size: 0.75rem;
   block-size: 0.75rem;
   border-radius: 2px;
+  background: var(--trend-fill);
+  box-shadow: inset 0 2px 0 var(--trend-mark);
+
+  &.trend-unknown {
+    background: repeating-linear-gradient(135deg, var(--quader-sev-unknown) 0 3px, var(--quader-sev-unknown-light) 3px 6px);
+  }
 }
 
 .trend-table-scroll {

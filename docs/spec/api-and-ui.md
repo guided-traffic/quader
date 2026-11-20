@@ -6334,11 +6334,20 @@ as cogpit draws an image's:
 - **Width by share** ([Q-UI-372](#q-ui-372--the-bars-segments-are-as-wide-as-their-share-with-room-for-their-number)): each
   segment first gets the room of its number and its padding, then the rest of the row is shared by the segments' shares of all
   findings, each share at least 7 %. A count is never cut and the row never scrolls sideways.
-- **Colours**: `--quader-sev-critical` (dark red), `--quader-sev-high` (red), `--quader-sev-medium` (orange), `--quader-sev-low`
-  (yellow), the count in `--quader-sev-ink-on-dark` on the first two and `--quader-sev-ink` on the next two; Unknown hatched in
-  diagonal stripes of `--quader-sev-unknown` and `--quader-sev-unknown-light`, its count in the text colour. A severity without
-  findings is drawn faint (its fill at 28 % over the surface), and its 0 stays readable in the text colour (4.5:1; the muted tone
-  would not be, `palette.spec.ts`).
+- **Colours: one scale for the bar, the trend and the badge**
+  ([Q-UI-860](#q-ui-860--one-severity-scale-for-the-bar-the-trend-and-the-badge-the-bars-fills-with-a-mark-tone-of-the-same-hue)).
+  The fills, the same in both schemes: `--quader-sev-critical` `#7f1d1d` (dark red), `--quader-sev-high` `#c9302a` (red),
+  `--quader-sev-medium` `#e8a33d` (orange), `--quader-sev-low` `#f5d68e` (yellow); the count in `--quader-sev-ink-light` (white) on
+  the first two and `--quader-sev-ink` `#1c1204` on the next two; Unknown hatched in diagonal stripes of `--quader-sev-unknown` and
+  `--quader-sev-unknown-light`, its count in the text colour. A severity without findings is drawn faint (its fill at 28 % over the
+  surface), and its 0 stays readable in the text colour (4.5:1; the muted tone would not be, `palette.spec.ts`). The same fills are
+  the bands of the trend (R-VULN-022). Each severity has a **mark tone** of its fill's hue, deeper in the light scheme and brighter
+  in the dark one, which keeps 3:1 against every surface it sits on: `--quader-sev-critical-mark` `#6c0b17` / `#d95853`,
+  `--quader-sev-high-mark` `#9c1e18` / `#f6815b`, `--quader-sev-medium-mark` `#a15e04` / `#ffb755`, `--quader-sev-low-mark`
+  `#a78314` / `#ffe8b0` (light / dark); it is the edge on top of the trend's band and the icon of the severity's badge. None is a
+  neutral grey (`--quader-sev-none` `#737278` / `#89888d`) and Unknown's mark the muted grey (`--quader-sev-unknown-mark` `#626168` /
+  `#a4a3a8`), so that neither reads as a step of the scale. No severity is green (R-UI-002), and none takes a status colour: a
+  severity is no error.
 - **Name.** The bar is `role="img"` with the name "Open findings: 13 Critical, 160 High, 113 Medium, 16 Low, 843 Unknown"; the
   numbers inside are hidden from the accessibility tree. With `[queries]` (the report's header and the grade card of the package
   page, R-UI-094) each segment is a link that applies its severity filter, named by its count and severity ("13 Critical"), in a
@@ -6351,6 +6360,10 @@ Acceptance criteria:
   still shows 0; the Unknown segment is hatched; the accessible name lists every count; with links each segment links to its
   filter; axe finds no serious violation.
 - Rendered: the counts 13, 160, 113, 16 and 843 fit their segments at 1440 and 390 px in both schemes.
+- Unit (`palette.spec.ts`): every count keeps 4.5:1 on its fill; every mark tone, None and Unknown's mark keep 3:1 against the page,
+  the raised surface, the card, the table head and the row under the pointer in both schemes; neighbouring severities (Critical,
+  High, Medium, Low, None) stay at least 9 apart in CIEDE2000, the fills and the marks, under the deuteranopia and the protanopia
+  simulations of Machado et al. (2009); a mark tone is within 12 degrees of its fill's hue in LCh.
 
 ### R-UI-093 · The grade card
 Priority: **P1** · Covers: quader-only
@@ -14805,8 +14818,10 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Rationale:** the same pieces on every screen of vulnerabilities, and no grade where none is defined. The trend
 chart keeps its series colours, which are measured at 3:1 against the page (R-UI-044), which the bar's Low and Medium are not:
-the bar carries its counts as text. The development agent revisits the chart's colours with the owner. **Applied in the spec:**
-R-UI-094, R-VULN-022.
+the bar carries its counts as text. The development agent revisits the chart's colours with the owner. **Revised on 2026-11-20
+(owner):** the chart takes the bar's fills, with an edge in a mark tone that keeps 3:1
+([Q-UI-860](#q-ui-860--one-severity-scale-for-the-bar-the-trend-and-the-badge-the-bars-fills-with-a-mark-tone-of-the-same-hue)).
+**Applied in the spec:** R-UI-094, R-VULN-022.
 
 ### Q-UI-377 · A list without grades has no grade column
 
@@ -19587,6 +19602,90 @@ a third locale or a narrower place for a fold comes.
 **Applied in the spec:** R-UI-121, R-UI-171, Q-UI-804. Code: [clients.ts](../../web/src/app/features/setup/clients.ts),
 [clients.spec.ts](../../web/src/app/features/setup/clients.spec.ts), [messages.de.xlf](../../web/src/locale/messages.de.xlf),
 [layout.ts](../../web/e2e/renders/layout.ts).
+
+### Q-UI-860 · One severity scale for the bar, the trend and the badge: the bar's fills with a mark tone of the same hue
+
+Status: **Decided by the owner on 2026-11-20** ("Option C" of three candidates a designer drew).
+
+Context: on the vulnerability report one severity had up to three colours. The trend came first (Q-VULN-53): its six series were
+marks against the page at 3:1 (WCAG 1.4.11), in tones of the first reference screens (Q-UI-88), Low a teal and Unknown a violet
+(`--quader-chart-*`). The severity bar came later in cogpit's colours (R-UI-092, Q-UI-370), whose Medium and Low fills do not reach
+3:1 against the page; the bar does not need them to, because it carries its counts as text, so the trend kept its own palette
+(Q-UI-376). And the badge of a finding took the page's status colours, so Critical and High were the same error red, and Low,
+None and Unknown the same muted grey. Low was pale yellow in the bar, teal in the chart and grey in a list. The owner asked for
+one scale. A designer drew three candidates as a static page of the report's top, the findings, the grade card, the tokens with
+their measured contrasts and the colour-vision simulations, light and dark, with today's for comparison.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A, warm by tone | The bar's warm hues, each one tone that is fill, band and icon at once: crimson, red, orange, gold, lifted in the dark scheme | One tone per severity; a single token each | Every tone must hold 3:1 on the card, so in the light scheme Medium becomes a brown orange and Low a mustard: the bar changes; in the dark scheme High is a soft coral |
+| (b) B, teal Low | The trend's scale taken into the bar: crimson, orange, amber and a teal Low, one tone each | The step from Medium to Low is a change of hue family that survives every colour-vision deficiency | Low leaves the warm family and reads as calm or informational, 20 degrees from the link blue and beside the green good grades; the bar changes most |
+| (c) C, the bar's fills with marks (chosen) | The bar stays exactly as it is, both schemes; the trend's bands take the same fills and draw an edge of 1.5 px on top in a mark tone of the same hue, deeper in the light scheme and brighter in the dark one; the badge's icon is that tone, its word the text colour; Unknown is the bar's grey hatch everywhere, None a neutral grey; the usage screens get a token of their own | The bar the owner knows stays; one hue per severity everywhere; every mark holds 3:1 on the page, the card, the table head and a hovered row; neighbours stay at least 9 apart (CIEDE2000) under deuteranopia and protanopia | Two tones and two tokens per severity; the chart needs a second path per series for the edges; in the dark scheme the deep Critical band is lit only by its edge |
+
+**Choice:** (c). The values are the designer's generator's, unchanged: the fills `#7f1d1d`, `#c9302a`, `#e8a33d`, `#f5d68e`; the marks
+Critical `#6c0b17` / `#d95853`, High `#9c1e18` / `#f6815b`, Medium `#a15e04` / `#ffb755`, Low `#a78314` / `#ffe8b0` (light / dark);
+None `#737278` / `#89888d`; Unknown's mark `#626168` / `#a4a3a8`; the usage teal `#347da0` / `#5cb3d6`, today's. The tightest pairs:
+the light Low mark on the card 3.02:1 and the dark Critical mark on the card 3.01:1; the closest neighbours the light marks of Medium
+and Low under deuteranopia (9.1) and the dark marks of High and Medium under deuteranopia (9.5). The grade shield
+(`--quader-grade-*`) is another scale and stays.
+
+**Rationale:** the owner's decision. The development agent records no revisit condition; the choice is the owner's. What the
+development agent decided in building it is Q-UI-861 and Q-UI-862.
+
+**Applied in the spec:** R-UI-092, R-VULN-022, Q-UI-376, Q-VULN-53. Code: [_tokens.scss](../../web/src/styles/_tokens.scss),
+[_vulnerabilities.scss](../../web/src/styles/_vulnerabilities.scss), [report-trend.ts](../../web/src/app/features/vulnerabilities/report-trend.ts),
+[vuln-parts.ts](../../web/src/app/features/vulnerabilities/vuln-parts.ts), [palette.spec.ts](../../web/src/styles/palette.spec.ts);
+[design-language.md](../developer/design-language.md#vulnerability-grades).
+
+### Q-UI-861 · A band's edge is drawn on every day its severity has a finding, on the band's true top
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the designer left open how a severity with findings stays visible when its band is very thin. At 390 px the chart is about
+half its scale: a band of two findings among 1,000 is 0.34 viewBox units high, under a pixel. The totals on the axis must stay true.
+The exact numbers are the table's (**Show as table**) and the text alternative's (the last day); the chart has no tooltip (Q-VULN-53
+chose none).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The edge is a line on the band's true top on every day the severity has at least one finding, 1.5 CSS px whatever the scale (`vector-effect: non-scaling-stroke`); the edges are drawn after every band, the worst last (chosen) | Each band's height is its count; a day with a finding has its line, a day without has none | The heights and the totals stay exact; a band of one finding is still a line of 1.5 px; where two edges meet, the worse severity is on top | The line reaches 0.75 px into the band above it, and for Critical 0.75 px below the axis; where two neighbouring bands are both thinner than the line, the less severe one's edge is hidden (the table has both) |
+| (b) A least height for a band with findings, 1.5 px, pushing the bands above it up | A thin band is always an area | Visible as a fill, not only as a line | The column overshoots its total: with six thin bands up to 9 px, and the axis no longer reads true |
+| (c) A least height taken from the band above | The column's total stays | Visible as a fill | The neighbour's height is wrong instead; a count is drawn larger than it is |
+
+**Choice:** (a). None has an edge too, in its own grey: on a band of its size it cannot be seen, and it keeps a thin None band
+visible (the mockup drew None without an edge). Rendered at 390 px with two Critical among about 400 for 300 days: in the light scheme
+the crimson mark is a clear line on the axis that starts on the first day with a Critical finding; in the dark scheme it is one
+pixel row of `#d95853` between High's fill above (about 1.4:1) and the page below (4.6:1), visible and faint, the weak point the
+designer named for the dark Critical band.
+
+**Rationale:** the axis and the heights are the chart's statement, and they stay true; visibility is bought with a line, not with
+a false area. The development agent revisits it if a reader reports a thin band that could not be seen.
+
+**Applied in the spec:** R-VULN-022. Code: `trendGeometry` and the `edges` of [report-trend.ts](../../web/src/app/features/vulnerabilities/report-trend.ts),
+[vulnerability-report.spec.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.spec.ts).
+
+### Q-UI-862 · At 365 days the columns touch and are not parted by a hairline
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the mockup drew 90 days only. At 365 days a column is 1.63 viewBox units wide and the columns touch (the gap of one unit is
+left out below four). Rendered with 365 days of data, each column still had the hairline of 0.25 units in the raised surface's colour
+that parts the columns of 30 and 90 days: about a sixth of every column was the page's colour, every band was striped, the pale
+Low read as near white in the light scheme and as stripes in the dark one, and white seams stood where the counts jumped.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the hairline | As 30 and 90 days | Nothing changes | The bands are no longer the bar's fills: what the owner's choice is about is lost at 365 days |
+| (b) Columns that touch drop the hairline (chosen) | `trendGeometry` says `touching`; the chart leaves the hairline out | The bands are the bar's fills; each band's edges, one per day, join into one stepped line | A single day is no longer told apart in the picture; the table carries every day |
+| (c) A week per column at 365 days | 52 columns with gaps | Columns that part | The chart draws other numbers than the table; more code; a thin Critical day disappears into its week |
+
+**Choice:** (b). The edges stay per day, so a day with a Critical finding still has its line.
+
+**Rationale:** the smallest change that keeps the bands in the scale's colours; 30 and 90 days are unchanged. The development agent
+revisits it if a longer range than 365 days comes (the API answers up to 400).
+
+**Applied in the spec:** R-VULN-022. Code: [report-trend.ts](../../web/src/app/features/vulnerabilities/report-trend.ts),
+[_vulnerabilities.scss](../../web/src/styles/_vulnerabilities.scss).
 
 ## What this does not cover
 

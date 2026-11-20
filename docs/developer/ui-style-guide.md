@@ -405,6 +405,11 @@ screen draws its own, and no screen shows a version's highest severity instead.
   bar ([design-language.md](design-language.md#vulnerability-grades)). S, A and B are the only greens beside the positive
   status ([Q-UI-370](../spec/api-and-ui.md#q-ui-370--the-grades-take-cogpits-colours-and-s-a-and-b-are-the-greens-of-a-good-grade)).
   The letter and the text carry the grade; the colour never does alone.
+- **A severity has one colour** wherever it is shown ([Q-UI-860](../spec/api-and-ui.md#q-ui-860--one-severity-scale-for-the-bar-the-trend-and-the-badge-the-bars-fills-with-a-mark-tone-of-the-same-hue),
+  [the severity scale](design-language.md#the-severity-scale)): its fill `--quader-sev-<severity>` in the bar and as a band of the
+  trend, its mark `--quader-sev-<severity>-mark` as the band's edge and the icon of `<quader-severity>`, whose word stays in the text
+  colour. A severity never takes a status colour (`--quader-status-bad` is an error, not Critical), and a chart of something
+  that is no severity takes a token of its own, as the usage screens take `--quader-chart-usage`.
 - **Sorting.** A list column of grades sorts by `gradeRank` (the grade, then the count that decides it, N/A lowest); a paged list
   loads up to 1,000 entries first ([Q-UI-373](../spec/api-and-ui.md#q-ui-373--the-list-sorts-by-grade-in-the-browser-over-the-whole-list-up-to-1000-entries)).
 

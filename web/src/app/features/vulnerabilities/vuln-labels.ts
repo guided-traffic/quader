@@ -12,7 +12,7 @@ import {
 /*
  * The words of the vulnerability screens, in one place so that the report, the detail, the package tab and the
  * dialogs say the same thing (R-VULN-022, R-VULN-023). A severity is a word and an icon, never a colour alone
- * (R-UI-044); the colour is a class (`sev-*`) that only reinforces them.
+ * (R-UI-044); the colour of the icon is a class (`sev-*`) that only reinforces them.
  */
 
 export function severityLabel(s: VulnerabilitySeverity): string {
@@ -124,7 +124,7 @@ export function statusText(f: Pick<VulnerabilityFinding, 'status' | 'blocked' | 
   return statusLabel(f.status);
 }
 
-/** The class that tints a severity word: red for the two top levels, amber for medium, muted below. */
+/** The class of a severity badge, which colours its icon in the severity's mark tone (one scale with the bar, R-VULN-022). */
 export function severityClass(s: VulnerabilitySeverity): string {
   return `sev-${s}`;
 }

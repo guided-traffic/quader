@@ -17,10 +17,19 @@ const BOTTOM = 24;
 /** Bottom to top of a column: the worst level sits on the axis, so its height reads without adding up. */
 const STACK: readonly VulnerabilitySeverity[] = ['critical', 'high', 'medium', 'low', 'none', 'unknown'];
 
+/** Each chart's hatch of Unknown needs a pattern ID of its own in the document. */
+let next = 0;
+
 export interface TrendSeries {
   readonly severity: VulnerabilitySeverity;
   /** The `d` of one path: one rectangle per day. */
   readonly path: string;
+  /**
+   * The `d` of the band's edge: a line on the band's top on every day the severity has a finding, drawn 1.5 px wide whatever the
+   * scale, so a band thinner than a pixel stays visible. It lies on the true top: the heights, and so the totals the axis
+   * shows, stay exact; the line reaches 0.75 px into the band above it.
+   */
+  readonly edge: string;
   readonly total: number;
 }
 
@@ -32,6 +41,11 @@ export interface TrendGeometry {
   readonly height: number;
   readonly left: number;
   readonly right: number;
+  /**
+   * The columns touch (365 days: a column of 1.6 viewBox units, no gap). The hairline in the surface's colour that parts the
+   * columns of 30 and 90 days is left out then: around so narrow a column it striped every band and washed the pale fills out.
+   */
+  readonly touching: boolean;
 }
 
 /** A round upper bound for the axis: 5, 10, 20, 50, 100, … never below the largest total. */
@@ -50,10 +64,12 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
   const plotW = WIDTH - LEFT - 4;
   const plotH = HEIGHT - TOP - BOTTOM;
   const slot = n === 0 ? plotW : plotW / n;
-  const barW = Math.max(0.5, slot - (slot > 4 ? 1 : 0));
+  const touching = slot <= 4;
+  const barW = Math.max(0.5, slot - (touching ? 0 : 1));
   const yOf = (v: number): number => TOP + plotH - (v / yMax) * plotH;
   const series = STACK.map((severity): TrendSeries => {
     let d = '';
+    let edge = '';
     let total = 0;
     trend.points.forEach((p, i) => {
       const below = STACK.slice(0, STACK.indexOf(severity)).reduce((sum, s) => sum + p.counts[s], 0);
@@ -64,17 +80,20 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
       const top = yOf(below + v);
       const h = yOf(below) - top;
       d += `M${x.toFixed(2)} ${top.toFixed(2)}h${barW.toFixed(2)}v${h.toFixed(2)}h${(-barW).toFixed(2)}z`;
+      edge += `M${x.toFixed(2)} ${top.toFixed(2)}h${barW.toFixed(2)}`;
     });
-    return { severity, path: d, total };
+    return { severity, path: d, edge, total };
   });
   const ticks = [0, yMax / 2, yMax].map((value) => ({ value, y: yOf(value) }));
-  return { series, yMax, ticks, width: WIDTH, height: HEIGHT, left: LEFT, right: WIDTH - 4 };
+  return { series, yMax, ticks, width: WIDTH, height: HEIGHT, left: LEFT, right: WIDTH - 4, touching };
 }
 
 /**
  * The trend of the open findings by severity (R-VULN-022): a stacked column per day, drawn here as an SVG (no chart
  * library, Q-VULN-53), over 30, 90 or 365 days, with a "Show as table" alternative that carries every number. The
- * chart is an image with a text alternative; the table is the accessible form of the data.
+ * chart is an image with a text alternative; the table is the accessible form of the data. Its colours are the severity
+ * bar's (one scale, R-UI-092): the bands its fills, each with an edge in the severity's mark tone, Unknown its hatch. The
+ * edges are drawn after every band, the worst last, so where two thin bands meet the worse one stays on top.
  */
 @Component({
   selector: 'quader-vuln-trend',
@@ -129,15 +148,30 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
             </table>
           </div>
         } @else if (geometry(); as g) {
-          <svg class="trend-chart" [attr.viewBox]="'0 0 ' + g.width + ' ' + g.height" role="img" aria-labelledby="vuln-trend-title vuln-trend-desc">
+          <svg class="trend-chart" [class.touching]="g.touching" [attr.viewBox]="'0 0 ' + g.width + ' ' + g.height" role="img" aria-labelledby="vuln-trend-title vuln-trend-desc">
             <desc id="vuln-trend-desc">{{ description() }}</desc>
             @for (t of g.ticks; track t.value) {
               <line class="trend-grid" [attr.x1]="g.left" [attr.x2]="g.right" [attr.y1]="t.y" [attr.y2]="t.y" />
               <text class="trend-tick" [attr.x]="g.left - 6" [attr.y]="t.y + 4" text-anchor="end">{{ t.value }}</text>
             }
+            <defs>
+              <pattern [attr.id]="hatchId" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
+                <rect class="trend-hatch-b" width="4" height="4" />
+                <rect class="trend-hatch-a" width="2" height="4" />
+              </pattern>
+            </defs>
             @for (s of g.series; track s.severity) {
               @if (s.path) {
-                <path [class]="'trend-series trend-' + s.severity" [attr.d]="s.path" />
+                <path
+                  [class]="'trend-series trend-' + s.severity"
+                  [attr.fill]="s.severity === 'unknown' ? 'url(#' + hatchId + ')' : null"
+                  [attr.d]="s.path"
+                />
+              }
+            }
+            @for (s of edges(); track s.severity) {
+              @if (s.edge) {
+                <path [class]="'trend-edge trend-' + s.severity" [attr.d]="s.edge" />
               }
             }
           </svg>
@@ -170,6 +204,7 @@ export class ReportTrend {
   protected readonly ranges = TREND_RANGES;
   protected readonly stack = STACK;
   protected readonly asTable = signal(false);
+  protected readonly hatchId = `quader-trend-hatch-${next++}`;
 
   protected readonly trend = resource({
     params: () => ({ project: this.project(), repository: this.repository(), format: this.format(), range: this.range(), refresh: this.refresh() }),
@@ -190,6 +225,8 @@ export class ReportTrend {
     const t = valueOf(this.trend);
     return t ? trendGeometry(t) : null;
   });
+  /** The edges in drawing order: the top of the stack first, Critical last, so the worst is on top where edges overlap. */
+  protected readonly edges = computed(() => [...(this.geometry()?.series ?? [])].reverse());
   /** The text alternative of the image: the span and the numbers of the last day. */
   protected readonly description = computed(() => {
     const t = valueOf(this.trend);

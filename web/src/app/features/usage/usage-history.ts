@@ -258,7 +258,7 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
       vector-effect: non-scaling-stroke;
     }
     .bars {
-      fill: var(--quader-chart-low);
+      fill: var(--quader-chart-usage);
     }
     .mark {
       fill: var(--quader-status-warn);
@@ -337,7 +337,7 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
       inline-size: 0.75rem;
       block-size: 0.75rem;
       border-radius: 2px;
-      background: var(--quader-chart-low);
+      background: var(--quader-chart-usage);
     }
     .points-scroll {
       max-block-size: 24rem;

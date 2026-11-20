@@ -1287,7 +1287,11 @@ user who sees the project; what a caller may read is narrowed by the API, so a c
   `repository` and `format`, so the count and the list name the same findings.
 - *The banner* is built from the summary's data ages (stale, never imported) and, for a holder of `settings:read`, the sources' failures (`dataNotices`).
 - *The trend* is an SVG drawn by `trendGeometry` (one path per severity, one rectangle per day), with a `<desc>` that states the last day's numbers, a legend with icons and "Show as
-  table" (Q-VULN-53). Its colours are the tokens `--quader-chart-*` of [design-language.md](design-language.md#where-the-values-live); a severity is never colour alone.
+  table" (Q-VULN-53). Its colours are the severity bar's ([the severity scale](design-language.md#the-severity-scale), Q-UI-860): each band its
+  severity's fill, a second path per series draws the band's edge in the mark tone on every day the severity has a finding, the worst last
+  (`edges`, Q-UI-861), Unknown is filled by a hatch pattern whose ID is the chart's own (`hatchId`), and at 365 days, where the columns touch,
+  no hairline parts them (`touching`, Q-UI-862). The severity badge colours its icon with the same mark tone (`.sev.sev-<severity>` in
+  `_vulnerabilities.scss`). A severity is never colour alone.
 - *The advisory text is the API's `detailsHtml`* (Q-VULN-52): the server's sanitized rendering of the Markdown, bound through `quader-package-readme` (the README component: Angular's sanitizer, the Trusted Types policy, its link and image rules); the UI never renders `details` itself. A reference is a link for `http` and `https` only, with `rel="nofollow noopener noreferrer"`.
 - *Export.* "Export CSV" calls the export operation with the list's filters and sort, takes the text answer (`ApiClient.getText` with `accept: 'text/csv'`) and hands it to the browser through a Blob URL
   that is revoked at once; a `422 export_too_large` is shown as the problem it is, and nothing is downloaded.

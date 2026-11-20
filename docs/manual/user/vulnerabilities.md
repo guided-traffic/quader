@@ -16,13 +16,13 @@ Select **Vulnerabilities** in the side bar of a project. The report shows the fi
 
 **The banner.** A banner appears when the advisory data of an ecosystem is stale, has never been imported completely, or its synchronisation keeps failing. Until data has been imported, the versions of that ecosystem are not evaluated. If you may read the settings, the banner links to the advisory sources.
 
-**The trend.** The chart shows the open findings per day by severity over **30 days**, **90 days** or **365 days**. **Show as table** replaces the chart with the same numbers in a table. A finding counts under its current severity, and a dismissed finding counts until it is resolved.
+**The trend.** The chart shows the open findings per day by severity over **30 days**, **90 days** or **365 days**, in the colours of the severity bar: Critical at the bottom, then High, Medium, Low, None (grey) and Unknown (hatched). A line on top of each band marks every day a severity has findings, so even a few findings among many stay visible. **Show as table** replaces the chart with the same numbers in a table. A finding counts under its current severity, and a dismissed finding counts until it is resolved.
 
 **The list.** Each row is one finding.
 
 | Column | Meaning |
 |---|---|
-| **Severity** | The level as a word with an icon, and the score when the advisory has one. The colour only reinforces the word |
+| **Severity** | The level as a word with an icon, and the score when the advisory has one. The icon has the severity's colour from the bar; the colour only reinforces the word |
 | **Status** | **Needs triage**, **Confirmed**, **Blocked**, **Dismissed** or **Resolved**. A version whose download is refused shows as **Blocked**, with the reason: **malicious package** or **blocked in triage** |
 | **Identifier** | The advisory identifier, which opens the finding. **Malicious** marks a package reported as malicious; **Known exploited** marks an advisory on the CISA list of exploited vulnerabilities |
 | **Package** | The package, with the version under it; opens the page of that version on its **Vulnerabilities** tab |

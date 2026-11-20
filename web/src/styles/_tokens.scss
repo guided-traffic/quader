@@ -193,15 +193,9 @@
   --quader-badge-info-bg: light-dark(#cbe2f9, #63a6e9);
   --quader-badge-info-fg: light-dark(#2f5ca0, #1d283e);
   --quader-badge-info-icon: light-dark(#1f75cb, #1d283e);
-  // The marks of the vulnerability trend (R-VULN-022): one per severity, none of them green and none of them the
-  // accent. Every pair keeps 3:1 against the page and the raised surface (WCAG 1.4.11); the legend and the table
-  // name the level, so the colour is never the only carrier (R-UI-044). palette.spec.ts holds the pairs.
-  --quader-chart-critical: light-dark(#b3261e, #ff8a80);
-  --quader-chart-high: light-dark(#c2570c, #ff9d57);
-  --quader-chart-medium: light-dark(#8a5a00, #ffc857);
-  --quader-chart-low: light-dark(#347da0, #5cb3d6);
-  --quader-chart-none: light-dark(#5b6270, #9aa1ad);
-  --quader-chart-unknown: light-dark(#8577e6, #a99cff);
+  // The series of the usage screens' meter and history (R-UI-183, R-UI-184): a teal of their own, no severity's colour, not
+  // green, not the accent; 3:1 against the page, the raised surface and the card the meter's track is (palette.spec.ts).
+  --quader-chart-usage: light-dark(#347da0, #5cb3d6);
   // The grade of a version (R-UI-090, Q-UI-370): the owner's cogpit scale, the same in both schemes from S to E; S, A and B
   // are the greens of a good grade, the only greens beside the positive status. A letter takes the dark ink, the light one on
   // E, or S's mint; each keeps 4.5:1 on its fill. N/A is quiet: the scheme's grey, its letter in the muted tone. The crest's
@@ -222,9 +216,10 @@
   --quader-grade-shadow: #000000;
   // The grade card is as wide as cogpit's drawer at most (R-UI-093).
   --quader-grade-card-measure: 40rem;
-  // The severity bar (R-UI-092): cogpit's colours, High one step deeper than its #d9403a so that the white count keeps 4.5:1;
-  // Unknown is hatched in two greys of the scheme with the text colour on them; a severity without findings is its colour at
-  // 28 % over the surface with the text colour (severity-bar.ts).
+  // One scale of the severities for the bar, the trend and the badge (R-UI-092, R-VULN-022). The fills are cogpit's, the same in
+  // both schemes, High one step deeper than its #d9403a so that the white count keeps 4.5:1: the bar's segments, the trend's
+  // bands, the legend's swatches. Unknown is hatched in two greys of the scheme with the text colour on them; a severity without
+  // findings is its fill at 28 % over the surface with the text colour (severity-bar.ts).
   --quader-sev-critical: #7f1d1d;
   --quader-sev-high: #c9302a;
   --quader-sev-medium: #e8a33d;
@@ -233,6 +228,17 @@
   --quader-sev-ink-light: #ffffff;
   --quader-sev-unknown: light-dark(#b9bdc4, #45505c);
   --quader-sev-unknown-light: light-dark(#e0e3e6, #26303c);
+  // Each severity's mark: a tone of its fill's hue (within 12 degrees in LCh), deeper in the light scheme and brighter in the dark
+  // one, that keeps 3:1 against the page, the raised surface, the card, the table head and the row under the pointer: the edge on
+  // top of a band of the trend and the badge's icon. Neighbours stay at least 9 apart (CIEDE2000) under deuteranopia and
+  // protanopia. None is a neutral grey and Unknown's mark the scheme's muted grey, so neither reads as a step of the scale.
+  // palette.spec.ts holds every pair.
+  --quader-sev-critical-mark: light-dark(#6c0b17, #d95853);
+  --quader-sev-high-mark: light-dark(#9c1e18, #f6815b);
+  --quader-sev-medium-mark: light-dark(#a15e04, #ffb755);
+  --quader-sev-low-mark: light-dark(#a78314, #ffe8b0);
+  --quader-sev-none: light-dark(#737278, #89888d);
+  --quader-sev-unknown-mark: light-dark(#626168, #a4a3a8);
   --quader-banner-bg: light-dark(#ecdcff, #5f00c0);
   --quader-banner-fg: light-dark(#5f00c0, #ecdcff);
 
