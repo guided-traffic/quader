@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 18:05): no registry task; a malware scan of every artifact with ClamAV, asked for by the owner that day and being prepared for him ([With the owner](#with-the-owner)); the role `scanner`, built and waiting on its branch for a certificate for each kind of pod, which the owner decided that day, and after it the analyser's database in a repository (section 11); the built-in project `upstream` stands ready on its branch and waits for one change the owner asked for at 18:05 (a well-known repository starts off and Internal); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 18:05): no registry task; a malware scan of every artifact with ClamAV, asked for by the owner that day and being prepared for him ([With the owner](#with-the-owner)); the role `scanner`, built and waiting on its branch for a certificate for each kind of pod, which the owner decided that day, and after it the analyser's database in a repository (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -524,12 +524,7 @@ records the recorder that tells such a stall apart).
   `layer_missing`; retried after a minute, never read as clean. Written into R-VULN-034 by its builder. A fix is named
   and not built: the scan listener answers a system subject on a disabled repository with a code of its own, and the
   scanner puts that off without an attempt.
-- **A list's filter loses the focus while one types** (found on 2026-11-20 in the render of the page **Upstream
-  registries**, then seen in a browser on the Repositories list of `main`: typed "np", paused, the next key went
-  nowhere). 250 ms after the last key the list navigates to write `?q=`, and `FocusOnNavigation` moved the focus to
-  the screen's `h1` after every navigation; every list with the shared head of 2026-11-18 has it. **Fixed on the
-  branch `feat/upstream`** (the focus service leaves the focus alone when only the query or the fragment changed) and
-  lands with the project `upstream`; this entry goes then.
+
 - **F-151 · The container scan's finding in the image scanning's analyser** (`usr/local/bin/trivy (gobinary)`, `stdlib`
   CVE-2026-97054) is accepted at that one path until 2026-12-19 in `.trivyignore.yaml` (H-1003). Decided by the development agent in
   the owner's absence and confirmed by the owner on 2026-11-19 ("Option A"); H-1003 does not name him. Open: the entry goes with the
@@ -582,7 +577,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 18:10.
+**State on 2026-11-20**, 18:40, after the landing of the project `upstream`.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -630,12 +625,10 @@ runs are in `git log`; this section holds the current state.
   [visibility.md](../security/visibility.md): a technical or CI token reads every `internal` repository at every door; live
   where a CI issuer is public, where a mapping admits fork pipelines to read, and for forks on a GitLab older than 18.4.
   **To check before the owner's installation takes the release:** whether one of the three is configured there.
-- **The built-in project `upstream`, ready on the branch `feat/upstream`** (worktree `.claude/worktrees/upstream-landing`,
-  tip `ab965a104`), every gate green, **held at 18:05 for the owner's word that a well-known repository starts off
-  and Internal** (below); four commits
+- **The built-in project `upstream`, landed on 2026-11-20 at 18:40** in four commits
   ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, ADR-209 and ADR-211):
   - **Package 1** (migration 00086): the project with its fixed id, one repository per upstream preset of the format
-    catalog, brought in line at every migration (created off, an administrator's address kept, a dropped
+    catalog, brought in line at every migration (created off and Internal, an administrator's address kept, a dropped
     preset retired and later purged), the operations under `/api/v1/upstream-repositories`, every other write to the
     project refused as the product's, the archive keys of Debian and Ubuntu, `upstream` first in `GET /api/v1/projects`,
     `upstream/scanner-trivy` declared and answering no client.
@@ -671,14 +664,21 @@ runs are in `git log`; this section holds the current state.
   refusal of an old session at an address write; the 409 of the service-account and CI-mapping writers over HTTP; the
   saved upstream test of a well-known repository (by the code it needs `repositories:write-config`); a real client
   printing the 404's sentence; the upgrade test (read: the admin list sorts by project key, and `e2e` sorts before
-  `upstream`). **On the owner's installation:** the release creates the 13 repositories, all off; it holds no project yet
-  (read on the cluster), so no key collides. **The owner's change before the landing** (2026-11-20, 18:05, after the
-  development agent told him they are created off and Private): "upstream projekte sollen vom Standard aber nicht aus
-  und privat sein, sondern aus und internal." A preset's repository is created at the level Internal, still off;
-  `upstream/scanner-trivy` stays Private. It replaces the development agent's Q-REPO-388 (the installation's default
-  level). Package 1's builder folds it into the four commits (the reconcile, the specification, the tests that
-  asserted Private, the screens' fixtures and texts) and says what the reconcile does on an installation that
-  restricts the level Internal; the gates run again on the new tip, then the branch lands. **Seen and left for the walkthrough:** the groups stand in
+  `upstream`). **A well-known repository starts off and Internal, the owner's word of 18:05** ("upstream projekte sollen vom Standard
+  aber nicht aus und privat sein, sondern aus und internal", after the development agent told him they were created off
+  and Private): folded into the four commits by package 1's builder before the landing. `upstream/scanner-trivy` stays
+  Private. It replaces the development agent's Q-REPO-388. **What the change showed:** the grant index does not know
+  "disabled", so with Internal presets every signed-in internal user got the twelve switched-off repositories in the
+  list of repositories and in the search's suggestions, while the project stayed hidden; a repository of `upstream` is
+  now listed and suggested to a caller without `repositories:read-config` only while it serves (Q-AUTHZ-306, the
+  development agent's, shown by the case that failed with all twelve). **Where an installation restricts the level
+  Internal,** the reconcile takes the highest level at or below it that a caller who is no administrator may choose,
+  so Private, and never fails `quader migrate` on a restriction (Q-REPO-393, the development agent's: created Internal
+  there, a repository administrator's switch would open a level reserved for security administrators). The manual and
+  `docs/security/visibility.md` say at the switch what it opens: everyone signed in who is not external, pipelines and
+  service accounts included, directly and through every virtual repository that lists it (H-1052). **On the owner's
+  installation:** the release creates the 13 repositories, twelve off and Internal and `scanner-trivy` Private; it
+  holds no project yet (read on the cluster), so no key collides. **Seen and left for the walkthrough:** the groups stand in
   the order of the format catalog, Ansible Galaxy first and OCI last; the project switcher lists Upstream under **Your
   projects**; in German the side-bar entry "Berechtigungsrichtlinien" reaches the side bar's edge (not this feature's).
 - **The role `scanner` and the analyser's database in a repository, specified on `main`** on 2026-11-20
@@ -696,8 +696,8 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (18:10), two builders (package 1's for the default level, package A's for the certificates) and a
-  planner (the malware scan, [With the owner](#with-the-owner)):
+- **In work** (18:40), one builder (package A's, for the certificates); the malware scan's working paper is with the
+  owner ([With the owner](#with-the-owner)):
   - **Package A of the scanner, first stage reported:** `0f23ad8ed` on `7fe52214` (143 files), the role `scanner`
     with its token, its listener on `packages`, the chart's objects and the tests up to the integration tier; no
     migration. Gates green but one: `make versions-check` fails on this machine's Docker buildx (F-17, the owner's
@@ -733,10 +733,9 @@ runs are in `git log`; this section holds the current state.
     top, with the specification, chart tests, unit tests of the name checks, the area `vulnimage`, and the
     end-to-end case once more on a cluster of its own.
   **Housekeeping at 17:20:** twelve local branches without a worktree and without a commit missing on `main` deleted.
-  **Waiting:** package B of the scanner, until `upstream` and package A are both on `main` (it needs `KindSystem` of
+  **Waiting:** package B of the scanner, until package A is on `main` beside `upstream` (it needs `KindSystem` of
   the one and `upstream/scanner-trivy` of the other, and the two change the same files: `internal/authz/index.go`,
-  `internal/limits/usage/buffer.go`, the request path, the specification). **Order of landing:** `upstream` first, as soon as the default level is in; package A follows, rebased by its own
-  builder. **Why package A waits,
+  `internal/limits/usage/buffer.go`, the request path, the specification). **Order of landing:** `upstream` is landed; package A follows, rebased by its own builder. **Why package A waits,
   verified on 2026-11-20:** the owner's installation takes every release within a minute (its HelmRelease names the
   chart version `*`), image scanning is on by the chart's default, and its certificate `quader-tls` allows server
   authentication only (read from the Secret on the cluster). A scanner pod whose pair does not allow client
@@ -945,7 +944,9 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   at the class its address names (Q-UI-843); the project shows no level of its own (Q-UI-844). Package 1's second
   stage: Q-REPO-390 to 392, Q-AUTHZ-305, and the two shapes Q-API-363 and Q-API-364, of which
   Q-API-364 decides who may read the state and level of the well-known repositories without the admin read: the
-  holders of `repositories:write-config` and the Owners of any project.
+  holders of `repositories:write-config` and the Owners of any project; a repository of `upstream` is listed and
+  suggested only while it serves (Q-AUTHZ-306); what the reconcile creates where the level Internal is restricted
+  (Q-REPO-393). Q-REPO-388 is the owner's since 2026-11-20 (off and Internal).
 - The role `scanner` and the analyser's database (2026-11-20, its planner's decisions beside the owner's): Q-VULN-161 to 176,
   Q-ARCH-527 to 531, Q-OCI-226 to 230, Q-HA-316 to 322, Q-LIM-66, Q-OPS-215, Q-UI-850. The ones to look at first: a listener
   of its own on `packages` for the scanner's pull (Q-ARCH-528); mutual TLS between worker and scanner with the chart's
