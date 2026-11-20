@@ -1814,7 +1814,9 @@ replica-to-replica network rule ([R-HA-001](spec/ha-and-helm.md#r-ha-001--active
   Statement-mode poolers are not supported ([ADR-101](#adr-101--connection-model-a-transaction-scoped-main-pool-behind-an-optional-pooler-sessions-only-on-workers)).
 - **Valkey and readiness** ([Q-HA-13](spec/ha-and-helm.md#q-ha-13--valkey-and-readiness), option (d)). Only configuration errors (a rejected
   credential, a failed TLS verification, a primary name no reachable Sentinel knows) hold back a
-  replica's first readiness; outages never affect readiness.
+  replica's first readiness; outages never affect readiness, except that a starting replica waits
+  for Valkey's first answer for at most `valkey.startup_answer_timeout` (the owner's decision
+  [Q-HA-293](spec/ha-and-helm.md#q-ha-293--a-replica-waits-for-valkeys-first-answer-before-its-first-readiness-for-a-bounded-time), 2026-11-20).
 - **Valkey topologies** ([Q-HA-14](spec/ha-and-helm.md#q-ha-14--valkey-topologies-quader-supports), option (b)). Sentinel is the only production topology at MVP,
   a primary-endpoint mode is P1, and Valkey Cluster is deferred ([ADR-099](#adr-099--valkey-client-valkey-go-against-valkey-90-and-later-sentinel-in-production)).
 
@@ -5019,8 +5021,10 @@ caches when Valkey itself is suspect.
 **Decision.**
 - **Readiness** ([Q-HA-13](spec/ha-and-helm.md#q-ha-13--valkey-and-readiness), option (d)). Only configuration errors hold back a replica's first
   readiness: a rejected credential (`WRONGPASS`, `NOAUTH`, `NOPERM`), a failed TLS verification,
-  or a primary name that no reachable Sentinel knows. Unreachability never does, before or after
-  the first readiness. The `valkey` check is otherwise reported as degraded, never gating.
+  or a primary name that no reachable Sentinel knows. Unreachability holds a starting replica back
+  only while it waits for Valkey's first answer, at most `valkey.startup_answer_timeout` (30 s,
+  Q-HA-293), and never after the first readiness. The `valkey` check is otherwise reported as
+  degraded, never gating.
 - **Degraded mode** ([R-HA-057](spec/ha-and-helm.md#r-ha-057--valkey-failover-outage-and-degraded-mode)). While Valkey is unavailable, collapsing and negative caching work per
   replica, rate limits fall back to per-replica shares, changes arrive at the change-log poll's
   speed, and signals wait for the next poll.
@@ -8711,7 +8715,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-HA-10](spec/ha-and-helm.md#q-ha-10--default-of-the-egress-networkpolicy) | Default of the egress NetworkPolicy? | superseded by the owner's rule of 2026-11-04 (ADR-154): no egress policy; was (a) off, with a `NOTES.txt` warning and an example values file | [ADR-154](#adr-154--network-policies-are-ingress-rules-between-the-charts-pods-each-with-its-port) |
 | [Q-HA-11](spec/ha-and-helm.md#q-ha-11--publishing-location-of-images-and-chart) | Where are images and the chart published? | (a) `ghcr.io/guided-traffic`, signed from the GitHub Actions release workflow. Owner decision of 2026-10-29 (overrides (a)): Docker Hub for the image, the GitHub Pages chart repository for the chart, provenance and SBOM attestations, no signatures | [ADR-024](#adr-024--the-helm-chart-is-the-supported-deployment-inv-13), [ADR-130](#adr-130--the-organisations-ci-and-release-standard) |
 | [Q-HA-12](spec/ha-and-helm.md#q-ha-12--replica-registry-at-mvp) | Replica registry at MVP? | (c) table, heartbeat, pruning and read-only API in the MVP, and the UI status screen (R-UI-038); since 2026-10-28 the registry also records each replica's node and reachable Sentinels (Q-UI-7) | [ADR-013](#adr-013--one-binary-roles-split-from-the-start-identical-replicas-per-role-inv-2) |
-| [Q-HA-13](spec/ha-and-helm.md#q-ha-13--valkey-and-readiness) | Valkey and readiness? | (d) only configuration errors (rejected credential, failed TLS verification, unknown primary name) hold back the first readiness; outages never affect readiness | [ADR-100](#adr-100--valkey-degrades-quader-but-never-gates-readiness-except-for-configuration-errors), [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
+| [Q-HA-13](spec/ha-and-helm.md#q-ha-13--valkey-and-readiness) | Valkey and readiness? | (d) only configuration errors (rejected credential, failed TLS verification, unknown primary name) hold back the first readiness; outages never affect readiness beyond the bounded wait for the first answer (Q-HA-293, owner 2026-11-20) | [ADR-100](#adr-100--valkey-degrades-quader-but-never-gates-readiness-except-for-configuration-errors), [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
 | [Q-HA-14](spec/ha-and-helm.md#q-ha-14--valkey-topologies-quader-supports) | Which Valkey topologies does Quader support? | (b) Sentinel only in production at MVP; standalone for development; a primary-endpoint mode at P1; Valkey Cluster deferred | [ADR-099](#adr-099--valkey-client-valkey-go-against-valkey-90-and-later-sentinel-in-production) |
 | [Q-HA-15](spec/ha-and-helm.md#q-ha-15--valkey-with-sentinel-in-the-local-profile-and-ci) | Valkey with Sentinel in the local profile and CI? | (d) Quader's own manifests, `deploy/dev/valkey.yaml`, from the official image; superseded for the dev profile on 2026-10-29 by the owner's valkey-operator (option c, with the gaps recorded) | [ADR-099](#adr-099--valkey-client-valkey-go-against-valkey-90-and-later-sentinel-in-production), [ADR-024](#adr-024--the-helm-chart-is-the-supported-deployment-inv-13), [ADR-129](#adr-129--the-owners-kubernetes-operators-are-the-standard-stack) |
 | [Q-HA-16](spec/ha-and-helm.md#q-ha-16--default-replica-counts-and-the-capacity-rule-for-drains) | Default replica counts and the capacity rule for drains? | (b) three `web` and two `worker` replicas by default; the N + 1 rule of R-HA-059 documented and tested | [ADR-105](#adr-105--drain-capacity-one-replica-more-than-the-peak-needs-per-role) |

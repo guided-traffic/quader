@@ -3835,10 +3835,12 @@ inside the process.
   at once, without network I/O.
 - **Degradation.** `cluster.ErrUnavailable` is never returned to a client and never fails a
   request; each mechanism degrades as R-ARCH-030 states. Valkey being unreachable never makes a
-  replica unready (INV-12): `/readyz` lists `valkey` under `degraded`, and start-up does not wait
-  for Valkey (R-ARCH-024). A configuration error found at a replica's first connection (an unknown
-  primary name, rejected credentials, a rejected certificate) is handled as
-  [ha-and-helm.md](ha-and-helm.md) Q-HA-13 decides.
+  replica unready (INV-12): `/readyz` lists `valkey` under `degraded`. A starting replica waits for
+  Valkey's first answer for at most `valkey.startup_answer_timeout` before its first readiness
+  (R-ARCH-024 step 10, [ha-and-helm.md](ha-and-helm.md) Q-HA-293). A configuration error found at a
+  replica's first connection (an unknown primary name, rejected credentials, a rejected certificate,
+  a `NOPERM` for the probe write or the take script that the first connection runs,
+  [ha-and-helm.md](ha-and-helm.md) Q-HA-331) is handled as [ha-and-helm.md](ha-and-helm.md) Q-HA-13 decides.
 - **TLS.** `valkey.tls` applies to the data nodes and, with `valkey.sentinel.tls`, to the Sentinels.
   Certificates are verified as `valkey.tls.mode` says, `verify-full` by default; `disable` needs
   `valkey.allow_insecure` (R-HA-056).
@@ -3855,7 +3857,10 @@ inside the process.
   leases of parallel downloads, [usage-and-limits.md](usage-and-limits.md) R-LIM-017, Q-LIM-10). `EVALSHA` and `EVAL` run one
   script, the take of a request (R-ARCH-034, [usage-and-limits.md](usage-and-limits.md) Q-LIM-57), which calls only `GET`,
   `INCRBY` and `EXPIRE` on the keys it is given; a script runs under the ACL of the user that sends it, so the two commands grant no
-  command and no key beyond the list. An example ACL rule, which the integration tier and the dev profile use:
+  command and no key beyond the list. A replica's first connection writes its probe key and runs the take with no key (`EVAL`,
+  then `EVALSHA`), so a user without them, or whose key pattern misses the prefix, is refused before the first readiness
+  ([ha-and-helm.md](ha-and-helm.md) Q-HA-331); a missing command elsewhere in the list shows at its first use ([H-1050](ha-and-helm.md#h-1050--only-the-probe-write-and-the-take-script-are-checked-at-start-another-missing-command-shows-at-its-first-use)). An example
+  ACL rule, which the integration tier and the dev profile use:
 
   ```text
   user quader on >… resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +incrby +expire +evalsha +eval +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
@@ -4448,15 +4453,18 @@ Start-up order:
 5. Run the key-ring canary (R-ARCH-021).
 6. Run the object-store check ([storage.md](storage.md)).
 7. Read the keyspace ID (R-ARCH-030) and start the Valkey client in the background (R-ARCH-031).
-   Start-up never waits for Valkey, and an unreachable Valkey never gates readiness; a
-   configuration error at the first connection is handled as [ha-and-helm.md](ha-and-helm.md)
-   Q-HA-13 decides. Run the first change-log poll (R-ARCH-018). Register in the replica registry
+   This step does not wait for Valkey beyond the client's first attempt; step 10 waits for its first
+   answer for a bounded time, and a configuration error found by that answer is handled as
+   [ha-and-helm.md](ha-and-helm.md) Q-HA-13 decides. Run the first change-log poll (R-ARCH-018). Register in the replica registry
    with the role. On a `worker` replica, open the lease pool (R-ARCH-017).
 8. Load the snapshots and initialise the registered caches.
 9. Open the client listeners (`api`, `packages`), each with the route families of its endpoint that the role serves (R-ARCH-001, Q-ARCH-298), or start the job workers on the queues the process claims (`worker`, R-ARCH-016), as the role allows.
-10. The `startup` readiness check passes. It requires that steps 3 to 9 have completed and that the
+10. Wait for Valkey's first answer, accepted or refused, at most until `valkey.startup_answer_timeout`
+    (30 s) has passed since step 7 started the client; meanwhile the `startup` check fails with the
+    reason `waiting_for_valkey` ([ha-and-helm.md](ha-and-helm.md) R-HA-008, Q-HA-293, Q-HA-330). Then
+    the `startup` readiness check passes. It requires that steps 3 to 9 have completed and that the
     audit partitions for the current and the next month exist (R-OPS-001). It does not require a
-    reachable Valkey.
+    reachable Valkey: after the bound the replica becomes ready degraded.
 
 Step 8 builds one area at a time, in the order of the list in `internal/app/steps.go`. Each area is a
 step that takes the typed results of earlier steps and returns its own; the list is checked against the
@@ -5078,7 +5086,8 @@ Acceptance criteria:
   and without it under `verify-ca`. There is no mode that encrypts without verifying; TLS can be
   switched off only as `valkey.tls.mode: disable` together with `valkey.allow_insecure: true`
   ([ha-and-helm.md](ha-and-helm.md) R-HA-056). Quader authenticates as an ACL user that can reach
-  only its own key and channel prefix and is denied scripting (R-ARCH-031). Passwords come from
+  only its own key and channel prefix and runs no script but the take of the limits (`EVALSHA`, `EVAL`), which runs under the
+  same ACL (R-ARCH-031). Passwords come from
   mounted files and are re-read on reconnection.
 - **No session state on the request path.** The `main` class keeps no state beyond its transaction
   (R-ARCH-019), so a transaction-mode pooler cannot leak one request's session settings into

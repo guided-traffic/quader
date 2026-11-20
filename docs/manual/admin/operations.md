@@ -19,12 +19,12 @@ The chart's probes use these paths: startup and liveness `/healthz`, readiness `
 
 | Check | Holds the replica unready |
 |---|---|
-| `startup` | until start-up has finished |
+| `startup` | until start-up has finished, which includes the wait for Valkey's first answer (reason `waiting_for_valkey`, at most `valkey.startup_answer_timeout`, 30 s) |
 | `database`, `schema`, `invalidation` | while PostgreSQL is unreachable, the schema is behind this version, or the change log cannot be read. After the first readiness, an outage shorter than `health.database_outage_grace` (20 s) only shows as degraded |
 | `tls` | until every listener certificate has loaded once |
 | `outbound` | until the CA files of `proxy.outbound.tls.ca_files` have loaded once |
 | `objectStore` | until the first readiness; for the whole life of the process with `health.require_object_store: true` |
-| `valkey` | never, except a configuration error at start; reason codes such as `connecting`, `no_sentinel`, `timeout`, `auth_failed`, `circuit_open` |
+| `valkey` | never, except a configuration error at start: Valkey refuses the password or the ACL user (`auth_failed`), the certificate or the primary name (`config_error`); reason codes such as `connecting`, `no_sentinel`, `timeout`, `auth_failed`, `circuit_open` |
 | `draining` | from the start of a shutdown |
 
 ## Metrics
@@ -206,7 +206,7 @@ Change replica counts through `helm upgrade` rather than `kubectl scale`: the mi
 
 | Dependency | What happens |
 |---|---|
-| Valkey | No request fails and replicas stay ready (`/readyz` lists `valkey` as degraded). Remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to a per-replica share of each budget, and changes reach other replicas through the PostgreSQL change log instead of an early message. System status shows **Degraded** |
+| Valkey | No request fails and replicas stay ready (`/readyz` lists `valkey` as degraded). Remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to a per-replica share of each budget, and changes reach other replicas through the PostgreSQL change log instead of an early message. System status shows **Degraded**. A pod that starts meanwhile stays unready while it waits for Valkey's first answer, at most `valkey.startup_answer_timeout` (30 s), and then becomes ready degraded; its log says `valkey gave no answer within valkey.startup_answer_timeout` with the reason |
 | PostgreSQL | Outages shorter than `health.database_outage_grace` (20 s) show as degraded; longer ones make the replicas unready. PostgreSQL holds everything durable, so Quader cannot serve without it |
 | Object store | Requests for stored content fail with a retryable `503` on the affected replica; everything else keeps working. Readiness depends on it only with `health.require_object_store: true` |
 

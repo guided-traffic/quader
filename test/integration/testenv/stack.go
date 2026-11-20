@@ -176,8 +176,12 @@ func (s *Stack) environ(host, port, name, userFile, passFile string) []string {
 	for _, a := range vk.Sentinels {
 		sentinels = append(sentinels, strconv.Quote(a))
 	}
+	// "Valkey stopped" is silence, so a replica would hold its first readiness for valkey.startup_answer_timeout
+	// (R-HA-008); the suites that use it test the degraded mode, not the start, and do not wait.
+	answerWait := "30s" // the default
 	if !s.valkey {
 		sentinels = []string{strconv.Quote("127.0.0.1:1")}
+		answerWait = "0s"
 	}
 	return []string{
 		"QUADER_DATABASE_HOST=" + host, "QUADER_DATABASE_PORT=" + port, "QUADER_DATABASE_NAME=" + name,
@@ -189,6 +193,7 @@ func (s *Stack) environ(host, port, name, userFile, passFile string) []string {
 		"QUADER_VALKEY_SENTINEL_PASSWORD_FILE=" + WriteFile(tb, dir, "vk-sentinel-pass", vk.SentinelPassword),
 		"QUADER_VALKEY_USERNAME_FILE=" + WriteFile(tb, dir, "vk-user", vk.Username), "QUADER_VALKEY_PASSWORD_FILE=" + WriteFile(tb, dir, "vk-pass", vk.Password),
 		"QUADER_VALKEY_TLS_CA_FILE=" + vk.CAFile, "QUADER_VALKEY_KEY_PREFIX=" + vk.KeyPrefix,
+		"QUADER_VALKEY_STARTUP_ANSWER_TIMEOUT=" + answerWait,
 		"QUADER_STORAGE_S3_BUCKET=" + s3.BlobsBucket, "QUADER_STORAGE_S3_ENDPOINT=" + s3.Endpoint, "QUADER_STORAGE_S3_REGION=" + s3.Region,
 		"QUADER_STORAGE_S3_FORCE_PATH_STYLE=true", "QUADER_STORAGE_S3_CA_FILE=" + CAFile(tb),
 		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static",

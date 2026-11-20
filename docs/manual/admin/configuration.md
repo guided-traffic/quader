@@ -135,6 +135,7 @@ The tables below list the keys an installation most often sets. Every key with i
 | `valkey.tls.ca_file` | empty (system roots) | CA of the servers; the chart sets it from `secrets.valkeyCA` |
 | `valkey.key_prefix` | `quader:` | Prefix of every key Quader writes; must end in `:` |
 | `valkey.command_timeout` | `500ms` | Time limit of one command |
+| `valkey.startup_answer_timeout` | `30s` | How long a starting replica stays unready while it waits for Valkey's first answer; a refused password, certificate or ACL user then keeps it unready, no answer at all lets it become ready degraded. `0` to `5m`; `0` does not wait, so a wrong password behind an unanswered first attempt shows only after the first requests. Raise it for a Valkey whose failover takes longer than about 20 s |
 
 </details>
 

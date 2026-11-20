@@ -126,9 +126,20 @@ func TestNPMHAClosing(t *testing.T) {
 			down := time.Now()
 			time.Sleep(2 * time.Minute)
 			deleted = deletePackagesPod(t)
-			waitFor(t, "a replacement packages pod ready in degraded mode", 3*time.Minute, 2*time.Second, func() bool {
+			// R-HA-008: the replacement holds its first readiness for Valkey's first answer, at most valkey.startup_answer_timeout
+			// (30 s), and then becomes ready degraded; the 3 minutes hold the pod's start and that bound. Whether a sample met the
+			// wait (the startup reason waiting_for_valkey) is logged, not asserted: on a slow node the start steps alone can use
+			// up the bound, and the replica then becomes ready without a visible wait, as specified.
+			waited := false
+			took := waitFor(t, "a replacement packages pod ready in degraded mode", 3*time.Minute, 2*time.Second, func() bool {
 				for _, p := range livePods(t, selPackages) {
-					if startedAt[p.Name] || !p.Ready {
+					if startedAt[p.Name] {
+						continue
+					}
+					if !p.Ready {
+						if code, body := ops(p.Name, "/readyz?verbose=1"); code == 503 && strings.Contains(body, "waiting_for_valkey") {
+							waited = true
+						}
 						continue
 					}
 					if code, body := ops(p.Name, "/readyz"); code == 200 && strings.Contains(body, `"valkey"`) {
@@ -138,7 +149,7 @@ func TestNPMHAClosing(t *testing.T) {
 				}
 				return false
 			})
-			t.Logf("deleted %s; %s became ready with valkey degraded while Valkey was down", deleted, replacement)
+			t.Logf("deleted %s; %s became ready with valkey degraded while Valkey was down, %s after the deletion (a sample saw waiting_for_valkey: %v)", deleted, replacement, took.Round(time.Second), waited)
 			time.Sleep(time.Until(down.Add(5 * time.Minute)))
 			watch := startValkeyClearWatch()
 			script(t, "valkey-start.sh")

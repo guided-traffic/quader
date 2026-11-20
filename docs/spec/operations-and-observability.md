@@ -157,12 +157,12 @@ their `degraded` state.
 
 | Check | Passes when | Kind | Why |
 |---|---|---|---|
-| `startup` | The start-up steps of [architecture.md](architecture.md) R-ARCH-024 have completed: the ops listener is bound; on `web` the client listener is bound, on `worker` the claim loop, the reaper and the scheduler loop run; in-process caches are initialised; audit partitions for the current and the next month exist (R-OPS-015) | gating | No half-started replica receives traffic or claims a job |
+| `startup` | The start-up steps of [architecture.md](architecture.md) R-ARCH-024 have completed: the ops listener is bound; on `web` the client listener is bound, on `worker` the claim loop, the reaper and the scheduler loop run; in-process caches are initialised; audit partitions for the current and the next month exist (R-OPS-015); Valkey has answered once, accepted or refused, or `valkey.startup_answer_timeout` has passed ([ha-and-helm.md](ha-and-helm.md) R-HA-008). Its reason is `waiting_for_valkey` during that wait and `starting` before | gating | No half-started replica receives traffic or claims a job, and a wrong Valkey credential shows before the first request |
 | `schema` | The applied schema version is inside the window this binary supports: at least the highest migration it embeds, with a `compat_floor` not above its version ([ha-and-helm.md](ha-and-helm.md) R-HA-018), and `system_state` holds no `restore_in_progress` marker ([backup-and-restore.md](backup-and-restore.md) R-BAK-021) | gating; a connectivity failure gets the outage grace below | A replica never serves against a schema it does not understand, or against a half-restored database |
 | `database` | `SELECT 1` on the replica's control connection ([architecture.md](architecture.md) R-ARCH-019) succeeds within the timeout, and the server is a primary | gating, with the outage grace below | Nothing works without PostgreSQL (INV-3). The control connection keeps an exhausted request pool from failing the check, so load never takes replicas out of the Service one after another ([ha-and-helm.md](ha-and-helm.md) R-HA-008, Q-HA-20) |
 | `invalidation` | The last successful change-log poll is younger than `cluster.epoch_max_staleness` ([architecture.md](architecture.md) R-ARCH-018) | gating | A replica that cannot poll the change log cannot bound how stale its revocations and policies are (INV-8, INV-9). The check depends on PostgreSQL only, never on Valkey. The poll runs on the replica's reserved control connection ([architecture.md](architecture.md) R-ARCH-019), so a saturated request pool does not fail it. Its evaluations start failing only once the poll has been stale for `cluster.epoch_max_staleness`, and it is debounced like `database`, so for the same outage it never turns a replica unready sooner than `database` does ([ha-and-helm.md](ha-and-helm.md) R-HA-008) |
 | `objectStore` | A `HEAD` request on the bucket (or on a sentinel object under the configured prefix) succeeds within the timeout | gating until the replica is first ready, then reported; gating throughout with `health.require_object_store: true` (Q-OPS-2) | The first readiness also requires the object-store startup check of [storage.md](storage.md) R-STOR-035, so a release with a wrong bucket never replaces working pods |
-| `valkey` | The Valkey health probe ([architecture.md](architecture.md) R-ARCH-030: a `SET` of the replica's probe key with its expiry) succeeds within `valkey.command_timeout`, and the replica's Valkey circuit is closed ([ha-and-helm.md](ha-and-helm.md) R-HA-057) | reported; before the replica is first ready it gates on a *configuration error* only (Q-HA-13) | Valkey holds shared ephemeral state only (INV-3). While it is unavailable every mechanism runs its fallback, so the replica still answers correctly and stays in the Service (INV-12) |
+| `valkey` | The Valkey health probe ([architecture.md](architecture.md) R-ARCH-030: a `SET` of the replica's probe key with its expiry) succeeds within `valkey.command_timeout`, and the replica's Valkey circuit is closed ([ha-and-helm.md](ha-and-helm.md) R-HA-057) | reported; before the replica is first ready it gates on a *configuration error* only (Q-HA-13), found in Valkey's first answer, which the `startup` check waits for | Valkey holds shared ephemeral state only (INV-3). While it is unavailable every mechanism runs its fallback, so the replica still answers correctly and stays in the Service (INV-12) |
 | `tls` | Every TLS material of the listeners that this process serves has loaded at least once (the pairs and the client CA of each listener; [architecture.md](architecture.md) R-ARCH-035). A rotation that does not load keeps the previous material and does not change the check | gating until the replica is first ready, then never again | A replica whose listeners cannot serve a handshake does not enter the Service; a later broken rotation is counted in `quader_tls_reload_errors_total` and does not make the replica unready |
 | `configBootstrap` | Startup configuration documents were applied (R-OPS-031); passes trivially when none are configured | gating | An invalid document stalls a rollout instead of breaking the service |
 | `draining` | No termination signal was received | gating | Removes a `web` replica from the Service and stops a `worker` from claiming before either stops |
@@ -184,9 +184,11 @@ debounce; the first readiness of a replica gets no grace; `0` switches it off. T
 unready before its queries give up.
 
 A Valkey *configuration error* is what [ha-and-helm.md](ha-and-helm.md) R-HA-008 lists: Valkey or a
-Sentinel rejects the credentials (`WRONGPASS`, `NOAUTH`, an ACL denial), TLS verification fails, or
-every reachable Sentinel answers that it does not know `valkey.sentinel.primary_name`.
-Unreachable Sentinels or data nodes are never a configuration error. After the first readiness, a
+Sentinel rejects the credentials (`WRONGPASS`, `NOAUTH`, an ACL denial `NOPERM`, also for the probe
+write and the take script of the first connection), TLS verification fails, or every reachable
+Sentinel answers that it does not know `valkey.sentinel.primary_name`. Unreachable Sentinels or data
+nodes are never a configuration error; a starting replica waits for an answer for at most
+`valkey.startup_answer_timeout` and then becomes ready degraded ([ha-and-helm.md](ha-and-helm.md) Q-HA-293). After the first readiness, a
 configuration error (a rotation mistake) counts as unavailability and is reported like it
 ([ha-and-helm.md](ha-and-helm.md) R-HA-007). The running replicas stay ready, but every pod that
 starts while the error lasts stays unready: a drain's replacement pods and the autoscaler's new
@@ -268,7 +270,7 @@ GET /healthz             → 200 {"status":"alive"} | 503 {"status":"stuck","stu
     "database": {"status": "pass", "latencyMs": 2},
     "invalidation": {"status": "pass", "lastPollAgeMs": 412},
     "objectStore": {"status": "pass", "latencyMs": 11},
-    "valkey": {"status": "degraded", "reason": "connection", "since": "2026-10-28T11:58:40.002Z"},
+    "valkey": {"status": "degraded", "reason": "connecting", "since": "2026-10-28T11:58:40.002Z"},
     "configBootstrap": {"status": "pass"},
     "draining": {"status": "pass"}
   }
@@ -276,12 +278,14 @@ GET /healthz             → 200 {"status":"alive"} | 503 {"status":"stuck","stu
 ```
 
 A check's `status` is `pass`, `fail` (gating) or `degraded` (reported). The `valkey` check's
-`reason` uses the vocabulary of the registry's Valkey view (R-OPS-003): an error kind of
-`quader_valkey_errors_total` (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`),
-`no_primary` (every reachable Sentinel answers that it does not know the primary name) or
-`unsupported_version`. A configuration error is `auth`, `tls` or `no_primary` before the replica
-was first ready, with `status: fail` and `"configError": true`; afterwards the same reasons are
-reported as `degraded`.
+`reason` is the client's reason code, a fixed vocabulary (`cluster.ReasonCodes`): `connecting`,
+`no_sentinel`, `timeout`, `auth_failed` (`WRONGPASS`, `NOAUTH`, `NOPERM`), `config_error` (a
+certificate the replica does not trust, a primary name no reachable Sentinel knows), `unsupported`,
+`circuit_open`, `probe_failed` and `closed`. A configuration error is `auth_failed` or
+`config_error` before the replica was first ready, with `status: fail` and `"configError": true`;
+afterwards the same reasons are reported as `degraded`. While a starting replica waits for Valkey's
+first answer, the `startup` check fails with the reason `waiting_for_valkey` and the `valkey` check
+shows the client's reason as `degraded` ([ha-and-helm.md](ha-and-helm.md) Q-HA-330).
 
 Failure text in verbose output MUST be sanitised. It never contains a connection string,
 credentials or a presigned URL (R-OPS-013), and it names no host, address or user name: the
@@ -325,10 +329,13 @@ health:
 - Scale the Valkey data nodes and Sentinels to 0 for 3 minutes, and delete one `web` pod meanwhile.
   Every replica answers `/readyz` with `200` and `"degraded":["valkey"]`, no pod leaves the
   Service's endpoints, `quader_health_check_passing{name="valkey"}` is `0`, the replacement pod
-  becomes ready, and the e2e client suite passes. After Valkey returns, `degraded` clears within
+  answers `503` with the `startup` reason `waiting_for_valkey` for `valkey.startup_answer_timeout`
+  and then becomes ready, and the e2e client suite passes. After Valkey returns, `degraded` clears within
   `valkey.circuit_breaker.open_duration` plus `valkey.health_check_interval` plus 5 s.
 - A new `web` pod started with a wrong Valkey password stays unready with `"failing":["valkey"]`,
-  reason `auth` and `"configError": true`, and the running replicas stay ready (Q-HA-13).
+  reason `auth_failed` and `"configError": true`, and the running replicas stay ready (Q-HA-13); so
+  does a pod whose first attempts get no answer, when a later one inside
+  `valkey.startup_answer_timeout` is refused ([ha-and-helm.md](ha-and-helm.md) Q-HA-293).
 - A replica started while `system_state` holds `restore_in_progress` stays unready with
   `"failing":["schema"]` and claims no job.
 - 1,000 parallel requests to `/readyz` cause no additional PostgreSQL sessions

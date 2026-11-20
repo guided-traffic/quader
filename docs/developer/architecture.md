@@ -284,9 +284,13 @@ Readiness: `startup`, `database`, `schema`, `invalidation`, `outbound` gate; `tl
 first readiness only: every listener pair and client CA has loaded once (until then the ops listener answers with a
 temporary certificate, `/healthz` 200 and `/readyz` 503, so HTTPS probes do not restart the container, Q-ARCH-36); `objectStore` gates the first readiness only
 unless `health.require_object_store`; `valkey` is reported and holds back the first readiness only on a configuration
-error (Q-HA-13). `/readyz?verbose=1` shows Valkey only through the fixed reason codes `connecting`,
+error (Q-HA-13). Step 10 (`bootstrap` in [app.go](../../internal/app/app.go)) waits for the Valkey client's first answer,
+accepted or refused, for at most `valkey.startup_answer_timeout` before the `startup` check passes; meanwhile that check's
+reason is `waiting_for_valkey` (`startupCheck`, `awaitValkeyAnswer` in [wire_valkey.go](../../internal/app/wire_valkey.go),
+[Q-HA-330](../spec/ha-and-helm.md#q-ha-330--step-10-waits-for-valkeys-first-answer-and-the-startup-check-names-the-wait)).
+`/readyz?verbose=1` shows Valkey only through the fixed reason codes `connecting`,
 `no_sentinel`, `timeout`, `auth_failed`, `circuit_open`, `probe_failed`, `unsupported`, `config_error`
-([wire_valkey.go](../../internal/app/wire_valkey.go), `valkeyReasonCode`); the free text with addresses
+([wire_valkey.go](../../internal/app/wire_valkey.go), `valkeyCheck`); the free text with addresses
 stays in the log and in the authenticated replica list. Checks are cached and debounced (`health.failure_threshold`, `health.success_threshold`); probes never
 run a check. A cached result carries the duration of the check's last run (`health.CheckResult.Latency`), which the heartbeat of
 the replica registry stores as `durationMs` ([coordination.md](coordination.md#replica-registry), Q-OPS-175); for `valkey`, which reads the client's state, it is the round trip of the client's last probe. `database` and `schema` carry `health.WithGrace(health.database_outage_grace)` and wrap their error with

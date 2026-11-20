@@ -45,7 +45,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 1. Check the Sentinels and the primary, and that at least two Sentinels are reachable: below that no failover can be elected.
 2. `QuaderValkeyUnavailableSingleReplica`: the cause is on the path of that pod (a node, a network policy, DNS). Compare the pods on `quader_valkey_available`, and delete the pod if the path does not heal.
-3. `auth_failed`: a rotated credential or certificate does not match. Running replicas keep working in degraded mode; new pods stay unready until `secrets.valkey` or `secrets.valkeyCA` is right, so a rollout stalls.
+3. `auth_failed` or `config_error`: a rotated credential or certificate does not match, or the ACL user lacks a command Quader needs (the log line `valkey configuration error` names `WRONGPASS`, `NOPERM` and the command, or the certificate). Running replicas keep working in degraded mode; new pods stay unready until `secrets.valkey`, `secrets.valkeyCA` or the ACL user is right, so a rollout stalls. A new pod waits up to `valkey.startup_answer_timeout` (30 s) for Valkey's answer; a pod that got none in that time becomes ready degraded and logs `valkey gave no answer within valkey.startup_answer_timeout`, and shows a wrong credential only when Valkey answers.
 4. `QuaderValkeyPrimaryDisagreement`: a replica is bound to a demoted primary. `GET /api/v1/system/replicas` shows each replica's primary; restart the one that names the old one.
 5. There is nothing to repair in Valkey afterwards.
 

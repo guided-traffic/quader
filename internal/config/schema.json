@@ -4513,6 +4513,14 @@
           "x-quader-env": "QUADER_VALKEY_SENTINEL_QUERY_TIMEOUT",
           "x-quader-type": "duration"
         },
+        "startup_answer_timeout": {
+          "default": "30s",
+          "description": "How long a starting replica holds its first readiness for Valkey's first answer, accepted or refused; without one it then becomes ready degraded (R-HA-008). 0 does not wait.",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_VALKEY_STARTUP_ANSWER_TIMEOUT",
+          "x-quader-type": "duration"
+        },
         "tls": {
           "additionalProperties": false,
           "properties": {

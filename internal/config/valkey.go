@@ -22,6 +22,7 @@ type Valkey struct {
 	SentinelQueryTimeout time.Duration   `yaml:"sentinel_query_timeout" default:"300ms" validate:"min=10ms" doc:"Per Sentinel tried."`
 	MaxConnLifetime      time.Duration   `yaml:"max_conn_lifetime" default:"30m" validate:"min=1s"`
 	HealthCheckInterval  time.Duration   `yaml:"health_check_interval" default:"5s" validate:"min=100ms"`
+	StartupAnswerTimeout time.Duration   `yaml:"startup_answer_timeout" default:"30s" validate:"min=0,max=5m" doc:"How long a starting replica holds its first readiness for Valkey's first answer, accepted or refused; without one it then becomes ready degraded (R-HA-008). 0 does not wait."`
 	Reconnect            ValkeyReconnect `yaml:"reconnect"`
 	CircuitBreaker       ValkeyBreaker   `yaml:"circuit_breaker"`
 }

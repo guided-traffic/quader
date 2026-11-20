@@ -141,13 +141,13 @@ func checkClientList(t *testing.T) {
 func TestE12Valkey(t *testing.T) {
 	t.Run("R-ARCH-031 R-ARCH-019 E0.12 CLIENT LIST on the primary shows quader:<pod>:… from every pod, TLS only, at most six per replica", checkClientList)
 
-	t.Run("R-HA-056 Q-HA-13 E0.12 a new replica with a wrong primary_name stays not ready and logs the cause", func(t *testing.T) {
+	t.Run("R-HA-056 R-HA-008 E0.12 a new replica with a wrong primary_name stays not ready and logs the cause", func(t *testing.T) {
 		expectStuckWithCause(t, "quader-e2e-wrong-primary", func(t *testing.T, name string) {
 			clonedReplica(t, name, func(spec map[string]any) { addEnv(spec, "QUADER_VALKEY_SENTINEL_PRIMARY_NAME", "wrong-primary") })
 		})
 	})
 
-	t.Run("R-HA-056 Q-HA-13 E0.12 a new replica with a wrong password stays not ready and logs the cause", func(t *testing.T) {
+	t.Run("R-HA-056 R-HA-008 E0.12 a new replica with a wrong password stays not ready and logs the cause", func(t *testing.T) {
 		kn(t, "delete", "secret", "quader-e2e-valkey-wrong", "--ignore-not-found")
 		kn(t, "create", "secret", "generic", "quader-e2e-valkey-wrong", "--from-literal=password=not-the-password")
 		t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "delete", "secret", "quader-e2e-valkey-wrong") })
@@ -163,9 +163,12 @@ func TestE12Valkey(t *testing.T) {
 		})
 	})
 
-	t.Run("R-HA-056 Q-HA-13 E0.12 with every Sentinel unreachable at its first start a new replica becomes ready, degraded valkey", func(t *testing.T) {
+	t.Run("R-HA-056 R-HA-008 E0.12 with every Sentinel unreachable at its first start a new replica becomes ready after valkey.startup_answer_timeout, degraded valkey", func(t *testing.T) {
+		// The replica holds its first readiness for the bound and then becomes ready degraded. The bound is set to 5 s
+		// here instead of the default 30 s: what the case shows does not depend on its length, and the leg keeps its time.
 		clonedReplica(t, "quader-e2e-no-sentinel", func(spec map[string]any) {
 			addEnv(spec, "QUADER_VALKEY_SENTINEL_ADDRESSES", `["127.0.0.1:36379"]`)
+			addEnv(spec, "QUADER_VALKEY_STARTUP_ANSWER_TIMEOUT", "5s")
 		})
 		var body string
 		took := waitFor(t, "the replica to become ready", 3*time.Minute, 2*time.Second, func() bool {
@@ -187,11 +190,11 @@ func TestE12Valkey(t *testing.T) {
 	})
 }
 
-// inconclusiveValkey are the reasons a replica reports for a Valkey it could not reach. Q-HA-13 (d): unreachability never holds
-// back the first readiness, and a rejected credential or an unknown primary name is only seen when a Sentinel or Valkey
-// answers. A replica whose first attempts ran into their deadline on a starved node (F-119; Test and Release 42885398204:
-// reason "timeout", ready after 29 s) is therefore ready by the specification, and the replica says nothing about the
-// misconfiguration it was started with.
+// inconclusiveValkey are the reasons a replica reports for a Valkey it could not reach. A rejected credential or an unknown
+// primary name is only seen when a Sentinel or Valkey answers, and a replica holds its first readiness for that answer for
+// valkey.startup_answer_timeout (30 s, R-HA-008). A replica whose attempts ran into their deadline for longer than that on a
+// starved node (F-119; Test and Release 42885398204, before the wait existed: reason "timeout", ready after 29 s) is therefore
+// ready by the specification, and the replica says nothing about the misconfiguration it was started with.
 var inconclusiveValkey = []string{"timeout", "connecting", "no_sentinel"}
 
 // expectStuckWithCause starts the replica (start) and shows that it does not become ready for 45 s while /readyz names valkey

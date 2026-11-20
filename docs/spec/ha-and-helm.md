@@ -677,12 +677,12 @@ Quader MUST behave as in this table. Each row is exercised by the failure-inject
 | Object storage unreachable from one replica only | Its circuit opens; peers' do not; alert `QuaderObjectStoreUnreachableSingleReplica` | That replica's blob requests fail fast with `503` and `Retry-After`; it stays ready | Blob requests that hit it fail; clients' retries are balanced by the edge proxy and usually reach another replica | Automatic when its network path heals; otherwise the responder deletes the pod |
 | S3 throttling (`503 SlowDown`) | SDK retryer | Retries with backoff (R-STOR-033) | Higher latency | The content-addressed key layout spreads load across prefixes (R-HA-050) |
 | S3 credentials fail (expired web identity, revoked key) | `InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken` and the other answers that name the credential, or a refresh error; a plain `AccessDenied` for one operation is an answer about the request and does not count ([Q-HA-254](#q-ha-254--a-store-answer-that-rejects-the-credential-counts-against-the-object-store-circuit)) | Counted as object-store failure: the circuit opens after `failure_threshold` of them; one `WARN` line when it opens, with the credential source and the store's code, never the secret | As the outage rows | Fix the credential; static key files are re-read (R-STOR-031) |
-| Valkey primary lost or switched over (Sentinel failover) | Command errors, timeouts, `READONLY`, closed connections; Sentinel's `switch-master` event as an early hint | Each Valkey use falls back for that call (R-HA-057); the client re-resolves the primary through Sentinel and checks its `ROLE` (R-HA-056); after `valkey.circuit_breaker.failure_threshold` failures the circuit skips Valkey for `open_duration`; replicas stay ready (Q-HA-13) | None; latency rises; a concurrent cache miss may be fetched upstream once per replica instead of once | Automatic, within Sentinel's `down-after-milliseconds` plus the failover and one reconnect backoff; when the election of the remaining Sentinels is split (two Sentinels left after a drain or a node loss), Sentinel starts the next automatic failover only after twice `failover-timeout` (2 minutes at the default), and Quader runs degraded until then or until the primary returns (R-HA-057) |
+| Valkey primary lost or switched over (Sentinel failover) | Command errors, timeouts, `READONLY`, closed connections; Sentinel's `switch-master` event as an early hint | Each Valkey use falls back for that call (R-HA-057); the client re-resolves the primary through Sentinel and checks its `ROLE` (R-HA-056); after `valkey.circuit_breaker.failure_threshold` failures the circuit skips Valkey for `open_duration`; replicas stay ready (Q-HA-13); a replica that starts during the failover holds its first readiness until the new primary answers, at most `valkey.startup_answer_timeout` (Q-HA-293) | None; latency rises; a concurrent cache miss may be fetched upstream once per replica instead of once | Automatic, within Sentinel's `down-after-milliseconds` plus the failover and one reconnect backoff; when the election of the remaining Sentinels is split (two Sentinels left after a drain or a node loss), Sentinel starts the next automatic failover only after twice `failover-timeout` (2 minutes at the default), and Quader runs degraded until then or until the primary returns (R-HA-057) |
 | Sentinel quorum lost (fewer than a majority of Sentinels reachable) | Sentinel queries fail or time out; `quader_valkey_sentinels_reachable`, the number of configured Sentinels that answered the last probe of all of them (R-HA-056 step 4, R-HA-057) | Existing connections to the primary keep working; a reconnect needs one reachable Sentinel; no failover can happen meanwhile | None while the primary is healthy; if the primary fails too, as the next row | Restore the Sentinels; alert `QuaderValkeySentinelsDegraded` |
-| Valkey unavailable for every replica, for any duration | Circuit open on every replica, `valkey` check, alert `QuaderValkeyUnavailable` | Degraded mode (R-HA-057): fetch collapse and negative caching per replica, rate limits approximated per replica, changes applied at the next change-log poll (R-HA-004); replicas stay ready; a replica started during the outage becomes ready (Q-HA-13) | None; upstream load rises, changes take up to `cluster.epoch_poll_interval` | Automatic; nothing to repair in Valkey |
+| Valkey unavailable for every replica, for any duration | Circuit open on every replica, `valkey` check, alert `QuaderValkeyUnavailable` | Degraded mode (R-HA-057): fetch collapse and negative caching per replica, rate limits approximated per replica, changes applied at the next change-log poll (R-HA-004); replicas stay ready; a replica started during the outage becomes ready degraded once `valkey.startup_answer_timeout` (30 s) has passed without an answer (Q-HA-13, Q-HA-293) | None; upstream load rises, changes take up to `cluster.epoch_poll_interval` | Automatic; nothing to repair in Valkey |
 | Valkey unreachable from one replica only | Its circuit opens; peers' do not; alert `QuaderValkeyUnavailableSingleReplica` | That replica runs in degraded mode; it stays ready | None | Automatic when its path heals; otherwise the responder deletes the pod |
 | Valkey content lost (flush, restart without persistence, a failover that drops writes not yet replicated) | Not detected, and not needed | A lost fetch lock causes a duplicate upstream fetch, which content addressing makes harmless (INV-11); negative-cache entries are fetched again; rate-limit counters restart; an entry that an older primary brings back is ignored when a newer invalidation covers it (R-ARCH-030) | None | Automatic |
-| Valkey rejects Quader's credentials or certificate (rotation mistake) | `WRONGPASS`, `NOAUTH`, TLS verification error | Running replicas: as "Valkey unavailable". New replicas: not ready until fixed, because a configuration error gates the first readiness (Q-HA-13), so a rollout stalls instead of degrading every replica | None from running replicas | Fix the Secret or the Valkey user |
+| Valkey rejects Quader's credentials or certificate (rotation mistake) | `WRONGPASS`, `NOAUTH`, `NOPERM`, TLS verification error | Running replicas: as "Valkey unavailable". New replicas: not ready until fixed, because a configuration error gates the first readiness (Q-HA-13); a new replica waits up to `valkey.startup_answer_timeout` for that answer, so a rollout stalls instead of degrading every replica also when its first attempts get no answer (Q-HA-293) | None from running replicas | Fix the Secret or the Valkey user |
 | Backup pod evicted, crashed or cut off during a run | Pod failure; Job controller | A drain eviction is not counted against `backoffLimit` (R-HA-060); the Job starts a new pod; an incomplete run is never listed as a backup ([backup-and-restore.md](backup-and-restore.md)) | None; serving replicas are not involved | Automatic; `QuaderBackupFailed` when a run ends `failed` or `abandoned` (an `interrupted` run does not count), `QuaderBackupStale` when no run succeeds within 1.5 × `backup.expected_interval` (R-HA-045) |
 | Restore pod evicted, crashed or cut off during a restore | Pod failure; Job controller | A drain eviction is not counted against `restore.backoffLimit`; the Job's next pod resumes from the restore anchor ([backup-and-restore.md](backup-and-restore.md) R-BAK-021); `quader migrate` refuses the anchored database meanwhile (R-HA-019) | None beyond the restore's own downtime; both roles are at zero | Automatic; a Job that failed for good is deleted and created again (R-HA-060) |
 | Spool volume full | Spool budget (R-STOR-004) | New uploads `503` with `Retry-After`; uploads larger than the whole budget `413` | Retry succeeds when space frees | R-HA-035 sizing |
@@ -729,13 +729,25 @@ the check thresholds and the chart's probe settings (R-HA-034) must satisfy toge
 - **Valkey never gates readiness after the first one** (INV-12, Q-HA-13). The `valkey` check runs
   every `valkey.health_check_interval` and is reported in verbose `/readyz`
   (`"degraded":["valkey"]`), in the replica registry and as `quader_valkey_available`. Before a
-  replica is ready for the first time, only a *configuration error* holds it back: Valkey or a
-  Sentinel rejects the credentials (`WRONGPASS`, `NOAUTH`, an ACL denial), TLS verification fails,
-  or every reachable Sentinel answers that it does not know `valkey.sentinel.primary_name`.
-  Unreachable Sentinels or data nodes never hold a replica back, so a replica started during a
-  Valkey outage becomes ready in degraded mode, and the autoscaler and a drain can still add
-  capacity. A rollout with a mistyped Valkey setting stalls with `maxUnavailable: 0` instead of
-  degrading every replica.
+  replica is ready for the first time, two things hold it back:
+  - **Valkey's first answer, for a bounded time** (the owner's decision
+    [Q-HA-293](#q-ha-293--a-replica-waits-for-valkeys-first-answer-before-its-first-readiness-for-a-bounded-time)).
+    The last start step waits until Valkey has answered a connection attempt once, accepted or
+    refused, or until `valkey.startup_answer_timeout` (default 30 s, [Q-HA-332](#q-ha-332--the-bound-is-the-setting-valkeystartup_answer_timeout-30-s-by-default))
+    has passed since the client started; meanwhile `/readyz` fails with the `startup` check's reason
+    `waiting_for_valkey` ([Q-HA-330](#q-ha-330--step-10-waits-for-valkeys-first-answer-and-the-startup-check-names-the-wait)).
+    What an answer is and what is silence is [Q-HA-331](#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script).
+    A start during an ordinary failover gets its answer inside the bound; a Valkey that stays
+    silent longer lets the replica become ready in degraded mode at the bound, and the log names
+    the bound and the reason, so the autoscaler and a drain can still add capacity.
+  - **A configuration error found by that answer:** Valkey or a Sentinel rejects the credentials
+    (`WRONGPASS`, `NOAUTH`, an ACL denial `NOPERM`, also for the probe write and the take script of
+    the first connection), TLS verification fails, or every reachable Sentinel answers that it does
+    not know `valkey.sentinel.primary_name`. The replica stays unready, does not exit, keeps
+    retrying, and becomes ready once a later attempt is accepted.
+
+  A rollout with a mistyped Valkey setting or a wrong ACL therefore stalls with `maxUnavailable: 0`
+  instead of degrading every replica, unless Valkey stayed silent to the new pod for the whole bound.
 - **Load never fails a check.** The `database` check ([operations-and-observability.md](operations-and-observability.md)
   R-OPS-001) and the change-log poll behind the `invalidation` check run on the replica's control
   connection ([architecture.md](architecture.md) R-ARCH-019), never on the request pool. A request
@@ -782,6 +794,12 @@ Acceptance criteria:
   and all pods return to ready within 15 s after removal.
 - With that policy applied, `kubectl drain <node> --ignore-daemonsets --delete-emptydir-data`
   evicts the Quader pod on that node instead of waiting.
+- A replica whose Valkey does not answer at its start answers `/readyz` with `503` and the
+  `startup` reason `waiting_for_valkey` until Valkey answers or `valkey.startup_answer_timeout` has
+  passed. An answer ends the wait at once: ready, or unready with the `valkey` check's configuration
+  error when it was a refusal; the bound ends it with `200` and `"degraded":["valkey"]` and a WARN
+  line that names the bound and the reason. A replica that has been ready never waits for Valkey
+  again: a later loss leaves it ready and degraded.
 - A test endpoint of the test build holds every request connection of every `web` replica in
   `SELECT pg_sleep(4)` transactions for 60 s, once with direct connections and once with the
   pooler profile (R-HA-058), where it also occupies every server connection of the request pooler.
@@ -1941,7 +1959,7 @@ and `valkey.key_prefix` must end in `:` (Q-HA-30).
 | `min-replicas-to-write` | `0` (Valkey's default) | With `1` and a single replica, draining the replica's node stops all writes on the primary |
 | Sentinels | At least three, on three nodes, quorum 2 | A majority must authorize a failover ([Sentinel](https://valkey.io/topics/sentinel/)); one drained node leaves a majority |
 | Sentinel `down-after-milliseconds` | 5000 recommended | Quader runs degraded for about this long when the primary dies (R-HA-057); a much shorter value risks failovers on short stalls |
-| ACL | A user for Quader, limited to keys `~<key_prefix>*`, channels `&<key_prefix>*` and the command list of [architecture.md](architecture.md) R-ARCH-031, which includes `ROLE` for the Sentinel client protocol and `DELIFEQ` for the script-free lock release, and no scripting command | A leaked Quader credential cannot read or flush other applications' data and cannot run scripts or administrative commands ([ACL](https://valkey.io/topics/acl/)) |
+| ACL | A user for Quader, limited to keys `~<key_prefix>*`, channels `&<key_prefix>*` and the command list of [architecture.md](architecture.md) R-ARCH-031, which includes `ROLE` for the Sentinel client protocol, `DELIFEQ` for the script-free lock release, and `EVALSHA` and `EVAL` for the one script of the limits, the take ([usage-and-limits.md](usage-and-limits.md) Q-LIM-57). A replica's first connection writes its probe key and runs the take with no key; a user that may not is refused before the first readiness ([Q-HA-331](#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script)) | A leaked Quader credential cannot read or flush other applications' data and cannot run administrative commands; a script runs under the same ACL, so it reaches no other key or command ([ACL](https://valkey.io/topics/acl/)) |
 | TLS | On, with `tls-replication yes`, so that Sentinels speak TLS as well | Valkey enables a Sentinel's `tls-port` only together with `tls-replication`, and requires client certificates by default (`tls-auth-clients yes`): mount one (`secrets.valkeyClientCert`) or set `tls-auth-clients optional` ([TLS](https://valkey.io/topics/tls/)) |
 
 **Discovery and failover.** Quader's Valkey client MUST follow the Sentinel client protocol
@@ -2032,6 +2050,7 @@ valkey:
   sentinel_query_timeout: 300ms      # default (proposed), per Sentinel tried
   max_conn_lifetime: 30m             # default (proposed)
   health_check_interval: 5s          # default (proposed)
+  startup_answer_timeout: 30s        # default; 0 to 5m, 0 = no wait; how long a starting replica holds its first readiness for Valkey's first answer (Q-HA-293, Q-HA-332)
   reconnect:
     initial_backoff: 100ms           # default (proposed)
     max_backoff: 5s                  # default (proposed)
@@ -2046,8 +2065,14 @@ Acceptance criteria:
   `quader:<pod>:…` from every `web` and `worker` pod, over the TLS port only (the profile's
   plaintext port is 0).
 - A new replica with a wrong `primary_name` stays not ready and logs that no Sentinel knows the
-  name; with a wrong password it stays not ready and logs `WRONGPASS`; with every Sentinel
-  unreachable at its first start it becomes ready with `"degraded":["valkey"]` (Q-HA-13).
+  name; with a wrong password it stays not ready and logs `WRONGPASS`, also when its first attempts
+  get no answer and a later one inside `valkey.startup_answer_timeout` does; with every Sentinel
+  unreachable at its first start it stays not ready with the `startup` reason `waiting_for_valkey`
+  for `valkey.startup_answer_timeout` and then becomes ready with `"degraded":["valkey"]` (Q-HA-13,
+  Q-HA-293).
+- A new replica whose ACL user lacks `EVAL` or `EVALSHA`, or whose key pattern does not cover
+  `valkey.key_prefix`, stays not ready and logs `NOPERM` with the command that was refused
+  (Q-HA-331).
 - With `valkey.tls.mode: disable` and `allow_insecure: false`, the replica exits and names both
   keys.
 - After a full R-HA-052 run, `valkey-cli --scan` lists no key outside `key_prefix`, and `TTL` of
@@ -2086,7 +2111,8 @@ and its fallback; this requirement fixes the contract they share.
    failed calls, the replica skips Valkey for `open_duration` and then lets one probe through. While
    the circuit is open, every use runs its fallback at once instead of waiting for a timeout.
 4. **Readiness.** As R-HA-008 and Q-HA-13 state: degraded, alerted, never unready after the first
-   readiness.
+   readiness. Only the first readiness waits for Valkey's first answer, at most
+   `valkey.startup_answer_timeout` (Q-HA-293); nothing on a running replica waits for Valkey.
 5. **Headroom.** While Valkey is unavailable, remote repositories may fetch an object once per
    replica, negative caching is per replica, and change propagation falls back to the poll. The
    reference load test (R-HA-050) runs once with Valkey stopped and records upstream request rates
@@ -2124,7 +2150,8 @@ k6 records only `2xx` and `304`:
   every replica reports `valkey` degraded for at most `down-after-milliseconds` plus 15 s;
   `/readyz` answers `200` throughout.
 - **Outage:** the Valkey pods and the Sentinels scaled to 0 for 5 minutes, with one `web` pod
-  deleted meanwhile. Zero failed; the replacement pod becomes ready in degraded mode;
+  deleted meanwhile. Zero failed; the replacement pod becomes ready in degraded mode once
+  `valkey.startup_answer_timeout` has passed;
   `QuaderValkeyUnavailable` fires; after the return, `degraded` clears within `open_duration` plus
   `health_check_interval` plus 5 s.
 - **Sentinel quorum loss:** with all three Sentinels up, `quader_valkey_sentinels_reachable` is 3 on
@@ -6137,10 +6164,12 @@ object-store startup check does (Q-HA-1).
 | (a) Never gate | Valkey is reported and alerted on, never part of readiness | Simplest; INV-12 word for word | A release with a mistyped Sentinel name, password or CA rolls out and degrades every replica at once: fetch collapse and negative caching per replica, rate limits approximated per replica, changes at poll speed. Only an alert notices |
 | (b) Gate continuously | Readiness fails while Valkey is unreachable | Removes a replica whose own path to Valkey is broken | Contradicts INV-12: a Valkey outage would empty the Service, although every replica still serves correctly |
 | (c) Gate the first readiness on any Valkey failure | As Q-HA-1 does for object storage | Stalls every rollout whose Valkey does not answer | A replica started during a Valkey outage cannot become ready, so drains, crashes and the autoscaler lose capacity while PostgreSQL carries the extra load (R-HA-057, rule 5); contradicts INV-12 for new replicas |
-| (d) Gate the first readiness on configuration errors only | A rejected credential (`WRONGPASS`, `NOAUTH`, `NOPERM`), a failed TLS verification, or a primary name that no reachable Sentinel knows holds a new replica back; unreachability never does | Stalls a misconfigured rollout with `maxUnavailable: 0`, as Q-HA-1's gate does; a replica started during an outage still becomes ready; INV-12 holds for every outage | The error classes are code to test; a Sentinel that lost its configuration answers like a wrong primary name, so a broken Valkey deployment can stall a Quader rollout |
+| (d) Gate the first readiness on configuration errors only | A rejected credential (`WRONGPASS`, `NOAUTH`, `NOPERM`), a failed TLS verification, or a primary name that no reachable Sentinel knows holds a new replica back; unreachability holds it back only while it waits for Valkey's first answer, at most `valkey.startup_answer_timeout` (30 s, [Q-HA-293](#q-ha-293--a-replica-waits-for-valkeys-first-answer-before-its-first-readiness-for-a-bounded-time)), and never after | Stalls a misconfigured rollout with `maxUnavailable: 0`, as Q-HA-1's gate does, also when the new pod's first attempts get no answer; a replica started during an outage still becomes ready, after the bound; INV-12 holds for every outage | The error classes are code to test; a Sentinel that lost its configuration answers like a wrong primary name, so a broken Valkey deployment can stall a Quader rollout; a start during an outage longer than a failover costs the bound |
 
 **Choice:** (d) — only configuration errors hold back the first readiness; Valkey outages never
-affect readiness.
+affect readiness, except that a starting replica waits for Valkey's first answer for at most
+`valkey.startup_answer_timeout` (the owner's decision Q-HA-293 of 2026-11-20, built as Q-HA-330 to
+Q-HA-333).
 
 **Rationale:** A configuration error is part of the release being rolled out, so stalling that
 rollout keeps the working replicas, which is the protection Q-HA-1 gives against a wrong bucket. An
@@ -6148,13 +6177,16 @@ outage is in a shared dependency, so holding back new replicas would only remove
 would let a typo keep every replica in degraded mode for good, with rate limits that hold only
 approximately ([architecture.md](architecture.md) R-ARCH-034), a quiet loss of what Valkey was
 added for. (b) and (c) contradict INV-12. The classifier needs three error classes that Valkey and Sentinel report
-distinctly. The development agent revisits this if a Sentinel that lost its state after a restart
+distinctly. A configuration error is seen only in an answer, and until the owner's decision
+Q-HA-293 a replica whose first attempts met silence became ready without one, so a wrong password
+could show only after the first request; the bounded wait for the first answer closes that window
+for every start that Valkey answers within the bound. The development agent revisits this if a Sentinel that lost its state after a restart
 ever stalls a rollout; the null-answer case would then need confirmation over a longer period
 before it counts as a configuration error.
 
 **Applied in the spec:** R-HA-008: the Valkey bullet. R-HA-007: the credential row. R-HA-056:
 acceptance criteria for a wrong primary name, a wrong password and unreachable Sentinels. R-HA-057:
-rule 4. Cross-page: [operations-and-observability.md](operations-and-observability.md) R-OPS-001
+rule 4. The wait for the first answer: Q-HA-293, Q-HA-330 to Q-HA-333. Cross-page: [operations-and-observability.md](operations-and-observability.md) R-OPS-001
 gets a `valkey` check that is reported, not gating, except for configuration errors before the
 first readiness.
 
@@ -9227,33 +9259,43 @@ Not verified: that the probes' load caused the stalls. A run with the lean probe
 
 **Applied:** [e15_tls_test.go](../../test/e2e/e15_tls_test.go) (`probeScript`), [e2e.md](../developer/e2e.md) (E0.15).
 
-### Q-HA-293 · A replica whose first Valkey attempt ran into its deadline cannot see a wrong password, and the E0.12 test says so instead of failing
+### Q-HA-293 · A replica waits for Valkey's first answer before its first readiness, for a bounded time
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the owner on 2026-11-20** — option (c), "okay c". It replaces the development agent's earlier choice, which
+kept the product as it was and made the E0.12 test retry a replica that could not see its fault (that retry stays in the test,
+now for a silence longer than the bound).
 
-Context: `TestE12Valkey`, "a new replica with a wrong password stays not ready and logs the cause", failed in Test and Release 42885398204 (job 130072271880) on d1c1a9ea: `quader-e2e-wrong-password became ready although valkey is misconfigured`, with the check `"valkey":{"reason":"timeout","since":"19:42:35.418Z","status":"degraded"}` at 19:43:04 (the pod had been degraded with that reason for 29 s). The test was green in the run before and in many earlier ones, and nothing about Valkey changed between the commits.
+Context: `TestE12Valkey`, "a new replica with a wrong password stays not ready and logs the cause", failed in Test and Release 42885398204 (job 130072271880) on d1c1a9ea: `quader-e2e-wrong-password became ready although valkey is misconfigured`, with the check `"valkey":{"reason":"timeout","since":"19:42:35.418Z","status":"degraded"}` at 19:43:04 (the pod had been degraded with that reason for 29 s). A configuration error is a verdict on an answer (Q-HA-13 (d)): the replica's first attempts reached no answer within their deadlines (the pod, the node or the Valkey pod was starved: the VM's CPU pressure was 450 ms/s on average in the runs of Q-HA-292), so it saw no `WRONGPASS`, became ready degraded, took requests and counted its limits alone until a later attempt was answered. Reproduced in [startup_test.go](../../test/integration/valkey/startup_test.go) ("a wrong password behind a server that never answers is not a startup error") with a listener that accepts the connection and never answers.
 
-How the code lets that replica become ready (read in this repository):
-1. A replica is ready when no gating check fails ([health.go](../../internal/observability/health/health.go) `Snapshot`, `gates`). The `valkey` check is a reported check: it gates only while `!everReady && configErr`, that is, only while the client holds a start-up error ([wire_valkey.go](../../internal/app/wire_valkey.go) `valkeyCheck`).
-2. The start-up error is set by `connectFailed` ([valkey.go](../../internal/cluster/valkey.go)) when `classifyStartup` ([valkey_sentinel.go](../../internal/cluster/valkey_sentinel.go)) finds a rejected credential in the answer of a Sentinel or of the data node (`WRONGPASS`, `NOAUTH`, `NOPERM`), a failed certificate verification, or a primary name that no reachable Sentinel knows. It is a verdict on an answer. A connection attempt that ends in a deadline is `KindTimeout` (`classify`), reason code `timeout`, and not a start-up error (Q-HA-13 (d): unreachability never holds back the first readiness).
-3. `NewValkey` waits for the first attempt only for `connect_timeout + 2 x sentinel_query_timeout x Sentinels + 1 s`. After that bound the first readiness is decided without a verdict.
-4. `health.everReady` latches at the first moment every gating check passes. A start-up error that a later attempt finds (the next attempt is answered with `WRONGPASS`) is too late to hold back a readiness that has latched, and it must be: a credential rotated wrongly at run time must not take every replica out of the Service (INV-12).
-
-So a replica with a wrong password, whose first attempts reach no answer within their deadlines (the pod, the node or the Valkey pod was starved: the VM's CPU pressure was 450 ms/s on average in the runs of Q-HA-292), is "unreachable", and by Q-HA-13 (d) becomes ready with the check degraded. An authentication error is classed as `auth_failed` only when it is received. Nothing in the order of the first probe against the first verdict is wrong when the server answers (the integration test `TestStartupErrors` and the e2e case had passed in every run in which it did).
-
-Reproduced in [startup_test.go](../../test/integration/valkey/startup_test.go) (`TestStartupErrors`, "a wrong password behind a server that never answers is not a startup error"): a standalone client with a wrong password points at a listener of the test that accepts the TCP connection and never answers, so the first attempt ends at its 500 ms deadline whatever the speed of the machine. `StartupError()` is nil, the client is unavailable and its reason code is `timeout`. The case above it gets its answer from the real stack and reports `WRONGPASS` and `auth_failed`. (A first version of the case used a `connect_timeout` of 1 ms against the real stack and failed on CI in Test and Release 42902356913: the answer came inside the millisecond. A premise that depends on the speed of the machine is not forced; the silent listener forces it.)
+Asked whether the first readiness should wait for a verdict, the owner was given three options:
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Hold the first readiness while the first verdict is missing | e.g. up to 30 s while the Sentinels name a primary that does not answer | Closes the window | The same state is a Valkey primary that is down while the Sentinels are still looking (a failover): a replica started in an outage would wait, which Q-HA-13 (c) rejected (drains, crashes and the autoscaler lose capacity) |
-| (b) Withdraw readiness when a late start-up error appears | The latched readiness is dropped | Catches the late verdict | A rotated wrong credential would empty the Service (INV-12); the check would flap |
-| (c) The test establishes the verdict before it asserts (chosen) | A replica that became ready with the Valkey check `timeout`, `connecting` or `no_sentinel` could not see the misconfiguration; it is deleted and the case runs again with a new replica, up to three times; a replica that is ready with any other state, or three that could not see, fail the test | The product keeps Q-HA-13 (d); the assertion about a replica that can see its fault is unchanged | A run on a runner so starved that three first attempts in a row run into their deadline fails, which is correct: the premise of the case is missing |
+| (a) Leave it | A replica whose first attempts get no answer becomes ready degraded at once, as Q-HA-13 (d) had it | A start during a Valkey failover or outage never waits | A wrong credential behind an unanswered first attempt shows only later; the replica already takes requests and counts its limits alone |
+| (b) Wait for a verdict without a bound | The first readiness waits until Valkey has answered once, accepted or refused | A wrong credential always shows before the first request | A replica started during an outage cannot become ready, which Q-HA-13 (c) rejected: drains, crashes and the autoscaler lose capacity |
+| (c) Wait for a verdict for a bounded time (chosen) | The first readiness waits until Valkey has answered once, accepted or refused, at most for a bound derived from the measured failover times; after the bound the replica becomes ready degraded as before | A wrong credential shows before the first request in nearly every case; a start during a failover loses seconds; a Valkey that is away for longer holds no start | A start during an outage longer than the bound costs the bound; a wrong credential behind a silence longer than the bound still shows only later |
 
-**Choice:** (c), in [e12_valkey_test.go](../../test/e2e/e12_valkey_test.go) (`expectStuckWithCause`, `stuckWithCause`), for both the wrong-primary and the wrong-password case. Not a product defect: the product behaves as Q-HA-13 (d) decided; the test assumed that a first attempt always reaches an answer.
+**Choice:** (c), by the owner. Built as four decisions of the development agent:
+[Q-HA-330](#q-ha-330--step-10-waits-for-valkeys-first-answer-and-the-startup-check-names-the-wait) (the last start step waits,
+and the `startup` check names the wait), [Q-HA-331](#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script)
+(what an answer is and what is silence), [Q-HA-332](#q-ha-332--the-bound-is-the-setting-valkeystartup_answer_timeout-30-s-by-default)
+(the bound, `valkey.startup_answer_timeout`, 30 s) and [Q-HA-333](#q-ha-333--the-bastion-does-not-wait-for-valkeys-first-answer)
+(the Bastion does not wait).
 
-**Rationale:** R-HA-056 says a replica with a wrong password stays not ready; a replica that was never answered has no wrong password to see, and the specification says explicitly that unreachability never holds a replica back. Revisit when a replica with a wrong password becomes ready with the Valkey check `auth_failed` or `config_error` (a defect), or when the specification wants the first readiness to wait for a verdict (then option (a), with a bound that a failover fits in).
+**Rationale:** the owner's. A refusal that comes inside the bound now ends where a refusal answered at once always ended: the
+replica stays unready with the `valkey` check `fail`, `"configError": true` and the reason `auth_failed` or `config_error`, keeps
+retrying and does not exit. The test of E0.12 keeps its retry for a replica that became ready with an inconclusive reason
+(`timeout`, `connecting`, `no_sentinel`): on a runner starved for longer than the bound that is still correct behaviour. Revisit
+when a start during an ordinary failover is seen to reach the bound (the log line `valkey gave no answer within
+valkey.startup_answer_timeout` while the Sentinels were failing over).
 
-**Applied:** [startup_test.go](../../test/integration/valkey/startup_test.go), [e12_valkey_test.go](../../test/e2e/e12_valkey_test.go).
+**Applied:** R-HA-007 (three rows), R-HA-008 (the Valkey bullet, an acceptance criterion), R-HA-056 (the ACL row, the configuration, the acceptance
+criteria), R-HA-057 (rule 4, the outage criterion), Q-HA-13 (option (d), the choice); [operations-and-observability.md](operations-and-observability.md)
+R-OPS-001; [architecture.md](architecture.md) R-ARCH-024 step 7 and 10, R-ARCH-031. Code: [wire_valkey.go](../../internal/app/wire_valkey.go)
+(`awaitValkeyAnswer`), [app.go](../../internal/app/app.go) (step 10, `startupCheck`), [valkey_answer.go](../../internal/cluster/valkey_answer.go)
+(`Answered`, the access check), [config/valkey.go](../../internal/config/valkey.go). Tests: [valkey_answer_test.go](../../internal/app/valkey_answer_test.go),
+[valkey_answer_test.go](../../internal/cluster/valkey_answer_test.go), [startup_test.go](../../test/integration/valkey/startup_test.go),
+[e12_valkey_test.go](../../test/e2e/e12_valkey_test.go).
 
 ### Q-HA-204 · The SPDX file of the release is written by the pinned syft image from the registry tag
 
@@ -10556,6 +10598,156 @@ Code: [values.yaml](../../deploy/helm/quader/values.yaml), [values.schema.json](
 `repository-content.html`), [internal/config/process.go](../../internal/config/process.go) and the start-up warning of the role
 `web` in [internal/app/app.go](../../internal/app/app.go).
 
+### Q-HA-330 · Step 10 waits for Valkey's first answer, and the startup check names the wait
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It builds
+the owner's decision [Q-HA-293](#q-ha-293--a-replica-waits-for-valkeys-first-answer-before-its-first-readiness-for-a-bounded-time).
+
+Context: the Valkey client is started at step 7 of [architecture.md](architecture.md) R-ARCH-024 and keeps trying in the
+background; `NewValkey` waits only for the first attempt (`connect_timeout` + 2 × `sentinel_query_timeout` × Sentinels + 1 s,
+4.8 s with three Sentinels at the defaults) and returns whatever that attempt met. The readiness registry
+([health.go](../../internal/observability/health/health.go)) knows gating checks, first-only checks and reported checks; the
+`valkey` check is reported and gates the first readiness only on a configuration error. The question is where the bounded wait
+for the first answer lives.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `NewValkey` blocks until the answer or the bound | Step 7 waits | No change outside the client | Every later step (the domain areas, the client listener) waits behind it, so a start during a failover takes the bound plus the rest of the start; the Bastion and every test that builds a client would wait too |
+| (b) The `valkey` check holds the first readiness while it has no answer and the bound has not passed | A third way for a reported check to gate, in the readiness registry | `/readyz` names `valkey` under `failing` during the wait | The check runs every `valkey.health_check_interval` (5 s), so readiness follows an answer and the bound up to 5 s late; a new state in the registry for one check |
+| (c) Step 10 waits, after every other step, until `Valkey.Answered` is closed or the bound has passed since the client started; the `startup` check's reason is `waiting_for_valkey` meanwhile (chosen) | `awaitValkeyAnswer` in [wire_valkey.go](../../internal/app/wire_valkey.go), called by `bootstrap` in [app.go](../../internal/app/app.go) before the start-up check passes; the forced refresh of step 10 evaluates every check at once afterwards | The wait overlaps the other start steps; readiness follows the answer and the bound at once; the registry and the `valkey` check keep their rules; a refusal ends in the same place as a refusal answered at once | During the wait `/readyz` names `startup` under `failing`, and Valkey only in the verbose checks (`valkey` degraded with its reason code) |
+
+**Choice:** (c). The `startup` check fails with the reason `waiting_for_valkey` while the step waits (`startupCheck` in
+[app.go](../../internal/app/app.go)), and with `starting` before. The log has one INFO line when the wait begins (with the
+client's reason code, the bound and the time left), one INFO line when the answer ends it, and one WARN line when the bound ends
+it: `valkey gave no answer within valkey.startup_answer_timeout: the replica becomes ready without it and runs degraded until
+Valkey answers; a wrong credential or certificate shows only then`, with the bound, the reason code and the reason text. A client
+that answered before step 10 logs nothing. A replica stopped during the wait ends step 10 with its context.
+
+**Rationale:** the wait is part of the start, and the start's last step is the one place that runs once, after everything else,
+and that already forces the registry to evaluate every check. (b) would put the start's timing into the registry and answer late
+by up to a check interval; (a) would serialise the start behind Valkey. Readiness after the wait is decided by the unchanged
+checks: an accepted credential passes, a refusal is a `ConfigError` that gates the first readiness, silence is `degraded`.
+Revisit if operators read `"failing":["startup"]` as a fault of Quader rather than a wait for Valkey; the `valkey` check could then
+carry the wait as (b) does, with a wake-up of the registry on the answer.
+
+**Applied:** R-HA-008 (the Valkey bullet); [architecture.md](architecture.md) R-ARCH-024 step 10;
+[operations-and-observability.md](operations-and-observability.md) R-OPS-001 (the `startup` row). Code and tests: see Q-HA-293.
+
+### Q-HA-331 · An answer is the login or its refusal, and the first connection also writes the probe key and runs the take script
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: read in valkey-go v1.0.79 (`pipe.go`, `_newPipe`): a connection opens with one pipeline `HELLO 3 AUTH <user>
+<password> SETNAME <name>` and `CLIENT SETINFO` (whose errors are ignored); `SELECT` only for a database other than 0. In Sentinel
+mode the client first asks a Sentinel on an authenticated connection. The login therefore proves the credential and nothing else:
+a user without `EVAL` and `EVALSHA`, which the take of the limits needs since
+[Q-LIM-57](usage-and-limits.md#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7),
+or whose key pattern does not cover `valkey.key_prefix`, logged in, became ready and met `NOPERM` at the first limited request
+and at the first probe: the circuit opened and closed in turn and every limit counted per replica. The server-settings row of
+R-HA-056 said "no scripting command" until this change, so that ACL was the documented one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The login only | An answer is HELLO answered (accepted) or a refusal that `classifyStartup` already reads | No new command | The window Q-HA-293 closes for a wrong password stays open for a wrong ACL: the replica is ready and counts its limits alone |
+| (b) The login, and on the first connection one write of the replica's probe key and the take script with no key, as `EVAL` and then `EVALSHA` (chosen) | `checkAccess` in [valkey_answer.go](../../internal/cluster/valkey_answer.go); the script with no window and no marker reads and writes nothing and answers `{1, nil}`; the script runs only for a client made with `WithScriptCheck` (the main installation's) | Catches the ACL that the documents made likely and a key pattern that misses the prefix; three commands once per process; `EVAL` first loads the script, so a user with `EVALSHA` but no `EVAL` is caught as well | Other commands of R-ARCH-031's list are not checked ([H-1050](#h-1050--only-the-probe-write-and-the-take-script-are-checked-at-start-another-missing-command-shows-at-its-first-use)) |
+| (c) Every command of the list at start | Each command once | Complete | Writes, publishes, subscribes and opens a transaction in the installation's keyspace at every start for what the first use shows as well; `ACL DRYRUN` would test them without effect, but it is an administrative command the user must not have |
+
+**Choice:** (b). What each outcome of an attempt is, and why:
+
+| The attempt meets | Answer or silence | Why |
+|---|---|---|
+| `HELLO 3 AUTH` answered with the server map by the data node (after a Sentinel named it on an authenticated connection), and the access check passes or fails for another reason than a refusal | answer: accepted | The server checked the credential. Another failure of the access check (`OOM`, a deadline after the login) is logged and left to the health probe, which reports it as before |
+| A server below 9.0 answers `HELLO` | answer: accepted, the client runs degraded (`unsupported`) | The version is a state, not a credential (R-ARCH-031) |
+| `WRONGPASS` or `NOAUTH` from the data node, or from every reachable Sentinel | answer: refused | The credential was checked and rejected |
+| `NOPERM` from `HELLO`, a Sentinel command, the probe write or `EVAL`/`EVALSHA` of the access check | answer: refused | The user may not do what Quader needs; the log names the step (`the take script (EVAL): NOPERM …`) |
+| A certificate the replica does not trust, a host name the certificate does not carry, a server that does not speak TLS, a TLS alert (a client certificate refused) | answer: refused | The server answered the handshake; the mismatch does not pass with time. A certificate the replica does not trust is not silence |
+| Every reachable Sentinel answers that it does not know `valkey.sentinel.primary_name` | answer: refused | As Q-HA-13 (d); during a failover a Sentinel still names the old primary, so a null answer is not a failover |
+| A connection, a handshake or a command that ends at its deadline | silence | A starved or partitioned node, or a primary that died before the Sentinels noticed |
+| A refused or reset connection, EOF | silence | A pod that is restarting or being rescheduled |
+| No Sentinel reachable | silence | The Sentinels are restarting or cut off |
+| A Sentinel names a primary that does not answer | silence | A failover in progress |
+| `LOADING`, `MASTERDOWN`, `BUSY`, `TRYAGAIN` | silence | A node that is loading or a replica without its primary; it passes |
+| A host name that does not resolve | silence | A pod being rescheduled has no DNS record for seconds; a mistyped name shows only after the bound ([H-1051](#h-1051--a-mistyped-valkey-or-sentinel-address-is-silence-and-the-replica-becomes-ready-degraded-after-the-bound)) |
+
+A refusal sets the client's start-up error, closes `Answered` and is classified as before (`auth_failed` for `WRONGPASS`,
+`NOAUTH` and `NOPERM`, `config_error` for TLS and the primary name; `quader_valkey_errors_total{kind}` `auth`, `tls`,
+`no_primary`). The log line `valkey configuration error` carries the server's reply, never the password or its length.
+
+**Rationale:** the owner asked that a wrong credential show before the first request; a wrong ACL has the same consequence (the
+replica counts its limits alone) and is found by the same answer for three commands once per process. The Bastion's user has no
+scripting command (R-BAS-034), so the script runs only with `WithScriptCheck`; its probe write is checked as well, which changes
+nothing for its readiness (Q-HA-333). Revisit when another command is added to the list that an operator's ACL is likely to deny,
+or when a missing command is found in a running installation (then (c), or that command in (b)).
+
+**Applied:** R-HA-008, R-HA-056 (the ACL row and an acceptance criterion); [architecture.md](architecture.md) R-ARCH-031 (the
+ACL and the start); [privilege-footprint.md](../security/privilege-footprint.md#valkey).
+
+### Q-HA-332 · The bound is the setting `valkey.startup_answer_timeout`, 30 s by default
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner
+was told that the bound is derived from the measured failover times.
+
+What the bound has to cover is a start during an ordinary failover: the primary is lost as the replica starts, the Sentinels name
+a new one, and the replica's next attempt reaches it. The numbers, each with its source:
+
+| Quantity | Value | Source |
+|---|---|---|
+| `down-after-milliseconds` | 5 s recommended for production and set in the local profile; 3 s in the integration stack | R-HA-056 server settings; [local-profile.md](../developer/local-profile.md#valkey-and-sentinel); [sentinel.conf](../../test/integration/conf/sentinel.conf) |
+| `failover-timeout` | 60 s in the local profile (Valkey's default); 15 s in the integration stack | the same |
+| Election after `down-after` | up to 1 s of random delay before a Sentinel starts, then up to 10 s for the election: 16 s after the loss at 5 s | [valkeyhold.go](../../test/e2e/valkeyhold/valkeyhold.go) (`AssistAfter`, Q-HA-181) |
+| Degraded window the spec allows a running replica after a primary loss | `down-after-milliseconds` + 15 s = 20 s | R-HA-057, criterion "Primary loss" |
+| Measured: planned failover, every replica on the new primary | 2 s (E0.13, `TestNPMHA`, `TestNuGetHA`); 7.4 to 8.0 s (`TestHAFaults_ValkeyPlannedFailover`, nightly 42601429868) | [e2e.md](../developer/e2e.md) |
+| Measured: primary pod force-deleted | 10 s (E0.13) | [e2e.md](../developer/e2e.md) |
+| One retry of a starting client | backoff up to `reconnect.max_backoff` 5 s, then the attempt: up to 0.9 s for three Sentinels at `sentinel_query_timeout` 0.3 s and up to `connect_timeout` 2 s for the primary, then up to 0.6 s for the probe of the Sentinels after a failure: 8.5 s | [config/valkey.go](../../internal/config/valkey.go), `connectLoop` and `connectFailed` in [valkey.go](../../internal/cluster/valkey.go) |
+| A split election after a drain | the next automatic failover after 2 × `failover-timeout` = 120 s | Q-HA-181; this is "a Valkey that is away for longer" and is not meant to fit |
+
+So the answer of a start during an ordinary failover comes at most one retry after the new primary is named: 10 s + 8.5 s =
+18.5 s for the slowest measured failover, 20 s + 8.5 s = 28.5 s for the worst the spec allows. 30 s holds both, the measured case
+with 11.5 s to spare. Against the chart's probes ([values.yaml](../../deploy/helm/quader/values.yaml) `probes`): the startup and
+liveness probes read `/healthz`, which never reads readiness (R-OPS-001) and is served from step 2 on, before the wait, so the
+startup probe's budget (2 s × 60 = 120 s) and the liveness probe's (10 s × 6 = 60 s) are not spent by it; the readiness probe
+(5 s, failure threshold 1) only keeps the pod out of the Service. A Deployment's progress deadline (Kubernetes' default 600 s, the
+chart sets none) is far above the bound; `minReadySeconds: 10` comes after it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A constant of 30 s | Nothing to configure | The plain path | An operator of a Valkey that fails over more slowly (a larger `down-after-milliseconds`, a managed service that takes a minute) cannot make a start during its failover wait for the answer |
+| (b) A setting `valkey.startup_answer_timeout`, default 30 s, 0 to 5 min, 0 = no wait (chosen) | [config/valkey.go](../../internal/config/valkey.go), validated by the configuration check | The default fits the reference topology; a slower Valkey gets a longer bound; the integration harness sets 0 for its stacks with Valkey stopped, which test the degraded mode and not the start | One more key, an expert one; 0 brings back the window Q-HA-293 closed, and the documentation says so |
+| (c) Derived at run time from the client's settings | `connect_timeout`, the backoff and the Sentinel timeout | Follows the client's settings | The Sentinels' `down-after-milliseconds` and the election dominate the sum, and the client cannot read them |
+
+**Choice:** (b). The ceiling of 5 minutes keeps the owner's "a Valkey that is away for longer holds no start" true for every
+value: above it a start would wait out the split election of Q-HA-181 and more. The bound counts from the client's start at step
+7, so the time of steps 8 and 9 is part of it.
+
+**Rationale:** the default follows from the numbers above; the setting exists for the one thing Quader cannot know, the failover
+time of a Valkey it does not run. Revisit when a start during an ordinary failover reaches the bound (the WARN line while the
+Sentinels fail over), or when the measured failover times change (a new Valkey operator, other Sentinel settings).
+
+**Applied:** R-HA-056 (the configuration block); [README.md](../../README.md) (the configuration reference);
+[operations.md](../manual/admin/operations.md). The chart passes `config.valkey.startup_answer_timeout` through like every other
+key of the section; no chart file changes.
+
+### Q-HA-333 · The Bastion does not wait for Valkey's first answer
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: every role of the binary (`api`, `packages`, `worker`, and the development roles `web` and `all`) starts the Valkey
+client at step 7 and runs step 10, so all of them wait (Q-HA-330); the `shell` has no client. The quader Bastion
+(`--role bastion`) uses the same client, `cluster.NewValkey` with `WithoutKeyspace`, from
+[shared/valkey.go](../../internal/bastion/shared/valkey.go) (`Open`), and its Valkey is optional: "Valkey being unavailable never
+makes a replica unready" ([bastion.md](bastion.md) R-BAS-034), and that includes a refusal, which `Open` only logs.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Bastion waits as well | Its start holds until the first answer or the bound | One rule for every process | A wait ends in the same state as no wait: a refusal does not hold a Bastion back, so the wait would only delay its readiness |
+| (b) The Bastion keeps its start; its client checks the probe write at the first connection like every client, without the script (chosen) | `Open` logs a refusal found in the first attempt as before | R-BAS-034 unchanged; a wrong key pattern of the Bastion's user is logged at start | A Bastion with a wrong credential behind a silent first attempt logs the refusal only when it comes |
+
+**Choice:** (b). **Rationale:** the owner's decision is about a replica that would take requests and count its limits alone
+before its mistake shows; a Bastion does that whatever the answer, by R-BAS-034. Revisit if the Bastion's first readiness is ever
+to be held on a Valkey configuration error; the wait of Q-HA-330 then applies to it unchanged.
+
+**Applied:** nothing in [bastion.md](bastion.md); [valkey.md](../developer/valkey.md#start-up) says which clients run the script.
+
 ## What this does not cover
 
 ### H-37 · A database restore revives revoked credentials and removed grants
@@ -10710,3 +10902,23 @@ Component: the CI leg `e2e-edge` of the nightly workflow ([performance.yml](../.
 Live. On 2026-11-09 four dispatches of the leg on the branch `p7-e55` (runs 42613296450, 42624333458, 42628360515, 42647432138) ended with "The self-hosted runner lost communication with the server" 6 to 15 minutes into `make e2e SET=edge`; steps that ran on the runner afterwards (`df`, `docker system df`) hung, so no log of the host exists. The first three streamed or wrote 6 GiB and 2 GiB of random bytes (the first two as files in the client pod, the third streamed); a neighbour run was on the machine in the first two (the main nightly, another builder's branch), and none was in the fourth except one queued. The same set, full size, passes on the arm64 laptop in 25 minutes (`TestEdge_R_HA_039_TransfersThroughTheIngressAndTheGateway` with 6144 MiB uploaded and downloaded through both edges in 1m16s and 46s, 17m7s for the reads at 2 MiB/s, the 1 GiB push in 14 s) with 22 to 25 GB of disk free in the Docker VM, and a sampler of the kind nodes saw at most 4.4 GiB of memory on the control-plane node. Not verified: which resource of the runner machine runs out (memory of the host, its disk, or the I/O of 12 GiB written beside the other legs) and what the runner agent's limits are.
 
 What makes it real: the leg shows red as a lost runner and takes a neighbour's job with it if it shares the machine; until the cause is known the criterion's CI evidence for the transfers is the local full-size run, and the leg should run alone on the machine (a dispatch with no other leg in progress).
+
+### H-1050 · Only the probe write and the take script are checked at start; another missing command shows at its first use
+
+Component: the access check of a replica's first Valkey connection ([Q-HA-331](#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script),
+`checkAccess` in [valkey_answer.go](../../internal/cluster/valkey_answer.go)). Subject: an ACL user that lacks another command of
+[architecture.md](architecture.md) R-ARCH-031's list (`GET`, `INCR`, `ZADD`, `PUBLISH`, `SUBSCRIBE`, `MULTI`, `DELIFEQ` and the
+others). Live in every installation whose operator writes the ACL by hand. What makes it real: the replica becomes ready, and the
+mechanism that needs the command meets `NOPERM` at its first use: the call counts as `quader_valkey_errors_total{kind="auth"}`,
+the circuit opens after `valkey.circuit_breaker.failure_threshold` such calls, and that mechanism runs its fallback (R-HA-057), so
+limits count per replica or a fetch collapses per replica until the ACL is fixed. Nothing is served wrongly.
+
+### H-1051 · A mistyped Valkey or Sentinel address is silence, and the replica becomes ready degraded after the bound
+
+Component: the first answer of R-HA-008 ([Q-HA-331](#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script)).
+Subject: a release whose `valkey.sentinel.addresses` or `valkey.address` names a host that does not resolve or a port nobody
+listens on. Live with any such typo. What makes it real: a name that does not resolve and a refused connection are what a pod
+being rescheduled looks like for seconds, so they count as silence; every new replica holds its first readiness for
+`valkey.startup_answer_timeout` and then becomes ready with the `valkey` check `degraded` (`no_sentinel` or `connecting`), and a
+rollout replaces every working replica with a degraded one, 30 s per pod, instead of stalling. `QuaderValkeyUnavailable` fires
+once every replica has been degraded for 2 minutes, and the WARN line of each start names the bound and the reason.

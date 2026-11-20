@@ -25,7 +25,7 @@ import (
 // writes a Valkey key: the commands are unexported (Q-ARCH-16).
 func valkeyMethods() []string {
 	return []string{
-		"Available", "Close", "CountCacheLookup", "CountDegraded", "OnPrimaryChange", "OnSubscribed",
+		"Answered", "Available", "Close", "CountCacheLookup", "CountDegraded", "OnPrimaryChange", "OnSubscribed",
 		"SetKeyspaceID", "StartupError", "Status",
 	}
 }

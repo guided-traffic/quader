@@ -109,6 +109,9 @@ the password is then sent to whoever answers. The client certificate pair is opt
 `allow_insecure`. At start a Sentinel-mode replica logs a warning when the Sentinels have no password, and another when the
 data nodes are verified against the system roots ([valkey.go](../../internal/cluster/valkey.go), `warnWeakTrust`). These are
 warnings only: no configuration switch turns them into errors yet ([spec ha-and-helm](../spec/ha-and-helm.md#r-ha-056--valkey-with-sentinel-connection-and-supported-topologies)).
+A server certificate the replica does not trust, or a handshake the server refuses, is an answer, not silence: a starting replica
+stays unready with the `valkey` check `config_error` until it is fixed. A handshake that ends at its deadline is silence, and the
+replica becomes ready degraded after `valkey.startup_answer_timeout` ([Q-HA-331](../spec/ha-and-helm.md#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script)).
 
 **Object store** ([blob/s3/client.go](../../internal/blob/s3/client.go)). Quader's object-store client takes its trust from
 `storage.s3.ca_file` when it is set; that file is the whole trust store of the client, neither the system roots nor

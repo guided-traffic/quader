@@ -1384,6 +1384,7 @@ valkey:
   sentinel_query_timeout: 300ms         # default; per Sentinel tried
   max_conn_lifetime: 30m                # default
   health_check_interval: 5s             # default; at least 100ms
+  startup_answer_timeout: 30s           # default; 0 to 5m; a starting replica stays unready until Valkey has answered once (accepted or refused) or this has passed, then becomes ready degraded; 0 does not wait, so a wrong password behind an unanswered first attempt shows only after the first requests
   reconnect:
     initial_backoff: 100ms              # default
     max_backoff: 5s                     # default

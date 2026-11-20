@@ -47,6 +47,12 @@ type Valkey struct {
 	keyspace atomic.Pointer[string]
 	// noKeyspace is set by WithoutKeyspace: keys carry no keyspace segment.
 	noKeyspace bool
+	// scriptCheck is set by WithScriptCheck: the first connection runs the take script (valkey_answer.go).
+	scriptCheck bool
+
+	// answered is closed at the first answer of Valkey, accepted or refused (Answered, valkey_answer.go).
+	answered   chan struct{}
+	answerOnce sync.Once
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -117,9 +123,10 @@ type ValkeyStatus struct {
 type ValkeyOption func(*valkeyOptions)
 
 type valkeyOptions struct {
-	keyspace   string
-	noKeyspace bool
-	tlsMetrics *tlsfiles.Metrics
+	keyspace    string
+	noKeyspace  bool
+	scriptCheck bool
+	tlsMetrics  *tlsfiles.Metrics
 }
 
 // WithKeyspaceID sets the keyspace from system_state.keyspace_id
@@ -141,8 +148,12 @@ func WithoutKeyspace() ValkeyOption { return func(o *valkeyOptions) { o.noKeyspa
 // in [Valkey.StartupError].
 //
 // NewValkey waits for the first connection attempt, bounded by ctx and by the
-// configured timeouts, so that StartupError is meaningful when it returns. ctx
-// does not bound the client's lifetime; Close does.
+// configured timeouts, so that StartupError is meaningful when it returns and
+// that attempt was answered. An attempt that met silence is no verdict:
+// [Valkey.Answered] stays open until a later attempt is answered, and the
+// composition root holds the first readiness on it for at most
+// valkey.startup_answer_timeout (Q-HA-13). ctx does not bound the client's
+// lifetime; Close does.
 func NewValkey(ctx context.Context, cfg config.Valkey, instance, role string, log *slog.Logger, reg prometheus.Registerer, opts ...ValkeyOption) (*Valkey, error) {
 	var o valkeyOptions
 	for _, opt := range opts {
@@ -180,7 +191,7 @@ func NewValkey(ctx context.Context, cfg config.Valkey, instance, role string, lo
 	v := &Valkey{
 		cfg: cfg, instance: instance, role: role, log: log.With("component", "valkey"), m: m,
 		creds: creds, dataTLS: dataTLS, sentinelTLS: sentinelTLS, tls: vt,
-		sentinelResolver: &net.Resolver{},
+		sentinelResolver: &net.Resolver{}, scriptCheck: o.scriptCheck, answered: make(chan struct{}),
 	}
 	v.warnWeakTrust()
 	v.br = newBreaker(cfg.CircuitBreaker.FailureThreshold, cfg.CircuitBreaker.OpenDuration, nil, func(open bool) {
@@ -296,7 +307,8 @@ func (v *Valkey) Status() ValkeyStatus {
 }
 
 // StartupError is non-nil when the first connection attempts found a
-// configuration error: a rejected credential (WRONGPASS, NOAUTH, NOPERM), a
+// configuration error: a rejected credential (WRONGPASS, NOAUTH, NOPERM, also
+// NOPERM for the probe write or the take script of the first connection), a
 // failed certificate verification, or a primary name that no reachable Sentinel
 // knows (Q-HA-13). The readiness registry holds the first readiness back on it.
 // An unreachable Valkey is not a startup error. The error clears when a later
@@ -486,6 +498,15 @@ func (v *Valkey) attempt() bool {
 		v.connectFailed(err)
 		return false
 	}
+	// The server answered the login. A refusal of what Quader needs beyond it is a
+	// configuration error like a rejected password (Q-HA-13).
+	if !v.isUnsupported() {
+		if err := v.checkAccess(c); err != nil {
+			c.Close()
+			v.connectFailed(err)
+			return false
+		}
+	}
 	v.mu.Lock()
 	if v.closed {
 		v.mu.Unlock()
@@ -500,6 +521,7 @@ func (v *Valkey) attempt() bool {
 	st := v.Status()
 	v.log.Info("valkey connected", "primary", st.Primary, "version", st.Version)
 	v.reevaluate()
+	v.markAnswered()
 	v.ps.poke()
 	return true
 }
@@ -528,6 +550,9 @@ func (v *Valkey) connectFailed(err error) {
 		v.startupErr = nil
 	}
 	v.mu.Unlock()
+	if isConfig {
+		v.markAnswered()
+	}
 	if changed {
 		if isConfig {
 			v.log.Error("valkey configuration error", "error", cause.Error())

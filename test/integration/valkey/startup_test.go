@@ -64,13 +64,17 @@ func TestStartupErrors(t *testing.T) {
 		if code := c.Status().ReasonCode; code != cluster.ReasonAuthFailed {
 			t.Fatalf("R-OPS-001 reason code = %q, want auth_failed", code)
 		}
+		if !answered(c) {
+			t.Fatal("R-HA-008 a refusal is an answer, and Answered is open")
+		}
 	})
-	t.Run("Q-HA-13 a wrong password behind a server that never answers is not a startup error: the verdict needs an answer", func(t *testing.T) {
+	t.Run("R-HA-008 a wrong password behind a server that never answers is not a startup error: the verdict needs an answer", func(t *testing.T) {
 		// The server accepts the TCP connection and never says a word, so the first attempt ends at its deadline and cannot
 		// be answered, however fast the machine is (F-119, E0.12 in Test and Release 42885398204: the replica with the wrong
-		// password reported reason "timeout" and became ready). Unreachability never holds back the first readiness
-		// (Q-HA-13 (d)), and a rejected credential is only seen when the server answers, so the client is degraded and has
-		// no startup error, however wrong the password is. The companion case above gets its answer: WRONGPASS.
+		// password reported reason "timeout" and became ready). A rejected credential is only seen when the server answers,
+		// so the client is degraded, has no startup error and no answer: the composition root holds the first readiness for
+		// valkey.startup_answer_timeout and then lets the replica become ready degraded (R-HA-008). The companion case above
+		// gets its answer: WRONGPASS.
 		ln, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
 			t.Fatal(err)
@@ -109,6 +113,9 @@ func TestStartupErrors(t *testing.T) {
 		if c.Available() {
 			t.Fatal("available with a server that never answers")
 		}
+		if answered(c) {
+			t.Fatal("R-HA-008 a deadline is not an answer, and Answered is closed")
+		}
 	})
 	t.Run("R-HA-056 a wrong Sentinel password is a startup error", func(t *testing.T) {
 		cfg := stackConfig(t, 2*time.Second)
@@ -125,6 +132,9 @@ func TestStartupErrors(t *testing.T) {
 		err := c.StartupError()
 		if err == nil || !strings.Contains(err.Error(), "certificate") {
 			t.Fatalf("StartupError = %v (status %+v)", err, c.Status())
+		}
+		if !answered(c) {
+			t.Fatal("R-HA-008 a certificate the replica does not trust is an answer, and Answered is open")
 		}
 	})
 	t.Run("R-HA-056 every Sentinel unreachable at first start gives a degraded client, no error", func(t *testing.T) {
@@ -160,6 +170,16 @@ func TestStartupErrors(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+// answered reports whether the client has had its first answer (R-HA-008).
+func answered(c *client) bool {
+	select {
+	case <-c.Answered():
+		return true
+	default:
+		return false
+	}
 }
 
 // otherCA writes a CA certificate that signed nothing of the stack and returns

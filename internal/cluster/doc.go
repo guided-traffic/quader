@@ -11,6 +11,7 @@
 // Files of the Valkey part are prefixed valkey_: valkey.go (client, lifecycle,
 // status), valkey_ops.go (the commands quader needs), valkey_keys.go (the
 // registry), valkey_pubsub.go, valkey_sentinel.go (discovery probe and startup
-// classification), valkey_breaker.go, valkey_errors.go, valkey_tls.go,
+// classification), valkey_answer.go (the first answer and the access check of
+// the first connection), valkey_breaker.go, valkey_errors.go, valkey_tls.go,
 // valkey_auth.go, valkey_metrics.go and valkey_version.go.
 package cluster

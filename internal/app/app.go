@@ -123,11 +123,14 @@ type App struct {
 	doc     *v1.Document
 	docErr  error
 
-	started   atomic.Bool
-	startedCh chan struct{}
-	fatal     chan error
-	bootDone  chan struct{}
-	bootStop  context.CancelFunc
+	started atomic.Bool
+	// awaitingValkey is set while step 10 waits for Valkey's first answer; the
+	// startup check names it (Q-HA-13, awaitValkeyAnswer).
+	awaitingValkey atomic.Bool
+	startedCh      chan struct{}
+	fatal          chan error
+	bootDone       chan struct{}
+	bootStop       context.CancelFunc
 	// bg tracks every goroutine the app starts itself (the check loop, the
 	// listeners' Serve, the gauge evaluator); Shutdown waits for them, so nothing
 	// logs after it returned. healthStop ends the check loop last of all.
@@ -139,6 +142,9 @@ type App struct {
 	db    *postgres.DB
 	sysf  *postgres.SystemFacts
 	vk    *cluster.Valkey
+	// vkSince is when the Valkey client was started: the bound of its first
+	// answer counts from it (valkey.startup_answer_timeout).
+	vkSince time.Time
 
 	// The components of the infrastructure areas, mirrored here by wireInfra for
 	// the domain steps that do not take them as typed inputs yet; leases is set by
@@ -274,9 +280,9 @@ func (a *App) OpsAddr() net.Addr {
 }
 
 func (a *App) setDB(db *postgres.DB) { a.mu.Lock(); a.db = db; a.mu.Unlock() }
-func (a *App) setValkey(v *cluster.Valkey) {
+func (a *App) setValkey(v *cluster.Valkey, since time.Time) {
 	a.mu.Lock()
-	a.vk = v
+	a.vk, a.vkSince = v, since
 	a.mu.Unlock()
 }
 func (a *App) setSystemFacts(f postgres.SystemFacts) { a.mu.Lock(); a.sysf = &f; a.mu.Unlock() }
@@ -309,12 +315,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.standingWarnings()
 
 	// Step 2: the ops listener, readiness 503, liveness 200.
-	a.health.AddReadiness("startup", func(context.Context) error {
-		if !a.started.Load() {
-			return health.WithReason(errUnavailable, "starting")
-		}
-		return nil
-	}, false)
+	a.health.AddReadiness("startup", startupCheck(&a.started, &a.awaitingValkey), false)
 	if err := a.planEndpoints(); err != nil {
 		return err
 	}
@@ -367,6 +368,21 @@ func (a *App) Start(ctx context.Context) error {
 	return nil
 }
 
+// startupCheck is the startup check of R-OPS-001: it passes once step 10 is
+// reached. Its reason says what the replica is still doing: waiting_for_valkey
+// while step 10 waits for Valkey's first answer, starting before.
+func startupCheck(started, awaitingValkey *atomic.Bool) health.CheckFunc {
+	return func(context.Context) error {
+		switch {
+		case started.Load():
+			return nil
+		case awaitingValkey.Load():
+			return health.WithReason(errUnavailable, "waiting_for_valkey")
+		}
+		return health.WithReason(errUnavailable, "starting")
+	}
+}
+
 func (a *App) fail(err error) {
 	select {
 	case a.fatal <- err:
@@ -399,7 +415,11 @@ func (a *App) bootstrap(ctx context.Context) error {
 		}
 	}
 
-	// Step 10: the start-up check passes.
+	// Step 10: the start-up check passes, once Valkey has answered or the bound
+	// has passed (R-HA-008, Q-HA-13).
+	if err := a.awaitValkey(ctx); err != nil {
+		return err
+	}
 	a.started.Store(true)
 	a.health.Refresh(ctx)
 	close(a.startedCh)

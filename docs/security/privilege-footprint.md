@@ -59,7 +59,13 @@ a key prefix, the command set the client uses, and no administration. The comman
 take of a request's rate windows ([usage-and-limits.md](../spec/usage-and-limits.md#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7)):
 a script runs under the ACL of the user that sends it, so it reaches no command and no key beyond the user's; what the two commands
 add is CPU time in Valkey, which `busy-reply-threshold` bounds for a script that would loop, and a writer under the user's credential
-could already refuse every request with 429 ([H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service)). The valkey operator that the owner's
+could already refuse every request with 429 ([H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service)). A replica's first
+connection writes its probe key and runs the take with no key: a user without `EVAL` or `EVALSHA`, or whose key pattern does not
+cover the key prefix, is refused there, and the replica stays unready like one with a wrong password, instead of serving with
+every limit counted per replica ([Q-HA-331](../spec/ha-and-helm.md#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script));
+another command missing from the user shows only at its first use ([H-1050](../spec/ha-and-helm.md#h-1050--only-the-probe-write-and-the-take-script-are-checked-at-start-another-missing-command-shows-at-its-first-use)).
+A starting replica waits for that answer for at most `valkey.startup_answer_timeout` (30 s); one that got none becomes ready
+degraded and sees a wrong credential only when Valkey answers ([Q-HA-293](../spec/ha-and-helm.md#q-ha-293--a-replica-waits-for-valkeys-first-answer-before-its-first-readiness-for-a-bounded-time)). The valkey operator that the owner's
 stack uses creates no ACL users and no separate Sentinel password yet. Until it does, the local profile runs Quader as the
 operator's `default` user with the cluster password, and the same Secret authenticates against the Sentinels: its values set
 `secrets.valkey.usernameKey: ""` ([values-dev.yaml](../../deploy/dev/values-dev.yaml); the owner's decision is recorded in
