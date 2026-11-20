@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 15:00): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 15:45): no registry task; the two features the owner decided on that day, the built-in project `upstream` and the role `scanner`, specified on `main` and being built in five work packages (section 11); the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -562,7 +562,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 15:00.
+**State on 2026-11-20**, 15:45.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `05d10d01`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -598,9 +598,10 @@ runs are in `git log`; this section holds the current state.
   ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, ADR-209 and ADR-211, the gaps
   H-1021 to H-1026), **built in three work packages:** (1) the project, the reconcile and the admin API (migration 00086);
   (2) membership across the project line, placeholders and usage (migration 00087); (3) the UI (the admin page, the switch,
-  the member picker, the placeholder). The builder of package 1 first builds its contract commit (the project's constants,
-  the migration, the facts on a repository, the error codes, the operations of the admin API) and stops; the builders of
-  packages 2 and 3 start on that commit, and it goes on with the rest of package 1.
+  the member picker, the placeholder, the project's first place in a list and the arrow in its mark, Q-UI-837). Package
+  1's contract commit exists and the three packages are built on it at once (**In work**, below). **Landing:** the three
+  land together as one feature, package 1 first; none of it is on `main` before the admin page and the refusals are, so
+  that no release carries a project `upstream` that nobody can administer.
 - **The role `scanner` and the analyser's database in a repository, specified on `main`** on 2026-11-20
   ([vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-041 to R-VULN-046, ADR-212 to ADR-214, the gaps
   H-1035 to H-1039 and H-1041 to H-1044), reconciled with the project `upstream` by its planner: the database's image is
@@ -616,15 +617,31 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (15:10): the builder of package 1 of `upstream` (its contract commit); the builder of package A of the
-  scanner, in two stages: everything up to the integration tier and the chart tests with the e2e case written, then, when
-  the host is quiet and it is told to, the one run of that case on a kind cluster of its own. **Waiting:** packages 2 and 3
-  for the contract commit; package B for a free builder (at most four) and for `upstream/scanner-trivy`. **Numbers the
-  builders hold** for decisions and gaps of their own: package 1 from Q-REPO-390, Q-AUTHZ-305, Q-API-362 and H-1053;
-  package A from Q-VULN-180, Q-ARCH-550, Q-HA-340, Q-OCI-235, Q-AUTHZ-330, Q-LIM-70, Q-OPS-220, Q-EP-90, H-1070 and
-  ADR-215. The next builder gets ranges above those. **To hand on:** the owner's Q-UI-837 (the project first in a list, an
-  arrow in its mark) was specified after the builder of package 1 had started: the order of `GET /api/v1/projects` goes to
-  it with the message that starts its second stage, the mark and the lists to the builder of package 3 with its brief.
+- **In work** (15:45), four builders, each in a worktree of its own:
+  - **Package 1 of `upstream`, second stage.** Its contract commit is `ceca6d08` on its branch, on top of `main` (not
+    landed): the package `internal/wellknown`, migration 00086 with the project's row, the table of the well-known
+    repositories and the database's guards, the kind and state of a well-known repository on every read, the error codes,
+    the ten operations of the admin API in the API document (their handlers answer 501). It now builds the reconcile, the
+    refusals, the handlers, the archive keys of Debian and Ubuntu, the order of `GET /api/v1/projects` (Q-UI-837) and the
+    integration area `upstream`.
+  - **Package 2 of `upstream`** (membership across the project line, placeholders, the usage row with migration 00087),
+    started on `ceca6d08`. No authorization code: the level `internal` already decides who reads a member.
+  - **Package 3 of `upstream`** (the UI: the admin page with the new switch, a registry's page, the member picker's group
+    and the placeholder, the built-in project in the main area, the arrow in its mark and its first place in the lists),
+    started on `ceca6d08`; it renders with a dev server of its own against fixtures and writes nothing to the running
+    UI stack.
+  - **Package A of the scanner**, in two stages: everything up to the integration tier and the chart tests with the e2e
+    case written, then, when the host is quiet and it is told to, the one run of that case on a kind cluster of its own.
+  **Waiting:** package B of the scanner, for a free builder (at most four) and for `upstream/scanner-trivy`. **Cut between
+  package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
+  `scanner-trivy` (its 48 hours, its include pattern, the 404 for every client) and leaves the "in use" function empty,
+  so the admin page says "Not in use" until package B supplies it; the system's own reading through the repository, the
+  actor of its fills and the cleanup's exemption for the layer in use are package B's. **The integration area `upstream`**
+  is written by packages 1 and 2 at once: package 1 owns its `main_test.go`, package 2's is dropped at landing.
+  **Numbers the builders hold** for decisions and gaps of their own: package 1 Q-REPO-390, Q-AUTHZ-305 to 309, Q-API-363,
+  H-1053 to H-1069, ADR-217, SQLSTATE AI011; package 2 Q-REPO-400, Q-AUTHZ-310, Q-LIM-75, H-1080, SQLSTATE AI015;
+  package 3 Q-UI-838 to 849, H-1090; package A Q-VULN-180, Q-ARCH-550, Q-HA-340, Q-OCI-235, Q-AUTHZ-330, Q-LIM-70,
+  Q-OPS-220, Q-EP-90, H-1070, ADR-215. The next builder gets ranges above those.
 - **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
   `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
   its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
@@ -748,7 +765,11 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   least one finding, and the heights stay exact (Q-UI-861); at 365 days the hairline between the columns goes (Q-UI-862).
 - The folds of **Set up client** (2026-11-20): a fold's label has at most 32 characters in English and German (Q-UI-810).
 - The project `upstream` (2026-11-20, its planner's decisions beside the owner's): Q-REPO-374 to 377 and 380 to 389,
-  Q-AUTHZ-300, 301, 303 and 304, Q-API-360 and 361, Q-UI-830 to 836, Q-LIM-62 and 63.
+  Q-AUTHZ-300, 301, 303 and 304, Q-API-360 and 361, Q-UI-830 to 836, Q-LIM-62 and 63. Its first builder's, in the
+  contract commit (not on `main` yet): a caller without the right gets 403 on the admin API's list and on a single
+  registry, not 404, because the keys are the same in every installation and a 404 would hide nothing (Q-API-362); the
+  well-known repositories are declared in the order of the format registry (Ansible Galaxy, Debian, npm, NuGet, OCI),
+  and the admin page orders its groups itself.
 - The role `scanner` and the analyser's database (2026-11-20, its planner's decisions beside the owner's): Q-VULN-161 to 176,
   Q-ARCH-527 to 531, Q-OCI-226 to 230, Q-HA-316 to 322, Q-LIM-66, Q-OPS-215, Q-UI-850. The ones to look at first: a listener
   of its own on `packages` for the scanner's pull (Q-ARCH-528); mutual TLS between worker and scanner with the chart's
