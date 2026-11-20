@@ -64,104 +64,194 @@ async function openAccess(options: {
       i.labels?.[0]?.textContent?.includes(level),
     )!;
   const fake = r.get(RepositoriesApi) as FakeRepositoriesApi;
-  return { ...r, group, radio, fake };
+  /** The toggle of the fold **Wiki visibility**. */
+  const fold = () => r.root.querySelector<HTMLButtonElement>('quader-repository-visibility quader-disclosure .inline-toggle');
+  const foldOpen = () => fold()?.getAttribute('aria-expanded') === 'true';
+  const save = async () => {
+    button(r.root, 'Save changes (visibility)').click();
+    await settle(r.fixture);
+  };
+  const choose = async (label: string, level: string) => {
+    radio(label, level).click();
+    await settle(r.fixture);
+  };
+  return { ...r, group, radio, fake, fold, foldOpen, save, choose };
 }
 
+/** The one group of the main view, and the group inside the fold, by their names. */
+const LEVEL = 'Visibility level';
+const WIKI = 'Wiki visibility';
+
 describe('The visibility block of a repository (R-UI-055)', () => {
-  it('R-UI-055 replaces the field "Require authentication" with the groups Artifacts and Wiki for a format with a wiki, and passes axe', async () => {
+  it('R-UI-055 the main view shows one group, Visibility level, in place of "Require authentication"; the wiki\'s level is the closed fold Wiki visibility, and the opened block passes axe', async () => {
     const r = await openAccess({});
     expect(text(r.root)).not.toContain('Require authentication');
-    expect(r.group('Artifacts')).toBeTruthy();
-    expect(r.group('Wiki')).toBeTruthy();
-    expect(r.radio('Artifacts', 'Internal').checked).toBe(true);
-    expect(r.radio('Wiki', 'Internal').checked).toBe(true);
+    const block = r.root.querySelector('quader-repository-visibility')!;
+    // One visible name of a group: the wiki's legend is for assistive technology, its fold's toggle names it on the screen.
+    expect([...block.querySelectorAll('legend:not(.visually-hidden)')].map((l) => text(l))).toEqual([LEVEL]);
+    expect(r.radio(LEVEL, 'Internal').checked).toBe(true);
+    expect(text(r.fold()!)).toContain(WIKI);
+    // The wiki has the repository's level: the fold is closed.
+    expect(r.foldOpen()).toBe(false);
+    expect(block.querySelector(`#${r.fold()!.getAttribute('aria-controls')}`)!.classList.contains('open')).toBe(false);
+
+    r.fold()!.click();
+    await settle(r.fixture);
+    expect(r.foldOpen()).toBe(true);
+    expect(r.group(WIKI)!.querySelector('legend')!.classList.contains('visually-hidden')).toBe(true);
+    expect(r.radio(WIKI, 'Internal').checked).toBe(true);
+    expect(text(block)).toContain('The wiki is the README and the documentation of the packages.');
     await expectAccessible(r.root);
   });
 
-  it('R-UI-055 a format without wiki content shows one group named Visibility', async () => {
+  it('R-UI-055 a format without wiki content shows the one group and no fold', async () => {
     const r = await openAccess({ format: 'generic' });
-    expect(r.group('Wiki')).toBeUndefined();
-    expect(r.group('Artifacts')).toBeUndefined();
-    expect(r.group('Visibility')).toBeTruthy();
+    expect(r.group(LEVEL)).toBeTruthy();
+    expect(r.group(WIKI)).toBeUndefined();
+    expect(r.fold()).toBeNull();
   });
 
-  it('R-UI-055 an option above the project is disabled with the reason; the wiki is bounded by the artifacts', async () => {
+  it('R-UI-055 the fold is open by itself while the wiki\'s level differs from the repository\'s, also for a reader, who sees the levels read-only with the reason', async () => {
+    const r = await openAccess({ project: 'public', artifacts: 'public', wiki: 'internal', capabilities: ['repositories:read-config'] });
+    expect(r.foldOpen()).toBe(true);
+    expect(r.radio(WIKI, 'Internal').checked).toBe(true);
+    expect(r.root.querySelector('quader-repository-visibility button[type="submit"]')).toBeNull();
+    expect(r.group(LEVEL)!.disabled).toBe(true);
+    expect(r.group(WIKI)!.disabled).toBe(true);
+    expect(text(r.root.querySelector('quader-repository-visibility')!)).toContain('Only the project\'s Owner');
+    // The person may close it; it is their choice then.
+    r.fold()!.click();
+    await settle(r.fixture);
+    expect(r.foldOpen()).toBe(false);
+  });
+
+  it('R-UI-055 an option above the project is disabled with the reason; the wiki is bounded by the repository\'s level', async () => {
     const r = await openAccess({});
-    expect(r.radio('Artifacts', 'Public').disabled).toBe(true);
-    expect(r.radio('Wiki', 'Public').disabled).toBe(true);
-    expect(text(r.group('Artifacts')!)).toContain('The project is internal, so this repository cannot be public.');
-    expect(r.radio('Artifacts', 'Private').disabled).toBe(false);
+    expect(r.radio(LEVEL, 'Public').disabled).toBe(true);
+    expect(r.radio(WIKI, 'Public').disabled).toBe(true);
+    expect(text(r.group(LEVEL)!)).toContain('The project is internal, so this repository cannot be public.');
+    expect(r.radio(LEVEL, 'Private').disabled).toBe(false);
 
-    r.radio('Artifacts', 'Private').click();
-    await settle(r.fixture);
-    // The wiki follows the artifacts down, and nothing above the artifacts can be chosen for it.
-    expect(r.radio('Wiki', 'Private').checked).toBe(true);
-    expect(r.radio('Wiki', 'Internal').disabled).toBe(true);
-    expect(text(r.group('Wiki')!)).toContain('The wiki cannot be more open than the artifacts.');
+    await r.choose(LEVEL, 'Private');
+    // The wiki goes down with the level, and nothing above the level can be chosen for it.
+    expect(r.radio(WIKI, 'Private').checked).toBe(true);
+    expect(r.radio(WIKI, 'Internal').disabled).toBe(true);
+    expect(text(r.group(WIKI)!)).toContain('The wiki cannot be more open than the repository.');
   });
 
-  it('R-UI-055 in a public project an Owner sets the artifacts public and keeps the wiki internal; only the changed part is sent', async () => {
+  it('R-UI-055 a wiki without a level of its own follows the visibility level: an Owner raises the level, both parts are sent, and the fold stays closed', async () => {
     const r = await openAccess({ project: 'public', member: true, capabilities: [] });
-    r.radio('Artifacts', 'Public').click();
-    await settle(r.fixture);
-    const save = button(r.root, 'Save changes (visibility)');
-    expect(save.disabled).toBe(false);
-    save.click();
-    await settle(r.fixture);
+    await r.choose(LEVEL, 'Public');
+    expect(r.radio(WIKI, 'Public').checked).toBe(true);
+    expect(r.foldOpen()).toBe(false);
+    expect(button(r.root, 'Save changes (visibility)').disabled).toBe(false);
+    await r.save();
     expect(r.fake.patches).toHaveLength(1);
-    expect(r.fake.patches[0]).toMatchObject({ key: 'web/repo', patch: { visibility: { artifacts: 'public' } }, etag: '"1"' });
-    expect(r.fake.repositories[0]?.visibility).toEqual({ artifacts: 'public', wiki: 'internal' });
+    expect(r.fake.patches[0]).toMatchObject({ key: 'web/repo', patch: { visibility: { artifacts: 'public', wiki: 'public' } }, etag: '"1"' });
+    expect(r.fake.repositories[0]?.visibility).toEqual({ artifacts: 'public', wiki: 'public' });
     expect(button(r.root, 'Save changes (visibility)').disabled).toBe(true);
+    expect(r.foldOpen()).toBe(false);
   });
 
-  it('R-UI-055 lowering the artifacts below the wiki sends both parts', async () => {
-    const r = await openAccess({ project: 'public', artifacts: 'public', wiki: 'public' });
-    r.radio('Artifacts', 'Private').click();
+  it('R-UI-055 a level chosen in the fold is the wiki\'s own: the visibility level no longer moves it, a closed fold says "Unsaved changes", and only the changed parts are sent', async () => {
+    const r = await openAccess({ project: 'public' });
+    r.fold()!.click();
     await settle(r.fixture);
-    button(r.root, 'Save changes (visibility)').click();
+    await r.choose(WIKI, 'Private');
+    await r.choose(LEVEL, 'Public');
+    expect(r.radio(WIKI, 'Private').checked).toBe(true);
+    // Closed by the person with the choice inside: the toggle says so.
+    r.fold()!.click();
     await settle(r.fixture);
+    expect(text(r.fold()!)).toContain('Unsaved changes');
+    await r.save();
+    expect(r.fake.patches[0]?.patch).toEqual({ visibility: { artifacts: 'public', wiki: 'private' } });
+    expect(text(r.fold()!)).not.toContain('Unsaved changes');
+
+    // The wiki alone: one part.
+    await r.choose(WIKI, 'Internal');
+    await r.save();
+    expect(r.fake.patches[1]?.patch).toEqual({ visibility: { wiki: 'internal' } });
+  });
+
+  it('R-UI-055 a wiki with its own level is lowered where the visibility level falls below it, gets it back when the level rises again, and both parts are sent', async () => {
+    const r = await openAccess({ project: 'public', artifacts: 'public', wiki: 'internal' });
+    await r.choose(LEVEL, 'Private');
+    expect(r.radio(WIKI, 'Private').checked).toBe(true);
+    await r.choose(LEVEL, 'Public');
+    expect(r.radio(WIKI, 'Internal').checked).toBe(true);
+    expect(button(r.root, 'Save changes (visibility)').disabled).toBe(true);
+
+    await r.choose(LEVEL, 'Private');
+    await r.save();
     expect(r.fake.patches[0]?.patch).toEqual({ visibility: { artifacts: 'private', wiki: 'private' } });
+  });
+
+  it('R-UI-055 what the server answers for a level stands under that level\'s group, the wiki\'s opens its fold, and an answer that names no level is the block\'s notice', async () => {
+    const r = await openAccess({ project: 'public' });
+    const block = r.root.querySelector('quader-repository-visibility')!;
+    const refuse = (status: number, code: string, pointer?: string) => {
+      r.fake.beforePatch = () => {
+        const top = pointer && status === 422 ? 'validation_failed' : code;
+        throw new ApiError(status, { code: top, ...(pointer ? { errors: [{ pointer, code }] } : {}) }, 'req-1');
+      };
+    };
+    const errorOf = (label: string) => r.group(label)!.querySelector('.field-error');
+
+    // The wiki follows the level up behind the closed fold; the server refuses the wiki's part.
+    await r.choose(LEVEL, 'Public');
+    expect(r.foldOpen()).toBe(false);
+    refuse(422, 'visibility_wiki_above_artifacts', '/visibility/wiki');
+    await r.save();
+    expect(r.foldOpen()).toBe(true);
+    expect(text(errorOf(WIKI)!)).toBe('The wiki cannot be more open than the repository.');
+    expect(r.group(WIKI)!.getAttribute('aria-describedby')).toBe(errorOf(WIKI)!.id);
+    expect(errorOf(LEVEL)).toBeNull();
+    expect(block.querySelector('quader-error-notice')).toBeNull();
+
+    refuse(403, 'visibility_level_restricted', '/visibility/artifacts');
+    await r.save();
+    expect(text(errorOf(LEVEL)!)).toContain('Only an administrator of Quader can choose this visibility level.');
+    expect(errorOf(WIKI)).toBeNull();
+    expect(block.querySelector('quader-error-notice')).toBeNull();
+
+    refuse(409, 'public_not_allowed');
+    await r.save();
+    expect(errorOf(LEVEL)).toBeNull();
+    expect(text(block.querySelector('quader-error-notice')!)).toContain('nothing can be public');
+    await expectAccessible(r.root);
   });
 
   it('R-UI-055 the warning of the answer is shown at the block', async () => {
     const r = await openAccess({ project: 'public', cls: 'remote', format: 'npm' });
-    r.radio('Artifacts', 'Public').click();
-    await settle(r.fixture);
-    button(r.root, 'Save changes (visibility)').click();
-    await settle(r.fixture);
+    await r.choose(LEVEL, 'Public');
+    await r.save();
     expect(text(r.root.querySelector('quader-repository-visibility')!)).toContain(
       'Anyone can fill the cache of this remote repository from its upstream.',
     );
   });
 
-  it('R-UI-055 a reader who may not write sees the levels read-only with the reason', async () => {
-    const r = await openAccess({ capabilities: ['repositories:read-config'] });
-    expect(r.root.querySelector('quader-repository-visibility button[type="submit"]')).toBeNull();
-    expect(r.group('Artifacts')!.disabled).toBe(true);
-    expect(text(r.root.querySelector('quader-repository-visibility')!)).toContain('Only the project\'s Owner');
-  });
-
   it('R-UI-141 an Owner sees a restricted level disabled with the reason, and keeps the level the repository has', async () => {
     const r = await openAccess({ project: 'public', artifacts: 'public', wiki: 'internal', member: true, capabilities: [], restricted: ['public'] });
-    // The artifacts are public: the level stays selectable and says that it cannot be chosen again once it is left.
-    expect(r.radio('Artifacts', 'Public').disabled).toBe(false);
-    expect(text(r.group('Artifacts')!)).toContain('Restricted: kept while it is set; only an administrator can choose it again.');
+    // The repository is public: the level stays selectable and says that it cannot be chosen again once it is left.
+    expect(r.radio(LEVEL, 'Public').disabled).toBe(false);
+    expect(text(r.group(LEVEL)!)).toContain('Restricted: kept while it is set; only an administrator can choose it again.');
     // The wiki is internal: public is a new choice, which only an administrator makes.
-    expect(r.radio('Wiki', 'Public').disabled).toBe(true);
-    expect(text(r.group('Wiki')!)).toContain('Only an administrator of Quader can choose this level.');
+    expect(r.radio(WIKI, 'Public').disabled).toBe(true);
+    expect(text(r.group(WIKI)!)).toContain('Only an administrator of Quader can choose this level.');
     await expectAccessible(r.root);
   });
 
   it('R-UI-141 the reason of the project comes first: an option above the project names the project, not the restriction', async () => {
     const r = await openAccess({ project: 'internal', member: true, capabilities: [], restricted: ['public'] });
-    expect(text(r.group('Artifacts')!)).toContain('The project is internal, so this repository cannot be public.');
-    expect(text(r.group('Artifacts')!)).not.toContain('Only an administrator');
+    expect(text(r.group(LEVEL)!)).toContain('The project is internal, so this repository cannot be public.');
+    expect(text(r.group(LEVEL)!)).not.toContain('Only an administrator');
   });
 
   it('R-UI-141 an administrator sees a restricted level enabled, with a note', async () => {
     const r = await openAccess({ project: 'public', restricted: ['public'] });
-    expect(r.radio('Artifacts', 'Public').disabled).toBe(false);
-    expect(text(r.group('Artifacts')!)).toContain('Restricted: only administrators can choose this level.');
+    expect(r.radio(LEVEL, 'Public').disabled).toBe(false);
+    expect(text(r.group(LEVEL)!)).toContain('Restricted: only administrators can choose this level.');
   });
 
   it('R-UI-055 the repository header shows the artifacts level as an icon with its name', async () => {

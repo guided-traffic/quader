@@ -103,7 +103,7 @@ export function describeAccessProblem(code: string | null): string | null {
     case 'visibility_above_project':
       return $localize`:@@problem.visibility_above_project:A repository cannot be more open than its project.`;
     case 'visibility_wiki_above_artifacts':
-      return $localize`:@@problem.visibility_wiki_above_artifacts:The wiki cannot be more open than the artifacts.`;
+      return $localize`:@@problem.visibility_wiki_above_artifacts:The wiki cannot be more open than the repository.`;
     case 'principal_not_allowed':
       return $localize`:@@problem.principal_not_allowed:Only users and groups can be members of a project. A service account, a CI mapping and the principals anonymous and authenticated cannot: a visibility level opens content to everyone instead.`;
     case 'secret_value_required':

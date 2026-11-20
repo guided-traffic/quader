@@ -420,6 +420,14 @@ async function* allSections(page: Page): AsyncGenerator<string> {
   }
   // The sections; a fold inside one (`inline`, the pattern syntax) stays as the page has it.
   await expect(page.locator('main quader-disclosure:not(.inline) > .disclosure > .collapse-region:not(.open)')).toHaveCount(0);
+  // But the fold of the wiki's own level (R-UI-055): closed while the wiki has the repository's level, which the first picture
+  // shows, and opened here, so that its options are rendered for a repository whose wiki does not differ too.
+  const wiki = page.locator('main quader-repository-visibility').getByRole('button', { name: /^Wiki visibility/ });
+  if ((await wiki.count()) > 0 && (await wiki.getAttribute('aria-expanded')) !== 'true') {
+    await wiki.click();
+    await expect(wiki).toHaveAttribute('aria-expanded', 'true');
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  }
   yield 'sections';
 }
 
@@ -523,6 +531,42 @@ async function* restrictedSettings(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main quader-repository-visibility .note, main quader-repository-visibility .reason').first()).toBeVisible();
   yield '';
   await page.unroute('**/api/v1/visibility-choices');
+}
+
+/**
+ * A change of a repository's visibility that the server refuses (R-UI-055): the level is lowered, which takes the wiki with it
+ * behind its closed fold, and the save is answered in the browser with a field problem at each level. Each stands under its
+ * group, the wiki's in its fold, which the answer opened. Nothing is saved.
+ */
+async function* visibilityRefused(page: Page): AsyncGenerator<string> {
+  const block = page.locator('main quader-repository-visibility');
+  await block.getByRole('group', { name: 'Visibility level' }).getByRole('radio', { name: /^Private/ }).check();
+  const stored = `**/api/v1/projects/${mainProject}/repositories/npm-internal`;
+  await page.route(stored, (route) =>
+    route.request().method() === 'PATCH'
+      ? route.fulfill({
+          status: 422,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'about:blank',
+            title: 'Unprocessable Entity',
+            status: 422,
+            code: 'validation_failed',
+            detail: 'The repository document is not valid.',
+            errors: [
+              { pointer: '/visibility/artifacts', code: 'visibility_above_project', detail: "The artifacts level is at most the project's level, private." },
+              { pointer: '/visibility/wiki', code: 'visibility_wiki_above_artifacts', detail: 'The wiki level is at most the artifacts level, private.' },
+            ],
+          }),
+        })
+      : route.fallback(),
+  );
+  await block.getByRole('button', { name: /^Save changes/ }).click();
+  await expect(block.getByRole('button', { name: /^Wiki visibility/ })).toHaveAttribute('aria-expanded', 'true');
+  await expect(block.locator('.field-error')).toHaveCount(2);
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield '';
+  await page.unroute(stored);
 }
 
 /** The creation form with Internal restricted: the Owner sees it off with the reason, an administrator with a note (R-UI-141). */
@@ -1076,6 +1120,14 @@ export const screens: readonly Screen[] = [
   { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },
   { id: 'project-usage-caller', path: `${P}/usage/user/${kinds.power}`, kinds: owners, walk: usageDetailWalk },
   { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
+  // The one state of the visibility section that no stored repository shows: the server's answer under each level's group.
+  {
+    id: 'repository-settings-visibility-refused',
+    path: `${P}/repositories/npm-internal/settings`,
+    kinds: ['power'],
+    walk: visibilityRefused,
+    expected: [{ match: /^PATCH \/api\/v1\/projects\/[^/]+\/repositories\/npm-internal answered 422$/, why: 'the save the walk refuses with a field problem at each level' }],
+  },
 
   // The administrator's area (Q-UI-127).
   { id: 'repository-settings-oci-remote', path: `${O}/repositories/docker-hub-remote/settings`, kinds: all, walk: remoteSections },

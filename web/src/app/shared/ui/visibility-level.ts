@@ -199,6 +199,10 @@ const LEVEL_STYLES = `
     fieldset:disabled .name {
       color: var(--quader-text-muted);
     }
+    /* The server's answer for the level closes the group: under the last option, before what follows the group. */
+    .field-error {
+      margin-block: 0 var(--quader-space-3);
+    }
 `;
 
 let nextGroupId = 1;
@@ -208,14 +212,16 @@ let nextGroupId = 1;
  * Internal and Public, each with its icon and one muted sentence, as the owner's GitLab has it. An option that cannot be
  * chosen stays visible, muted, with its reason under the sentence (`reasons`); the radio is disabled and the reason is
  * part of the option's description. Native radios, so the arrow keys move and select, and Tab enters and leaves the group once.
+ * What the server answered for the level stands under the options (`error`), as an alert that describes the group; a group
+ * inside a fold whose toggle names it keeps its legend for assistive technology only (`labelHidden`).
  *
- *   <quader-visibility-level label="Artifacts" subject="artifacts" [(value)]="artifacts" [reasons]="{ public: 'The project is internal.' }" />
+ *   <quader-visibility-level label="Visibility level" subject="artifacts" [(value)]="level" [reasons]="{ public: 'The project is internal.' }" />
  */
 @Component({
   selector: 'quader-visibility-level',
   template: `
-    <fieldset class="levels" [disabled]="disabled()">
-      <legend class="field-label">{{ label() }}</legend>
+    <fieldset class="levels" [disabled]="disabled()" [attr.aria-describedby]="error() ? errorId : null">
+      <legend class="field-label" [class.visually-hidden]="labelHidden()">{{ label() }}</legend>
       @if (unsetNote(); as note) {
         <p class="muted unset" role="status">{{ note }}</p>
       }
@@ -241,12 +247,19 @@ let nextGroupId = 1;
           </span>
         </label>
       }
+      @if (error(); as message) {
+        <p class="field-error" role="alert" [id]="errorId">{{ message }}</p>
+      }
     </fieldset>
   `,
   styles: LEVEL_STYLES,
 })
 export class VisibilityLevelControl {
   readonly label = input.required<string>();
+  /** The group is named by what stands above it (the toggle of the fold that holds it): the legend is for assistive technology only. */
+  readonly labelHidden = input(false);
+  /** What the server answered for this level when it refused the save (a field problem at the level's member), under the options. */
+  readonly error = input<string | null>(null);
   readonly subject = input<VisibilitySubject>('project');
   readonly value = model.required<VisibilityLevel>();
   /** While set, nothing is chosen yet: no option is checked and the note says what is applied instead (the server's default). */
@@ -259,6 +272,7 @@ export class VisibilityLevelControl {
   readonly disabled = input(false);
 
   protected readonly group = `quader-visibility-level-${nextGroupId++}`;
+  protected readonly errorId = `${this.group}-error`;
 
   protected readonly options = computed(() =>
     VISIBILITY_LEVELS.map((level) => {

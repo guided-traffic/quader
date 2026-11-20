@@ -127,19 +127,25 @@ test('R-UI-055 the Owner of a public project sets the artifacts of a repository 
   expect(member.ok(), await member.text()).toBeTruthy();
   void page;
 
-  await test.step('in the public project both groups offer Public; the wiki cannot be above the artifacts', async () => {
+  await test.step('in the public project the level may be Public; the wiki follows it behind its fold and cannot be above it, and its own level is chosen in the fold', async () => {
     await bob.goto(`/ui/en/projects/${publicProject}/repositories/${wikiRepo}/settings`);
-    // The visibility is an open section of the settings page (R-UI-087).
-    const artifacts = bob.getByRole('group', { name: 'Artifacts' });
-    const wiki = bob.getByRole('group', { name: 'Wiki' });
-    // the project is public, so the artifacts may be Public; the wiki is at most as open as the artifacts (Internal now)
+    // The visibility is an open section of the settings page (R-UI-087): one group, and the wiki's own level in a fold that is
+    // closed while the wiki has the repository's level (R-UI-055).
+    const artifacts = bob.getByRole('group', { name: 'Visibility level' });
+    const fold = bob.getByRole('button', { name: /^Wiki visibility/ });
+    const wiki = bob.getByRole('group', { name: 'Wiki visibility' });
+    await expect(fold).toHaveAttribute('aria-expanded', 'false');
+    await fold.click();
+    // the project is public, so the repository may be Public; the wiki is at most as open as the repository (Internal now)
     await expect(artifacts.getByRole('radio', { name: /^Public/ })).toBeEnabled();
+    await expect(wiki.getByRole('radio', { name: /^Internal/ })).toBeChecked();
     await expect(wiki.getByRole('radio', { name: /^Public/ })).toBeDisabled();
     await artifacts.getByRole('radio', { name: /^Private/ }).check();
     await expect(wiki.getByRole('radio', { name: /^Internal/ })).toBeDisabled();
     await expect(wiki.getByRole('radio', { name: /^Private/ })).toBeChecked();
+    // without a level of its own the wiki follows the level up too
     await artifacts.getByRole('radio', { name: /^Public/ }).check();
-    await expect(wiki.getByRole('radio', { name: /^Public/ })).toBeEnabled();
+    await expect(wiki.getByRole('radio', { name: /^Public/ })).toBeChecked();
     await wiki.getByRole('radio', { name: /^Internal/ }).check();
     await expectAccessible(bob, 'repository access, visibility');
     await bob.getByRole('button', { name: 'Save changes (visibility)' }).click();
@@ -157,8 +163,10 @@ test('R-UI-055 the Owner of a public project sets the artifacts of a repository 
     const restricted = await admin.patch('/api/v1/settings/visibility', { data: { restrictedLevels: ['public'] }, headers: merge });
     expect(restricted.status(), await restricted.text()).toBe(200);
     await bob.goto(`/ui/en/projects/${publicProject}/repositories/${wikiRepo}/settings`);
-    const artifacts = bob.getByRole('group', { name: 'Artifacts' });
-    const wiki = bob.getByRole('group', { name: 'Wiki' });
+    const artifacts = bob.getByRole('group', { name: 'Visibility level' });
+    const wiki = bob.getByRole('group', { name: 'Wiki visibility' });
+    // The wiki's level differs from the repository's: its fold is open by itself.
+    await expect(bob.getByRole('button', { name: /^Wiki visibility/ })).toHaveAttribute('aria-expanded', 'true');
     await expect(artifacts.getByRole('radio', { name: /^Public/ })).toBeChecked();
     await expect(artifacts.getByRole('radio', { name: /^Public/ })).toBeEnabled();
     await expect(artifacts).toContainText('only an administrator can choose it again');

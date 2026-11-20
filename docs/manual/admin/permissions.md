@@ -204,7 +204,7 @@ application/merge-patch+json` and the `ETag` of the last read in `If-Match`.
 
 ### Everyone signed in reads, and some content is public
 
-Set the project `web` to **Internal** and the artifacts and the wiki of `web/npm-internal` to **Internal**: every internal user reads them and nobody needs a policy. For content that anyone may install, set `web` to **Public**, then the artifacts of `web/npm-public` to **Public** and its wiki to **Internal** if the README should stay inside the organization: an anonymous `npm install` works, `npm view` prints no README, and an internal user's token prints it.
+Set the project `web` to **Internal** and the visibility level of `web/npm-internal` to **Internal**, which its wiki follows: every internal user reads them and nobody needs a policy. For content that anyone may install, set `web` to **Public**, then the visibility level of `web/npm-public` to **Public** and, under **Wiki visibility**, its wiki to **Internal** if the README should stay inside the organization: an anonymous `npm install` works, `npm view` prints no README, and an internal user's token prints it.
 
 ### A team works in its project
 

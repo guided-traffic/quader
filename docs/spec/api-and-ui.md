@@ -5207,15 +5207,36 @@ Built as Q-UI-229, Q-UI-233 to Q-UI-236: [project-settings.ts](../../web/src/app
 ### R-UI-055 · The visibility of a repository
 Priority: **MVP** · Covers: quader-only
 
-- The section **Visibility** of the repository's settings page (R-UI-087) is the block **Visibility**: one column, two radio groups of Q-UI-228, **Artifacts** ("Who can install, download and list the packages")
-  and **Wiki** ("Who can read the README and the documentation"), and its own **Save changes**
-  ([Q-UI-231](#q-ui-231--a-repository-sets-artifacts-and-wiki-in-one-block-of-its-access-tab-and-the-wizard-sets-the-artifacts)).
-  An option above the project's level is disabled with "The project is internal, so this repository cannot be public."; a wiki
-  option above the artifacts' level is disabled with "The wiki cannot be more open than the artifacts." Choosing an artifacts
-  level below the wiki's lowers the wiki's choice with it. The wiki group is shown only for a format with wiki content
-  (`wiki: true` in `GET /api/v1/formats`, R-AUTHZ-034); for the others the block shows one group, labelled **Visibility**.
-- The creation form holds the artifacts group (R-UI-081), preset to the `visibility` of R-REPO-063 (the lower of the
-  installation's default and the project's level); the wiki follows the artifacts at create.
+- **One level in the main view.** The section **Visibility** of the repository's settings page (R-UI-087) is the block
+  **Visibility**: one column, one radio group of Q-UI-228, **Visibility level**, and its own **Save changes**
+  ([Q-UI-231](#q-ui-231--a-repository-sets-artifacts-and-wiki-in-one-block-of-its-access-tab-and-the-wizard-sets-the-artifacts),
+  [Q-UI-770](#q-ui-770--the-wikis-own-level-is-a-fold-of-the-section-visibility-closed-while-the-wiki-has-the-repositorys-level),
+  [Q-UI-772](#q-ui-772--the-one-group-is-named-visibility-level-for-every-format-and-the-wiki-is-bounded-by-the-repository)).
+  The level is the artifacts': who can install, download and list the packages. An option above the project's level is disabled
+  with "The project is internal, so this repository cannot be public." The block is the same for every format and every class.
+- **The wiki's own level behind a fold.** For a format with wiki content (`wiki: true` in `GET /api/v1/formats`, R-AUTHZ-034) the
+  block has the fold **Wiki visibility** under the group, the inline form of the shared disclosure (Q-UI-552); the other formats
+  have none. It holds the sentence "The wiki is the README and the documentation of the packages. It has the repository's
+  visibility level unless a lower one is chosen here." and the wiki's radio group, which the fold's toggle names on the screen (its
+  legend, **Wiki visibility**, is for assistive technology). A wiki option above the visibility level is disabled with "The wiki
+  cannot be more open than the repository."
+  - The fold is closed while the wiki's level is the visibility level. The block opens it when the two differ, as stored or in
+    the form, and when the server refused the wiki's level, so a differing level and its error are never behind a closed fold by
+    themselves. The person may close it; a closed fold that holds an unsaved choice says "Unsaved changes" after its name.
+  - **The wiki follows**
+    ([Q-UI-771](#q-ui-771--a-wiki-without-a-level-of-its-own-follows-the-visibility-level-in-the-form)). While the wiki has no
+    level of its own (it is stored at the visibility level, and no level was chosen in the fold in this edit) it takes the level
+    chosen above, up and down, and the save sends both parts. A wiki with a level of its own keeps it: it is lowered where the
+    visibility level falls below it, and gets it back when the level rises again before the save. Choosing the visibility
+    level's own level for the wiki and saving makes it follow again.
+- **The server's answer at its level**
+  ([Q-UI-773](#q-ui-773--the-servers-answer-for-a-level-stands-under-that-levels-group)). A field problem at
+  `/visibility/artifacts` or `/visibility/wiki` (422 with `visibility_above_project` or `visibility_wiki_above_artifacts`, 403
+  `visibility_level_restricted`, R-API-057) stands under that level's group, in the error colour, as an alert that describes the
+  group; the wiki's opens its fold. An answer that names no level (409 `public_not_allowed`) is the block's notice. The block
+  sends only the parts that changed.
+- The creation form holds the one group (R-UI-081, labelled **Visibility** among the form's fields), preset to the `visibility` of
+  R-REPO-063 (the lower of the installation's default and the project's level); the wiki follows the artifacts at create.
 - A warning `public_populates_remote` of the answer is shown as a warning at the block, with its sentence (R-AUTHZ-008).
 - The repository list, the repository's header and the client setup dialog show the artifacts level's icon before the
   repository's name (Q-UI-230).
@@ -5224,11 +5245,22 @@ Priority: **MVP** · Covers: quader-only
 
 Acceptance criteria:
 
-- In the Public project `web`, the Owner sets Artifacts to Public and Wiki to Internal and saves; the repository list shows the
-  Public icon, and an anonymous visitor's package page of a package in it has no README tab (R-UI-057).
+- In the Public project `web`, the Owner of a repository whose levels are Internal sets **Visibility level** to Public: the wiki
+  follows behind its closed fold. The Owner opens **Wiki visibility**, sets the wiki to Internal and saves; the repository list
+  shows the Public icon, and an anonymous visitor's package page of a package in it has no README tab (R-UI-057). Opened again,
+  the settings page shows the fold open (the journey `21-visibility`).
 - In an Internal project the option Public of both groups is disabled with the reason.
+- Unit tests (`repository-visibility.spec.ts`): one visible group and the closed fold for a format with a wiki, no fold for one
+  without; the fold open by itself while the levels differ, also for a reader; the wiki bounded by the level with its reason; a
+  wiki without a level of its own follows the level up, both parts are sent and the fold stays closed; a level chosen in the fold
+  is the wiki's own, a closed fold with it says "Unsaved changes", and only the changed parts are sent; a wiki with its own level
+  is lowered with the level and gets it back; a field problem stands under its level's group, the wiki's opens the fold, and an
+  answer without a level is the block's notice; no serious axe violation with the fold open and with an error.
+- Renders: `repository-settings-npm-local` (the fold closed, and opened in `sections`), `repository-settings-ansible` (levels that
+  differ: open as the page opens), `repository-settings-generic` (no fold), `repository-settings-visibility-refused` (the
+  server's answer under each group).
 
-Built as Q-UI-231, Q-UI-236, Q-UI-237: [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts), [repository-create.ts](../../web/src/app/features/repositories/repository-create.ts) (the creation form since R-UI-080); test [repository-visibility.spec.ts](../../web/src/app/features/repositories/repository-visibility.spec.ts).
+Built as Q-UI-231, Q-UI-236, Q-UI-237, Q-UI-770 to Q-UI-773: [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts), [repository-create.ts](../../web/src/app/features/repositories/repository-create.ts) (the creation form since R-UI-080); test [repository-visibility.spec.ts](../../web/src/app/features/repositories/repository-visibility.spec.ts).
 
 ### R-UI-140 · The restricted visibility levels in the general settings
 Priority: **MVP** · Covers: quader-only
@@ -6160,7 +6192,8 @@ The settings page follows the style guide's settings pages: one column of at mos
 ([Q-UI-351](#q-ui-351--the-repository-settings-page-is-one-column-of-sections)). In this order, where they apply:
 
 1. At the top, without a title: **Key** (a read-only field) and **Description (optional)**, with **Save changes**.
-2. **Visibility**, open: the block of R-UI-055 with its own save.
+2. **Visibility**, open: the block of R-UI-055 with its own save: the one level, and for a format with wiki content the fold
+   **Wiki visibility**, closed while the wiki has the repository's level.
 3. **Upstream** (remote), open: R-UI-082 with its **Upstream details** region, which holds **Offline** here.
 4. **Members** (virtual), open: the editor of R-UI-022 with its own save.
 5. Closed: **Mirror** (status above the settings, R-UI-021, and the format's `mirror` member), **<Display name> settings**, **Access
@@ -13107,6 +13140,11 @@ form that the page will take and sits where access is configured now. The develo
 
 **Applied in the spec:** R-UI-055, R-UI-021.
 
+**Revised by [Q-UI-770](#q-ui-770--the-wikis-own-level-is-a-fold-of-the-section-visibility-closed-while-the-wiki-has-the-repositorys-level)
+to [Q-UI-773](#q-ui-773--the-servers-answer-for-a-level-stands-under-that-levels-group)** (the owner's product rule of
+2026-11-12): the block shows one group, **Visibility level**, for every format, and the wiki's own level is a fold under it; the
+one block with one save stays.
+
 ### Q-UI-232 · The external flag is a checkbox in place on the user page, and a badge in the list
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -16736,6 +16774,105 @@ Status: **Decided by the development agent** — selected from the options below
 **Rationale:** a one-way step deserves its sentence where it is taken. The development agent records no revisit condition.
 
 **Applied in the spec:** R-UI-141; [authorization.md](authorization.md) Q-AUTHZ-285.
+
+### Q-UI-770 · The wiki's own level is a fold of the section Visibility, closed while the wiki has the repository's level
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's product rule of 2026-11-12: access in the standard flow is the members and the visibility level, nothing
+else, and a setting only an expert needs lives behind a disclosure. The section **Visibility** of a repository's settings showed
+two groups of three options, **Artifacts** and **Wiki** (Q-UI-231), for every format with wiki content (npm, NuGet, Ansible
+Galaxy today). The wiki's level is the expert's: a new repository has it at the artifacts' level, and most never change it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fold **Wiki visibility** inside the open section, under the one group: the inline form of the shared disclosure, as **Upstream details** inside **Upstream**; closed while the wiki's level is the repository's, opened by the block while the two differ or the server refused the wiki's level; the person may close it, and a closed fold with an unsaved choice says "Unsaved changes" (chosen) | `<quader-disclosure [inline]="true">` in `repository-visibility.ts`, its state a signal that follows "differs or refused" | One level in the main view; the wiki's level stays where visibility is set, in the same block with the same save, so "at most the repository's level" is seen beside it; a differing level is never hidden; the app's pattern for a section's further details | One more line in the section for a format with a wiki |
+| (b) A closed section **Wiki visibility** of the page, among **Access details** and the others | A `<quader-disclosure>` with a save of its own | Out of the standard section whole | Two saves for two levels that bound each other; a differing wiki level is a screen further down; lowering the level would change a field in another section |
+| (c) The wiki's level inside **Access details** | With the patterns and Hide existence | No new fold | That section saves the document's members with its own patch; the levels are not part of that form (Q-UI-237); a differing level could not open it without opening the patterns too |
+| (d) Always open, under the first group | Today's block with a smaller second group | Nothing hidden | The standard flow keeps a second access setting, which the rule excludes |
+
+**Choice:** (a). The fold has no hint line: its sentence stands inside it, so the closed fold is one line. **Rationale:** the
+rule asks for one level in the standard flow and for the detail on demand; the two levels are one decision of the server (one
+patch, rules that bind them), so they stay one block. Opening by itself is what keeps the simple view honest: whoever sees a
+closed fold knows that the wiki has the level above. The development agent revisits (b) if further parts get levels of their own
+and the fold grows into a form.
+
+The project's settings and the admin area's general settings were checked for the same two groups: a project has one level (its
+group is **Visibility level** in a closed section **Visibility**), and the general settings hold **Default project visibility**
+and **Restricted visibility levels**, the two settings the owner named for that section (W-11, Q-UI-540), which are not a second
+level of one thing. Neither shows artifacts and wiki, so neither changes.
+
+**Applied in the spec:** R-UI-055, R-UI-087. Code: [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts).
+
+### Q-UI-771 · A wiki without a level of its own follows the visibility level, in the form
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: with the wiki's group in view, choosing an artifacts level below the wiki's lowered the wiki, and raising the artifacts
+left the wiki where it was. Behind a closed fold that rule makes the one visible level say less than it shows: an Owner who
+raises a repository from Internal to Public would keep an Internal wiki without having seen it, and the fold would open on a
+difference nobody chose. The document stores two levels (`visibility.artifacts`, `visibility.wiki`, R-REPO-004), and a create
+stores the wiki at the artifacts' level.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) In the form, a wiki whose stored level is the artifacts' and for which no level was chosen in this edit takes the level chosen above, up and down, and both parts are sent; a wiki with a level of its own keeps it, is lowered where the level falls below it and gets it back when the level rises again before the save; choosing the repository's level for it and saving makes it follow again (chosen) | The wiki's value in the form is derived: the level, or the lower of its own and the level | The one level means the whole repository for whoever never opens the fold; "follows" needs no stored flag, because equal levels are what a new repository has; nothing is lost by lowering and raising within an edit | An expert who set both levels equal on purpose gets a wiki that moves with the level; the API alone still leaves a part that is not named as it is |
+| (b) Today's rule: the wiki is only lowered | Raising the level leaves the wiki | No part changes that the person did not touch | The fold opens after every raise, on a difference the person did not choose; a Public repository whose README is not public, by default |
+| (c) The server stores "follows" (a wiki level that may be absent) | A change of the document, the schema and the rules of R-AUTHZ-033 | The API follows too | A change of the stored format and of every reader of the wiki's level for a rule the form can hold; nothing in the product reads "follows" but this form |
+
+**Choice:** (a). **Rationale:** the simple path must be complete: one level, one meaning. The form is where the two levels are
+set by a person, and equal levels are the state every repository starts in. The development agent revisits (c) when an API
+client or a second screen needs to know whether a wiki follows, and (b) if the walk shows wikis opened to the public by a
+raise that was meant for the packages alone.
+
+**Applied in the spec:** R-UI-055. Code: `wikiFollows` and `wiki` of [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts).
+
+### Q-UI-772 · The one group is named Visibility level, for every format, and the wiki is bounded by "the repository"
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the group was **Artifacts** for a format with a wiki and **Visibility** for one without, under the section heading
+**Visibility**; the reason under a wiki option read "The wiki cannot be more open than the artifacts.", which is also the text of
+the server's `visibility_wiki_above_artifacts`. With one group in view, "Artifacts" names a part the screen no longer shows
+beside another.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Visibility level** for every format, as the project's settings and the dialog that creates a project name their group; the fold is **Wiki visibility**, and its group carries that name for assistive technology only; the reason and the problem text read "The wiki cannot be more open than the repository." (chosen) | `label`, `labelHidden` of the level control; two texts | One name for the same choice at a project and at a repository; no word in the main view that needs the model explained; the fold's toggle is the one visible name of its group | The creation form keeps **Visibility**, the name of a field among its fields |
+| (b) Keep **Artifacts** where there is a wiki | No change of words | Exact about the part | The plain user reads a part name and looks for the other part |
+| (c) **Visibility** for every format | The heading's word again | Short | The same word twice, one under the other |
+
+**Choice:** (a). The creation form's group stays **Visibility** (R-UI-081): there it is a field of a form, beside **Key** and
+**Description (optional)**, with no heading of that name above it. **Rationale:** one way of saying a thing: the level of a
+project and the level of a repository are chosen in a group of the same name, and the manual keeps "artifacts" and "wiki" for
+whoever reads how the two parts work. The development agent revisits the creation form's label if the walk reads the two words as
+two things.
+
+**Applied in the spec:** R-UI-055. Code: [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts),
+[visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts),
+[problem-messages-access.ts](../../web/src/app/core/http/problem-messages-access.ts).
+
+### Q-UI-773 · The server's answer for a level stands under that level's group
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a refused save of the levels showed the block's notice with the problem's text; for a 422 that was "Some entries are not
+valid.", whatever the field problem said. The server names the level in `errors[]` (`/visibility/artifacts`, `/visibility/wiki`:
+422 `visibility_above_project` and `visibility_wiki_above_artifacts`, 403 `visibility_level_restricted`); 409 `public_not_allowed`
+names none. With the wiki's group behind a fold, a problem at the wiki's level could be answered behind a closed fold.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field problem's text under its level's group, in the error colour, an alert that describes the group (`error` of the level control); a problem at the wiki's level opens its fold; an answer that names no level, or the wiki's level for a format without the fold, stays the block's notice (chosen) | `fieldErrorAt` per pointer in the block | The answer stands where it is corrected; a 422 says what was wrong; nothing is answered behind a closed fold | The form disables what the server would refuse, so the state is seen only after a change by someone else or a stale page |
+| (b) The block's notice for everything, with the field problems listed in it | One place | Simple | The reader maps a sentence to a group; the fold stays closed over its error |
+| (c) An error summary with links, as the creation form has | `quader-error-summary` | The form's pattern | A summary for two groups that are both on the screen |
+
+**Choice:** (a). **Rationale:** an error belongs at its control (the style guide's forms), and the block has at most two.
+The development agent revisits (c) if the block gets more fields.
+
+**Applied in the spec:** R-UI-055. Code: [visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts),
+[repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts); render
+`repository-settings-visibility-refused`.
 
 ### Q-UI-550 · The members list takes the head and the table of every list, and its count moves to the heading
 

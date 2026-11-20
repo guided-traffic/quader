@@ -9143,13 +9143,13 @@
         <target>Nichts weicht vom gespeicherten Stand ab.</target>
       </segment>
     </unit>
-    <unit id="repo.visibility.artifacts">
+    <unit id="repo.visibility.wiki-fold">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:108</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:157</note>
       </notes>
       <segment>
-        <source>Artifacts</source>
-        <target>Artefakte</target>
+        <source>Wiki visibility</source>
+        <target>Sichtbarkeit des Wikis</target>
       </segment>
     </unit>
     <unit id="project-dialog.display-name">
@@ -12584,13 +12584,13 @@
         <target><pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/></pc>-Einstellungen</target>
       </segment>
     </unit>
-    <unit id="repo.visibility.wiki-note">
+    <unit id="repo.visibility.wiki-text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:49,52</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:59,61</note>
       </notes>
       <segment>
-        <source> Artifacts: who can install, download and list the packages. Wiki: who can read the README and the documentation. </source>
-        <target>Artefakte: wer die Pakete installieren, herunterladen und auflisten darf. Wiki: wer die README und die Dokumentation lesen darf.</target>
+        <source> The wiki is the README and the documentation of the packages. It has the repository&apos;s visibility level unless a lower one is chosen here. </source>
+        <target>Das Wiki sind die README und die Dokumentation der Pakete. Es hat die Sichtbarkeitsstufe des Repositorys, solange hier keine niedrigere gewählt ist.</target>
       </segment>
     </unit>
     <unit id="files.folder-created">
@@ -12811,13 +12811,13 @@
         <target>Aktiviert</target>
       </segment>
     </unit>
-    <unit id="repo.visibility.wiki">
+    <unit id="repo.visibility.level">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:39,40</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:47,49</note>
       </notes>
       <segment>
-        <source>Wiki</source>
-        <target>Wiki</target>
+        <source>Visibility level</source>
+        <target>Sichtbarkeitsstufe</target>
       </segment>
     </unit>
     <unit id="vuln.advisory.heading">
@@ -16579,11 +16579,11 @@
     </unit>
     <unit id="problem.visibility_wiki_above_artifacts">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-access.ts:102</note>
+        <note category="location">src/app/core/http/problem-messages-access.ts:106</note>
       </notes>
       <segment>
-        <source>The wiki cannot be more open than the artifacts.</source>
-        <target>Das Wiki kann nicht offener sein als die Artefakte.</target>
+        <source>The wiki cannot be more open than the repository.</source>
+        <target>Das Wiki kann nicht offener sein als das Repository.</target>
       </segment>
     </unit>
     <unit id="pkg.vuln.findings-none">
@@ -23805,15 +23805,6 @@
         <target>Vom Upstream übernommen</target>
       </segment>
     </unit>
-    <unit id="repo.visibility.single">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:108</note>
-      </notes>
-      <segment>
-        <source>Visibility</source>
-        <target>Sichtbarkeit</target>
-      </segment>
-    </unit>
     <unit id="route.dashboard.title">
       <notes>
         <note category="location">src/app/app.routes.ts:89</note>
@@ -24389,13 +24380,13 @@
         <target>Noch kein Mitglied. Fügen Sie die Repositorys hinzu, aus denen dieses ausliefert.</target>
       </segment>
     </unit>
-    <unit id="repo.visibility.wiki-above-artifacts">
+    <unit id="repo.visibility.wiki-above-repository">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:117</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:181</note>
       </notes>
       <segment>
-        <source>The wiki cannot be more open than the artifacts.</source>
-        <target>Das Wiki kann nicht offener sein als die Artefakte.</target>
+        <source>The wiki cannot be more open than the repository.</source>
+        <target>Das Wiki kann nicht offener sein als das Repository.</target>
       </segment>
     </unit>
     <unit id="route.profile.sessions.title">

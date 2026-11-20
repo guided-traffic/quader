@@ -100,3 +100,4 @@ before using a new term in a German text.
 | collection (Ansible), import task, tombstone (a deleted version number) | Collection, Import-Aufgabe, Grabstein |
 | documentation (of a collection), module, plugin, role, parameter, suboption, return value | Dokumentation, Modul, Plugin, Rolle, Parameter, Unteroption, Rückgabewert |
 | import log (tab of a version), docs site (link) | Import-Protokoll, Dokumentations-Website |
+| visibility, visibility level (Private, Internal, Public), wiki visibility | Sichtbarkeit, Sichtbarkeitsstufe (Privat, Intern, Öffentlich), Sichtbarkeit des Wikis |
