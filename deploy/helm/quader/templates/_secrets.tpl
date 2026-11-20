@@ -115,38 +115,25 @@ backup (R-BAK-020).
 {{- $out = append $out (dict "name" "metrics" "secret" $s.metricsToken.existingSecret "path" "/var/run/secrets/quader/metrics" "items" (list (dict "key" $s.metricsToken.key "path" "token"))) -}}
 {{- end -}}
 {{- /*
-TLS material of the listeners (R-HA-063): only the pods whose process loads it; the Job serves no
-listener. The listener pair of tls.secretName is read by the ops listener of every pod unless tls.ops
-gives it its own pair, and by the client listener (the pods that open :8080: api, packages, their path
-pools) and by every further endpoint without a certificate of its own (the
-pods that serve it). The client CA belongs to the client listener of the default endpoint only. A pod
-that loads none of them does not get the private key.
+TLS material of the listeners (R-HA-063, Q-HA-345): every pod of a role holds the pair of its kind (api, packages, worker), which
+its operations listener, its client listener and every further endpoint without a pair of its own serve, and never the pair of
+another kind; the Jobs serve no listener and hold none. ca.crt joins the pair, in the same volume so that the kubelet swaps both
+together, only where a link verifies with it (R-HA-066, quader.linkNeedsCA). The client CA belongs to the client listener of the
+default endpoint only.
 */ -}}
 {{- $t := .root.Values.tls -}}
 {{- if $t.enabled -}}
 {{- $role := .role | default "" -}}
 {{- $pool := .pool | default "" -}}
 {{- $client := include "quader.opensDefault" (dict "role" $role "pool" $pool) | eq "true" -}}
-{{- $mainPair := or $client (not $t.ops.secretName) (include "quader.linkNeedsPair" (dict "root" .root "role" $role) | eq "true") -}}
-{{- if and (ne $role "worker") (not $mainPair) -}}
-{{- range $name := include "quader.unitEndpoints" (dict "root" .root "role" $role "pool" $pool) | fromYamlArray -}}
-{{- $e := include "quader.endpoint" (dict "root" $.root "name" $name) | fromYaml -}}
-{{- if not $e.tlsSecret -}}
-{{- $mainPair = true -}}
+{{- $items := list (dict "key" "tls.crt" "path" "tls.crt") (dict "key" "tls.key" "path" "tls.key") -}}
+{{- if include "quader.linkNeedsCA" (dict "root" .root "role" $role "pool" $pool) -}}
+{{- $items = append $items (dict "key" "ca.crt" "path" "ca.crt") -}}
 {{- end -}}
-{{- end -}}
-{{- end -}}
-{{- if $mainPair -}}
-{{- $out = append $out (dict "name" "tls" "secret" $t.secretName "path" "/var/run/secrets/quader/tls" "items" (list (dict "key" $t.certKey "path" "tls.crt") (dict "key" $t.keyKey "path" "tls.key"))) -}}
-{{- end -}}
+{{- $out = append $out (dict "name" "tls" "secret" (include "quader.tlsSecret" (dict "root" .root "kind" $role)) "path" "/var/run/secrets/quader/tls" "items" $items) -}}
 {{- if and $client $t.clientCA.secretName -}}
 {{- $out = append $out (dict "name" "tls-client-ca" "secret" $t.clientCA.secretName "path" "/var/run/secrets/quader/tls-client-ca" "items" (list (dict "key" $t.clientCA.key "path" "ca.crt"))) -}}
 {{- end -}}
-{{- if $t.ops.secretName -}}
-{{- $out = append $out (dict "name" "tls-ops" "secret" $t.ops.secretName "path" "/var/run/secrets/quader/tls-ops" "items" (list (dict "key" $t.ops.certKey "path" "tls.crt") (dict "key" $t.ops.keyKey "path" "tls.key"))) -}}
-{{- end -}}
-{{- /* The internal CA of the links of the image scanning (R-HA-066, templates/_scanner.tpl). */ -}}
-{{- $out = concat $out (include "quader.scannerLinkMounts" (dict "root" .root "role" $role "pool" $pool) | fromYamlArray) -}}
 {{- end -}}
 {{- /* The Secrets of the endpoints this pod serves (R-EP-004, R-EP-008); worker pods and the Job serve none. */ -}}
 {{- $out = concat $out (include "quader.endpointSecretMounts" (dict "root" .root "role" (.role | default "") "pool" (.pool | default "")) | fromYamlArray) -}}

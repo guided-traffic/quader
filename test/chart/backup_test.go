@@ -787,7 +787,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 				t.Errorf("the backup pod mounts %v, want %s among them", v, want)
 			}
 		}
-		for _, no := range []string{"quader-db-app", "quader-db-owner", "quader-valkey", "quader-encryption-keys", "quader-tls", "quader-s3"} {
+		for _, no := range []string{"quader-db-app", "quader-db-owner", "quader-valkey", "quader-encryption-keys", "quader-tls-api", "quader-tls-packages", "quader-tls-worker", "quader-s3"} {
 			if has(v, no) {
 				t.Errorf("the backup pod mounts %s", no)
 			}
@@ -843,7 +843,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 				t.Errorf("the restore Job mounts %v, want %s among them", v, want)
 			}
 		}
-		for _, no := range []string{"quader-db-app", "quader-db-backup", "quader-valkey", "quader-tls"} {
+		for _, no := range []string{"quader-db-app", "quader-db-backup", "quader-valkey", "quader-tls-api", "quader-tls-packages", "quader-tls-worker"} {
 			if has(v, no) {
 				t.Errorf("the restore Job mounts %s", no)
 			}

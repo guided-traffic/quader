@@ -136,7 +136,7 @@ images, the parser of the most hostile input Quader reads, has the smallest foot
 | Key ring | nothing: no key file; it cannot sign or verify a token or open a sealed secret |
 | Kubernetes | nothing: no service-account token, no RBAC; the pod names no service account of the chart, which may carry a cloud identity of the object store, and runs under the namespace's `default` ([Q-HA-343](../spec/ha-and-helm.md#q-ha-343--the-scanner-pod-names-no-service-account-of-the-chart), [H-1070](#h-1070--the-scanner-runs-under-the-namespaces-default-service-account)) |
 | The registry | pull, through the scan listener of `packages`, of the one manifest and the blobs of its name that the call's scan token names, for the token's minutes; never fill a remote, never write |
-| The pod | the security context of every pod; one writable spool and `/tmp`; the chart's TLS pair (or its own) and the internal CA; with `tls.ops.secretName` the pair of the operations listener ([Q-HA-340](../spec/ha-and-helm.md#q-ha-340--with-tlsops-the-scanner-mounts-the-pair-of-its-operations-listener)) |
+| The pod | the security context of every pod; one writable spool and `/tmp`; the scanner's own TLS pair and the internal CA, one Secret ([R-HA-063](../spec/ha-and-helm.md#r-ha-063--chart-tls-wiring)) |
 
 What an analyser that an image took over can do with this footprint is on [image-scanning.md](image-scanning.md). What it does not bound is
 the network: [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner).
@@ -191,7 +191,7 @@ The gaps of the spec pages that bound or widen this footprint:
 - [H-41](../spec/operations-and-observability.md#h-41--ingress-enforcement-is-verified-on-one-cni-only): the enforcement of the ingress NetworkPolicy is verified on one CNI only.
 - [H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods): the chart restricts no egress of its pods.
 - [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner): the same for the scanner, whose pod holds no credential but reads hostile images.
-- [H-1035](image-scanning.md#h-1035--the-scanner-holds-the-charts-tls-key-by-default): the scanner holds the chart's TLS key by default.
+- [H-1035](image-scanning.md#h-1035--a-taken-over-analyser-holds-the-scanners-pair): a taken-over analyser holds the scanner's pair, which passes nowhere the scanner does not.
 
 ### H-71 · Single-role mode gives the runtime login DDL rights
 

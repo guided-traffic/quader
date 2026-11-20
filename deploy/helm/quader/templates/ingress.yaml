@@ -3,61 +3,49 @@
 Each host is split by path prefix between the role Services (R-HA-037, Q-HA-71): the rules are
 fixed, not values, every one is pathType Prefix, and the paths of the path pools (R-HA-062) are the
 only data that goes in (templates/_edge.tpl). The operations port is never routed. The chart renders no affinity annotation.
+The edge verifies each backend under its kind's name (R-HA-063, Q-HA-348): HAProxy Ingress and Traefik read it from the Services
+(services.yaml); ingress-nginx reads it per Ingress, so with it the rules of each kind get an Ingress of their own (quader.ingressGroups).
 */ -}}
 {{- $hosts := .Values.ingress.hosts }}
 {{- if not $hosts }}
 {{- $hosts = list (urlParse .Values.config.server.base_url).hostname }}
 {{- end }}
+{{- $bt := .Values.ingress.backendTLS }}
+{{- $rules := include "quader.edgeRules" (dict "root" . "endpoint" "") | fromYamlArray }}
+{{- range $g := include "quader.ingressGroups" (dict "root" $ "rules" $rules "name" (include "quader.fullname" $) "endpoint" "" "controller" $bt.controller) | fromYamlArray }}
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "quader.fullname" . }}
+  name: {{ $g.name }}
   labels:
-    {{- include "quader.labels" (dict "root" . "component" "ingress") | nindent 4 }}
-    {{- with .Values.ingress.labels }}
+    {{- include "quader.labels" (dict "root" $ "component" "ingress") | nindent 4 }}
+    {{- with $.Values.ingress.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- $ann := merge (dict) .Values.ingress.annotations .Values.commonAnnotations }}
+  {{- $ann := merge (dict) $.Values.ingress.annotations $.Values.commonAnnotations }}
   {{- /* Backend over TLS (R-HA-063): the controller-specific settings, only for the controller named. */}}
-  {{- if and .Values.tls.enabled (eq .Values.ingress.backendTLS.controller "haproxy") }}
-  {{- /* haproxy-ingress backend-scope keys (https://haproxy-ingress.github.io/docs/configuration/keys/), default prefix haproxy-ingress.github.io. */}}
-  {{- $hp := "haproxy-ingress.github.io/" }}
-  {{- $_ := set $ann (print $hp "secure-backends") "true" }}
-  {{- with (ternary .Values.ingress.backendTLS.caSecret "" .Values.ingress.backendTLS.verify) }}
-  {{- $_ := set $ann (print $hp "secure-verify-ca-secret") . }}
-  {{- $_ := set $ann (print $hp "secure-sni") (printf "%s.%s.svc" (include "quader.fullname" $) $.Release.Namespace) }}
-  {{- end }}
-  {{- with .Values.ingress.backendTLS.clientCertSecret }}
-  {{- $_ := set $ann (print $hp "secure-crt-secret") . }}
-  {{- end }}
-  {{- end }}
-  {{- if and .Values.tls.enabled (eq .Values.ingress.backendTLS.controller "ingress-nginx") }}
-  {{- $_ := set $ann "nginx.ingress.kubernetes.io/backend-protocol" "HTTPS" }}
-  {{- with (ternary .Values.ingress.backendTLS.caSecret "" .Values.ingress.backendTLS.verify) }}
-  {{- $_ := set $ann "nginx.ingress.kubernetes.io/proxy-ssl-verify" "on" }}
-  {{- $_ := set $ann "nginx.ingress.kubernetes.io/proxy-ssl-secret" (printf "%s/%s" $.Release.Namespace .) }}
-  {{- $_ := set $ann "nginx.ingress.kubernetes.io/proxy-ssl-name" (printf "%s.%s.svc" (include "quader.fullname" $) $.Release.Namespace) }}
-  {{- $_ := set $ann "nginx.ingress.kubernetes.io/proxy-ssl-server-name" "on" }}
-  {{- end }}
-  {{- end }}
+  {{- $ann = merge (include "quader.backendIngressAnnotations" (dict "root" $ "bt" $bt "kind" $g.kind "own" "" "service" $g.service) | fromYaml) $ann }}
   {{- if $ann }}
   annotations:
     {{- toYaml $ann | nindent 4 }}
   {{- end }}
 spec:
-  {{- with .Values.ingress.className }}
+  {{- with $.Values.ingress.className }}
   ingressClassName: {{ . }}
   {{- end }}
-  {{- with .Values.ingress.tls }}
+  {{- if $g.tls }}
+  {{- with $.Values.ingress.tls }}
   tls:
     {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- end }}
   rules:
     {{- range $hosts }}
     - host: {{ . | quote }}
       http:
         paths:
-          {{- range $rule := include "quader.edgeRules" (dict "root" $ "endpoint" "") | fromYamlArray }}
+          {{- range $rule := $g.rules }}
           - path: {{ $rule.path }}
             pathType: Prefix
             backend:
@@ -67,4 +55,5 @@ spec:
                   name: http
           {{- end }}
     {{- end }}
+{{- end }}
 {{- end }}

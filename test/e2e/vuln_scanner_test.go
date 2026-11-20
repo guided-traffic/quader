@@ -70,7 +70,8 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 			Volumes                      []struct {
 				Name   string `json:"name"`
 				Secret *struct {
-					Items []struct {
+					SecretName string `json:"secretName"`
+					Items      []struct {
 						Key  string `json:"key"`
 						Path string `json:"path"`
 					} `json:"items"`
@@ -97,6 +98,10 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 			t.Errorf("the scanner pod has the projected volume %s (a service account token)", vol.Name)
 		}
 		if vol.Secret != nil {
+			// The scanner holds its own kind's pair and no other kind's (R-HA-063, Q-HA-345).
+			if vol.Secret.SecretName != "quader-tls-scanner" {
+				t.Errorf("the scanner pod mounts the Secret %s", vol.Secret.SecretName)
+			}
 			for _, it := range vol.Secret.Items {
 				items[vol.Name] = append(items[vol.Name], it.Path)
 			}
@@ -117,7 +122,7 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 		}
 	}
 	sort.Strings(files)
-	if want := []string{"tls-internal/ca.crt", "tls/tls.crt", "tls/tls.key"}; strings.Join(files, ",") != strings.Join(want, ",") {
+	if want := []string{"tls/ca.crt", "tls/tls.crt", "tls/tls.key"}; strings.Join(files, ",") != strings.Join(want, ",") {
 		t.Errorf("below /var/run/secrets/quader/ the scanner pod holds %v, want %v", files, want)
 	}
 }

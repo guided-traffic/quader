@@ -228,8 +228,6 @@ scanner:
   terminationGracePeriodSeconds: 60     # an analysis still running at the shutdown timeout is killed and put off by the worker without an attempt
   spool:
     sizeLimit: 6Gi                      # the analyses, admitted through the budget (sizeLimit minus spool.headroom): per slot the largest image (config.vulnerabilities.images.max_image_size) plus 64 MiB, validated
-  tls:
-    secretName: ""                      # empty = tls.secretName; example: quader-scanner-tls, a pair of its own from the same CA, so that the pair the edge trusts stays out of this pod (H-1035)
   resources:
     requests:
       cpu: 500m
@@ -396,30 +394,40 @@ config:
   #       ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt  # example: an instance behind a private CA
 
 # ── TLS on Quader's own listeners ────────────────────
-# The chart never creates the Secret. It holds the keys of a cert-manager TLS Secret (tls.crt,
-# tls.key and, for the edge and for Prometheus, ca.crt). Mounted as a directory volume without
-# subPath, so a rotated Secret reaches the pod through the kubelet's atomic swap and the process
-# reloads the files (tls.reloadInterval). tls.* configures the default client listener :8080 and
-# the operations listener :8081; each entry of endpoints carries its own tls block.
+# Every kind of pod (api, packages, worker, scanner) has a pair and a name of its own: <fullname>-<kind>.<namespace>.svc, and
+# <fullname>-ops.<namespace>.svc for the scrape (R-HA-063). With tls.certManager the chart renders a cert-manager Certificate per
+# kind into the Secret <fullname>-tls-<kind>; tls.existingSecrets names an existing Secret per kind instead. A pod mounts its
+# kind's Secret only, as a directory volume without subPath, so a rotated Secret reaches its pods through the kubelet's atomic
+# swap and the process reloads the files (tls.reloadInterval). tls.* configures the default client listener :8080 and the
+# operations listener :8081; each entry of endpoints carries its own tls block.
 tls:
   enabled: true                         # false = plain HTTP inside the cluster
-  secretName: ""                        # required with tls.enabled; example: quader-tls (cert-manager Certificate secretName)
-  certKey: tls.crt                      # key of the certificate chain in the Secret
-  keyKey: tls.key                       # key of the private key in the Secret
+  existingSecrets:                      # empty = the cert-manager Certificates below; else an existing Secret per kind with tls.crt, tls.key and ca.crt, one CA for all, a different Secret for each kind; the chart never creates them
+    api: ""                             # example: quader-tls-api (names <fullname>-api.<namespace>.svc and <fullname>-ops.<namespace>.svc, usage server auth)
+    packages: ""                        # example: quader-tls-packages (<fullname>-packages.<namespace>.svc and the ops name, server auth)
+    worker: ""                          # example: quader-tls-worker (<fullname>-worker.<namespace>.svc and the ops name, server auth and client auth)
+    scanner: ""                         # example: quader-tls-scanner (<fullname>-scanner.<namespace>.svc and the ops name, server auth and client auth); needed while the scanner is rendered
+  certManager:                          # the Certificate per kind the chart renders while existingSecrets is empty: <fullname>-tls-<kind>
+    issuerRef:
+      kind: ClusterIssuer               # ClusterIssuer | Issuer (an Issuer of the release namespace)
+      name: ""                          # required with tls.enabled unless existingSecrets names a Secret per kind; example: cluster-ca
+      group: cert-manager.io
+    duration: 2160h                     # 90 days
+    renewBefore: 720h                   # 30 days
+    privateKey:
+      algorithm: ECDSA                  # ECDSA | RSA; rotationPolicy is Always: a renewal changes the key too
+      size: 256                         # ECDSA: 256 | 384; RSA: 2048 | 3072 | 4096
+    extraDnsNames: []                   # names every pair carries besides its kind's, for a client that reaches a pod by port-forward; no check of the chart relies on them; example: [localhost]
+    extraIpAddresses: []                # example: [127.0.0.1]
   minVersion: "1.2"                     # "1.2" | "1.3" (server.tls.min_version)
   reloadInterval: 10s                   # content poll of the mounted files (server.tls.reload_interval)
   clientCA:                             # optional mutual TLS: the edge must present a client certificate
     secretName: ""                      # empty = no client certificates requested; example: quader-edge-ca
     key: ca.crt                         # key of the CA bundle in that Secret
     auth: require                       # require | verify_if_given (server.tls.client_auth)
-  ops:                                  # optional separate certificate for:8081 (probes, metrics); empty = same material as:8080. Recommended with endpoint pools and workers: only then the listener private key of:8080 stays out of the pods that do not serve it
-    secretName: ""                      # example: quader-ops-tls
-    certKey: tls.crt
-    keyKey: tls.key
   backendTLSPolicy:                     # Gateway API: how the Gateway verifies quader (needs the BackendTLSPolicy CRD)
     enabled: false
-    caConfigMapName: ""                 # required when enabled; example: quader-tls-ca (a ConfigMap with ca.crt: Gateway API takes no Secret here)
-    hostname: ""                        # empty = <fullname>.<namespace>.svc; must be a SAN of the certificate
+    caConfigMapName: ""                 # required when enabled; example: quader-tls-ca (a ConfigMap with ca.crt: Gateway API takes no Secret here); each policy verifies its Service's kind name
 
 # ── Existing Secrets (the chart never creates one) ──────────────────────────
 secrets:
@@ -624,10 +632,12 @@ ingress:
   tls: []                               # example: [{secretName: quader-tls, hosts: [quader.example.com]}]
   backendTLS:                           # how the controller reaches quader when tls.enabled; quader speaks HTTPS, so the controller must too
     controller: haproxy                 # haproxy (HAProxy Ingress, the primary target) | traefik | ingress-nginx | manual (you set the backend protocol in ingress.annotations / service.annotations)
-    verify: true                        # the controller verifies the quader certificate; needs caSecret (haproxy, ingress-nginx) or serversTransport (traefik); false = encrypted but unverified
-    caSecret: ""                        # required with verify on haproxy and ingress-nginx; Secret in the release namespace with ca.crt; example: quader-tls (a cert-manager Secret carries ca.crt)
+    verify: true                        # the controller verifies each backend under its kind's name, <fullname>-api.<namespace>.svc or <fullname>-packages.<namespace>.svc (R-HA-063); traefik needs serversTransports; false = encrypted but unverified
+    caSecret: ""                        # haproxy, ingress-nginx: empty = the Secret of the pair the backend serves (its kind's, or a further endpoint's own), whose ca.crt the controller reads; example: quader-internal-ca
     clientCertSecret: ""                # haproxy: Secret with tls.crt and tls.key that HAProxy Ingress presents to quader (required with tls.clientCA); example: quader-edge-client
-    serversTransport: ""                # traefik: ServersTransport reference <namespace>-<name>@kubernetescrd that verifies quader; example: quader-quader-tls@kubernetescrd
+    serversTransports:                  # traefik: a ServersTransport per kind, reference <namespace>-<name>@kubernetescrd, with that kind's name as serverName; required with verify on traefik
+      api: ""                           # example: quader-quader-api@kubernetescrd
+      packages: ""                      # example: quader-quader-packages@kubernetescrd
 
 gateway:
   enabled: false                        # an HTTPRoute (gateway.networking.k8s.io/v1, Gateway API v1.2 or later) with the path rules of the Ingress; may run beside ingress.enabled
@@ -666,7 +676,7 @@ endpoints: {}                           # only the default endpoint; example:
 #    maxInFlight: 1024                  # per replica and endpoint
 #    trustedProxies: []                 # config.server.trusted_proxies
 #    tls:
-#      existingSecret: ""               # "" = the pair of tls.secretName; example quader-packages-tls (keys tls.crt, tls.key)
+#      existingSecret: ""               # "" = the pair of the kind of the pods that serve it; example quader-packages-tls (keys tls.crt, tls.key)
 #      extraSecrets: []                 # example [quader-packages-wildcard-tls]: further pairs, chosen by SNI
 #      clientCaSecret: ""               # no client certificates; example quader-customer-ca (key ca.crt)
 #    pool:

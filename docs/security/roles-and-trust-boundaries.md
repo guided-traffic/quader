@@ -118,11 +118,13 @@ key ring, because the analyser is the largest parser of hostile input in the ins
 roles:
 
 ```text
-   worker (job, database, detection)                      holds every data credential and the key ring
-      | HTTPS :8080, mutual TLS (internal CA)              signs one scan token per call
+   worker (job, database, detection)                      holds every data credential, the key ring and the worker's pair
+      | HTTPS :8080, mutual TLS: the scanner admits         signs one scan token per call
+      | the worker's name only, the worker the scanner's
       v
-   scanner (analysis)                                     holds the TLS pair, the internal CA, one call's token and image
-      | HTTPS :8082, mutual TLS, scan token                no connection to PostgreSQL, Valkey, the object store
+   scanner (analysis)                                     holds the scanner's pair, the internal CA, one call's token and image
+      | HTTPS :8082, mutual TLS: the scan listener admits   no connection to PostgreSQL, Valkey, the object store
+      | the scanner's name only; scan token
       v
    packages: scan listener (endpoint "scan")              accepts scan tokens only; reads, never fills
 ```
@@ -130,7 +132,8 @@ roles:
 | Property | How | Test |
 |---|---|---|
 | the scanner builds no area that reaches a data store | its role enables the area `scanner` alone; its configuration load resolves no secret file | `TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute` (`internal/app`), `TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile` (`internal/config`) |
-| the scanner's pod mounts no secret but the TLS pair and the internal CA | the chart's volume list for the role; the shared extras do not reach it | `TestR_HA_065_*` (`test/chart`) |
+| the scanner's pod mounts no secret but its own TLS pair and the internal CA | the chart's volume list for the role; the shared extras do not reach it | `TestR_HA_065_*` (`test/chart`) |
+| each link admits one kind: a certificate of the CA with another kind's name or a wildcard is refused on both ends | the exact name checks of the links | `TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName` (`internal/httpserver`), `TestR_VULN_041_TheLinksRefuseAClientWithoutTheCertificateOfTheirKind` (`test/integration/vulnimage`) |
 | a scan token reads one image and works only on the scan listener | the claims' rule, the endpoint `scan`, the digest pin of the enforcement point, the fixed rule of the decision point | `TestR_OCI_037_*` (`internal/auth/registrytoken`, `internal/api/registry`, `internal/authz`), `TestR_EP_010_TheScanListenerAcceptsAScanTokenAndNothingElse` (`internal/auth`) |
 | what the scanner answers cannot steer the worker's analyser | the worker decodes it under limits and writes it anew | `TestR_VULN_043_*` (`internal/vuln/imagescan`) |
 
@@ -226,8 +229,8 @@ The gaps of these boundaries that the spec pages record:
 - [H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service): write access to Valkey denies service.
 
 The gaps of the scanner's boundary are on [image-scanning.md](image-scanning.md#what-this-does-not-cover): its egress
-([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)), the chart's key in its pod
-([H-1035](image-scanning.md#h-1035--the-scanner-holds-the-charts-tls-key-by-default)) and its links without TLS
+([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)), the scanner's own pair in its pod
+([H-1035](image-scanning.md#h-1035--a-taken-over-analyser-holds-the-scanners-pair)) and its links without TLS
 ([H-1043](image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)).
 
 ### H-62 · Client address follows the header the edge sends

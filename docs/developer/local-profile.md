@@ -13,11 +13,11 @@ the base of the end-to-end tests. The requirements are [R-HA-051](../spec/ha-and
 ```mermaid
 flowchart LR
   host["host client / k6<br/>(dev CA)"] -- "https :28080 (NodePort 30443)" --> hap["HAProxy Ingress<br/>2 pods, control-plane node"]
-  hap -- "HTTPS, verify quader-tls CA,<br/>SNI quader.quader.svc" --> web["quader api / packages / worker"]
+  hap -- "HTTPS, each backend verified<br/>under its kind's name" --> web["quader api / packages / worker / scanner"]
   web -- "verify-full" --> pg[("CloudNativePG<br/>quader-db")]
   web -- "TLS 36379 / 16379" --> vk[("Valkey operator:<br/>2 Valkey + 3 Sentinels")]
   web -- "https, ca_file" --> s3[("SeaweedFS")]
-  cm["cert-manager<br/>Issuer quader-dev-ca"] -. "quader-tls, quader-edge-tls,<br/>quader-s3-tls, quader-valkey-tls" .-> web
+  cm["cert-manager<br/>Issuer quader-dev-ca"] -. "quader-tls-&lt;kind&gt; (the chart's),<br/>quader-edge-tls, quader-s3-tls, quader-valkey-tls" .-> web
   iso["internal-secrets-<br/>operator"] -. "passwords, key ring" .-> web
 ```
 
@@ -35,7 +35,7 @@ flowchart LR
 | Valkey 9.1 | namespace `quader` | `Valkey` resource `quader-valkey` ([valkey.yaml](../../deploy/dev/valkey.yaml)): StatefulSet `quader-valkey` (2 pods) and `quader-valkey-sentinel` (3 pods), TLS only, `emptyDir`, PodDisruptionBudgets, one pod of each tier per zone. The Alpine image has every tool the operator's scripts need (checked against `RequiredImageTools` of the operator, 1.14.12) | `DEV_VALKEY_IMAGE` |
 | SeaweedFS | namespace `quader` | Deployment `quader-s3` (one `weed server` on the 20 Gi PersistentVolumeClaim `quader-s3-data` (a local-path volume, so the objects survive a scale to 0, [Q-STOR-147](../spec/storage.md#q-stor-147--the-dev-profiles-object-store-keeps-its-objects-over-an-outage)), pinned to the control-plane node like the edge, because the volume is bound to a node and no test drains this one; memory limit 4Gi: two 500 MB uploads at once were OOM-killed at 1Gi in E1.13), HTTPS on `quader-s3:9000` with `quader-s3-tls`, buckets `quader-blobs` (versioning on), `quader-pg-archive`, `quader-backups` | `DEV_SEAWEEDFS_IMAGE`, `DEV_AWSCLI_IMAGE` |
 | Keycloak (test IdP) | namespace `quader` | Deployment `quader-keycloak` ([keycloak.yaml](../../deploy/dev/keycloak.yaml)), `start-dev` with a realm import, HTTPS only on `quader-keycloak:8443` with `quader-keycloak-tls`; realm `quader` with the users `alice` and `bob`, the groups `quader-team-web` and `quader-platform-admins`, the client `quader` (Q-AUTH-35, [test IdP](#the-test-idp)) | `DEV_KEYCLOAK_IMAGE` |
-| Quader | namespace `quader` | Helm release `quader` with [values-dev.yaml](../../deploy/dev/values-dev.yaml): `api` 2 and `packages` 3 with 1 GiB limits, `worker` 2 (grace period 60 s, so a drain test does not wait 300 s) and the pool `vuln` 2 (queue `vuln`, the settings of `worker`), migration Job, `health.shutdown_drain_delay` 15 s (the edge took longer than the default 5 s to drop a draining pod's endpoint on the CI runners), caches of 64, 32 and 64 MiB so a pod of the serving roles keeps 858 memory slots instead of 90 (Q-ARCH-243), the chart's NetworkPolicies, `tls.enabled` with `quader-tls` and `reloadInterval: 2s`, the endpoint `customers` on `:8443`; `up.sh` adds the Docker `kind` network ranges as `networkPolicy.probeCIDRs` | image `guidedtraffic/quader:dev` (the default of `up.sh`, loaded into kind from the local Docker; `make image` builds it) |
+| Quader | namespace `quader` | Helm release `quader` with [values-dev.yaml](../../deploy/dev/values-dev.yaml): `api` 2 and `packages` 3 with 1 GiB limits, `worker` 2 (grace period 60 s, so a drain test does not wait 300 s) and the pool `vuln` 2 (queue `vuln`, the settings of `worker`), migration Job, `health.shutdown_drain_delay` 15 s (the edge took longer than the default 5 s to drop a draining pod's endpoint on the CI runners), caches of 64, 32 and 64 MiB so a pod of the serving roles keeps 858 memory slots instead of 90 (Q-ARCH-243), the chart's NetworkPolicies, `tls.enabled` with the chart's pairs per kind from the Issuer `quader-dev-ca` and `reloadInterval: 2s`, the endpoint `customers` on `:8443`; `up.sh` adds the Docker `kind` network ranges as `networkPolicy.probeCIDRs` | image `guidedtraffic/quader:dev` (the default of `up.sh`, loaded into kind from the local Docker; `make image` builds it) |
 
 The namespace `quader` enforces the restricted Pod Security Standard (`enforce`, `audit` and `warn`),
 and every dependency manifest satisfies it, the operators' generated pods included. Images are pinned by digest; the
@@ -138,7 +138,7 @@ The set `edge` ([e2e.md](e2e.md#the-edge-and-alert-tests)) uses it.
 PrometheusRule of the cluster, and kube-state-metrics; no Alertmanager, Grafana or node exporter
 ([Q-HA-263](../spec/ha-and-helm.md#q-ha-263--the-dev-stack-gets-a-prometheus-for-the-profile-alerts-kube-prometheus-stack-without-alertmanager-grafana-and-node-exporter-plain-http-on-its-own-interface)).
 [values-alerts.yaml](../../deploy/dev/values-alerts.yaml) renders the chart's ServiceMonitor (every 10 s) and PrometheusRule. The Prometheus scrapes the ops
-listener over TLS and verifies it against the dev CA for `quader-ops.<ns>.svc`, a name that `quader-tls` carries ([pki.yaml](../../deploy/dev/pki.yaml)); the chart's
+listener over TLS and verifies it against the dev CA for `quader-ops.<ns>.svc`, a name that every kind's pair carries (R-HA-063); the chart's
 NetworkPolicy admits the scrape from the namespace `monitoring`. Its interface is plain HTTP inside the cluster: reach it with
 `kubectl -n monitoring port-forward svc/prometheus-kube-prometheus-prometheus 9090` (see
 [H-797](../security/transport-encryption.md#h-797--the-prometheus-of-the-profile-alerts-serves-its-interface-and-api-in-plain-http)). The set `alerts`
@@ -184,7 +184,7 @@ Generated or created in namespace `quader`; nothing in `up.sh` makes a random va
 | `quader-encryption-keys` | `dev.key`: 32 random bytes, **raw** (`iso.gtrfc.com/type: bytes`) | internal-secrets-operator | chart: `secrets.encryption`; the file name without `.key`, `dev`, is the key ID. The key ring accepts a 32-byte file as it is and base64 text of 32 bytes |
 | `quader-break-glass` | `password` (32 characters, plaintext: at least 20 are required) | internal-secrets-operator, **rotated every 24 h** (`iso.gtrfc.com/rotate: 24h`) | chart: `secrets.breakGlass` (mounted into `api` pods, renders `auth.break_glass.password_file`); the e2e tests read it for E1.1 and R-AUTH-042 |
 | `quader-dev-ca` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager (self-signed root, ten years) | the Issuer `quader-dev-ca` |
-| `quader-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | Quader's listeners (`tls.secretName`) and HAProxy Ingress, which verifies it (`ingress.backendTLS.caSecret`); it names `quader` (the SNI the edge sends), the role Services `quader-api` and `quader-packages` that the Bastions and other in-cluster callers use, and `localhost`. `quader-customers-tls` names `quader-ep-customers` and `quader-api-ep-customers` |
+| `quader-tls-api`, `quader-tls-packages`, `quader-tls-worker`, `quader-tls-scanner` | `tls.crt`, `tls.key`, `ca.crt` | the chart's Certificates (`tls.certManager.issuerRef: quader-dev-ca`), cert-manager | the pair of each kind of pod, in that kind's pods only; each names `quader-<kind>.<ns>.svc` (the name HAProxy Ingress verifies per Service for `api` and `packages`, and the links check), `quader-ops.<ns>.svc` and, as the profile's extra names, `localhost` and `127.0.0.1` for the tests that reach one pod through a port-forward; the worker's and the scanner's allow client authentication. `quader-customers-tls` names `quader-ep-customers` and `quader-api-ep-customers` |
 | `quader-edge-tls` | `tls.crt`, `tls.key` | cert-manager | the edge's certificate for `localhost` |
 | `quader-s3-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | SeaweedFS; Quader mounts its `ca.crt` through `secrets.s3CA`, which renders `storage.s3.ca_file` |
 | `quader-customers-tls`, `quader-customers-wildcard-tls`, `quader-customers-edge-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | the endpoint `customers` (below) |
@@ -332,10 +332,11 @@ PostgreSQL and S3 from the host: `kubectl --context kind-quader -n quader port-f
 and `svc/quader-s3 9000` (https; trust `.dev/pki/ca.crt` and use the name `quader-s3.quader.svc`, for example with
 `curl --resolve quader-s3.quader.svc:9000:127.0.0.1`); the credentials are in `quader-db-app` and `quader-s3`.
 
-To renew Quader's certificate by hand, the way cert-manager's `cmctl renew` does (the e2e drill uses the same trigger):
+To renew the certificate of one kind of pod by hand, the way cert-manager's `cmctl renew` does (the e2e drill uses the same trigger on
+each kind's):
 
 ```shell
-kubectl --context kind-quader -n quader patch certificate quader-tls --subresource=status --type=json -p \
+kubectl --context kind-quader -n quader patch certificate quader-tls-api --subresource=status --type=json -p \
   '[{"op":"add","path":"/status/conditions/-","value":{"type":"Issuing","status":"True","reason":"ManuallyTriggered","message":"Certificate re-issuance manually triggered","lastTransitionTime":"'"$(date -u +%FT%TZ)"'"}}]'
 ```
 

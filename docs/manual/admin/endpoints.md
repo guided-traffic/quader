@@ -50,7 +50,7 @@ endpoints:
     replicaHeader: never                # default
     maxInFlight: 1024                   # default
     tls:
-      existingSecret: quader-packages-tls    # example; default "" = the pair of tls.secretName
+      existingSecret: quader-packages-tls    # example; default "" = the pair of the kind of the pods that serve it
       extraSecrets: []                  # default; further pairs chosen by SNI, example [quader-packages-wildcard-tls]
       clientCaSecret: ""                # default: no client certificates
     pool:

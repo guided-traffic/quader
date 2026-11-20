@@ -179,6 +179,19 @@ func isServing(p pod) bool {
 	return strings.HasPrefix(p.Name, "quader-api-") || strings.HasPrefix(p.Name, "quader-packages-")
 }
 
+// tlsKinds are the kinds of pod the drill's pods belong to; each serves the pair of its own Secret quader-tls-<kind> (R-HA-063).
+var tlsKinds = []string{"api", "packages", "worker"}
+
+// podKind is the kind of a replica of selQuader, from its name (a pool's pods are named after their role).
+func podKind(p pod) string {
+	for _, k := range tlsKinds {
+		if strings.HasPrefix(p.Name, "quader-"+k+"-") {
+			return k
+		}
+	}
+	return ""
+}
+
 func TestE15TLS(t *testing.T) {
 	t.Run("R-ARCH-035 R-HA-063 E0.15 a plaintext request to a quader pod's :8080 and :8081 and to the object store is not answered", func(t *testing.T) {
 		pk := livePods(t, selPackages)[0]
@@ -197,14 +210,17 @@ func TestE15TLS(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-035 R-HA-063 E0.15 the listener certificate is renewed under load: only 200, the new certificate is served within reload_interval + 1 s on every pod, reloads are counted, no restart", func(t *testing.T) {
+	t.Run("R-ARCH-035 R-HA-063 E0.15 the pair of every kind is renewed under load: only 200, each pod serves its kind's new certificate within reload_interval + 1 s, reloads are counted, no restart", func(t *testing.T) {
 		interval := configuredReloadInterval(t)
 		bound := interval + time.Second
 		image := os.Getenv("QUADER_E2E_OPENSSL_IMAGE")
 		if image == "" {
 			t.Fatal("QUADER_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
 		}
-		before := secretSerial(t, "quader-tls")
+		before := map[string]string{}
+		for _, k := range tlsKinds {
+			before[k] = secretSerial(t, "quader-tls-"+k)
+		}
 		pods := livePods(t, selQuader)
 		if len(pods) < 4 {
 			t.Fatalf("%d quader pods, want at least 4", len(pods))
@@ -247,8 +263,8 @@ func TestE15TLS(t *testing.T) {
 				if len(ls) == 0 {
 					return false
 				}
-				l := ls[len(ls)-1]
-				if l.file != before || l.opsSer != before || (isServing(p) && l.client != before) {
+				l, b := ls[len(ls)-1], before[podKind(p)]
+				if l.file != b || l.opsSer != b || (isServing(p) && l.client != b) {
 					return false
 				}
 			}
@@ -262,14 +278,20 @@ func TestE15TLS(t *testing.T) {
 		patch := fmt.Sprintf(`[{"op":"add","path":"/status/conditions/-","value":{"type":"Issuing","status":"True","reason":"ManuallyTriggered","message":"Certificate re-issuance manually triggered","lastTransitionTime":%q}}]`,
 			time.Now().UTC().Format(time.RFC3339))
 		renewedAt := time.Now()
-		kn(t, "patch", "certificate", "quader-tls", "--subresource=status", "--type=json", "-p", patch)
-		var after string
-		waitFor(t, "cert-manager to issue a new certificate into Secret quader-tls", 3*time.Minute, 200*time.Millisecond, func() bool {
-			after = secretSerial(t, "quader-tls")
-			return after != before
+		for _, k := range tlsKinds {
+			kn(t, "patch", "certificate", "quader-tls-"+k, "--subresource=status", "--type=json", "-p", patch)
+		}
+		after := map[string]string{}
+		waitFor(t, "cert-manager to issue a new certificate into each Secret quader-tls-<kind>", 3*time.Minute, 200*time.Millisecond, func() bool {
+			for _, k := range tlsKinds {
+				if after[k] = secretSerial(t, "quader-tls-"+k); after[k] == before[k] {
+					return false
+				}
+			}
+			return true
 		})
 		issued := time.Since(renewedAt)
-		t.Logf("renewal triggered; cert-manager wrote serial %s (was %s) after %s", after, before, issued.Round(100*time.Millisecond))
+		t.Logf("renewal triggered; cert-manager wrote the serials %v (were %v) after %s", after, before, issued.Round(100*time.Millisecond))
 
 		type timing struct{ file, client, opsL float64 }
 		times := map[string]timing{}
@@ -277,10 +299,11 @@ func TestE15TLS(t *testing.T) {
 			done := true
 			for _, p := range pods {
 				ls := logs(p)
+				a := after[podKind(p)]
 				tm := timing{
-					file:   firstAt(ls, after, func(l probeLine) string { return l.file }),
-					client: firstAt(ls, after, func(l probeLine) string { return l.client }),
-					opsL:   firstAt(ls, after, func(l probeLine) string { return l.opsSer }),
+					file:   firstAt(ls, a, func(l probeLine) string { return l.file }),
+					client: firstAt(ls, a, func(l probeLine) string { return l.client }),
+					opsL:   firstAt(ls, a, func(l probeLine) string { return l.opsSer }),
 				}
 				times[p.Name] = tm
 				done = done && tm.file >= 0 && (tm.client >= 0 || !isServing(p)) && tm.opsL >= 0

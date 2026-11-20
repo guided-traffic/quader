@@ -1738,16 +1738,6 @@
           },
           "additionalProperties": false
         },
-        "tls": {
-          "type": "object",
-          "properties": {
-            "secretName": {
-              "type": "string",
-              "description": "a pair of the scanner's own, issued by the CA of tls.secretName's ca.crt; empty = tls.secretName (Q-HA-317)"
-            }
-          },
-          "additionalProperties": false
-        },
         "resources": {
           "type": "object",
           "properties": {
@@ -2788,8 +2778,17 @@
             "caSecret": {
               "type": "string"
             },
-            "serversTransport": {
-              "type": "string"
+            "serversTransports": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "api": {
+                  "type": "string"
+                },
+                "packages": {
+                  "type": "string"
+                }
+              }
             },
             "clientCertSecret": {
               "type": "string"
@@ -3005,16 +3004,97 @@
         "enabled": {
           "type": "boolean"
         },
-        "secretName": {
-          "type": "string"
+        "existingSecrets": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "api": {
+              "type": "string"
+            },
+            "packages": {
+              "type": "string"
+            },
+            "worker": {
+              "type": "string"
+            },
+            "scanner": {
+              "type": "string"
+            }
+          }
         },
-        "certKey": {
-          "type": "string",
-          "minLength": 1
-        },
-        "keyKey": {
-          "type": "string",
-          "minLength": 1
+        "certManager": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "issuerRef": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ClusterIssuer",
+                    "Issuer"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "description": "the cert-manager issuer of the pairs of every kind of pod; required unless existingSecrets names them (R-HA-063)"
+                },
+                "group": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "duration": {
+              "type": "string",
+              "pattern": "^([0-9]+h)?([0-9]+m)?([0-9]+s)?$",
+              "minLength": 2
+            },
+            "renewBefore": {
+              "type": "string",
+              "pattern": "^([0-9]+h)?([0-9]+m)?([0-9]+s)?$",
+              "minLength": 2
+            },
+            "privateKey": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "algorithm": {
+                  "type": "string",
+                  "enum": [
+                    "ECDSA",
+                    "RSA"
+                  ]
+                },
+                "size": {
+                  "type": "integer",
+                  "enum": [
+                    256,
+                    384,
+                    2048,
+                    3072,
+                    4096
+                  ]
+                }
+              }
+            },
+            "extraDnsNames": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "extraIpAddresses": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
         },
         "minVersion": {
           "type": "string",
@@ -3048,23 +3128,6 @@
             }
           }
         },
-        "ops": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "secretName": {
-              "type": "string"
-            },
-            "certKey": {
-              "type": "string",
-              "minLength": 1
-            },
-            "keyKey": {
-              "type": "string",
-              "minLength": 1
-            }
-          }
-        },
         "backendTLSPolicy": {
           "type": "object",
           "additionalProperties": false,
@@ -3073,9 +3136,6 @@
               "type": "boolean"
             },
             "caConfigMapName": {
-              "type": "string"
-            },
-            "hostname": {
               "type": "string"
             }
           }
@@ -3355,8 +3415,17 @@
                   "caSecret": {
                     "type": "string"
                   },
-                  "serversTransport": {
-                    "type": "string"
+                  "serversTransports": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "api": {
+                        "type": "string"
+                      },
+                      "packages": {
+                        "type": "string"
+                      }
+                    }
                   },
                   "clientCertSecret": {
                     "type": "string"

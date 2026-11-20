@@ -4264,38 +4264,60 @@ Acceptance criteria:
 ### R-ARCH-038 · TLS between Quader's pods
 Priority: **P1** · Covers: HA-018
 
-The image scanning adds the first links between Quader's own pods (R-ARCH-036, R-ARCH-037). Each link authenticates both ends with the
-TLS material the installation has already (Q-ARCH-529), and every piece of it reloads without a restart (INV-20, R-ARCH-035).
+The image scanning adds the first links between Quader's own pods (R-ARCH-036, R-ARCH-037). Each end of a link presents the pair of its
+own kind of pod and checks the other end's name ([ha-and-helm.md](ha-and-helm.md) Q-HA-345, R-HA-063), and every piece of the material
+reloads without a restart (INV-20, R-ARCH-035).
 
 ```yaml
 server:
   scan_listen: ""                     # default (proposed): no scan listener; the chart sets ":8082" on the main packages Deployment (R-ARCH-037)
+  scan_clients: []                    # the names of the kinds of pod the scan listener admits, one per kind of scanner; the chart sets [<fullname>-scanner.<namespace>.svc]
   internal_tls:
-    ca_file: ""                       # the CA the links between Quader's pods verify against; the chart sets /var/run/secrets/quader/tls-internal/ca.crt; example: /etc/quader/internal-ca.crt
+    ca_file: ""                       # the CA the links between Quader's pods verify against; the chart sets /var/run/secrets/quader/tls/ca.crt, the ca.crt of the pod's own Secret; example: /etc/quader/internal-ca.crt
+vulnerabilities:
+  images:
+    scanner:
+      server_name: ""                 # empty = the host of scanner.url; the chart sets <fullname>-scanner.<namespace>.svc
+      client_name: ""                 # the name the scanner's listener requires in a client certificate; the chart sets <fullname>-worker.<namespace>.svc
+    registry:
+      server_name: ""                 # empty = the host of registry.url; the chart sets <fullname>-packages.<namespace>.svc
 ```
 
-- **The identity is the listener's pair.** A process presents the first pair of `server.tls.certificates` as its client certificate on a link,
-  and serves it on the scanner's listener and the scan listener. The pair must allow client authentication (the extended key usage
+- **The identity is the process's pair.** A process presents the first pair of `server.tls.certificates` as its client certificate on a link,
+  and serves it on the scanner's listener and the scan listener. A client's pair must allow client authentication (the extended key usage
   `clientAuth`, or none); a process that needs it for a link and finds a pair without it logs the reason once per loaded pair, and a
   `scanner` stays not ready ([ha-and-helm.md](ha-and-helm.md) R-HA-065).
-- **Both ends verify.** A client of a link verifies the server's certificate against `internal_tls.ca_file` under the link's `server_name`
-  (`vulnerabilities.images.scanner.server_name`, `vulnerabilities.images.registry.server_name`); the scanner's listener and the scan
-  listener require a client certificate that chains to the same file, so a peer without one is refused in the handshake before any HTTP is
-  read. No hostname is checked in the client certificate: the CA is what admits a peer.
+- **Both ends check the other's name**
+  ([Q-ARCH-552](#q-arch-552--each-end-of-a-link-requires-one-name-listed-exactly-in-the-other-ends-certificate)). The client verifies the
+  server's certificate against `internal_tls.ca_file` and requires the link's `server_name` among its DNS names; the listener requires a client
+  certificate that chains to the same file and lists one of the names it admits among its DNS names: the scanner's listener the one name of
+  `vulnerabilities.images.scanner.client_name`, the scan listener one of `server.scan_clients`, a list with an entry per kind of scanner, so
+  that a second kind of scanner is one entry more; a route of the scan listener may narrow it to one of them (`httpserver.PeerName`). The name must be listed exactly, compared
+  without regard to case: a wildcard name does not stand for it, and the subject's common name is not read. A peer that fails either check is
+  refused in the handshake, before any HTTP is read, and the listener logs the names the certificate listed.
+- **Where a name is required.** While `server.tls` serves TLS, `vulnerabilities.images.scanner.client_name` is required in the role `scanner`
+  and `server.scan_clients` in a process of the role `packages` or `web` that opens `scan_listen`; the role `all` may leave both empty, and then the CA alone admits a client, which in that role is the process itself
+  ([Q-ARCH-553](#q-arch-553--the-role-all-keeps-one-pair-the-integration-harness-issues-one-per-role)). An empty `server_name` is the host of
+  the link's URL; an IP address there is verified against the certificate's IP addresses by Go's rules, which is what the role `all`'s
+  loopback calls do. A name holds no wildcard, port or path: it is compared exactly.
 - **Reloading.** The pair and the CA are checked every `server.tls.reload_interval` by the reloader of R-ARCH-035, compared by content; a
   new pair or CA serves and is presented from the next handshake on, and a broken one keeps the last good one, counted in
   `quader_tls_reload_errors_total` with `listener="scan"` or `listener="scanner"` and `kind="client"` for the presented pair. The worker opens
-  a connection per call, so a rotation reaches every call within the interval.
-- **Without TLS** (`server.tls.certificates` empty, the chart's `tls.enabled: false`), the links are plain HTTP and no client certificate is
-  asked ([ha-and-helm.md](ha-and-helm.md) Q-HA-322); `internal_tls.ca_file` set without a pair is refused at start.
+  a connection per call, so a rotation reaches every call within the interval. The names are configuration and change with a restart.
+- **Without TLS** (`server.tls.certificates` empty, the chart's `tls.enabled: false`), the links are plain HTTP, no client certificate is
+  asked and no name is checked ([ha-and-helm.md](ha-and-helm.md) Q-HA-322); `internal_tls.ca_file` set without a pair is refused at start.
 - The links never use the outbound factory of R-ARCH-022: its egress address policy refuses cluster addresses by design, and these links go
   only to the installation's own Services.
 
 Acceptance criteria:
 
 - Unit (`internal/httpserver`, under a second): a client certificate of another CA, none, and an expired one are refused in the handshake of
-  the scan listener; a pair with the extended key usage `serverAuth` alone is reported as unfit for a link; a rotated CA admits the new
-  client from the next handshake, with no restart.
+  the scan listener; on each link, a client certificate of the CA that lists another kind's name or only a wildcard is refused by the
+  listener, and a server certificate of the CA that lists another kind's name is refused by the client; a pair with the extended key usage
+  `serverAuth` alone is reported as unfit for a link; a rotated CA admits the new client from the next handshake, with no restart.
+- Unit (`internal/config`): a scanner with TLS and no `scanner.client_name`, and a `packages` process with a scan listener, TLS and no
+  `server.scan_clients`, are refused at start, naming the key; the role `all` starts without either; two names in `scan_clients` load.
+- Unit (`internal/httpserver`): a listener that admits two kinds admits each and refuses a third, and `PeerName` names the kind that called.
 
 ### R-ARCH-020 · Configuration schema in code and the file/database split
 Priority: **MVP** · Covers: OPS-040
@@ -11067,7 +11089,10 @@ the registry, which would then use the same listener under its own token kind.
 ### Q-ARCH-529 · The links between Quader's pods authenticate both ends with the listener's pair against the chart's CA
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner's rule:
-every listener and every link inside the chart speaks TLS, and certificates rotate without a restart.
+every listener and every link inside the chart speaks TLS, and certificates rotate without a restart. **Superseded** in its choice of the one
+pair by the owner's decision [Q-HA-345](ha-and-helm.md#q-ha-345--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-and-the-chart-issues-the-pairs)
+(2026-11-20), which takes (b): a pair per kind of pod, issued by the chart, with the names checked on each link (Q-ARCH-552). The listener's
+pair stays the identity, and the `ca.crt` of the pod's own Secret the trust anchor. Kept as the record of what was decided before.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -11305,6 +11330,49 @@ authentication. The role `all` builds the same scanner (Q-ARCH-531), and its pro
 scanner's. The development agent would revisit this if the role `all` were ever rendered for an installation.
 
 **Applied in the spec:** R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-067.
+
+### Q-ARCH-552 · Each end of a link requires one name, listed exactly in the other end's certificate
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's decision is that each link checks the name of the other side ([ha-and-helm.md](ha-and-helm.md) Q-HA-345). Until then the
+listeners of the links admitted any client certificate of the CA, and the clients verified the server by Go's hostname rules, which let a
+wildcard name stand for any. The owner's issuer had issued 76 certificates, 28 of them with client authentication.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The names listed exactly among the DNS names, on both ends; no wildcard, no common name: one `server_name` per client, one `client_name` for the scanner's listener (the worker), and `server.scan_clients`, a list with an entry per kind of scanner, for the scan listener; required in the roles that serve a link while TLS is on, optional in `all` (chosen) | The keys of R-ARCH-038 | A certificate of the CA passes only when it was issued for that very kind; a wildcard certificate of another service never passes; the chart sets every name; the second kind of scanner that is coming (the malware scanner, [Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration)) is one entry in the scan listener's list, and a route that serves one kind only narrows it with `PeerName` ([malware-scanning.md](malware-scanning.md) Q-MAL-27) | A configuration outside the chart writes the names |
+| (b) Go's hostname rules on both ends | Wildcards stand for a name | Usual TLS behaviour | A wildcard certificate for the namespace's Services would pass as every kind |
+| (c) A list of names on every side | Several admitted names everywhere | A rename without a gap | Only the scan listener has more than one kind of caller; elsewhere one name keeps the check and its log readable |
+| (d) The name in the subject's common name | A field cert-manager does not need to write | — | The common name is deprecated for host names, and a CA issues it freely |
+
+**Choice:** (a). The client's check runs after Go's own verification of the chain and the name, so it narrows it and widens nothing. The
+listener logs a refused client with the names its certificate listed. **Rationale:** the name is the kind's identity, so a check that a
+wildcard can satisfy is not a check of the kind. The development agent would revisit this when a link must admit two kinds, or when an issuer
+policy (cert-manager's approver-policy) guarantees the names in the CA itself.
+
+**Applied in the spec:** R-ARCH-038; [ha-and-helm.md](ha-and-helm.md) R-HA-066; [vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-185.
+
+### Q-ARCH-553 · The role `all` keeps one pair; the integration harness issues one per role
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the role `all` (the UI development backend, the role `all` tests) runs the worker, `packages` and the scanner in one process with one
+`server.tls` block, and its links call its own listeners over loopback (Q-ARCH-531). The integration stack starts the roles as replicas in
+one test process, with the stack's one pair, and the suite `vulnimage` runs the links as the chart does. A plain local start must not become
+harder.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `all`: one pair, `client_name` and `scan_clients` optional (empty: the CA admits); the harness issues a pair per role from the stack's CA with the names `<kind>.quader.test` (`web` carries the names of `api` and `packages`, `all` all four), `localhost` and `127.0.0.1`, and sets the four names of the links (chosen) | One rule for the processes, one place in the harness | `make ui-dev-backend` starts as before; the integration suite runs every check of the chart, so a refused name shows there first | The role `all` checks no name unless one is configured |
+| (b) `all` with several identities: a pair per part of the process | One process presents the worker's pair to its own scanner | Closer to the chart | The parts share memory and files: an identity that separates them from each other separates nothing |
+| (c) Names required in `all` too | The UI development backend writes four names into its certificate | One rule without an exception | A plain local start needs a certificate with the right names |
+
+**Choice:** (a). The dev profile on kind is the chart's own path: `tls.certManager.issuerRef` names the profile's CA Issuer. **Rationale:** the name check
+guards a boundary between pods, which the role `all` does not have. The development agent would revisit this when the role `all` is run as more
+than one replica that call each other.
+
+**Applied in the spec:** R-ARCH-038; [ha-and-helm.md](ha-and-helm.md) R-HA-067.
 
 ### Q-ARCH-560 · A scanner is of a kind, image or malware, chosen by configuration
 

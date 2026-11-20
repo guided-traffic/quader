@@ -38,12 +38,14 @@ The chart mounts each Secret into the pods that need it and nowhere else ([_secr
 
 - the key ring (`encryption`) in the pods of every role but `scanner` and in the restore Job, which checks that it opens every key ID of
   the backup; never in the migration Job or the backup pods, which never seal or open a value;
-- in the `scanner` pods, the listener's pair and the internal CA (`ca.crt` of the chart's TLS Secret), with `tls.ops.secretName` the pair
-  of the operations listener, and nothing else: no key ring, no database, Valkey or object-store file, no shared `extraEnvFrom` or
+- the TLS pair of each kind of pod (`api`, `packages`, `worker`, `scanner`; Secret `<fullname>-tls-<kind>`, which the chart's Certificate
+  makes, or `tls.existingSecrets.<kind>`) in the pods of that kind only, and its `ca.crt` beside it where a link verifies with it
+  ([R-HA-063](../spec/ha-and-helm.md#r-ha-063--chart-tls-wiring)); a pod holds no other kind's pair;
+- in the `scanner` pods, the scanner's own pair and the internal CA, and nothing else: no key ring, no database, Valkey or object-store file, no shared `extraEnvFrom` or
   `extraVolumes` ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml)); the same in the malware scanner's container `quader`, and nothing
   of the installation in its container `clamd` or in the worker's container `freshclam`, which hold no credential at all
   ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment), [R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-freshclam-container-of-the-worker));
-- in the `worker` pods while the image scanning is on, the listener's pair as the identity they present to the scanner, and the internal
+- in the `worker` pods while the image scanning is on, the worker's pair as the identity they present to the scanner, and the internal
   CA; in the main `packages` pods, the internal CA for the scan listener ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart));
 - the object-store credentials only with `credentials.source: static`;
 - the metrics token only with `metrics.auth: static`;

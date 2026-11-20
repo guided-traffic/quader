@@ -36,7 +36,7 @@ config:
     trusted_proxies: ["10.244.0.0/24"]
   bastion:
     main:
-      url: https://quader-api.quader.svc:8080          # the Service of the main installation's api pods; certificate quader-tls names it
+      url: https://quader-api.quader.svc:8080          # the Service of the main installation's api pods; the api pair the chart issues (quader-tls-api) names it
       packages_url: https://quader-packages.quader.svc:8080 # the forwarded package and raw-file requests and the probes go to the packages pods
       unreachable_after: 10s
       token_reload_interval: 5s

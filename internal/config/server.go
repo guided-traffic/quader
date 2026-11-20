@@ -23,6 +23,7 @@ type Server struct {
 	// The scan listener of packages and the trust anchor of the links between quader's pods (R-ARCH-037, R-ARCH-038):
 	// server_scanner.go.
 	ScanListen         string            `yaml:"scan_listen" default:"" doc:"The scan listener of a packages process (and web and all): the image scanning's pull, with scan tokens only, behind a client certificate of internal_tls.ca_file (R-ARCH-037). Empty opens none; the chart sets :8082 on the main packages Deployment while the image scanning is on."`
+	ScanClients        []string          `yaml:"scan_clients" default:"[]" doc:"The names of the kinds of pod the scan listener admits: a client certificate of internal_tls.ca_file must list one of them exactly among its DNS names, no wildcard standing for it (R-ARCH-038, Q-ARCH-552). Required while scan_listen is open with TLS, except in the role all, where empty lets the CA alone admit (Q-ARCH-553). The chart sets the name of every kind of scanner it renders, [<fullname>-scanner.<namespace>.svc]; a route of the listener may narrow it to one of them."`
 	InternalTLS        ServerInternalTLS `yaml:"internal_tls" doc:"The trust anchor of the links between quader's pods (R-ARCH-038)."`
 	ContentBaseURL     string            `yaml:"content_base_url" default:"" doc:"Separate content origin (P1); empty means one origin."`
 	ContentURLTTL      time.Duration     `yaml:"content_url_ttl" default:"300s" doc:"Lifetime of a signed content URL."`

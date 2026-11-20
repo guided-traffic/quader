@@ -33,6 +33,9 @@ type scannerValidator interface {
 }
 
 // validateForScanner is the part of the root's cross-section rules that binds the role scanner: the shutdown budget against the
-// pod's grace period (R-HA-011, R-HA-065). The rules that bind the database, the object store, Valkey or the login are not the
-// role's.
-func (c *Config) validateForScanner(r *Report) { c.validateShutdownBudget(r) }
+// pod's grace period (R-HA-011, R-HA-065) and the names of its links (R-ARCH-038). The rules that bind the database, the object
+// store, Valkey or the login are not the role's.
+func (c *Config) validateForScanner(r *Report) {
+	c.validateShutdownBudget(r)
+	c.validateLinkNames(r)
+}

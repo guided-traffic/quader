@@ -42,56 +42,119 @@ If a replica starts while its certificate is missing or broken, the ops listener
 
 ## Certificates in the Helm chart
 
-The chart never creates a Secret. Create each Secret before the install, for example with cert-manager. The chart mounts every Secret as a read-only directory without `subPath`, so a Secret update reaches the running process. Certificate Secrets do not roll the pods when their content changes.
+Every kind of pod has a certificate and a name of its own: `api`, `packages`, `worker` and, while the image scanning is on, `scanner`. A pool or an endpoint pool carries its role's. The pair of a kind names `<fullname>-<kind>.<namespace>.svc` and `<fullname>-ops.<namespace>.svc`; the pairs of `worker` and `scanner` also allow client authentication, because they present themselves on the links of the image scanning. No pod holds the pair of another kind, so a pod that is taken over cannot pose as one.
+
+The plain path is one value: the cert-manager issuer. The chart then renders a `Certificate` per kind, `<fullname>-tls-<kind>`, with the names and the usages above, and cert-manager writes the Secret of the same name and renews it.
 
 ```yaml
 tls:
   enabled: true                         # default; false = plain HTTP inside the cluster
-  secretName: quader-tls                 # example; required while enabled; keys tls.crt, tls.key and ca.crt
-  certKey: tls.crt                      # default
-  keyKey: tls.key                       # default
+  certManager:
+    issuerRef:
+      kind: ClusterIssuer               # default: ClusterIssuer | Issuer (of the release namespace)
+      name: cluster-ca                  # example; required unless existingSecrets names a Secret per kind
+      group: cert-manager.io            # default
+    duration: 2160h                     # default: 90 days
+    renewBefore: 720h                   # default: 30 days
+    privateKey:
+      algorithm: ECDSA                  # default: ECDSA | RSA; a renewal changes the key too
+      size: 256                         # default: ECDSA 256 | 384, RSA 2048 | 3072 | 4096
+    extraDnsNames: []                   # default; names every pair carries besides its own, for a client that reaches one pod by port-forward
+    extraIpAddresses: []                # default
   minVersion: "1.2"                     # default: 1.2 | 1.3
   reloadInterval: 10s                   # default
   clientCA:
     secretName: ""                      # default: no client certificates on :8080
     key: ca.crt                         # default
     auth: require                       # default: require | verify_if_given
-  ops:
-    secretName: quader-ops-tls           # example; default "" = :8081 serves the pair of tls.secretName
 ingress:
   backendTLS:
     controller: haproxy                 # default: haproxy | traefik | ingress-nginx | manual
-    verify: true                        # default: the controller verifies Quader's certificate
-    caSecret: quader-tls                 # example; a Secret with ca.crt, required with verify on haproxy and ingress-nginx
+    verify: true                        # default: the controller verifies each backend under its kind's name
+    caSecret: ""                        # default: the Secret of the pair the backend serves, whose ca.crt the controller reads
     clientCertSecret: ""                # default; haproxy: the pair the controller presents when tls.clientCA is set
 ```
 
-Set `tls.ops.secretName` when you run worker replicas or endpoint pools: without it every pod holds the private key of the main listener, because its ops listener inherits that pair.
+The issuer must be one CA for all kinds: each pod verifies the others against the `ca.crt` of its own Secret. On the first install the pods wait in `ContainerCreating` until cert-manager has written their Secret, which takes seconds.
 
-The ingress controller connects to Quader over HTTPS. With HAProxy Ingress the chart has the controller verify Quader's certificate for the name `<fullname>.<namespace>.svc`, so that name must be in the certificate; an endpoint's Ingress verifies `<fullname>-ep-<name>.<namespace>.svc` against the endpoint's certificate. A cert-manager Secret carries `ca.crt`, so `caSecret` can name the same Secret as `tls.secretName`.
+### Without cert-manager
+
+Name an existing Secret per kind instead of the issuer. The chart never creates them, refuses one Secret named for two kinds, and refuses an issuer and Secrets together.
+
+```yaml
+tls:
+  existingSecrets:
+    api: quader-tls-api                 # example
+    packages: quader-tls-packages       # example
+    worker: quader-tls-worker           # example
+    scanner: quader-tls-scanner         # example; only while the image scanning is on
+```
+
+Each Secret holds `tls.crt`, `tls.key` and `ca.crt`, issued by one CA, with the names and usages below. With cert-manager and an issuer you choose to manage yourself, these are the four Certificates (release `quader`, namespace `quader`):
+
+```yaml
+apiVersion: cert-manager.io/v1          # example
+kind: Certificate
+metadata:
+  name: quader-tls-worker
+  namespace: quader
+spec:
+  secretName: quader-tls-worker
+  usages: [digital signature, server auth, client auth]   # client auth for the worker and the scanner only
+  dnsNames:
+    - quader-worker.quader.svc
+    - quader-ops.quader.svc
+  issuerRef:
+    name: internal-ca                   # example
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1          # example
+kind: Certificate
+metadata:
+  name: quader-tls-scanner
+  namespace: quader
+spec:
+  secretName: quader-tls-scanner
+  usages: [digital signature, server auth, client auth]
+  dnsNames:
+    - quader-scanner.quader.svc
+    - quader-ops.quader.svc
+  issuerRef:
+    name: internal-ca                   # example
+    kind: ClusterIssuer
+```
+
+`quader-tls-api` and `quader-tls-packages` look the same with `quader-api.quader.svc` or `quader-packages.quader.svc` and `usages: [digital signature, server auth]`.
+
+### How the ingress controller verifies Quader
+
+The ingress controller connects to Quader over HTTPS and verifies each backend under the name of its kind: `<fullname>-api.<namespace>.svc` for the `api` Services, `<fullname>-packages.<namespace>.svc` for the `packages` Services. A backend that serves another kind's pair is refused.
+
+| Controller | Where the chart puts the name |
+|---|---|
+| HAProxy Ingress | `secure-sni` and `secure-verify-ca-secret` on each Service the Ingress routes to; `secure-backends` on the Ingress |
+| Traefik | `serverstransport` on each Service, from `ingress.backendTLS.serversTransports.api` and `.packages`: create one ServersTransport per kind with that kind's name as `serverName` |
+| ingress-nginx | an Ingress per kind (`<fullname>` for `api`, `<fullname>-packages` for `packages`), each with its kind's `proxy-ssl-name`; the first one holds the TLS of the host |
+| Gateway API | a `BackendTLSPolicy` per Service with its kind's name (`tls.backendTLSPolicy.enabled`, CA from `caConfigMapName`) |
+
+A further endpoint without a pair of its own is verified the same way. With `endpoints.<name>.tls.existingSecret`, its Services are verified under their own names, `<fullname>-ep-<name>.<namespace>.svc` and `<fullname>-api-ep-<name>.<namespace>.svc`, which that pair must carry.
 
 ### The links of the image scanning
 
-While the image scanning is on (`config.vulnerabilities.images.enabled`, the default), the worker calls the scanner and the scanner pulls the image from the scan listener of `packages`. Both links run inside the cluster over mutual TLS with the pair of `tls.secretName`: each side serves it, presents it as its client certificate, and verifies the other side against `ca.crt` of the same Secret for the name `<fullname>.<namespace>.svc`. That makes three demands on the certificate of `tls.secretName`:
+While the image scanning is on (`config.vulnerabilities.images.enabled`, the default), the worker calls the scanner and the scanner pulls the image from the scan listener of `packages`. Both links run over mutual TLS: each side presents its own kind's pair, verifies the other against the `ca.crt` of its own Secret, and checks the other's name. The scanner admits only a certificate that lists `<fullname>-worker.<namespace>.svc`, the scan listener only one that lists `<fullname>-scanner.<namespace>.svc`; a wildcard name does not count. The chart sets these names; with the issuer the pairs carry them.
 
-- It allows client authentication: the extended key usage `client auth` next to `server auth`, or no extended key usage at all. cert-manager issues `server auth` and `client auth` only when `usages` lists both, as the example below does. A worker or scanner whose certificate lacks it logs the reason at start; the scanner stays not ready, and scans are put off with `scanner_unavailable` (alert `QuaderVulnerabilityImageScannerUnavailable`).
-- It carries `<fullname>.<namespace>.svc`, the name the ingress controller verifies already.
-- The Secret holds `ca.crt`, the CA that issued it. The chart mounts only that key, at `/var/run/secrets/quader/tls-internal/ca.crt`, in the `worker`, the main `packages` and the `scanner` pods, never in `api` pods.
+A worker or scanner whose pair lacks `client auth` logs the reason at start; the scanner stays not ready, and scans are put off with `scanner_unavailable` (alert `QuaderVulnerabilityImageScannerUnavailable`). With `tls.enabled: false` both links run in plain HTTP; the scan token and the NetworkPolicies are then what protects them.
 
-`scanner.tls.secretName` gives the scanner a pair of its own. It must be issued by the CA in `ca.crt` of `tls.secretName` and carry the same name and usages. With `tls.enabled: false` both links run in plain HTTP; the scan token and the NetworkPolicies are then what protects them.
-
-A rotated Secret reaches every side without a restart: the worker opens a new connection for every call, and each handshake uses the files as they are.
+Each kind's Secret rotates on its own and reaches its pods without a restart: the worker opens a new connection for every call, and each handshake uses the files as they are.
 
 <details>
 <summary>Secrets and where the pods see them</summary>
 
 | Chart value | Keys read | Mounted at | Used for |
 |---|---|---|---|
-| `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` | client listener, the ops listener while it inherits, and the identity the `worker`, the main `packages` and the `scanner` pods present on the links of the image scanning |
-| `tls.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-internal/ca.crt` | `server.internal_tls.ca_file`: the CA the links of the image scanning verify with (`worker`, main `packages` and `scanner` pods only) |
-| `scanner.tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` in the `scanner` pods | the scanner's own pair, instead of the one of `tls.secretName` |
+| `tls.certManager` (Secret `<fullname>-tls-<kind>`) or `tls.existingSecrets.<kind>` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` in the pods of that kind only | client listener, ops listener, scanner's listener, scan listener, and the identity the worker and the scanner present on the links |
+| the same Secret | `ca.crt` | `/var/run/secrets/quader/tls/ca.crt` in the `worker`, main `packages` and `scanner` pods | `server.internal_tls.ca_file`: the CA the links of the image scanning verify with |
 | `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/ca.crt` | client certificates on `:8080` (main `api` and `packages` pods only) |
-| `tls.ops.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls-ops/` | ops listener |
 | `endpoints.<name>.tls.existingSecret`, `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`n` = position) | endpoint listener |
 | `endpoints.<name>.tls.clientCaSecret` | `ca.crt` | `/var/run/secrets/quader/endpoints/<name>/client-ca/ca.crt` | client certificates on the endpoint |
 | `secrets.databaseCA` | `ca.crt` | `/var/run/secrets/quader/database-ca/ca.crt` | `database.ssl_root_cert_file` |
@@ -182,41 +245,20 @@ The labels are `kind` (`listener`, `database`, `valkey`, `objectstore`, `outboun
 
 ## cert-manager example
 
-A Certificate for the main listener of a release `quader` in the namespace `quader`. The names cover the base URL host, the Service name the ingress controller verifies, and the ops Service name for a monitoring system that verifies the ops listener.
-
-```yaml
-apiVersion: cert-manager.io/v1         # example
-kind: Certificate                       # example
-metadata:
-  name: quader-tls                       # example
-  namespace: quader                      # example
-spec:
-  secretName: quader-tls                 # example; the value of tls.secretName and ingress.backendTLS.caSecret
-  duration: 2160h                       # example: 90 days
-  renewBefore: 720h                     # example
-  privateKey:
-    algorithm: ECDSA                    # example
-    size: 256                           # example
-    rotationPolicy: Always              # example: a renewal also changes the key
-  usages: [digital signature, key encipherment, server auth, client auth]   # example; client auth for the links of the image scanning
-  dnsNames:
-    - quader.example.com                 # example: the host of server.base_url
-    - quader.quader.svc                   # example: <fullname>.<namespace>.svc, verified by HAProxy Ingress
-    - quader-ops.quader.svc               # example: the ops Service, if your scraper verifies it
-  issuerRef:
-    name: internal-ca                   # example: your Issuer or ClusterIssuer
-    kind: ClusterIssuer                 # example
-```
-
-cert-manager renews the Secret before it expires; Quader picks up the new pair without a restart. Further endpoints get Certificates of their own with the endpoint's hosts and `<fullname>-ep-<name>.<namespace>.svc`.
+With `tls.certManager.issuerRef` the chart writes the Certificates of Quader's own pods itself (see above). What you still issue are the
+certificates of the edge, which carry the public host names: the Ingress's `ingress.tls` Secret, for example through cert-manager's
+annotation `cert-manager.io/cluster-issuer` on the Ingress, and those of further endpoints with their hosts and, when the endpoint has a pair
+of its own, `<fullname>-ep-<name>.<namespace>.svc` for the ingress controller.
 
 ## Common failures
 
 | Symptom | Cause | What to do |
 |---|---|---|
-| The chart does not render: `tls.secretName` is required | `tls.enabled` is `true` by default | Create the Secret and set `tls.secretName` |
+| The chart does not render: `tls.certManager.issuerRef.name or tls.existingSecrets is required` | `tls.enabled` is `true` by default | Name your cert-manager issuer in `tls.certManager.issuerRef.name`, or a Secret per kind in `tls.existingSecrets` |
+| The chart does not render: two kinds name the same Secret | One pair for several kinds undoes the separation of the kinds | Issue a pair per kind, or let the chart issue them |
+| Pods hang in `ContainerCreating` right after the install, waiting for `<fullname>-tls-<kind>` | cert-manager has not issued the Certificate yet, or the issuer refuses it | `kubectl describe certificate <fullname>-tls-<kind>`; fix the issuer named in `tls.certManager.issuerRef` |
 | Pods stay unready; `/readyz?verbose=1` shows the `tls` check failing | The listener Secret is missing, uses other key names, or holds a key that does not match the certificate, or a certificate that is expired or not valid yet | Check the Secret's `tls.crt` and `tls.key` and the error log line that names the file |
-| The ingress answers with a gateway error | The controller talks plain HTTP to Quader (wrong `ingress.backendTLS.controller`), or cannot verify Quader's certificate | Set the controller you run; make sure the certificate holds `<fullname>.<namespace>.svc` and `caSecret` holds its CA |
+| The ingress answers with a gateway error | The controller talks plain HTTP to Quader (wrong `ingress.backendTLS.controller`), or cannot verify a backend under its kind's name | Set the controller you run; with named Secrets, make sure each pair holds `<fullname>-<kind>.<namespace>.svc` and its Secret holds `ca.crt` |
 | A client gets `400` "Client sent an HTTP request to an HTTPS server" | Plain HTTP sent to a TLS listener | Use `https://` |
 | A renewed certificate is not served | The file did not load, or the mount uses `subPath` (a hand-written manifest) | Look for `quader_tls_reload_errors_total` and the error log; mount the Secret as a directory |
 | Clients refuse an expired certificate | The renewal stopped producing new content; Quader keeps serving the loaded pair | Fix the issuer; alert on the expiry metric |
@@ -225,5 +267,5 @@ cert-manager renews the Secret before it expires; Quader picks up the new pair w
 | Connections to PostgreSQL or Valkey fail with a certificate error | `verify-full` against the system roots for a server with a private CA, or a host name the certificate does not hold | Set `secrets.databaseCA` or `secrets.valkeyCA`; connect by a name in the certificate |
 | The object store fails after `secrets.s3CA` was set | That file replaces every other trusted root for the object store | Put the full CA chain of the object store into it |
 | The render fails with `tls.clientCA` and HAProxy Ingress | The controller needs a certificate to present | Set `ingress.backendTLS.clientCertSecret` |
-| The scanner pods stay unready and image scans show `scanner_unavailable` | The certificate of `tls.secretName` lacks `client auth` | Add `client auth` to the certificate's usages |
-| The `worker`, `packages` or `scanner` pods hang in `ContainerCreating` with a mount error naming `ca.crt` | The Secret of `tls.secretName` has no `ca.crt` | Let the issuer write `ca.crt` into the Secret, or add it |
+| The scanner pods stay unready and image scans show `scanner_unavailable` | A named Secret of `worker` or `scanner` lacks `client auth`, or its pair does not list its kind's name, which the other side checks | Issue it with the usages and the name of [the example above](#without-cert-manager); the scanner logs the names it found |
+| The `worker`, `packages` or `scanner` pods hang in `ContainerCreating` with a mount error naming `ca.crt` | The Secret of that kind has no `ca.crt` | Let the issuer write `ca.crt` into the Secret, or add it |

@@ -1,18 +1,21 @@
 {{- if and .Values.tls.enabled .Values.tls.backendTLSPolicy.enabled }}
 {{- /*
-How a Gateway API implementation verifies quader (R-HA-063): one policy per Service the default
-endpoint's edge routes to (templates/_edge.tpl quader.edgeServices: <fullname>-api,
-<fullname>-packages and the Services of the path pools), named as the Service. Every policy targets the Service
-port http and verifies the name <fullname>.<namespace>.svc, the name the listener certificate
-carries (R-HA-037). The CA reference is a ConfigMap: Gateway API takes no Secret here. The chart
-creates neither the ConfigMap nor the CRD.
+How a Gateway API implementation verifies quader (R-HA-063, Q-HA-348): one policy per Service the default
+endpoint's edge routes to (templates/_edge.tpl: <fullname>-api, <fullname>-packages and the Services of the
+path pools), named as the Service. Every policy targets the Service port http and verifies the name of the
+kind of the Service's pods, <fullname>-api.<namespace>.svc or <fullname>-packages.<namespace>.svc, which that
+kind's pair carries. The CA reference is a ConfigMap: Gateway API takes no Secret here. The chart creates
+neither the ConfigMap nor the CRD.
 */ -}}
-{{- range $svc := include "quader.edgeServices" . | fromYamlArray }}
+{{- $seen := dict }}
+{{- range $r := include "quader.edgeRules" (dict "root" . "endpoint" "") | fromYamlArray }}
+{{- if not (hasKey $seen $r.service) }}
+{{- $_ := set $seen $r.service true }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
-  name: {{ $svc }}
+  name: {{ $r.service }}
   labels:
     {{- include "quader.labels" (dict "root" $ "component" "ingress") | nindent 4 }}
   {{- with (include "quader.commonAnnotations" $) }}
@@ -23,13 +26,14 @@ spec:
   targetRefs:
     - group: ""
       kind: Service
-      name: {{ $svc }}
+      name: {{ $r.service }}
       sectionName: http
   validation:
-    hostname: {{ default (printf "%s.%s.svc" (include "quader.fullname" $) $.Release.Namespace) $.Values.tls.backendTLSPolicy.hostname | quote }}
+    hostname: {{ include "quader.tlsName" (dict "root" $ "kind" $r.role) | quote }}
     caCertificateRefs:
       - group: ""
         kind: ConfigMap
         name: {{ $.Values.tls.backendTLSPolicy.caConfigMapName }}
+{{- end }}
 {{- end }}
 {{- end }}

@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"slices"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -15,12 +17,13 @@ import (
 	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
-// The links between quader's pods (R-ARCH-038, Q-ARCH-529): the worker's call of the scanner and the scanner's pull from the scan
-// listener of packages. Each end presents the first pair of server.tls.certificates and verifies the other against
-// server.internal_tls.ca_file; the listener of a link requires a client certificate that chains to that CA, so a peer without one
-// is refused in the handshake before any HTTP is read. No hostname is checked in a client certificate: the CA admits a peer. Every
-// file reloads without a restart, compared by content (R-ARCH-035), and a connection is opened per call, so a rotation reaches the
-// next call. Without TLS (server.tls.certificates empty) the links are plain HTTP (Q-HA-322).
+// The links between quader's pods (R-ARCH-038, Q-ARCH-552): the worker's call of the scanner and the scanner's pull from the scan
+// listener of packages. Each end presents the first pair of server.tls.certificates, its own kind's pair in the chart, and verifies the
+// other against server.internal_tls.ca_file; the listener of a link requires a client certificate that chains to that CA and lists the
+// link's client name, and the client requires the server name in the server's certificate, each listed exactly among the DNS names:
+// a wildcard does not stand for it and the common name is not read. A peer that fails is refused in the handshake before any HTTP is
+// read. Every file reloads without a restart, compared by content (R-ARCH-035), and a connection is opened per call, so a rotation
+// reaches the next call. Without TLS (server.tls.certificates empty) the links are plain HTTP and no name is checked (Q-HA-322).
 
 // Link names of the two links, the value of the listener label of their material.
 const (
@@ -31,20 +34,65 @@ const (
 // ErrLinkNeedsCA is the refusal of a link with TLS and without the internal trust anchor.
 var ErrLinkNeedsCA = errors.New("server.internal_tls.ca_file is required for the links between quader's pods while server.tls serves TLS (R-ARCH-038)")
 
+// ErrPeerName is the refusal of a peer whose certificate of the internal CA does not list the name the link requires (Q-ARCH-552).
+var ErrPeerName = errors.New("the certificate does not list the name of the kind of pod this link admits")
+
 // NewLinkListenerTLS is the TLS of the listener of a link: the scanner's listener or the scan listener. It serves the pairs of
 // server.tls and requires a client certificate that chains to server.internal_tls.ca_file, whatever server.tls.client_auth says
-// about the client listener (R-ARCH-037). Nil without TLS: the listener serves plain HTTP.
-func NewLinkListenerTLS(link string, s config.Server, opts ...tlsfiles.Option) (*ListenerTLS, error) {
+// about the client listener (R-ARCH-037), and that lists one of clientNames among its DNS names (Q-ARCH-552): the kinds of pod the
+// listener admits, one for the scanner's listener (the worker), one per kind of scanner for the scan listener. A route may narrow it to
+// one kind with PeerName. No names let the CA alone admit, which only the role all does (Q-ARCH-553). Nil without TLS: the listener
+// serves plain HTTP.
+func NewLinkListenerTLS(link string, s config.Server, clientNames []string, opts ...tlsfiles.Option) (*ListenerTLS, error) {
 	if !s.TLS.Enabled() {
 		return nil, nil
 	}
 	if s.InternalTLS.CAFile == "" {
 		return nil, fmt.Errorf("%s listener: %w", link, ErrLinkNeedsCA)
 	}
-	return NewListenerTLS(link, config.ServerTLS{
+	l, err := NewListenerTLS(link, config.ServerTLS{
 		Certificates: s.TLS.Certificates, ClientCAFile: s.InternalTLS.CAFile, ClientAuth: config.ClientAuthRequire,
 		MinVersion: s.TLS.MinVersion, ReloadInterval: s.TLS.ReloadInterval,
 	}, opts...)
+	if err != nil || len(clientNames) == 0 {
+		return l, err
+	}
+	names := slices.Clone(clientNames)
+	l.verify = func(cs tls.ConnectionState) error {
+		if len(cs.PeerCertificates) == 0 {
+			return fmt.Errorf("%s listener: no client certificate: %w", link, ErrPeerName)
+		}
+		if PeerName(cs.PeerCertificates[0], names) == "" {
+			return fmt.Errorf("%s listener admits %s only: %w", link, strings.Join(names, ", "), HasName(cs.PeerCertificates[0], names[0]))
+		}
+		return nil
+	}
+	return l, nil
+}
+
+// PeerName is the first of names that the certificate lists exactly among its DNS names (HasName), or "" for none: the kind of pod a
+// verified client certificate of a link belongs to, for a route that admits one kind of those its listener admits (Q-ARCH-552).
+func PeerName(c *x509.Certificate, names []string) string {
+	for _, n := range names {
+		if HasName(c, n) == nil {
+			return n
+		}
+	}
+	return ""
+}
+
+// HasName reports whether the certificate lists name among its DNS names, exactly and without regard to case (Q-ARCH-552): a
+// wildcard name does not stand for it, and the subject's common name is not read. The error names what the certificate lists.
+func HasName(c *x509.Certificate, name string) error {
+	if c == nil {
+		return ErrPeerName
+	}
+	for _, n := range c.DNSNames {
+		if strings.EqualFold(n, name) {
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: it lists %q", ErrPeerName, c.DNSNames)
 }
 
 // LinkTLS is the client side of a link: the pair it presents and the CA it verifies the far end against, under the link's server
@@ -63,7 +111,9 @@ type LinkTLS struct {
 }
 
 // NewLinkTLS builds the client side of a link from the server section: the first pair of server.tls.certificates and the CA of
-// server.internal_tls.ca_file. serverName is the name verified in the far end's certificate. Nil without TLS: the link is plain.
+// server.internal_tls.ca_file. serverName is the name verified in the far end's certificate: a DNS name must be listed exactly among
+// its DNS names (Q-ARCH-552), an IP address is verified against its IP addresses by Go's rules, and an empty one is the host of the
+// address dialled. Nil without TLS: the link is plain.
 func NewLinkTLS(link string, s config.Server, serverName string, log *slog.Logger, opts ...tlsfiles.Option) (*LinkTLS, error) {
 	if !s.TLS.Enabled() {
 		return nil, nil
@@ -91,16 +141,29 @@ func NewLinkTLS(link string, s config.Server, serverName string, log *slog.Logge
 }
 
 // Config is the client configuration of one connection of the link: the CA of the moment as the only roots (a CA that has not
-// loaded is an empty pool, which trusts nothing), the link's server name and the pair presented when the far end asks for one.
+// loaded is an empty pool, which trusts nothing), the link's server name and the pair presented when the far end asks for one. Go
+// verifies the chain and the name first; the exact check of a DNS name runs after it, so it narrows Go's rules and widens nothing.
 func (l *LinkTLS) Config() *tls.Config {
 	pool := l.material.Pool()
 	if pool == nil {
 		pool = x509.NewCertPool()
 	}
-	return &tls.Config{
+	cfg := &tls.Config{
 		MinVersion: l.min, RootCAs: pool, ServerName: l.serverName, NextProtos: []string{"http/1.1"},
 		GetClientCertificate: l.material.ClientCertificate,
 	}
+	if name := l.serverName; name != "" && net.ParseIP(name) == nil {
+		cfg.VerifyConnection = func(cs tls.ConnectionState) error {
+			if len(cs.PeerCertificates) == 0 {
+				return fmt.Errorf("the link to the %s: %w", l.link, ErrPeerName)
+			}
+			if err := HasName(cs.PeerCertificates[0], name); err != nil {
+				return fmt.Errorf("the link to the %s requires %s: %w", l.link, name, err)
+			}
+			return nil
+		}
+	}
+	return cfg
 }
 
 // Loaded returns nil once the pair and the CA have loaded at least once.

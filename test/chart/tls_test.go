@@ -44,9 +44,25 @@ func configOf(t *testing.T, docs []doc) doc {
 	return cfg
 }
 
+// kindSecrets lists the Secrets of the kinds' pairs (quader-tls-<kind>) that pod projects, in volume order.
+func kindSecrets(pod any) []string {
+	var out []string
+	for _, v := range list(pod, "volumes") {
+		if s := str(v, "secret", "secretName"); strings.HasPrefix(s, "quader-tls-") {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// noIssuer is the set that leaves the cert-manager path, for the renders that name Secrets or turn TLS off.
+const noIssuer = "tls.certManager.issuerRef.name="
+
 func TestTLS(t *testing.T) {
-	t.Run("R-HA-063 the default render serves HTTPS: probes, mount without subPath, config paths, appProtocol", func(t *testing.T) {
+	t.Run("R-HA-063 the default render serves HTTPS: probes, its kind's pair without subPath, config paths, appProtocol", func(t *testing.T) {
 		_, docs := render(t, required())
+		// The pods of the links get ca.crt beside their pair, the api pods do not (R-HA-066).
+		items := map[string]string{"api": "tls.crt->tls.crt,tls.key->tls.key", "packages": "tls.crt->tls.crt,tls.key->tls.key,ca.crt->ca.crt", "worker": "tls.crt->tls.crt,tls.key->tls.key,ca.crt->ca.crt"}
 		for _, role := range []string{"api", "packages", "worker"} {
 			pod := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 			c := at(pod, "containers", "0")
@@ -58,10 +74,10 @@ func TestTLS(t *testing.T) {
 					t.Errorf("quader-%s %s port = %q, want ops", role, probe, got)
 				}
 			}
-			vol := secretVolume(pod, "quader-tls")
-			if vol == nil {
-				t.Fatalf("quader-%s does not project the Secret quader-tls", role)
+			if got := kindSecrets(pod); len(got) != 1 || got[0] != "quader-tls-"+role {
+				t.Fatalf("quader-%s projects the pairs %v, want its own kind's only", role, got)
 			}
+			vol := secretVolume(pod, "quader-tls-"+role)
 			m := mountOf(pod, vol)
 			if m == nil || str(m, "mountPath") != tlsMountPath+"" || at(m, "readOnly") != true {
 				t.Errorf("quader-%s tls mount = %v, want a read-only mount at %s", role, m, tlsMountPath)
@@ -73,8 +89,8 @@ func TestTLS(t *testing.T) {
 			for _, it := range list(vol, "secret", "items") {
 				keys = append(keys, str(it, "key")+"->"+str(it, "path"))
 			}
-			if strings.Join(keys, ",") != "tls.crt->tls.crt,tls.key->tls.key" {
-				t.Errorf("quader-%s projects %v, want exactly the certificate and the key (ca.crt is for the edge, not for this process)", role, keys)
+			if strings.Join(keys, ",") != items[role] {
+				t.Errorf("quader-%s projects %v, want %s", role, keys, items[role])
 			}
 		}
 
@@ -96,7 +112,7 @@ func TestTLS(t *testing.T) {
 		}
 		for _, absent := range [][]string{{"server", "tls", "client_ca_file"}, {"server", "tls", "client_auth"}, {"server", "ops_tls"}} {
 			if at(cfg, absent...) != nil {
-				t.Errorf("config %s is set without tls.clientCA or tls.ops", strings.Join(absent, "."))
+				t.Errorf("config %s is set without tls.clientCA", strings.Join(absent, "."))
 			}
 		}
 
@@ -110,12 +126,80 @@ func TestTLS(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-063 tls.enabled without tls.secretName fails, names the key and says how to opt out", func(t *testing.T) {
-		renderFails(t, []string{filepath.Join(chartDir, "ci", "required-only.yaml")}, []string{"tls.secretName="}, "tls.secretName", "tls.enabled: false")
+	t.Run("R-HA-063 Q-HA-346 the chart issues a Certificate per kind with its name, the ops name and the usages of the kind", func(t *testing.T) {
+		_, docs := render(t, required())
+		certs := ofKind(docs, "Certificate")
+		if len(certs) != 4 {
+			t.Fatalf("%d Certificates, want one per kind (api, packages, worker, scanner)", len(certs))
+		}
+		for i, kind := range []string{"api", "packages", "worker", "scanner"} {
+			c := certs[i]
+			name := "quader-tls-" + kind
+			if str(c, "metadata", "name") != name || str(c, "spec", "secretName") != name {
+				t.Errorf("Certificate %d = %s into %s, want %s", i, str(c, "metadata", "name"), str(c, "spec", "secretName"), name)
+			}
+			var dns []string
+			for _, d := range list(c, "spec", "dnsNames") {
+				dns = append(dns, d.(string))
+			}
+			if want := "quader-" + kind + ".default.svc,quader-ops.default.svc"; strings.Join(dns, ",") != want {
+				t.Errorf("%s dnsNames = %v, want %s", name, dns, want)
+			}
+			var usages []string
+			for _, u := range list(c, "spec", "usages") {
+				usages = append(usages, u.(string))
+			}
+			want := "digital signature,server auth"
+			if kind == "worker" || kind == "scanner" {
+				want += ",client auth"
+			}
+			if strings.Join(usages, ",") != want {
+				t.Errorf("%s usages = %v, want %s", name, usages, want)
+			}
+			if str(c, "spec", "issuerRef", "name") != "cluster-ca" || str(c, "spec", "issuerRef", "kind") != "ClusterIssuer" ||
+				str(c, "spec", "issuerRef", "group") != "cert-manager.io" || str(c, "spec", "privateKey", "algorithm") != "ECDSA" ||
+				str(c, "spec", "privateKey", "rotationPolicy") != "Always" || str(c, "spec", "duration") != "2160h" || str(c, "spec", "renewBefore") != "720h" {
+				t.Errorf("%s spec = %v", name, at(c, "spec"))
+			}
+			if at(c, "spec", "ipAddresses") != nil {
+				t.Errorf("%s carries IP addresses without extraIpAddresses", name)
+			}
+		}
+		_, rsa := render(t, required(), "tls.certManager.privateKey.algorithm=RSA", "tls.certManager.privateKey.size=3072",
+			"tls.certManager.extraDnsNames[0]=localhost", "tls.certManager.extraIpAddresses[0]=127.0.0.1", "config.vulnerabilities.images.enabled=false")
+		c := ofKind(rsa, "Certificate")
+		if len(c) != 3 {
+			t.Fatalf("%d Certificates with the image scanning off, want three: no scanner", len(c))
+		}
+		if toStr(at(c[0], "spec", "usages")) != "- digital signature\n- key encipherment\n- server auth\n" ||
+			toStr(at(c[0], "spec", "dnsNames")) != "- quader-api.default.svc\n- quader-ops.default.svc\n- localhost\n" ||
+			toStr(at(c[0], "spec", "ipAddresses")) != "- 127.0.0.1\n" {
+			t.Errorf("an RSA pair with extra names = %v", at(c[0], "spec"))
+		}
+		renderFails(t, required(), []string{"tls.certManager.privateKey.algorithm=DSA"}, "algorithm")
+	})
+
+	t.Run("R-HA-063 Q-HA-347 without an issuer every kind names a Secret of its own; neither, both or one Secret for two kinds fail", func(t *testing.T) {
+		renderFails(t, required(), []string{noIssuer}, "tls.certManager.issuerRef.name", "tls.existingSecrets", "tls.enabled: false")
+		named := []string{noIssuer, "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s"}
+		_, docs := render(t, required(), named...)
+		if n := len(ofKind(docs, "Certificate")); n != 0 {
+			t.Errorf("%d Certificates rendered while tls.existingSecrets names the pairs", n)
+		}
+		for role, secret := range map[string]string{"api": "a", "packages": "p", "worker": "w"} {
+			if secretVolume(at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec"), secret) == nil {
+				t.Errorf("quader-%s does not mount %s", role, secret)
+			}
+		}
+		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner="), "tls.existingSecrets.scanner")
+		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner=w"), "tls.existingSecrets.worker", "tls.existingSecrets.scanner", "the same Secret w")
+		renderFails(t, required(), []string{"tls.existingSecrets.api=a"}, "tls.certManager.issuerRef.name", "tls.existingSecrets.api")
+		// Without the scanner, three Secrets are enough.
+		render(t, required(), append(named[:4:4], "config.vulnerabilities.images.enabled=false")...)
 	})
 
 	t.Run("R-HA-063 tls.enabled=false renders HTTP probes, plain Service ports and no TLS wiring", func(t *testing.T) {
-		out, docs := render(t, required(), "tls.enabled=false", "tls.secretName=")
+		out, docs := render(t, required(), "tls.enabled=false", noIssuer)
 		for _, role := range []string{"api", "packages", "worker"} {
 			pod := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 			c := at(pod, "containers", "0")
@@ -134,15 +218,16 @@ func TestTLS(t *testing.T) {
 		if at(cfg, "server", "tls") != nil || at(cfg, "server", "ops_tls") != nil {
 			t.Errorf("config carries server.tls or ops_tls with tls.enabled false")
 		}
-		if strings.Contains(out, "appProtocol") || strings.Contains(out, "scheme: HTTPS") || strings.Contains(out, "BackendTLSPolicy") {
+		if strings.Contains(out, "appProtocol") || strings.Contains(out, "scheme: HTTPS") || strings.Contains(out, "BackendTLSPolicy") || len(ofKind(docs, "Certificate")) != 0 {
 			t.Error("TLS wiring rendered with tls.enabled false")
 		}
 		t.Run("TLS options without tls.enabled fail", func(t *testing.T) {
-			renderFails(t, required(), []string{"tls.enabled=false", "tls.clientCA.secretName=edge"}, "tls.enabled")
+			renderFails(t, required(), []string{"tls.enabled=false", noIssuer, "tls.clientCA.secretName=edge"}, "tls.enabled")
+			render(t, required(), "tls.enabled=false") // the issuer value may stay: without TLS it renders nothing
 		})
 	})
 
-	t.Run("R-HA-030 the migration Job serves no listener and mounts no TLS material", func(t *testing.T) {
+	t.Run("R-HA-030 the migration Job serves no listener and mounts no TLS material; each kind mounts its own pair", func(t *testing.T) {
 		_, docs := render(t, haIngress())
 		job := at(find(docs, "Job", "quader-migrate"), "spec", "template", "spec")
 		if job == nil {
@@ -158,28 +243,19 @@ func TestTLS(t *testing.T) {
 				t.Errorf("the migration Job mounts %s", str(m, "mountPath"))
 			}
 		}
-		// The web pods hold every listener Secret. The worker opens the operations listener only, which has its own pair here:
-		// the listener private key and the client CA of :8080 stay out of it (SA5, H-57).
+		// The packages pods hold their own pair and the client CA of :8080; the worker its own pair only (SA5, H-57).
 		web := at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec")
-		for _, s := range []string{"quader-tls", "quader-edge-ca", "quader-ops-tls"} {
+		for _, s := range []string{"quader-tls-packages", "quader-edge-ca"} {
 			if secretVolume(web, s) == nil {
 				t.Errorf("quader-packages does not mount %s", s)
 			}
 		}
 		worker := at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec")
-		if secretVolume(worker, "quader-ops-tls") == nil {
-			t.Error("quader-worker does not mount quader-ops-tls")
+		if got := kindSecrets(worker); len(got) != 1 || got[0] != "quader-tls-worker" {
+			t.Errorf("quader-worker mounts the pairs %v, want quader-tls-worker only", got)
 		}
 		if secretVolume(worker, "quader-edge-ca") != nil {
 			t.Error("quader-worker mounts quader-edge-ca although it serves no listener that loads it")
-		}
-		// The pair reaches the worker only as the identity it presents to the scanner while the image scanning is on (R-HA-066).
-		if secretVolume(worker, "quader-tls") == nil {
-			t.Error("quader-worker does not mount quader-tls, which it presents to the scanner")
-		}
-		_, off := render(t, haIngress(), "config.vulnerabilities.images.enabled=false")
-		if secretVolume(at(find(off, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls") != nil {
-			t.Error("quader-worker mounts quader-tls with the image scanning off, although it serves no listener that loads it")
 		}
 	})
 
@@ -221,24 +297,12 @@ func TestTLS(t *testing.T) {
 		})
 	})
 
-	t.Run("R-HA-063 tls.ops separates the operations listener certificate", func(t *testing.T) {
-		_, docs := render(t, required(), "tls.ops.secretName=quader-ops-tls")
-		cfg := configOf(t, docs)
-		if at(cfg, "server", "ops_tls", "inherit") != false {
-			t.Errorf("ops_tls.inherit = %v, want false", at(cfg, "server", "ops_tls", "inherit"))
-		}
-		if got := str(cfg, "server", "ops_tls", "certificates", "0", "cert_file"); got != "/var/run/secrets/quader/tls-ops/tls.crt" {
-			t.Errorf("ops_tls cert_file = %q", got)
-		}
-		if got := str(cfg, "server", "ops_tls", "certificates", "0", "key_file"); got != "/var/run/secrets/quader/tls-ops/tls.key" {
-			t.Errorf("ops_tls key_file = %q", got)
-		}
-		if got := str(cfg, "server", "tls", "certificates", "0", "cert_file"); got != tlsMountPath+"/tls.crt" {
-			t.Errorf("server.tls cert_file = %q, the client listener keeps its own pair", got)
-		}
-		pod := at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec")
-		if secretVolume(pod, "quader-tls") == nil || secretVolume(pod, "quader-ops-tls") == nil {
-			t.Error("web must mount both the client and the operations Secret")
+	t.Run("R-HA-063 the values of the one pair are gone", func(t *testing.T) {
+		for set, key := range map[string]string{
+			"tls.secretName=quader-tls": "'secretName'", "tls.ops.secretName=quader-ops-tls": "'ops'", "tls.certKey=tls.crt": "'certKey'",
+			"scanner.tls.secretName=s": "'tls'", "tls.backendTLSPolicy.hostname=quader.default.svc": "'hostname'", "ingress.backendTLS.serversTransport=t": "'serversTransport'",
+		} {
+			renderFails(t, required(), []string{set}, key)
 		}
 	})
 
@@ -255,7 +319,7 @@ func TestTLS(t *testing.T) {
 		renderFails(t, required(), []string{"config.server.tls.min_version=1.3"}, "config.server.tls")
 		renderFails(t, required(), []string{"config.server.ops_tls.inherit=false"}, "config.server.ops_tls")
 		// Opted out, the operator may wire their own material (extraVolumes) through config.
-		render(t, required(), "tls.enabled=false", "tls.secretName=", "config.server.tls.min_version=1.3")
+		render(t, required(), "tls.enabled=false", noIssuer, "config.server.tls.min_version=1.3")
 	})
 
 	t.Run("R-HA-063 rotating the Secret does not roll the pods, a changed setting does", func(t *testing.T) {
@@ -269,70 +333,94 @@ func TestTLS(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-063 the Ingress reaches quader over HTTPS: the backend setting of the controller named", func(t *testing.T) {
-		t.Run("HAProxy Ingress is the default and renders the backend-scope keys with CA verification and SNI", func(t *testing.T) {
+	t.Run("R-HA-063 Q-HA-348 the edge verifies each backend under its kind's name, where the controller reads it", func(t *testing.T) {
+		t.Run("HAProxy Ingress is the default: secure-backends on the Ingress, the kind's name and CA on each Service", func(t *testing.T) {
 			_, docs := render(t, haIngress())
 			ann := at(ofKind(docs, "Ingress")[0], "metadata", "annotations")
-			want := map[string]string{
-				"haproxy-ingress.github.io/secure-backends":         "true",
-				"haproxy-ingress.github.io/secure-verify-ca-secret": "quader-tls",
-				"haproxy-ingress.github.io/secure-sni":              "quader.default.svc",
-				"haproxy-ingress.github.io/secure-crt-secret":       "quader-edge-client",
-			}
-			for k, v := range want {
+			for k, v := range map[string]string{"haproxy-ingress.github.io/secure-backends": "true", "haproxy-ingress.github.io/secure-crt-secret": "quader-edge-client"} {
 				if got := str(ann, k); got != v {
-					t.Errorf("annotation %s = %q, want %q", k, got, v)
+					t.Errorf("Ingress annotation %s = %q, want %q", k, got, v)
+				}
+			}
+			if at(ann, "haproxy-ingress.github.io/secure-sni") != nil || at(ann, "haproxy-ingress.github.io/secure-verify-ca-secret") != nil {
+				t.Errorf("the Ingress carries a name or a CA for every backend: %v", ann)
+			}
+			for svc, kind := range map[string]string{"quader-api": "api", "quader-packages": "packages"} {
+				sa := at(find(docs, "Service", svc), "metadata", "annotations")
+				if str(sa, "haproxy-ingress.github.io/secure-sni") != "quader-"+kind+".default.svc" ||
+					str(sa, "haproxy-ingress.github.io/secure-verify-ca-secret") != "quader-tls-"+kind {
+					t.Errorf("Service %s annotations = %v, want the name and the Secret of %s", svc, sa, kind)
 				}
 			}
 			if s := toStr(ann); strings.Contains(s, "nginx.ingress") || strings.Contains(s, "traefik") {
 				t.Errorf("another controller's setting rendered: %s", s)
 			}
 		})
-		t.Run("verification needs the CA, tls.clientCA needs a client certificate", func(t *testing.T) {
-			renderFails(t, required(), []string{"ingress.enabled=true"}, "ingress.backendTLS.caSecret", "ingress.backendTLS.verify: false")
-			renderFails(t, required(), []string{"ingress.enabled=true", "ingress.backendTLS.caSecret=quader-tls", "tls.clientCA.secretName=edge"}, "ingress.backendTLS.clientCertSecret")
-			renderFails(t, required(), []string{"ingress.enabled=true", "ingress.backendTLS.controller=traefik"}, "ingress.backendTLS.serversTransport")
+		t.Run("a named CA wins; tls.clientCA needs a client certificate; traefik needs a transport per kind", func(t *testing.T) {
+			_, docs := render(t, required(), "ingress.enabled=true", "ingress.backendTLS.caSecret=corp-ca")
+			if got := str(find(docs, "Service", "quader-packages"), "metadata", "annotations", "haproxy-ingress.github.io/secure-verify-ca-secret"); got != "corp-ca" {
+				t.Errorf("secure-verify-ca-secret = %q, want corp-ca", got)
+			}
+			renderFails(t, required(), []string{"ingress.enabled=true", "tls.clientCA.secretName=edge"}, "ingress.backendTLS.clientCertSecret")
+			renderFails(t, required(), []string{"ingress.enabled=true", "ingress.backendTLS.controller=traefik", "ingress.backendTLS.serversTransports.api=a"}, "ingress.backendTLS.serversTransports.api and .packages")
 		})
 		t.Run("verify=false renders an encrypted but unverified connection", func(t *testing.T) {
 			_, docs := render(t, required(), "ingress.enabled=true", "ingress.backendTLS.verify=false")
 			ann := at(ofKind(docs, "Ingress")[0], "metadata", "annotations")
-			if str(ann, "haproxy-ingress.github.io/secure-backends") != "true" || at(ann, "haproxy-ingress.github.io/secure-verify-ca-secret") != nil {
+			if str(ann, "haproxy-ingress.github.io/secure-backends") != "true" {
 				t.Errorf("annotations = %v", ann)
+			}
+			if sa := at(find(docs, "Service", "quader-api"), "metadata", "annotations"); sa != nil && strings.Contains(toStr(sa), "secure-") {
+				t.Errorf("Service quader-api annotations = %v", sa)
 			}
 		})
 		t.Run("tls.enabled=false needs no controller", func(t *testing.T) {
-			_, docs := render(t, required(), "tls.enabled=false", "tls.secretName=", "ingress.enabled=true")
+			_, docs := render(t, required(), "tls.enabled=false", noIssuer, "ingress.enabled=true")
 			ing := ofKind(docs, "Ingress")[0]
 			if at(ing, "metadata", "annotations") != nil {
 				t.Errorf("annotations = %v", at(ing, "metadata", "annotations"))
 			}
 		})
-		t.Run("ingress-nginx", func(t *testing.T) {
-			_, docs := render(t, required(), "ingress.enabled=true", "ingress.backendTLS.controller=ingress-nginx", "ingress.backendTLS.caSecret=quader-tls")
-			ann := at(ofKind(docs, "Ingress")[0], "metadata", "annotations")
-			want := map[string]string{
-				"nginx.ingress.kubernetes.io/backend-protocol":      "HTTPS",
-				"nginx.ingress.kubernetes.io/proxy-ssl-verify":      "on",
-				"nginx.ingress.kubernetes.io/proxy-ssl-secret":      "default/quader-tls",
-				"nginx.ingress.kubernetes.io/proxy-ssl-name":        "quader.default.svc",
-				"nginx.ingress.kubernetes.io/proxy-ssl-server-name": "on",
+		t.Run("ingress-nginx gets an Ingress per kind, each with its kind's name; the first holds the TLS", func(t *testing.T) {
+			_, docs := render(t, required(), "ingress.enabled=true", "ingress.backendTLS.controller=ingress-nginx", "ingress.tls[0].secretName=edge", "ingress.tls[0].hosts[0]=quader.example.com")
+			ings := ofKind(docs, "Ingress")
+			if len(ings) != 2 || str(ings[0], "metadata", "name") != "quader" || str(ings[1], "metadata", "name") != "quader-packages" {
+				t.Fatalf("Ingress objects = %d, want quader and quader-packages", len(ings))
 			}
-			for k, v := range want {
-				if got := str(ann, k); got != v {
-					t.Errorf("annotation %s = %q, want %q", k, got, v)
+			for i, kind := range []string{"api", "packages"} {
+				ann := at(ings[i], "metadata", "annotations")
+				want := map[string]string{
+					"nginx.ingress.kubernetes.io/backend-protocol":      "HTTPS",
+					"nginx.ingress.kubernetes.io/proxy-ssl-verify":      "on",
+					"nginx.ingress.kubernetes.io/proxy-ssl-secret":      "default/quader-tls-" + kind,
+					"nginx.ingress.kubernetes.io/proxy-ssl-name":        "quader-" + kind + ".default.svc",
+					"nginx.ingress.kubernetes.io/proxy-ssl-server-name": "on",
+				}
+				for k, v := range want {
+					if got := str(ann, k); got != v {
+						t.Errorf("Ingress %d annotation %s = %q, want %q", i, k, got, v)
+					}
+				}
+				for _, p := range list(ings[i], "spec", "rules", "0", "http", "paths") {
+					if svc := str(p, "backend", "service", "name"); !strings.HasPrefix(svc, "quader-"+kind) {
+						t.Errorf("the Ingress of %s routes %s to %s", kind, str(p, "path"), svc)
+					}
+				}
+				if strings.Contains(strings.ToLower(toStr(ann)), "traefik") {
+					t.Error("a Traefik setting rendered for ingress-nginx")
 				}
 			}
-			if strings.Contains(strings.ToLower(toStr(ann)), "traefik") {
-				t.Error("a Traefik setting rendered for ingress-nginx")
+			if at(ings[0], "spec", "tls") == nil || at(ings[1], "spec", "tls") != nil {
+				t.Errorf("spec.tls = %v, %v; want it on the first Ingress only", at(ings[0], "spec", "tls"), at(ings[1], "spec", "tls"))
 			}
 		})
-		t.Run("traefik sets the scheme and transport on the Service", func(t *testing.T) {
+		t.Run("traefik sets the scheme and the kind's transport on the Service", func(t *testing.T) {
 			_, docs := render(t, required(), "ingress.enabled=true", "ingress.backendTLS.controller=traefik",
-				"ingress.backendTLS.serversTransport=quader-quader-tls@kubernetescrd")
-			for _, svc := range []string{"quader-api", "quader-packages"} {
+				"ingress.backendTLS.serversTransports.api=quader-quader-api@kubernetescrd", "ingress.backendTLS.serversTransports.packages=quader-quader-packages@kubernetescrd")
+			for svc, kind := range map[string]string{"quader-api": "api", "quader-packages": "packages"} {
 				ann := at(find(docs, "Service", svc), "metadata", "annotations")
 				if str(ann, "traefik.ingress.kubernetes.io/service.serversscheme") != "https" ||
-					str(ann, "traefik.ingress.kubernetes.io/service.serverstransport") != "quader-quader-tls@kubernetescrd" {
+					str(ann, "traefik.ingress.kubernetes.io/service.serverstransport") != "quader-quader-"+kind+"@kubernetescrd" {
 					t.Errorf("Service %s annotations = %v", svc, ann)
 				}
 			}
@@ -341,15 +429,14 @@ func TestTLS(t *testing.T) {
 			}
 		})
 		t.Run("manual renders no vendor setting", func(t *testing.T) {
-			out, docs := render(t, required(), "ingress.enabled=true", "ingress.backendTLS.controller=manual")
-			if strings.Contains(out, "nginx.ingress") || strings.Contains(out, "traefik.ingress") {
+			out, _ := render(t, required(), "ingress.enabled=true", "ingress.backendTLS.controller=manual")
+			if strings.Contains(out, "nginx.ingress") || strings.Contains(out, "traefik.ingress") || strings.Contains(out, "haproxy-ingress") {
 				t.Error("a vendor annotation rendered for manual")
 			}
-			_ = docs
 		})
 	})
 
-	t.Run("R-HA-063 the BackendTLSPolicy for Gateway API is optional and verifies against a CA ConfigMap", func(t *testing.T) {
+	t.Run("R-HA-063 the BackendTLSPolicy for Gateway API is optional and verifies each Service's kind against a CA ConfigMap", func(t *testing.T) {
 		_, docs := render(t, required())
 		if len(ofKind(docs, "BackendTLSPolicy")) != 0 {
 			t.Error("a BackendTLSPolicy rendered by default")
@@ -357,22 +444,24 @@ func TestTLS(t *testing.T) {
 		renderFails(t, required(), []string{"tls.backendTLSPolicy.enabled=true"}, "tls.backendTLSPolicy.caConfigMapName")
 		_, docs = render(t, required(), "tls.backendTLSPolicy.enabled=true", "tls.backendTLSPolicy.caConfigMapName=quader-tls-ca")
 		p := ofKind(docs, "BackendTLSPolicy")
-		// one policy per Service the default endpoint's edge names (R-HA-038), each verifying <fullname>.<namespace>.svc
+		// one policy per Service the default endpoint's edge names (R-HA-038), each verifying the name of its Service's kind
 		if len(p) != 2 {
 			t.Fatalf("%d BackendTLSPolicy objects, want one per role Service", len(p))
 		}
-		if str(p[0], "spec", "targetRefs", "0", "name") != "quader-api" || str(p[1], "spec", "targetRefs", "0", "name") != "quader-packages" ||
-			str(p[0], "spec", "targetRefs", "0", "kind") != "Service" || str(p[0], "metadata", "name") != "quader-api" {
-			t.Errorf("targetRefs = %v, %v", at(p[0], "spec", "targetRefs"), at(p[1], "spec", "targetRefs"))
-		}
-		if str(p[0], "spec", "validation", "hostname") != "quader.default.svc" ||
-			str(p[0], "spec", "validation", "caCertificateRefs", "0", "name") != "quader-tls-ca" ||
-			str(p[0], "spec", "validation", "caCertificateRefs", "0", "kind") != "ConfigMap" {
-			t.Errorf("validation = %v", at(p[0], "spec", "validation"))
+		for i, kind := range []string{"api", "packages"} {
+			if str(p[i], "spec", "targetRefs", "0", "name") != "quader-"+kind || str(p[i], "spec", "targetRefs", "0", "kind") != "Service" ||
+				str(p[i], "metadata", "name") != "quader-"+kind {
+				t.Errorf("targetRefs = %v", at(p[i], "spec", "targetRefs"))
+			}
+			if str(p[i], "spec", "validation", "hostname") != "quader-"+kind+".default.svc" ||
+				str(p[i], "spec", "validation", "caCertificateRefs", "0", "name") != "quader-tls-ca" ||
+				str(p[i], "spec", "validation", "caCertificateRefs", "0", "kind") != "ConfigMap" {
+				t.Errorf("validation = %v", at(p[i], "spec", "validation"))
+			}
 		}
 	})
 
-	t.Run("R-HA-063 every value set either names its TLS Secret or opts out explicitly", func(t *testing.T) {
+	t.Run("R-HA-063 every value set either issues or names its pairs or opts out explicitly", func(t *testing.T) {
 		eachSet(t, func(t *testing.T, _ string, _ string, docs []doc) {
 			cfg := configOf(t, docs)
 			on := at(cfg, "server", "tls") != nil
@@ -392,51 +481,35 @@ func toStr(v any) string {
 }
 
 func TestTLSMountsFollowTheListeners(t *testing.T) {
-	t.Run("R-HA-030 without tls.ops every runtime pod mounts the listener pair, the operations listener inherits it", func(t *testing.T) {
-		_, docs := render(t, required())
-		for _, role := range []string{"api", "packages", "worker"} {
-			if secretVolume(at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec"), "quader-tls") == nil {
-				t.Errorf("quader-%s does not mount quader-tls", role)
+	t.Run("R-HA-030 R-HA-063 every runtime pod mounts its own kind's pair and no other, also with the image scanning off", func(t *testing.T) {
+		for _, sets := range [][]string{nil, {"config.vulnerabilities.images.enabled=false"}} {
+			_, docs := render(t, required(), sets...)
+			for _, role := range []string{"api", "packages", "worker"} {
+				if got := kindSecrets(at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")); len(got) != 1 || got[0] != "quader-tls-"+role {
+					t.Errorf("%v: quader-%s mounts the pairs %v, want quader-tls-%s only", sets, role, got, role)
+				}
+			}
+		}
+		_, off := render(t, required(), "config.vulnerabilities.images.enabled=false")
+		for _, it := range list(secretVolume(at(find(off, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls-worker"), "secret", "items") {
+			if str(it, "key") == "ca.crt" {
+				t.Error("quader-worker projects ca.crt with the image scanning off, although no link verifies with it")
 			}
 		}
 	})
 
-	t.Run("R-HA-030 R-HA-066 with tls.ops the worker mounts the pair of :8080 only to present it to the scanner, and the web pods do", func(t *testing.T) {
-		_, docs := render(t, required(), "tls.ops.secretName=quader-ops-tls", "config.vulnerabilities.images.enabled=false")
-		if secretVolume(at(find(docs, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls") != nil {
-			t.Error("quader-worker mounts quader-tls with the image scanning off")
-		}
-		_, on := render(t, required(), "tls.ops.secretName=quader-ops-tls")
-		if secretVolume(at(find(on, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls") == nil {
-			t.Error("quader-worker does not mount quader-tls, which it presents to the scanner")
-		}
-		if secretVolume(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"), "quader-tls") == nil {
-			t.Error("quader-packages does not mount quader-tls")
-		}
-	})
-
-	t.Run("R-HA-030 with tls.ops an endpoint pool mounts the pair only when an endpoint it serves has none of its own", func(t *testing.T) {
-		pool := []string{"tls.ops.secretName=quader-ops-tls", "endpoints.c.port=8443", "endpoints.c.baseUrl=https://p.example.com", "endpoints.c.pool.enabled=true"}
-		_, docs := render(t, required(), pool...)
+	t.Run("R-HA-030 an endpoint pool mounts its kind's pair, and its endpoint's own pair beside it", func(t *testing.T) {
+		pool := []string{"endpoints.c.port=8443", "endpoints.c.baseUrl=https://p.example.com", "endpoints.c.pool.enabled=true"}
 		podOf := func(docs []doc) any {
 			return at(find(docs, "Deployment", "quader-packages-ep-c"), "spec", "template", "spec")
 		}
-		if secretVolume(podOf(docs), "quader-tls") == nil {
-			t.Error("the pool serves an endpoint on the listener pair and does not mount it")
+		_, docs := render(t, required(), pool...)
+		if got := kindSecrets(podOf(docs)); len(got) != 1 || got[0] != "quader-tls-packages" {
+			t.Errorf("the pool mounts the pairs %v, want its kind's", got)
 		}
 		_, docs = render(t, required(), append(pool, "endpoints.c.tls.existingSecret=c-tls")...)
-		if secretVolume(podOf(docs), "quader-tls") != nil {
-			t.Error("the pool mounts quader-tls although its endpoint has a pair of its own and the operations listener has one")
-		}
-		if secretVolume(podOf(docs), "c-tls") == nil {
-			t.Error("the pool does not mount the pair of its endpoint")
-		}
-		if secretVolume(podOf(docs), "quader-ops-tls") == nil {
-			t.Error("the pool does not mount quader-ops-tls")
-		}
-		// The main web pods keep the default endpoint's pair.
-		if secretVolume(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"), "quader-tls") == nil {
-			t.Error("quader-packages does not mount quader-tls")
+		if secretVolume(podOf(docs), "c-tls") == nil || secretVolume(podOf(docs), "quader-tls-packages") == nil {
+			t.Error("the pool does not mount its endpoint's pair beside its kind's")
 		}
 	})
 

@@ -57,6 +57,7 @@ func (c *Config) Validate(r *Report) {
 			p.ExpectedWebReplicas, p.ExpectedServingReplicas)
 	}
 	c.validateShutdownBudget(r)
+	c.validateLinkNames(r)
 	if c.System.BootstrapAnonymousRead {
 		// Every endpoint's origin counts: the bridge is checked against the origins
 		// that reach the edge, not only the default one (SA3).

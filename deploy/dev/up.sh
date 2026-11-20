@@ -140,7 +140,7 @@ task_pki() {
     --set startupapicheck.image.digest="$(digest_of "$DEV_CERT_MANAGER_STARTUPAPICHECK_IMAGE")" \
     --wait --timeout 5m
   render "$DEV_DIR/pki.yaml" | kn apply -f -
-  kn wait --for=condition=Ready certificate/quader-dev-ca certificate/quader-tls certificate/quader-edge-tls certificate/quader-s3-tls --timeout=3m
+  kn wait --for=condition=Ready certificate/quader-dev-ca certificate/quader-edge-tls certificate/quader-s3-tls --timeout=3m
 }
 
 # The operator caches every Secret and ConfigMap of the cluster. Its chart's limit of 128 MiB was too small on a long-lived dev

@@ -70,10 +70,10 @@ func TestR_VULN_041_AScannerStoppedDuringAnAnalysisPutsTheScanOff(t *testing.T) 
 	}
 }
 
-// R-VULN-041, R-ARCH-037, R-ARCH-038: the scanner's listener and the scan listener refuse a client without a certificate of the internal
-// CA in the handshake; the scan listener refuses a request with the stack's pair but without a scan token, and a user's token, with 401
-// and no challenge.
-func TestR_VULN_041_TheLinksRefuseAClientWithoutTheInternalCAsCertificate(t *testing.T) {
+// R-VULN-041, R-ARCH-037, R-ARCH-038, Q-VULN-185: the scanner's listener and the scan listener refuse a client without a certificate of
+// the internal CA, and a certificate of that CA of another kind, in the handshake; the scan listener refuses a request with the
+// scanner's pair but without a scan token, and a user's token, with 401 and no challenge.
+func TestR_VULN_041_TheLinksRefuseAClientWithoutTheCertificateOfTheirKind(t *testing.T) {
 	f := newFlow(t)
 	img := newImage(t)
 	f.push("app", "1.0", img)
@@ -96,12 +96,34 @@ func TestR_VULN_041_TheLinksRefuseAClientWithoutTheInternalCAsCertificate(t *tes
 			t.Errorf("%s answered %d to a client without a certificate", name, res.StatusCode)
 		}
 	}
-	pair, err := tls.LoadX509KeyPair(filepath.Join(testenv.CertDir(t), "server.crt"), filepath.Join(testenv.CertDir(t), "server.key"))
+	// R-ARCH-038, Q-VULN-185: a certificate of the CA admits only the one kind each listener serves. The stack's own server pair is a
+	// certificate of the CA with neither kind's name; the pair of web carries the names of api and packages.
+	shared, err := tls.LoadX509KeyPair(filepath.Join(testenv.CertDir(t), "server.crt"), filepath.Join(testenv.CertDir(t), "server.key"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	withPair := testenv.TLSConfig(t)
-	withPair.Certificates = []tls.Certificate{pair}
+	with := func(c tls.Certificate) *tls.Config {
+		cfg := testenv.TLSConfig(t)
+		cfg.Certificates = []tls.Certificate{c}
+		return cfg
+	}
+	for _, c := range []struct {
+		name, addr string
+		pair       tls.Certificate
+	}{
+		{"the scanner's listener with the pair of packages", f.scanner.ScannerAddr(), f.st.RolePair(t, "web")},
+		{"the scanner's listener with the scanner's own pair", f.scanner.ScannerAddr(), f.st.RolePair(t, "scanner")},
+		{"the scanner's listener with a certificate of the CA for another name", f.scanner.ScannerAddr(), shared},
+		{"the scan listener with the worker's pair", f.api.Addr("scan"), f.st.RolePair(t, "worker")},
+		{"the scan listener with a certificate of the CA for another name", f.api.Addr("scan"), shared},
+	} {
+		res, err := get(with(c.pair), c.addr, "/", "")
+		if err == nil {
+			_ = res.Body.Close()
+			t.Errorf("%s answered %d", c.name, res.StatusCode)
+		}
+	}
+	withPair := with(f.st.RolePair(t, "scanner"))
 	for what, token := range map[string]string{"no token": "", "a user's token": f.adm} {
 		res, err := get(withPair, f.api.Addr("scan"), manifest, token)
 		if err != nil {

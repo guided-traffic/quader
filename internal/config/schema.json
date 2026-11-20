@@ -3255,7 +3255,7 @@
           "properties": {
             "ca_file": {
               "default": "",
-              "description": "PEM bundle of the CA the links between quader's pods verify against, and that a client certificate of the scanner's listener and of the scan listener must chain to (R-ARCH-038). Read again every server.tls.reload_interval. The chart sets /var/run/secrets/quader/tls-internal/ca.crt, the ca.crt of tls.secretName. Needs server.tls.certificates: without TLS the links are plain HTTP.",
+              "description": "PEM bundle of the CA the links between quader's pods verify against, and that a client certificate of the scanner's listener and of the scan listener must chain to (R-ARCH-038). Read again every server.tls.reload_interval. The chart sets /var/run/secrets/quader/tls/ca.crt, the ca.crt of the pod's own Secret (R-HA-063). Needs server.tls.certificates: without TLS the links are plain HTTP.",
               "type": "string",
               "x-quader-env": "QUADER_SERVER_INTERNAL_TLS_CA_FILE"
             }
@@ -3377,6 +3377,15 @@
           ],
           "type": "string",
           "x-quader-env": "QUADER_SERVER_REPLICA_HEADER"
+        },
+        "scan_clients": {
+          "default": [],
+          "description": "The names of the kinds of pod the scan listener admits: a client certificate of internal_tls.ca_file must list one of them exactly among its DNS names, no wildcard standing for it (R-ARCH-038, Q-ARCH-552). Required while scan_listen is open with TLS, except in the role all, where empty lets the CA alone admit (Q-ARCH-553). The chart sets the name of every kind of scanner it renders, [\u003cfullname\u003e-scanner.\u003cnamespace\u003e.svc]; a route of the listener may narrow it to one of them.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "x-quader-env": "QUADER_SERVER_SCAN_CLIENTS"
         },
         "scan_listen": {
           "default": "",
@@ -4725,7 +4734,7 @@
               "properties": {
                 "server_name": {
                   "default": "",
-                  "description": "The name the scanner verifies in the scan listener's certificate against server.internal_tls.ca_file; empty is the host of url. The chart sets \u003cfullname\u003e.\u003cnamespace\u003e.svc.",
+                  "description": "The name the scanner requires in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-packages.\u003cnamespace\u003e.svc, the name of packages (R-HA-063). The names the scan listener admits are server.scan_clients.",
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_REGISTRY_SERVER_NAME"
                 },
@@ -4763,9 +4772,15 @@
             "scanner": {
               "additionalProperties": false,
               "properties": {
+                "client_name": {
+                  "default": "",
+                  "description": "The name the scanner's listener requires in a client certificate, listed exactly among its DNS names (Q-ARCH-552): the worker's. Required in a scanner while server.tls serves TLS; empty in the role all, where the CA alone admits (Q-ARCH-553). The chart sets \u003cfullname\u003e-worker.\u003cnamespace\u003e.svc.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_CLIENT_NAME"
+                },
                 "server_name": {
                   "default": "",
-                  "description": "The name the worker verifies in the scanner's certificate against server.internal_tls.ca_file; empty is the host of url. The chart sets \u003cfullname\u003e.\u003cnamespace\u003e.svc, the name its certificate carries.",
+                  "description": "The name the worker requires in the scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-scanner.\u003cnamespace\u003e.svc, the scanner's name (R-HA-063).",
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME"
                 },

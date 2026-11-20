@@ -1,6 +1,9 @@
 package config
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 // ScanEndpoint is the reserved name of the endpoint of the scan listener (R-EP-001, R-EP-002, R-ARCH-037): built in, never an
 // entry of server.endpoints.
@@ -11,9 +14,10 @@ const ScanMaxInFlight = 64
 
 // ServerInternalTLS is the trust anchor of the links between quader's pods (R-ARCH-038): the worker's call of the scanner and the
 // scanner's pull from the scan listener of packages. Each end presents the first pair of server.tls.certificates and verifies the
-// other against this CA; the scanner's listener and the scan listener refuse a peer without such a certificate in the handshake.
+// other against this CA and by the names of vulnerabilities.images (Q-ARCH-552); the scanner's listener and the scan listener refuse a
+// peer without such a certificate in the handshake.
 type ServerInternalTLS struct {
-	CAFile string `yaml:"ca_file" default:"" doc:"PEM bundle of the CA the links between quader's pods verify against, and that a client certificate of the scanner's listener and of the scan listener must chain to (R-ARCH-038). Read again every server.tls.reload_interval. The chart sets /var/run/secrets/quader/tls-internal/ca.crt, the ca.crt of tls.secretName. Needs server.tls.certificates: without TLS the links are plain HTTP."`
+	CAFile string `yaml:"ca_file" default:"" doc:"PEM bundle of the CA the links between quader's pods verify against, and that a client certificate of the scanner's listener and of the scan listener must chain to (R-ARCH-038). Read again every server.tls.reload_interval. The chart sets /var/run/secrets/quader/tls/ca.crt, the ca.crt of the pod's own Secret (R-HA-063). Needs server.tls.certificates: without TLS the links are plain HTTP."`
 }
 
 // validateLinks checks the scan listener and the internal trust anchor (R-ARCH-037, R-ARCH-038).
@@ -35,6 +39,14 @@ func (s *Server) validateLinks(r *Report) {
 				}
 			}
 		}
+	}
+	for i, name := range s.ScanClients {
+		if name == "" || !exactName(name) {
+			r.Add(fmt.Sprintf("scan_clients[%d]", i), "%q must be a DNS name without a wildcard, a port or a path: it is compared exactly with a name of the certificate (Q-ARCH-552)", name)
+		}
+	}
+	if role := r.Role(); s.ScanListen != "" && s.TLS.Enabled() && (role == RolePackages || role == RoleWeb) && len(s.ScanClients) == 0 {
+		r.Add("scan_clients", "is required while scan_listen is open with TLS: it names the kinds of pod the scan listener admits, the scanners (R-ARCH-038); the chart sets it")
 	}
 	if s.InternalTLS.CAFile != "" && !s.TLS.Enabled() {
 		r.Add("internal_tls.ca_file", "is set while tls.certificates is empty: the links between quader's pods present and serve the pair of server.tls, so without one they are plain HTTP and no client certificate can be asked (R-ARCH-038)")

@@ -98,10 +98,12 @@ backup:
   enabled: true
 
 tls:
-  secretName: quader-tls                           # example: a cert-manager Certificate's Secret (tls.crt, tls.key, ca.crt)
+  certManager:
+    issuerRef:
+      name: cluster-ca                             # example: the cert-manager ClusterIssuer of the pair of every kind of pod (Secrets quader-tls-<kind>)
   backendTLSPolicy:
-    enabled: true                                  # one BackendTLSPolicy per Service the HTTPRoute names
-    caConfigMapName: quader-tls-ca                 # example: a ConfigMap with the CA that signed quader-tls
+    enabled: true                                  # one BackendTLSPolicy per Service the HTTPRoute names, for the name of its kind
+    caConfigMapName: quader-tls-ca                 # example: a ConfigMap with the CA of cluster-ca (a trust-manager Bundle target)
 
 # The edge requirements of R-HA-039 for HAProxy Ingress: no body limit, timeouts that outlast a multi-GiB transfer on a slow
 # link. The Gateway's own are the HTTPRoute timeouts below (and the policies of R-HA-039, which the chart does not render).
@@ -109,8 +111,7 @@ ingress:
   enabled: true
   className: haproxy                               # example
   backendTLS:
-    controller: haproxy
-    caSecret: quader-tls                           # example: the Secret carries ca.crt
+    controller: haproxy                            # each Service carries its kind's name and Secret for HAProxy Ingress to verify
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt    # example
     haproxy-ingress.github.io/timeout-client: 1h   # example

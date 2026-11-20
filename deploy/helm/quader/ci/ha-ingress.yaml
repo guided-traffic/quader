@@ -88,18 +88,19 @@ spool:
     size: 50Gi
     accessModes: [ReadWriteOnce]
 tls:
-  secretName: quader-tls                           # example: a cert-manager Certificate's secret (tls.crt, tls.key, ca.crt)
+  existingSecrets:                                 # example: an installation without cert-manager names a Secret per kind (tls.crt, tls.key, ca.crt)
+    api: quader-tls-api
+    packages: quader-tls-packages
+    worker: quader-tls-worker
+    scanner: quader-tls-scanner
   minVersion: "1.3"
   clientCA:
     secretName: quader-edge-ca                     # example: mutual TLS from the edge
-  ops:
-    secretName: quader-ops-tls                     # example: separate certificate for the operations listener
 ingress:
   enabled: true
   className: haproxy
   backendTLS:
     controller: haproxy                            # example: HAProxy Ingress connects with HTTPS and verifies quader
-    caSecret: quader-tls                           # example: the cert-manager Secret carries ca.crt
     clientCertSecret: quader-edge-client           # example: client certificate for the mutual TLS of tls.clientCA
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt

@@ -109,3 +109,45 @@ func TestR_ARCH_037_TheScanListenerAndTheInternalTrustAnchorAreValidated(t *test
 		containsAll(t, issuesOf(t, loadRole(t, "packages", "QUADER_SERVER_INTERNAL_TLS_CA_FILE=/ca.crt")), "server.internal_tls.ca_file is set while tls.certificates is empty")
 	})
 }
+
+// R-ARCH-038, Q-ARCH-552, Q-ARCH-553: with TLS, the listener of each link names the one kind it admits; the role all may leave the
+// names empty, and no name may hold a wildcard or a port.
+func TestR_ARCH_038_TheListenersOfTheLinksNameTheKindTheyAdmit(t *testing.T) {
+	tlsOn := []string{`QUADER_SERVER_TLS_CERTIFICATES=[{"cert_file":"/tls/tls.crt","key_file":"/tls/tls.key"}]`, "QUADER_SERVER_INTERNAL_TLS_CA_FILE=/tls/ca.crt"}
+	with := func(env ...string) []string { return append(append([]string{}, tlsOn...), env...) }
+	t.Run("a scanner with TLS needs the worker's name", func(t *testing.T) {
+		containsAll(t, issuesOf(t, loadRole(t, "scanner", with(testRegistryURL)...)), "vulnerabilities.images.scanner.client_name is required in a scanner")
+		if err := loadRole(t, "scanner", with(testRegistryURL, "QUADER_VULNERABILITIES_IMAGES_SCANNER_CLIENT_NAME=quader-worker.quader.svc")...); err != nil {
+			t.Fatal(err)
+		}
+		if err := loadRole(t, "scanner", testRegistryURL); err != nil {
+			t.Fatalf("without TLS no name is checked: %v", err)
+		}
+	})
+	t.Run("a process that opens the scan listener with TLS needs the scanner's name", func(t *testing.T) {
+		for _, role := range []string{"packages", "web"} {
+			containsAll(t, issuesOf(t, loadRole(t, role, with("QUADER_SERVER_SCAN_LISTEN=:8082")...)), "server.scan_clients is required while scan_listen is open")
+			// Every kind of scanner the scan listener admits is one entry: a second kind adds its name (Q-ARCH-552).
+			if err := loadRole(t, role, with("QUADER_SERVER_SCAN_LISTEN=:8082", `QUADER_SERVER_SCAN_CLIENTS=["quader-scanner.quader.svc","quader-other-scanner.quader.svc"]`)...); err != nil {
+				t.Errorf("%s: %v", role, err)
+			}
+		}
+		if err := loadRole(t, "packages", tlsOn...); err != nil {
+			t.Fatalf("packages without a scan listener: %v", err)
+		}
+	})
+	t.Run("Q-ARCH-553 the role all may leave both names empty", func(t *testing.T) {
+		if err := loadRole(t, "all", with("QUADER_SERVER_SCAN_LISTEN=:8082")...); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("a name is compared exactly, so it holds no wildcard, port or path", func(t *testing.T) {
+		for _, bad := range []string{"*.quader.svc", "quader-worker.quader.svc:8080", "quader-worker/x"} {
+			containsAll(t, issuesOf(t, loadRole(t, "worker", testScannerURL, "QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME="+bad)), "vulnerabilities.images.scanner.server_name")
+			containsAll(t, issuesOf(t, loadRole(t, "packages", `QUADER_SERVER_SCAN_CLIENTS=["`+bad+`"]`)), "server.scan_clients[0]")
+		}
+		if err := loadRole(t, "worker", testScannerURL, "QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME=::1"); err != nil {
+			t.Fatalf("an IPv6 address: %v", err)
+		}
+	})
+}

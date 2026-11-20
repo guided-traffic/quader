@@ -33,8 +33,8 @@ killed with the call; its output is bounded before it is answered.
 
 ## What the scanner holds, and what a taken-over analyser can do with it
 
-The scanner's pod mounts the TLS pair it serves and presents (the chart's, or its own with `scanner.tls.secretName`), the internal CA, the
-configuration file, a spool and `/tmp`, and nothing else: no database, object-store or Valkey credential or CA, no key of the key ring, no
+The scanner's pod mounts its own Secret (the scanner's pair, which it serves and presents, and the internal CA), the configuration file, a
+spool and `/tmp`, and nothing else; no pod of another kind holds the scanner's pair, and the scanner holds no other kind's: no database, object-store or Valkey credential or CA, no key of the key ring, no
 login secret, no trusted CA bundle, no service-account token, and none of the chart's shared extras
 ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)).
 Its process opens no connection but the one to the scan listener and keeps nothing between two calls.
@@ -45,7 +45,7 @@ An analyser that a crafted image took over runs as the scanner's user in the sca
 |---|---|
 | read the image of its call, and its scan token | the call; the token reaches that one manifest and the blobs of its name, for `pull_timeout` ([H-1041](oci-registry.md#h-1041--a-scan-token-is-a-bearer-credential-for-one-image-until-it-runs-out)) |
 | write the package list of its own image | nothing: the image's own contents decide that list anyway, so a pusher gains nothing it did not have |
-| read the TLS pair and the internal CA, and with `tls.ops.secretName` the pair of the operations listener ([Q-HA-340](../spec/ha-and-helm.md#q-ha-340--with-tlsops-the-scanner-mounts-the-pair-of-its-operations-listener)) | the pair is the chart's by default ([H-1035](#h-1035--the-scanner-holds-the-charts-tls-key-by-default)) |
+| read the scanner's pair and the internal CA | the pair names the scanner only, and every other side of a link checks the name of the kind it expects ([H-1035](#h-1035--a-taken-over-analyser-holds-the-scanners-pair)) |
 | open connections to any address the pod network reaches | the cluster operator's policy; the chart renders no egress rule ([H-1036](#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
 | end its own pod's analysis by memory or by writing | `max_attempts`: the call breaks, the worker records `scanner_lost` and spends an attempt ([H-1044](#h-1044--an-image-can-end-a-scanners-analysis-on-every-attempt)) |
 | reach a concurrent analysis of the same pod | only with `slots` above 1 ([H-1037](#h-1037--analyses-that-share-a-scanner-share-its-user)) |
@@ -61,9 +61,11 @@ verified on any cluster.
 
 ## Who may call the scanner, and how the pull is authorised
 
-The scanner's listener requires a client certificate of the internal CA, and the NetworkPolicy admits only the worker pods that claim the
-queue `vuln` on its port ([R-VULN-041](../spec/vulnerability-scanning.md#r-vuln-041--the-call-from-the-worker-to-the-scanner)). A pod that
-reaches the port without such a certificate gets a refused handshake and no HTTP answer. The scanner verifies no token itself: it has no key
+The scanner's listener requires a client certificate of the internal CA that lists the worker's name, and the NetworkPolicy admits only the
+worker pods that claim the queue `vuln` on its port ([R-VULN-041](../spec/vulnerability-scanning.md#r-vuln-041--the-call-from-the-worker-to-the-scanner),
+[Q-VULN-185](../spec/vulnerability-scanning.md#q-vuln-185--each-end-of-a-link-proves-its-kind-the-worker-to-the-scanner-the-scanner-to-the-scan-listener)).
+A pod that reaches the port without such a certificate, or with a certificate of the CA for another kind or a wildcard name, gets a refused
+handshake and no HTTP answer. The scan listener admits the scanner's name only, the same way. The scanner verifies no token itself: it has no key
 to verify with. The scan listener of `packages` does, and it accepts nothing but a scan token there, which only a holder of the key ring can
 sign ([R-ARCH-037](../spec/architecture.md#r-arch-037--the-scan-listener-of-packages), R-OCI-037). The token, not the caller, decides what
 is read.
@@ -199,15 +201,27 @@ CVE-2026-97054, in the HTTP/1 server of `net/http`. What is not covered: a findi
 pushed, applies in full and is bounded only by the limits outside the analyser that this page describes and by what the scanner's pod holds;
 and nothing tells an installation that already runs an image which analyser build it carries, beyond the image's SBOM.
 
-### H-1035 · The scanner holds the chart's TLS key by default
+### H-1035 · A taken-over analyser holds the scanner's pair
 
-Component: the scanner's pod and the chart's TLS wiring ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment),
-[Q-HA-317](../spec/ha-and-helm.md#q-ha-317--the-scanner-serves-the-charts-pair-by-default-a-pair-of-its-own-is-a-value)). Subject: the
-identity `<fullname>.<namespace>.svc` that the edge verifies for the backends of `api` and `packages`, and that every link of R-HA-066
-accepts. Live by default; dormant with `scanner.tls.secretName`. An analyser that an image took over reads the pair from
-its mount. With it, a party that can also put itself between the edge and a backend (a Service's endpoints, which need the Kubernetes API,
-or an address the CNI lets it claim) can pose as that backend, and it can present itself on the links of the image scanning as any role.
-What makes it real: a taken-over analyser together with a position in the pod network; the scanner itself has no service-account token.
+Component: the scanner's pod and the pairs per kind of pod ([R-HA-063](../spec/ha-and-helm.md#r-ha-063--chart-tls-wiring),
+[Q-HA-345](../spec/ha-and-helm.md#q-ha-345--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-and-the-chart-issues-the-pairs)). Subject:
+the scanner's pair, `<fullname>-scanner.<namespace>.svc` and `<fullname>-ops.<namespace>.svc`. Live by design: the analyser runs in the pod
+that mounts it. With it, a taken-over analyser passes the scan listener's check, which the scanner passes already, and still needs a scan
+token for each manifest (ADR-213); it does not pass the scanner's listener (the worker's name only), the edge (the names of `api` and
+`packages`) or any link as another kind. As a server it could pose as a scanner toward a worker, which needs a position between the worker
+and the Service `<fullname>-scanner` (its endpoints, which need the Kubernetes API, or an address the CNI lets it claim), and as an
+operations listener toward the scrape ([H-1071](transport-encryption.md#h-1071--every-pair-also-carries-the-operations-name)). What makes it real: a taken-over analyser together with such a position; the scanner has no
+service-account token.
+
+What the pair of each other kind allows, for the case that its pod is taken over or its Secret read (each kind's pods hold more than its
+pair, so the pair is the smaller loss):
+
+| Kind | Its pair passes as | It does not pass as |
+|---|---|---|
+| `api` | `api` toward the edge (sessions and logins pass through), with a position in front of `<fullname>-api` | `packages` toward the edge; any client of a link (no `client auth`) |
+| `packages` | `packages` toward the edge, and the scan listener toward the scanner, with a position in front of its Service; the scanner checks every digest it pulls, so it can withhold an image but not change one | `api`; any client of a link |
+| `worker` | a caller of the scanner, which the NetworkPolicy admits from the pods of the worker of `vuln` only; without a scan token from the key ring a call reads nothing | a server toward the edge; the scanner toward the worker |
+| `scanner` | as above | as above |
 
 ### H-1036 · The chart restricts no egress of the scanner
 

@@ -430,11 +430,12 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 
 | Name | Value | Built |
 |---|---|---|
-| Listener certificate mount | `/var/run/secrets/quader/tls/` (`tls.crt`, `tls.key`; only in pods that load the pair, see `tls.ops`) | yes (`_secrets.tpl`) |
+| Kinds of pod with a pair | `api`, `packages`, `worker`, `scanner` (pools and endpoint pools carry their role's) | yes (`_tls.tpl`) |
+| Name of a kind | `<fullname>-<kind>.<namespace>.svc`, and `<fullname>-ops.<namespace>.svc` in every pair for the scrape; the edge and the links check the kind's name | yes (`_tls.tpl`) |
+| Certificate and Secret of a kind | `<fullname>-tls-<kind>` with `tls.certManager.issuerRef`; else `tls.existingSecrets.<kind>` | yes (`certificates.yaml`) |
+| Listener certificate mount | `/var/run/secrets/quader/tls/` (`tls.crt`, `tls.key` of the pod's own kind; every pod with TLS) | yes (`_secrets.tpl`) |
+| Internal CA mount | `/var/run/secrets/quader/tls/ca.crt` (`ca.crt` of the pod's own Secret; renders `server.internal_tls.ca_file`): the trust anchor of the links of the image scanning, in the `worker`, main `packages` and `scanner` pods, never in `api` pods | yes (`_scanner.tpl`) |
 | Listener client CA mount | `/var/run/secrets/quader/tls-client-ca/ca.crt` (the pods that open :8080: `api`, `packages` and their path pools) | yes |
-| Ops listener certificate mount | `/var/run/secrets/quader/tls-ops/` | yes |
-| Internal CA mount | `/var/run/secrets/quader/tls-internal/ca.crt` (`ca.crt` of `tls.secretName`; renders `server.internal_tls.ca_file`): the trust anchor of the links of the image scanning, in the `worker`, main `packages` and `scanner` pods, never in `api` pods | yes (`_scanner.tpl`) |
-| Scanner's own pair | `scanner.tls.secretName`, mounted at `/var/run/secrets/quader/tls/` in the `scanner` pods instead of the pair of `tls.secretName` | yes (`scanner.yaml`) |
 | Endpoint certificate mount | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`tls.crt`, `tls.key`; `n` is the position in `tls.certificates`), client CA at `…/<name>/client-ca/ca.crt` | yes (`_endpoints.tpl`) |
 | PostgreSQL CA and client pair | `/var/run/secrets/quader/database-ca/ca.crt`, `/var/run/secrets/quader/database-client/tls.{crt,key}` | yes |
 | Object-store CA | `/var/run/secrets/quader/s3-ca/ca.crt` (`secrets.s3CA`; renders `storage.s3.ca_file`) | yes |
@@ -892,13 +893,16 @@ parts are in place today and which are pending.
 kind, kubectl and Helm for the dev profile. `make versions-check` reports any installed tool that differs from its pin.
 
 **Install a release.** The image is `docker.io/guidedtraffic/quader` on Docker Hub, and the chart is in its own repository.
-The chart needs its values and the existing Secrets of [the Helm values](#helm-values):
+The chart needs its values and the existing Secrets of [the Helm values](#helm-values). With TLS on (the default) it also needs a
+cert-manager issuer, from which it issues a certificate for every kind of pod (`tls.certManager.issuerRef.name`, for example your
+`ClusterIssuer`), or a Secret per kind in `tls.existingSecrets`:
 
 ```shell
 helm repo add quader https://guided-traffic.github.io/quader/
 helm repo update quader
 helm install quader quader/quader -n quader -f values.yaml --version <v>   # example: <v> from helm search repo quader --versions
 helm status quader -n quader                                             # example: STATUS: deployed
+kubectl -n quader get certificate                                        # example: quader-tls-api, -packages, -worker, -scanner READY True
 ```
 
 **1. Start the local profile** (a kind cluster, CloudNativePG PostgreSQL with a standby, Valkey with a replica and three
@@ -1230,8 +1234,9 @@ server:
   listen: ":8080"                       # default: the default endpoint's listener; in the role scanner the scanner's listener
   ops_listen: ":8081"                   # default
   scan_listen: ""                       # default: none; example ":8082": the scan listener of packages, web and all, which accepts scan tokens only (the chart sets it on the main packages Deployment)
+  scan_clients: []                      # default: empty = the CA alone admits (the role all); required with scan_listen and TLS: the names of the kinds of scanner it admits; the chart sets [<fullname>-scanner.<namespace>.svc]
   internal_tls:
-    ca_file: ""                         # default; example /var/run/secrets/quader/tls-internal/ca.crt: the CA the links of the image scanning verify both sides against; required with server.tls on the scanner, the scan listener and a worker while the image scanning is on (the chart sets it)
+    ca_file: ""                         # default; example /var/run/secrets/quader/tls/ca.crt (the chart's, the ca.crt of the pod's own Secret): the CA the links of the image scanning verify both sides against; required with server.tls on the scanner, the scan listener and a worker while the image scanning is on (the chart sets it)
   read_header_timeout: 10s              # default; at least 1s
   idle_timeout: 120s                    # default
   transfer_stall_timeout: 60s           # default
@@ -1979,11 +1984,12 @@ vulnerabilities:
     pull_timeout: 10m                   # default; 1m to 1h: the scanner's pull, and the lifetime of a scan token
     scanner:
       url: ""                           # default; example https://quader-scanner.quader.svc:8080; required in a worker; empty in all = its own scanner over loopback (the chart sets it)
-      server_name: ""                   # default: the host of url; the chart sets <fullname>.<namespace>.svc
+      server_name: ""                   # default: the host of url; listed exactly in the scanner's certificate; the chart sets <fullname>-scanner.<namespace>.svc
+      client_name: ""                   # default: empty = the CA alone admits (the role all); required in a scanner with TLS: the worker's name its listener admits; the chart sets <fullname>-worker.<namespace>.svc
       slots: 1                          # default; 1 to 16: analyses one scanner runs at once (H-1037 above 1)
     registry:
       url: ""                           # default; example https://quader-packages-scan.quader.svc:8082; required in the role scanner; empty in all = its own scan listener (the chart sets it)
-      server_name: ""                   # default: the host of url; the chart sets <fullname>.<namespace>.svc
+      server_name: ""                   # default: the host of url; listed exactly in the scan listener's certificate; the chart sets <fullname>-packages.<namespace>.svc
 ```
 
 Security notes:
@@ -2209,7 +2215,7 @@ and the problem details of R-ARCH-023 with the `deb_*` codes of [error codes](#e
 | `bastions.trusted_proxies` | `[]` | The Bastions' egress addresses: their forwarded client address and host count only for a request that carries a valid Bastion token. Listed in `server.trusted_proxies` instead, the address would be believed for any request from it, Bastion token or not. A `/0` prefix is refused. | [Bastion](docs/security/bastion.md), [Q-BAS-116](docs/spec/bastion.md) |
 | `tracing.incoming_context`, `tracing.trusted_peers` | `trusted_peers`, `[]` | No incoming trace context is continued by default; only the listed peers can choose the trace ID. `server.trusted_proxies` grants no trace trust. | [roles and trust boundaries](docs/security/roles-and-trust-boundaries.md), [Q-OPS-32](docs/spec/operations-and-observability.md) |
 | `server.base_url` | empty | Empty is for development only. Set the `https` origin of the edge. | [R-OPS-005](docs/spec/operations-and-observability.md) |
-| `server.internal_tls.ca_file`, Helm `scanner.tls.secretName` | the chart's: `ca.crt` of `tls.secretName`, empty | The links of the image scanning are mutual TLS against this CA; the scanner presents the chart's pair by default, so an analyser that a hostile image took over can read the key the edge trusts. `scanner.tls.secretName` gives the scanner a pair of its own. With `tls.enabled: false` both links are plain HTTP. | [H-1035](docs/security/image-scanning.md#h-1035--the-scanner-holds-the-charts-tls-key-by-default), [H-1043](docs/security/image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated) |
+| `server.internal_tls.ca_file`, `vulnerabilities.images.scanner.client_name`, `server.scan_clients`, Helm `tls.certManager.issuerRef` | the chart's: `ca.crt` of the pod's own Secret and the kinds' names, `ClusterIssuer` `""` | The links of the image scanning are mutual TLS against this CA, and each end admits only the other kind's name: a pod of another kind, or a wildcard certificate of the same CA, is refused. Every kind of pod holds its own pair, so an analyser that a hostile image took over holds the scanner's only. The names are only as strong as the issuer's rule of who may request them: a `ClusterIssuer` that any namespace may use lets anyone who creates Certificates there request the worker's name. With `tls.enabled: false` both links are plain HTTP. | [H-1035](docs/security/image-scanning.md#h-1035--a-taken-over-analyser-holds-the-scanners-pair), [H-1072](docs/security/transport-encryption.md#h-1072--the-name-check-is-as-strong-as-the-issuers-rule-of-who-may-request-a-name), [H-1043](docs/security/image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated) |
 | `vulnerabilities.images.scanner.slots` | `1` | Above 1, the analyses of one scanner pod share its user: one hostile image can read the others' images and tokens. Raise the scanner's replicas instead. | [H-1037](docs/security/image-scanning.md#h-1037--analyses-that-share-a-scanner-share-its-user) |
 | `system.bootstrap_anonymous_read` | `false` | `true` lets anonymous callers read the installation facts and the replica list on the client port. Startup refuses it with an `https` base URL that is not localhost. | [H-63](docs/security/roles-and-trust-boundaries.md), [Q-API-14](docs/spec/api-and-ui.md) |
 | `metrics.auth` | `none` | With `none`, whoever reaches port 8081 reads the metrics; the chart's NetworkPolicy limits that. `static` requires a bearer token file. | [H-41](docs/spec/operations-and-observability.md), [R-OPS-006](docs/spec/operations-and-observability.md) |
@@ -2737,8 +2743,6 @@ scanner:                                # the analysis of container images, rend
   terminationGracePeriodSeconds: 60     # default; an analysis still running at the shutdown timeout is ended and put off without an attempt
   spool:
     sizeLimit: 6Gi                      # default; its budget (minus spool.headroom) must hold slots × (max_image_size + 64 MiB), validated
-  tls:
-    secretName: ""                      # default: the pair of tls.secretName; example: quader-scanner-tls, issued by the CA of tls.secretName's ca.crt for <fullname>.<namespace>.svc with client auth (H-1035)
   resources: {requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 1Gi}, limits: {memory: 2Gi}}   # default; no CPU limit
   autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
   podDisruptionBudget: {enabled: true, maxUnavailable: 1}   # default
@@ -2790,23 +2794,32 @@ migrations:
 ```yaml
 tls:
   enabled: true                         # default; false = plain HTTP inside the cluster (H-38)
-  secretName: ""                        # required with tls.enabled; example: quader-tls (a kubernetes.io/tls Secret with tls.crt, tls.key and ca.crt)
-  certKey: tls.crt                      # default
-  keyKey: tls.key                       # default
+  existingSecrets:                      # default: all empty = the Certificates below; else a Secret per kind with tls.crt, tls.key and ca.crt, one CA, never one Secret for two kinds
+    api: ""                             # example: quader-tls-api, for <fullname>-api.<namespace>.svc and <fullname>-ops.<namespace>.svc, server auth
+    packages: ""                        # example: quader-tls-packages, for <fullname>-packages.<namespace>.svc and the ops name, server auth
+    worker: ""                          # example: quader-tls-worker, for <fullname>-worker.<namespace>.svc and the ops name, server auth and client auth
+    scanner: ""                         # example: quader-tls-scanner, for <fullname>-scanner.<namespace>.svc and the ops name, server auth and client auth
+  certManager:                          # the chart renders a Certificate <fullname>-tls-<kind> per kind of pod
+    issuerRef:
+      kind: ClusterIssuer               # default: ClusterIssuer | Issuer (of the release namespace)
+      name: ""                          # required with tls.enabled unless existingSecrets names the pairs; example: cluster-ca
+      group: cert-manager.io            # default
+    duration: 2160h                     # default: 90 days
+    renewBefore: 720h                   # default: 30 days
+    privateKey:
+      algorithm: ECDSA                  # default: ECDSA | RSA; rotationPolicy Always: a renewal changes the key
+      size: 256                         # default: ECDSA 256 | 384; RSA 2048 | 3072 | 4096
+    extraDnsNames: []                   # default; names every pair carries besides its kind's, for clients that reach one pod by port-forward; no check relies on them
+    extraIpAddresses: []                # default; example: [127.0.0.1]
   minVersion: "1.2"                     # default: 1.2 | 1.3 (server.tls.min_version)
   reloadInterval: 10s                   # default (server.tls.reload_interval)
   clientCA:                             # optional mutual TLS on :8080
     secretName: ""                      # default: empty = no client certificates; example: quader-edge-ca
     key: ca.crt                         # default
     auth: require                       # default: require | verify_if_given
-  ops:                                  # a separate pair for :8081; empty = the same material as :8080 (inherit), which puts the :8080 private key into every pod. Set it when you run workers or endpoint pools (H-57)
-    secretName: ""                      # default; example: quader-ops-tls
-    certKey: tls.crt                    # default
-    keyKey: tls.key                     # default
   backendTLSPolicy:                     # Gateway API: how the Gateway verifies Quader; needs the BackendTLSPolicy CRD
-    enabled: false                      # default
+    enabled: false                      # default; one policy per Service, for the name of its kind
     caConfigMapName: ""                 # required when enabled; a ConfigMap with ca.crt
-    hostname: ""                        # default: <fullname>.<namespace>.svc; must be a SAN of the certificate
 ingress:
   enabled: false                        # default
   className: ""                         # default: the cluster's default IngressClass
@@ -2815,15 +2828,18 @@ ingress:
   tls: []                               # default; example: [{secretName: quader-tls, hosts: [quader.example.com]}]
   backendTLS:                           # how the controller reaches Quader over TLS
     controller: haproxy                 # default: haproxy | traefik | ingress-nginx | manual
-    verify: true                        # default: the controller verifies the Quader certificate; with true, caSecret is required (haproxy, ingress-nginx), also for the Ingress of an endpoint
-    caSecret: ""                        # required with verify on haproxy and ingress-nginx; a Secret with ca.crt; example: quader-tls
+    verify: true                        # default: the controller verifies each backend under its kind's name, <fullname>-api.<namespace>.svc or <fullname>-packages.<namespace>.svc
+    caSecret: ""                        # default: empty = the Secret of the pair the backend serves (haproxy, ingress-nginx); example: quader-internal-ca
     clientCertSecret: ""                # haproxy: a Secret with tls.crt and tls.key presented to Quader; required with tls.clientCA
-    serversTransport: ""                # traefik only: <namespace>-<name>@kubernetescrd; required with verify
+    serversTransports:                  # traefik only: a ServersTransport per kind with its name as serverName; both required with verify
+      api: ""                           # example: quader-quader-api@kubernetescrd
+      packages: ""                      # example: quader-quader-packages@kubernetescrd
 ```
 
-With `controller: haproxy` the chart renders `haproxy-ingress.github.io/secure-backends`, `secure-verify-ca-secret`,
-`secure-sni` and `secure-crt-secret`. Other controllers get their own annotations as listed in
-[ingress.yaml](deploy/helm/quader/templates/ingress.yaml).
+With `controller: haproxy` the chart renders `haproxy-ingress.github.io/secure-backends` and `secure-crt-secret` on the Ingress, and
+`secure-sni` with the kind's name and `secure-verify-ca-secret` on each Service the Ingress routes to; Traefik gets each kind's
+ServersTransport on its Services, ingress-nginx an Ingress per kind, the Gateway API a BackendTLSPolicy per Service
+([_tls.tpl](deploy/helm/quader/templates/_tls.tpl)). A backend that serves another kind's pair is refused by the edge.
 
 </details>
 
@@ -2945,7 +2961,7 @@ The files are added to the system roots for every outbound TLS connection (upstr
 release, the Jobs included, after the files that `config.proxy.outbound.tls.ca_files` already lists. They are mounted without `subPath`, so a
 rotation of the source reaches the pods at the kubelet's pace and the binary reads the files again within 60 s
 ([R-HA-043](docs/spec/ha-and-helm.md), [H-804](docs/spec/ha-and-helm.md#h-804--a-change-of-the-ca-source-reaches-the-pods-at-the-kubelets-pace)).
-Security: whoever can write the source can make Quader accept a certificate it signs, so protect it like `tls.secretName`. PostgreSQL never uses
+Security: whoever can write the source can make Quader accept a certificate it signs, so protect it like the issuer of the pairs. PostgreSQL never uses
 the bundle: the database connection trusts `secrets.databaseCA` only. With `useForObjectStore` the file is the object store's whole trust store.
 
 Sizing profiles ([R-HA-050](docs/spec/ha-and-helm.md)) are values files of the chart; layer one before your own:
@@ -3030,7 +3046,7 @@ endpoints: {}                           # default: only the default endpoint; th
 #    maxInFlight: 1024                  # default, per replica and endpoint
 #    trustedProxies: []                 # default: config.server.trusted_proxies
 #    tls:
-#      existingSecret: ""               # default: empty = the pair of tls.secretName; example: quader-packages-tls
+#      existingSecret: ""               # default: empty = the pair of the kind of the pods that serve it; example: quader-packages-tls
 #      extraSecrets: []                 # default; further pairs, chosen by SNI; example: [quader-packages-wildcard-tls]
 #      clientCaSecret: ""               # default: no client certificates; example: quader-customer-ca (key ca.crt)
 #    pool:

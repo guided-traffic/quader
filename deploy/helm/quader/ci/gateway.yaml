@@ -18,7 +18,9 @@ config:
         - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
       primary_name: quader
 tls:
-  secretName: quader-tls                           # example: the one value TLS needs (tls.enabled defaults to true)
+  certManager:
+    issuerRef:
+      name: cluster-ca                             # example: the one value TLS needs (tls.enabled defaults to true)
   backendTLSPolicy:
     enabled: true
     caConfigMapName: quader-tls-ca

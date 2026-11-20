@@ -51,6 +51,33 @@ func NewCA(tb testing.TB, name string) *CA {
 	return &CA{Cert: cert, Key: key, PEM: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
 }
 
+// LoadCA reads a CA certificate and its private key (PEM; PKCS#8, PKCS#1 or SEC 1) that the test did not create, so that a test
+// issues leaves of an existing CA: the integration stack's (test/integration/certs.sh).
+func LoadCA(tb testing.TB, certFile, keyFile string) *CA {
+	tb.Helper()
+	certPEM, err := os.ReadFile(certFile) //nolint:gosec // the test names the CA it issues from
+	if err != nil {
+		tb.Fatal(err)
+	}
+	keyPEM, err := os.ReadFile(keyFile) //nolint:gosec // the test names the CA it issues from
+	if err != nil {
+		tb.Fatal(err)
+	}
+	pair, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		tb.Fatalf("the CA of %s and %s: %v", certFile, keyFile, err)
+	}
+	cert, err := x509.ParseCertificate(pair.Certificate[0])
+	if err != nil {
+		tb.Fatal(err)
+	}
+	key, ok := pair.PrivateKey.(crypto.Signer)
+	if !ok {
+		tb.Fatalf("the key of %s cannot sign", keyFile)
+	}
+	return &CA{Cert: cert, Key: key, PEM: certPEM}
+}
+
 // Pool is a pool that holds only this CA.
 func (ca *CA) Pool() *x509.CertPool {
 	p := x509.NewCertPool()

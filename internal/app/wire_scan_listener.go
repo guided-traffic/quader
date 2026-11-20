@@ -60,10 +60,11 @@ func (a *App) planScanListener() error {
 // isScanListener reports whether an endpoint is the scan listener's.
 func isScanListener(rt *endpointRuntime) bool { return rt.cfg.Name == config.ScanEndpoint }
 
-// scanListenerTLS is the TLS of the scan listener: the pair of server.tls and a required client certificate of the internal CA,
-// whatever server.tls.client_auth says about the client listener (R-ARCH-037). Nil without TLS.
+// scanListenerTLS is the TLS of the scan listener: the pair of server.tls and a required client certificate of the internal CA
+// that lists one of the names of server.scan_clients, the kinds of scanner, whatever server.tls.client_auth says about the client
+// listener (R-ARCH-037, R-ARCH-038). Nil without TLS.
 func (a *App) scanListenerTLS() (*httpserver.ListenerTLS, error) {
-	return httpserver.NewLinkListenerTLS(httpserver.LinkScan, a.cfg.Server, a.tlsOptions(httpserver.LinkScan)...)
+	return httpserver.NewLinkListenerTLS(httpserver.LinkScan, a.cfg.Server, a.cfg.Server.ScanClients, a.tlsOptions(httpserver.LinkScan)...)
 }
 
 // linkLoopback points the role all's links at its own listeners once step 9 has bound them (Q-ARCH-531): the worker calls its own

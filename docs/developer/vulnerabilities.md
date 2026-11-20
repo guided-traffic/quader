@@ -697,12 +697,15 @@ packages: the scan listener (endpoint scan) ── auth.byScanToken ── regis
 | The scan token | [registrytoken/scan.go](../../internal/auth/registrytoken/scan.go), [auth/scan.go](../../internal/auth/scan.go) | Claims `s`, `sid`, `d`; the endpoint `scan`; the lifetime `pull_timeout`; the stage that accepts nothing else (R-EP-010) |
 | The digest pin and the decision | [registry/scan_pin.go](../../internal/api/registry/scan_pin.go), [authz/system.go](../../internal/authz/system.go) | The manifest of the token's digest and the blobs of its name only; one fixed rule: `read` of the named repository while it is active and not disabled, never `populate` |
 | The exemptions | [formathost/system_read.go](../../internal/formathost/system_read.go), [limits/subject.go](../../internal/limits/subject.go) | No block gate, no download, no probe; the subject `system`, limited by nothing (Q-OCI-230, Q-LIM-66) |
-| The links' TLS | [httpserver/link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go) | A listener that requires a client certificate of the internal CA; the client side that presents the first pair of `server.tls` and checks its `client auth` usage |
+| The links' TLS | [httpserver/link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go) | A listener that requires a client certificate of the internal CA listing the one kind's name it admits; the client side that presents the first pair of `server.tls`, checks its `client auth` usage and requires the server's kind name (R-ARCH-038, Q-ARCH-552) |
 | The chart | [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml), [_scanner.tpl](../../deploy/helm/quader/templates/_scanner.tpl) | The Deployment, its two Services, its policy, the managed keys, the checks of Q-HA-318 ([helm-chart.md](helm-chart.md)) |
 
 **Run it locally.** `make ui-dev-backend` runs the role `all`, whose worker calls its own scanner over loopback through the same client,
 token and checks; without the analyser binary the process stays ready and `/readyz?verbose=1` shows `scanner` degraded (Q-ARCH-551). The integration stack starts a scanner replica beside `web` and `worker` with `StackOptions{TLS: true}`
 ([test/integration/vulnimage](../../test/integration/vulnimage)), with the analyser replaced at the seam (`app.VulnOverride.ImageAnalyser`).
+With TLS the harness issues each role a pair of its own from the stack's CA (`rolePairs` in [testenv/tls.go](../../test/integration/testenv/tls.go):
+the names `<kind>.quader.test`, `web` carrying `api`'s and `packages`', and `localhost`, `127.0.0.1`) and sets the four names of the links,
+so the suite runs the checks of the chart; `Stack.RolePair` hands a test the pair of a role to present itself (Q-ARCH-553).
 
 **The fidelity test.** `make test-analyser` fetches the pinned analyser (`make trivy`) and runs
 `TestQ_VULN_164_TheRewrittenAnalysisDetectsWhatTheAnalysersOwnDoes`: an Alpine 3.12 image of a few kilobytes is analysed, the analysis is

@@ -108,10 +108,12 @@ request to an HTTPS server") and never reaches a handler.
 
 ## How to rotate
 
-- **Kubernetes (the chart).** cert-manager (or anything else) updates the Secret; the kubelet swaps the projected
-  volume; the reloader sees the new content within `reload_interval`. Nothing else to do; watch
+- **Kubernetes (the chart).** cert-manager (or anything else) updates the Secret of one kind of pod (the chart issues one
+  per kind, `<fullname>-tls-<kind>`, R-HA-063); the kubelet swaps the projected volume of that kind's pods, pair and
+  `ca.crt` together; the reloader sees the new content within `reload_interval`. Nothing else to do; watch
   `quader_tls_reloads_total` rise and the expiry gauge move. The chart must mount the Secret without `subPath`, or the
-  kubelet never updates the file.
+  kubelet never updates the file. A change of the issuer's CA reaches each kind with its own renewal (H-1073 in
+  [transport-encryption.md](../security/transport-encryption.md)).
 - **Files on a host.** Replace the files in place. Writing the key and then the certificate (or the other way) is
   safe: a pass that reads them half-way refuses the pair once and keeps the old one, the next pass loads the new
   pair. Writing each file by rename is cleaner and avoids the one counted error.

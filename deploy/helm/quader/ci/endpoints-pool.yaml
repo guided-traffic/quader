@@ -16,7 +16,9 @@ config:
         - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
       primary_name: quader
 tls:
-  secretName: quader-tls
+  certManager:
+    issuerRef:
+      name: cluster-ca                             # example: the cert-manager ClusterIssuer that issues the pair of every kind of pod
 secrets:
   database:
     existingSecret: quader-db-app

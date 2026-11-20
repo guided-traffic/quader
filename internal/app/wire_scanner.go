@@ -71,7 +71,8 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 		}
 	}
 	var err error
-	if out.listenerTLS, err = httpserver.NewLinkListenerTLS(httpserver.LinkScanner, cfg.Server, a.tlsOptions(httpserver.LinkScanner)...); err != nil {
+	if out.listenerTLS, err = httpserver.NewLinkListenerTLS(httpserver.LinkScanner, cfg.Server, nonEmpty(images.Scanner.ClientName),
+		a.tlsOptions(httpserver.LinkScanner)...); err != nil {
 		return scannerArea{}, err
 	}
 	serverName := images.Registry.ServerName
@@ -278,4 +279,12 @@ func loopbackOrigin(addr net.Addr, tls bool) string {
 		scheme = "https"
 	}
 	return scheme + "://" + addr.String()
+}
+
+// nonEmpty is the one name a listener of a link admits as a list, or none when it is empty (the role all, Q-ARCH-553).
+func nonEmpty(name string) []string {
+	if name == "" {
+		return nil
+	}
+	return []string{name}
 }

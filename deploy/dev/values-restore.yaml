@@ -5,7 +5,7 @@
 # restore.enabled and no replica, then upgraded with web and worker replicas (restore-ns.sh).
 #
 # No edge, no identity provider and no second endpoint: the drill reaches the restored installation through port-forwards to its
-# Services, with the dev CA that signs quader-tls.
+# Services, with the dev CA that signs the pairs the chart issues in this namespace (R-HA-063).
 image:
   registry: docker.io
   repository: guidedtraffic/quader
@@ -17,7 +17,12 @@ highAvailability:
 
 tls:
   enabled: true
-  secretName: quader-tls
+  certManager:
+    issuerRef:
+      name: quader-dev-ca              # the dev CA's Issuer of this namespace (restore-ns.yaml)
+      kind: Issuer
+    extraDnsNames: [localhost]         # the drill reaches single pods through port-forwards under localhost
+    extraIpAddresses: [127.0.0.1]
 
 api:
   replicaCount: 1
@@ -35,10 +40,11 @@ worker:
     requests: {cpu: 50m, memory: 128Mi, ephemeral-storage: 128Mi}
     limits: {memory: 512Mi}
 
-# The dev CA, as in values-dev.yaml: the Secret quader-tls of this namespace carries only the CA certificate in ca.crt, not the CA's key. A restored
-# CI issuer (caBundleRef) and the test advisory source verify against it; the chart mounts it in every pod of the release, the Jobs included.
+# The dev CA: the copy of quader-s3-tls in this namespace carries only the CA certificate in ca.crt (restore-ns.sh), not the CA's key. A
+# restored CI issuer (caBundleRef) and the test advisory source verify against it; the chart mounts it in every pod of the release, the Jobs
+# included, so it cannot be a Secret the release's own Certificates make: the hook Jobs run before they exist.
 trustedCA:
-  existingSecret: quader-tls
+  existingSecret: quader-s3-tls
   keys: [ca.crt]
 
 restore:

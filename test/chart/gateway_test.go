@@ -275,16 +275,17 @@ func TestServiceMonitor(t *testing.T) {
 		}
 	})
 
-	t.Run("with TLS the endpoint verifies the pods against ca.crt of the listener's Secret", func(t *testing.T) {
+	t.Run("Q-HA-349 with TLS the endpoint verifies the pods under the ops name every pair carries, against ca.crt of the api kind's Secret", func(t *testing.T) {
 		if str(ep, "scheme") != "https" || str(ep, "tlsConfig", "serverName") != "quader-ops.default.svc" ||
-			str(ep, "tlsConfig", "ca", "secret", "name") != "quader-tls" || str(ep, "tlsConfig", "ca", "secret", "key") != "ca.crt" {
+			str(ep, "tlsConfig", "ca", "secret", "name") != "quader-tls-api" || str(ep, "tlsConfig", "ca", "secret", "key") != "ca.crt" {
 			t.Errorf("tlsConfig = %v scheme %q", at(ep, "tlsConfig"), str(ep, "scheme"))
 		}
-		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.ops.secretName=quader-ops-tls")
-		if got := str(at(find(d, "ServiceMonitor", "quader"), "spec", "endpoints", "0"), "tlsConfig", "ca", "secret", "name"); got != "quader-ops-tls" {
-			t.Errorf("CA Secret = %q, want the ops pair's quader-ops-tls", got)
+		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a",
+			"tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s")
+		if got := str(at(find(d, "ServiceMonitor", "quader"), "spec", "endpoints", "0"), "tlsConfig", "ca", "secret", "name"); got != "a" {
+			t.Errorf("CA Secret = %q, want the api kind's a", got)
 		}
-		_, plain := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.enabled=false")
+		_, plain := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.enabled=false", "tls.certManager.issuerRef.name=")
 		pep := at(find(plain, "ServiceMonitor", "quader"), "spec", "endpoints", "0")
 		if str(pep, "scheme") != "" || at(pep, "tlsConfig") != nil {
 			t.Errorf("plain-HTTP endpoint = %v", pep)
@@ -293,7 +294,7 @@ func TestServiceMonitor(t *testing.T) {
 
 	t.Run("the CA Secret is read from the namespace of the ServiceMonitor, so it must be the release namespace with TLS", func(t *testing.T) {
 		renderFails(t, required(), []string{"metrics.serviceMonitor.enabled=true", "metrics.serviceMonitor.namespace=monitoring"}, "metrics.serviceMonitor.namespace (monitoring) must be the release namespace")
-		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "metrics.serviceMonitor.namespace=monitoring", "tls.enabled=false")
+		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "metrics.serviceMonitor.namespace=monitoring", "tls.enabled=false", "tls.certManager.issuerRef.name=")
 		if str(find(d, "ServiceMonitor", "quader"), "metadata", "namespace") != "monitoring" {
 			t.Error("the ServiceMonitor is not in the namespace set")
 		}

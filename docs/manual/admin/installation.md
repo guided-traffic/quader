@@ -13,7 +13,7 @@ Quader installs with its Helm chart and consumes the services below; the chart d
 | PostgreSQL | Version 16 or later, `UTF8`, a database and a login that is not a superuser. A [CloudNativePG](https://cloudnative-pg.io/documentation/) cluster provides what the chart reads: the read-write Service, the application Secret with `username` and `password`, and a Secret with the server's `ca.crt`. |
 | Valkey | Version 9.0 or later with [Sentinel](https://valkey.io/topics/sentinel/), over TLS. With the default `highAvailability.enforce: true` the chart requires at least three Sentinel addresses. Standalone Valkey is for development only and is refused under `enforce`. |
 | Object storage | An S3-compatible bucket and credentials for it. SeaweedFS, MinIO and Ceph RGW need path-style addressing (`force_path_style: true`). |
-| Certificates | A `kubernetes.io/tls` Secret for Quader's own listeners with `tls.crt`, `tls.key` and `ca.crt`, for example from a [cert-manager](https://cert-manager.io/docs/) `Certificate`. It must name the client Service, `<fullname>.<namespace>.svc`, because the ingress controller verifies that name by default. |
+| Certificates | A [cert-manager](https://cert-manager.io/docs/) issuer of one CA (`tls.certManager.issuerRef`): the chart issues a certificate for every kind of pod (`api`, `packages`, `worker`, `scanner`) with the names the ingress controller and the pods check. Without cert-manager, an existing `kubernetes.io/tls` Secret per kind with `tls.crt`, `tls.key` and `ca.crt` (`tls.existingSecrets`; [TLS and certificates](tls-and-certificates.md#without-cert-manager)). |
 | Ingress controller | HAProxy Ingress is the default and tested target. The chart also renders the backend-TLS settings for Traefik and ingress-nginx, which are tested for their rendering only. With `controller: manual` you set the backend protocol yourself. |
 | OpenID Connect provider | A client for Quader using the authorization-code flow, with the redirect URI `<base URL>/auth/oidc/<provider ID>/callback`. |
 
@@ -76,9 +76,9 @@ Whoever can read the break-glass Secret is an administrator of Quader. Restrict 
 | `secrets.breakGlass` | `password` | optional; without it the break-glass account is switched off | `api` pods only, `api` pools included; never `packages` |
 | `secrets.oidc[]` | `client-secret`, one entry per provider | one per OIDC provider that uses a client secret | `api` pods only, `api` pools included; never `packages` |
 | `secrets.metricsToken` | `token` | with `config.metrics.auth: static` | `api`, `packages`, `worker` |
-| `tls.secretName` | `tls.crt`, `tls.key` | with `tls.enabled` (the default) | the pods that serve with it |
-| `tls.clientCA.secretName`, `tls.ops.secretName` | `ca.crt`; `tls.crt`, `tls.key` | optional: mutual TLS from the edge; a separate certificate for the ops listener | `api` and `packages`; every pod |
-| `ingress.backendTLS.caSecret` | `ca.crt` | with HAProxy Ingress or ingress-nginx and `verify: true` | read by the ingress controller |
+| `tls.existingSecrets.<kind>` | `tls.crt`, `tls.key`, `ca.crt` | with `tls.enabled` (the default) and no `tls.certManager.issuerRef.name`; with the issuer the chart issues them as `<fullname>-tls-<kind>` | the pods of that kind only (`api`, `packages`, `worker`, `scanner`) |
+| `tls.clientCA.secretName` | `ca.crt` | optional: mutual TLS from the edge | `api` and `packages` |
+| `ingress.backendTLS.caSecret` | `ca.crt` | optional: by default the controller reads the `ca.crt` of the Secret of the pair the backend serves | read by the ingress controller |
 
 Secrets are mounted as read-only files, never as environment variables, so a rotated Secret reaches the running pods. The settings of an S3 provisioner's Secret (bucket, region, endpoint) are the one exception: they are passed as environment variables because they are not credentials.
 
@@ -118,7 +118,9 @@ config:
           issuer: https://id.example.com         # example
           client_id: quader                       # example
 tls:
-  secretName: quader-tls                          # example: tls.crt, tls.key, ca.crt for <fullname>.<namespace>.svc
+  certManager:
+    issuerRef:
+      name: cluster-ca                            # example: the cert-manager ClusterIssuer that issues the pair of every kind of pod
 ingress:
   enabled: true                                  # example; default false
   className: haproxy                             # example
@@ -126,8 +128,7 @@ ingress:
     - secretName: quader-public-tls               # example: the certificate of quader.example.com
       hosts: [quader.example.com]                 # example
   backendTLS:
-    controller: haproxy                          # default
-    caSecret: quader-tls                          # example: a Secret with the ca.crt that signed tls.secretName
+    controller: haproxy                          # default: each backend is verified under its kind's name
 secrets:
   database:
     existingSecret: quader-db-app                 # example: the CloudNativePG application Secret

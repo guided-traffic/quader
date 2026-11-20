@@ -45,11 +45,12 @@ type StackOptions struct {
 	// Env is appended to the environment of every replica after the harness's own
 	// settings, so it wins: the QUADER_* settings a whole suite changes.
 	Env []string
-	// TLS serves every listener of every replica with the stack's server pair and
-	// makes the stack's CA the trust anchor of the links between the replicas
-	// (server.internal_tls.ca_file, R-ARCH-038): the links of the image scanning
-	// are then mutual TLS, as in the chart. The harness's requests go over https
-	// and verify against the stack's CA.
+	// TLS serves every listener of a replica with a pair of its role that the
+	// harness issues from the stack's CA (RolePair), makes that CA the trust anchor
+	// of the links between the replicas (server.internal_tls.ca_file, R-ARCH-038)
+	// and sets the names each end of a link checks: the links of the image
+	// scanning are then mutual TLS with the checks of the chart (Q-ARCH-553). The
+	// harness's requests go over https and verify against the stack's CA.
 	TLS bool
 }
 
@@ -63,7 +64,9 @@ type Stack struct {
 	pg     config.Database
 	valkey bool
 	// tls is StackOptions.TLS: the replicas serve https and the harness verifies against the stack's CA.
-	tls     bool
+	tls bool
+	// pairs are the files of the pair of each role on a stack with TLS (rolePairs): role -> cert and key file.
+	pairs   map[string][2]string
 	adminMu sync.Mutex // the admin connection is not safe for concurrent use
 	admin   *pgx.Conn
 	val     *apitest.Validator
@@ -169,10 +172,12 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 	s.sealed = WriteFile(tb, dir, "2026-10.key", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{42}, 32)))
 	s.base = append(s.environ(host, port, name, userFile, passFile), pooler...)
 	if o.TLS {
-		// The stack's server pair carries localhost and 127.0.0.1 and both usages, server and client authentication
-		// (test/integration/certs.sh), so it serves every listener and authenticates every link (R-ARCH-038).
-		pair := strconv.Quote(filepath.Join(CertDir(tb), "server.crt")) + `,"key_file":` + strconv.Quote(filepath.Join(CertDir(tb), "server.key"))
-		s.base = append(s.base, `QUADER_SERVER_TLS_CERTIFICATES=[{"cert_file":`+pair+`}]`, "QUADER_SERVER_INTERNAL_TLS_CA_FILE="+CAFile(tb))
+		// Every role gets a pair of its own, as every kind of pod does in the chart (R-HA-063, Q-ARCH-553); Start serves it, and
+		// each end of a link checks the other's name.
+		s.pairs = rolePairs(tb, dir)
+		s.base = append(s.base, "QUADER_SERVER_INTERNAL_TLS_CA_FILE="+CAFile(tb),
+			"QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME="+KindName("scanner"), "QUADER_VULNERABILITIES_IMAGES_SCANNER_CLIENT_NAME="+KindName("worker"),
+			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_SERVER_NAME="+KindName("packages"), `QUADER_SERVER_SCAN_CLIENTS=["`+KindName("scanner")+`"]`)
 	}
 	s.base = append(s.base, o.Env...)
 	s.Project(DefaultProject)

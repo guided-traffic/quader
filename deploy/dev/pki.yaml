@@ -2,9 +2,10 @@
 # certificate of the profile. cert-manager issues, renews and re-issues them; nothing is made by hand.
 #
 #   quader-dev-ca        the root (Secret quader-dev-ca; ca.crt is what a client trusts, see local-profile.md)
-#   quader-tls           quader's own listeners (:8080, :8081), Secret quader-tls; chart tls.secretName and
-#                        ingress.backendTLS.caSecret. HAProxy Ingress verifies this certificate for the name
-#                        quader.quader.svc; clients in the cluster call the role Services quader-api and quader-packages.
+#   (quader-tls-<kind>)  quader's own listeners are not issued here: the chart issues a pair per kind of pod (api,
+#                        packages, worker, scanner) from the Issuer quader-dev-ca (values-dev.yaml tls.certManager), each
+#                        for quader-<kind>.<ns>.svc and quader-ops.<ns>.svc, and HAProxy Ingress verifies each backend
+#                        under its kind's name.
 #   quader-edge-tls      the edge's certificate for clients on the host (https://localhost:<port>)
 #   quader-s3-tls        the SeaweedFS S3 endpoint (https://quader-s3.quader.svc:9000)
 #   quader-customers-tls            the endpoint `customers` (values-dev.yaml endpoints.customers): its exact host and
@@ -50,45 +51,6 @@ metadata:
 spec:
   ca:
     secretName: quader-dev-ca
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: quader-tls
-spec:
-  secretName: quader-tls
-  commonName: quader
-  duration: 2160h           # 90 days
-  renewBefore: 720h
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-    rotationPolicy: Always  # a renewal changes the key as well, so the e2e rotation drill is a real one
-  usages: [digital signature, key encipherment, server auth, client auth]
-  dnsNames:
-    - quader
-    - quader.${NS}
-    - quader.${NS}.svc
-    - quader.${NS}.svc.cluster.local
-    - quader-api
-    - quader-api.${NS}
-    - quader-api.${NS}.svc
-    - quader-api.${NS}.svc.cluster.local
-    - quader-packages
-    - quader-packages.${NS}
-    - quader-packages.${NS}.svc
-    - quader-packages.${NS}.svc.cluster.local
-    - quader-ops
-    - quader-ops.${NS}
-    - quader-ops.${NS}.svc
-    - quader-ops.${NS}.svc.cluster.local
-    - localhost
-  ipAddresses:
-    - 127.0.0.1
-  issuerRef:
-    name: quader-dev-ca
-    kind: Issuer
-    group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate

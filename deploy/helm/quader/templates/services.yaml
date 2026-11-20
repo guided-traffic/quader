@@ -18,12 +18,9 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
   {{- $svcAnn := merge (dict) $.Values.service.annotations $.Values.commonAnnotations }}
-  {{- /* Traefik reads the backend scheme and transport from the Service (R-HA-063). */}}
-  {{- if and $.Values.ingress.enabled $.Values.tls.enabled (eq $.Values.ingress.backendTLS.controller "traefik") }}
-  {{- $_ := set $svcAnn "traefik.ingress.kubernetes.io/service.serversscheme" "https" }}
-  {{- with $.Values.ingress.backendTLS.serversTransport }}
-  {{- $_ := set $svcAnn "traefik.ingress.kubernetes.io/service.serverstransport" . }}
-  {{- end }}
+  {{- /* HAProxy Ingress and Traefik read the backend's name, CA, scheme and transport from the Service: its kind's (R-HA-063, Q-HA-348). */}}
+  {{- if $.Values.ingress.enabled }}
+  {{- $svcAnn = merge (include "quader.backendServiceAnnotations" (dict "root" $ "bt" $.Values.ingress.backendTLS "kind" $unit.role "own" "" "service" (printf "%s-%s" (include "quader.fullname" $) $unit.name)) | fromYaml) $svcAnn }}
   {{- end }}
   {{- if $svcAnn }}
   annotations:

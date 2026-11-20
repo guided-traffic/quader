@@ -1,8 +1,10 @@
 package config
 
 import (
+	"net"
 	"net/url"
 	"path/filepath"
+	"strings"
 )
 
 // finalizeScanDir derives vulnerabilities.images.scan_dir from the spool when it is unset (Q-VULN-184): the working files of the
@@ -19,14 +21,43 @@ func (i *VulnerabilityImages) finalizeScanDir(spoolDir string, sources map[strin
 // it the role all leaves them empty and calls its own scanner listener over loopback (Q-ARCH-531).
 type VulnerabilityScannerLink struct {
 	URL        string `yaml:"url" default:"" doc:"The scanner's listener, an origin: https://<fullname>-scanner.<namespace>.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531)."`
-	ServerName string `yaml:"server_name" default:"" doc:"The name the worker verifies in the scanner's certificate against server.internal_tls.ca_file; empty is the host of url. The chart sets <fullname>.<namespace>.svc, the name its certificate carries."`
+	ServerName string `yaml:"server_name" default:"" doc:"The name the worker requires in the scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets <fullname>-scanner.<namespace>.svc, the scanner's name (R-HA-063)."`
+	ClientName string `yaml:"client_name" default:"" doc:"The name the scanner's listener requires in a client certificate, listed exactly among its DNS names (Q-ARCH-552): the worker's. Required in a scanner while server.tls serves TLS; empty in the role all, where the CA alone admits (Q-ARCH-553). The chart sets <fullname>-worker.<namespace>.svc."`
 	Slots      int    `yaml:"slots" default:"1" validate:"min=1,max=16" doc:"Analyses one scanner process runs at a time; a call while every slot holds one is answered 503 scanner_busy. The chart checks the scanner's spool against it (Q-HA-318); more than one slot lets the analyses of one pod reach each other (H-1037), so scale by replicas."`
 }
 
 // VulnerabilityPullLink is the scanner's side of the pull from the scan listener of packages (R-VULN-042).
 type VulnerabilityPullLink struct {
 	URL        string `yaml:"url" default:"" doc:"The scan listener of packages, an origin: https://<fullname>-packages-scan.<namespace>.svc:8082 in the chart, which sets it. Required in a scanner; empty in the role all, where it means the process's own scan listener. The scanner reads no other address: a call cannot point it elsewhere."`
-	ServerName string `yaml:"server_name" default:"" doc:"The name the scanner verifies in the scan listener's certificate against server.internal_tls.ca_file; empty is the host of url. The chart sets <fullname>.<namespace>.svc."`
+	ServerName string `yaml:"server_name" default:"" doc:"The name the scanner requires in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets <fullname>-packages.<namespace>.svc, the name of packages (R-HA-063). The names the scan listener admits are server.scan_clients."`
+}
+
+// validateLinkNames requires the name the scanner's listener checks while the links speak TLS (R-ARCH-038, Q-ARCH-552): the worker's.
+// The role all may leave it empty (Q-ARCH-553); the scan listener's names are server.scan_clients (Server.validateLinks). A name with a
+// wildcard or a port is refused: the check compares it exactly with a DNS name of the certificate.
+func (c *Config) validateLinkNames(r *Report) {
+	images := c.Vulnerabilities.Images
+	for _, n := range []struct{ key, name string }{
+		{"scanner.server_name", images.Scanner.ServerName},
+		{"scanner.client_name", images.Scanner.ClientName},
+		{"registry.server_name", images.Registry.ServerName},
+	} {
+		if !exactName(n.name) {
+			r.Add("vulnerabilities.images."+n.key, "%q must be a DNS name or an IP address without a wildcard, a port or a path: it is compared exactly with a name of the certificate (Q-ARCH-552)", n.name)
+		}
+	}
+	if !c.Server.TLS.Enabled() {
+		return
+	}
+	if r.Role() == RoleScanner && images.Scanner.ClientName == "" {
+		r.Add("vulnerabilities.images.scanner.client_name", "is required in a scanner while server.tls serves TLS: it names the worker, the one kind of pod its listener admits (R-ARCH-038); the chart sets it")
+	}
+}
+
+// exactName reports whether a name of a link can be compared exactly with a name of a certificate: a DNS name or an IP address,
+// without a wildcard, a port or a path (Q-ARCH-552).
+func exactName(name string) bool {
+	return !strings.ContainsAny(name, "*/ ") && (!strings.Contains(name, ":") || net.ParseIP(name) != nil)
 }
 
 // Validate checks the addresses of the links and, for the role scanner, that it names the scan listener it pulls from

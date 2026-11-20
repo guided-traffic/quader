@@ -162,7 +162,7 @@ Argument: the root context. Returns YAML, "{}" without endpoints.
 {{- $_ := set $c "cache_fill" $e.cacheFill -}}
 {{- $_ := set $c "rate_limit_class" $e.rateLimitClass -}}
 {{- $_ := set $c "replica_header" $e.replicaHeader -}}
-{{- /* TLS (R-EP-004): position 0 is the endpoint's own Secret, else the listener pair of tls.secretName when further pairs follow. */ -}}
+{{- /* TLS (R-EP-004): position 0 is the endpoint's own Secret, else the pair of the kind of the pods that serve it (R-HA-063) when further pairs follow. */ -}}
 {{- if $root.Values.tls.enabled -}}
 {{- $t := dict -}}
 {{- $certs := list -}}

@@ -112,16 +112,36 @@ fixes the form, so every term is a number and a unit.
 {{- /* TLS (R-HA-063, Q-HA-32). */ -}}
 {{- $t := $v.tls -}}
 {{- if $t.enabled -}}
-{{- if not $t.secretName -}}
-{{- fail "quader: tls.secretName is required while tls.enabled is true (default); the chart never creates the Secret. Name an existing kubernetes.io/tls Secret with tls.crt and tls.key (a cert-manager Certificate's secretName, example: quader-tls), or opt out of TLS on quader's listeners with tls.enabled: false (plain HTTP inside the cluster)" -}}
+{{- /* A pair per kind of pod (R-HA-063, Q-HA-345, Q-HA-347): issued by tls.certManager.issuerRef, or an existing Secret per kind, never both, never one Secret for two kinds. */ -}}
+{{- $kinds := include "quader.tlsKinds" . | fromYamlArray -}}
+{{- $named := list -}}
+{{- range $e := include "quader.tlsKindTable" . | fromYamlArray -}}
+{{- $k := $e.kind -}}
+{{- with index $t.existingSecrets $k -}}{{- $named = append $named $k -}}{{- end -}}
+{{- end -}}
+{{- if and $t.certManager.issuerRef.name $named -}}
+{{- fail (printf "quader: tls.certManager.issuerRef.name and tls.existingSecrets.%s are both set: the chart issues the pairs with an issuer, or the Secrets name them, not both (R-HA-063)" (first $named)) -}}
+{{- end -}}
+{{- if not $t.certManager.issuerRef.name -}}
+{{- if not $named -}}
+{{- fail "quader: tls.certManager.issuerRef.name or tls.existingSecrets is required while tls.enabled is true (default): every kind of pod has a pair of its own (R-HA-063). Name a cert-manager issuer (example: tls.certManager.issuerRef.name: cluster-ca, tls.certManager.issuerRef.kind: ClusterIssuer) and the chart issues them, or name an existing Secret per kind in tls.existingSecrets (api, packages, worker, scanner), or opt out with tls.enabled: false (plain HTTP inside the cluster)" -}}
+{{- end -}}
+{{- $seen := dict -}}
+{{- range $k := $kinds -}}
+{{- $s := index $t.existingSecrets $k -}}
+{{- if not $s -}}
+{{- fail (printf "quader: tls.existingSecrets.%s is required while tls.existingSecrets names the pairs: every kind of pod the chart renders (%s) has a Secret of its own with tls.crt, tls.key and ca.crt, for <fullname>-%s.<namespace>.svc (R-HA-063)" $k (join ", " $kinds) $k) -}}
+{{- end -}}
+{{- if hasKey $seen $s -}}
+{{- fail (printf "quader: tls.existingSecrets.%s and tls.existingSecrets.%s name the same Secret %s: every kind of pod has a pair of its own (R-HA-063, Q-HA-347)" (get $seen $s) $k $s) -}}
+{{- end -}}
+{{- $_ := set $seen $s $k -}}
+{{- end -}}
 {{- end -}}
 {{- if $v.ingress.enabled -}}
 {{- $bt := $v.ingress.backendTLS -}}
-{{- if and $bt.verify (or (eq $bt.controller "haproxy") (eq $bt.controller "ingress-nginx")) (not $bt.caSecret) -}}
-{{- fail (printf "quader: ingress.backendTLS.caSecret is required for controller %s while ingress.backendTLS.verify is true: name a Secret in the release namespace with the CA as ca.crt (a cert-manager Secret carries it; example: the value of tls.secretName), or set ingress.backendTLS.verify: false to accept an unverified connection" $bt.controller) -}}
-{{- end -}}
-{{- if and $bt.verify (eq $bt.controller "traefik") (not $bt.serversTransport) -}}
-{{- fail "quader: ingress.backendTLS.serversTransport is required for controller traefik while ingress.backendTLS.verify is true (<namespace>-<name>@kubernetescrd of a ServersTransport that verifies quader), or set ingress.backendTLS.verify: false" -}}
+{{- if and $bt.verify (eq $bt.controller "traefik") (not (and $bt.serversTransports.api $bt.serversTransports.packages)) -}}
+{{- fail "quader: ingress.backendTLS.serversTransports.api and .packages are required for controller traefik while ingress.backendTLS.verify is true (<namespace>-<name>@kubernetescrd of a ServersTransport per kind, each with that kind's name as serverName, R-HA-063), or set ingress.backendTLS.verify: false" -}}
 {{- end -}}
 {{- if and $t.clientCA.secretName (eq $bt.controller "haproxy") (not $bt.clientCertSecret) -}}
 {{- fail "quader: tls.clientCA requires ingress.backendTLS.clientCertSecret with controller haproxy: quader demands a client certificate and HAProxy Ingress needs a Secret with tls.crt and tls.key to present" -}}
@@ -131,8 +151,8 @@ fixes the form, so every term is a number and a unit.
 {{- fail "quader: tls.backendTLSPolicy.caConfigMapName is required with tls.backendTLSPolicy.enabled (a ConfigMap with the CA as ca.crt)" -}}
 {{- end -}}
 {{- else -}}
-{{- if or $t.clientCA.secretName $t.ops.secretName $t.backendTLSPolicy.enabled -}}
-{{- fail "quader: tls.clientCA, tls.ops and tls.backendTLSPolicy need tls.enabled: true" -}}
+{{- if or $t.clientCA.secretName $t.backendTLSPolicy.enabled -}}
+{{- fail "quader: tls.clientCA and tls.backendTLSPolicy need tls.enabled: true" -}}
 {{- end -}}
 {{- end -}}
 
@@ -153,7 +173,7 @@ fixes the form, so every term is a number and a unit.
 
 {{- /* The ServiceMonitor reads the CA Secret of the scrape from its own namespace (R-HA-045). */ -}}
 {{- if and $v.metrics.serviceMonitor.enabled $v.tls.enabled $v.metrics.serviceMonitor.namespace (ne $v.metrics.serviceMonitor.namespace $ns) -}}
-{{- fail (printf "quader: metrics.serviceMonitor.namespace (%s) must be the release namespace (%s) while tls.enabled is true: the Prometheus operator reads the CA Secret of the scrape (ca.crt of tls.secretName or tls.ops.secretName) from the namespace of the ServiceMonitor" $v.metrics.serviceMonitor.namespace $ns) -}}
+{{- fail (printf "quader: metrics.serviceMonitor.namespace (%s) must be the release namespace (%s) while tls.enabled is true: the Prometheus operator reads the CA Secret of the scrape (ca.crt of the Secret of the kind api) from the namespace of the ServiceMonitor" $v.metrics.serviceMonitor.namespace $ns) -}}
 {{- end -}}
 
 {{- /* The trusted CA bundle (R-HA-043): one source, files to mount, and the object store's CA is either this bundle or secrets.s3CA. */ -}}
@@ -283,17 +303,15 @@ Endpoints (R-EP-008, R-HA-029): every failure names the value. Argument: the roo
 {{- if and (not $v.tls.enabled) (or $e.tlsSecret $e.tlsExtraSecrets $e.tlsClientCaSecret) -}}
 {{- fail (printf "quader: %s.tls.existingSecret, extraSecrets and clientCaSecret need tls.enabled: true" $key) -}}
 {{- end -}}
-{{- if and $e.tlsClientCaSecret (not (or $e.tlsSecret $v.tls.secretName)) -}}
-{{- fail (printf "quader: %s.tls.clientCaSecret needs a certificate: set %s.tls.existingSecret or tls.secretName" $key $key) -}}
-{{- end -}}
-{{- /* The endpoint's Ingress follows the rules of the default one: a merged backendTLS block that verifies needs its CA (R-HA-063). */ -}}
+{{- /* The endpoint's Ingress follows the rules of the default one: a merged backendTLS block that verifies with traefik needs a transport per kind it routes to (R-HA-063). */ -}}
 {{- if and $v.tls.enabled $e.ingressEnabled -}}
 {{- $bt := include "quader.endpointBackendTLS" (dict "root" $ "name" $name) | fromYaml -}}
-{{- if and $bt.verify (or (eq $bt.controller "haproxy") (eq $bt.controller "ingress-nginx")) (not $bt.caSecret) -}}
-{{- fail (printf "quader: %s.ingress.backendTLS.caSecret is required for controller %s while verify is true (set it here or in ingress.backendTLS): name a Secret in the release namespace with the CA as ca.crt, or set %s.ingress.backendTLS.verify: false to accept an unverified connection" $key $bt.controller $key) -}}
+{{- if and $bt.verify (eq $bt.controller "traefik") -}}
+{{- range $role := include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray -}}
+{{- if not (index ($bt.serversTransports | default dict) $role) -}}
+{{- fail (printf "quader: %s.ingress.backendTLS.serversTransports.%s is required for controller traefik while verify is true (set it here or in ingress.backendTLS; <namespace>-<name>@kubernetescrd of a ServersTransport that verifies the name the endpoint's %s pods serve), or set %s.ingress.backendTLS.verify: false" $key $role $role $key) -}}
 {{- end -}}
-{{- if and $bt.verify (eq $bt.controller "traefik") (not $bt.serversTransport) -}}
-{{- fail (printf "quader: %s.ingress.backendTLS.serversTransport is required for controller traefik while verify is true (set it here or in ingress.backendTLS; <namespace>-<name>@kubernetescrd of a ServersTransport that verifies quader), or set %s.ingress.backendTLS.verify: false" $key $key) -}}
+{{- end -}}
 {{- end -}}
 {{- if and $e.tlsClientCaSecret (eq $bt.controller "haproxy") (not $bt.clientCertSecret) -}}
 {{- fail (printf "quader: %s.tls.clientCaSecret requires %s.ingress.backendTLS.clientCertSecret (or ingress.backendTLS.clientCertSecret) with controller haproxy: quader demands a client certificate on this endpoint and HAProxy Ingress needs a Secret with tls.crt and tls.key to present" $key $key) -}}

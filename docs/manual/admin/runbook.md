@@ -167,12 +167,12 @@ The image scanning works in two spools. The scanner's holds the analyses: per an
 
 **What you see.** `QuaderVulnerabilityImageScannerUnavailable`; images stay `pending_scan`; `quader_vuln_image_scans_total` counts `scanner_unavailable`, `registry_unavailable` or `pull_refused` and no `scanned`; the scanner pods are not ready, or `quader_scanner_analyses_total` stands still.
 
-**What it means.** The worker calls a scanner pod (`<fullname>-scanner`, port 8080) for every image, and the scanner pulls the image from the scan listener of the main `packages` pods (`<fullname>-packages-scan`, port 8082). Both links are mutual TLS with the certificate of `tls.secretName` and its `ca.crt`. A scan put off for one of these codes spends no attempt and is tried again after one minute (`pull_refused`: five).
+**What it means.** The worker calls a scanner pod (`<fullname>-scanner`, port 8080) for every image, and the scanner pulls the image from the scan listener of the main `packages` pods (`<fullname>-packages-scan`, port 8082). Both links are mutual TLS: the worker and the scanner present their own kind's certificate, and each side checks the other's name against the `ca.crt` of its own Secret. A scan put off for one of these codes spends no attempt and is tried again after one minute (`pull_refused`: five).
 
 | Code | Usual cause |
 |---|---|
-| `scanner_unavailable` | No ready scanner pod; or the worker's certificate lacks the usage `client auth`, so the scanner refuses the handshake (the worker logs "does not allow client authentication") |
-| `registry_unavailable` | The scanner cannot reach port 8082 of the `packages` pods: a NetworkPolicy of the cluster that drops it, the `packages` pods not ready, or the scanner's certificate refused there |
+| `scanner_unavailable` | No ready scanner pod; or the worker's certificate lacks the usage `client auth` (the worker logs "does not allow client authentication") or does not list `<fullname>-worker.<namespace>.svc`, so the scanner refuses the handshake and logs the names it found |
+| `registry_unavailable` | The scanner cannot reach port 8082 of the `packages` pods: a NetworkPolicy of the cluster that drops it, the `packages` pods not ready, or the scanner's certificate refused there because it does not list `<fullname>-scanner.<namespace>.svc` |
 | `pull_refused` | The scan listener refused the scan token: the worker and `packages` read different key rings, or their clocks differ by more than a minute |
 | `scanner_busy` | Every slot is taken; not an error, but a backlog: raise `scanner.replicaCount` |
 

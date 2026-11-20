@@ -10,18 +10,8 @@ spread, security context) but none of the secrets, the shared extras or the serv
 {{- if and (dig "enabled" true $vuln) (dig "enabled" true (dig "images" (dict) $vuln)) -}}true{{- end -}}
 {{- end -}}
 
-{{/* The Secret of the pair the scanner serves and presents: scanner.tls.secretName, else tls.secretName (Q-HA-317). */}}
-{{- define "quader.scannerTLSSecret" -}}
-{{- .Values.scanner.tls.secretName | default .Values.tls.secretName -}}
-{{- end -}}
-
-{{/* The name the links verify in the far end's certificate: the name the chart's certificate carries for the edge (R-HA-037). */}}
-{{- define "quader.linkServerName" -}}
-{{- printf "%s.%s.svc" (include "quader.fullname" .) .Release.Namespace -}}
-{{- end -}}
-
-{{/* The path of the internal CA in the pods of the links (R-ARCH-038). */}}
-{{- define "quader.internalCAPath" -}}/var/run/secrets/quader/tls-internal/ca.crt{{- end -}}
+{{/* The path of the internal CA in the pods of the links (R-ARCH-038): the ca.crt of the pod's own Secret, beside its pair (R-HA-063). */}}
+{{- define "quader.internalCAPath" -}}/var/run/secrets/quader/tls/ca.crt{{- end -}}
 
 {{/*
 The worker Deployment that claims the queue vuln (Q-HA-320): the pool that lists it, else the main worker. Returns the unit's pool
@@ -50,10 +40,14 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 {{- $links := dict "url" (printf "%s://%s-scanner.%s.svc:8080" $scheme $fullname $.Release.Namespace) -}}
 {{- $pull := dict "url" (printf "%s://%s-packages-scan.%s.svc:8082" $scheme $fullname $.Release.Namespace) -}}
 {{- if $.Values.tls.enabled -}}
-{{- $_ := set $links "server_name" (include "quader.linkServerName" $) -}}
-{{- $_ := set $pull "server_name" (include "quader.linkServerName" $) -}}
+{{- /* Each end checks the other's kind (R-HA-066, Q-VULN-185): the worker calls the scanner, the scanner pulls from packages. */ -}}
+{{- $_ := set $links "server_name" (include "quader.tlsName" (dict "root" $ "kind" "scanner")) -}}
+{{- $_ := set $links "client_name" (include "quader.tlsName" (dict "root" $ "kind" "worker")) -}}
+{{- $_ := set $pull "server_name" (include "quader.tlsName" (dict "root" $ "kind" "packages")) -}}
 {{- $srv := get $m "server" | default (dict) -}}
 {{- $_ := set $srv "internal_tls" (dict "ca_file" (include "quader.internalCAPath" $)) -}}
+{{- /* The scan listener admits every kind of scanner the release renders (quader.tlsKindTable). */ -}}
+{{- $_ := set $srv "scan_clients" (include "quader.scanClients" $ | fromYamlArray) -}}
 {{- $_ := set $m "server" $srv -}}
 {{- end -}}
 {{- $_ := set $m "vulnerabilities" (dict "images" (dict "scanner" $links "registry" $pull)) -}}
@@ -62,26 +56,16 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 
 {{/* The configuration keys the chart manages for the links, refused when set in config (R-HA-029). Returns a YAML list. */}}
 {{- define "quader.scannerManagedPaths" -}}
-{{- toYaml (list "vulnerabilities.images.scanner.url" "vulnerabilities.images.scanner.server_name" "vulnerabilities.images.registry.url" "vulnerabilities.images.registry.server_name" "server.internal_tls" "server.scan_listen") -}}
+{{- toYaml (list "vulnerabilities.images.scanner.url" "vulnerabilities.images.scanner.server_name" "vulnerabilities.images.scanner.client_name" "vulnerabilities.images.registry.url" "vulnerabilities.images.registry.server_name" "server.internal_tls" "server.scan_listen" "server.scan_clients") -}}
 {{- end -}}
 
 {{/*
-The mounts of the links in a pod of a role (R-HA-066): the internal CA (ca.crt of tls.secretName) in the main packages pods, which
-serve the scan listener, and in every worker pod, which calls the scanner. The scanner's own mounts are in templates/scanner.yaml.
-Argument: dict "root" . "role" "pool". Returns a YAML list of the entries of quader.secretMounts.
+"true" when the pods of a role verify a link with the internal CA (R-HA-066), so their Secret's ca.crt joins their pair: the main
+packages pods, which serve the scan listener, and every worker pod, which calls the scanner. The scanner's own mount is in
+templates/scanner.yaml. Argument: dict "root" . "role" "pool".
 */}}
-{{- define "quader.scannerLinkMounts" -}}
-{{- $out := list -}}
-{{- $ := .root -}}
-{{- if and $.Values.tls.enabled (include "quader.scannerOn" $) (or (eq .role "worker") (and (eq .role "packages") (not .pool))) -}}
-{{- $out = append $out (dict "name" "tls-internal" "secret" $.Values.tls.secretName "path" "/var/run/secrets/quader/tls-internal" "items" (list (dict "key" "ca.crt" "path" "ca.crt"))) -}}
-{{- end -}}
-{{- toYaml $out -}}
-{{- end -}}
-
-{{/* "true" when the pods of a role need the chart's pair for a link although they would not load it otherwise: a worker presents it to the scanner (R-ARCH-038). Argument: dict "root" . "role". */}}
-{{- define "quader.linkNeedsPair" -}}
-{{- if and .root.Values.tls.enabled (include "quader.scannerOn" .root) (eq .role "worker") -}}true{{- end -}}
+{{- define "quader.linkNeedsCA" -}}
+{{- if and .root.Values.tls.enabled (include "quader.scannerOn" .root) (or (eq .role "worker") (and (eq .role "packages") (not .pool))) -}}true{{- end -}}
 {{- end -}}
 
 {{/* The environment of the main packages Deployment for the scan listener (R-HA-066, R-ARCH-037). Argument: dict "root" . "role" "pool". */}}
@@ -119,7 +103,7 @@ pods only, never from anywhere. Argument: as quader.scanListenEnv. Returns one Y
 
 {{/*
 The checks of the scanner (R-HA-065, R-HA-029, Q-HA-318): its spool budget holds every slot's largest image plus 64 MiB, its
-replicas, and its own pair only with TLS. The worker's check of its spool is in quader.validateRoles. Argument: the root context.
+replicas. Its pair is checked with the other kinds' (quader.validate, R-HA-063). The worker's check of its spool is in quader.validateRoles. Argument: the root context.
 */}}
 {{- define "quader.validateScanner" -}}
 {{- $v := .Values -}}
@@ -151,8 +135,5 @@ replicas, and its own pair only with TLS. The worker's check of its spool is in 
 {{- if and $v.scanner.podDisruptionBudget.minAvailable $v.scanner.podDisruptionBudget.maxUnavailable -}}
 {{- fail "quader: scanner.podDisruptionBudget.minAvailable and scanner.podDisruptionBudget.maxUnavailable are mutually exclusive; set one and null the other" -}}
 {{- end -}}
-{{- end -}}
-{{- if and $v.scanner.tls.secretName (not $v.tls.enabled) -}}
-{{- fail "quader: scanner.tls.secretName needs tls.enabled: without TLS the links of the image scanning are plain HTTP and no pair is served (Q-HA-322)" -}}
 {{- end -}}
 {{- end -}}

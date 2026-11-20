@@ -577,7 +577,7 @@ endpoints: {}                             # default (proposed): only the default
 #    maxInFlight: 1024                    # default (proposed)
 #    trustedProxies: []                   # default (proposed): config.server.trusted_proxies
 #    tls:
-#      existingSecret: ""                 # default (proposed): "" = the listener pair of tls.secretName (R-HA-063)
+#      existingSecret: ""                 # default (proposed): "" = the pair of the kind of the pods that serve it (R-HA-063)
 #      extraSecrets: []                   # default (proposed); example [quader-packages-wildcard-tls]: further pairs, chosen by SNI
 #      clientCaSecret: ""                 # default (proposed): no client certificates
 #    pool:
@@ -2411,8 +2411,10 @@ requests on a role that answers them `404`.
 | (b) Two Services named by role for every endpoint (`-packages`, `-api`) | Uniform names | Symmetric | Renames the Service of every existing package-only endpoint, and with it the verification name of its edge |
 | (c) Refuse a surface that spans both roles | One Service per endpoint | Simple | Breaks the dev profile's `customers` and any installation like it (Q-EP-54) |
 
-**Choice:** (a). The edge verifies both Services under the name the endpoint's certificate carries for
-`<fullname>-ep-<name>.<namespace>.svc`.
+**Choice:** (a). The edge verifies each Service under the name of the pair its pods serve: the kind's name
+(`<fullname>-api.<namespace>.svc`, `<fullname>-packages.<namespace>.svc`) when the endpoint has no pair of its own, and the Service's own
+name (`<fullname>-ep-<name>.<namespace>.svc`, `<fullname>-api-ep-<name>.<namespace>.svc`) when it has, which its pair must then carry
+([ha-and-helm.md](ha-and-helm.md) Q-HA-348).
 
 **Rationale:** (a) changes nothing for the default surface and reuses one routing table for every endpoint. The development
 agent would revisit this if the endpoint's certificate cannot carry the verification name for two Services on an edge.
@@ -2643,16 +2645,13 @@ endpoint's pool (R-EP-008).
 
 Live for every installation that configures a further endpoint, most of all one reachable from the
 internet. Subject: the database, object-store and Valkey credentials, the stored-secret key ring
-and the private key of the listener pair the pod loads (its own endpoint pair, and the pair of
-`tls.secretName` when the operations listener inherits it or an endpoint has no pair of its own)
-of the process that serves it. A pool keeps external load off internal pods and keeps the internal
+and the private key of the listener pairs the pod loads (its own endpoint pair, and the pair of its
+kind, which every pod holds, [ha-and-helm.md](ha-and-helm.md) R-HA-063) of the process that serves it. A pool keeps external load off internal pods and keeps the internal
 listener closed on its pods, but its process holds the same credentials as every `web` replica, so
 a flaw reachable through the external endpoint (request parsing, format code, H-1) reaches internal
-data as from any other request. No reduced-privilege role exists for endpoint pools. The chart
-mounts the private key of the default endpoint's pair (`tls.secretName`) only into pods that load it:
-with `tls.ops.secretName` set and pairs of their own on the pool's endpoints, an endpoint pool and
-the workers hold no copy of it; without `tls.ops`, every pod holds it, because its operations
-listener inherits the pair. Set `tls.ops` when you run pools. The cut into roles (phase 6a, built;
+data as from any other request. No reduced-privilege role exists for endpoint pools. The pair of an
+endpoint pool is its kind's (`api` or `packages`), shared with that kind's main Deployment, and no pod
+holds the pair of another kind (Q-HA-345). The cut into roles (phase 6a, built;
 Q-EP-70, [ha-and-helm.md](ha-and-helm.md) Q-HA-79) narrows the subject for package endpoints: their pods are of role
 `packages`, which mounts no OIDC client secret and no break-glass password and evaluates no session; the credentials listed
 above stay ([architecture.md](architecture.md) H-517). What makes it real: an exploitable flaw in a code path that the

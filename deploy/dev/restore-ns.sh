@@ -114,7 +114,7 @@ NSYAML
   copy_secret quader-s3 quader-s3 Opaque access-key-id:access-key-id secret-access-key:secret-access-key
   copy_secret quader-s3-tls quader-s3-tls Opaque ca.crt:ca.crt
 
-  log "applying restore-ns.yaml (certificate, PostgreSQL, Valkey, empty bucket)"
+  log "applying restore-ns.yaml (issuer, PostgreSQL, Valkey, empty bucket)"
   render_r "$DEV_DIR/restore-ns.yaml" | kubectl --context "$CTX" apply -f - >/dev/null
 
   local start; start="$(date +%s)"
@@ -122,7 +122,6 @@ NSYAML
     [ $(( $(date +%s) - start )) -lt 120 ] || die "Secret restore-valkey-auth has no field password after 120s: is the internal-secrets-operator running?"
     sleep 1
   done
-  rn wait --for=condition=Ready certificate/quader-tls --timeout=3m >/dev/null
   until rn get statefulset restore-valkey restore-valkey-sentinel >/dev/null 2>&1; do sleep 1; done
   (NS="$RNS"; sts_wait_ready restore-valkey 2 300; sts_wait_ready restore-valkey-sentinel 3 300)
   until rn get cluster quader-db >/dev/null 2>&1; do sleep 1; done

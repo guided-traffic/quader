@@ -1,7 +1,8 @@
 {{- /*
 The role scanner (R-HA-065, R-HA-066, ADR-212): <fullname>-scanner runs "quader serve --role scanner" and analyses container images
 for the worker. It holds no secret of PostgreSQL, the object store or Valkey and no key of the key ring: its volumes are the spool,
-/tmp, the configuration file, the TLS pair it serves and presents and the internal CA, and nothing else; none of the shared extras
+/tmp, the configuration file and its own Secret (R-HA-063: the pair it serves and presents, and the internal CA in the same
+volume), and nothing else; none of the shared extras
 (extraEnv, extraEnvFrom, extraVolumes, extraVolumeMounts) reaches it (Q-HA-321). It uses no service account of the chart: that one
 may carry a cloud identity of the object store, and the scanner calls no API (automountServiceAccountToken false, no RBAC).
 
@@ -16,7 +17,7 @@ quader.scanListenRule). Nothing is rendered while the image scanning is off.
 {{- $r := .Values.scanner }}
 {{- $fullname := include "quader.fullname" . }}
 {{- $ctx := dict "root" $ "role" "scanner" "r" $r "pool" "" }}
-{{- $tlsSecret := include "quader.scannerTLSSecret" . }}
+{{- $tlsSecret := include "quader.tlsSecret" (dict "root" . "kind" "scanner") }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -148,15 +149,6 @@ spec:
             - name: secret-tls
               mountPath: /var/run/secrets/quader/tls
               readOnly: true
-            - name: secret-tls-internal
-              mountPath: /var/run/secrets/quader/tls-internal
-              readOnly: true
-            {{- if $.Values.tls.ops.secretName }}
-            {{- /* The operations listener's own pair, which the probes and the scrape see (R-HA-063). */}}
-            - name: secret-tls-ops
-              mountPath: /var/run/secrets/quader/tls-ops
-              readOnly: true
-            {{- end }}
             {{- end }}
       volumes:
         - name: config
@@ -190,33 +182,18 @@ spec:
           emptyDir:
             sizeLimit: {{ $.Values.tmp.sizeLimit }}
         {{- if $.Values.tls.enabled }}
+        {{- /* The scanner's own Secret only (R-HA-063): its pair and, in the same volume so the kubelet swaps them together, the CA it verifies packages against. */}}
         - name: secret-tls
           secret:
             secretName: {{ $tlsSecret }}
             defaultMode: 0440
             items:
-              - key: {{ $.Values.tls.certKey }}
+              - key: tls.crt
                 path: tls.crt
-              - key: {{ $.Values.tls.keyKey }}
+              - key: tls.key
                 path: tls.key
-        - name: secret-tls-internal
-          secret:
-            secretName: {{ $.Values.tls.secretName }}
-            defaultMode: 0440
-            items:
               - key: ca.crt
                 path: ca.crt
-        {{- if $.Values.tls.ops.secretName }}
-        - name: secret-tls-ops
-          secret:
-            secretName: {{ $.Values.tls.ops.secretName }}
-            defaultMode: 0440
-            items:
-              - key: {{ $.Values.tls.ops.certKey }}
-                path: tls.crt
-              - key: {{ $.Values.tls.ops.keyKey }}
-                path: tls.key
-        {{- end }}
         {{- end }}
 {{- if $r.podDisruptionBudget.enabled }}
 {{- include "quader.pdb" (dict "root" $ "unit" (dict "name" "scanner" "role" "scanner" "pool" "" "r" $r)) | nindent 0 }}

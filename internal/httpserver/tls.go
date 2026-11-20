@@ -31,6 +31,8 @@ type ListenerTLS struct {
 	running  atomic.Bool
 	listener string
 	temp     *temporaryCert
+	// verify is the check of a link's listener on the verified client certificate (NewLinkListenerTLS); nil checks nothing more.
+	verify func(tls.ConnectionState) error
 }
 
 type generationConfig struct {
@@ -121,6 +123,7 @@ func (l *ListenerTLS) configFor(*tls.ClientHelloInfo) (*tls.Config, error) {
 			cfg.ClientCAs = x509.NewCertPool()
 		}
 	}
+	cfg.VerifyConnection = l.verify
 	l.cached.Store(&generationConfig{gen: gen, cfg: cfg})
 	return cfg, nil
 }

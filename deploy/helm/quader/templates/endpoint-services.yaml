@@ -24,12 +24,10 @@ metadata:
     quader/endpoint: {{ $name | quote }}
   {{- $bt := include "quader.endpointBackendTLS" (dict "root" $ "name" $name) | fromYaml }}
   {{- $svcAnn := merge (dict) $e.serviceAnnotations $.Values.commonAnnotations }}
-  {{- /* Traefik reads the backend scheme and transport from the Service (R-HA-063). */}}
-  {{- if and $e.ingressEnabled $.Values.tls.enabled (eq $bt.controller "traefik") }}
-  {{- $_ := set $svcAnn "traefik.ingress.kubernetes.io/service.serversscheme" "https" }}
-  {{- with $bt.serversTransport }}
-  {{- $_ := set $svcAnn "traefik.ingress.kubernetes.io/service.serverstransport" . }}
-  {{- end }}
+  {{- /* HAProxy Ingress and Traefik read the backend's name, CA, scheme and transport from the Service (R-HA-063, Q-HA-348): the kind's,
+  or the Service's own name with the endpoint's own pair. */}}
+  {{- if $e.ingressEnabled }}
+  {{- $svcAnn = merge (include "quader.backendServiceAnnotations" (dict "root" $ "bt" $bt "kind" $role "own" ($e.tlsSecret | default "") "service" (printf "%s-%sep-%s" (include "quader.fullname" $) $t.prefix $name)) | fromYaml) $svcAnn }}
   {{- end }}
   {{- if $svcAnn }}
   annotations:

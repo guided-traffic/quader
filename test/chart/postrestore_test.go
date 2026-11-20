@@ -116,7 +116,7 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 				t.Errorf("secrets = %v, want %s", v, want)
 			}
 		}
-		for _, no := range []string{"quader-db-app", "quader-db-backup", "quader-valkey", "quader-encryption-keys", "quader-tls", "quader-backup-keys", "quader-backup-ca"} {
+		for _, no := range []string{"quader-db-app", "quader-db-backup", "quader-valkey", "quader-encryption-keys", "quader-tls-api", "quader-tls-packages", "quader-tls-worker", "quader-backup-keys", "quader-backup-ca"} {
 			if has(no) {
 				t.Errorf("the post-restore Job mounts %s", no)
 			}

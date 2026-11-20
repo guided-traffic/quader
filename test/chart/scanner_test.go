@@ -50,8 +50,8 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 	if got := containerArgs(pod); !slices.Equal(got, []string{"serve", "--role", "scanner"}) {
 		t.Fatalf("args %v", got)
 	}
-	if got := volumeNames(pod); !slices.Equal(got, []string{"config", "secret-tls", "secret-tls-internal", "spool", "tmp"}) {
-		t.Fatalf("the scanner mounts %v, the five volumes of R-HA-065 only", got)
+	if got := volumeNames(pod); !slices.Equal(got, []string{"config", "secret-tls", "spool", "tmp"}) {
+		t.Fatalf("the scanner mounts %v, the four volumes of R-HA-065 only", got)
 	}
 	if at(pod, "automountServiceAccountToken") != false || str(pod, "serviceAccountName") != "" || at(pod, "shareProcessNamespace") != nil {
 		t.Fatalf("service account %q, automount %v, shareProcessNamespace %v", str(pod, "serviceAccountName"), at(pod, "automountServiceAccountToken"), at(pod, "shareProcessNamespace"))
@@ -60,8 +60,8 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 		t.Fatal("the scanner is not the first process of its one container")
 	}
 	secrets := secretVolumes(pod)
-	if secrets["secret-tls"] != "quader-tls" || secrets["secret-tls-internal"] != "quader-tls" || len(secrets) != 2 {
-		t.Fatalf("secret volumes %v", secrets)
+	if secrets["secret-tls"] != "quader-tls-scanner" || len(secrets) != 1 {
+		t.Fatalf("secret volumes %v, want the scanner's own Secret only", secrets)
 	}
 	items := func(name string) []string {
 		var out []string
@@ -74,11 +74,8 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 		}
 		return out
 	}
-	if got := items("secret-tls"); !slices.Equal(got, []string{"tls.crt", "tls.key"}) {
-		t.Fatalf("the pair's files %v", got)
-	}
-	if got := items("secret-tls-internal"); !slices.Equal(got, []string{"ca.crt"}) {
-		t.Fatalf("the internal CA's files %v", got)
+	if got := items("secret-tls"); !slices.Equal(got, []string{"tls.crt", "tls.key", "ca.crt"}) {
+		t.Fatalf("the files of the scanner's Secret %v, want its pair and the CA", got)
 	}
 	c := at(pod, "containers", "0")
 	if list(c, "envFrom") != nil {
@@ -90,7 +87,7 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 		}
 	}
 	for _, p := range mountPaths(pod) {
-		if strings.HasPrefix(p, "/var/run/secrets/") && !slices.Contains([]string{"/var/run/secrets/quader/tls", "/var/run/secrets/quader/tls-internal"}, p) {
+		if strings.HasPrefix(p, "/var/run/secrets/") && p != "/var/run/secrets/quader/tls" {
 			t.Errorf("the scanner mounts %s", p)
 		}
 	}
@@ -107,10 +104,11 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 	if find(docs, "PodDisruptionBudget", "quader-scanner") == nil {
 		t.Fatal("no PodDisruptionBudget of the scanner")
 	}
-	// Q-HA-340: with a pair of the operations listener's own, the scanner mounts it as every pod does, and nothing more.
-	_, docs = render(t, required(), "tls.ops.secretName=quader-ops-tls")
-	if got := secretVolumes(scannerPod(t, docs)); got["secret-tls-ops"] != "quader-ops-tls" || len(got) != 3 {
-		t.Fatalf("with tls.ops the scanner's secret volumes are %v", got)
+	// With named Secrets the scanner mounts its own and no other kind's (Q-HA-347).
+	_, docs = render(t, required(), "tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p",
+		"tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s")
+	if got := secretVolumes(scannerPod(t, docs)); got["secret-tls"] != "s" || len(got) != 1 {
+		t.Fatalf("with tls.existingSecrets the scanner's secret volumes are %v", got)
 	}
 	// R-HA-061: the spool follows spool.type like every role's.
 	_, docs = render(t, required(), "spool.type=ephemeral", "spool.ephemeral.size=20Gi")
@@ -129,7 +127,7 @@ func TestR_HA_065_TheImageScanningOffRendersNoScanner(t *testing.T) {
 		}
 	}
 	for name, pod := range podSpecs(docs) {
-		if envByName(pod)["QUADER_SERVER_SCAN_LISTEN"] != nil || hasMount(pod, "/var/run/secrets/quader/tls-internal") {
+		if envByName(pod)["QUADER_SERVER_SCAN_LISTEN"] != nil || slices.Contains(tlsItems(pod), "ca.crt") {
 			t.Errorf("%s has the scan listener or the internal CA", name)
 		}
 	}
@@ -171,9 +169,12 @@ func TestQ_HA_318_TheSpoolsAreCheckedAgainstWhatTheyHold(t *testing.T) {
 		render(t, required(), "worker.spool.sizeLimit=3Gi", "scanner.spool.sizeLimit=1Gi", "config.vulnerabilities.images.enabled=false")
 		render(t, required(), "worker.spool.sizeLimit=3Gi", "scanner.spool.sizeLimit=1Gi", "config.vulnerabilities.enabled=false")
 	})
-	t.Run("R-HA-029 the scanner's replicas, and its own pair only with TLS", func(t *testing.T) {
+	t.Run("R-HA-029 the scanner's replicas, and a Secret of its own with named Secrets", func(t *testing.T) {
 		renderFails(t, required(), []string{"scanner.replicaCount=0"}, "scanner.replicaCount")
-		renderFails(t, required(), []string{"tls.enabled=false", "scanner.tls.secretName=own"}, "scanner.tls.secretName")
+		renderFails(t, required(), []string{
+			"tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p",
+			"tls.existingSecrets.worker=w",
+		}, "tls.existingSecrets.scanner")
 	})
 }
 
@@ -205,13 +206,13 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 			if (scan != nil) != (name == "quader-packages") || (scan != nil && str(scan, "value") != ":8082") {
 				t.Errorf("%s: QUADER_SERVER_SCAN_LISTEN %v", name, scan)
 			}
-			ca := hasMount(pod, "/var/run/secrets/quader/tls-internal")
+			ca := slices.Contains(tlsItems(pod), "ca.crt")
 			wantCA := name == "quader-packages" || name == "quader-scanner" || strings.HasPrefix(name, "quader-worker")
 			if ca != wantCA {
 				t.Errorf("%s: internal CA mounted %v", name, ca)
 			}
-			if strings.HasPrefix(name, "quader-worker") && !hasMount(pod, "/var/run/secrets/quader/tls") {
-				t.Errorf("%s does not have the pair it presents to the scanner", name)
+			if strings.HasPrefix(name, "quader-worker") && secretVolumes(pod)["secret-tls"] != "quader-tls-worker" {
+				t.Errorf("%s does not have the worker's pair, which it presents to the scanner", name)
 			}
 		}
 	})
@@ -219,10 +220,11 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		cfg := renderedConfig(t, docs)
 		for path, want := range map[string]string{
 			"vulnerabilities.images.scanner.url":          "https://quader-scanner.default.svc:8080",
-			"vulnerabilities.images.scanner.server_name":  "quader.default.svc",
+			"vulnerabilities.images.scanner.server_name":  "quader-scanner.default.svc",
+			"vulnerabilities.images.scanner.client_name":  "quader-worker.default.svc",
 			"vulnerabilities.images.registry.url":         "https://quader-packages-scan.default.svc:8082",
-			"vulnerabilities.images.registry.server_name": "quader.default.svc",
-			"server.internal_tls.ca_file":                 "/var/run/secrets/quader/tls-internal/ca.crt",
+			"vulnerabilities.images.registry.server_name": "quader-packages.default.svc",
+			"server.internal_tls.ca_file":                 "/var/run/secrets/quader/tls/ca.crt",
 		} {
 			if got := str(cfg, strings.Split(path, ".")...); got != want {
 				t.Errorf("%s = %q, want %q", path, got, want)
@@ -230,9 +232,15 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		}
 		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.url=https://evil.example.com"}, "config.vulnerabilities.images.scanner.url is managed by the chart")
 		renderFails(t, required(), []string{"config.server.scan_listen=:9999"}, "config.server.scan_listen is managed by the chart")
+		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.client_name=x"}, "config.vulnerabilities.images.scanner.client_name is managed by the chart")
+		// The scan listener admits every kind of scanner the release renders, one entry each (quader.tlsKindTable).
+		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-scanner.default.svc\n" {
+			t.Errorf("server.scan_clients = %q, want the scanner's name", got)
+		}
+		renderFails(t, required(), []string{"config.server.scan_clients[0]=x"}, "config.server.scan_clients is managed by the chart")
 	})
 	t.Run("Q-HA-322 without TLS the links are plain and nothing of TLS mounts", func(t *testing.T) {
-		_, docs := render(t, required(), "tls.enabled=false", "tls.secretName=")
+		_, docs := render(t, required(), "tls.enabled=false", "tls.certManager.issuerRef.name=")
 		cfg := renderedConfig(t, docs)
 		if str(cfg, "vulnerabilities", "images", "scanner", "url") != "http://quader-scanner.default.svc:8080" || at(cfg, "server", "internal_tls") != nil {
 			t.Fatalf("%v", at(cfg, "vulnerabilities"))
@@ -241,13 +249,19 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 			t.Fatalf("volumes %v", got)
 		}
 	})
-	t.Run("Q-HA-317 a pair of the scanner's own, beside the CA of tls.secretName", func(t *testing.T) {
-		_, docs := render(t, required(), "scanner.tls.secretName=quader-scanner-tls")
-		secrets := secretVolumes(scannerPod(t, docs))
-		if secrets["secret-tls"] != "quader-scanner-tls" || secrets["secret-tls-internal"] != "quader-tls" {
-			t.Fatalf("%v", secrets)
+}
+
+// tlsItems lists the files the pod projects from its kind's Secret at /var/run/secrets/quader/tls.
+func tlsItems(pod any) []string {
+	var out []string
+	for _, v := range list(pod, "volumes") {
+		if str(v, "name") == "secret-tls" {
+			for _, it := range list(v, "secret", "items") {
+				out = append(out, str(it, "path"))
+			}
 		}
-	})
+	}
+	return out
 }
 
 // R-HA-042, ADR-154, Q-HA-320: the scanner admits 8080 from the worker Deployment that claims the queue vuln, the policy of the main
@@ -296,9 +310,9 @@ func TestR_HA_042_TheLinksAdmitTheirOneSender(t *testing.T) {
 	}
 }
 
-// Q-VULN-163: the worker proves itself to the scanner with the chart's pair, so the certificate the chart's documentation shows and the
-// one the dev profile issues must allow client authentication and carry the name the links verify.
-func TestQ_VULN_163_TheDocumentedCertificatesAllowClientAuthentication(t *testing.T) {
+// Q-VULN-185, Q-HA-347: the dev profile lets the chart issue its pairs, and the manual's example of named Secrets gives the worker and the
+// scanner client authentication and each kind its name, which the links check.
+func TestQ_VULN_185_TheDocumentedPairsAllowTheLinksOfEachKind(t *testing.T) {
 	read := func(t *testing.T, path string) string {
 		t.Helper()
 		b, err := os.ReadFile(filepath.Join(repoRoot, path))
@@ -307,20 +321,19 @@ func TestQ_VULN_163_TheDocumentedCertificatesAllowClientAuthentication(t *testin
 		}
 		return string(b)
 	}
-	pki := read(t, "deploy/dev/pki.yaml")
-	i := strings.Index(pki, "name: quader-tls")
-	if i < 0 {
-		t.Fatal("the dev profile issues no quader-tls")
+	if pki := read(t, "deploy/dev/pki.yaml"); strings.Contains(pki, "name: quader-tls\n") {
+		t.Fatal("the dev profile still issues a pair for all kinds")
 	}
-	cert := pki[i:]
-	if j := strings.Index(cert, "\n---"); j > 0 {
-		cert = cert[:j]
-	}
-	if !strings.Contains(cert, "client auth") || !strings.Contains(cert, "- quader.${NS}.svc\n") {
-		t.Fatalf("the dev profile's certificate:\n%s", cert)
+	if dev := read(t, "deploy/dev/values-dev.yaml"); !strings.Contains(dev, "    issuerRef:\n      name: quader-dev-ca\n      kind: Issuer\n") {
+		t.Fatal("the dev profile does not let the chart issue its pairs from the dev CA")
 	}
 	manual := read(t, "docs/manual/admin/tls-and-certificates.md")
-	if !strings.Contains(manual, "usages: [digital signature, key encipherment, server auth, client auth]") {
-		t.Fatal("the manual's cert-manager example does not allow client authentication, which the links of the image scanning need")
+	for _, kind := range []string{"worker", "scanner"} {
+		if !strings.Contains(manual, "  name: quader-tls-"+kind+"\n") || !strings.Contains(manual, "- quader-"+kind+".quader.svc\n") {
+			t.Errorf("the manual's example of named Secrets lacks the pair of %s with its name", kind)
+		}
+	}
+	if !strings.Contains(manual, "usages: [digital signature, server auth, client auth]") {
+		t.Fatal("the manual's example does not give the worker and the scanner client authentication, which their links need")
 	}
 }

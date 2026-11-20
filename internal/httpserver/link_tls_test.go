@@ -70,7 +70,7 @@ func TestR_ARCH_038_TheListenerOfALinkRequiresAClientCertificateOfTheInternalCA(
 	ca := tlstest.NewCA(t, "internal")
 	caFile := ca.WriteCA(t, dir, "ca.crt")
 	srvCert, srvKey := ca.Issue(t, tlstest.Options{}).Files(t, dir, "server")
-	l, err := NewLinkListenerTLS(LinkScan, linkServer(srvCert, srvKey, caFile))
+	l, err := NewLinkListenerTLS(LinkScan, linkServer(srvCert, srvKey, caFile), nil)
 	if err != nil || l == nil {
 		t.Fatalf("%v %v", l, err)
 	}
@@ -110,11 +110,11 @@ func TestR_ARCH_038_TheListenerOfALinkRequiresAClientCertificateOfTheInternalCA(
 		}
 	})
 	t.Run("without TLS the link listener is plain, and with TLS it needs the internal CA", func(t *testing.T) {
-		if l, err := NewLinkListenerTLS(LinkScan, config.Server{}); l != nil || err != nil {
+		if l, err := NewLinkListenerTLS(LinkScan, config.Server{}, nil); l != nil || err != nil {
 			t.Fatalf("%v %v", l, err)
 		}
 		s := linkServer(srvCert, srvKey, "")
-		if _, err := NewLinkListenerTLS(LinkScan, s); !errors.Is(err, ErrLinkNeedsCA) {
+		if _, err := NewLinkListenerTLS(LinkScan, s, nil); !errors.Is(err, ErrLinkNeedsCA) {
 			t.Fatalf("%v", err)
 		}
 	})
@@ -142,7 +142,7 @@ func TestR_ARCH_038_ThePairOfALinkMustAllowClientAuthentication(t *testing.T) {
 	if err := link.Fit(); err == nil {
 		t.Fatal("the link reports an unfit pair as fit")
 	}
-	srv, err := NewLinkListenerTLS(LinkScanner, linkServer(certFile, keyFile, caFile))
+	srv, err := NewLinkListenerTLS(LinkScanner, linkServer(certFile, keyFile, caFile), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestR_ARCH_038_ThePairOfALinkMustAllowClientAuthentication(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		listener, err := NewLinkListenerTLS(LinkScanner, s)
+		listener, err := NewLinkListenerTLS(LinkScanner, s, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -166,12 +166,126 @@ func TestR_ARCH_038_ThePairOfALinkMustAllowClientAuthentication(t *testing.T) {
 		}
 		foreign := tlstest.NewCA(t, "foreign")
 		fc, fk := foreign.Issue(t, tlstest.Options{}).Files(t, dir, "foreign")
-		stranger, err := NewLinkListenerTLS(LinkScanner, linkServer(fc, fk, foreign.WriteCA(t, dir, "foreign.crt")))
+		stranger, err := NewLinkListenerTLS(LinkScanner, linkServer(fc, fk, foreign.WriteCA(t, dir, "foreign.crt")), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if err := handshake(t, stranger, client.Config()); err == nil {
 			t.Fatal("the client trusted a server of another CA")
+		}
+	})
+}
+
+// R-ARCH-038, Q-ARCH-552, Q-VULN-185: each end of a link checks the other's kind. Every pair below is a valid certificate of the one
+// internal CA with both usages; only the names differ, as the chart's pairs of the kinds differ (R-HA-063).
+func TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName(t *testing.T) {
+	dir := t.TempDir()
+	ca := tlstest.NewCA(t, "internal")
+	caFile := ca.WriteCA(t, dir, "ca.crt")
+	const ns = ".quader.svc"
+	names := map[string]string{
+		"api": "quader-api" + ns, "packages": "quader-packages" + ns, "worker": "quader-worker" + ns, "scanner": "quader-scanner" + ns,
+		"wildcard": "*" + ns,
+	}
+	pairs := map[string]config.Server{}
+	for kind, name := range names {
+		certFile, keyFile := ca.Issue(t, tlstest.Options{DNSNames: []string{name, "quader-ops" + ns}}).Files(t, dir, kind)
+		pairs[kind] = linkServer(certFile, keyFile, caFile)
+	}
+	listen := func(link, kind, admits string) *ListenerTLS {
+		l, err := NewLinkListenerTLS(link, pairs[kind], []string{names[admits]})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := l.Loaded(); err != nil {
+			t.Fatal(err)
+		}
+		return l
+	}
+	dial := func(link, kind, requires string) *tls.Config {
+		c, err := NewLinkTLS(link, pairs[kind], names[requires], nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := c.Loaded(); err != nil {
+			t.Fatal(err)
+		}
+		return c.Config()
+	}
+	for _, link := range []struct{ name, client, server string }{
+		{LinkScanner, "worker", "scanner"}, // the worker's call of the scanner
+		{LinkScan, "scanner", "packages"},  // the scanner's pull from the scan listener of packages
+	} {
+		t.Run(link.name+": the right kinds pass", func(t *testing.T) {
+			if err := handshake(t, listen(link.name, link.server, link.client), dial(link.name, link.client, link.server)); err != nil {
+				t.Fatalf("%s to %s: %v", link.client, link.server, err)
+			}
+		})
+		t.Run(link.name+": the listener refuses every other kind and a wildcard", func(t *testing.T) {
+			l := listen(link.name, link.server, link.client)
+			for kind := range names {
+				if kind == link.client {
+					continue
+				}
+				// The client verifies the listener as the right kind, so a refusal is the listener's.
+				if err := handshake(t, l, dial(link.name, kind, link.server)); err == nil {
+					t.Errorf("the %s listener admitted the pair of %s (%s)", link.name, kind, names[kind])
+				} else if errors.Is(err, ErrPeerName) {
+					t.Errorf("the client refused, not the listener: %v", err)
+				}
+			}
+		})
+		t.Run(link.name+": the client refuses a server of every other kind and a wildcard", func(t *testing.T) {
+			for kind := range names {
+				if kind == link.server {
+					continue
+				}
+				// The listener admits the right client, so a refusal is the client's: Go's hostname check for another name, the exact
+				// check for the wildcard, which Go's rules would let pass.
+				err := handshake(t, listen(link.name, kind, link.client), dial(link.name, link.client, link.server))
+				var host x509.HostnameError
+				if kind == "wildcard" && !errors.Is(err, ErrPeerName) || kind != "wildcard" && !errors.As(err, &host) {
+					t.Errorf("the %s client to a server with the pair of %s (%s): %v, want the name refused", link.client, kind, names[kind], err)
+				}
+			}
+		})
+	}
+	t.Run("an empty client name lets the CA alone admit, as the role all does", func(t *testing.T) {
+		l, err := NewLinkListenerTLS(LinkScanner, pairs["scanner"], nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := handshake(t, l, dial(LinkScanner, "packages", "scanner")); err != nil {
+			t.Fatalf("a certificate of the CA without the name: %v", err)
+		}
+	})
+	t.Run("a listener that admits two kinds admits each and no third; PeerName tells a route which one called", func(t *testing.T) {
+		// The scan listener admits every kind of scanner (server.scan_clients); here the scanner and, as a second kind, the worker.
+		l, err := NewLinkListenerTLS(LinkScan, pairs["packages"], []string{names["scanner"], names["worker"]})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, kind := range []string{"scanner", "worker"} {
+			if err := handshake(t, l, dial(LinkScan, kind, "packages")); err != nil {
+				t.Errorf("the pair of %s: %v", kind, err)
+			}
+		}
+		if err := handshake(t, l, dial(LinkScan, "api", "packages")); err == nil {
+			t.Error("the listener admitted a third kind")
+		}
+		leaf, err := tls.LoadX509KeyPair(pairs["worker"].TLS.Certificates[0].CertFile, pairs["worker"].TLS.Certificates[0].KeyFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c, err := x509.ParseCertificate(leaf.Certificate[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := PeerName(c, []string{names["scanner"], names["worker"]}); got != names["worker"] {
+			t.Errorf("PeerName = %q, want the worker's", got)
+		}
+		if got := PeerName(c, []string{names["scanner"]}); got != "" {
+			t.Errorf("PeerName of another kind's list = %q", got)
 		}
 	})
 }

@@ -13,7 +13,8 @@ import (
 )
 
 // The worker's side of the role scanner (R-VULN-041, R-OCI-037, ADR-212, ADR-213): the client of the call, over a connection per call
-// with the chart's pair as the client certificate and the internal CA as the only roots, and the signer of the scan token of each call,
+// with the worker's own pair as the client certificate, the internal CA as the only roots and the scanner's name required in its
+// certificate (R-ARCH-038), and the signer of the scan token of each call,
 // derived from the key ring the worker holds. The role all calls its own scanner over loopback (linkLoopback, Q-ARCH-531).
 
 // scanCallSlack is added to the scanner's own bounds for the deadline of a call: pull_timeout + timeout + 1m (R-VULN-041).

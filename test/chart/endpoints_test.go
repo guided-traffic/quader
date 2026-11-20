@@ -218,11 +218,11 @@ func TestEndpoints(t *testing.T) {
 			str(c, "client_ca_file") != "/var/run/secrets/quader/endpoints/customers/client-ca/ca.crt" {
 			t.Errorf("customers tls = %v", c)
 		}
-		// partners names no Secret: it serves the pair of tls.secretName (server.tls) and renders none.
+		// partners names no Secret: it serves the pair of its kind (server.tls) and renders none.
 		if at(configOf(t, docs), "server", "endpoints", "partners", "tls") != nil {
 			t.Error("an endpoint without its own Secret renders a tls block")
 		}
-		// extraSecrets alone: position 0 is the listener pair of tls.secretName.
+		// extraSecrets alone: position 0 is the pair of the kind of the pods that serve it.
 		_, docs = render(t, required(), "endpoints.c.port=8443", "endpoints.c.baseUrl=https://p.example.com", "endpoints.c.tls.extraSecrets={wild}")
 		certs = list(at(configOf(t, docs), "server", "endpoints", "c", "tls"), "certificates")
 		if len(certs) != 2 || str(certs[0], "cert_file") != tlsMountPath+"/tls.crt" || str(certs[1], "cert_file") != "/var/run/secrets/quader/endpoints/c/1/tls.crt" {
@@ -230,13 +230,17 @@ func TestEndpoints(t *testing.T) {
 		}
 	})
 
-	t.Run("R-EP-008 backend TLS annotations follow the endpoint's controller, with the Service name as the verified name", func(t *testing.T) {
+	t.Run("R-EP-008 Q-HA-348 backend TLS annotations follow the endpoint's controller: the kind's name, or the Service's own with a pair of its own", func(t *testing.T) {
 		_, docs := render(t, endpointsSet())
 		part := find(docs, "Ingress", "quader-ep-partners")
 		if str(part, "metadata", "annotations", "haproxy-ingress.github.io/secure-backends") != "true" ||
-			str(part, "metadata", "annotations", "haproxy-ingress.github.io/secure-verify-ca-secret") != "quader-tls" ||
-			!strings.HasPrefix(str(part, "metadata", "annotations", "haproxy-ingress.github.io/secure-sni"), "quader-ep-partners.") {
-			t.Errorf("partners annotations = %v", at(part, "metadata", "annotations"))
+			at(part, "metadata", "annotations", "haproxy-ingress.github.io/secure-sni") != nil {
+			t.Errorf("partners Ingress annotations = %v", at(part, "metadata", "annotations"))
+		}
+		// partners serves its kind's pair, so HAProxy Ingress verifies the kind's name against the kind's Secret, read from the Service.
+		if sa := at(find(docs, "Service", "quader-ep-partners"), "metadata", "annotations"); str(sa, "haproxy-ingress.github.io/secure-sni") != "quader-packages.default.svc" ||
+			str(sa, "haproxy-ingress.github.io/secure-verify-ca-secret") != "quader-tls-packages" {
+			t.Errorf("partners Service annotations = %v", sa)
 		}
 		// customers uses traefik with its own backendTLS: the scheme goes on its Service, no HAProxy keys on its Ingress.
 		svc := find(docs, "Service", "quader-ep-customers")
@@ -248,8 +252,17 @@ func TestEndpoints(t *testing.T) {
 				t.Errorf("customers Ingress carries %s although its controller is traefik", k)
 			}
 		}
-		if find(docs, "Service", "quader-ep-partners") == nil || at(find(docs, "Service", "quader-ep-partners"), "metadata", "annotations") != nil {
-			t.Error("partners Service carries annotations although its controller is haproxy")
+		if strings.Contains(toStr(at(find(docs, "Service", "quader-ep-partners"), "metadata", "annotations")), "traefik") {
+			t.Error("partners Service carries a Traefik setting although its controller is haproxy")
+		}
+		// An endpoint with a pair of its own behind HAProxy Ingress: each Service verifies its own name against that pair's Secret.
+		_, docs = render(t, required(), "endpoints.c.port=8443", "endpoints.c.baseUrl=https://p.example.com", "endpoints.c.surface={packages,files,api}",
+			"endpoints.c.tls.existingSecret=c-tls", "endpoints.c.ingress.enabled=true")
+		for _, svc := range []string{"quader-ep-c", "quader-api-ep-c"} {
+			sa := at(find(docs, "Service", svc), "metadata", "annotations")
+			if str(sa, "haproxy-ingress.github.io/secure-sni") != svc+".default.svc" || str(sa, "haproxy-ingress.github.io/secure-verify-ca-secret") != "c-tls" {
+				t.Errorf("Service %s annotations = %v", svc, sa)
+			}
 		}
 	})
 
@@ -302,8 +315,8 @@ func TestEndpoints(t *testing.T) {
 		if hasInt(containerPorts(web), 8443) || envByName(web)["QUADER_POOL_NAME"] != nil || secretVolume(web, "quader-packages-tls") != nil {
 			t.Errorf("main packages pods serve the pooled endpoint: ports %v", containerPorts(web))
 		}
-		if secretVolume(pod, "quader-packages-tls") == nil || secretVolume(pod, "quader-tls") == nil {
-			t.Error("the pool does not mount its endpoint's certificate and the listener pair")
+		if secretVolume(pod, "quader-packages-tls") == nil || secretVolume(pod, "quader-tls-packages") == nil {
+			t.Error("the pool does not mount its endpoint's certificate and its kind's pair")
 		}
 		// the pool's pods are selected by no other policy, so its policy admits the operations port too
 		np := find(docs, "NetworkPolicy", "quader-packages-ep-customers")
@@ -396,13 +409,12 @@ func TestEndpoints(t *testing.T) {
 			{"ui on a further endpoint", base("endpoints.c.surface={ui,packages}"), []string{"endpoints.c.surface", "ui"}},
 			{"endpoints set inside config", []string{"config.server.endpoints.x.listen=:9000"}, []string{"config.server.endpoints"}},
 			{"a pool below two replicas", base("endpoints.c.pool.enabled=true", "endpoints.c.pool.replicaCount=1"), []string{"endpoints.c.pool.replicaCount"}},
-			{"extra pairs without TLS", base("tls.enabled=false", "endpoints.c.tls.extraSecrets={wild}"), []string{"endpoints.c.tls", "tls.enabled"}},
-			{"a client CA without TLS", base("tls.enabled=false", "endpoints.c.tls.clientCaSecret=ca"), []string{"endpoints.c.tls", "tls.enabled"}},
-			{"an endpoint Ingress that verifies with haproxy and names no CA (the default controller)", base("endpoints.c.ingress.enabled=true"), []string{"endpoints.c.ingress.backendTLS.caSecret", "haproxy", "verify"}},
-			{"an endpoint Ingress that verifies with ingress-nginx and names no CA", base("endpoints.c.ingress.enabled=true", "endpoints.c.ingress.backendTLS.controller=ingress-nginx"), []string{"endpoints.c.ingress.backendTLS.caSecret", "ingress-nginx"}},
-			{"an endpoint Ingress that verifies with traefik and names no ServersTransport", base("endpoints.c.ingress.enabled=true", "endpoints.c.ingress.backendTLS.controller=traefik"), []string{"endpoints.c.ingress.backendTLS.serversTransport", "traefik"}},
+			{"extra pairs without TLS", base("tls.enabled=false", "tls.certManager.issuerRef.name=", "endpoints.c.tls.extraSecrets={wild}"), []string{"endpoints.c.tls", "tls.enabled"}},
+			{"a client CA without TLS", base("tls.enabled=false", "tls.certManager.issuerRef.name=", "endpoints.c.tls.clientCaSecret=ca"), []string{"endpoints.c.tls", "tls.enabled"}},
+			{"an endpoint Ingress that verifies with traefik and names no ServersTransport", base("endpoints.c.ingress.enabled=true", "endpoints.c.ingress.backendTLS.controller=traefik"), []string{"endpoints.c.ingress.backendTLS.serversTransports.packages", "traefik"}},
+			{"an endpoint of both roles behind traefik without a transport for api", base("endpoints.c.surface={packages,api}", "endpoints.c.ingress.enabled=true", "endpoints.c.ingress.backendTLS.controller=traefik", "endpoints.c.ingress.backendTLS.serversTransports.packages=p"), []string{"endpoints.c.ingress.backendTLS.serversTransports.api", "traefik"}},
 			{"an endpoint with a client CA behind haproxy and no client certificate Secret", base("endpoints.c.ingress.enabled=true", "endpoints.c.ingress.backendTLS.caSecret=ca", "endpoints.c.tls.existingSecret=c-tls", "endpoints.c.tls.clientCaSecret=c-ca"), []string{"endpoints.c.ingress.backendTLS.clientCertSecret", "haproxy"}},
-			{"a global CA does not help an endpoint that sets verify itself under another controller", base("ingress.backendTLS.caSecret=ca", "endpoints.c.ingress.enabled=true", "endpoints.c.ingress.backendTLS.controller=traefik"), []string{"endpoints.c.ingress.backendTLS.serversTransport"}},
+			{"a global CA does not help an endpoint that sets verify itself under another controller", base("ingress.backendTLS.caSecret=ca", "endpoints.c.ingress.enabled=true", "endpoints.c.ingress.backendTLS.controller=traefik"), []string{"endpoints.c.ingress.backendTLS.serversTransports"}},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				renderFails(t, required(), tc.sets, tc.want...)

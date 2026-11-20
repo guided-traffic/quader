@@ -4,14 +4,17 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 // Every connection of the integration stack is TLS, verified against the stack's own CA
@@ -30,6 +33,57 @@ func CAFile(tb testing.TB) string {
 func CertDir(tb testing.TB) string {
 	tb.Helper()
 	return Get(tb, "QUADER_TEST_CERT_DIR")
+}
+
+// KindName is the name the pair of a kind of pod carries on a stack with TLS, and that the links check (R-HA-063, Q-ARCH-553): the
+// chart's <fullname>-<kind>.<namespace>.svc, here <kind>.quader.test.
+func KindName(kind string) string { return kind + ".quader.test" }
+
+// roleKinds are the kinds whose names the pair of a role carries: web serves api and packages, all is every kind in one process.
+var roleKinds = map[string][]string{
+	"web": {"api", "packages"}, "api": {"api"}, "packages": {"packages"}, "worker": {"worker"}, "scanner": {"scanner"},
+	"all": {"api", "packages", "worker", "scanner"},
+}
+
+// rolePairs issues a pair per role from the stack's CA into dir: the names of its kinds, localhost, 127.0.0.1 and ::1 (the harness
+// verifies the replicas by address), server authentication, and client authentication for the roles that call a link (worker,
+// scanner, all), as the chart's Certificates have.
+func rolePairs(tb testing.TB, dir string) map[string][2]string {
+	tb.Helper()
+	ca := tlstest.LoadCA(tb, CAFile(tb), filepath.Join(CertDir(tb), "ca.key"))
+	out := map[string][2]string{}
+	for role, kinds := range roleKinds {
+		names := []string{"localhost"}
+		for _, k := range kinds {
+			names = append(names, KindName(k))
+		}
+		usages := []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+		if role == "worker" || role == "scanner" || role == "all" {
+			usages = append(usages, x509.ExtKeyUsageClientAuth)
+		}
+		leaf := ca.Issue(tb, tlstest.Options{
+			DNSNames: names, IPs: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}, ExtKeyUsage: usages,
+			NotAfter: time.Now().Add(6 * time.Hour),
+		})
+		c, k := leaf.Files(tb, dir, "tls-"+role)
+		out[role] = [2]string{c, k}
+	}
+	return out
+}
+
+// RolePair is the pair of a role on a stack with TLS, for a test that presents it itself (a call to the scanner with the pair of
+// packages, which must be refused).
+func (s *Stack) RolePair(tb testing.TB, role string) tls.Certificate {
+	tb.Helper()
+	p, ok := s.pairs[role]
+	if !ok {
+		tb.Fatalf("the stack has no pair of the role %q (StackOptions.TLS)", role)
+	}
+	pair, err := tls.LoadX509KeyPair(p[0], p[1])
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return pair
 }
 
 // RootCAs is a pool with only the stack's CA: the system roots are deliberately not part of it,

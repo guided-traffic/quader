@@ -21,7 +21,7 @@ rotation reaches a running process. The configuration keys are listed in the ref
 | every role and the Jobs of the backup lane to the object store | `storage.s3.endpoint`, `storage.s3.ca_file` | an endpoint without a scheme is `https` ([Q-STOR-15](../spec/storage.md#q-stor-15--object-store-endpoint-without-a-scheme)) | `ca_file` only when it is set; else the outbound factory's trust store (the system roots while `proxy.outbound.tls.use_system_roots`, plus `proxy.outbound.tls.ca_files`) | on each check of the outbound transport |
 | outbound HTTP clients | `proxy.outbound.tls` | system roots, `min_version` `1.2` | chain and host name | at most every 10 s on use |
 | OTLP span export | `tracing.ca_file`, `tracing.protocol` | off until `tracing.enabled` | the system roots, or `ca_file` (refused with an `http://` endpoint) | **once, at start** ([H-69](#h-69--tracingca_file-is-read-once-at-start)) |
-| worker to the scanner's listener, scanner to the scan listener of `packages` ([link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go)) | `server.internal_tls.ca_file`, `vulnerabilities.images.scanner`, `vulnerabilities.images.registry` ([R-ARCH-038](../spec/architecture.md#r-arch-038--tls-between-quaders-pods)) | the chart's pair on both ends, mutual TLS; plain HTTP with the chart's `tls.enabled: false` ([H-1043](image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)) | both ends: the server's chain against the internal CA under `<fullname>.<namespace>.svc`, the client's chain against the same CA | every `reload_interval`, for the next handshake; the worker opens a connection per call |
+| worker to the scanner's listener, scanner to the scan listener of `packages` ([link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go)) | `server.internal_tls.ca_file`, `vulnerabilities.images.scanner`, `vulnerabilities.images.registry` ([R-ARCH-038](../spec/architecture.md#r-arch-038--tls-between-quaders-pods)) | each end's own kind's pair, mutual TLS; plain HTTP with the chart's `tls.enabled: false` ([H-1043](image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)) | both ends: the chain against the internal CA, and the other kind's name listed exactly among the certificate's DNS names (`<fullname>-scanner`, `-worker`, `-packages`, `.<namespace>.svc`; [Q-ARCH-552](../spec/architecture.md#q-arch-552--each-end-of-a-link-requires-one-name-listed-exactly-in-the-other-ends-certificate), [H-1072](#h-1072--the-name-check-is-as-strong-as-the-issuers-rule-of-who-may-request-a-name)) | every `reload_interval`, for the next handshake; the worker opens a connection per call |
 
 Plaintext needs an explicit switch on each of these: `database.allow_insecure` for `disable`, `allow` and `prefer`,
 `valkey.allow_insecure` for `valkey.tls.mode: disable` and `valkey.sentinel.tls: false`,
@@ -128,53 +128,58 @@ outbound factory's trust store ([outbound/factory.go](../../internal/outbound/fa
 ## What the chart renders
 
 The chart is [deploy/helm/quader](../../deploy/helm/quader). The defaults below are from [values.yaml](../../deploy/helm/quader/values.yaml).
+Every kind of pod has a pair and a name of its own ([R-HA-063](../spec/ha-and-helm.md#r-ha-063--chart-tls-wiring),
+[ADR-215](../decisions.md#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues)).
 
 | Value | Default | Effect |
 |---|---|---|
-| `tls.enabled` | `true` | renders the TLS wiring; with `true` and no `tls.secretName` the render fails |
-| `tls.secretName` | `""` (required with `enabled`) | the Secret that holds the listener's pair; the chart never creates it |
-| `tls.certKey`, `tls.keyKey` | `tls.crt`, `tls.key` | the keys projected into the pod |
+| `tls.enabled` | `true` | renders the TLS wiring; with `true` and neither `tls.certManager.issuerRef.name` nor `tls.existingSecrets` the render fails |
+| `tls.certManager.issuerRef` (`kind`, `name`, `group`) | `ClusterIssuer`, `""`, `cert-manager.io` | renders a cert-manager `Certificate` `<fullname>-tls-<kind>` per kind (`api`, `packages`, `worker`, `scanner`) with the names `<fullname>-<kind>.<namespace>.svc` and `<fullname>-ops.<namespace>.svc`, `server auth`, and `client auth` for `worker` and `scanner` ([certificates.yaml](../../deploy/helm/quader/templates/certificates.yaml)) |
+| `tls.certManager.duration`, `renewBefore`, `privateKey`, `extraDnsNames`, `extraIpAddresses` | `2160h`, `720h`, ECDSA 256, `[]`, `[]` | the Certificates' lifetime and key (`rotationPolicy: Always`), and names every pair carries besides its own, which no check relies on |
+| `tls.existingSecrets.<kind>` | `""` | an existing Secret per kind instead of the issuer; refused together with the issuer and when two kinds name one Secret |
 | `tls.minVersion`, `tls.reloadInterval` | `"1.2"`, `10s` | `server.tls.min_version` and `reload_interval` |
 | `tls.clientCA.secretName` | `""` | when set, `server.tls.client_ca_file` and `client_auth` (`require` by default) |
-| `tls.ops.secretName` | `""` | a separate pair for `:8081`; the ops listener then has its own block |
-| `ingress.backendTLS.controller` | `haproxy` | the controller-specific backend settings: `haproxy`, `traefik`, `ingress-nginx` or `manual` |
-| `ingress.backendTLS.verify` | `true` | the controller verifies the Quader certificate; with `true` and no `caSecret` (haproxy, ingress-nginx) or `serversTransport` (traefik) the render fails, for the Ingress of the default endpoint and for the Ingress of every further endpoint (its own `ingress.backendTLS` merged over this block) |
+| `ingress.backendTLS.controller` | `haproxy` | where the backend settings go: `haproxy`, `traefik`, `ingress-nginx` or `manual` |
+| `ingress.backendTLS.verify` | `true` | the controller verifies each backend under its kind's name; Traefik needs `serversTransports.api` and `.packages`, for the Ingress of the default endpoint and of every further endpoint (its own `ingress.backendTLS` merged over this block) |
+| `ingress.backendTLS.caSecret` | `""` | the Secret whose `ca.crt` the controller verifies with; empty is the Secret of the pair the backend serves |
 | `secrets.s3CA.existingSecret`, `key` | `""`, `ca.crt` | mounts the CA of the object store at `/var/run/secrets/quader/s3-ca/` and renders `storage.s3.ca_file` |
 | `trustedCA.existingSecret` or `existingConfigMap`, `keys`, `useForObjectStore` | `""`, `""`, `[ca-bundle.crt]`, `false` | mounts the listed files of a Secret or ConfigMap at `/etc/quader/ca/` in every pod of the release, appends them to `proxy.outbound.tls.ca_files` (after the operator's own), and with `useForObjectStore` makes the one file `storage.s3.ca_file`; refused together with `secrets.s3CA` |
 
-What the pods get, from [_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl): the Secret is mounted read-only at
-`/var/run/secrets/quader/tls/` with `tls.crt` and `tls.key` only, and only into pods that load that pair: the pods that open the client listener (`api`, `packages` and their path
-pools), a pod that serves a further endpoint without a pair of its own, and every pod whose operations
-listener inherits it, which is every pod unless `tls.ops.secretName` is set. With `tls.ops`, workers and endpoint pools
-whose endpoints bring their own pairs hold no copy of the client listener's private key
-([H-57](../spec/endpoints.md#h-57--a-further-endpoint-runs-with-every-credential-of-a-web-replica) lists what such a pod
-still holds). The client CA mounts only into the pods that open the client listener of the default endpoint. `ca.crt` is not projected into the process, because the
-listener never reads it; the Secret itself still carries `ca.crt` for the edge and for monitoring. The mount has no
-`subPath`, so the kubelet's swap of the projected files reaches the process. The migration Job mounts no listener material.
+What the pods get, from [_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl): each pod mounts its own kind's Secret read-only at
+`/var/run/secrets/quader/tls/` with `tls.crt` and `tls.key`, and `ca.crt` where a link verifies with it (the worker, the main `packages`
+pods and the scanner while the image scanning is on); no pod mounts the Secret of another kind, so a pod that is taken over holds no pair
+that passes as another kind ([H-1035](image-scanning.md#h-1035--a-taken-over-analyser-holds-the-scanners-pair) lists what each kind's pair
+allows). Pools and endpoint pools hold their role's pair; a pod that serves a further endpoint with a pair of its own holds that one too
+([H-57](../spec/endpoints.md#h-57--a-further-endpoint-runs-with-every-credential-of-a-web-replica)). The client CA mounts only into the pods
+that open the client listener of the default endpoint. The mount has no `subPath`, so the kubelet's swap of the projected files, pair and
+CA together, reaches the process; each kind's Secret rotates on its own. The migration Job and the backup and restore pods mount no listener
+material.
 
-The trusted CA bundle (R-HA-043, [Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)) adds trust for every outbound TLS connection of every pod, upstreams, OIDC issuers, GitLab and webhooks: whoever can write the named Secret or ConfigMap can make Quader accept a certificate it signs, so that source is as protected as `tls.secretName`. The files are public certificates, projected by `items` without `subPath`; PostgreSQL's connection never uses them (`secrets.databaseCA` is a directory of its own), and the Valkey and backup-target CAs stay their own values. With `useForObjectStore` the file is the object store's whole trust store, not an addition (the rule of `storage.s3.ca_file`). A rotation reaches the pods at the kubelet's pace ([H-804](../spec/ha-and-helm.md#h-804--a-change-of-the-ca-source-reaches-the-pods-at-the-kubelets-pace)). Tested by `TestR_HA_043_TrustedCA`.
+The trusted CA bundle (R-HA-043, [Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)) adds trust for every outbound TLS connection of every pod, upstreams, OIDC issuers, GitLab and webhooks: whoever can write the named Secret or ConfigMap can make Quader accept a certificate it signs, so that source is as protected as the issuer of the pairs. The files are public certificates, projected by `items` without `subPath`; PostgreSQL's connection never uses them (`secrets.databaseCA` is a directory of its own), and the Valkey and backup-target CAs stay their own values. With `useForObjectStore` the file is the object store's whole trust store, not an addition (the rule of `storage.s3.ca_file`). A rotation reaches the pods at the kubelet's pace ([H-804](../spec/ha-and-helm.md#h-804--a-change-of-the-ca-source-reaches-the-pods-at-the-kubelets-pace)). Tested by `TestR_HA_043_TrustedCA`.
 
 The probes use `scheme: HTTPS` on the ops port when `tls.enabled` is true ([_pod.tpl](../../deploy/helm/quader/templates/_pod.tpl)).
 The client and ops Service ports declare `appProtocol: https` ([services.yaml](../../deploy/helm/quader/templates/services.yaml)).
 
-For the HAProxy Ingress, the chart renders `haproxy-ingress.github.io/secure-backends: "true"`, the verification secret
-(`secure-verify-ca-secret`), the server name `<fullname>.<namespace>.svc` (`secure-sni`) and, with a client certificate,
-`secure-crt-secret` ([ingress.yaml](../../deploy/helm/quader/templates/ingress.yaml)). The render refuses `clientCA` with
-HAProxy and no `clientCertSecret` ([_validate.tpl](../../deploy/helm/quader/templates/_validate.tpl)). A further endpoint's
-Ingress ([endpoint-ingress.yaml](../../deploy/helm/quader/templates/endpoint-ingress.yaml)) follows the same rules on the
-block that results from its own `ingress.backendTLS` laid over the global one (`quader.validateEndpoints`): verification with
-HAProxy Ingress or ingress-nginx without `caSecret`, with Traefik without `serversTransport`, and an endpoint
-`tls.clientCaSecret` with HAProxy and no `clientCertSecret` all fail the render. `verify: false` is the only way to render an
-unverified backend connection with these three controllers.
+The edge verifies each backend under the name of its kind, `<fullname>-api.<namespace>.svc` or `<fullname>-packages.<namespace>.svc`
+([Q-HA-348](../spec/ha-and-helm.md#q-ha-348--the-edge-verifies-each-backend-under-its-kinds-name-the-setting-goes-where-each-controller-reads-it),
+[_tls.tpl](../../deploy/helm/quader/templates/_tls.tpl)). For HAProxy Ingress the chart renders `secure-backends: "true"` and, with a client
+certificate, `secure-crt-secret` on the Ingress ([ingress.yaml](../../deploy/helm/quader/templates/ingress.yaml)), and `secure-sni` and
+`secure-verify-ca-secret` on each Service it routes to, where HAProxy Ingress reads backend keys per Service; Traefik gets the kind's
+ServersTransport on each Service; ingress-nginx, which reads `proxy-ssl-name` per Ingress only, gets an Ingress per kind. A further
+endpoint's backends are verified the same way, or under their own Service name when the endpoint has a pair of its own
+([endpoint-ingress.yaml](../../deploy/helm/quader/templates/endpoint-ingress.yaml)). The render refuses `clientCA` with HAProxy and no
+`clientCertSecret` ([_validate.tpl](../../deploy/helm/quader/templates/_validate.tpl)), and an endpoint `tls.clientCaSecret` with HAProxy and
+no `clientCertSecret`. `verify: false` is the only way to render an unverified backend connection with these three controllers.
 
 The `ServiceMonitor` (`metrics.serviceMonitor.enabled`, [servicemonitor.yaml](../../deploy/helm/quader/templates/servicemonitor.yaml))
-scrapes the ops port with `scheme: https` when `tls.enabled` is true, and its `tlsConfig` verifies the pods against `ca.crt` of the ops
-listener's Secret (`tls.ops.secretName`, else `tls.secretName`) and the name `<fullname>-ops.<namespace>.svc`; with `metrics.auth: static`
-it sends the bearer token of `secrets.metricsToken`. The Gateway API edge of the default endpoint is an `HTTPRoute` (`gateway.enabled`,
-[httproute.yaml](../../deploy/helm/quader/templates/httproute.yaml)), whose rules go to the Service port `http` of each role. How the Gateway
-verifies that connection is the `BackendTLSPolicy`, rendered only with `tls.enabled` and `tls.backendTLSPolicy.enabled`
-([backendtlspolicy.yaml](../../deploy/helm/quader/templates/backendtlspolicy.yaml)): one policy per Service the edge may route to, for
-the name `<fullname>.<namespace>.svc`, with the CA from a ConfigMap (`tls.backendTLSPolicy.caConfigMapName`, which the render requires).
+scrapes the ops port with `scheme: https` when `tls.enabled` is true, and its `tlsConfig` verifies the pods against `ca.crt` of the `api`
+kind's Secret and the name `<fullname>-ops.<namespace>.svc`, which every pair carries ([H-1071](#h-1071--every-pair-also-carries-the-operations-name));
+with `metrics.auth: static` it sends the bearer token of `secrets.metricsToken`. The Gateway API edge of the default endpoint is an
+`HTTPRoute` (`gateway.enabled`, [httproute.yaml](../../deploy/helm/quader/templates/httproute.yaml)), whose rules go to the Service port
+`http` of each role. How the Gateway verifies that connection is the `BackendTLSPolicy`, rendered only with `tls.enabled` and
+`tls.backendTLSPolicy.enabled` ([backendtlspolicy.yaml](../../deploy/helm/quader/templates/backendtlspolicy.yaml)): one policy per Service
+the edge may route to, for the name of the Service's kind, with the CA from a ConfigMap (`tls.backendTLSPolicy.caConfigMapName`, which the
+render requires).
 
 ## What this does not cover
 
@@ -279,9 +284,39 @@ Stage: the e2e profile `alerts` ([local-profile.md](../developer/local-profile.m
 
 Live in the profile `alerts`, dormant everywhere else. The Prometheus that kube-prometheus-stack installs listens on 9090 in plain HTTP, and so does kube-state-metrics:
 the tests read the alert state through the API server's Service proxy, and a person reads it with a port-forward. The link that carries Quader's data, the scrape of the ops
-listener, is TLS and verified against the dev CA (the ServiceMonitor's `tlsConfig`, `quader-ops.<ns>.svc` in the certificate of `quader-tls`); what the plain interface holds is the
+listener, is TLS and verified against the dev CA (the ServiceMonitor's `tlsConfig`, `quader-ops.<ns>.svc`, which every kind's pair carries); what the plain interface holds is the
 metrics of the replicas, which the ops listener serves without authentication in this profile (`metrics.auth: none`). Anyone with a pod in the cluster can read them, which they could
 from the ops port if the chart's NetworkPolicy did not close it to the namespace `monitoring`; the Prometheus's pod sits in that namespace and answers to every namespace.
 
 What makes it real: a dev cluster shared with other workloads, where a pod outside `monitoring` reads the replicas' metrics (repository labels, route names, counts) from the Prometheus
 instead of the ops port. A production installation runs its own Prometheus and decides how that is protected.
+
+### H-1071 · Every pair also carries the operations name
+
+Component: the scrape of the ServiceMonitor ([Q-HA-349](../spec/ha-and-helm.md#q-ha-349--every-pair-also-carries-the-operations-name-and-the-scrape-verifies-that-name)).
+Subject: the metrics Prometheus reads and, with `config.metrics.auth: static`, the bearer token it sends. Live with
+`metrics.serviceMonitor.enabled`. One endpoint scrapes the pods of every kind under `<fullname>-ops.<namespace>.svc`, so the pair of any
+kind passes as the operations listener of any pod: a holder of one pair who can put itself between Prometheus and a pod's `8081` answers
+false numbers, and receives the metrics token, which reads the metrics of every pod. What makes it real: a stolen pair together with a position
+in the pod network in front of a scraped pod.
+
+### H-1072 · The name check is as strong as the issuer's rule of who may request a name
+
+Component: the name checks of the links and of the edge ([R-ARCH-038](../spec/architecture.md#r-arch-038--tls-between-quaders-pods),
+[Q-ARCH-552](../spec/architecture.md#q-arch-552--each-end-of-a-link-requires-one-name-listed-exactly-in-the-other-ends-certificate)).
+Subject: the identity of every kind. Live with a `ClusterIssuer` that any namespace may use, which is cert-manager's default: whoever may
+create a `Certificate` in any namespace of the cluster can have that issuer sign `<fullname>-worker.<namespace>.svc` and pass as the worker
+on the scanner's listener, or as `api` or `packages` toward the edge. The names are not secret, the chart cannot see the issuer's policy, and
+the check cannot tell such a certificate from the chart's. Dormant with an `Issuer` in the release namespace whose CA signs nothing else, or
+with an issuer policy (cert-manager's approver-policy) that binds these names to the release namespace. What makes it real: a shared
+`ClusterIssuer`, a user with the right to create Certificates elsewhere in the cluster, and a position in the pod network.
+
+### H-1073 · A CA rollover reaches each kind with its own renewal
+
+Component: the `ca.crt` of each kind's Secret ([Q-HA-347](../spec/ha-and-helm.md#q-ha-347--tlscertmanager-issues-a-certificate-per-kind-tlsexistingsecrets-names-a-secret-per-kind-instead)).
+Subject: the links of the image scanning. Live during a rollover of the issuer's CA. cert-manager writes the issuer's current CA into
+`ca.crt` when it issues a Secret, so after the CA changes, a kind whose pair was renewed trusts only the new CA while a kind not yet renewed
+presents a pair of the old one: the worker refuses the scanner or the reverse until both are renewed, and scans are put off with
+`scanner_unavailable` or `registry_unavailable` meanwhile (no attempt is spent). The edge verifies each kind against that kind's own Secret,
+so it is not affected. What makes it real: a new CA in the issuer; renewing the four Certificates together (`cmctl renew`) ends it, and a CA
+bundle that holds both CAs during the change avoids it.

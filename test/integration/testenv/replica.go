@@ -95,6 +95,10 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 	// The ops listener's address must differ from server.listen as written, so it
 	// gets a free port of its own.
 	environ := append(append([]string{}, s.base...), "QUADER_POD_NAME="+o.Name, "QUADER_SERVER_OPS_LISTEN="+FreeAddr(tb))
+	if p, ok := s.pairs[o.Role]; ok {
+		// The pair of the replica's role (StackOptions.TLS, R-HA-063).
+		environ = append(environ, `QUADER_SERVER_TLS_CERTIFICATES=[{"cert_file":`+strconv.Quote(p[0])+`,"key_file":`+strconv.Quote(p[1])+`}]`)
+	}
 	if o.Endpoints != "" {
 		environ = append(environ, "QUADER_SERVER_ENDPOINTS="+o.Endpoints)
 	}

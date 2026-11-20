@@ -11,12 +11,18 @@ image:
 highAvailability:
   enforce: true
 
-# TLS on quader's listeners (R-ARCH-035, R-HA-063): the certificate is Secret quader-tls, issued by
-# cert-manager from the dev CA (pki.yaml). The short reload interval makes the rotation drill (E0.15)
-# fast; the chart default is 10s.
+# TLS on quader's listeners (R-ARCH-035, R-HA-063): the chart issues a pair per kind of pod (Secrets quader-tls-api,
+# -packages, -worker, -scanner) from the dev CA's Issuer (pki.yaml). The extra names let the tests that reach one pod
+# through a port-forward verify it as localhost; no check of the chart relies on them. The short reload interval makes
+# the rotation drill (E0.15) fast; the chart default is 10s.
 tls:
   enabled: true
-  secretName: quader-tls
+  certManager:
+    issuerRef:
+      name: quader-dev-ca
+      kind: Issuer
+    extraDnsNames: [localhost]
+    extraIpAddresses: [127.0.0.1]
   reloadInterval: 2s
 
 api:
@@ -205,7 +211,7 @@ trustedCA:
   keys: [ca.crt]
 
 # The edge: HAProxy Ingress (haproxy-values.yaml) terminates TLS with Secret quader-edge-tls for localhost and
-# speaks HTTPS to quader, verifying quader's certificate against the dev CA (R-HA-063).
+# speaks HTTPS to quader, verifying each backend under its kind's name against the ca.crt of its kind's Secret (R-HA-063).
 ingress:
   enabled: true
   className: haproxy
@@ -215,7 +221,6 @@ ingress:
   backendTLS:
     controller: haproxy
     verify: true
-    caSecret: quader-tls                  # a cert-manager Secret carries ca.crt
 
 # The second endpoint (R-EP-001 to R-EP-005, E0.16, E1.14): `customers` listens on :8443 with its own host, its own
 # certificate pair plus a wildcard pair chosen by SNI (all from cert-manager, pki.yaml), serves the package routes, the
