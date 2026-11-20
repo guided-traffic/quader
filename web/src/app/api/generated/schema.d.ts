@@ -706,7 +706,7 @@ export interface paths {
         /**
          * Clear the lockout of the break-glass account
          * @description Clears a lockout of the break-glass account at once on every replica (R-AUTH-014, R-AUTH-038) and writes
-         *     `auth.breakglass.unlocked` with severity `high`. Any other username answers `404`. The answer is `204`
+         *     `auth.breakglass.unlocked` with the outcome `warning`. Any other username answers `404`. The answer is `204`
          *     whether or not a lock was in force.
          */
         post: operations["unlockBreakGlass"];

@@ -1094,7 +1094,10 @@ R-HA-045 takes them over (cross-page):
 `system:backup`, written to the source database by the run:
 `system.backup.completed` (`backupId`, `outcome`, `databaseBytes`, `blobsCopied`, `damaged`),
 `system.backup.failed` (`backupId`, `code`), `system.backup.deleted` (`backupId`, `reason`:
-`retention` or `manual`), `system.backup.target_adopted` (`previousIncarnation`). A restore writes
+`retention` or `manual`), `system.backup.target_adopted` (`previousIncarnation`). `system.backup.completed` has the
+outcome `success` for a run that ended `completed` and `warning` for one that ended `completed_with_warnings`
+([Q-BAK-61](#q-bak-61--the-completed-event-of-a-run-with-warnings-is-a-warning)): the backup exists, and the audit log marks the
+run as one an administrator should look at; `system.backup.failed` has the outcome `failure`. A restore writes
 `system.restored` into the restored database with `source: "backup"`, `backupId` and
 `snapshotAt` (R-BAK-021).
 
@@ -1154,9 +1157,9 @@ Priority: **MVP** · Covers: OPS-033
   ```
 
   The backup writes its audit events through `backup_record_event()`, a `SECURITY DEFINER` function of the schema owner that
-  accepts the four events of R-BAK-014 with the outcome `success` or `failure` and writes them as the actor `system:backup`
-  (Q-BAK-50); the login has no `INSERT` on `audit_event`, so a compromised backup pod cannot write any other event. The
-  migration records the role it granted (`system_state` key `backup_role`) and, when `database.backup_role` names another
+  accepts the four events of R-BAK-014 with the outcome `success` or `failure`, and `system.backup.completed` also with
+  `warning` (Q-BAK-61), and writes them as the actor `system:backup` (Q-BAK-50); the login has no `INSERT` on `audit_event`,
+  so a compromised backup pod cannot write any other event. The migration records the role it granted (`system_state` key `backup_role`) and, when `database.backup_role` names another
   role or none, revokes from the former role exactly what it granted.
 
   The default privileges cover tables the owner creates between two migration runs, such as the
@@ -2536,6 +2539,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** The remaining forgery, a false `system.backup.completed`, is the one H-555 already names for the run record. The development agent would revisit this if the events gain fields that need the registry's schema check.
 
+Since then: the function also accepts the outcome `warning`, for `system.backup.completed` alone
+([Q-BAK-61](#q-bak-61--the-completed-event-of-a-run-with-warnings-is-a-warning)).
+
 **Applied:** R-BAK-015; `internal/meta/postgres/backup_grants.go`, `internal/backup/pgevents.go`, `internal/backup/pgfacts.go`; `test/integration/backup/create_audit_test.go`.
 
 ### Q-BAK-51 · A server-side copy is bounded by a deadline derived from the object's size, ticks the run through a callback on the object reference, and a copy that outlasts its bound makes the caller stream
@@ -2724,6 +2730,36 @@ would revisit it if `TestBackupJournal` passes 15 minutes on the dev cluster: th
 
 **Applied:** `test/e2e/backup_journal_test.go`, `test/e2e/backup_ci_test.go`, `deploy/dev/e2e.sh` (set `backup`),
 `deploy/dev/restore-ns.sh`, `deploy/dev/values-restore.yaml`; [e2e.md](../developer/e2e.md#the-backup-tests).
+
+### Q-BAK-61 · The completed event of a run with warnings is a warning
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a create run that ends `completed_with_warnings` left something out or could not clean up: a damaged source blob that
+is not in the backup (R-BAK-006), a pruning that failed after the manifest was written (Q-BAK-24), a sweep that was skipped.
+Its `system.backup.completed` was recorded with the outcome `success`, like a clean run's; only `details.outcome` told them
+apart, which the audit log's list does not show. Since the audit model has the outcome `warning` for what happened and should
+be looked at ([identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-402), that is what such a run is.
+`backup_record_event()` accepted `success` and `failure` only (Q-BAK-50).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The same event with the outcome `warning`; the function accepts `warning` for `system.backup.completed` and for no other event of the lane (chosen) | The run picks the outcome from its end state; a migration replaces the function | The list marks the run and the outcome filter finds it; the name still says that a backup exists; what a compromised backup login can forge grows by one outcome of one event | A schema step for one more accepted value |
+| (b) An event of its own, `system.backup.completed_with_warnings` | A fifth event of the lane | The action filter tells the two apart | Two names for "a backup was written", so everything that looks for a backup needs both; a name in the permanent registry for what an outcome says |
+| (c) Keep `success`, the run state says the rest | Nothing changes | Nothing to build | The audit log shows a green entry for a backup that lacks a blob |
+| (d) The function accepts `warning` for all four events | One line less in the function | Simpler check | Widens what the backup login may write for events that have no such end |
+
+**Choice:** (a), as migration `00084_backup_event_warning.sql`: the function is replaced with `CREATE OR REPLACE`, which keeps
+its owner and its grants, and its fixed `search_path` is set again, because a replaced function loses it. `details.outcome` stays: it is the run's end state, in the words of R-BAK-009. Exit code `0`, the
+metrics and `QuaderBackupFailed` are unchanged: a run with warnings is a success for alerting (R-BAK-014).
+
+**Rationale:** "the backup exists, but look" is what the outcome `warning` means everywhere else in the log. The development
+agent would revisit it if the backup lane gains events whose warnings an administrator must tell apart by more than the run's
+`result.warnings`, which the backup page shows.
+
+**Applied in the spec:** R-BAK-014, R-BAK-015; [operations-and-observability.md](operations-and-observability.md) R-OPS-016 (the
+row of `system.backup.completed`). Code: `finish` in [create.go](../../internal/backup/create/create.go),
+[00084_backup_event_warning.sql](../../internal/meta/postgres/migrations/00084_backup_event_warning.sql).
 
 ## What this does not cover
 

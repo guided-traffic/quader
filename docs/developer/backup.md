@@ -464,7 +464,7 @@ opens the connections when the run starts, with the run's context (a SIGTERM end
 
 | File | Responsibility |
 |---|---|
-| [create.go](../../internal/backup/create/create.go) | `Deps`, `New`, `Create`: facts, grants, the run row, `finish` (completed, warnings, failed, interrupted; audit events; hold and pins released by `Finish`) |
+| [create.go](../../internal/backup/create/create.go) | `Deps`, `New`, `Create`: facts, grants, the run row, `finish` (completed, warnings, failed, interrupted; audit events, `system.backup.completed` with the outcome `warning` for a run that ended `completed_with_warnings`, which `backup_record_event()` accepts for that event alone since migration 00084; hold and pins released by `Finish`) |
 | [run.go](../../internal/backup/create/run.go) | the phase machine, the snapshot phase with the `all` hold in the `onLocked` callback, cleanup of open uploads and the snapshot |
 | [preflight.go](../../internal/backup/create/preflight.go) | the probe and the encryption check (R-BAK-026), the marker, adoption, the listing that finds the previous backup |
 | [diff.go](../../internal/backup/create/diff.go) | the merge of the referenced set with the previous list: new blob list, pins in batches, the reservoir of the spot check, hold `all` to `pinned` |

@@ -14,6 +14,7 @@ import (
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/session"
 )
 
@@ -429,7 +430,7 @@ func TestR_AUTH_014_UnlockOverTheAPI(t *testing.T) {
 	if jsonOf(t, body)["principal"].(map[string]any)["kind"] != "break_glass" {
 		t.Fatalf("%s", body)
 	}
-	if n := len(e.audit.events("auth.breakglass.unlocked")); n != 1 {
-		t.Fatalf("auth.breakglass.unlocked events: %d", n)
+	if evs := e.audit.events("auth.breakglass.unlocked"); len(evs) != 1 || evs[0].Outcome != audit.Warning {
+		t.Fatalf("auth.breakglass.unlocked events: %+v, want one warning (R-AUTH-041)", evs)
 	}
 }

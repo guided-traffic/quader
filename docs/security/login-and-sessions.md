@@ -143,7 +143,9 @@ decoder. The tests `TestR_AUTH_014_LocalLoginEdge` pin the order.
   to it.
 - Every login decision is recorded: `auth.login.succeeded` and `auth.login.failed`, `auth.breakglass.login` and
   `auth.breakglass.locked`, `auth.logout` and `auth.session.ended` go to the audit recorder of the replica
-  ([events_login.go](../../internal/audit/events_login.go)); the `quader admin` commands write their events (actor `admin-cli`,
+  ([events_login.go](../../internal/audit/events_login.go)). No event of the break-glass account is recorded as a success: a
+  sign-in with it, a lock and an unlock have the outcome `warning`, which the audit log marks and its outcome filter finds, and a
+  refused sign-in `failure` ([R-AUTH-041](../spec/identity-and-authentication.md#r-auth-041--authentication-audit-events)); the `quader admin` commands write their events (actor `admin-cli`,
   pod and OS user) through an audit writer of their own, in the transaction of the change.
 - The single factor, the IdP's authentication strength and a rotation that no running replica notices are gaps of the spec, linked
   at the end of this page.
@@ -163,7 +165,7 @@ decoder. The tests `TestR_AUTH_014_LocalLoginEdge` pin the order.
   (`auth.session.ended`, reason `revoked`). The list shows the source address and user agent of each session: personal data that the
   capability exposes (Q-AUTH-43).
 - `POST /api/v1/users/{breakGlassName}/unlock` needs the role `admin`, not a capability a token scope can name, clears the lockout in the
-  row every attempt reads (no replica caches it) and writes `auth.breakglass.unlocked` with severity `high`. A call for another username
+  row every attempt reads (no replica caches it) and writes `auth.breakglass.unlocked` with the outcome `warning`. A call for another username
   answers `404`. The user record shows `lockedUntil`; `GET /api/v1/users?status=locked` finds the account.
 
 ## What this does not cover

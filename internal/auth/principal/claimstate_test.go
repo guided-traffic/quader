@@ -2,6 +2,9 @@ package principal
 
 import (
 	"encoding/json"
+	"fmt"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -104,5 +107,86 @@ func TestR_AUTH_008_AStoredStateNeedsAReasonAndATime(t *testing.T) {
 	got := parseClaimMissing(`{"provider":"corp","reason":"absent","since":"2026-11-04T08:30:00Z","onMissingClaim":"keep"}`)
 	if got == nil || got.Reason != "absent" || got.OnMissingClaim != "keep" || got.Since.Year() != 2026 {
 		t.Fatalf("%+v", got)
+	}
+}
+
+// R-AUTH-008, R-AUTH-041: a result of a group rule that is no valid group name is recorded as a warning when the identity's
+// set of such results changes to another set that is not empty, and never while the set stays; what the sign-in stores is
+// what the next one is compared with.
+func TestR_AUTH_008_SkippedRuleResultsAreRecordedWhenTheirSetChanges(t *testing.T) {
+	many := make([]string, 25)
+	for i := range many {
+		many[i] = fmt.Sprintf("Bad %02d", i)
+	}
+	cases := []struct {
+		name      string
+		stored    string // the member groupsSkipped of the identity's last_claims
+		skipped   []string
+		wantNames []string // of the state to store; nil: none
+		wantCount int
+		wantEvent bool
+	}{
+		{"none skipped and none stored records nothing and stores nothing", "null", nil, nil, 0, false},
+		{"the first skipped result records a warning and stores the set", "null", []string{"Team A"}, []string{"Team A"}, 1, true},
+		{
+			"the same set at the next sign-in, in another order and with a duplicate, records nothing",
+			`{"names":["Bad!","Team A"],"count":2}`,
+			[]string{"Team A", "Bad!", "Team A"},
+			[]string{"Bad!", "Team A"},
+			2, false,
+		},
+		{"another set records again", `{"names":["Team A"],"count":1}`, []string{"Team B"}, []string{"Team B"}, 1, true},
+		{"none skipped any more drops the state without an event", `{"names":["Team A"],"count":1}`, nil, nil, 0, false},
+		{
+			"a name is cut to 128 characters, and NUL and bytes that are no UTF-8 become U+FFFD",
+			"null",
+			[]string{strings.Repeat("ä", 200), "a\x00b", "c\xffd"},
+			[]string{"a�b", "c�d", strings.Repeat("ä", 128)},
+			3, true,
+		},
+		{"of more than 20 names the first 20 are kept, with the count of all", "null", many, many[:20], 25, true},
+		{"a stored value without a name is no state", `{"count":3}`, []string{"Team A"}, []string{"Team A"}, 1, true},
+	}
+	for _, tc := range cases {
+		t.Run("R-AUTH-008 "+tc.name, func(t *testing.T) {
+			c := LoginClaims{Provider: "corp", SkippedGroups: tc.skipped}
+			next, ev := skippedChange(parseSkipped(tc.stored), c)
+			if (ev != nil) != tc.wantEvent {
+				t.Fatalf("event %+v, want one: %v", ev, tc.wantEvent)
+			}
+			if tc.wantNames == nil {
+				if next != nil {
+					t.Fatalf("state %+v, want none", next)
+				}
+				return
+			}
+			if next == nil || !slices.Equal(next.Names, tc.wantNames) || next.Count != tc.wantCount {
+				t.Fatalf("state %+v, want %v of %d", next, tc.wantNames, tc.wantCount)
+			}
+			raw, err := json.Marshal(next)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, again := skippedChange(parseSkipped(string(raw)), c); again != nil {
+				t.Fatalf("the same sign-in against the state it stored records %+v", again)
+			}
+			if ev == nil {
+				return
+			}
+			if ev.Type != audit.EventUserGroupsSkipped || ev.Outcome != audit.Warning || ev.Reason != "invalid_group_name" {
+				t.Fatalf("event %+v", ev)
+			}
+			var d struct {
+				Provider string   `json:"provider"`
+				Skipped  []string `json:"skipped"`
+				Count    int      `json:"count"`
+			}
+			if err := json.Unmarshal(ev.Details, &d); err != nil {
+				t.Fatal(err)
+			}
+			if d.Provider != "corp" || !slices.Equal(d.Skipped, tc.wantNames) || d.Count != tc.wantCount {
+				t.Fatalf("details %+v", d)
+			}
+		})
 	}
 }

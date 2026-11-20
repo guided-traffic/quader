@@ -138,7 +138,7 @@ auth:
               group: "team-$1"                   # example
 ```
 
-At every sign-in, the user's memberships from this provider become exactly the groups the rules produce. Only groups that already exist are joined, unless `create_groups` is true. Memberships added by hand or by auto-join are never touched. A result that is not a valid group name is skipped and logged. When the claim is missing, `clear` removes the provider's memberships, `keep` leaves them, and `deny` refuses the sign-in.
+At every sign-in, the user's memberships from this provider become exactly the groups the rules produce. Only groups that already exist are joined, unless `create_groups` is true. Memberships added by hand or by auto-join are never touched. A result that is not a valid group name (lower-case letters, digits, `.`, `_` and `-`, at most 128 characters) gives no membership and creates no group; the audit log records it (below). When the claim is missing, `clear` removes the provider's memberships, `keep` leaves them, and `deny` refuses the sign-in.
 
 **When a provider stops sending groups.** With `clear` the users of that provider silently lose the memberships it gave them; with `keep` they keep memberships the provider may have taken away. Quader records it once per user and provider, not at every sign-in:
 
@@ -148,6 +148,8 @@ At every sign-in, the user's memberships from this provider become exactly the g
 - The metric `quader_auth_group_claim_missing_total{name,reason}` counts every sign-in without a usable claim. Alert on its rate if you want to hear of every such sign-in; filter the audit log by the outcome **warning** to see when it began.
 - With `deny` every refused sign-in is a failed sign-in (`auth.login.failed`, reason `groups_claim_missing`) in the audit log, each attempt.
 - With `group_sync.enabled: false` nothing is recorded.
+
+**When a rule gives a name that is no group name.** A rule such as `match_regex: "acme/team-(.+)"` with `group: "team-$1"` turns the value `acme/team-Web Shop` into `team-Web Shop`, which is no group name: the user gets no group for it, and nothing on the sign-in page says so. The audit log shows **Invalid group name skipped at sign-in** (`user.groups.result_skipped`) with the outcome **warning**, the provider and the names (at most 20, each cut to 128 characters, with the count of all). It is recorded once per user and provider when the set of skipped names changes, not at every sign-in. Correct the rule, or the group's name at the provider; the next sign-in then records the new membership as **Group memberships synchronised**.
 
 A group that a restore marked as **detached** (below) is neither filled nor created by the sync: a rule that produces its name adds no member and, with `create_groups`, creates no second group; the sign-in goes on.
 
@@ -230,6 +232,7 @@ auth:
 ```
 
 - **Lockout.** `threshold` failed attempts within `window`, from any address, lock the account for `duration`; during the lock even the right password is refused. Anyone who can reach the sign-in can keep the account locked, so keep it disabled outside recovery or restrict `/auth/local/` at your edge. An administrator clears a lock with **Unlock** on the account's user page, or with `quader admin break-glass unlock`.
+- **In the audit log.** No event of the account is a success: every sign-in with it (**Break-glass sign-in**, `auth.breakglass.login`), every lock (**Break-glass account locked**) and every unlock (**Break-glass account unlocked**) has the outcome **warning**, and a refused sign-in **failure**. Filter the audit log by the action `auth.breakglass.*` to see when the account was used and from which address.
 - **Rotation.** Replace the password in the Secret. When a replica notices the new file, all break-glass sessions end and local sign-in is refused for `rotation_hold`. A file without a usable password refuses every local sign-in.
 - **No password file.** An enabled account without `password_file` starts, logs a warning and refuses every local sign-in. The settings screen shows **Enabled.** and, below it, the error **No password is configured: `auth.break_glass.password_file` is empty.** The API field is `status.breakGlass.passwordStatus` of `GET /api/v1/settings/auth`: `ok`, `not_configured`, `unusable` (a rotated file that holds no usable password; the screen says **The password file is not usable on this replica**) or `not_applicable` (the account is disabled). The value describes the replica that answers; a replica that has not yet noticed a rotation can still say `ok`. Test a local sign-in before you rely on the account.
 - **Disable it** once an administrator can sign in through the identity provider: remove `secrets.breakGlass` and roll the release.

@@ -1697,7 +1697,7 @@ CREATE TABLE audit_event (
   occurred_at   timestamptz NOT NULL,
   action        text        NOT NULL,          -- registry name, e.g. 'repository.created'
   category      text        NOT NULL,
-  outcome       text        NOT NULL CHECK (outcome IN ('success','denied','failure','warning')),  -- warning: identity Q-AUTH-402
+  outcome       text        NOT NULL CHECK (outcome IN ('success','denied','failure','warning')),  -- warning: identity R-AUTH-041
   actor_type    text        NOT NULL,          -- user | service_account | ci | breakglass | system | anonymous
   actor_id      uuid,
   actor_name    text,
@@ -1932,7 +1932,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.task_triggered` | T | — | Manual task run, garbage collection, reindex, storage-summary refresh | `task`, `job_id`, `parameters` |
 | `system.support_bundle_created`, `system.support_bundle_downloaded`, `system.support_bundle_deleted` | T | — | R-OPS-027 | `bundle_id`, `include` |
 | `system.caches_flushed` | T | — | R-OPS-047 (P1) | `inProcess`, `negativeRepositories` |
-| `system.backup.completed` | T | — | A `quader backup create` run ended `completed` or `completed_with_warnings` ([backup-and-restore.md](backup-and-restore.md) R-BAK-014); actor `system:backup`, `replica` = the backup pod | `backupId`, `outcome`, `databaseBytes`, `blobsCopied`, `damaged` |
+| `system.backup.completed` | T | — | A `quader backup create` run ended `completed` (outcome `success`) or `completed_with_warnings` (outcome `warning`, Q-BAK-61) ([backup-and-restore.md](backup-and-restore.md) R-BAK-014); actor `system:backup`, `replica` = the backup pod | `backupId`, `outcome`, `databaseBytes`, `blobsCopied`, `damaged` |
 | `system.backup.failed` | T | — | A create run ended `failed` (R-BAK-014); an `interrupted` run writes none; actor `system:backup` | `backupId`, `code` |
 | `system.backup.deleted` | T | — | A backup was deleted by retention or by `quader backup delete` (R-BAK-016); actor `system:backup` | `backupId`, `reason` (`retention`, `manual`) |
 | `system.backup.target_adopted` | T | — | A run adopted a target of an earlier incarnation (R-BAK-002); actor `system:backup` | `previousIncarnation` |

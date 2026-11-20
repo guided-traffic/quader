@@ -335,6 +335,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.user.groups.claim_missing:Group claim missing at sign-in`;
     case 'user.groups.claim_returned':
       return $localize`:@@audit.action.user.groups.claim_returned:Group claim back at sign-in`;
+    case 'user.groups.result_skipped':
+      return $localize`:@@audit.action.user.groups.result_skipped:Invalid group name skipped at sign-in`;
     case 'user.groups.synced':
       return $localize`:@@audit.action.user.groups.synced:Group memberships synchronised`;
     case 'user.rename_conflict':

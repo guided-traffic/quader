@@ -230,4 +230,23 @@ func TestR_AUTH_008_TheGroupClaimStateIsRecordedWhenItChanges(t *testing.T) {
 			t.Fatalf("%d claim_missing events", n)
 		}
 	})
+	t.Run("R-AUTH-008 a rule result that is no group name is stored with the identity and recorded once, as a warning, also from a second replica", func(t *testing.T) {
+		bad := func(c *principal.LoginClaims) { c.SkippedGroups = []string{"Team A"} }
+		signIn(t, a, claims("pia", "sub-pia", bad))
+		signIn(t, b, claims("pia", "sub-pia", bad))
+		if n := both("pia", audit.EventUserGroupsSkipped); n != 1 {
+			t.Fatalf("%d result_skipped events", n)
+		}
+		if n := e.scalar(`SELECT count(*) FROM audit_event WHERE action = 'user.groups.result_skipped' AND actor_name = 'pia' AND outcome = 'warning'
+		                   AND reason = 'invalid_group_name' AND details -> 'skipped' = '["Team A"]'::jsonb`); n != 1 {
+			t.Fatalf("%d stored warnings", n)
+		}
+		if n := e.scalar(`SELECT count(*) FROM user_identity WHERE subject = 'sub-pia' AND last_claims -> 'groupsSkipped' -> 'names' = '["Team A"]'::jsonb`); n != 1 {
+			t.Fatal("the skipped results are not stored with the identity")
+		}
+		signIn(t, a, claims("pia", "sub-pia"))
+		if n := e.scalar(`SELECT count(*) FROM user_identity WHERE subject = 'sub-pia' AND last_claims ? 'groupsSkipped'`); n != 0 {
+			t.Fatal("the state stayed after a sign-in that skipped nothing")
+		}
+	})
 }

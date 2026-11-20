@@ -6,7 +6,8 @@ package audit
 // finish the restore (R-BAK-021 step 9) and the replay (R-BAK-024). No detail holds a credential, a key or a name used for
 // matching.
 //
-//   - system.backup.completed: a create run ended completed or completed_with_warnings. An interrupted run writes none.
+//   - system.backup.completed: a create run ended completed (outcome success) or completed_with_warnings (outcome warning,
+//     Q-BAK-61). An interrupted run writes none.
 //   - system.backup.failed: a create run ended failed.
 //   - system.backup.deleted: a backup was deleted by retention or by quader backup delete.
 //   - system.backup.target_adopted: a run adopted a target of an earlier incarnation (R-BAK-002).

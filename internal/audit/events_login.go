@@ -40,25 +40,27 @@ func init() {
 			`"method":{"enum":["oidc"]},"provider":{"type":"string"},"issuer":{"type":"string"},` +
 			`"idp_error":{"type":"string","maxLength":200},"purpose":{"enum":["login","reauth"]}},"additionalProperties":false}`,
 	})
-	// Every break-glass attempt, success or failure, with severity high (R-AUTH-014).
+	// The three events of the break-glass account are never recorded as a success: what happened has the outcome warning,
+	// which is how the audit log says that an administrator should look (R-AUTH-014, R-AUTH-041, Q-AUTH-423).
+	//
+	// Every break-glass attempt: warning for a sign-in, failure for a refused one. usernameMatched says whether the
+	// presented username was the account's; the presented value is never recorded.
 	Register(EventType{
 		Name: EventAuthBreakGlassLogin, Category: CategoryAuth, Mode: Async,
 		Schema: `{"type":"object","properties":{` +
-			`"severity":{"const":"high"},"session_id":{"type":"string"},"username":{"type":"string","maxLength":128}},` +
-			`"required":["severity"],"additionalProperties":false}`,
+			`"session_id":{"type":"string"},"usernameMatched":{"type":"boolean"}},` +
+			`"required":["usernameMatched"],"additionalProperties":false}`,
 	})
 	// Written in the transaction whose failure count locked the account (R-AUTH-038).
 	Register(EventType{
 		Name: EventAuthBreakGlassLocked, Category: CategoryAuth, Mode: Transactional,
 		Schema: `{"type":"object","properties":{` +
-			`"severity":{"const":"high"},"failures":{"type":"integer"},"locked_until":{"type":"string","format":"date-time"}},` +
-			`"required":["severity"],"additionalProperties":false}`,
+			`"failures":{"type":"integer"},"locked_until":{"type":"string","format":"date-time"}},"additionalProperties":false}`,
 	})
-	// quader admin break-glass unlock and, from wave 2, POST /api/v1/users/{breakGlassName}/unlock.
+	// quader admin break-glass unlock and POST /api/v1/users/{breakGlassName}/unlock.
 	Register(EventType{
 		Name: EventAuthBreakGlassUnlocked, Category: CategoryAuth, Mode: Transactional,
-		Schema: `{"type":"object","properties":{` +
-			`"severity":{"const":"high"},"was_locked":{"type":"boolean"}},"required":["severity"],"additionalProperties":false}`,
+		Schema: `{"type":"object","properties":{"was_locked":{"type":"boolean"}},"additionalProperties":false}`,
 	})
 	Register(EventType{
 		Name: EventAuthLogout, Category: CategoryAuth, Mode: Async,

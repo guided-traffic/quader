@@ -35,6 +35,10 @@ const (
 	// warning); EventUserGroupsClaimBack that it is usable again. Neither is written while the state stays (Q-AUTH-400).
 	EventUserGroupsClaimMiss = "user.groups.claim_missing"
 	EventUserGroupsClaimBack = "user.groups.claim_returned"
+	// EventUserGroupsSkipped records that results of a provider's group rules were no valid group name and gave no
+	// membership (outcome warning). It is written when an identity's set of skipped results changes to another set that is
+	// not empty, not at every sign-in (R-AUTH-008, Q-AUTH-422).
+	EventUserGroupsSkipped   = "user.groups.result_skipped"
 	EventGroupCreated        = "group.created"
 	EventGroupUpdated        = "group.updated"
 	EventGroupDeleted        = "group.deleted"
@@ -114,6 +118,12 @@ func init() {
 		Name: EventUserGroupsClaimBack, Category: CategoryIdentity, Mode: Transactional, Webhook: true,
 		Schema: `{"type":"object","properties":{"provider":{"type":"string"},"reason":` + claimReason + `,"missingSince":{"type":"string"},` +
 			onMissing + `}}`,
+	})
+	// skipped holds at most 20 of the names, each cut to 128 characters; count is how many there were.
+	Register(EventType{
+		Name: EventUserGroupsSkipped, Category: CategoryIdentity, Mode: Transactional, Webhook: true,
+		Schema: `{"type":"object","properties":{"provider":{"type":"string"},` +
+			`"skipped":{"type":"array","maxItems":20,"items":{"type":"string","maxLength":128}},"count":{"type":"integer"}}}`,
 	})
 
 	ident(EventGroupCreated, NoJournal, `{"type":"object","properties":{"origin":{"type":"string"},"autoJoin":{"type":"boolean"},"members":`+eventSchemaNames+`}}`)

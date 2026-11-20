@@ -63,7 +63,8 @@ func TestR_AUTH_014_BreakGlass(t *testing.T) {
 			}
 		}
 		evs := e.audit.events(audit.EventAuthBreakGlassLogin)
-		if len(evs) != 1 || evs[0].Outcome != audit.Success || !strings.Contains(string(evs[0].Details), `"severity":"high"`) {
+		// R-AUTH-041: a sign-in with the break-glass account is recorded as a warning, never as a success.
+		if len(evs) != 1 || evs[0].Outcome != audit.Warning || evs[0].Actor.Kind != "break_glass" {
 			t.Fatalf("events %+v", evs)
 		}
 	})
@@ -98,8 +99,8 @@ func TestR_AUTH_014_BreakGlass(t *testing.T) {
 				t.Fatalf("locked: %d %s", resp.StatusCode, body)
 			}
 		}
-		if n := len(e.audit.events(audit.EventAuthBreakGlassLocked)); n != 1 {
-			t.Fatalf("auth.breakglass.locked events = %d", n)
+		if evs := e.audit.events(audit.EventAuthBreakGlassLocked); len(evs) != 1 || evs[0].Outcome != audit.Warning {
+			t.Fatalf("auth.breakglass.locked events = %+v, want one warning", evs)
 		}
 	})
 

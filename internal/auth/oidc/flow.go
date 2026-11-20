@@ -218,7 +218,7 @@ func (s *Service) callback(ctx context.Context, in CallbackInput, p *Provider) (
 	}
 	// Step 9: the access token goes out of scope here; neither it nor a refresh
 	// token is stored or accepted anywhere (INV-8).
-	m, lerr := p.mapClaims(v, userinfo, s.o.Auth.BreakGlass.Username, s.log)
+	m, lerr := p.mapClaims(v, userinfo, s.o.Auth.BreakGlass.Username)
 	if lerr != nil {
 		return done, lerr
 	}

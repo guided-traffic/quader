@@ -113,7 +113,7 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 
 	t.Run("R-AUTH-007 the username is lower case with the prefix, and the claims carry issuer and subject", func(t *testing.T) {
 		pre := testProvider(t, func(c *config.AuthOIDCProvider) { c.UsernamePrefix = "corp." })
-		m, lerr := pre.mapClaims(base(func(c claims) { c["preferred_username"] = "Alice.Smith" }), nil, "admin", quiet)
+		m, lerr := pre.mapClaims(base(func(c claims) { c["preferred_username"] = "Alice.Smith" }), nil, "admin")
 		if lerr != nil {
 			t.Fatal(lerr)
 		}
@@ -124,14 +124,14 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 
 	t.Run("R-AUTH-007 a name outside the ASCII pattern after NFC is username_invalid", func(t *testing.T) {
 		// "Ame" plus a combining acute composes to an e with acute under NFC, which the pattern refuses.
-		if _, lerr := p.mapClaims(base(func(c claims) { c["preferred_username"] = "Ame\u0301lie" }), nil, "admin", quiet); lerr == nil || lerr.reason != ReasonUsernameInvalid {
+		if _, lerr := p.mapClaims(base(func(c claims) { c["preferred_username"] = "Ame\u0301lie" }), nil, "admin"); lerr == nil || lerr.reason != ReasonUsernameInvalid {
 			t.Fatalf("got %v", lerr)
 		}
 	})
 
 	t.Run("R-AUTH-007 a reserved name, the break-glass username and an invalid name are username_invalid", func(t *testing.T) {
 		for _, n := range []string{"me", "Anonymous", "authenticated", "system", "admin", "-x", "a b", ""} {
-			_, lerr := p.mapClaims(base(func(c claims) { c["preferred_username"] = n }), nil, "admin", quiet)
+			_, lerr := p.mapClaims(base(func(c claims) { c["preferred_username"] = n }), nil, "admin")
 			if lerr == nil || lerr.reason != ReasonUsernameInvalid {
 				t.Errorf("%q: %v", n, lerr)
 			}
@@ -141,15 +141,15 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 	t.Run("R-AUTH-008 the rules map quader-team-web to team-web, ignore unrelated and skip invalid names", func(t *testing.T) {
 		m, lerr := p.mapClaims(base(func(c claims) {
 			c["groups"] = []any{"quader-team-web", "unrelated", "quader-platform-admins", "BadName"}
-		}), nil, "admin", quiet)
+		}), nil, "admin")
 		if lerr != nil {
 			t.Fatal(lerr)
 		}
 		if got := strings.Join(m.claims.Groups, ","); got != "platform-admins,team-web" {
 			t.Fatalf("groups = %s", got)
 		}
-		if len(m.skipped) != 1 || m.skipped[0] != "BadName" {
-			t.Fatalf("skipped = %v", m.skipped)
+		if len(m.claims.SkippedGroups) != 1 || m.claims.SkippedGroups[0] != "BadName" {
+			t.Fatalf("skipped = %v", m.claims.SkippedGroups)
 		}
 	})
 
@@ -163,7 +163,7 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 	}
 	for _, mc := range missing {
 		t.Run("R-AUTH-008 Q-AUTH-4 a group claim that is "+mc.name+" clears by default with the reason "+mc.reason, func(t *testing.T) {
-			m, lerr := p.mapClaims(base(mc.mut), nil, "admin", quiet)
+			m, lerr := p.mapClaims(base(mc.mut), nil, "admin")
 			if lerr != nil {
 				t.Fatal(lerr)
 			}
@@ -176,11 +176,11 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 
 	t.Run("R-AUTH-008 on_missing_claim deny fails with groups_claim_missing, keep keeps", func(t *testing.T) {
 		deny := testProvider(t, func(c *config.AuthOIDCProvider) { c.GroupSync.OnMissingClaim = config.OnMissingDeny })
-		if _, lerr := deny.mapClaims(base(func(c claims) { delete(c, "groups") }), nil, "admin", quiet); lerr == nil || lerr.reason != ReasonGroupsClaimMissing {
+		if _, lerr := deny.mapClaims(base(func(c claims) { delete(c, "groups") }), nil, "admin"); lerr == nil || lerr.reason != ReasonGroupsClaimMissing {
 			t.Fatalf("deny: %v", lerr)
 		}
 		keep := testProvider(t, func(c *config.AuthOIDCProvider) { c.GroupSync.OnMissingClaim = config.OnMissingKeep })
-		m, lerr := keep.mapClaims(base(func(c claims) { delete(c, "groups") }), nil, "admin", quiet)
+		m, lerr := keep.mapClaims(base(func(c claims) { delete(c, "groups") }), nil, "admin")
 		if lerr != nil || !m.claims.KeepOnMissing {
 			t.Fatalf("keep: %+v %v", m.claims, lerr)
 		}
@@ -199,14 +199,14 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 
 	t.Run("R-AUTH-007 gates: require_verified_email and login_requires_groups", func(t *testing.T) {
 		v := testProvider(t, func(c *config.AuthOIDCProvider) { c.RequireVerifiedEmail = true })
-		if _, lerr := v.mapClaims(base(func(c claims) { c["email_verified"] = false }), nil, "admin", quiet); lerr == nil || lerr.reason != ReasonEmailUnverified {
+		if _, lerr := v.mapClaims(base(func(c claims) { c["email_verified"] = false }), nil, "admin"); lerr == nil || lerr.reason != ReasonEmailUnverified {
 			t.Fatalf("verified: %v", lerr)
 		}
 		g := testProvider(t, func(c *config.AuthOIDCProvider) { c.LoginRequiresGroups = []string{"acme"} })
-		if _, lerr := g.mapClaims(base(nil), nil, "admin", quiet); lerr == nil || lerr.reason != ReasonNotInAllowedGroup {
+		if _, lerr := g.mapClaims(base(nil), nil, "admin"); lerr == nil || lerr.reason != ReasonNotInAllowedGroup {
 			t.Fatalf("groups: %v", lerr)
 		}
-		if _, lerr := g.mapClaims(base(func(c claims) { c["groups"] = []any{"acme"} }), nil, "admin", quiet); lerr != nil {
+		if _, lerr := g.mapClaims(base(func(c claims) { c["groups"] = []any{"acme"} }), nil, "admin"); lerr != nil {
 			t.Fatalf("member refused: %v", lerr)
 		}
 	})
@@ -215,7 +215,7 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 		nested := testProvider(t, func(c *config.AuthOIDCProvider) { c.Claims.Groups = "realm_access.roles" })
 		v := base(func(c claims) { delete(c, "email"); delete(c, "groups") })
 		ui := claims{"sub": "s-1", "email": "from-userinfo@example.com", "realm_access": map[string]any{"roles": []any{"x"}}}
-		m, lerr := nested.mapClaims(v, ui, "admin", quiet)
+		m, lerr := nested.mapClaims(v, ui, "admin")
 		if lerr != nil || m.claims.Email != "from-userinfo@example.com" || len(m.rawGroups) != 1 {
 			t.Fatalf("%+v %v", m, lerr)
 		}

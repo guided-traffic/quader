@@ -2067,7 +2067,9 @@ func (q *Queries) IdentityLockGroup(ctx context.Context, id string) ([]IdentityL
 }
 
 const identityLockGroupClaim = `-- name: IdentityLockGroupClaim :many
-SELECT coalesce(last_claims -> 'groupClaimMissing', 'null'::jsonb)::text AS claim_missing, now()::timestamptz AS now
+SELECT coalesce(last_claims -> 'groupClaimMissing', 'null'::jsonb)::text AS claim_missing,
+       coalesce(last_claims -> 'groupsSkipped', 'null'::jsonb)::text AS groups_skipped,
+       now()::timestamptz AS now
   FROM user_identity
  WHERE issuer = $1::text AND subject = $2::text
    FOR UPDATE
@@ -2079,13 +2081,15 @@ type IdentityLockGroupClaimParams struct {
 }
 
 type IdentityLockGroupClaimRow struct {
-	ClaimMissing string
-	Now          pgtype.Timestamptz
+	ClaimMissing  string
+	GroupsSkipped string
+	Now           pgtype.Timestamptz
 }
 
 // The stored state of the group claim of an identity (R-AUTH-008) under the lock of its row, and the transaction's time, which
 // is the time of the audit event that a change of the state records (Q-AUTH-403). claim_missing is 'null' while the claim was
-// usable at the identity's last sign-in, and before its first one.
+// usable at the identity's last sign-in, and before its first one. groups_skipped is the set of rule results of its last sign-in
+// that were no valid group name, 'null' when there were none (Q-AUTH-422).
 func (q *Queries) IdentityLockGroupClaim(ctx context.Context, arg IdentityLockGroupClaimParams) ([]IdentityLockGroupClaimRow, error) {
 	rows, err := q.db.Query(ctx, identityLockGroupClaim, arg.Issuer, arg.Subject)
 	if err != nil {
@@ -2095,7 +2099,7 @@ func (q *Queries) IdentityLockGroupClaim(ctx context.Context, arg IdentityLockGr
 	items := []IdentityLockGroupClaimRow{}
 	for rows.Next() {
 		var i IdentityLockGroupClaimRow
-		if err := rows.Scan(&i.ClaimMissing, &i.Now); err != nil {
+		if err := rows.Scan(&i.ClaimMissing, &i.GroupsSkipped, &i.Now); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

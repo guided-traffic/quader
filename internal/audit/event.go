@@ -12,9 +12,11 @@ import (
 type Outcome string
 
 // The outcomes. Denied is an authorization refusal (authz.denied). Warning is
-// an action that happened and that an administrator should look at, such as a
-// sign-in whose group claim went missing (Q-AUTH-402); it is never a failure.
-// The table accepts these four.
+// an action that happened and that an administrator should look at (Q-AUTH-402):
+// a sign-in whose group claim went missing or whose group rules gave a name that
+// is no group name (R-AUTH-008), a sign-in with the break-glass account, its
+// lockout and its unlock (R-AUTH-014), a backup that completed with warnings
+// (R-BAK-014). It is never a failure. The table accepts these four.
 const (
 	Success Outcome = "success"
 	Failure Outcome = "failure"

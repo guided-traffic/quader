@@ -115,6 +115,11 @@ type LoginClaims struct {
 	// the group claim (R-AUTH-008); the provisioner makes the user's
 	// oidc:<provider> memberships exactly this set.
 	Groups []string
+	// SkippedGroups are the results of the mapping rules that are no valid group
+	// name (R-AUTH-018) and give no membership. user.groups.result_skipped
+	// records them when the identity's stored set of them changes to another set
+	// that is not empty, not at every sign-in (R-AUTH-008).
+	SkippedGroups []string
 
 	// GroupSync is false when group_sync.enabled is off for the provider: the
 	// memberships are not touched.

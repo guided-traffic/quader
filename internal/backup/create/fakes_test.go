@@ -280,6 +280,19 @@ func (r *recEvents) types() []string {
 	return out
 }
 
+// outcomes are the outcomes of the recorded events of a type, in order.
+func (r *recEvents) outcomes(typ string) []audit.Outcome {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var out []audit.Outcome
+	for _, e := range r.evs {
+		if e.Type == typ {
+			out = append(out, e.Outcome)
+		}
+	}
+	return out
+}
+
 // env bundles a pipeline with its fakes.
 type env struct {
 	t      *testing.T

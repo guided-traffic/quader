@@ -227,8 +227,11 @@ RETURNING id;
 -- name: IdentityLockGroupClaim :many
 -- The stored state of the group claim of an identity (R-AUTH-008) under the lock of its row, and the transaction's time, which
 -- is the time of the audit event that a change of the state records (Q-AUTH-403). claim_missing is 'null' while the claim was
--- usable at the identity's last sign-in, and before its first one.
-SELECT coalesce(last_claims -> 'groupClaimMissing', 'null'::jsonb)::text AS claim_missing, now()::timestamptz AS now
+-- usable at the identity's last sign-in, and before its first one. groups_skipped is the set of rule results of its last sign-in
+-- that were no valid group name, 'null' when there were none (Q-AUTH-422).
+SELECT coalesce(last_claims -> 'groupClaimMissing', 'null'::jsonb)::text AS claim_missing,
+       coalesce(last_claims -> 'groupsSkipped', 'null'::jsonb)::text AS groups_skipped,
+       now()::timestamptz AS now
   FROM user_identity
  WHERE issuer = sqlc.arg(issuer)::text AND subject = sqlc.arg(subject)::text
    FOR UPDATE;

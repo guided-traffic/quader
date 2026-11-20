@@ -39,7 +39,7 @@ transaction's `now()` for a transactional event and the producer's time for an a
 | Column | From | Note |
 |---|---|---|
 | `action`, `category` | the registry entry of `Event.Type` | the event cannot name another category |
-| `outcome` | `Event.Outcome` | `success` (the default when empty), `failure`, `denied`, `warning` (it happened, and an administrator should look: `audit.Warning`, [Q-AUTH-402](../spec/identity-and-authentication.md#q-auth-402--a-warning-is-an-outcome-of-its-own); migration `00078`) |
+| `outcome` | `Event.Outcome` | `success` (the default when empty), `failure`, `denied`, `warning` (it happened, and an administrator should look: `audit.Warning`, [Q-AUTH-402](../spec/identity-and-authentication.md#q-auth-402--a-warning-is-an-outcome-of-its-own); migration `00078`). There is no severity: a producer that wants an event noticed records it with `warning`. The producers are `user.groups.claim_missing` and `user.groups.result_skipped` ([claimstate.go](../../internal/auth/principal/claimstate.go)), the three break-glass events for everything but a refused sign-in ([breakglass.go](../../internal/auth/oidc/breakglass.go)) and `system.backup.completed` of a run with warnings ([create.go](../../internal/backup/create/create.go)); [R-AUTH-041](../spec/identity-and-authentication.md#r-auth-041--authentication-audit-events) lists them |
 | `actor_type`, `actor_name` | `Actor.Kind`, `Actor.Name` | `break_glass` is stored as `breakglass` |
 | `actor_id`, `token_id` | `Actor.ID`, `Actor.TokenID` | stored only when a UUID |
 | `auth_method` | `Actor.AuthMethod` | |

@@ -689,7 +689,8 @@ reads the configured group claim:
 - `match_regex` is RE2 (Go `regexp`), implicitly anchored to the whole value. `group` may use
   `$1` or `${name}` expansions from it.
 - The target set is the union of the results of all rules.
-- A result that violates the group-name rule of R-AUTH-018 is skipped with a warning event.
+- A result that violates the group-name rule of R-AUTH-018 is skipped with a warning event: it gives no membership and
+  creates no group, and `user.groups.result_skipped` records it (**Skipped results and their event**, below).
 
 **Missing target groups.** If a target group does not exist:
 
@@ -746,6 +747,27 @@ before. A sign-in refused by `deny` never reaches the state: it is the failed si
 `groups_claim_missing`, recorded at every attempt, and the metric does not count it (the login counts it in
 `quader_auth_attempts_total{method="oidc",outcome="failure",reason="groups_claim_missing"}`).
 
+**Skipped results and their event**
+([Q-AUTH-422](#q-auth-422--a-skipped-result-of-a-group-rule-is-an-event-of-its-own-recorded-when-the-identitys-set-of-them-changes)).
+A rule whose result is no group name (`quader-(.+)` with `group: "$1"` on the value `quader-Team A`) is a mistake in the
+provider's rules or a value nobody expected, and the user silently lacks a group they were meant to get. Quader stores the
+skipped results of a sign-in with the identity, beside the state of the claim: `groupsSkipped: {"names", "count"}` in its
+`last_claims` while the last sign-in skipped any, no such member otherwise. `names` are the results sorted, each once, each
+cut to 128 characters, at most 20 of them; `count` is how many different ones there were. The NUL character and bytes that are no
+UTF-8 are stored as U+FFFD. The audit log records the set when it changes, not at every sign-in:
+
+| Stored set before the sign-in | Skipped at this sign-in | Event |
+|---|---|---|
+| none, or another set | a set that is not empty | `user.groups.result_skipped`, outcome `warning`, reason `invalid_group_name`, `details.provider`, `details.skipped` (the names) and `details.count` |
+| the same set | the same set | none |
+| any | none | none; the stored set is dropped |
+
+There is no event for the end: when the rule is corrected, the sign-in that gives the membership records it as
+`user.groups.synced`. The set and the event are written in the sign-in's one transaction under the same lock of the identity's
+row as the state of the claim, so two sign-ins of one identity at the same moment record one change. A sign-in whose claim is
+missing applies no rule and so skips nothing; a provider with `group_sync.enabled: false` stores no set and records nothing.
+No log line is written per sign-in: the event has its copy in the log like every audit event.
+
 The user's profile (R-AUTH-017), `GET /api/v1/users/me` and the user's page in the admin area show the stored state as
 `groupClaimMissing: {"provider", "reason", "since", "onMissingClaim"}` until a sign-in through that provider delivers the
 claim; with two identities whose claim is missing, the one whose state began last. This makes a broken group mapper or an overage visible
@@ -796,6 +818,10 @@ Acceptance criteria:
 - With `group_sync.enabled: false`, a login without the claim stores no state and writes neither event.
 - A user linked to two providers whose claim is missing at one of them has the state of that identity only; a login through
   the other provider neither records nor clears it.
+- With the rule `match_regex: "quader-(.+)"`, `group: "$1"`, the IdP sends `groups: ["quader-team-web", "quader-Team A"]`.
+  The user becomes a member of `team-web`, no group `Team A` exists, and one `user.groups.result_skipped` event with outcome
+  `warning` and `skipped: ["Team A"]` is written. A second login with the same claim writes no event, also on another replica.
+  A login that skips `Team B` instead writes the event again; a login that skips nothing writes none and drops the stored set.
 
 ### R-AUTH-009 · Multiple providers and the login page
 Priority: **MVP** · Covers: AUTHN-007, AUTHN-037
@@ -1227,8 +1253,11 @@ The break-glass account:
 
 Bootstrapping automation uses `quader admin` instead (R-AUTH-015).
 
-**Visibility.** Every break-glass login (success or failure) writes an `auth.breakglass.login`
-event with severity `high`. The UI shows a permanent banner during a break-glass session.
+**Visibility.** Every break-glass login (success or failure) writes an `auth.breakglass.login` event. None of the events of
+the break-glass account is recorded as a `success`: a sign-in has the outcome `warning`, which is how the audit log says that an
+administrator should look, and a refused one `failure` (R-AUTH-041,
+[Q-AUTH-423](#q-auth-423--the-break-glass-events-are-warnings-the-audit-model-has-no-severity)). The UI shows a permanent banner
+during a break-glass session.
 
 Configuration:
 
@@ -3438,7 +3467,8 @@ fresh threshold (INV-3, R-ARCH-034):
   `quader admin break-glass unlock` clears a lock early;
 - the user record shows `lockedUntil`, and `GET /api/v1/users?status=locked` lists the account
   (ADMAPI-050);
-- each lock writes `auth.breakglass.locked`.
+- each lock writes `auth.breakglass.locked`, and each unlock `auth.breakglass.unlocked`, both with the outcome `warning`
+  (R-AUTH-041).
 
 The per-node counting weakness of the catalog's suspension mechanism does not apply.
 
@@ -3684,6 +3714,12 @@ API, retention and log emission (INV-16).
 - `subject`: the affected principal or token;
 - `details`: JSON.
 
+**Warnings.** An event has no severity. `warning` is the one way the model says that something happened and that an
+administrator should look at it, and the outcome filter of the audit log lists all of it. The events recorded with it:
+`user.groups.claim_missing` and `user.groups.result_skipped` (R-AUTH-008); a sign-in with the break-glass account, its lock
+and its unlock (R-AUTH-014, R-AUTH-038); and `system.backup.completed` of a run that ended `completed_with_warnings`
+([backup-and-restore.md](backup-and-restore.md) R-BAK-014).
+
 Secrets never appear in events: no token values, hashes, session secrets, passwords, ID tokens
 or authorization codes.
 
@@ -3692,7 +3728,7 @@ or authorization codes.
 | Event | Emitted by | Persisted |
 |---|---|---|
 | `auth.login.succeeded`, `auth.login.failed` | R-AUTH-006, R-AUTH-007; reasons from those pages | yes |
-| `auth.breakglass.login`, `auth.breakglass.locked`, `auth.breakglass.unlocked` | R-AUTH-014, R-AUTH-038, R-AUTH-015 (`unlocked`, Q-AUTH-37); severity `high` | yes |
+| `auth.breakglass.login`, `auth.breakglass.locked`, `auth.breakglass.unlocked` | R-AUTH-014, R-AUTH-038, R-AUTH-015 (`unlocked`, Q-AUTH-37); never outcome `success`: `warning` for a sign-in, a lock and an unlock, `failure` for a refused sign-in ([Q-AUTH-423](#q-auth-423--the-break-glass-events-are-warnings-the-audit-model-has-no-severity)); `auth.breakglass.login` carries `usernameMatched` and never the presented username | yes |
 | `auth.logout`, `auth.session.ended` (admin, evicted, principal disabled) | R-AUTH-010, R-AUTH-013 | yes; idle and absolute expiry are not recorded |
 | `auth.csrf_failed` | R-AUTH-012 | yes, at most one per session and minute on each replica; a log-volume bound, not a count |
 | `auth.credential.rejected` | R-AUTH-001 for malformed or unknown credentials | log stream and metric only, because of volume |
@@ -3704,6 +3740,7 @@ or authorization codes.
 | `user.groups.synced` | R-AUTH-008, with added and removed lists | yes, only when something changed |
 | `user.groups.claim_missing` | R-AUTH-008, with provider, reason (`absent`, `wrong_type`, `overage`), the previous reason when the reason changed, and `onMissingClaim`; outcome `warning` | yes, once per change of the identity's state to missing or to another reason (Q-AUTH-400), not at every login; the metric counts every login |
 | `user.groups.claim_returned` | R-AUTH-008, with provider, the reason the claim was missing for, `missingSince` and `onMissingClaim`; outcome `success` | yes, once when a login of an identity whose claim was missing delivers it again (Q-AUTH-401) |
+| `user.groups.result_skipped` | R-AUTH-008, with provider, `skipped` (at most 20 results of the group rules that are no group name, each cut to 128 characters) and `count`; outcome `warning`, reason `invalid_group_name` | yes, once per change of the identity's set of skipped results to another set that is not empty ([Q-AUTH-422](#q-auth-422--a-skipped-result-of-a-group-rule-is-an-event-of-its-own-recorded-when-the-identitys-set-of-them-changes)), not at every login |
 | `group.created`, `group.updated`, `group.deleted`, `group.members.changed` | R-AUTH-018, R-AUTH-039 | yes |
 | `serviceaccount.created`, `serviceaccount.updated`, `serviceaccount.disabled`, `serviceaccount.deleted` | R-AUTH-020, R-AUTH-046; `details.level` (`instance`, `project`, `repository`), `details.repository` for a repository's account, `details.actions` on a change of its rights, `details.moved` with the old and new name when its repository moved | yes |
 | `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | R-AUTH-045: the account, the token's ID and name; `token.created` and `token.revoked` of its secrets carry `technicalToken` | yes |
@@ -6283,6 +6320,10 @@ outcome of `success` would ask the reader to read two columns to learn one thing
 a second axis is needed: the break-glass events, which the table of R-AUTH-041 calls of severity `high`, are recorded with the
 outcome `success` and carry no field for it.
 
+Since then: the break-glass events are recorded as warnings and the table no longer names a severity
+([Q-AUTH-423](#q-auth-423--the-break-glass-events-are-warnings-the-audit-model-has-no-severity)); the other producers of the
+outcome are listed in R-AUTH-041.
+
 **Applied in the spec:** R-AUTH-041; [operations-and-observability.md](operations-and-observability.md) R-OPS-015 (the
 table), R-OPS-017 (the filter); [api-and-ui.md](api-and-ui.md) R-UI-037 (the list).
 
@@ -6553,6 +6594,72 @@ secret to keep working.
 **Applied in the spec:** R-AUTH-015. Code: `tokenCreate` in [admin_identity.go](../../cmd/quader/admin_identity.go), tested in
 `TestR_AUTH_015_TheTokenCommandNamesAProjectAccount`; the end-to-end suites' administrator is issued with it.
 
+### Q-AUTH-422 · A skipped result of a group rule is an event of its own, recorded when the identity's set of them changes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-AUTH-008 says that a result of a group rule that is no group name is "skipped with a warning event". The code
+skipped it and wrote a log line at every sign-in; the audit log had nothing. The owner's decision at W-14
+([Q-AUTH-400](#q-auth-400--a-missing-group-claim-is-recorded-when-it-changes-not-at-every-sign-in)) is the measure: an entry
+per sign-in for a state that does not change is what made half of his audit log.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A new type `user.groups.result_skipped`, outcome `warning`, recorded when the identity's stored set of skipped results changes to another set that is not empty (chosen) | The set is `groupsSkipped` in the identity's `last_claims`, read and written under the lock of [Q-AUTH-403](#q-auth-403--the-state-of-the-claim-is-compared-and-written-under-the-lock-of-the-identitys-row) | The log says when a rule began to give a user a name that is none, once; the action filter and a webhook find it; no new table and no second lock | One more type in the catalogue; a rule that is wrong for 500 users writes 500 entries, each once |
+| (b) The event at every sign-in that skips a result | No state | Nothing stored | The flood Q-AUTH-400 removed, for a mistake that stays until someone edits the configuration |
+| (c) Once per provider and name in the whole installation | A table keyed by provider and name | The fewest entries; the mistake is in the provider's rules, not with the user | A table that grows with what the identity provider sends and needs its own retention; the entry does not say which users lack the group; a second lock beside the identity's |
+| (d) A member `skipped` of `user.groups.synced` | No new type | One event for the whole synchronization | That event is written only when memberships changed and carries a journal entry; a skipped result changes no membership, so most would never be recorded |
+| (e) The specification follows the code: skipped and logged | A change of wording | Nothing to build | A log line is gone with the log's rotation and is not where an administrator looks; a user who silently lacks a group is what the audit log's warnings are for |
+
+**Choice:** (a). The event carries the provider, at most 20 of the names, each cut to 128 characters, and the count of all:
+a claim has up to 1000 values and a result that is no group name can be any text, so the entry is bounded where the stored
+state is. There is no event for the end, unlike
+[Q-AUTH-401](#q-auth-401--the-return-of-the-claim-is-an-event-of-its-own): the correction of a rule shows as the
+`user.groups.synced` that adds the membership, and a value that the provider no longer sends changes nothing in Quader. The
+log line per sign-in is removed; the event has its copy in the log.
+
+**Rationale:** the same reasoning as Q-AUTH-400, with the state where that decision put it, so one mechanism decides both
+entries. The development agent would revisit it if an installation shows one wrong rule writing an entry for each of many
+identities; (c) is then the form to take, with the table it needs.
+
+**Applied in the spec:** R-AUTH-008 (the rule, **Skipped results and their event**, the
+acceptance criterion), R-AUTH-041 (the event table, **Warnings**). Code: `skippedChange` in
+[claimstate.go](../../internal/auth/principal/claimstate.go), `LoginClaims.SkippedGroups`, `mapClaims` in
+[claims.go](../../internal/auth/oidc/claims.go), `IdentityLockGroupClaim` in
+[identity.sql](../../internal/meta/postgres/queries/identity.sql).
+
+### Q-AUTH-423 · The break-glass events are warnings; the audit model has no severity
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-AUTH-014 and the table of R-AUTH-041 called the severity of `auth.breakglass.login`, `auth.breakglass.locked` and
+`auth.breakglass.unlocked` "high". An audit event has an outcome and no severity
+([Q-AUTH-402](#q-auth-402--a-warning-is-an-outcome-of-its-own), which named this as its condition to revisit). The producers
+wrote the constant `"severity": "high"` into the details of the three types and recorded a sign-in, a lock and an unlock with
+the outcome `success`: the list showed the green icon, and no filter found what the specification called the events to notice.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The specification follows the model: none of the three events is a `success`; a sign-in, a lock and an unlock have the outcome `warning`, a refused sign-in keeps `failure`; the constant detail goes (chosen) | Three producers change an outcome; the schemas lose a field; no change of the table, the API or the UI | The list marks them and the outcome filter lists them with everything else an administrator should look at; one axis; a field that is the same in every event of a type says nothing | "warning" is a weaker word than "high"; `auth.breakglass.login` is never listed under `success` (the sign-in's `auth.login.succeeded` with `method: breakglass` is) |
+| (b) The model learns a severity: a level per event type in the registry (`info`, `warning`, `high`), derived by the API, a column and a filter in the list | A field in the API, the export and the UI | Says "high" literally | A second axis for three types, which Q-AUTH-402 rejected as (b); `user.groups.claim_missing` would be a warning on both axes or `success` on one; a reader reads two columns to learn one thing |
+| (c) A stored severity per row | A column of `audit_event`, an index for its filter | A producer could grade a single event | A schema step, a field of the export and a filter for three producers that all say the same |
+| (d) A fifth outcome `high` | The check of the table, the filter, the enum and the list learn one more value | Says "high" literally | An outcome says how an action ended; two outcomes that both mean "look at this" need a rule for who uses which, and the refused sign-in, the worst of the cases, is a `failure` and would not be `high` |
+| (e) Keep the constant detail and the wording | Nothing changes | Nothing to build | The specification keeps promising something the log shows nowhere |
+
+**Choice:** (a). The rule is one sentence: no event of the break-glass account is a `success`. An unlock is a warning as well,
+also when no lock was in force (`was_locked: false`): the events of the account are noticed as a whole, and an administrator
+who did not unlock it wants to see that someone did.
+
+**Rationale:** what R-AUTH-014 wants is that the use of the recovery account is seen. In the model that is the outcome
+`warning`, which the list shows and the filter finds; a level that only a detail carries is seen by nobody. The development
+agent would revisit it when something has to rank the entries an administrator should look at against each other, such as
+an alert or a webhook that pages for some of them and not for others: that needs levels, and (b) is then the form to take.
+
+**Applied in the spec:** R-AUTH-014 (**Visibility**), R-AUTH-038, R-AUTH-041 (the event table, **Warnings**), H-17. The
+detail schema of `auth.breakglass.login` also named a `username` that no producer wrote; it now names `usernameMatched`, which
+they write. Code: [events_login.go](../../internal/audit/events_login.go), `Unlock`, `recordFailure` and `audit` in
+[breakglass.go](../../internal/auth/oidc/breakglass.go); the API's description of `POST /api/v1/users/{username}/unlock`.
+
 ## What this does not cover
 
 ### H-836 · `tokens:read` shows which owners are administrators
@@ -6584,7 +6691,7 @@ hours must use SCIM or disable users in Quader as part of their leaver process.
 ### H-17 · Break-glass account is single-factor
 
 The break-glass login uses a password only. It is protected by Secret handling, cluster-wide
-lockout, short sessions, no token capability and high-severity audit events, and it is meant to
+lockout, short sessions, no token capability and audit events that are recorded as warnings, and it is meant to
 be disabled outside recovery. A TOTP or WebAuthn second factor (IAM-039, P2) is not specified.
 Anyone who can read the Kubernetes Secret and reach the login page while the account is
 enabled is administrator.

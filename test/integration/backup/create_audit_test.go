@@ -66,7 +66,7 @@ func TestR_BAK_015_TheBackupLoginWritesItsOwnAuditEventsAndNoOthers(t *testing.T
 	if _, err := c.Exec(ctx, `INSERT INTO quader.audit_event (id, occurred_at, action, category, outcome, actor_type) VALUES (gen_random_uuid(), now(), 'authz.role.bound', 'authz', 'success', 'user')`); err == nil || !strings.Contains(err.Error(), "42501") {
 		t.Fatalf("a direct insert = %v, want 42501", err)
 	}
-	for _, bad := range [][]any{{"authz.role.bound", "success"}, {"system.restored", "success"}, {"system.backup.completed", "denied"}} {
+	for _, bad := range [][]any{{"authz.role.bound", "success"}, {"system.restored", "success"}, {"system.backup.completed", "denied"}, {"system.backup.failed", "warning"}, {"system.backup.deleted", "warning"}} {
 		if _, err := c.Exec(ctx, `SELECT quader.backup_record_event($1, $2, 'pod', '', '{}')`, bad...); err == nil || !strings.Contains(err.Error(), "42501") {
 			t.Fatalf("backup_record_event(%v) = %v, want 42501", bad, err)
 		}
@@ -76,6 +76,18 @@ func TestR_BAK_015_TheBackupLoginWritesItsOwnAuditEventsAndNoOthers(t *testing.T
 	}
 	if got := scalarText(in, `SELECT actor_type || '/' || actor_name || '/' || category || '/' || replica FROM quader.audit_event WHERE action = 'system.backup.completed'`); got != "system/backup/system/pod-1" {
 		t.Fatalf("event = %s", got)
+	}
+	// R-BAK-014: warning is the outcome of a run that completed with warnings, and of no other event of the lane (above).
+	if _, err := c.Exec(ctx, `SELECT quader.backup_record_event('system.backup.completed', 'warning', 'pod-2', '', '{"backupId": "y"}')`); err != nil {
+		t.Fatal(err)
+	}
+	if got := scalarText(in, `SELECT outcome FROM quader.audit_event WHERE action = 'system.backup.completed' AND replica = 'pod-2'`); got != "warning" {
+		t.Fatalf("outcome = %s", got)
+	}
+	// The migration that replaced the function set its search_path again: a SECURITY DEFINER function without a fixed one resolves
+	// audit_event through the caller's.
+	if got := scalarText(in, `SELECT array_to_string(proconfig, ';') FROM pg_proc WHERE proname = 'backup_record_event'`); !strings.HasPrefix(got, "search_path=quader, pg_temp") {
+		t.Fatalf("proconfig = %q", got)
 	}
 }
 

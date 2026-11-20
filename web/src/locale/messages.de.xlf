@@ -33906,6 +33906,15 @@
         <target>Gruppen-Claim bei der Anmeldung wieder vorhanden</target>
       </segment>
     </unit>
+    <unit id="audit.action.user.groups.result_skipped">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:339</note>
+      </notes>
+      <segment>
+        <source>Invalid group name skipped at sign-in</source>
+        <target>Ungültiger Gruppenname bei der Anmeldung übersprungen</target>
+      </segment>
+    </unit>
     <unit id="audit.outcome.warning">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:392</note>

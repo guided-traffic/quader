@@ -61,6 +61,9 @@ func TestR_BAK_009_PhasesAndManifest(t *testing.T) {
 	if !slices.Equal(e.events.types(), []string{audit.EventBackupCompleted}) {
 		t.Fatalf("events = %v", e.events.types())
 	}
+	if got := e.events.outcomes(audit.EventBackupCompleted); !slices.Equal(got, []audit.Outcome{audit.Success}) {
+		t.Fatalf("R-BAK-014: a run that completed is recorded with %v, want success", got)
+	}
 	if !e.snap.released || !e.snap.closed {
 		t.Fatal("the migration lock and the snapshot must be released after the export")
 	}
@@ -212,6 +215,9 @@ func TestR_BAK_006_SourceDamage(t *testing.T) {
 		}
 		if e.runs.finished != backup.StateCompletedWithWarning {
 			t.Fatalf("state = %s", e.runs.finished)
+		}
+		if got := e.events.outcomes(audit.EventBackupCompleted); !slices.Equal(got, []audit.Outcome{audit.Warning}) {
+			t.Fatalf("R-BAK-014: a run that completed with warnings is recorded with %v, want warning", got)
 		}
 	})
 	t.Run("an object of the right size with other content is corrupt", func(t *testing.T) {

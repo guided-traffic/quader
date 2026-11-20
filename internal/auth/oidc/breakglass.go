@@ -25,8 +25,8 @@ const LockoutKey = "break-glass"
 
 // Unlock clears a lockout of the break-glass account at once on every replica
 // (R-AUTH-014, R-AUTH-015: every login attempt reads the row) and records
-// auth.breakglass.unlocked with severity high in the same transaction (Q-AUTH-37).
-// It reports whether a lock was in force. `quader admin break-glass unlock` and
+// auth.breakglass.unlocked with the outcome warning in the same transaction
+// (Q-AUTH-37, Q-AUTH-423). It reports whether a lock was in force. `quader admin break-glass unlock` and
 // `POST /api/v1/users/{breakGlassName}/unlock` both call it.
 func Unlock(ctx context.Context, db meta.Runner, rec audit.Recorder, actor audit.Actor, src audit.Source) (bool, error) {
 	var was bool
@@ -40,9 +40,9 @@ func Unlock(ctx context.Context, db meta.Runner, rec audit.Recorder, actor audit
 			return err
 		}
 		was = len(rows) == 1 && rows[0]
-		details, _ := json.Marshal(map[string]any{"severity": "high", "was_locked": was})
+		details, _ := json.Marshal(map[string]any{"was_locked": was})
 		return rec.RecordTx(ctx, tx, audit.Event{
-			Type: audit.EventAuthBreakGlassUnlocked, Actor: actor, Source: src, Outcome: audit.Success, Details: details,
+			Type: audit.EventAuthBreakGlassUnlocked, Actor: actor, Source: src, Outcome: audit.Warning, Details: details,
 		})
 	})
 	return was, err
@@ -387,7 +387,7 @@ func (b *BreakGlass) login(ctx context.Context, in LocalLoginInput) (session.Cre
 	if err != nil {
 		return session.Created{}, postgres.Unavailable(err)
 	}
-	b.audit(ctx, in.Source, audit.Success, "", created.ID, true)
+	b.audit(ctx, in.Source, audit.Warning, "", created.ID, true)
 	b.s.m.Attempt("breakglass", "success", "")
 	details, _ := json.Marshal(map[string]string{"method": "breakglass", "session_id": created.ID})
 	b.s.o.Audit.Record(ctx, audit.Event{
@@ -496,9 +496,9 @@ func (b *BreakGlass) recordFailure(ctx context.Context, src audit.Source) error 
 		if err != nil || len(rows) == 0 {
 			return err
 		}
-		details, _ := json.Marshal(map[string]any{"severity": "high", "failures": rows[0].Failures, "locked_until": rows[0].LockedUntil.Time.UTC().Format(time.RFC3339)})
+		details, _ := json.Marshal(map[string]any{"failures": rows[0].Failures, "locked_until": rows[0].LockedUntil.Time.UTC().Format(time.RFC3339)})
 		return b.s.o.Audit.RecordTx(ctx, tx, audit.Event{
-			Type: audit.EventAuthBreakGlassLocked, Actor: audit.Actor{Kind: "anonymous"}, Outcome: audit.Success,
+			Type: audit.EventAuthBreakGlassLocked, Actor: audit.Actor{Kind: "anonymous"}, Outcome: audit.Warning,
 			Source: src, Subject: audit.Subject{Kind: "user", ID: b.userID, Name: b.cfg.Username}, Details: details,
 		})
 	})
@@ -508,18 +508,20 @@ func (b *BreakGlass) recordFailure(ctx context.Context, src audit.Source) error 
 	return nil
 }
 
-// audit writes auth.breakglass.login with severity high, for success and
-// failure alike (R-AUTH-014). It records whether the presented username was the
-// account's, never the presented value: a password typed into the username
-// field would otherwise land in the audit trail. The password never is recorded.
+// audit writes auth.breakglass.login for every attempt (R-AUTH-014): with the
+// outcome warning for a sign-in, which an administrator should look at, and
+// failure for a refused one; never success (Q-AUTH-423). It records whether the
+// presented username was the account's, never the presented value: a password
+// typed into the username field would otherwise land in the audit trail. The
+// password never is recorded.
 func (b *BreakGlass) audit(ctx context.Context, src audit.Source, outcome audit.Outcome, reason, sessionID string, usernameMatched bool) {
-	d := map[string]any{"severity": "high", "usernameMatched": usernameMatched}
+	d := map[string]any{"usernameMatched": usernameMatched}
 	if sessionID != "" {
 		d["session_id"] = sessionID
 	}
 	details, _ := json.Marshal(d)
 	actor := audit.Actor{Kind: "anonymous"}
-	if outcome == audit.Success {
+	if outcome != audit.Failure {
 		actor = audit.Actor{Kind: "break_glass", ID: b.userID, Name: b.cfg.Username}
 	}
 	b.s.o.Audit.Record(ctx, audit.Event{

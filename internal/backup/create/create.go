@@ -229,8 +229,14 @@ func (r *runState) finish(ctx, hctx context.Context, err error) (*backup.Result,
 			r.d.Log.Error("the backup is complete but its run record could not be finished", "backup", r.id, "err", ferr)
 			return nil, classify(fmt.Errorf("finish the run record: %w", ferr))
 		}
+		// A run that completed with warnings is recorded as a warning: the backup exists, and an administrator should look at
+		// what it left out or could not clean up (R-BAK-014).
+		outcome := audit.Success
+		if state == backup.StateCompletedWithWarning {
+			outcome = audit.Warning
+		}
 		r.event(cctx, audit.Event{
-			Type: audit.EventBackupCompleted, Actor: actor(), Outcome: audit.Success,
+			Type: audit.EventBackupCompleted, Actor: actor(), Outcome: outcome,
 			Details: mustJSON(map[string]any{"backupId": string(r.id), "outcome": string(state), "databaseBytes": r.res.DatabaseBytes, "blobsCopied": r.res.BlobsCopied, "damaged": r.res.DamagedBlobs}),
 		})
 		r.d.Log.Info("backup run finished", "backup", r.id, "outcome", state, "copied", r.res.BlobsCopied, "damaged", r.res.DamagedBlobs)

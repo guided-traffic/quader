@@ -3,7 +3,6 @@ package oidc
 import (
 	"crypto/sha256"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"slices"
 	"strings"
@@ -62,14 +61,12 @@ type mapping struct {
 	claims principal.LoginClaims
 	// rawGroups are the claim values before the rules, for login_requires_groups.
 	rawGroups []string
-	// skipped are rule results that are no valid group name.
-	skipped []string
 }
 
 // mapClaims applies the claim mapping, the gates and the group rules of a
 // provider (R-AUTH-007, R-AUTH-008). breakGlass is the reserved break-glass
 // username.
-func (p *Provider) mapClaims(v validated, userinfo claims, breakGlass string, log *slog.Logger) (mapping, *loginError) {
+func (p *Provider) mapClaims(v validated, userinfo claims, breakGlass string) (mapping, *loginError) {
 	cfg := p.cfg
 	m := mapping{claims: principal.LoginClaims{
 		Provider: p.ID, Issuer: v.issuer, Subject: v.subject,
@@ -111,10 +108,9 @@ func (p *Provider) mapClaims(v validated, userinfo claims, breakGlass string, lo
 		}
 	}
 	if m.claims.GroupSync && missing == "" {
-		m.claims.Groups, m.skipped = applyRules(cfg.GroupSync.Rules, groups)
-		for _, s := range m.skipped {
-			log.Warn("a group rule produced a name that is not a valid group name; skipped", "provider", p.ID, "group", s)
-		}
+		// A result that is no group name gives no membership; the provisioner records it as a warning when the identity's
+		// set of such results changes (R-AUTH-008).
+		m.claims.Groups, m.claims.SkippedGroups = applyRules(cfg.GroupSync.Rules, groups)
 	}
 	return m, nil
 }
