@@ -6688,7 +6688,7 @@ these forms; it defines no check of its own.
 | (b) A new action `wiki` | Grants name it | Fine-grained grants | Every policy, role and preset changes; the owner asked for levels, not for an action |
 | (c) Each format decides in its handlers | No contract change | Easy start | Nothing makes a new handler ask; the T-19 draft's own gate is one function per format |
 
-**Choice:** (a). The Go contracts are in [visibility-work-packages.md](../projektplan/visibility-work-packages.md) WP0.
+**Choice:** (a). The Go contracts are in [visibility.go](../../internal/authz/visibility.go).
 
 **Rationale:** grants stay as they are (a `read` covers both parts), so the only new input is the level of the part; a
 coordinate field carries it through every path that already decides a read, listings included. The three forms match the three

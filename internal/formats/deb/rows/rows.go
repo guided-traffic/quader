@@ -3,7 +3,7 @@
 // format, receives them. Both import this leaf, which holds plain data and imports nothing of the module.
 //
 // Keys cross the port as plain data: armored bytes, fingerprints and times. The OpenPGP library is a leaf of its own and the
-// contracts of the format do not import it (apt-work-packages.md, WP0).
+// contracts of the format do not import it (T-17's plan, WP0).
 package rows
 
 import (

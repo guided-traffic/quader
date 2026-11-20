@@ -4999,7 +4999,7 @@ the merged files are its own and cannot be rendered per request.
 
 **Choice:** (a).
 
-**Rationale:** a virtual repository accepts generated items from the publication port and from nothing else (apt-work-packages.md, WP8). The
+**Rationale:** a virtual repository accepts generated items from the publication port and from nothing else (T-17's plan, WP8). The
 development agent would revisit it if a second format needed a stored merged document.
 
 **Applied in the spec:** R-STOR-003 (above), R-STOR-028 (the summary lists a virtual repository that holds generated items; built with the virtual class).

@@ -12,7 +12,7 @@ import (
 // decompresses to more fails with TooLarge instead of ending quietly (R-DEB-034). The xz module is only ever read through this
 // bounded reader (its advisory CVE-2021-29482 is a decompression-bomb class issue, Q-DEB-24).
 //
-// The work package of the package-file libraries extends the checks around it (apt-work-packages.md, WP1).
+// The work package of the package-file libraries extends the checks around it (T-17's plan, WP1).
 func NewXZReader(r io.Reader, lim Limits) (io.Reader, error) {
 	return NewXZReaderMax(r, effective(lim).UncompressedBytes)
 }

@@ -11,14 +11,14 @@ import (
 // The handlers of the routes live in files of the work packages that build them (handlers_local.go, handlers_upload.go,
 // handlers_remote.go, handlers_virtual.go) and register themselves here by route name. A route without a registered handler answers
 // 501 deb_not_implemented (R-DEB-005), so the table of routes (routes.go) is complete and frozen from the first package on and no
-// package edits it (apt-work-packages.md, 2.5).
+// package edits it (T-17's plan, 2.5).
 var handlerRegistry = struct {
 	mu sync.RWMutex
 	by map[string]func(*Format) formats.HandlerFunc
 	// remote holds the handlers a route has for the repositories of the remote class. The format's Match is blind to the class
 	// (Q-DEB-45), so three routes (deb.dists.get, deb.dists.by_hash, deb.pool.get) serve every class; the handler a package registers
 	// with registerHandler answers the local and virtual classes, the one registered with registerRemoteHandler the remote class, and
-	// no package edits the file of the other (apt-work-packages.md, 2.5).
+	// no package edits the file of the other (T-17's plan, 2.5).
 	remote map[string]func(*Format) formats.HandlerFunc
 }{by: map[string]func(*Format) formats.HandlerFunc{}, remote: map[string]func(*Format) formats.HandlerFunc{}}
 

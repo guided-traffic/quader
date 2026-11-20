@@ -5,8 +5,7 @@ three classes are built: the local class (upload, coordinates, deletion, the ind
 of an archive with the verification of its releases, and the mirror) and the virtual class (a merged, re-signed index over local and remote
 members); what stays is in [What is built and what is not](#what-is-built-and-what-is-not). This page follows a request: the address and the
 routes, the files, the schema, an upload into a local repository, the build that signs its indexes, the keys it signs with, the reads of a
-client, the remote class, the mirror, the virtual class, a restore, the screens, the tests and the counting stub archive. The specification is [formats/debian.md](../spec/formats/debian.md); the plan and the cut into work packages are
-[apt-work-packages.md](../projektplan/apt-work-packages.md); the decisions for the contract are
+client, the remote class, the mirror, the virtual class, a restore, the screens, the tests and the counting stub archive. The specification is [formats/debian.md](../spec/formats/debian.md); the decisions for the contract are
 [ADR-170](../decisions.md#adr-170--apt-indexes-are-built-by-a-job-and-published-through-the-item-stores-publication-port-as-generated-items-also-in-virtual-repositories),
 [ADR-171](../decisions.md#adr-171--every-debian-local-and-virtual-repository-has-its-own-eddsalegacy-signing-key-generated-by-quader-and-sealed-with-the-stored-secret-key-ring-rotation-by-a-co-signing-next-key-the-journal-withholds-keys-and-never-erases-them)
 and [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote).
@@ -601,10 +600,10 @@ and uploads; the xz handling of Quader is tested with its own unit tests.
 
 ## What is built and what is not
 
-Built, by work package of [apt-work-packages.md](../projektplan/apt-work-packages.md): the contracts and the schema (WP0), the libraries (WP1), the signing
+Built, by work package of the plan of T-17: the contracts and the schema (WP0), the libraries (WP1), the signing
 keys and the OpenPGP library (WP2), the local class (WP3), the publication port and the index builder with its metrics (WP4), the counting stub archive
 (WP5), the remote class (WP6), the mirror (WP7), the virtual class (WP8), the integration rows of the local and the virtual class (WP9), the e2e set `deb`
-and its CI job `e2e-deb` (WP10), the UI (WP11), the documentation (WP12) and the background upstream (WP13). The evidence is the closing section of the plan.
+and its CI job `e2e-deb` (WP10), the UI (WP11), the documentation (WP12) and the background upstream (WP13).
 
 Not built, or not proven:
 

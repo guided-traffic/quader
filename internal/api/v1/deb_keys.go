@@ -17,7 +17,7 @@ import (
 // data port (internal/formatdata/deb) validates, seals, writes and records. No answer, error or log line holds a private key; the
 // passphrase of an import is used once and not kept.
 
-// DebKeyStore is the part of the Debian data port the key operations use (apt-work-packages.md, 2.2).
+// DebKeyStore is the part of the Debian data port the key operations use (T-17's plan, 2.2).
 type DebKeyStore interface {
 	Keys(ctx context.Context, repoID int64) ([]rows.Key, error)
 	CreateNext(ctx context.Context, in rows.NewKey) (rows.Key, error)

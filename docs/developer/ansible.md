@@ -3,8 +3,7 @@
 The Ansible Galaxy format (`internal/formats/ansible`) serves collections to `ansible-galaxy` from local, remote and virtual repositories,
 and roles by translation from a remote. This page is for a contributor to the format: the address and the routes, the files, the leaf
 packages, the schema, the scheme `Token` of the authentication stage and the data port. The specification is
-[formats/ansible.md](../spec/formats/ansible.md); the plan and its cut into work packages are
-[ansible-work-packages.md](../projektplan/ansible-work-packages.md); the decision for the contract is
+[formats/ansible.md](../spec/formats/ansible.md); the decision for the contract is
 [ADR-191](../decisions.md#adr-191--the-format-contract-gains-the-route-flag-for-the-galaxy-token-scheme-and-the-hub-token-exchange-is-an-optional-interface-of-the-remote-adapter).
 
 What is built today is the **skeleton, the leaves and the local class**: the format registers with its route table, the grammars, the classification of

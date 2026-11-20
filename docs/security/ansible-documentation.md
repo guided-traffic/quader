@@ -1,7 +1,6 @@
 # Ansible Galaxy collection documentation
 
-Status: built in the backend (owner task T-19; requirements [R-ANS-033 to R-ANS-046](../spec/formats/ansible.md), work packages in
-[galaxy-docs-work-packages.md](../projektplan/galaxy-docs-work-packages.md)). The screens are not part of this page's mechanism yet; the wiki check is
+Status: built in the backend (owner task T-19; requirements [R-ANS-033 to R-ANS-046](../spec/formats/ansible.md)). The screens are not part of this page's mechanism yet; the wiki check is
 the one of R-AUTHZ-034 (`Host.WikiReadable`, `authz.ReadScope.MayReadWiki`; see [visibility.md](visibility.md)).
 
 This page describes what the text of a collection's documentation can make Quader do and show, and who may read it. Two parties write that text and

@@ -20,8 +20,8 @@ import (
 // TestProtocol runs the acceptance criteria of docs/spec/formats/oci.md that name the protocol against three replicas of one
 // installation (PostgreSQL, Valkey with Sentinel, S3), every request pinned to a replica by the test. The installation is
 // built once, so the criteria are subtests whose names start with the requirement ID they prove; a criterion that needs a real
-// client (Buildx, Podman, Kubernetes), the conformance suite or the restore drill is not here and is named in
-// docs/projektplan/oci-work-packages.md ("WP13 as built").
+// client (Buildx, Podman, Kubernetes), the conformance suite or the restore drill is not here;
+// docs/developer/oci.md lists where the tests of the format run.
 func TestProtocol(t *testing.T) {
 	p := newProto(t, protoOptions{replicas: 3, setup: pathPeople})
 	for _, c := range []struct {

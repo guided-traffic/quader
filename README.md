@@ -1117,8 +1117,8 @@ fingerprints of `deb.upstreamKeys` with the ones Debian publishes before you tru
 these steps. The local path (upload with `curl` from the client, the index wait, the rendered snippets, `apt-get update --error-on=any`
 and `apt-get install`) runs in the e2e set `deb` on Debian 13 and 12 and Ubuntu 24.04 and 22.04 ([e2e.md](docs/developer/e2e.md#the-debian-tests));
 the virtual repository over a local and a remote member is the integration case `TestR_DEB_025_AptGetUpdateAndInstallThroughAVirtualRepository`
-(`debian:13`, `ubuntu:22.04`) against the counting stub archive. Whether the remote of `deb.debian.org` ran against the real archive is recorded in
-the closing section of [apt-work-packages.md](docs/projektplan/apt-work-packages.md#24--closing).
+(`debian:13`, `ubuntu:22.04`) against the counting stub archive. The read-only check of a remote of `deb.debian.org` against the real archive is `TestDebClosingPublic` of the set `deb-closing`
+([e2e.md](docs/developer/e2e.md#the-debian-tests)); it ran green on kind (`linux/arm64`) at the closing of T-17 (2026-11-09), with 3 upstream requests.
 
 <details>
 <summary>Upgrade, uninstall and the failure scripts</summary>

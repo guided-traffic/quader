@@ -6987,7 +6987,7 @@ wiki level apart from the artifacts, and a user flag `external`.
 and both reach every replica within the existing bounds (R-AUTHZ-036). The Bastion's interface rises to version 2: its handshake
 reports `anonymousReads`, its feed carries the level changes, and a request through it never reads by `internal`
 ([spec/bastion.md](spec/bastion.md) Q-BAS-148 to Q-BAS-150). Every test and fixture that switched anonymous access on or set
-`requireAuthentication` changes ([projektplan/visibility-work-packages.md](projektplan/visibility-work-packages.md)). The wiki
+`requireAuthentication` changes. The wiki
 level cannot hide documentation shipped inside an artifact (H-880 in [security/visibility.md](security/visibility.md)).
 
 **Alternatives considered.** Levels compiled into policy entries for `anonymous` and `authenticated` (two places that can disagree);
@@ -7401,7 +7401,7 @@ transaction of the change. The repository service calls `repository.Hooks.OnUpda
 - `handlerFor` composes them: a request addressed to a remote repository goes to the remote handler, every other to the shared one, and a route with neither answers 501.
 - The routes of a flat repository are the remote class's alone and use `registerHandler`.
 
-**Consequences.** No file of another package changes when the remote class lands, and the route table stays frozen (apt-work-packages.md, 2.5).
+**Consequences.** No file of another package changes when the remote class lands, and the route table stays frozen (T-17's plan, 2.5).
 
 **Alternatives considered.** One shared handler per route registered by two packages (a panic at start-up); a class switch inside the local handlers (edits another package's files).
 

@@ -1,7 +1,6 @@
 # Debian and Ubuntu APT repositories
 
-Status: specification — built (phase T-17, closed; FULL.md block D row "Debian / APT repositories", the work packages and their evidence in
-[apt-work-packages.md](../../projektplan/apt-work-packages.md)): local, remote (modes `pullThrough` and `mirror`) and virtual repositories for
+Status: specification — built (phase T-17, closed; FULL.md block D row "Debian / APT repositories"): local, remote (modes `pullThrough` and `mirror`) and virtual repositories for
 `apt` and `apt-get` on Debian and Ubuntu; what stays is in [Deferred](#deferred) and in the gaps below
 
 This page specifies how Quader serves APT repositories: the format `deb` for local, remote and virtual repositories in the
@@ -1744,7 +1743,7 @@ Every entry of the catalog page, with what this phase does (Q-DEB-2). "Built" me
 ## Changes to other pages
 
 The decisions of this page change other pages. Each change is made by the work package that builds its mechanism, in the same
-change as its code ([apt-work-packages.md](../../projektplan/apt-work-packages.md)), because several blocks are held equal to the
+change as its code, because several blocks are held equal to the
 code by tests (the contract blocks of R-ARCH-008 and R-ARCH-009 by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`). The decision
 IDs of other pages below are reserved for those edits and recorded there by the package that applies them:
 

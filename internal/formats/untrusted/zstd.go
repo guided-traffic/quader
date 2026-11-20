@@ -13,7 +13,7 @@ import (
 // that decompresses to more fails with TooLarge instead of ending quietly (R-DEB-034). The decoder runs on one goroutine and its
 // memory is bounded by the cap.
 //
-// The work package of the package-file libraries extends the checks around it (apt-work-packages.md, WP1).
+// The work package of the package-file libraries extends the checks around it (T-17's plan, WP1).
 func NewZstdReader(r io.Reader, lim Limits) (io.Reader, error) {
 	return NewZstdReaderMax(r, effective(lim).UncompressedBytes)
 }

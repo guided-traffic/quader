@@ -5955,8 +5955,8 @@ the guides) the highest kind of the caller's memberships counts.
   repository settings are planned on T-18's tree (T-21, "Creating and configuring a repository") and are not decided on this page;
   their defects are in the audit.
 
-This page specifies the kinds and the decisions; the screens follow them in the fix waves of the audit
-([ui-audit.md](../projektplan/ui-audit.md)), each change rendered under rule 11 (R-UI-047, `make ui-renders`).
+This page specifies the kinds and the decisions; the screens follow them in the fix waves of the audit of 2026-11-12,
+each change rendered under rule 11 (R-UI-047, `make ui-renders`).
 
 Acceptance criteria:
 
@@ -6568,7 +6568,7 @@ Acceptance criteria:
 ### R-UI-100 · The head of every list: the search by name, Filters and the filters that are set
 Priority: **MVP** · Covers: quader-only
 
-The owner's walk of 2026-11-18 (W-6, [promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend)): a name was three steps
+The owner's walk of 2026-11-18 (W-6): a name was three steps
 away (**Filters**, the section **Name or description**, **Search**), and what was filtered was not visible while the panel was
 closed. Every list screen has one row above its table, built by one component, `<quader-list-head>`
 ([list-head.ts](../../web/src/app/shared/ui/list-head.ts)):
@@ -7012,7 +7012,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 What the development agent saw on the 19 screens of the admin area before the owner's walk (2026-11-18,
-[promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend), "Station of the administrator"): a status whose icon
+"Station of the administrator"): a status whose icon
 stood on one line and its word on the next in every row of the jobs; a replica's name, an action's key and a token's description
 broken while the column beside them was half empty; a UUID broken across two lines where the row named the same person by name;
 **Format** and **Class** 2 px below the other cells of their row; a dashboard card as wide as the page with a label 1,100 px from
@@ -7186,7 +7186,7 @@ Acceptance criteria: the unit tests of R-UI-150 per place; no template of `web/s
 ### R-UI-158 · The security dashboard is the auditor's page, under Your work
 Priority: **MVP** · Covers: quader-only
 
-The owner's walk of 2026-11-18 (W-17, [promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend)): "beim Security
+The owner's walk of 2026-11-18 (W-17): "beim Security
 dashboard handelt es sich nicht um ein Admin Feature, sondern um ein Auditor-Feature. Für Auditoren oder Administratoren gehört es
 unter Your Work als zweite Kategorie "Security Audit", darunter dann Security Dashboard. Sichtbar nur für Instanz-Auditoren und
 Instanz-Administratoren."
@@ -7360,7 +7360,7 @@ Acceptance criteria:
 ### R-UI-166 · The start page is the list of projects
 Priority: **MVP** · Covers: quader-only
 
-The owner's walk of 2026-11-18 (W-20, [promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend)), at the start
+The owner's walk of 2026-11-18 (W-20), at the start
 page as the auditor: "Unter projects macht "recently opened" irgendwie keinen Sinn, sieht nicht aus. […] Unter projects will der
 Nutzer eher "neues" finden oder Artefakte erkunden."
 
@@ -13211,7 +13211,7 @@ has no maximum. The description column keeps wrapping, so it gives room before t
 act. The development agent revisits it if installations produce addresses over about 80 characters and the list needs more
 than the panel in the common case; (b) with a 60 ch field is then the fallback.
 
-**Applied in the spec:** R-UI-065, R-UI-066. Code and tests: [client-address-work-packages.md](../projektplan/client-address-work-packages.md).
+**Applied in the spec:** R-UI-065, R-UI-066. Code and tests: [address-field.ts](../../web/src/app/shared/address-field.ts) and its spec.
 
 ### Q-UI-271 · On a narrow viewport the field scrolls inside itself and keeps the button attached
 
@@ -13412,7 +13412,7 @@ list sideways at 1440 px whatever the address column did.
 | (d) Cut long keys with an ellipsis | One line | Even rows | A name that cannot be read, which R-UI-065 forbids for addresses for the same reason |
 
 **Choice:** (a). The other lists keep their names on one line; whether they follow is item UI-A-29 of the audit
-([ui-audit.md](../projektplan/ui-audit.md)), with their columns.
+of 2026-11-12, with their columns.
 
 **Rationale:** a name is read, an address copied; a wrapped key stays readable and selectable, and the repository list needs the
 room for Q-UI-300. The development agent revisits it with the columns of the other lists.
@@ -13565,7 +13565,7 @@ Context: fix wave 1 of T-21 (the coordinator, 2026-11-12) after the renders of Q
 first column was about 150 px, so the key `debian-internal-packages-for-bookworm-and-trixie` wrapped to four lines and the
 descriptions to three; the cells of one row sat at different heights (the name at the top of its tall cell, format and address
 centred); and the room of the other columns was a number the repository list set for itself (`--quader-address-others`). The other
-lists had none of it (systemic cause 2 of [ui-audit.md](../projektplan/ui-audit.md)).
+lists had none of it (systemic cause 2 of the UI audit of 2026-11-12).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -14546,7 +14546,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) "New <displayName> repository" (chosen) | "New OCI (Docker) repository", "New Ansible Galaxy repository" | One name per format on the tiles, in the lists and in the title | Longer than the owner's "New OCI repository" |
 | (b) A short title name per format in the catalog | "New OCI repository" | The owner's words | A second name of each format to keep |
 
-**Choice:** (a); the owner's question 2 in [repository-setup-work-packages.md](../projektplan/repository-setup-work-packages.md) asks him.
+**Choice:** (a); the owner's question 2 of the plan of T-21b asks him; it is in the list [With the owner](../projektplan/promt.md#with-the-owner).
 
 **Rationale:** a format is called one thing everywhere. The development agent would revisit (b) on the owner's word.
 
@@ -14788,7 +14788,7 @@ Context: the owner typed "test" into the top bar's field **Find a repository** a
 repository list (`/admin/repositories?q=test`, `submitSearch` of [app.ts](../../web/src/app/app.ts)). His rule of 2026-11-12
 ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details-on-demand)): "A search from the main area ends in the main area. Only a
 live suggestion that is marked as a page of the admin area, and shown only to an instance administrator, may lead there." The search
-with live suggestions for every reader is the owner's task T-22 ([promt.md](../projektplan/promt.md#owner-task-of-2026-11-12-for-later-a-search-with-suggestions)),
+with live suggestions for every reader is the owner's task T-22 (R-UI-095 to R-UI-099),
 planned now and built after T-18; this is the stopgap until then. The field was shown only with `repositories:read-config`, on the
 belief that readers had no list across projects; the list `GET /api/v1/repositories` is open to every caller and filtered by `read`
 ([repositories_api.go](../../internal/api/v1/repositories_api.go), `visibleRepositories`; found by the planner of T-22).
@@ -14801,7 +14801,7 @@ belief that readers had no list across projects; the list `GET /api/v1/repositor
 
 **Choice:** (a). The field is shown to every signed-in user (R-UI-002) instead of only to a holder of `repositories:read-config`;
 an anonymous visitor gets it with T-22. The page's address is `/search?q=<text>`, which T-22's results page
-(R-UI-098 in [its plan](../projektplan/search-work-packages.md)) extends by
+(R-UI-098) extends by
 `kind` and tabs. The field offers no suggestions of its own while
 typing (no `datalist`, no list of Quader's): what a browser may offer is its own form history, which `autocomplete="off"` asks it to
 leave out. The start page's package search takes its text from the address (`/projects?find=<text>`), so that the results page can

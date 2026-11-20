@@ -8,7 +8,7 @@
 // (the values of the data port) and, as the work packages land, control (deb822), debfile (the package archive), version (dpkg
 // order) and index (the renderers).
 //
-// This is the skeleton the work packages of T-17 fill (docs/projektplan/apt-work-packages.md, 2.5). It registers, the conformance
+// This is the skeleton the work packages of T-17 fill (docs/spec/formats/debian.md). It registers, the conformance
 // kit runs, the routes of every class are declared (routes.go) and answer 501 deb_not_implemented until a work package registers
 // the handler of a route by its name (handlers.go), and the descriptor, the grammars, the layout, the classification, the error shape
 // and the settings schema are final. A class joins the format when its class_*.go file registers it: the local class in

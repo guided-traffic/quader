@@ -6,7 +6,7 @@ package deb
 // implementation per format ID and refuses to start without it ([Format.Descriptor] names the type).
 //
 // The port is one interface that embeds a group interface per work package, each in a file of its own, so that the packages that
-// build in parallel never edit the same file (apt-work-packages.md, 2.2):
+// build in parallel never edit the same file (T-17's plan, 2.2):
 //
 //	LocalStore    store_local.go    uploads, coordinates, removal, the stored file          internal/formatdata/deb/local_store.go
 //	KeyStore      store_keys.go     signing keys, rotation, the key journal                 internal/formatdata/deb/keys_store.go

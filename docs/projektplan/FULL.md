@@ -45,7 +45,7 @@ Ansible Galaxy goes first because it replaces a system the owner runs today. The
 follow the [roadmap's format order](../coverage/roadmap.md#p1-format-expansion-order).
 
 ### F0 · Ansible Galaxy (replaces the existing Galaxy)
-- 🟢 Spec page [formats/ansible.md](../spec/formats/ansible.md) ([catalog](../features/formats/ansible.md)), the cut into work packages in [ansible-work-packages.md](ansible-work-packages.md)
+- 🟢 Spec page [formats/ansible.md](../spec/formats/ansible.md) ([catalog](../features/formats/ansible.md))
 - 🟢 Local: publish (multipart or raw body, import tasks) and install of collections, immutability and tombstones, reindex, the package screens; integration area `ansiblelocal`. Roles only through remote and virtual repositories (Q-ANS-6)
 - 🟢 Remote: proxy of the public Galaxy: pull-through of collections (paged version lists, the announced digest verified, the identity inside the archive checked) and of roles by translation from allowed hosts, the mirror of the collections the patterns select (Q-ANS-52); integration areas `ansibleremote` and `mirror`. 🟡 The Automation Hub's token exchange (Q-ANS-51), also for the mirror's listing, is tested against the stub realm only (H-842)
 - 🟢 Virtual: one endpoint for internal and public content: merged version lists, first match, publish through the deploy target, versions a path grant hides stay hidden through the virtual repository; integration area `ansiblevirtual`
@@ -187,7 +187,7 @@ all four columns green.
 | Chef | ⚪ | ⚪ | ⚪ | ⚪ |
 | CocoaPods | ⚪ | ⚪ | ⚪ | ⚪ |
 | Bower | ⚪ | ⚪ | ⚪ | ⚪ |
-| Debian / APT repositories (Debian and Ubuntu; apt, apt-get) | 🟢 [formats/debian.md](../spec/formats/debian.md) | 🟢 local, remote (`pullThrough`, `mirror`), virtual ([deb.md](../developer/deb.md)) | 🟢 `deblocal`, `debkeys`, `debremote`, `debvirtual`, the Debian files of `mirror`, `querybudget`, `postgres`, `itempublish`; the conformance kit with no skip | 🟢 set `deb`, CI job `e2e-deb` ([apt-work-packages.md](apt-work-packages.md#24--closing)) |
+| Debian / APT repositories (Debian and Ubuntu; apt, apt-get) | 🟢 [formats/debian.md](../spec/formats/debian.md) | 🟢 local, remote (`pullThrough`, `mirror`), virtual ([deb.md](../developer/deb.md)) | 🟢 `deblocal`, `debkeys`, `debremote`, `debvirtual`, the Debian files of `mirror`, `querybudget`, `postgres`, `itempublish`; the conformance kit with no skip | 🟢 set `deb`, CI job `e2e-deb` ([e2e.md](../developer/e2e.md#the-debian-tests)) |
 | RPM | ⚪ | ⚪ | ⚪ | ⚪ |
 | Alpine Linux | ⚪ | ⚪ | ⚪ | ⚪ |
 | Opkg | ⚪ | ⚪ | ⚪ | ⚪ |
@@ -209,7 +209,7 @@ all four columns green.
   restore that withholds keys instead of reviving or erasing them; remotes that pass upstream releases through, verify them against
   `deb.upstreamKeys` and never store an older one; the mirror of named suites, components and architectures; virtual repositories that
   merge verified member releases and re-sign; the screens, the setup and the guides; clients Debian 13 and 12, Ubuntu 24.04 and 22.04.
-  Evidence: [apt-work-packages.md, Closing](apt-work-packages.md#24--closing). Stays: local source packages, snapshots, debug-symbol and
+  Evidence: [deb.md](../developer/deb.md#what-is-built-and-what-is-not). Stays: local source packages, snapshots, debug-symbol and
   installer packages, `dput`, translations and `Contents` for local and virtual repositories, mirrors of flat archives, `Valid-Until` on
   Quader's own releases, keys in a key service, Debian vulnerability matching, copy and move, exposure rules, the Bastion and nested virtual
   repositories (debian.md, Deferred); the nightly set `deb-long`, the Debian pass beside clients and under a drain in the e2e sets, a build

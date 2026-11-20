@@ -1,12 +1,10 @@
 # Ansible Galaxy repositories
 
-Status: specification, building (block B, unit F0 of [FULL.md](../../projektplan/FULL.md); the work packages are in
-[ansible-work-packages.md](../../projektplan/ansible-work-packages.md)). Built: the format skeleton and the local class (publish, import
+Status: specification, building (block B, unit F0 of [FULL.md](../../projektplan/FULL.md)). Built: the format skeleton and the local class (publish, import
 tasks, the three read operations, tombstones, the reindex, the package screens). Not built yet: the remote class, the virtual class and
 the client surface. It is the first registry after the beta because it replaces a Galaxy system the owner runs today.
 The documentation of a collection version (the Documentation and Contents tabs, R-ANS-033 to R-ANS-046, owner task T-19) is built in the backend (the generator, the rows, the route
-`docs-blob/` for the three classes, the three operations, the fetch job and the counting stub); the screens and the end-to-end rows are the work of builder B2. The plan is
-[galaxy-docs-work-packages.md](../../projektplan/galaxy-docs-work-packages.md).
+`docs-blob/` for the three classes, the three operations, the fetch job and the counting stub); the screens and the end-to-end rows are the work of builder B2.
 
 This page specifies how Quader serves Ansible content to `ansible-galaxy`: the format `ansible` for local, remote and virtual
 repositories; the subset of the Galaxy API that `ansible-galaxy collection install`, `collection publish`, `role install` and a
@@ -1694,8 +1692,8 @@ Every entry of the catalog page, with what is built, what stays and what is not 
 
 ## Changes to other pages
 
-Each change is made by the work package that builds its mechanism, in the same change as its code
-([ansible-work-packages.md](../../projektplan/ansible-work-packages.md)), because several blocks are held equal to the code by tests.
+Each change is made by the work package that builds its mechanism, in the same change as its code,
+because several blocks are held equal to the code by tests.
 
 | Page | Change | Decision |
 |---|---|---|

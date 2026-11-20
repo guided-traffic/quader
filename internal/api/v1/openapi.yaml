@@ -13501,7 +13501,7 @@ paths:
   #
   # The management operations of the Debian (APT) format (R-DEB-009, R-DEB-014, R-DEB-015, R-DEB-017, R-DEB-032) and the reindex
   # of a repository's derived metadata (R-REPO-016). The operations answer 501 `deb_not_implemented` until the work package that
-  # builds them lands (apt-work-packages.md).
+  # builds them lands (T-17's plan).
   /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys:
     parameters:
       - $ref: "#/components/parameters/ProjectKey"

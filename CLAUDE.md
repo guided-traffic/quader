@@ -50,7 +50,7 @@ immer fetter werden und mehr und mehr Daten schieben. Wir schaffen das einfach v
 
 ## Product: simple by default, details on demand
 
-By the owner's decisions of 2026-11-12 (T-21 in [promt.md](docs/projektplan/promt.md#owner-task-of-2026-11-12)). Quader is for people who
+By the owner's decisions of 2026-11-12 (T-21, [R-UI-067](docs/spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator)). Quader is for people who
 want to keep and fetch their artifacts, not for people who want to configure a repository manager. "Keep it simple, for every
 repository type, but allow detailed settings."
 

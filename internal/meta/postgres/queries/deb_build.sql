@@ -1,4 +1,4 @@
--- Statements of the Debian index builder (R-DEB-010, R-DEB-012, R-DEB-014, apt-work-packages.md WP4). The local class's rows are
+-- Statements of the Debian index builder (R-DEB-010, R-DEB-012, R-DEB-014, T-17 WP4). The local class's rows are
 -- queries/deb_local.sql, the signing keys queries/deb_keys.sql.
 
 -- name: DebSuiteStates :many

@@ -10190,7 +10190,7 @@ may be xz (R-DEB-023). R-ARCH-028 gives every untrusted input one bounded reader
 **Choice:** (a).
 
 **Rationale:** the readers are the only importers of the xz module, so a bound cannot be forgotten. `NewAr` is declared and answers
-`not_implemented` until the package-file libraries are built (apt-work-packages.md, WP1); the xz and Zstandard readers are built.
+`not_implemented` until the package-file libraries are built (T-17's plan, WP1); the xz and Zstandard readers are built.
 
 **Applied in the spec:** R-ARCH-028 (the readers), R-DEB-034. Code: `internal/formats/untrusted/{ar,xz,zstd}.go`.
 

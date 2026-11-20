@@ -4,8 +4,7 @@ The documentation of a collection version (the README, the Markdown files of `do
 data that Quader generates for a local repository, keeps for a remote one and reads from the winning member for a virtual one. The
 requirements are [R-ANS-033 to R-ANS-046](../spec/formats/ansible.md), the screens are R-UI-060 to R-UI-064
 ([api-and-ui.md](../spec/api-and-ui.md)), the decisions [ADR-196](../decisions.md) and [ADR-197](../decisions.md), and the threats
-[docs/security/ansible-documentation.md](../security/ansible-documentation.md). The work-package cut is
-[galaxy-docs-work-packages.md](../projektplan/galaxy-docs-work-packages.md).
+[docs/security/ansible-documentation.md](../security/ansible-documentation.md).
 
 ## What is built and what is not
 

@@ -168,7 +168,7 @@ type DebVirtualSuiteRowsRow struct {
 	Inputs     json.RawMessage
 }
 
-// Statements of the build of a virtual Debian repository's indexes (R-DEB-025, R-DEB-026, apt-work-packages.md WP8). The suite rows and the
+// Statements of the build of a virtual Debian repository's indexes (R-DEB-025, R-DEB-026, T-17 WP8). The suite rows and the
 // generations are written by deb_build.sql; the remote members' rows are deb_remote.sql.
 // The suites a virtual repository has, with the inputs its last build compared and the time of the check.
 func (q *Queries) DebVirtualSuiteRows(ctx context.Context, repoID int64) ([]DebVirtualSuiteRowsRow, error) {

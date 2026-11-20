@@ -294,8 +294,7 @@ of each state to render (an empty name is the screen as it opens). `UI_RENDERS_W
 `QUADER_` variable, and the backend that `make ui-renders` starts inherits the environment.
 
 **How to look.** Open the contact sheet; for each changed screen open the light and the dark picture at 1440 px and the one at
-390 px, and go through the [checklist](ui-style-guide.md#checklist). The audit of every screen of T-21 is
-[ui-audit.md](../projektplan/ui-audit.md).
+390 px, and go through the [checklist](ui-style-guide.md#checklist).
 
 ## How the build reaches the binary
 

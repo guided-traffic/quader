@@ -13,7 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
-// DebServices are the services of the operations of the Debian (APT) format that the management API serves (apt-work-packages.md).
+// DebServices are the services of the operations of the Debian (APT) format that the management API serves (T-17's plan).
 // The composition root fills them (internal/app/wire_deb_api.go); a nil member answers its operation with 503.
 type DebServices struct {
 	// Coordinates changes the coordinates of a stored package file.

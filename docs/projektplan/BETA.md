@@ -1126,7 +1126,7 @@ Details: [roadmap: owner walkthrough](../coverage/roadmap.md#owner-walkthrough)
   - ⚪ Backup by the CronJob and restore into an empty namespace
   - 🟡 The frontend, screen by screen as the plain user, the power user and the administrator (owner, started 2026-11-18): the
     objections are recorded as W-1 and following in
-    [promt.md](promt.md#owner-walk-of-2026-11-18-the-frontend); nothing of them is built yet
+    [promt.md](promt.md#owner-walk-of-2026-11-18-the-frontend); W-1 to W-26 are built, what is open of them is there
 - ⚪ Objections from the walkthrough worked off
   - 🟢 Every repository belongs to exactly one project and none is shared (owner, 2026-11-06,
     [Q-AUTHZ-206](../spec/authorization.md#q-authz-206--every-repository-belongs-to-exactly-one-project)); a

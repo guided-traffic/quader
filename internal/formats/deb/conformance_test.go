@@ -105,7 +105,7 @@ func conformanceChanges() []formattest.ChangeCase {
 	}
 }
 
-// conformance is the fixture of the kit over the format with the local class built (apt-work-packages.md, WP3): the index and key routes
+// conformance is the fixture of the kit over the format with the local class built (T-17's plan, WP3): the index and key routes
 // answer 501 until the work packages of the index builder and of the keys build them, so those routes are listed as not built, each with
 // its reason, and the work package that builds the operation removes the entry (the kit refuses a skip the format contradicts).
 func conformance() formattest.Fixture {

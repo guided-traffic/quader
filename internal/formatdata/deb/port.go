@@ -7,7 +7,7 @@
 // 00062_deb_remote and registers them with the backup (tables_deb.go), so that the package must be linked wherever the migrated
 // schema is checked against the registry (cmd/quader/registry.go).
 //
-// The port is composed of one group per work package (apt-work-packages.md, 2.2), each in a file of its own: local_store.go,
+// The port is composed of one group per work package (T-17's plan, 2.2), each in a file of its own: local_store.go,
 // keys_store.go, build_store.go, remote_store.go, mirror_store.go, virtual_store.go, view_store.go and journal_store.go. A group that
 // is not built yet answers not_implemented, so nothing is silently empty; the package that builds a group replaces its file and no
 // other. The job handlers are build.go (deb-index), remote_parse.go (deb-remote-parse) and refresh.go (deb-index-refresh).

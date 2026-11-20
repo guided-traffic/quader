@@ -28,7 +28,7 @@ type GeneratedFile struct {
 
 // Publisher is the publication port of the item store (Q-STOR-182, ADR-170): the one way generated items are written. It is
 // implemented here for both classes; a virtual repository accepts generated items from this port and from nothing else (the rule of the
-// virtual class, apt-work-packages.md WP8, is checked by the caller that publishes into a virtual repository: this port writes to the
+// virtual class, T-17 WP8, is checked by the caller that publishes into a virtual repository: this port writes to the
 // repository it is given).
 type Publisher interface {
 	// Publish stores every file's blob first, outside any transaction (R-STOR-005), then runs one transaction that upserts a

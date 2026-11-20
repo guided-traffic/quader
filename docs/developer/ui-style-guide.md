@@ -21,8 +21,8 @@ fill it, is worse than a list that is shorter than the reference's ([Q-UI-214](.
 
 ## Simple by default, details on demand
 
-The owner's product rules of 2026-11-12 ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details-on-demand), T-21 in
-[promt.md](../projektplan/promt.md#owner-task-of-2026-11-12)) come before every other rule of this page that is about what a
+The owner's product rules of 2026-11-12 ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details-on-demand), T-21)
+come before every other rule of this page that is about what a
 screen shows. Quader is for people who keep and fetch their artifacts, not for people who configure a repository manager; the
 three kinds of user they serve are [R-UI-067](../spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator).
 

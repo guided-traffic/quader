@@ -506,7 +506,7 @@ type DebSuiteStatesRow struct {
 	SignedBy    []string
 }
 
-// Statements of the Debian index builder (R-DEB-010, R-DEB-012, R-DEB-014, apt-work-packages.md WP4). The local class's rows are
+// Statements of the Debian index builder (R-DEB-010, R-DEB-012, R-DEB-014, T-17 WP4). The local class's rows are
 // queries/deb_local.sql, the signing keys queries/deb_keys.sql.
 // Every suite of a repository with the fingerprints of the keys that signed its current generation.
 func (q *Queries) DebSuiteStates(ctx context.Context, repoID int64) ([]DebSuiteStatesRow, error) {
