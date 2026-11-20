@@ -104,6 +104,11 @@ func TestR_API_016_ChallengedByLevels(t *testing.T) {
 		name, path string
 		want       bool
 	}{
+		{"Q-OCI-225 a push into public artifacts without a credential answers the challenge", "POST /v2/main/open/app/blobs/uploads/", true},
+		{"Q-OCI-225 a manifest PUT into public artifacts without a credential answers the challenge", "PUT /v2/main/open/app/manifests/1", true},
+		{"Q-OCI-225 a HEAD of a blob in public artifacts is a read and is charged", "HEAD /v2/main/open/app/blobs/sha256:00", false},
+		{"Q-OCI-225 a write into a repository the index does not hold is charged", "POST /v2/main/nothing/app/blobs/uploads/", false},
+		{"Q-OCI-225 a POST of another format can be a read and is charged", "POST /api/npm/main/open/-/npm/v1/security/advisories/bulk", false},
 		{"a repository with public artifacts is read without a credential", "/api/nuget/main/open/v3/index.json", false},
 		{"internal artifacts answer the challenge", "/api/nuget/main/staff/v3/flatcontainer/acme.widgets/index.json", true},
 		{"private artifacts answer the challenge", "/api/npm/main/team/left-pad", true},
@@ -123,7 +128,11 @@ func TestR_API_016_ChallengedByLevels(t *testing.T) {
 		{"the registry's catalog is charged", "/v2/_catalog", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := challenged(httptest.NewRequest("GET", tc.path, nil)); got != tc.want {
+			method, path := "GET", tc.path
+			if m, p, ok := strings.Cut(tc.path, " "); ok {
+				method, path = m, p
+			}
+			if got := challenged(httptest.NewRequest(method, path, nil)); got != tc.want {
 				t.Fatalf("Challenged(%s) = %v, want %v", tc.path, got, tc.want)
 			}
 		})

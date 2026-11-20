@@ -239,7 +239,9 @@ Priority: **MVP** · Covers: BEYOND-030
 - **Not counted as a request**: a request without a credential that the decision point is certain to answer with the challenge
   (the rule of Q-API-290 in [api-and-ui.md](api-and-ui.md): a NuGet client's first attempt without its credentials; and by
   Q-API-357 the same on the registry's paths: the version check `/v2/` and a registry client's first attempt at a repository
-  whose artifacts are not `public`);
+  whose artifacts are not `public`; and a write without a credential on the registry's paths at any repository the index holds,
+  public or not, [formats/oci.md](formats/oci.md#q-oci-225--a-push-without-a-credential-into-public-artifacts-is-answered-with-the-challenge-and-is-no-request)
+  Q-OCI-225);
   a `OPTIONS` preflight; a request refused before stage 7 (`421`, `503 server_busy`, the endpoint's class of R-EP-015), except a
   failed credential, which R-LIM-003 records.
 - **The management API** (`/api/v1/…`), `/auth/…`, `/ui/…` and the host-root exchange routes are not protocol paths. They keep the

@@ -3652,6 +3652,30 @@ failed pull. With the upstream down (its connections cut) the e2e row measured `
 
 **Applied in the spec:** R-OCI-024 (as built); `TestR_OCI_024_ReferrersOfAnUpstreamThatFailedAre404`, `TestR_OCI_024_TheReferrersTagOfAnUpstreamThatFailedIs404`, `TestOCIRemoteMirror` ([oci_remote_test.go](../../../test/e2e/oci_remote_test.go)).
 
+### Q-OCI-225 · A push without a credential into public artifacts is answered with the challenge and is no request
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. A defect of
+the download limits' first step, found on the kind cluster on 2026-11-20 (the set `oci`); the sibling of F-161.
+
+Context: docker pushes into a repository whose artifacts are `public` without its credential first: it asks with a `HEAD` for each
+blob whether it is there (404), then starts each upload with a `POST`, which is answered 401 with the challenge, and only then fetches a
+token. The rule that a request certain to be answered with the challenge is no request of the address (Q-API-357,
+[usage-and-limits.md](../usage-and-limits.md) R-LIM-005) read the level of the repository alone, so at public artifacts the `POST`s were
+charged to the pushing machine's address: a push of four blobs spent eight of the anonymous budget, and a build farm behind one address
+pushing large images meets 429 at the start of an upload, where its clients expect the challenge.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A write without a credential on the registry's paths, at a repository the grant index holds, is answered with the challenge whatever the level and is not counted; the `HEAD`s stay reads (chosen) | `ChallengedByLevels` in [ratelimit.go](../../../internal/api/v1/ratelimit.go) | No route of the registry admits a write without a credential (the anonymous caller holds no grant, R-AUTH-037); a push costs the address only its reads | The `HEAD`s of a push still count against the address |
+| (b) Every unsafe request without a credential on every protocol path | One rule for every format | Simpler | npm's audit is a `POST` that reads, and is answered to an anonymous caller of a public repository |
+| (c) As built | — | — | The defect above |
+
+**Choice:** (a). **Rationale:** the rule of Q-API-357 is "a request certain to be answered with the challenge", and a registry write
+without a credential is certain to be, at every level. Revisit if a route of the registry ever admits a write without a credential.
+
+**Applied in the spec:** [usage-and-limits.md](../usage-and-limits.md) R-LIM-005. Tests: `TestR_API_016_ChallengedByLevels` in
+[ratelimit_test.go](../../../internal/api/v1/ratelimit_test.go); on the cluster `TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget`.
+
 ## What this does not cover
 
 ### H-579 · A holder of the stored-secret key ring can mint registry tokens

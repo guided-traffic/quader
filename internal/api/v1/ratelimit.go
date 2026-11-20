@@ -91,12 +91,18 @@ type LevelReader interface {
 // /api/<format>/ one. Charged to the address, a build farm behind one address would get 429 where its clients expect the
 // challenge, and no client signs in after a 429. The token endpoint and the catalog are not part of this: they have limits
 // of their own or list what the caller may see.
+//
+// A push is the same case at a repository of public artifacts too (Q-OCI-225): a registry client sends its writes there
+// without a credential first, a HEAD of each blob and then the upload's POST, and no route of the registry admits a write
+// without one. The HEADs are reads and are charged; a write is answered with the challenge whatever the level. A POST of
+// another format can be a read (npm's audit), so this holds for the registry's paths alone.
 func ChallengedByLevels(index func() LevelReader) func(r *http.Request) bool {
 	return func(r *http.Request) bool {
 		path := r.URL.EscapedPath()
 		if path == "/v2/" || path == "/v2" {
 			return true
 		}
+		registry := false
 		a, ok := qname.ParseAddress(path)
 		if ok && a.Family != qname.FamilyAPI {
 			return false
@@ -105,13 +111,20 @@ func ChallengedByLevels(index func() LevelReader) func(r *http.Request) bool {
 			if a, ok = qname.ParseRegistryAddress(path); !ok {
 				return false
 			}
+			registry = true
 		}
 		idx := index()
 		if idx == nil {
 			return false
 		}
 		artifacts, _, known := idx.Levels(a.Repo)
-		return known && artifacts != authz.LevelPublic
+		if !known {
+			return false
+		}
+		if registry && r.Method != http.MethodGet && r.Method != http.MethodHead {
+			return true
+		}
+		return artifacts != authz.LevelPublic
 	}
 }
 
