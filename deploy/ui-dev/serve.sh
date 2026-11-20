@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds quader and the profile's sign-in provider (test/devidp) from the working tree, applies the migrations,
-# starts the provider in the background and runs one replica of role all in the foreground against the services of
-# deploy/ui-dev/up.sh. Ctrl-C stops both; run it again after a change of the Go code.
+# Writes quader.yaml again (config.sh), builds quader and the profile's sign-in provider (test/devidp) from the working tree,
+# applies the migrations, starts the provider in the background and runs one replica of role all in the foreground against
+# the services of deploy/ui-dev/up.sh. Ctrl-C stops both; run it again after a change of the Go code.
 # docs/developer/web-ui.md#local-ui-development
 set -euo pipefail
 
@@ -9,7 +9,9 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$root"
 
 state="$root/.dev/ui-dev"
-[ -f "$state/quader.yaml" ] || { echo "$state/quader.yaml is missing: run 'make ui-dev-up' first" >&2; exit 1; }
+# quader.yaml is written again from the state directory of up.sh, so a change of the profile's configuration reaches it at this
+# start; config.sh creates no certificate, secret or container and fails when up.sh has not run.
+deploy/ui-dev/config.sh "$state"
 
 bin="$state/bin/quader"
 idp="$state/bin/devidp"

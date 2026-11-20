@@ -102,7 +102,7 @@ ui-dev-up: ## PostgreSQL, Valkey and SeaweedFS (TLS) for UI work; writes .dev/ui
 	deploy/ui-dev/up.sh
 
 .PHONY: ui-dev-backend
-ui-dev-backend: ## Build quader, migrate, run one replica of role all on https://127.0.0.1:19080 in the foreground (deploy/ui-dev/serve.sh)
+ui-dev-backend: ## Write .dev/ui-dev/quader.yaml again, build quader, migrate, run one replica of role all on https://127.0.0.1:19080 in the foreground (deploy/ui-dev/serve.sh)
 	deploy/ui-dev/serve.sh
 
 .PHONY: ui-dev-web

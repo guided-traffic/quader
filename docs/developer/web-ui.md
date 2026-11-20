@@ -86,7 +86,7 @@ flowchart LR
 ```shell
 make web-ci            # once, and after a change of web/package-lock.json
 make ui-dev-up         # the containers, the buckets, .dev/ui-dev (certificates, secrets, key ring, quader.yaml)
-make ui-dev-backend    # terminal 1: builds quader, migrates, runs it in the foreground; prints the sign-in
+make ui-dev-backend    # terminal 1: writes quader.yaml again, builds quader, migrates, runs it in the foreground; prints the sign-in
 make ui-dev-web        # terminal 2: https://localhost:4200/ui/
 make ui-dev-down       # stops the containers, keeps the data; PURGE=1 removes the data and .dev/ui-dev
 ```
@@ -118,9 +118,9 @@ through the dev server works only against a Quader whose base URL is `https://lo
 | PostgreSQL, Valkey (standalone), SeaweedFS | containers `quader-ui-dev-*`, volumes `quader-ui-dev_*`; images `INTEGRATION_POSTGRES_IMAGE`, `VALKEY_91_IMAGE`, `SEAWEEDFS_IMAGE` of [tools/versions.env](../../tools/versions.env) | [compose.yaml](../../deploy/ui-dev/compose.yaml), [up.sh](../../deploy/ui-dev/up.sh) |
 | Certificates: a CA of its own, one certificate per service with the SANs `localhost` and `127.0.0.1` | `.dev/ui-dev/certs` | [test/integration/certs.sh](../../test/integration/certs.sh), called by `up.sh` |
 | Secret files, the key ring (`dev`), the break-glass password | `.dev/ui-dev/secrets`, written once | `up.sh` |
-| Quader's configuration | `.dev/ui-dev/quader.yaml`, rewritten by every `up.sh` | `up.sh` |
+| Quader's configuration | `.dev/ui-dev/quader.yaml`, rewritten from the paths of the state directory by every `up.sh` and every `serve.sh`, so a change of the profile's configuration reaches an existing `.dev/ui-dev` at the next `make ui-dev-backend`; it creates no certificate, secret or container, and fails naming the file when one `up.sh` writes is missing | [config.sh](../../deploy/ui-dev/config.sh), run by `up.sh` and `serve.sh` |
 | Quader binary | `.dev/ui-dev/bin/quader` | [serve.sh](../../deploy/ui-dev/serve.sh) |
-| The sign-in provider `ui-dev`: `https://localhost:19090`, the loopback address only, the certificate `server.crt` of the profile; the client secret | `.dev/ui-dev/bin/devidp`, `.dev/ui-dev/secrets/idp-client-secret` | `serve.sh` starts and stops it with Quader; `up.sh` writes the secret and the provider into `quader.yaml` |
+| The sign-in provider `ui-dev`: `https://localhost:19090`, the loopback address only, the certificate `server.crt` of the profile; the client secret | `.dev/ui-dev/bin/devidp`, `.dev/ui-dev/secrets/idp-client-secret` | `serve.sh` starts and stops it with Quader; `up.sh` writes the secret, `config.sh` the provider into `quader.yaml` |
 
 **Where it differs from an installation**, so a finding is checked in the embedded build before it is called a defect:
 
@@ -137,6 +137,12 @@ through the dev server works only against a Quader whose base URL is `https://lo
 - The outbound clients trust the profile's CA and may reach the loopback addresses (`proxy.outbound.tls.ca_files`,
   `proxy.outbound.address_policy.allow_cidrs`), so that Quader reaches the provider; a remote repository of this profile can
   therefore reach a service on this machine, which an installation's default egress policy refuses (R-REPO-038).
+- One certificate for every link of the image scanning. The role `all` calls its own scanner and pulls from its own scan listener
+  on loopback ports; both ends present `server.crt` and verify the other against the profile's CA, named in
+  `server.internal_tls.ca_file` (R-ARCH-038; a TLS start refuses to begin without it), under `127.0.0.1`, which `server.crt` lists
+  with the usages server and client authentication. No name of a kind of pod is required (empty in the role `all`, Q-ARCH-553), so
+  any certificate of the profile's CA is admitted, `postgres.crt` and `s3.crt` too; an installation admits only the worker at the
+  scanner and only the scanners at the scan listener ([helm-chart.md](helm-chart.md#the-scanner)).
 - No advisory source reaches the network: KEV is off, and OSV reads only npm from the mirror repository `platform/advisory-mirror` (R-VULN-005), which the render seed fills with records of its own ([Renders of every screen](#renders-of-every-screen)); until then a sync run fails for the missing repository and the vulnerability screens stay empty.
 - The `read` class of the API's rate limits admits 800 requests per 4 s instead of 200 (`api.rate_limits.read`): `make
   ui-renders` opens three pages of one user at a time, and a full run reached 197 reads of one user in 4 s, at the default's

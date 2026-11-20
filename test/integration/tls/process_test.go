@@ -26,8 +26,11 @@ func TestListenerRotation(t *testing.T) {
 	ca := tlstest.NewCA(t, "quader listener ca")
 	certFile, keyFile := ca.Issue(t, tlstest.Options{Serial: big.NewInt(1001)}).Files(t, in.dir, "tls")
 	const reload = time.Second
+	// With TLS the links of the image scanning need their trust anchor (R-ARCH-038); the role all's links run on loopback
+	// with the same pair, so the listener's CA is theirs.
 	r := in.serve(t, "all", certificatesEnv("QUADER_SERVER_TLS_CERTIFICATES", certFile, keyFile),
-		"QUADER_SERVER_TLS_RELOAD_INTERVAL="+reload.String())
+		"QUADER_SERVER_TLS_RELOAD_INTERVAL="+reload.String(),
+		"QUADER_SERVER_INTERNAL_TLS_CA_FILE="+write(t, in.dir, "internal-ca.crt", string(ca.PEM)))
 	fresh := httpsClient(ca, false)
 	r.waitReady(t, fresh, 60*time.Second)
 	pid := r.cmd.Process.Pid

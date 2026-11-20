@@ -486,7 +486,7 @@ One new file and one line in the list.
 `worker` side by side against the integration stack, then SIGTERM under load. Run it with
 `set -a; . .dev/integration/env; set +a; go test -tags integration -race ./test/integration/server/...`.
 [test/integration/tls](../../test/integration/tls) builds the binary as well and runs `serve --role all` with TLS on both
-listeners, rotating the certificate under load (E0.15 at process level, [tls.md](tls.md#how-to-test)).
+listeners and the listener's CA as `server.internal_tls.ca_file`, which a TLS start needs for its links, rotating the certificate under load (E0.15 at process level, [tls.md](tls.md#how-to-test)).
 [test/integration/overload](../../test/integration/overload) seeds an installation through `testenv.NewStack` and runs the binary
 (`Stack.Environ`) with `QUADER_RUNTIME_MEMORY_LIMIT_BYTES` of 256 MiB: 1,000 downloads whose clients read nothing, the memory
 guard's slots and `503`s, and the memory the runtime holds, sampled from `/metrics` ([Stage 4 and the memory guard](#stage-4-and-the-memory-guard)).
