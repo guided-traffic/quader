@@ -1,0 +1,98 @@
+// The two pages of Upstream registries (R-UI-187, R-UI-188). Only tokens; the list is the shared data table, the page of one registry
+// the style guide's settings page.
+
+:host {
+  display: block;
+}
+
+// Why Switch all on is disabled, under the header, as a page's other notes about its actions stand.
+.all-on {
+  margin: calc(-1 * var(--quader-space-2)) 0 var(--quader-space-4);
+}
+
+// A group's head: the format's icon and its name across the row, at the weight of a row's name, on the row's line.
+tr.group-row > th {
+  padding-block-start: var(--quader-space-5);
+  font-weight: 600;
+}
+
+tr.group-row .format-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-2);
+  margin-block: calc((1rem - 1.25rem) / 2);
+  white-space: nowrap;
+  vertical-align: top;
+
+  quader-format-icon {
+    font-size: 1.25rem;
+  }
+}
+
+// The switch, its word and a state's badge on one line; nothing in it breaks.
+td.state-cell {
+  white-space: nowrap;
+
+  > .badge {
+    margin-inline-start: var(--quader-space-2);
+  }
+}
+
+// The level: its icon, the select as wide as its longest option, and under them a refusal or the private row's note.
+td.level-cell {
+  white-space: nowrap;
+
+  > quader-visibility-icon {
+    margin-inline-end: var(--quader-space-1);
+  }
+
+  // A 32 px control centred on the row's line by the line rule (R-UI-175); its icon is centred on the select inside it. Apart, the
+  // icon stood on the line's top and the select on its middle, 8 px apart in a stacked row.
+  > .level-control {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--quader-space-1);
+    vertical-align: top;
+    margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2);
+  }
+
+  .level-select {
+    inline-size: auto;
+  }
+
+  > .secondary,
+  > .field-error {
+    display: block;
+    max-inline-size: 18rem;
+    margin-block-start: var(--quader-space-2);
+    white-space: normal;
+  }
+}
+
+.field-error {
+  color: var(--quader-status-bad);
+  font: var(--quader-type-body-small);
+}
+
+.word {
+  white-space: nowrap;
+}
+
+// The second table, the system repositories (Q-UI-834).
+.system-heading {
+  margin: var(--quader-space-8) 0 var(--quader-space-1);
+  font-size: var(--quader-heading-3);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.system-hint {
+  margin: 0 0 var(--quader-space-4);
+}
+
+// A stacked row holds a switch and a select, 24 and 32 px on a line of 16: its lines keep the room the controls reach past their
+// line, so the select does not touch the badge above it (the rows at 390 and 1,024 px). The rows are this page's: no `tbody` in the
+// selector, which is the data table's and out of reach of this stylesheet.
+quader-data-table.registries.stacked tr {
+  row-gap: var(--quader-space-3);
+}

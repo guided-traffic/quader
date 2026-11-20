@@ -23,12 +23,21 @@
       }
     </div>
     <!-- The picture of the flow (Q-UI-800): the machine, the token, the repository; from about 1,200 px. -->
-    <quader-setup-flow-art art [format]="formatName()" [publish]="offerPublish()" [token]="!anonymous()" />
+    @if (!systemRepository()) {
+      <quader-setup-flow-art art [format]="formatName()" [publish]="offerPublish()" [token]="!anonymous()" />
+    }
   </quader-page-header>
 
   @if (loadFailure(); as f) {
     <quader-error-notice [error]="f" (retry)="setupAnswer.reload(); guideAnswer.reload()" />
   }
+
+  <!-- scanner-trivy: Quader's image scanning reads through it, no client does (R-UI-190, R-REPO-070). -->
+  @if (systemRepository()) {
+    <p class="system-note" data-testid="setup-system" i18n="@@setup.system">
+      Quader's image scanning reads its database through this repository. Clients cannot use it.
+    </p>
+  } @else {
 
   @if (disabled()) {
     <p class="banner-warning" role="note">
@@ -291,5 +300,6 @@
       <h2 id="guide-heading" i18n="@@setup.guide.heading">Guide</h2>
       <quader-guide-view [sections]="g.sections" />
     </section>
+  }
   }
 }

@@ -1,3 +1,5 @@
+@use 'icons';
+
 // The shared look of list screens: the head of a list (search, Filters, chips), the drawer's filters, the data table and the
 // cells every list shares. Global on purpose: the table frame belongs to <quader-data-table>, but its rows are projected from the
 // screens, so scoped component styles would not reach them. Colours and lengths come from the tokens only (R-UI-044).
@@ -282,6 +284,18 @@
 
   &.medium::before {
     font-size: 0.875rem;
+  }
+
+  // The built-in project `upstream` (the owner's Q-UI-837): an arrow pointing up of the icon font where another project has its
+  // initial, in the letter's colour, a little larger than the letter so that its stroke reads as the letter's.
+  &.upstream::before {
+    @include icons.project-arrow;
+
+    font-size: 0.875rem;
+  }
+
+  &.medium.upstream::before {
+    font-size: 1.125rem;
   }
 }
 

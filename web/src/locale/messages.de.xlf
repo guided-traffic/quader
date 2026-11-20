@@ -5962,15 +5962,6 @@
         <target>allen davon</target>
       </segment>
     </unit>
-    <unit id="virtual.intro">
-      <notes>
-        <note category="location">src/app/features/repositories/virtual-members.html:3,7</note>
-      </notes>
-      <segment>
-        <source> A virtual repository asks its members in this order and serves the first answer. It offers the local and remote repositories of its own project and format. </source>
-        <target>Ein virtuelles Repository fragt seine Mitglieder in dieser Reihenfolge und liefert die erste Antwort. Es bietet die lokalen und Remote-Repositories seines eigenen Projekts und Formats an.</target>
-      </segment>
-    </unit>
     <unit id="vuln.grade.text.eosl">
       <notes>
         <note category="location">src/app/shared/vulnerability/grade-words.ts:91</note>
@@ -24246,15 +24237,6 @@
         <target>Break-Glass-Anmeldung</target>
       </segment>
     </unit>
-    <unit id="repo.create.members-hint">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:147,149</note>
-      </notes>
-      <segment>
-        <source> The repositories this one serves from, asked in this order. Only local and remote repositories of this project and format are offered. </source>
-        <target>Die Repositorys, aus denen dieses ausliefert, in dieser Reihenfolge gefragt. Angeboten werden nur lokale und Remote-Repositorys dieses Projekts und Formats.</target>
-      </segment>
-    </unit>
     <unit id="policy-diff.added">
       <notes>
         <note category="location">src/app/features/permissions/policy-diff-dialog.ts:30,32</note>
@@ -38810,6 +38792,1190 @@
       <segment>
         <source>Your token goes here</source>
         <target>Hier steht Ihr Token</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.heading">
+      <notes>
+        <note category="location">src/app/app.routes.ts:115</note>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:207</note>
+        <note category="location">src/app/features/upstream/upstream.routes.ts:7</note>
+      </notes>
+      <segment>
+        <source>Upstream registries</source>
+        <target>Upstream-Registrys</target>
+      </segment>
+    </unit>
+    <unit id="nav.upstream">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:112</note>
+      </notes>
+      <segment>
+        <source>Upstream registries</source>
+        <target>Upstream-Registrys</target>
+      </segment>
+    </unit>
+    <unit id="projects.built-in">
+      <notes>
+        <note category="location">src/app/features/projects/project-list.ts:81,83</note>
+        <note category="location">src/app/features/projects/projects-home.ts:64,66</note>
+      </notes>
+      <segment>
+        <source>Built-in</source>
+        <target>Integriert</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.picker.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/member-picker.ts:55,57</note>
+      </notes>
+      <segment>
+        <source>Upstream registries</source>
+        <target>Upstream-Registrys</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.managed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:124</note>
+      </notes>
+      <segment>
+        <source>Managed in <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a [routerLink]=&quot;adminLink()&quot;&gt;" dispEnd="&lt;/a&gt;">Admin area › Upstream registries</pc>.</source>
+        <target>Verwaltet unter <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a [routerLink]=&quot;adminLink()&quot;&gt;" dispEnd="&lt;/a&gt;">Adminbereich › Upstream-Registrys</pc>.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.managed-text">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:126,128</note>
+      </notes>
+      <segment>
+        <source>Managed in Admin area › Upstream registries.</source>
+        <target>Verwaltet unter Adminbereich › Upstream-Registrys.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:150,151</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:211,212</note>
+      </notes>
+      <segment>
+        <source>Account</source>
+        <target>Konto</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.offline.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:163,164</note>
+      </notes>
+      <segment>
+        <source>Serve only what is cached; ask the registry nothing.</source>
+        <target>Nur ausliefern, was im Cache liegt; die Registry wird nichts gefragt.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.basic-of">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:209</note>
+      </notes>
+      <segment>
+        <source>Username and password of <ph id="0" equiv="user" disp="remote.username"/></source>
+        <target>Benutzername und Passwort von <ph id="0" equiv="user" disp="remote.username"/></target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.none">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:214</note>
+      </notes>
+      <segment>
+        <source>No account</source>
+        <target>Kein Konto</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.central">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:119</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.displayName }}"/> is offered to every project as <pc id="1" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="2" equiv="INTERPOLATION_1" disp="{{ c.name }}"/></pc>. A virtual repository can list it instead of a remote of your own.</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ c.displayName }}"/> steht jedem Projekt als <pc id="1" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="2" equiv="INTERPOLATION_1" disp="{{ c.name }}"/></pc> zur Verfügung. Ein virtuelles Repository kann es statt eines eigenen Remote-Repositorys aufnehmen.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.central.link">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:119,121</note>
+      </notes>
+      <segment>
+        <source>New virtual repository</source>
+        <target>Neues virtuelles Repository</target>
+      </segment>
+    </unit>
+    <unit id="virtual.intro-upstream">
+      <notes>
+        <note category="location">src/app/features/repositories/virtual-members.html:3,6</note>
+      </notes>
+      <segment>
+        <source> A virtual repository asks its members in this order and serves the first answer. It offers the local and remote repositories of its own project and format, and the registries Quader offers to every project. </source>
+        <target> Ein virtuelles Repository fragt seine Mitglieder in dieser Reihenfolge und liefert die erste Antwort. Es bietet die lokalen und Remote-Repositories seines eigenen Projekts und Formats an und die Registrys, die Quader jedem Projekt anbietet. </target>
+      </segment>
+    </unit>
+    <unit id="wellknown.effective-skipped">
+      <notes>
+        <note category="location">src/app/features/repositories/virtual-members.html:77,81</note>
+      </notes>
+      <segment>
+        <source>Skipped</source>
+        <target>Übersprungen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.skipped.one">
+      <notes>
+        <note category="location">src/app/features/repositories/virtual-members.ts:109</note>
+      </notes>
+      <segment>
+        <source>1 member takes no part: <ph id="0" equiv="names" disp="list"/>.</source>
+        <target>1 Mitglied wirkt nicht mit: <ph id="0" equiv="names" disp="list"/>.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.skipped.many">
+      <notes>
+        <note category="location">src/app/features/repositories/virtual-members.ts:110</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="names.length"/> members take no part: <ph id="1" equiv="names" disp="list"/>.</source>
+        <target><ph id="0" equiv="count" disp="names.length"/> Mitglieder wirken nicht mit: <ph id="1" equiv="names" disp="list"/>.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.inactive.named">
+      <notes>
+        <note category="location">src/app/features/repositories/well-known-members.ts:89</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="name"/> takes no part until an administrator of Quader switches it on.</source>
+        <target><ph id="0" equiv="name" disp="name"/> wirkt nicht mit, bis ein Administrator von Quader es einschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.inactive">
+      <notes>
+        <note category="location">src/app/features/repositories/well-known-members.ts:90</note>
+      </notes>
+      <segment>
+        <source>A member takes no part until an administrator of Quader switches it on.</source>
+        <target>Ein Mitglied wirkt nicht mit, bis ein Administrator von Quader es einschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.again.title">
+      <notes>
+        <note category="location">src/app/features/upstream/account-again-dialog.ts:28,30</note>
+      </notes>
+      <segment>
+        <source>Enter the account again</source>
+        <target>Konto erneut eingeben</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.again.text">
+      <notes>
+        <note category="location">src/app/features/upstream/account-again-dialog.ts:30,31</note>
+      </notes>
+      <segment>
+        <source>The account goes to <ph id="0" equiv="INTERPOLATION" disp="{{ data.hosts }}"/> only. Enter it again for the new address, or remove it.</source>
+        <target>Das Konto geht nur an <ph id="0" equiv="INTERPOLATION" disp="{{ data.hosts }}"/>. Geben Sie es für die neue Adresse erneut ein oder entfernen Sie es.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.remove">
+      <notes>
+        <note category="location">src/app/features/upstream/account-again-dialog.ts:59,60</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:261,264</note>
+      </notes>
+      <segment>
+        <source>Remove account</source>
+        <target>Konto entfernen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.again.save">
+      <notes>
+        <note category="location">src/app/features/upstream/account-again-dialog.ts:60,64</note>
+      </notes>
+      <segment>
+        <source>Save with this account</source>
+        <target>Mit diesem Konto speichern</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.set-all.title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:24,26</note>
+      </notes>
+      <segment>
+        <source>Set the visibility of every registry</source>
+        <target>Sichtbarkeit aller Registrys festlegen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.set-all.text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:26,28</note>
+      </notes>
+      <segment>
+        <source>Every registry that Quader offers takes this level, whether it is on or off.</source>
+        <target>Jede Registry, die Quader anbietet, erhält diese Stufe, ob sie eingeschaltet ist oder nicht.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.set-all.confirm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:38,42</note>
+      </notes>
+      <segment>
+        <source>Set visibility</source>
+        <target>Sichtbarkeit festlegen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.off.title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:78</note>
+      </notes>
+      <segment>
+        <source>Switch off <ph id="0" equiv="name" disp="r.displayName"/>?</source>
+        <target><ph id="0" equiv="name" disp="r.displayName"/> ausschalten?</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.off.one">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:81</note>
+      </notes>
+      <segment>
+        <source>1 virtual repository lists it. It skips it until it is on again; nothing of its own changes.</source>
+        <target>1 virtuelles Repository nimmt es auf. Es überspringt es, bis es wieder eingeschaltet ist; an ihm selbst ändert sich nichts.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.off.many">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:85</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> virtual repositories in <ph id="1" equiv="projects" disp="projects"/> projects list it. They skip it until it is on again; nothing of theirs changes.</source>
+        <target><ph id="0" equiv="count" disp="n"/> virtuelle Repositories in <ph id="1" equiv="projects" disp="projects"/> Projekten nehmen es auf. Sie überspringen es, bis es wieder eingeschaltet ist; an ihnen selbst ändert sich nichts.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.off.confirm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:84</note>
+      </notes>
+      <segment>
+        <source>Switch off</source>
+        <target>Ausschalten</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.public.title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:97</note>
+      </notes>
+      <segment>
+        <source>Make <ph id="0" equiv="name" disp="r.displayName"/> public?</source>
+        <target><ph id="0" equiv="name" disp="r.displayName"/> öffentlich machen?</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.public.confirm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:99</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:147</note>
+      </notes>
+      <segment>
+        <source>Make public</source>
+        <target>Öffentlich machen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on.title-one">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:115</note>
+      </notes>
+      <segment>
+        <source>Switch on 1 registry?</source>
+        <target>1 Registry einschalten?</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on.title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:116</note>
+      </notes>
+      <segment>
+        <source>Switch on <ph id="0" equiv="count" disp="n"/> registries?</source>
+        <target><ph id="0" equiv="count" disp="n"/> Registrys einschalten?</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on.text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:118</note>
+      </notes>
+      <segment>
+        <source>Each is Internal once it is on: everyone signed in who is not marked external, people and their pipelines and service accounts, can pull through it, directly and through every virtual repository that lists it. Quader contacts each registry when a client asks for something it has not stored.</source>
+        <target>Jede ist nach dem Einschalten Intern: Alle Angemeldeten, die nicht als extern markiert sind, Personen samt ihren Pipelines und Servicekonten, können über sie ziehen, direkt und über jedes virtuelle Repository, das sie aufnimmt. Quader fragt eine Registry, wenn ein Client etwas anfordert, das noch nicht gespeichert ist.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on.confirm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:121</note>
+      </notes>
+      <segment>
+        <source>Switch all on</source>
+        <target>Alle einschalten</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on.done-one">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:128</note>
+      </notes>
+      <segment>
+        <source>1 registry switched on.</source>
+        <target>1 Registry eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on.done">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:129</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="changed"/> registries switched on.</source>
+        <target><ph id="0" equiv="count" disp="changed"/> Registrys eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.public.all-title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:145</note>
+      </notes>
+      <segment>
+        <source>Make every registry public?</source>
+        <target>Alle Registrys öffentlich machen?</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.set-all.done">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:153</note>
+      </notes>
+      <segment>
+        <source>Every registry is <ph id="0" equiv="level" disp="name"/>.</source>
+        <target>Jede Registry ist <ph id="0" equiv="level" disp="name"/>.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.set-all">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:46,48</note>
+      </notes>
+      <segment>
+        <source> Set visibility of all </source>
+        <target> Sichtbarkeit aller festlegen </target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:59,61</note>
+      </notes>
+      <segment>
+        <source> Switch all on </source>
+        <target> Alle einschalten </target>
+      </segment>
+    </unit>
+    <unit id="wellknown.all-on.none">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:64,67</note>
+      </notes>
+      <segment>
+        <source>Every registry is on.</source>
+        <target>Jede Registry ist eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:152,153</note>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:186,187</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+        <target>Details</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.heading">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:162,163</note>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:212</note>
+      </notes>
+      <segment>
+        <source>Used by Quader</source>
+        <target>Von Quader genutzt</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.hint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:163,164</note>
+      </notes>
+      <segment>
+        <source>Repositories Quader reads for its own work. They have no switch: the work that uses them decides.</source>
+        <target>Repositories, die Quader für die eigene Arbeit liest. Sie haben keinen Schalter: Die Arbeit, die sie nutzt, entscheidet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.description">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:208</note>
+      </notes>
+      <segment>
+        <source>The public registries this installation offers to every project. Each is off until you switch it on.</source>
+        <target>Die öffentlichen Registrys, die diese Installation jedem Projekt anbietet. Jede ist aus, bis Sie sie einschalten.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.search">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:209</note>
+      </notes>
+      <segment>
+        <source>Filter registries</source>
+        <target>Registrys filtern</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.empty">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:210</note>
+      </notes>
+      <segment>
+        <source>Quader offers no registry yet.</source>
+        <target>Quader bietet noch keine Registry an.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:211</note>
+      </notes>
+      <segment>
+        <source>No registry matches.</source>
+        <target>Keine Registry passt.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.col.registry">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:263</note>
+      </notes>
+      <segment>
+        <source>Registry</source>
+        <target>Registry</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.col.on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:264</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:43,44</note>
+      </notes>
+      <segment>
+        <source>On</source>
+        <target>An</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.col.listed">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:268</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:23,24</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:296,297</note>
+      </notes>
+      <segment>
+        <source>Listed by</source>
+        <target>Aufgenommen von</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.help.listed">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:270</note>
+      </notes>
+      <segment>
+        <source>The number of virtual repositories, in every project, that list the registry as a member.</source>
+        <target>Die Zahl der virtuellen Repositories aller Projekte, die die Registry als Mitglied aufnehmen.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.col.repository">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:275</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.col.use">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:276</note>
+      </notes>
+      <segment>
+        <source>Use</source>
+        <target>Nutzung</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.level.label">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:299</note>
+      </notes>
+      <segment>
+        <source>Visibility of <ph id="0" equiv="name" disp="r.displayName"/></source>
+        <target>Sichtbarkeit von <ph id="0" equiv="name" disp="r.displayName"/></target>
+      </segment>
+    </unit>
+    <unit id="wellknown.badge">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:11,13</note>
+      </notes>
+      <segment>
+        <source>Upstream registry</source>
+        <target>Upstream-Registry</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.open">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:13,15</note>
+      </notes>
+      <segment>
+        <source>Open repository</source>
+        <target>Repository öffnen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.retired">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:20,22</note>
+      </notes>
+      <segment>
+        <source>Quader no longer offers this registry. Its cached content is being removed.</source>
+        <target>Quader bietet diese Registry nicht mehr an. Ihr Cache-Inhalt wird entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.state.heading">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:29,30</note>
+      </notes>
+      <segment>
+        <source>State and visibility</source>
+        <target>Zustand und Sichtbarkeit</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.in-use-text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:36,38</note>
+      </notes>
+      <segment>
+        <source>In use by the image scanning. Its visibility is always Private.</source>
+        <target>Von der Image-Analyse genutzt. Die Sichtbarkeit ist immer Privat.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.not-in-use-text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:38,41</note>
+      </notes>
+      <segment>
+        <source>Not in use by the image scanning. Its visibility is always Private.</source>
+        <target>Nicht von der Image-Analyse genutzt. Die Sichtbarkeit ist immer Privat.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.heading">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:95,96</note>
+      </notes>
+      <segment>
+        <source>Address</source>
+        <target>Adresse</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.differs">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:98,99</note>
+      </notes>
+      <segment>
+        <source>Differs from Quader&apos;s</source>
+        <target>Weicht von Quaders Adresse ab</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.product">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:99,100</note>
+      </notes>
+      <segment>
+        <source>Quader&apos;s address is <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ productUrl() }}"/></pc>.</source>
+        <target>Quaders Adresse ist <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ productUrl() }}"/></pc>.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.is-product">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:102,104</note>
+      </notes>
+      <segment>
+        <source>This is Quader&apos;s address.</source>
+        <target>Das ist Quaders Adresse.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.hosts.hint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:126,127</note>
+      </notes>
+      <segment>
+        <source>Hosts the registry&apos;s documents and its login may lead to. Only a host that receives the credential gets it.</source>
+        <target>Hosts, zu denen die Dokumente der Registry und ihre Anmeldung führen können. Nur ein Host, der die Zugangsdaten erhält, bekommt sie.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.keys.heading">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:164,165</note>
+      </notes>
+      <segment>
+        <source>Archive keys</source>
+        <target>Archivschlüssel</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.keys.hint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:165,166</note>
+      </notes>
+      <segment>
+        <source>The keys that sign the archive&apos;s indexes. Quader checks every index it fetches against them.</source>
+        <target>Die Schlüssel, die die Indizes des Archivs signieren. Quader prüft jeden abgerufenen Index gegen sie.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.keys.none">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:167,169</note>
+      </notes>
+      <segment>
+        <source>No key is stored.</source>
+        <target>Kein Schlüssel gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.keys.replace">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:179,180</note>
+      </notes>
+      <segment>
+        <source>Replace the keys</source>
+        <target>Schlüssel ersetzen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.keys.block">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:184,185</note>
+      </notes>
+      <segment>
+        <source>Armored public keys</source>
+        <target>Öffentliche Schlüssel (ASCII-armored)</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.keys.block-hint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:187,189</note>
+      </notes>
+      <segment>
+        <source>Paste the archive&apos;s public keys as one armored block. Empty keeps the keys above.</source>
+        <target>Fügen Sie die öffentlichen Schlüssel des Archivs als einen Block ein. Leer behält die Schlüssel oben.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.save">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:198,199</note>
+      </notes>
+      <segment>
+        <source>Save address</source>
+        <target>Adresse speichern</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.reset">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:203,205</note>
+      </notes>
+      <segment>
+        <source>Reset to Quader&apos;s address</source>
+        <target>Auf Quaders Adresse zurücksetzen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.hint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:212,213</note>
+      </notes>
+      <segment>
+        <source>An account counts the pulls of every project against this account&apos;s allowance, and whoever can read this registry pulls with it.</source>
+        <target>Ein Konto zählt die Abrufe aller Projekte gegen das Kontingent dieses Kontos, und wer diese Registry lesen darf, zieht mit ihm.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.removed-by-update">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:216,217</note>
+      </notes>
+      <segment>
+        <source>The account was removed when Quader&apos;s address moved to another host on <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | date: &apos;mediumDate&apos; }}"/></pc>; enter it again.</source>
+        <target>Das Konto wurde entfernt, als Quaders Adresse am <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | date: &apos;mediumDate&apos; }}"/></pc> auf einen anderen Host wechselte; geben Sie es erneut ein.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.save">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:256,257</note>
+      </notes>
+      <segment>
+        <source>Save account</source>
+        <target>Konto speichern</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details.hint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:292,293</note>
+      </notes>
+      <segment>
+        <source>Who lists the registry, its settings for teams, its limits and its dates.</source>
+        <target>Wer die Registry aufnimmt, ihre Einstellungen für Teams, ihre Limits und ihre Daten.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details.narrowing">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:298,300</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+        <target>Einstellungen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details.narrowing-link">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:300,302</note>
+      </notes>
+      <segment>
+        <source>Include and exclude patterns, offline and the administrator&apos;s notes</source>
+        <target>Ein- und Ausschlussmuster, Offline und die Notizen des Administrators</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details.limits">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:302,304</note>
+      </notes>
+      <segment>
+        <source>Download limits</source>
+        <target>Download-Limits</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details.limits-link">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:304,306</note>
+      </notes>
+      <segment>
+        <source>The repository&apos;s limits, on its settings page</source>
+        <target>Die Limits des Repositorys, auf seiner Einstellungsseite</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.saved">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:288</note>
+      </notes>
+      <segment>
+        <source>Address saved.</source>
+        <target>Adresse gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.address.reset-done">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:304</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:322</note>
+      </notes>
+      <segment>
+        <source>The address is Quader&apos;s again.</source>
+        <target>Die Adresse ist wieder die von Quader.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.reset.title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:315</note>
+      </notes>
+      <segment>
+        <source>Reset the address and remove the account?</source>
+        <target>Adresse zurücksetzen und Konto entfernen?</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.reset.text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:316</note>
+      </notes>
+      <segment>
+        <source>The account goes to <ph id="0" equiv="hosts" disp="hosts"/> only, and Quader&apos;s address uses other hosts. The reset removes it; enter it again afterwards if Quader&apos;s address needs one.</source>
+        <target>Das Konto geht nur an <ph id="0" equiv="hosts" disp="hosts"/>, und Quaders Adresse nutzt andere Hosts. Das Zurücksetzen entfernt es; geben Sie es danach erneut ein, falls Quaders Adresse eines braucht.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.reset.confirm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:317</note>
+      </notes>
+      <segment>
+        <source>Reset and remove the account</source>
+        <target>Zurücksetzen und Konto entfernen</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.saved">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:373</note>
+      </notes>
+      <segment>
+        <source>Account saved.</source>
+        <target>Konto gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.removed">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:388</note>
+      </notes>
+      <segment>
+        <source>Account removed.</source>
+        <target>Konto entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.listed.none">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:435</note>
+      </notes>
+      <segment>
+        <source>No virtual repository lists it.</source>
+        <target>Kein virtuelles Repository nimmt sie auf.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.listed.one">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:437</note>
+      </notes>
+      <segment>
+        <source>1 virtual repository lists it.</source>
+        <target>1 virtuelles Repository nimmt sie auf.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.listed.many">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:446</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> virtual repositories in <ph id="1" equiv="projects" disp="projects"/> projects list it.</source>
+        <target><ph id="0" equiv="count" disp="n"/> virtuelle Repositories in <ph id="1" equiv="projects" disp="projects"/> Projekten nehmen sie auf.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.state.not-switched-on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:15</note>
+      </notes>
+      <segment>
+        <source>Not switched on</source>
+        <target>Nicht eingeschaltet</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.state.switched-off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:17</note>
+      </notes>
+      <segment>
+        <source>Switched off</source>
+        <target>Ausgeschaltet</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.state.retired">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:19</note>
+      </notes>
+      <segment>
+        <source>No longer offered</source>
+        <target>Nicht mehr angeboten</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.state.off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:21</note>
+      </notes>
+      <segment>
+        <source>Off</source>
+        <target>Aus</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.placeholder.not-switched-on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:30</note>
+      </notes>
+      <segment>
+        <source>Skipped until an administrator of Quader switches it on.</source>
+        <target>Übersprungen, bis ein Administrator von Quader es einschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.placeholder.switched-off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:32</note>
+      </notes>
+      <segment>
+        <source>Skipped: an administrator of Quader switched it off.</source>
+        <target>Übersprungen: Ein Administrator von Quader hat es ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.placeholder.retired">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:34</note>
+      </notes>
+      <segment>
+        <source>Skipped: Quader no longer offers it. Remove it.</source>
+        <target>Übersprungen: Quader bietet es nicht mehr an. Entfernen Sie es.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.member.private">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:40</note>
+      </notes>
+      <segment>
+        <source>Private: the readers of this virtual repository do not read through it unless a global policy names them.</source>
+        <target>Privat: Die Leser dieses virtuellen Repositorys lesen nicht über es, es sei denn, eine globale Richtlinie nennt sie.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.row.private">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:45</note>
+      </notes>
+      <segment>
+        <source>Only administrators and the principals a global policy names read it; teams&apos; virtual repositories skip it.</source>
+        <target>Nur Administratoren und die Prinzipale, die eine globale Richtlinie nennt, lesen sie; virtuelle Repositories der Teams überspringen sie.</target>
+      </segment>
+    </unit>
+    <unit id="switch.on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:50</note>
+        <note category="location">src/app/shared/ui/switch.ts:127</note>
+      </notes>
+      <segment>
+        <source>On</source>
+        <target>An</target>
+      </segment>
+    </unit>
+    <unit id="switch.off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:50</note>
+        <note category="location">src/app/shared/ui/switch.ts:127</note>
+      </notes>
+      <segment>
+        <source>Off</source>
+        <target>Aus</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.switch.label">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:60</note>
+      </notes>
+      <segment>
+        <source>Switch on <ph id="0" equiv="name" disp="r.displayName"/></source>
+        <target><ph id="0" equiv="name" disp="r.displayName"/> einschalten</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.switched.on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:66</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="r.displayName"/> is on.</source>
+        <target><ph id="0" equiv="name" disp="r.displayName"/> ist eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.switched.off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:67</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="r.displayName"/> is off.</source>
+        <target><ph id="0" equiv="name" disp="r.displayName"/> ist ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.level.set">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:73</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="r.displayName"/> is <ph id="1" equiv="level" disp="level"/>.</source>
+        <target><ph id="0" equiv="name" disp="r.displayName"/> ist <ph id="1" equiv="level" disp="level"/>.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.note.overridden">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:79</note>
+      </notes>
+      <segment>
+        <source>Address differs from Quader&apos;s</source>
+        <target>Adresse weicht von Quaders ab</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.note.account-removed">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:81</note>
+      </notes>
+      <segment>
+        <source>The account was removed when Quader&apos;s address moved to another host; enter it again.</source>
+        <target>Das Konto wurde entfernt, als Quaders Adresse auf einen anderen Host wechselte; geben Sie es erneut ein.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.in-use">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:89</note>
+      </notes>
+      <segment>
+        <source>In use by the image scanning</source>
+        <target>Von der Image-Analyse genutzt</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.not-in-use">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:90</note>
+      </notes>
+      <segment>
+        <source>Not in use</source>
+        <target>Nicht genutzt</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.public.sentence">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:100</note>
+      </notes>
+      <segment>
+        <source>Public: anyone on the internet can pull through this installation, on its bandwidth and on its upstream allowance (Docker Hub&apos;s pull limit, for example).</source>
+        <target>Öffentlich: Jeder im Internet kann über diese Installation ziehen, auf ihre Bandbreite und auf ihr Upstream-Kontingent (zum Beispiel das Pull-Limit von Docker Hub).</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.route.detail">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream.routes.ts:12</note>
+      </notes>
+      <segment>
+        <source>Upstream registry</source>
+        <target>Upstream-Registry</target>
+      </segment>
+    </unit>
+    <unit id="visibility.upstream.private">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:166</note>
+      </notes>
+      <segment>
+        <source>Only administrators and the principals a global policy names. Teams&apos; virtual repositories skip a private registry.</source>
+        <target>Nur Administratoren und die Prinzipale, die eine globale Richtlinie nennt. Virtuelle Repositories der Teams überspringen eine private Registry.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.upstream.internal">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:168</note>
+      </notes>
+      <segment>
+        <source>Everyone signed in, service accounts and CI jobs included, except external users, directly and through every virtual repository that lists it.</source>
+        <target>Alle Angemeldeten, auch Servicekonten und CI-Jobs, außer externen Benutzern, direkt und über jedes virtuelle Repository, das sie aufnimmt.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.upstream.public">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:170</note>
+      </notes>
+      <segment>
+        <source>Anyone, also without signing in, on this installation&apos;s bandwidth and the registry&apos;s pull allowance.</source>
+        <target>Jeder, auch ohne Anmeldung, auf die Bandbreite dieser Installation und das Pull-Kontingent der Registry.</target>
+      </segment>
+    </unit>
+    <unit id="repo.create.members-hint-upstream">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-create.html:152,155</note>
+      </notes>
+      <segment>
+        <source> The repositories this one serves from, asked in this order: the local and remote repositories of this project and format, and the registries Quader offers to every project. </source>
+        <target> Die Repositories, aus denen dieses liefert, in dieser Reihenfolge gefragt: die lokalen und Remote-Repositories dieses Projekts und Formats und die Registrys, die Quader jedem Projekt anbietet. </target>
+      </segment>
+    </unit>
+    <unit id="wellknown.state.label">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:43,44</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.scanner.hint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:120,122</note>
+      </notes>
+      <segment>
+        <source> The registry must serve the image aquasec/trivy-db. For a registry that names it otherwise, see <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a routerLink=&quot;/help/admin/vulnerability-sources&quot; fragment=&quot;container-images&quot;&gt;" dispEnd="&lt;/a&gt;">the image scanning&apos;s database setting</pc>. </source>
+        <target> Die Registry muss das Image aquasec/trivy-db anbieten. Für eine Registry, die es anders nennt, siehe <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a routerLink=&quot;/help/admin/vulnerability-sources&quot; fragment=&quot;container-images&quot;&gt;" dispEnd="&lt;/a&gt;">die Datenbank-Einstellung der Image-Analyse</pc>. </target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.level">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.html:107,109</note>
+      </notes>
+      <segment>
+        <source>Its visibility is always Private: only Quader&apos;s image scanning reads it.</source>
+        <target>Die Sichtbarkeit ist immer Privat: Nur die Image-Analyse von Quader liest es.</target>
+      </segment>
+    </unit>
+    <unit id="setup.system">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:38,41</note>
+      </notes>
+      <segment>
+        <source> Quader&apos;s image scanning reads its database through this repository. Clients cannot use it. </source>
+        <target> Die Image-Analyse von Quader liest ihre Datenbank über dieses Repository. Clients können es nicht nutzen. </target>
+      </segment>
+    </unit>
+    <unit id="projects.level.built-in">
+      <notes>
+        <note category="location">src/app/shared/ui/project-mark.ts:62</note>
+      </notes>
+      <segment>
+        <source>Each registry has its own visibility.</source>
+        <target>Jede Registry hat ihre eigene Sichtbarkeit.</target>
+      </segment>
+    </unit>
+    <unit id="virtual.decision.not-switched-on">
+      <notes>
+        <note category="location">src/app/features/repositories/virtual-members.ts:61</note>
+      </notes>
+      <segment>
+        <source>Not switched on, so not asked</source>
+        <target>Nicht eingeschaltet, daher nicht gefragt</target>
+      </segment>
+    </unit>
+    <unit id="virtual.decision.switched-off">
+      <notes>
+        <note category="location">src/app/features/repositories/virtual-members.ts:63</note>
+      </notes>
+      <segment>
+        <source>Switched off, so not asked</source>
+        <target>Ausgeschaltet, daher nicht gefragt</target>
+      </segment>
+    </unit>
+    <unit id="virtual.decision.retired">
+      <notes>
+        <note category="location">src/app/features/repositories/virtual-members.ts:65</note>
+      </notes>
+      <segment>
+        <source>No longer offered, so not asked</source>
+        <target>Nicht mehr angeboten, daher nicht gefragt</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.off.many-one-project">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:84</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> virtual repositories in 1 project list it. They skip it until it is on again; nothing of theirs changes.</source>
+        <target><ph id="0" equiv="count" disp="n"/> virtuelle Repositories in 1 Projekt nehmen es auf. Sie überspringen es, bis es wieder eingeschaltet ist; an ihnen selbst ändert sich nichts.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.listed.many-one-project">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:445</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> virtual repositories in 1 project list it.</source>
+        <target><ph id="0" equiv="count" disp="n"/> virtuelle Repositories in 1 Projekt nehmen sie auf.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.listed.other">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:452</note>
+      </notes>
+      <segment>
+        <source>And 1 more virtual repository.</source>
+        <target>Und 1 weiteres virtuelles Repository.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.listed.others">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:453</note>
+      </notes>
+      <segment>
+        <source>And <ph id="0" equiv="count" disp="n"/> more virtual repositories.</source>
+        <target>Und <ph id="0" equiv="count" disp="n"/> weitere virtuelle Repositories.</target>
       </segment>
     </unit>
   </file>

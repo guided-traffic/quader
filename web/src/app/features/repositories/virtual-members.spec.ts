@@ -3,7 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { scan } from 'rxjs';
 import { ApiError } from '../../api/problem';
 import { Repository, RepositoriesApi } from '../../api/repositories-api';
-import { FakeRepositoriesApi, FakeRepository } from '../../api/testing/fakes-catalog';
+import { FakeRepositoriesApi, FakeRepository, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
+import { UpstreamApi } from '../../api/upstream-api';
+import { FakeUpstreamApi } from '../../api/testing/fakes-upstream';
 import { button, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
 import { MemberChange, VirtualMembers, decisionText } from './virtual-members';
 
@@ -228,5 +230,124 @@ describe('Virtual repository member editor (R-UI-022)', () => {
       expect(decisionText(d), d).not.toBe(d);
     }
     expect(decisionText('something-new')).toBe('something-new');
+  });
+});
+
+describe('A well-known repository as a member (R-UI-189)', () => {
+  async function renderNpm(
+    members: string[],
+    options: {
+      capabilities?: readonly string[];
+      canWrite?: boolean;
+      upstream?: (a: FakeUpstreamApi) => void;
+      repositories?: FakeRepository[];
+    } = {},
+  ) {
+    const r = await renderScreen(VirtualMembers, {
+      inputs: { repo: virtualDoc(members), canWrite: options.canWrite ?? true },
+      ...(options.capabilities ? { capabilities: options.capabilities } : {}),
+      setup: (get) => {
+        const api = get(RepositoriesApi) as FakeRepositoriesApi;
+        api.formatsResult = [PACKAGE_FORMAT];
+        api.repositories = options.repositories ?? [repo('npm-all', 'virtual'), repo('npm-local', 'local')];
+        options.upstream?.(get(UpstreamApi) as FakeUpstreamApi);
+      },
+    });
+    const saves = TestBed.runInInjectionContext(() =>
+      toSignal(outputToObservable(r.fixture.componentInstance.save).pipe(scan((all, c) => [...all, c], [] as MemberChange[])), {
+        initialValue: [] as MemberChange[],
+      }),
+    );
+    await settle(r.fixture);
+    return { ...r, saves };
+  }
+
+  it('R-UI-189 the picker of an npm virtual repository offers npm-local and, under Upstream registries, upstream/npmjs with its state; adding it saves both', async () => {
+    const { fixture, root, saves } = await renderNpm([]);
+    expect(keys(root, 'vm-available')).toEqual(['npm-local']);
+    const group = root.querySelector('[data-testid="vm-upstream"]')!;
+    expect(text(root.querySelector(`#${group.getAttribute('aria-labelledby')}`)!)).toBe('Upstream registries');
+    const npmjs = group.querySelector<HTMLElement>('[role="option"]')!;
+    expect(text(npmjs)).toContain('npm public registry');
+    expect(text(npmjs)).toContain('upstream/npmjs');
+    expect(text(npmjs)).toContain('Not switched on');
+
+    await click(fixture, option(root, 'vm-available', 'npm-local'));
+    await click(fixture, npmjs);
+    await click(fixture, button(root, 'Add'));
+    expect(keys(root, 'vm-members')).toEqual(['npm-local', 'upstream/npmjs']);
+    // The member keeps its place and says why it takes no part (Q-UI-833); the section's head counts it.
+    const placeholder = option(root, 'vm-members', 'upstream/npmjs');
+    expect(text(placeholder)).toContain('Not switched on');
+    expect(text(placeholder)).toContain('Skipped until an administrator of Quader switches it on.');
+    expect(text(root.querySelector('[data-testid="vm-skipped"] span:last-child')!)).toBe('1 member takes no part: upstream/npmjs.');
+    button(root, /Save changes/).click();
+    await settle(fixture);
+    expect(saves()).toEqual([{ members: ['npm-local', 'upstream/npmjs'], deployTarget: null }]);
+    await expectAccessible(root);
+  });
+
+  it('R-UI-189 a switched-off and a retired member keep their places with their words; an active private one says who reads through it', async () => {
+    const { root } = await renderNpm(['upstream/npmjs', 'npm-local', 'upstream/old-registry'], {
+      upstream: (a) => a.set('npmjs', { state: 'switched-off' }),
+    });
+    expect(keys(root, 'vm-members')).toEqual(['upstream/npmjs', 'npm-local', 'upstream/old-registry']);
+    expect(text(option(root, 'vm-members', 'upstream/npmjs'))).toContain('Skipped: an administrator of Quader switched it off.');
+    expect(text(option(root, 'vm-members', 'upstream/old-registry'))).toContain('No longer offered');
+    expect(text(root.querySelector('[data-testid="vm-effective"]')!)).toContain('Skipped');
+
+    const active = await renderNpm(['upstream/npmjs'], { upstream: (a) => a.set('npmjs', { state: 'active', visibility: 'private' }) });
+    expect(text(option(active.root, 'vm-members', 'upstream/npmjs'))).toContain(
+      'Private: the readers of this virtual repository do not read through it unless a global policy names them.',
+    );
+    expect(active.root.querySelector('[data-testid="vm-skipped"]')).toBeNull();
+  });
+
+  it("R-UI-189 a project's Owner without the admin read learns each registry's exact state and level from the format's read", async () => {
+    const { root, get } = await renderNpm(['upstream/npmjs'], {
+      capabilities: [],
+      upstream: (a) => a.set('npmjs', { state: 'switched-off' }),
+    });
+    const api = get(UpstreamApi) as FakeUpstreamApi;
+    expect(api.calls).toContainEqual({ op: 'format', body: { format: 'npm' } });
+    expect(text(option(root, 'vm-members', 'upstream/npmjs'))).toContain('Switched off');
+    expect(text(option(root, 'vm-members', 'upstream/npmjs'))).toContain('Skipped: an administrator of Quader switched it off.');
+  });
+
+  it('R-UI-189 a reader who may not change the members, or whom the format\'s read refuses, learns a registry it reads that is off as Off', async () => {
+    const readable = [repo('npm-all', 'virtual'), repo('npmjs', 'remote', { disabled: true }, 'upstream')];
+    const reader = await renderNpm(['upstream/npmjs'], { capabilities: [], canWrite: false, repositories: readable });
+    expect((reader.get(UpstreamApi) as FakeUpstreamApi).calls.some((c) => c.op === 'format')).toBe(false);
+    expect(text(option(reader.root, 'vm-members', 'upstream/npmjs'))).toContain('Off');
+    expect(text(option(reader.root, 'vm-members', 'upstream/npmjs'))).toContain('Skipped until an administrator of Quader switches it on.');
+
+    const refused = await renderNpm(['upstream/npmjs'], {
+      capabilities: [],
+      repositories: readable,
+      upstream: (a) => (a.formatFailure = new ApiError(403, { code: 'forbidden', detail: 'The operation is not permitted.' }, 'rid')),
+    });
+    expect(text(option(refused.root, 'vm-members', 'upstream/npmjs'))).toContain('Off');
+  });
+
+  it('R-UI-189 Explain a path names a placeholder by its state, in the words of its badge', async () => {
+    const { fixture, root, get } = await renderNpm(['npm-local', 'upstream/npmjs']);
+    (get(RepositoriesApi) as FakeRepositoriesApi).resolutionFor = (ref, path) => ({
+      repository: ref,
+      descriptor: { path, kind: 'metadata', package: path },
+      members: [
+        { key: 'npm-local', class: 'local', decision: 'miss' },
+        { key: 'upstream/npmjs', class: 'remote', decision: 'disabled', upstreamState: 'not-switched-on' },
+      ],
+      unreadableMembers: 0,
+    });
+    type(root.querySelector<HTMLInputElement>('input[name="samplePath"]')!, 'left-pad');
+    await settle(fixture);
+    button(root, 'Explain').click();
+    await settle(fixture);
+    const rows = [...root.querySelectorAll('[data-testid="vm-explanation"] tbody tr')].map((tr) => [...tr.children].map((c) => text(c)));
+    expect(rows).toEqual([
+      ['npm-local', 'Does not hold it'],
+      ['upstream/npmjs', 'Not switched on, so not asked'],
+    ]);
   });
 });

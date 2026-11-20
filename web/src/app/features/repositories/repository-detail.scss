@@ -55,6 +55,38 @@
   }
 }
 
+// A well-known repository's upstream stands where a remote's Upstream section stands and reads like it and like Visibility above it:
+// their headings are the document's own h2, not the small heading of the page's other open sections.
+.open-section.managed > h2 {
+  font: revert;
+  margin: revert;
+}
+
+// scanner-trivy's fixed level: its icon on the line of the statement (R-UI-175).
+.fixed-level {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+  margin: 0;
+}
+
+// The line of a section whose values an administrator sets in the admin area (R-UI-190).
+.managed-line {
+  margin: 0 0 var(--quader-space-3);
+  color: var(--quader-text-muted);
+}
+
+.open-section .offline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+  margin-block-start: var(--quader-space-4);
+}
+
+.open-section .offline + .hint {
+  margin: var(--quader-space-1) 0 0;
+}
+
 // A fieldset that only disables what it holds for a caller who may not change the repository.
 .plain {
   min-inline-size: 0;

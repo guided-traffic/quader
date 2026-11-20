@@ -19,6 +19,7 @@ import {
 import { Notifier } from '../../core/notifier';
 import { ServerAddress } from '../../core/server-address';
 import { SessionStore } from '../../core/session-store';
+import { isSystemRepository, isUpstreamProject } from '../../core/upstream-project';
 import { SelectField, SelectOption } from '../../shared/access/fields';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ConflictResolver } from '../../shared/conflict-dialog';
@@ -60,6 +61,9 @@ import { UpstreamSettings, upstreamPointerLabel, upstreamTarget } from './upstre
 import { MemberChange, VirtualMembers } from './virtual-members';
 import { RepositoryServiceAccounts } from '../service-accounts/repository-service-accounts';
 import { RepositoryLimitsSection } from '../limits/repository-limits-section';
+import { UpstreamApi, UpstreamRepository } from '../../api/upstream-api';
+import { MemberState, stateBadge } from '../upstream/upstream-words';
+import { memberInactiveText } from './well-known-members';
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
 type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
@@ -162,10 +166,78 @@ export class RepositoryDetail implements HasUnsavedChanges {
   });
   protected readonly classText = classLabel;
 
+  // ---- A repository of the built-in project `upstream` (R-UI-190, R-REPO-069) ----
+
+  private readonly upstreamApi = inject(UpstreamApi);
+  /**
+   * A well-known repository: the product holds its identity, address and protocol members, an administrator its state, level,
+   * address and account on its page in the admin area; this page edits only what narrows what it serves (Q-UI-835).
+   */
+  protected readonly managed = computed(() => isUpstreamProject(this.project()));
+  /** The admin area's item of the repository, for its state and its kind; read by a caller who may read it (R-REPO-073). */
+  private readonly wellKnownRead = resource({
+    params: () => (this.managed() && this.session.has('repositories:read-config') ? this.key() : undefined),
+    loader: async ({ params }): Promise<UpstreamRepository | null> => {
+      try {
+        return (await this.upstreamApi.get(params)).value;
+      } catch {
+        return null;
+      }
+    },
+  });
+  protected readonly wellKnown = computed(() => valueOf(this.wellKnownRead) ?? null);
+  /** `scanner-trivy`, a system repository: everything is the product's (R-REPO-070). Known by its key, for every caller. */
+  protected readonly systemRepository = computed(() => isSystemRepository(this.project(), this.key()));
+  /** What an administrator narrows on a well-known repository: patterns, offline, notes (R-REPO-069); nothing on a system one. */
+  protected readonly canNarrow = computed(() => this.canChange() && !this.systemRepository());
+  /** The page of the repository in the admin area, where its state, level, address and account are set (R-UI-188). */
+  protected readonly adminLink = computed(() => ['/admin/upstream', this.key()]);
+  protected readonly adminLinked = computed(() => this.session.has('repositories:read-config'));
+  /** The state's badge of a well-known repository that is not active: **Not switched on**, **Switched off**, **No longer offered**. */
+  protected readonly wellKnownBadge = computed(() => {
+    if (!this.managed()) return null;
+    const state = this.wellKnown()?.state;
+    if (state && state !== 'active') return stateBadge(state as MemberState);
+    return this.stored()?.disabled ? stateBadge('off') : null;
+  });
+  /** The account of a well-known repository in words, read-only here. */
+  protected readonly accountText = computed(() => {
+    const remote = this.stored()?.remote;
+    switch (remote?.authMode) {
+      case 'basic':
+        return remote.username
+          ? $localize`:@@wellknown.account.basic-of:Username and password of ${remote.username}:user:`
+          : $localize`:@@upstream.auth.basic:Username and password`;
+      case 'bearer':
+        return $localize`:@@upstream.auth.bearer:Bearer token`;
+      default:
+        return $localize`:@@wellknown.account.none:No account`;
+    }
+  });
+  protected readonly extraHostsText = computed(() =>
+    (this.stored()?.remote?.extraHosts ?? []).map((h) => h.pattern).join(', '),
+  );
+
+  /**
+   * A section saves for whom may change the repository; of a well-known repository only the sections that narrow it (the patterns,
+   * offline in the upstream's section, the notes), and nothing of a system repository (R-UI-190).
+   */
+  protected canSave(section: SettingsSection): boolean {
+    if (!this.canChange()) return false;
+    if (!this.managed()) return true;
+    return this.canNarrow() && (section === 'upstream' || section === 'access' || section === 'notes');
+  }
+
+  protected setOffline(offline: boolean): void {
+    this.form.update((f) => (f ? { ...f, upstream: { ...f.upstream, offline } } : f));
+  }
+
   /** The upstream settings: a remote repository (R-UI-082). */
   protected readonly upstreamSection = computed(() => this.stored()?.class === 'remote');
   /** The section Mirror: a remote repository of a format that can mirror (R-UI-021, Q-UI-104). */
-  protected readonly mirrorSection = computed(() => this.stored()?.class === 'remote' && this.format()?.mirror === true);
+  protected readonly mirrorSection = computed(
+    () => this.stored()?.class === 'remote' && this.format()?.mirror === true && !isUpstreamProject(this.project()),
+  );
   /** The status panel: a remote repository stored in mode `mirror` (Q-UI-119), while the section is open. */
   protected readonly mirrorStatusShown = computed(() => this.mirrorSection() && this.stored()?.remote?.mode === 'mirror');
   protected readonly mirrorRefresh = signal(0);
@@ -211,7 +283,12 @@ export class RepositoryDetail implements HasUnsavedChanges {
    */
   protected readonly serviceAccountsSection = computed(() => {
     const repo = this.stored();
-    return repo !== null && repo.lifecycle !== 'deleting' && (this.session.has('identities:read') || this.session.isOwnerOf(repo.project));
+    return (
+      repo !== null &&
+      repo.lifecycle !== 'deleting' &&
+      !isUpstreamProject(repo.project) &&
+      (this.session.has('identities:read') || this.session.isOwnerOf(repo.project))
+    );
   });
   /** The fingerprints of a remote Debian repository's upstream keys, read back beside `upstreamKeys` (R-DEB-020). */
   protected readonly debUpstreamFingerprints = computed<readonly string[]>(() => {
@@ -591,6 +668,12 @@ export class RepositoryDetail implements HasUnsavedChanges {
         this.etag,
       );
       this.takeStored(saved.value, saved.etag);
+      // A member that is not switched on is accepted with the warning `member_inactive` (R-REPO-071), said in words (R-UI-189).
+      this.warnings.set(
+        (saved.value.warnings ?? []).map((w) =>
+          w.code === 'member_inactive' ? memberInactiveText(w.pointer, change.members) : w.detail,
+        ),
+      );
       this.notifier.status($localize`:@@repo.members.saved:Members saved.`);
     } catch (e) {
       this.membersFailure.set(asApiError(e));
@@ -767,7 +850,10 @@ export class RepositoryDetail implements HasUnsavedChanges {
   });
   protected readonly moveOptions = computed<readonly SelectOption[]>(() => [
     { value: '', label: $localize`:@@repo.move.choose:Choose a project` },
-    ...(valueOf(this.moveTargets) ?? []).filter((k) => k !== this.project()).map((k) => ({ value: k, label: k })),
+    // Nothing moves into the built-in project `upstream` (R-REPO-069).
+    ...(valueOf(this.moveTargets) ?? [])
+      .filter((k) => k !== this.project() && !isUpstreamProject(k))
+      .map((k) => ({ value: k, label: k })),
   ]);
   /** Moving takes `repositories:write-config`, or the Owner role in both projects (R-REPO-060). */
   protected readonly canMove = computed(

@@ -369,20 +369,35 @@ Below, **Effective resolution order** lists the stored members, and **Explain a 
 
 Besides the repositories of its own project, a virtual repository may list the well-known registries of the built-in project `upstream`
 that have its format, written `upstream/<key>` (`upstream/npmjs`, `upstream/docker-hub`): one central cache of the registry for every project,
-instead of a remote repository of your own. Pin rules and claims treat such a member like any remote member, and a repository of your own
-project with the same key cannot be listed beside it. Which registries are in use is an administrator's decision on the **Upstream
-registries** page:
+instead of a remote repository of your own ([Upstream registries](upstream-registries.md)). In the member editor, **Upstream registries**
+under the project's repositories lists them, each by its name and `upstream/<key>`, with its state where it is not on. Add one as any
+member, for example `upstream/npmjs` after your local npm repository: one address then serves your packages and the public ones. Pin rules
+and claims treat such a member like any remote member, and a repository of your own project with the same key cannot be listed beside it.
+Which registries are in use is an administrator's decision on the **Upstream registries** page:
 
 - A registry that is not switched on can still be listed. The save then carries the warning `member_inactive`, which names the member and
-  its state (`not-switched-on`, `switched-off`, `retired`). Until an administrator switches it on, the member is skipped: it is a
-  placeholder that keeps its place in the list.
+  its state (`not-switched-on`, `switched-off`, `retired`), and the page says that the member takes no part until an administrator
+  switches it on. Until then the member is skipped: it is a placeholder that keeps its place in the list, with its badge and one sentence:
+
+  | Badge | Sentence | What to do |
+  |---|---|---|
+  | **Not switched on** | Skipped until an administrator of Quader switches it on. | Ask an administrator; nothing of the virtual repository needs to change |
+  | **Switched off** | Skipped: an administrator of Quader switched it off. | The same |
+  | **No longer offered** | Skipped: Quader no longer offers it. Remove it. | Remove it from the members |
+  | **Off** | Skipped until an administrator of Quader switches it on. | Shown to whoever reads the members but may not change them, who cannot tell the first two apart |
+
+- The section's head says how many members take no part, **Effective resolution order** marks them **Skipped**, and **Explain a path**
+  shows such a member with its badge.
 - A request for a name that only the placeholder would have served answers `404`, and the client prints why, for example "upstream/npmjs is a
   member of this virtual repository, but an administrator of Quader has not switched it on." A name a member of your project holds is
-  served as before. **Explain a path** shows the placeholder as `disabled` with its state.
+  served as before.
 - When an administrator switches the registry on, every virtual repository that lists it resolves through it from the next request, on
   every replica, without a change to the virtual repository. A registry Quader no longer offers stays a placeholder until you remove it.
 - Who reads through the member is decided by the registry's own visibility: an **Internal** one is read by every signed-in user, CI job and
-  service account, but not by users flagged external; a **Private** one only by whom a global policy names.
+  service account, but not by users flagged external; a **Private** one only by whom a global policy names, which its member says.
+
+The form of a new remote repository says so when the registry you chose is offered already, with a link to a new virtual repository; your
+own remote stays possible.
 
 ## Edit a repository
 

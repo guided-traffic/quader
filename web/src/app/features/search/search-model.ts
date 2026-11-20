@@ -2,6 +2,7 @@ import { NavArea, NavItem, areaEntries, areaItems } from '../../core/navigation'
 import { SearchSuggestions, SuggestionKind } from '../../api/search-api';
 import { packageCommands } from '../packages/package-links';
 import { letterOf } from '../../shared/ui/project-mark';
+import { isUpstreamProject } from '../../core/upstream-project';
 import { termsOf } from './highlight';
 
 /** The filter of the field (R-UI-095): **All**, a kind of the main area, or for an instance administrator users or groups. */
@@ -29,6 +30,8 @@ export interface SearchEntry {
   readonly format?: string;
   /** A project's letter mark. */
   readonly letter?: string;
+  /** The mark is the built-in project `upstream`'s arrow instead of the letter (Q-UI-837). */
+  readonly upstream?: boolean;
   /** A user's ID, the seed of the avatar. */
   readonly avatar?: string;
   /** A disabled user. */
@@ -186,6 +189,7 @@ export function projectEntry(key: string, displayName: string | null | undefined
     label: displayName || key,
     secondary: key,
     letter: letterOf(displayName, key),
+    ...(isUpstreamProject(key) ? { upstream: true } : {}),
     literal: true,
     commands: ['/projects', key],
   };

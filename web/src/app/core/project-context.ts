@@ -5,6 +5,7 @@ import { filter, map } from 'rxjs';
 import { collectAll } from '../api/pagination';
 import { Project, ProjectsApi } from '../api/projects-api';
 import { FrequentPlaces } from './frequent-places';
+import { upstreamFirst } from './upstream-project';
 import { SessionStore } from './session-store';
 
 /** How many recently visited projects the switcher shows. */
@@ -60,7 +61,7 @@ export class ProjectContext {
 
   /** The key of the project the current URL is in, or null (the start page, the admin area, the profile …). */
   readonly key = computed(() => projectKeyOf(this.url()));
-  /** The projects the caller may see, ordered by key. */
+  /** The projects the caller may see: the built-in project `upstream` first (Q-UI-837), then the others by key. */
   readonly projects = this._projects.asReadonly();
   /** The list has been read (successfully or not); the start page waits for it. */
   readonly loaded = this._loaded.asReadonly();
@@ -114,7 +115,7 @@ export class ProjectContext {
 
   private async read(): Promise<void> {
     try {
-      this._projects.set(await collectAll(this.api.list({})));
+      this._projects.set(upstreamFirst(await collectAll(this.api.list({})), (p) => p.key));
     } catch {
       // A convenience: without the list the switcher offers the recent keys only.
       this._projects.set([]);

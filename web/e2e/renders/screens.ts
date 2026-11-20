@@ -1151,6 +1151,10 @@ export const screens: readonly Screen[] = [
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins },
   { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: searched('web') },
   { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen(), widths: [1100, 1280] },
+  // The public registries Quader offers (R-UI-187, R-UI-188): the list grouped by format, and a Debian archive's page, the one with
+  // the most to lay out (its archive keys). The member editor's placeholder is in repository-settings-oci-virtual.
+  { id: 'admin-upstream', path: '/ui/admin/upstream', kinds: admins },
+  { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
   { id: 'admin-repository-new', path: '/ui/admin/repositories/new', kinds: admins, walk: chooser },
   { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen(userChips) },
   { id: 'admin-user', path: '/ui/admin/users/sam', kinds: admins },

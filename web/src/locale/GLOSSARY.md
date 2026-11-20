@@ -102,3 +102,7 @@ before using a new term in a German text.
 | documentation (of a collection), module, plugin, role, parameter, suboption, return value | Dokumentation, Modul, Plugin, Rolle, Parameter, Unteroption, Rückgabewert |
 | import log (tab of a version), docs site (link) | Import-Protokoll, Dokumentations-Website |
 | visibility, visibility level (Private, Internal, Public), wiki visibility | Sichtbarkeit, Sichtbarkeitsstufe (Privat, Intern, Öffentlich), Sichtbarkeit des Wikis |
+| upstream registry (a well-known repository of the project upstream), built-in (project), listed by (virtual repositories) | Upstream-Registry (Plural Upstream-Registrys), integriert, aufgenommen von |
+| switch on, switch off, on, off, switch all on | einschalten, ausschalten, an, aus, alle einschalten |
+| not switched on, switched off, no longer offered, placeholder (member), take no part, skipped | nicht eingeschaltet, ausgeschaltet, nicht mehr angeboten, Platzhalter, wirkt nicht mit, übersprungen |
+| account (of an upstream), archive keys, image scanning | Konto, Archivschlüssel, Image-Analyse |

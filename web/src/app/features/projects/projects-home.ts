@@ -4,14 +4,15 @@ import { firstValueFrom } from 'rxjs';
 import { collectAll } from '../../api/pagination';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
 import { ProjectContext } from '../../core/project-context';
+import { isUpstreamProject, upstreamFirst } from '../../core/upstream-project';
 import { SessionStore } from '../../core/session-store';
 import { valueOf } from '../../shared/paged-resource';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { QuaderDialog } from '../../shared/ui/dialog';
-import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ListHead } from '../../shared/ui/list-head';
-import { ProjectMark } from '../../shared/ui/project-mark';
+import { NoValue } from '../../shared/ui/no-value';
+import { ProjectLevel, ProjectMark } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectDialog } from './project-dialog';
 import { projectRoleLabel } from './project-roles';
@@ -25,7 +26,7 @@ import { projectRoleLabel } from './project-roles';
  */
 @Component({
   selector: 'quader-projects-home',
-  imports: [RouterLink, Checkbox, DataTable, ListHead, PageHeader, ProjectMark, VisibilityIcon],
+  imports: [RouterLink, Checkbox, DataTable, ListHead, NoValue, PageHeader, ProjectLevel, ProjectMark],
   template: `
     <quader-page-header [heading]="heading" [description]="hint()">
       @if (canCreate()) {
@@ -57,17 +58,27 @@ import { projectRoleLabel } from './project-roles';
               <quader-project-mark [key]="p.key" [name]="p.displayName" size="medium" />
               <span class="icon-name-text">
                 <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
+                <!-- The product's project, no team's (R-UI-190, Q-UI-835): its badge after the name; it has no role and no members. -->
+                @if (builtIn(p.key)) {
+                  &ngsp;<span class="badge" i18n="@@projects.built-in">Built-in</span>
+                }
                 <span class="secondary" translate="no">{{ p.key }}</span>
               </span>
             </span>
           </th>
           <td>{{ p.description }}</td>
-          <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
+          <td class="level"><quader-project-level [key]="p.key" [level]="p.visibility" /></td>
           @if (!anonymous()) {
             <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
           }
           <td class="num">{{ p.repositories }}</td>
-          <td class="num">{{ p.members }}</td>
+          <td class="num">
+            @if (builtIn(p.key)) {
+              <quader-no-value />
+            } @else {
+              {{ p.members }}
+            }
+          </td>
         </tr>
       }
     </quader-data-table>
@@ -97,7 +108,6 @@ export class ProjectsHome {
   /** The search of the project list (Q-UI-421). */
   protected readonly q = signal('');
   protected readonly searchLabel = $localize`:@@projects.search:Filter projects`;
-  protected readonly levelText = levelName;
   protected readonly onlyMine = signal(false);
   /** The memberships alone, from the server (`membership=true`); read only while the filter is on (R-UI-054). */
   private readonly mine = resource({
@@ -106,13 +116,17 @@ export class ProjectsHome {
   });
   /** The caller sees projects it is no member of: the filter has something to do. */
   protected readonly hasOthers = computed(() => this.context.projects().some((p) => p.role === undefined));
-  /** The caller's projects first, then the others its level admits, each group in key order. */
+  /**
+   * The built-in project `upstream` first whenever it is shown (the owner's Q-UI-837), then the caller's projects, then the others
+   * its level admits, each group in key order. A search that does not match `upstream` takes it out like any project.
+   */
   protected readonly shown = computed<readonly Project[]>(() => {
     const q = this.q().trim().toLowerCase();
     const source = this.onlyMine() ? (valueOf(this.mine) ?? []) : this.context.projects();
     const matching = source.filter((p) => !q || p.key.includes(q) || p.displayName.toLowerCase().includes(q));
-    return [...matching.filter((p) => p.role !== undefined), ...matching.filter((p) => p.role === undefined)];
+    return upstreamFirst([...matching.filter((p) => p.role !== undefined), ...matching.filter((p) => p.role === undefined)], (p) => p.key);
   });
+  protected readonly builtIn = isUpstreamProject;
   protected readonly emptyText = computed(() => {
     if (this.context.projects().length > 0) return $localize`:@@projects-home.empty-filtered:No project matches.`;
     return this.session.state() === 'anonymous'

@@ -518,6 +518,12 @@ const patterns: readonly { readonly name: string; readonly html: string }[] = [
     html: `<p><quader-project-mark class="quader-project-mark" data-letter="P"></quader-project-mark> Platform engineering</p>
       <div style="display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px"><quader-project-mark class="quader-project-mark medium" data-letter="P" style="grid-row:1 / span 2;align-self:center"></quader-project-mark><span>Platform engineering</span><span style="grid-column:2;font-size:0.75rem;line-height:1rem">platform</span></div>`,
   },
+  {
+    // The built-in project's mark holds the icon font's arrow where another holds its letter (Q-UI-837): the same box on the line.
+    name: "the built-in project upstream's mark, its arrow, beside a name of one line and beside a name and its key",
+    html: `<p><quader-project-mark class="quader-project-mark upstream"></quader-project-mark> Upstream</p>
+      <div style="display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px"><quader-project-mark class="quader-project-mark medium upstream" style="grid-row:1 / span 2;align-self:center"></quader-project-mark><span>Upstream <span class="badge">Built-in</span></span><span style="grid-column:2;font-size:0.75rem;line-height:1rem">upstream</span></div>`,
+  },
 ];
 
 test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => {

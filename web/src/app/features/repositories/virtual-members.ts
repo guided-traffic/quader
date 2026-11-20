@@ -11,6 +11,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { MemberPicker } from './member-picker';
+import { WellKnownMembers, memberState } from './well-known-members';
 
 /** What the editor asks its screen to store: the ordered member keys and the default deployment target (`null`: none). */
 export interface MemberChange {
@@ -51,13 +52,30 @@ export function decisionText(decision: string): string {
 }
 
 /**
+ * The decision of a placeholder (R-UI-189, R-REPO-072): a member of the project `upstream` that is not switched on, in the words of
+ * its badge, from the explanation's `upstreamState`.
+ */
+export function placeholderDecisionText(state: 'switched-off' | 'not-switched-on' | 'retired'): string {
+  switch (state) {
+    case 'not-switched-on':
+      return $localize`:@@virtual.decision.not-switched-on:Not switched on, so not asked`;
+    case 'switched-off':
+      return $localize`:@@virtual.decision.switched-off:Switched off, so not asked`;
+    case 'retired':
+      return $localize`:@@virtual.decision.retired:No longer offered, so not asked`;
+  }
+}
+
+/**
  * The member editor of a virtual repository (R-UI-022, Q-UI-210): the member picker (`quader-member-picker`, the two listboxes and
  * their buttons, shared with the creation form), the default deployment target among the members that are local, and a save of its
  * own. A server refusal (422 with a pointer such as `/virtual/members/1`) is shown on the member it names. The effective resolution
  * order is the saved list, and a sample path is explained member by member by `GET …/resolution`.
  *
- * Only the repositories of the virtual repository's own project and format that are no virtual repository and not the repository itself
- * are offered (R-REPO-017, Q-REPO-212); virtual members arrive with R-REPO-018.
+ * The repositories of the virtual repository's own project and format that are no virtual repository and not the repository itself
+ * are offered (R-REPO-017, Q-REPO-212), and the format's well-known repositories of the project `upstream` in a group of their own
+ * (R-UI-189, Q-REPO-371); virtual members arrive with R-REPO-018. A member that takes no part (not switched on, switched off, no
+ * longer offered) keeps its place; the section's head counts them and the effective order marks them as skipped (Q-UI-833).
  */
 @Component({
   selector: 'quader-virtual-members',
@@ -88,6 +106,26 @@ export class VirtualMembers {
   protected readonly deployTarget = linkedSignal<string | null>(() => this.storedTarget());
 
   protected readonly candidates = resource({ loader: () => this.api.listAll() });
+  private readonly wellKnownMembers = inject(WellKnownMembers);
+  /** The format's well-known repositories, with what the caller learns of their states (Q-UI-840); null while they load. */
+  private readonly wellKnownRead = resource({
+    params: () =>
+      this.candidates.value() ? { format: this.repo().format, readable: this.candidates.value() ?? [], writes: this.canWrite() } : undefined,
+    loader: async ({ params }) =>
+      this.wellKnownMembers.of(await this.wellKnownMembers.format(params.format), params.readable, params.writes),
+  });
+  protected readonly wellKnown = computed(() => this.wellKnownRead.value() ?? null);
+
+  /** The members that take no part, by name (R-UI-189): the section's head names them. */
+  protected readonly skipped = computed(() => this.members().filter((k) => memberState(k, this.wellKnown()) !== null));
+  protected readonly skippedText = computed(() => {
+    const names = this.skipped();
+    if (names.length === 0) return '';
+    const list = names.join(', ');
+    return names.length === 1
+      ? $localize`:@@wellknown.skipped.one:1 member takes no part: ${list}:names:.`
+      : $localize`:@@wellknown.skipped.many:${names.length}:count: members take no part: ${list}:names:.`;
+  });
 
   /** The repositories that may be members: same project and format, local or remote, not this one, not being deleted. */
   protected readonly pool = computed<readonly RepositorySummary[]>(() => {
@@ -129,7 +167,13 @@ export class VirtualMembers {
 
   // The effective resolution order is the saved list; the explanation of a path is asked for on demand.
   protected readonly effective = computed(() =>
-    this.storedMembers().map((key, i) => ({ key, position: i + 1, cls: this.classOf(key), target: key === this.storedTarget() })),
+    this.storedMembers().map((key, i) => ({
+      key,
+      position: i + 1,
+      cls: this.classOf(key),
+      target: key === this.storedTarget(),
+      skipped: memberState(key, this.wellKnown()) !== null,
+    })),
   );
   protected readonly samplePath = signal('');
   protected readonly explaining = signal(false);
@@ -137,6 +181,7 @@ export class VirtualMembers {
   protected readonly explainError = signal<ApiError | null>(null);
 
   protected classOf(key: string): 'local' | 'remote' | 'unknown' {
+    if (key.startsWith('upstream/')) return 'remote';
     const c = this.classes().get(key);
     return c === 'local' || c === 'remote' ? c : 'unknown';
   }
@@ -201,7 +246,7 @@ export class VirtualMembers {
     }
   }
 
-  protected decision(d: string): string {
-    return decisionText(d);
+  protected decision(m: RepositoryResolution['members'][number]): string {
+    return m.upstreamState ? placeholderDecisionText(m.upstreamState) : decisionText(m.decision);
   }
 }

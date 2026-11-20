@@ -17,6 +17,9 @@ import { ApiError } from '../../api/problem';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { ProjectContext } from '../../core/project-context';
+import { isUpstreamProject } from '../../core/upstream-project';
+import { UpstreamApi } from '../../api/upstream-api';
+import { stateBadge } from '../upstream/upstream-words';
 import { Confirm } from '../../shared/confirm-dialog';
 import { PageHeader } from '../../shared/ui/page-header';
 import { CopyButton } from '../../shared/copy-button';
@@ -109,11 +112,37 @@ export class RepositoryList {
   protected readonly inProject = (): boolean => this.route.snapshot.paramMap.has('project');
   /** The project the list is limited to: the project of the screen, or the filter of the admin list. */
   protected readonly projectKey = computed(() => this.project() || null);
-  /** Create goes to the wizard of the project when the list is limited to one the caller manages. */
-  protected readonly canCreateHere = computed(() => this.canCreate() || this.session.canWriteRepositories(this.projectKey()));
-  /** A repository may be deleted by the capability and by the Owners of its project. */
+  /** Create goes to the wizard of the project when the list is limited to one the caller manages; nothing is created in `upstream`. */
+  protected readonly canCreateHere = computed(
+    () => !isUpstreamProject(this.projectKey()) && (this.canCreate() || this.session.canWriteRepositories(this.projectKey())),
+  );
+  /** A repository may be deleted by the capability and by the Owners of its project; a well-known one never (R-UI-190). */
   protected canDeleteRow(row: RepositorySummary): boolean {
-    return this.session.canWriteRepositories(row.project);
+    return !isUpstreamProject(row.project) && this.session.canWriteRepositories(row.project);
+  }
+
+  private readonly upstreamApi = inject(UpstreamApi);
+  /**
+   * The retired well-known repositories, by key, for a caller who reads the admin list (R-UI-190): their rows say **No longer
+   * offered**, every other one that is off **Off**. Read only once the list shows one of them that is off.
+   */
+  private readonly retired = resource({
+    params: () =>
+      this.session.has('repositories:read-config') && this.list.items().some((r) => isUpstreamProject(r.project) && r.disabled)
+        ? true
+        : undefined,
+    loader: async (): Promise<ReadonlySet<string>> => {
+      try {
+        return new Set((await this.upstreamApi.list()).filter((r) => r.state === 'retired').map((r) => r.key));
+      } catch {
+        return new Set();
+      }
+    },
+  });
+  /** The state's badge of a row of the project `upstream` that is off (R-UI-190); null for any other row. */
+  protected wellKnownBadge(row: RepositorySummary): string | null {
+    if (!isUpstreamProject(row.project) || !row.disabled) return null;
+    return (valueOf(this.retired)?.has(row.key) ?? false) ? stateBadge('retired') : stateBadge('off');
   }
   /** The settings are offered to who may read or change the configuration (UI-A-06). */
   protected canConfigureRow(row: RepositorySummary): boolean {

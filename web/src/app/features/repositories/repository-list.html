@@ -114,7 +114,9 @@
               translate="no"
               >{{ row.key }}</a
             >
-            @if (row.disabled) {
+            @if (wellKnownBadge(row); as b) {
+              <span class="badge">{{ b }}</span>
+            } @else if (row.disabled) {
               <span class="badge" i18n="@@repo.badge.disabled">disabled</span>
             }
             @if (row.lifecycle === 'deleting') {

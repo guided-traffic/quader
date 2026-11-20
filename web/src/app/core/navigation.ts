@@ -1,6 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { ProjectContext, projectKeyOf } from './project-context';
 import { SessionStore } from './session-store';
+import { isUpstreamProject } from './upstream-project';
 
 /**
  * The capability that opens the security dashboard (R-UI-158, Q-AUTHZ-295): read on the metadata of every repository, which is
@@ -107,6 +108,8 @@ export const NAV_AREAS: readonly NavArea[] = [
           { kind: 'item', route: '/admin/dashboard', icon: 'dashboard', label: $localize`:@@nav.dashboard:Dashboard`, capability: 'settings:read' },
           { kind: 'item', route: '/admin/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects`, capability: 'projects:read' },
           { kind: 'item', route: '/admin/repositories', icon: 'inventory_2', label: $localize`:@@nav.repositories:Repositories`, capability: 'repositories:read-config' },
+          // The well-known repositories of the project `upstream`, switched on and off (R-UI-187).
+          { kind: 'item', route: '/admin/upstream', icon: 'cloud_download', label: $localize`:@@nav.upstream:Upstream registries`, capability: 'repositories:read-config' },
           { kind: 'item', route: '/admin/endpoints', icon: 'router', label: $localize`:@@nav.endpoints:Endpoints`, capability: 'endpoints:read' },
           // >>> M5b bastion
           { kind: 'item', route: '/admin/bastions', icon: 'public', label: $localize`:@@nav.bastions:Bastions`, capability: 'endpoints:read' },
@@ -183,6 +186,9 @@ export function projectEntries(key: string, session: SessionStore): readonly Nav
   const at = (path: string): string => `/projects/${encodeURIComponent(key)}/${path}`;
   const manages = (capability: string): boolean => session.has(capability) || session.isOwnerOf(key);
   const plain = !session.isAdministrator() && (session.projectRole(key) ?? 'reader') === 'reader';
+  // The built-in project `upstream` (R-UI-190, Q-UI-835): its content only. It has no members, policies, service accounts or CI
+  // mappings, and its settings are the product's.
+  const builtIn = isUpstreamProject(key);
   const access: NavItem[] = [
     ...(plain ? [] : [{ route: at('members'), icon: 'group', label: $localize`:@@nav.project.members:Members` }]),
     ...(manages('policies:read')
@@ -207,14 +213,18 @@ export function projectEntries(key: string, session: SessionStore): readonly Nav
     // >>> M4b vulnerabilities
     { kind: 'item', route: at('vulnerabilities'), icon: 'security', label: $localize`:@@nav.vulnerabilities:Vulnerabilities` },
     // <<< M4b vulnerabilities
-    {
-      kind: 'group',
-      id: 'project-access',
-      icon: 'shield',
-      label: $localize`:@@nav.section.project-access:Access`,
-      items: access,
-    },
-    ...(plain
+    ...(builtIn
+      ? []
+      : [
+          {
+            kind: 'group' as const,
+            id: 'project-access',
+            icon: 'shield',
+            label: $localize`:@@nav.section.project-access:Access`,
+            items: access,
+          },
+        ]),
+    ...(plain || builtIn
       ? []
       : [{ kind: 'item' as const, route: at('settings'), icon: 'settings', label: $localize`:@@nav.project.settings:Settings` }]),
   ];

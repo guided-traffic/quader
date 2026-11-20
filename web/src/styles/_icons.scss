@@ -8,6 +8,22 @@
   src: url('../../node_modules/material-icons/iconfont/material-icons-outlined.woff2') format('woff2');
 }
 
+// The glyph of the built-in project `upstream`'s mark (Q-UI-837): an arrow pointing up of this font, drawn by a `::before` as a
+// project's initial is, so it is not part of the name of the link around it. Its size is the place's.
+@mixin project-arrow {
+  content: 'arrow_upward';
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
+}
+
 .material-icons {
   font-family: 'Material Icons';
   font-weight: normal;

@@ -4,7 +4,9 @@
       <quader-visibility-icon [level]="level" />
     }
     <strong>{{ ref() }}</strong>
-    @if (stored()?.disabled) {
+    @if (wellKnownBadge(); as b) {
+      <span class="badge warn" translate="yes"><span class="material-icons" aria-hidden="true">warning</span>{{ b }}</span>
+    } @else if (stored()?.disabled) {
       <span class="badge" translate="yes" i18n="@@repo.settings.disabled-badge">Disabled</span>
     }
   </p>
@@ -23,7 +25,7 @@
 </ng-template>
 
 <ng-template #save let-section let-suffix="suffix">
-  @if (canChange()) {
+  @if (canSave(section)) {
     <div class="actions">
       <button class="btn btn-confirm" type="submit" [disabled]="!dirty(section) || saving() !== null">
         <ng-container i18n="@@repo.settings.save">Save changes</ng-container>
@@ -88,7 +90,7 @@
             class="area-input field-w-name"
             rows="2"
             maxlength="2000"
-            [readonly]="!canChange()"
+            [readonly]="!canSave('general')"
             [value]="current.description"
             [attr.aria-invalid]="errorsOf('general').has('/description') ? 'true' : null"
             (input)="setDescription($any($event.target).value)"
@@ -97,22 +99,83 @@
         <ng-container *ngTemplateOutlet="save; context: { $implicit: 'general', suffix: '' }" />
       </form>
 
-      @if (repo.visibility; as levels) {
+      @if (systemRepository()) {
+        <!-- scanner-trivy's level is the product's and its project has no members: one statement, not a group of levels (R-UI-190). -->
+        <section class="open-section managed" aria-labelledby="repo-visibility-fixed">
+          <h2 id="repo-visibility-fixed" i18n="@@repo.visibility.heading">Visibility</h2>
+          <p class="fixed-level">
+            <quader-visibility-icon level="private" /><span i18n="@@wellknown.system.level">Its visibility is always Private: only Quader's image scanning reads it.</span>
+          </p>
+        </section>
+      } @else if (repo.visibility; as levels) {
         <div class="open-section">
           <quader-repository-visibility
             [stored]="levels"
             [projectLevel]="projectLevel.value() ?? null"
             [hasWiki]="format()?.wiki ?? false"
-            [canWrite]="canChange()"
+            [canWrite]="canChange() && !managed()"
+            [managed]="managed()"
             [saving]="visibilitySaving()"
             [failure]="visibilityFailure()"
             [warnings]="visibilityWarnings()"
             (save)="saveVisibility($event)"
           />
+          @if (managed()) {
+            <ng-container *ngTemplateOutlet="managedLine" />
+          }
         </div>
       }
 
-      @if (upstreamSection() && format(); as upstreamFormat) {
+      <!-- The line of every section a well-known repository's administrator sets elsewhere (R-UI-190). -->
+      <ng-template #managedLine>
+        <p class="managed-line">
+          @if (adminLinked()) {
+            <ng-container i18n="@@wellknown.managed">Managed in <a [routerLink]="adminLink()">Admin area › Upstream registries</a>.</ng-container>
+          } @else {
+            <ng-container i18n="@@wellknown.managed-text">Managed in Admin area › Upstream registries.</ng-container>
+          }
+        </p>
+      </ng-template>
+
+      @if (upstreamSection() && managed()) {
+        <!-- A well-known repository's upstream: the address and the account are the administrator's of the admin area, read-only here;
+             Offline narrows what it serves and is saved here (R-REPO-069). -->
+        <form class="open-section managed" aria-labelledby="repo-upstream-managed" (submit)="saveSection('upstream', $event)" novalidate>
+          <h2 id="repo-upstream-managed" i18n="@@upstream.heading">Upstream</h2>
+          <ng-container *ngTemplateOutlet="managedLine" />
+          <div class="field">
+            <label class="field-label" for="f-remote-url-managed" i18n="@@upstream.url">Upstream URL</label>
+            <input id="f-remote-url-managed" class="text-input field-w-full" translate="no" readonly [value]="repo.remote?.url ?? ''" />
+          </div>
+          <dl class="facts">
+            <dt i18n="@@upstream.hosts">Further hosts</dt>
+            <dd>
+              @if (extraHostsText(); as hosts) {
+                <span translate="no">{{ hosts }}</span>
+              } @else {
+                <span i18n="@@upstream.hosts.none">No further host.</span>
+              }
+            </dd>
+            <dt i18n="@@wellknown.account.heading">Account</dt>
+            <dd>{{ accountText() }}</dd>
+          </dl>
+          <label class="check-row offline">
+            <input
+              type="checkbox"
+              [disabled]="!canSave('upstream')"
+              [checked]="current.upstream.offline"
+              aria-describedby="d-remote-offline-managed"
+              (change)="setOffline($any($event.target).checked)"
+            />
+            <span i18n="@@upstream.offline">Offline</span>
+          </label>
+          <p id="d-remote-offline-managed" class="hint" i18n="@@wellknown.offline.hint">Serve only what is cached; ask the registry nothing.</p>
+          <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'upstream' }" />
+          <ng-container *ngTemplateOutlet="save; context: { $implicit: 'upstream', suffix: sectionLabel('upstream') }" />
+        </form>
+      }
+
+      @if (upstreamSection() && !managed() && format(); as upstreamFormat) {
         <form class="open-section" (submit)="saveSection('upstream', $event)" novalidate>
           <fieldset class="plain" [disabled]="!canChange()">
             <quader-upstream-settings
@@ -200,7 +263,7 @@
             [note]="unsaved('format')"
           >
             <form (submit)="saveSection('format', $event)" novalidate>
-              <fieldset class="plain" [disabled]="!canChange()">
+              <fieldset class="plain" [disabled]="!canSave('format')">
                 <quader-format-settings
                   [nodes]="settingNodes()"
                   [pointer]="memberPointer()"
@@ -226,8 +289,11 @@
           [note]="unsaved('access')"
         >
           <form (submit)="saveSection('access', $event)" novalidate>
-            <quader-repository-fields section="paths" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
-            <quader-repository-fields section="access" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
+            <quader-repository-fields section="paths" [form]="current" (formChange)="setForm($event)" [readonly]="!canSave('access')" [fieldErrors]="errorsOf('access')" />
+            <!-- Hide existence is the product's on a well-known repository (R-REPO-069). -->
+            @if (!managed()) {
+              <quader-repository-fields section="access" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
+            }
             <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'access' }" />
             <ng-container *ngTemplateOutlet="save; context: { $implicit: 'access', suffix: sectionLabel('access') }" />
           </form>
@@ -247,7 +313,7 @@
           [note]="unsaved('notes')"
         >
           <form (submit)="saveSection('notes', $event)" novalidate>
-            <quader-repository-fields section="notes" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('notes')" />
+            <quader-repository-fields section="notes" [form]="current" (formChange)="setForm($event)" [readonly]="!canSave('notes')" [fieldErrors]="errorsOf('notes')" />
             <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'notes' }" />
             <ng-container *ngTemplateOutlet="save; context: { $implicit: 'notes', suffix: sectionLabel('notes') }" />
           </form>
@@ -368,8 +434,9 @@
           }
         </quader-disclosure>
 
-        @if (canChange()) {
-          <!-- What acts on the running repository comes last, behind its own closed section (Q-UI-352). -->
+        @if (canChange() && !managed()) {
+          <!-- What acts on the running repository comes last, behind its own closed section (Q-UI-352). A well-known repository is
+               never disabled, moved or deleted here (R-UI-190). -->
           <quader-disclosure
             class="advanced"
             i18n-heading="@@repo.detail.advanced"

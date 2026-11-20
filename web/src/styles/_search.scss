@@ -1,3 +1,5 @@
+@use 'icons';
+
 // The search field of the top bar and its list (R-UI-095 to R-UI-097): the field with its chip and filter on the top bar's fill,
 // the list under it on the menu surface, grouped with quiet headings, the admin groups apart behind a line and marked, and below
 // 36 rem a sheet over the top bar's width (Q-UI-403). Global and scoped to the element, as the shell's styles are.
@@ -216,6 +218,13 @@ quader-search-field {
 
     &::before {
       content: attr(data-letter);
+    }
+
+    // The built-in project `upstream` carries its arrow, as its mark does everywhere (Q-UI-837).
+    &.upstream::before {
+      @include icons.project-arrow;
+
+      font-size: 0.875rem;
     }
   }
 

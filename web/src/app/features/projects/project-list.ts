@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../api/problem';
 import { Project, ProjectsApi } from '../../api/projects-api';
 import { ProjectContext } from '../../core/project-context';
+import { isUpstreamProject, upstreamFirst } from '../../core/upstream-project';
 import { SessionStore } from '../../core/session-store';
 import { Needs } from '../../shared/access/needs';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -12,9 +13,8 @@ import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
-import { ProjectMark } from '../../shared/ui/project-mark';
+import { ProjectLevel, ProjectMark } from '../../shared/ui/project-mark';
 import { formatSize } from '../packages/format-size';
-import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import { ProjectDialog } from './project-dialog';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -29,7 +29,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'quader-project-list',
-  imports: [PageHeader, RouterLink, DataTable, ErrorNotice, ListHead, Needs, NoValue, ProjectMark, VisibilityIcon],
+  imports: [PageHeader, RouterLink, DataTable, ErrorNotice, ListHead, Needs, NoValue, ProjectLevel, ProjectMark],
   template: `
     <quader-page-header heading="Projects" i18n-heading="@@projects.heading">
       <button actions class="btn btn-confirm"
@@ -67,7 +67,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       (more)="list.more()"
       (retry)="list.reload()"
     >
-      @for (p of list.items(); track p.key) {
+      @for (p of rows(); track p.key) {
         <tr>
           <!-- The project's mark before its name, its key under it: the first column of every list of projects (Q-UI-424). -->
           <th scope="row">
@@ -75,11 +75,15 @@ import { PageHeader } from '../../shared/ui/page-header';
               <quader-project-mark [key]="p.key" [name]="p.displayName" size="medium" />
               <span class="icon-name-text">
                 <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
+                <!-- The product's project (R-UI-190): its badge, no Owners, no members, and nothing to edit or delete. -->
+                @if (builtIn(p.key)) {
+                  &ngsp;<span class="badge" i18n="@@projects.built-in">Built-in</span>
+                }
                 <span class="secondary" translate="no">{{ p.key }}</span>
               </span>
             </span>
           </th>
-          <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
+          <td class="level"><quader-project-level [key]="p.key" [level]="p.visibility" /></td>
           <td class="wrap" translate="no">
             @if (ownerSummary(p); as owners) {
               {{ owners }}
@@ -88,7 +92,13 @@ import { PageHeader } from '../../shared/ui/page-header';
             }
           </td>
           <!-- A count is a figure, at the column's end (Q-UI-574). -->
-          <td class="num">{{ p.members }}</td>
+          <td class="num">
+            @if (builtIn(p.key)) {
+              <quader-no-value />
+            } @else {
+              {{ p.members }}
+            }
+          </td>
           <td class="num">{{ p.repositories }}</td>
           <td class="num" [attr.title]="p.logicalBytes + ' B'">{{ size(p.logicalBytes) }}</td>
           <td class="actions">
@@ -113,7 +123,6 @@ export class ProjectList {
   protected readonly session = inject(SessionStore);
 
   protected readonly size = formatSize;
-  protected readonly levelText = levelName;
   protected readonly list = new PagedResource<Project>();
   protected readonly q = signal('');
   protected readonly sort = signal<TableSort>({ column: 'key', direction: 'asc' });
@@ -148,10 +157,17 @@ export class ProjectList {
     return p.owners.map((o) => o.replace(/^(user|group):/, '')).join(', ');
   }
 
-  /** `projects:write`, or the Owner role of the project (Q-AUTHZ-208). */
+  /** `projects:write`, or the Owner role of the project (Q-AUTHZ-208); the built-in project's name and level are the product's. */
   protected canEdit(p: Project): boolean {
-    return this.canWrite() || this.session.isOwnerOf(p.key);
+    return !isUpstreamProject(p.key) && (this.canWrite() || this.session.isOwnerOf(p.key));
   }
+
+  protected readonly builtIn = isUpstreamProject;
+  /**
+   * The loaded page in the server's order, the built-in project `upstream` first under either direction of the sort (the owner's
+   * Q-UI-837): the API lists it first, and the list keeps it there whatever it is sorted by.
+   */
+  protected readonly rows = computed(() => upstreamFirst(this.list.items(), (p) => p.key));
 
   protected async apply(): Promise<void> {
     const q = this.q().trim() || undefined;

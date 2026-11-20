@@ -1,8 +1,14 @@
 <div class="members">
-  <p class="hint" i18n="@@virtual.intro">
+  <p class="hint" i18n="@@virtual.intro-upstream">
     A virtual repository asks its members in this order and serves the first answer. It offers the local and remote repositories of
-    its own project and format.
+    its own project and format, and the registries Quader offers to every project.
   </p>
+  @if (skippedText(); as text) {
+    <p class="banner-warning" role="status" data-testid="vm-skipped">
+      <span class="material-icons inline warn" aria-hidden="true">warning</span>
+      <span>{{ text }}</span>
+    </p>
+  }
 
   @if (generalFailure(); as f) {
     <quader-error-notice [error]="f" />
@@ -16,6 +22,7 @@
   <form (submit)="submit($event)" novalidate>
     <quader-member-picker
       [pool]="pool()"
+      [wellKnown]="wellKnown()"
       [(members)]="members"
       [canWrite]="canWrite()"
       [errorAt]="memberErrorAt"
@@ -66,6 +73,9 @@
           @if (m.target) {
             <span class="class-tag" i18n="@@virtual.effective-target">Default deployment target</span>
           }
+          @if (m.skipped) {
+            <span class="class-tag" i18n="@@wellknown.effective-skipped">Skipped</span>
+          }
         </li>
       }
     </ol>
@@ -111,7 +121,7 @@
           @for (m of x.members; track m.key) {
             <tr>
               <th scope="row" translate="no">{{ m.key }}</th>
-              <td>{{ decision(m.decision) }}</td>
+              <td>{{ decision(m) }}</td>
             </tr>
           }
         </tbody>

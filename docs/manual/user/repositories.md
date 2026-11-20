@@ -32,6 +32,7 @@ A virtual repository is one address for several npm repositories, several NuGet 
 - Publishing through a virtual repository goes to its deployment target, a local member. A virtual repository without one refuses every publish.
 - For NuGet, the version list and the package documents of an ID are the union of the versions of its members. A version that two members hold comes from the first one in the order, and so does the package you download; a search lists a package once, with the versions of all members.
 - A name that a local member has claimed is served only from that member, so a public package with the same name and a higher version never replaces an internal one.
+- A member may be a public registry Quader offers to every project, `upstream/npmjs` or `upstream/docker-hub`, of the built-in project **Upstream**, which stands first in the list of projects with an arrow as its mark. Until an administrator switches it on, the virtual repository skips it, and a package only it would have served answers not found with a message that says so.
 
 ## Projects and repository keys
 

@@ -117,7 +117,8 @@ export const repositories: readonly RepoSeed[] = [
   { project: mainProject, key: 'scratch', format: 'generic', class: 'local' },
   { project: otherProject, key: 'base-images', format: 'oci', class: 'local', description: 'Hardened base images.' },
   { project: otherProject, key: 'docker-hub-remote', format: 'oci', class: 'remote', description: 'Docker Hub, cached.' },
-  { project: otherProject, key: 'containers', format: 'oci', class: 'virtual', members: ['base-images', 'docker-hub-remote'] },
+  // The last member is a public registry Quader offers, not switched on: the member editor shows it as a placeholder (R-UI-189).
+  { project: otherProject, key: 'containers', format: 'oci', class: 'virtual', members: ['base-images', 'docker-hub-remote', 'upstream/docker-hub'] },
   // A remote that a visitor without a session pulls through (owner, 2026-11-19): public, and bound to one namespace of the
   // upstream, because a request without a credential fills its cache.
   {

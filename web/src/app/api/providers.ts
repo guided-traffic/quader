@@ -50,6 +50,9 @@ import { HttpSearchApi, SearchApi } from './search-api';
 // >>> W-26 limits
 import { HttpLimitsApi, LimitsApi } from './limits-api';
 // <<< W-26 limits
+// >>> upstream
+import { HttpUpstreamApi, UpstreamApi } from './upstream-api';
+// <<< upstream
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -111,5 +114,8 @@ export function provideApiServices(): Provider[] {
     // >>> W-26 limits
     { provide: LimitsApi, useClass: HttpLimitsApi },
     // <<< W-26 limits
+    // >>> upstream
+    { provide: UpstreamApi, useClass: HttpUpstreamApi },
+    // <<< upstream
   ];
 }

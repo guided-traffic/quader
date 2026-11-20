@@ -10,6 +10,7 @@ import { RepositoriesApi, isConsumerView, repoRef } from '../../api/repositories
 import { CreateTokenRequest, TokensApi } from '../../api/tokens-api';
 import { repositoryCommands } from '../../core/project-links';
 import { SessionStore } from '../../core/session-store';
+import { isSystemRepository } from '../../core/upstream-project';
 import { AddressField } from '../../shared/address-field';
 import { CodeWindow } from '../../shared/code/code-window';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -125,6 +126,11 @@ export class ClientSetupPage {
     return project && key ? repoRef(project, key) : null;
   });
   protected readonly anonymous = computed(() => this.session.state() === 'anonymous');
+  /**
+   * A system repository of the project `upstream` (`scanner-trivy`): Quader's own work reads through it and every client's request
+   * is answered as for a repository that does not exist (R-REPO-070), so the page says so and asks for no snippet (R-UI-190).
+   */
+  protected readonly systemRepository = computed(() => isSystemRepository(this.project(), this.key()));
 
   protected readonly formats = resource({ loader: () => this.repositories.formats() });
   protected readonly loaded = resource({
@@ -184,7 +190,7 @@ export class ClientSetupPage {
     params: () => {
       const repository = this.ref();
       const client = this.activeClient();
-      if (!repository || !client || !this.repository()) return undefined;
+      if (!repository || !client || !this.repository() || this.systemRepository()) return undefined;
       return { repository, client, credentials: this.credentials(), bastion: this.activeBastion() };
     },
     loader: ({ params }) =>
@@ -199,7 +205,7 @@ export class ClientSetupPage {
   protected readonly guideAnswer = resource({
     params: () => {
       const client = this.activeClient();
-      if (!client || this.activeBastion()) return undefined;
+      if (!client || this.activeBastion() || this.systemRepository()) return undefined;
       const ref = this.ref();
       if (ref) return this.repository() ? { ref, format: '', cls: '', client } : undefined;
       const format = this.descriptor()?.name;

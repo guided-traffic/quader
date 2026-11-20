@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { upstreamFirst } from '../../core/upstream-project';
 import { Router, RouterLink } from '@angular/router';
 import {
   LimitMode,
@@ -200,7 +201,7 @@ export class UsageOverview {
 
   private async loadProjects(): Promise<void> {
     try {
-      const all = await collectAll(this.projectsApi.list({}));
+      const all = upstreamFirst(await collectAll(this.projectsApi.list({})), (p) => p.key);
       this.projectOptions.set([
         { value: '', label: $localize`:@@usage.filter.any:Any` },
         ...all.map((p) => ({ value: p.key, label: p.displayName || p.key })),

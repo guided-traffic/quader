@@ -45,7 +45,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
         <quader-visibility-level
           i18n-label="@@repo.visibility.level"
           label="Visibility level"
-          subject="artifacts"
+          [subject]="managed() ? 'upstream' : 'artifacts'"
           [value]="artifacts()"
           (valueChange)="artifacts.set($event)"
           [reasons]="artifactReasons()"
@@ -53,7 +53,8 @@ import { Disclosure } from '../../shared/ui/disclosure';
           [error]="artifactsError()"
           [disabled]="!canWrite()"
         />
-        @if (hasWiki()) {
+        <!-- A well-known repository has one level for its packages and its documentation, set in the admin area: no fold. -->
+        @if (hasWiki() && !managed()) {
           <quader-disclosure class="wiki" [inline]="true" [heading]="wikiHeading" [note]="wikiNote()" [(expanded)]="wikiOpen">
             <p class="muted wiki-text" i18n="@@repo.visibility.wiki-text">
               The wiki is the README and the documentation of the packages. It has the repository's visibility level unless a lower
@@ -87,7 +88,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
               <ng-container i18n="@@repo.visibility.save">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@repo.visibility.save-for"> (visibility)</span>
             </button>
-          } @else {
+          } @else if (!managed()) {
             <p class="muted" i18n="@@repo.visibility.read-only">
               Only the project's Owner and holders of repositories:write-config change the visibility.
             </p>
@@ -132,6 +133,12 @@ export class RepositoryVisibilityBlock {
   /** The format has wiki content (`wiki` of `GET /api/v1/formats`). */
   readonly hasWiki = input(false);
   readonly canWrite = input(false);
+  /**
+   * A well-known repository's level is set in the admin area, which the page says under the block (R-UI-190): no note of its own,
+   * and no fold Wiki visibility, because its one level covers its packages and its documentation and the repository document
+   * refuses a change of either (`422 managed_by_product` at `/visibility`).
+   */
+  readonly managed = input(false);
   readonly saving = input(false);
   readonly failure = input<ApiError | null>(null);
   /** The sentences of the answer's warnings, shown at the block. */

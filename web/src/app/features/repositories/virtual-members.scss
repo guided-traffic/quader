@@ -44,6 +44,13 @@ table.decisions {
   td {
     padding: var(--quader-space-1) var(--quader-space-3);
     text-align: start;
+    /* A decision that wraps keeps its first line on the member's line. */
+    vertical-align: top;
     border-block-end: 1px solid var(--quader-border);
+  }
+
+  /* A member's name is one identifier, upstream/docker-hub too: it is not broken at its hyphen; the decision wraps instead. */
+  tbody th {
+    white-space: nowrap;
   }
 }

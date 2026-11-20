@@ -463,3 +463,29 @@ describe('Set up client', () => {
     expect(snippets(oci, 'configure')[0]).toContain('--password-stdin');
   });
 });
+
+describe('Set up client of a system repository (R-UI-190)', () => {
+  it('R-UI-190 the page of upstream/scanner-trivy says that only the image scanning reads through it, and asks for no snippet or guide', async () => {
+    const r = await open(
+      { project: 'upstream', key: 'scanner-trivy' },
+      {
+        setup: (get) =>
+          (get(RepositoriesApi) as FakeRepositoriesApi).repositories.push({
+            key: 'scanner-trivy',
+            project: 'upstream',
+            class: 'remote',
+            format: 'oci',
+            description: 'Image scanning database',
+          } as never),
+      },
+    );
+    expect(text(r.root.querySelector('[data-testid="setup-system"]')!)).toBe(
+      "Quader's image scanning reads its database through this repository. Clients cannot use it.",
+    );
+    expect(r.root.querySelector('quader-setup-snippet, quader-code-window')).toBeNull();
+    expect(r.root.querySelector('quader-address-field')).toBeNull();
+    expect(r.setup.calls).toEqual([]);
+    expect(r.guides.calls).toEqual([]);
+    await expectAccessible(r.root);
+  });
+});

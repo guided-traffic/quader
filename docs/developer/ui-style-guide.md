@@ -44,8 +44,8 @@ three kinds of user they serve are [R-UI-067](../spec/api-and-ui.md#r-ui-067--th
 
 Take the first of these that fits, in this order:
 
-1. A shared control: `<quader-text-field>`, `<quader-select-field>`, `<quader-checkbox>`, `<quader-tab-group>`, `<quader-data-table>`,
-   `<quader-avatar>`, `QuaderDialog`, the `[quaderTooltip]` directive ([web/src/app/shared/](../../web/src/app/shared/)).
+1. A shared control: `<quader-text-field>`, `<quader-select-field>`, `<quader-checkbox>`, `<quader-switch>`, `<quader-tab-group>`,
+   `<quader-data-table>`, `<quader-avatar>`, `QuaderDialog`, the `[quaderTooltip]` directive ([web/src/app/shared/](../../web/src/app/shared/)).
 2. A class of [_controls.scss](../../web/src/styles/_controls.scss): `btn`, `text-input`, `select-input`, `badge`, `tab-nav`,
    `menu`. The table in [design-language.md](design-language.md#controls) lists each with its markup.
 3. A component style that uses only the `--quader-*` tokens of [_tokens.scss](../../web/src/styles/_tokens.scss).
@@ -170,12 +170,18 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
 
 - **A project is its mark and its name** ([Q-UI-424](../spec/api-and-ui.md#q-ui-424--a-projects-mark-is-one-component-before-its-name-wherever-a-project-is-listed)):
   in a list of projects `<quader-project-mark size="medium">` before the display name with the key under it; in a row that names
-  its project `<quader-project-link [key]>`, the small mark and the display name, linked. Never the key alone.
+  its project `<quader-project-link [key]>`, the small mark and the display name, linked. Never the key alone. The built-in project
+  `upstream` carries an arrow pointing up where every other project carries its initial, has the badge **Built-in** after its name,
+  and stands first in every list of projects the app builds, whatever the sort (the owner's
+  [Q-UI-837](../spec/api-and-ui.md#q-ui-837--the-project-upstream-stands-first-in-a-list-of-projects-and-its-mark-is-an-arrow-pointing-up)):
+  `upstreamFirst` of [upstream-project.ts](../../web/src/app/core/upstream-project.ts), the one place that knows the key. A project's
+  level in a list is `<quader-project-level [key] [level]>`: its icon and its name, and for `upstream` the en dash heard as "Each
+  registry has its own visibility." ([Q-UI-844](../spec/api-and-ui.md#q-ui-844--the-project-upstream-shows-no-level-of-its-own-each-registry-has-one)).
 - **A time in a list is relative**, its date and time the title: `<quader-time-ago [at] absolute="title" />` ("4 minutes ago",
   "in 4 weeks"). A log (the audit log, the issued CI tokens) writes the date and the time; a card or a page's facts the relative
   time with the absolute in brackets ([Q-UI-431](../spec/api-and-ui.md#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)).
-- An inline control in a row (the role select) has no visible label and an `aria-label` that names the row. It shows the current
-  value, and a change is saved at once, with the status message of the `Notifier`.
+- An inline control in a row (the role select, a level, a switch) has no visible label and an `aria-label` that names the row. It
+  shows the current value, and a change is saved at once, with the status message of the `Notifier`.
 - Filter and order work on what is loaded, or are sent to the server where the list is paged. A filter that finds nothing says
   so in a row of the table; an empty list says so in place of the table and offers the action that fills it.
 - **The head of a list** is `<quader-list-head>` ([list-head.ts](../../web/src/app/shared/ui/list-head.ts), [R-UI-100](../spec/api-and-ui.md#r-ui-100--the-head-of-every-list-the-search-by-name-filters-and-the-filters-that-are-set)): give
@@ -260,6 +266,20 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
 - A choice among the values of a list (the version of a package) is a select, so it looks like the choice it is.
 - A check box is `<quader-checkbox>`, its box a direct child of `.check-row`, which keeps it at 16 px beside a label of several
   lines ([Q-UI-575](../spec/api-and-ui.md#q-ui-575--a-check-box-keeps-its-size-beside-a-long-label)).
+- A thing that is on or off and changes at once, without a save (a public registry of **Upstream registries**), is a switch,
+  `<quader-switch [checked] [label] (checkedChange)>` ([switch.ts](../../web/src/app/shared/ui/switch.ts),
+  [Q-UI-830](../spec/api-and-ui.md#q-ui-830--upstream-registries-is-one-list-grouped-by-format-with-a-switch-and-a-level-in-each-row)).
+  A choice that a form saves stays a check box.
+
+  | Part | How |
+  |---|---|
+  | Element | A native `<button role="switch">` with `aria-checked`: Space and Enter toggle it, a screen reader says its name and "on" or "off" |
+  | Name | `label`, what it switches: "Switch on Docker Hub"; the visible word after it, **On** or **Off**, repeats the state and is `aria-hidden` (`showWord` false where the place says the state otherwise) |
+  | Track | 40 by 24 px (the target of R-UI-044), round; `--quader-accent-fill` when on, `--quader-control-border` when off, their hover tokens under the pointer; never green, which is a positive status |
+  | Knob | 16 px, `--quader-on-accent`, 4 px from the track's edge, with `check` or `close` of the icon font at 12 px in the track's colour; it slides over the motion duration (none under reduced motion) |
+  | Focus | The focus ring of every control, 2 px off the track |
+  | Line | Centred on its text's line by the line rule (`--quader-line`), so it makes a row's line no taller (R-UI-175) |
+  | State | The screen sets `checked` from the server's answer; a click only asks (`checkedChange`). `busy` holds it (`aria-busy`) while the answer is open; `disabled` where it cannot change. A reader without the right to change sees the word alone, no switch |
 - A choice among three or fewer exclusive things, where the reader should see them all, is a radio group, each option with a
   muted sentence under its label. Four or more is a select. A disabled option stays visible, muted, and says why.
 - A visibility level is chosen with `<quader-visibility-level>` ([visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts), [Q-UI-228](../spec/api-and-ui.md#q-ui-228--a-level-is-chosen-in-a-radio-group-of-three-each-with-its-icon-and-a-sentence)): a native radio group of Private, Internal and Public, each with its icon (`lock`, `shield`, `public`, as the owner's GitLab has them) and one muted sentence that names what the level admits for the `subject` (new projects, a project, artifacts, wiki). An option that cannot be chosen is disabled, stays visible and shows its reason under the sentence (`reasons`), which is also part of the option's description. A restricted level an administrator may still choose, or the level an object keeps, is enabled with a muted note under it (`notes`); a reason wins over a note, and the reasons come in the order of R-AUTHZ-038 (`firstReasons`). The group is named **Visibility level** where one level of a thing is chosen (a project, a repository). What the server answered for the level when it refused the save stands under the options (`error`: the field problem at the level's member), and a group inside a fold whose toggle names it keeps its legend for assistive technology only (`labelHidden`). A second level of the same thing that only an expert sets (the wiki's own level of a repository) is such a fold, closed while it has the first level and opened by the form while it differs ([Q-UI-770](../spec/api-and-ui.md#q-ui-770--the-wikis-own-level-is-a-fold-of-the-section-visibility-closed-while-the-wiki-has-the-repositorys-level)). The levels an administrator restricts are chosen with `<quader-restricted-levels>`, checkboxes laid out as the same options ([Q-UI-541](../spec/api-and-ui.md#q-ui-541--a-restricted-level-is-a-checkbox-laid-out-as-a-level-option-and-the-default-and-the-restricted-levels-exclude-each-other-in-the-form)). The same level shown before a name in a list or a header is `<quader-visibility-icon>`: the icon with the level's name as its accessible label and tooltip ([Q-UI-230](../spec/api-and-ui.md#q-ui-230--a-level-is-shown-as-an-icon-before-a-name-as-gitlab-shows-it)). The icon is not a status colour.

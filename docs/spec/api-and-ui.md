@@ -8161,8 +8161,9 @@ its own in the admin area on which an administrator switches each well-known rep
 action that switches all on and one that sets the visibility of all
 ([Q-UI-830](#q-ui-830--upstream-registries-is-one-list-grouped-by-format-with-a-switch-and-a-level-in-each-row)).
 
-- **Where.** The admin area's single entry **Upstream registries** after **Repositories** (R-UI-002), icon `public`, route
-  `/admin/upstream`, for a caller with `repositories:read-config`; the page reads `listUpstreamRepositories` (R-API-083).
+- **Where.** The admin area's single entry **Upstream registries** after **Repositories** (R-UI-002), icon `cloud_download`
+  ([Q-UI-838](#q-ui-838--upstream-registries-takes-the-icon-cloud_download-of-the-admin-areas-side-bar)), route `/admin/upstream`, for a caller with `repositories:read-config`; the page reads
+  `listUpstreamRepositories` (R-API-083).
 - **Header.** Title **Upstream registries**, with the number of preset repositories as its badge; the sentence "The public
   registries this installation offers to every project. Each is off until you switch it on." The primary action **Switch all on**
   (`btn btn-confirm`), the second **Set visibility of all** (`btn btn-default`); both only for `repositories:write-config`, and
@@ -8174,9 +8175,11 @@ action that switches all on and one that sets the visibility of all
   2. **On**: a switch (`role="switch"`, `aria-checked`, the shared `<quader-switch>`, its accessible name "Switch on Docker Hub") with
      the word **On** or **Off** after it, and, where the state says more than off, a `warn` badge **Switched off** for one switched
      off before, **No longer offered** for a retired one; a retired row has no switch. Read-only callers see the word only.
-  3. **Visibility**: `<quader-select-field>` of Private, Internal and Public with their icons, as wide as "Internal"; a level the
-     caller may not choose is disabled with its reason (R-UI-141). A row whose repository is `private` and on says under the select,
-     muted: "Only administrators and the principals a global policy names read it; teams' virtual repositories skip it."
+  3. **Visibility**: the level's icon and an inline select of Private, Internal and Public without a visible label, named
+     "Visibility of Docker Hub", as wide as "Internal" ([Q-UI-839](#q-ui-839--a-rows-level-is-an-inline-select-without-a-visible-label-the-levels-icon-before-it)); a level the caller may not choose is disabled
+     (R-UI-141). A row whose repository is `private` and on says under its name,
+     muted, with the row's other notes (Q-UI-839): "Only administrators and the principals a global policy names read it; teams'
+     virtual repositories skip it."
   4. **Listed by**: the number of virtual repositories that list it (`num`), or the en dash.
   5. One action, **Details** (R-UI-163), which opens R-UI-188.
   A note under the name, muted, where it applies: "Address differs from Quader's"; "The account was removed when Quader's address moved
@@ -8187,7 +8190,8 @@ action that switches all on and one that sets the visibility of all
   ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)).
 - **Switching** sends `setUpstreamRepositoryState` at once, without a dialog; the switch shows the server's answer and a `role="status"`
   line "Docker Hub is on." Switching off a repository that virtual repositories list asks first: "Switch off Docker Hub? 3 virtual
-  repositories in 2 projects list it. They skip it until it is on again; nothing of theirs changes." with **Switch off**.
+  repositories in 2 projects list it. They skip it until it is on again; nothing of theirs changes." with **Switch off** (`listedBy`
+  and `listedByProjects` of the list's item, [Q-API-363](#q-api-363--the-item-counts-the-listing-virtual-repositories-and-their-projects-and-an-answer-about-one-repository-names-them)).
 - **Switch all on** opens a dialog: "Switch on 11 registries? Each is Internal once it is on: everyone signed in who is not marked external,
   people and their pipelines and service accounts, can pull through it, directly and through every virtual repository that lists it.
   Quader contacts each registry when a client asks for something it has not stored." with the names of the registries it switches on, and **Switch all on**. It never offers Public (owner).
@@ -8229,10 +8233,12 @@ Priority: **MVP** · Covers: quader-only
      saved repository after the save; the unsaved test of R-REPO-024 before it), **Save account** and **Remove account**. A muted
      sentence above: "An account counts the pulls of every project against this account's allowance, and whoever can read this
      registry pulls with it." ([security/data-and-secret-flow.md](../security/data-and-secret-flow.md)).
-  4. **Details**, closed: **Listed by** (the virtual repositories by qualified name, as links, as far as the caller reads them, and the
-     number of the others), the settings an administrator narrows (a link to the repository's settings page, R-UI-190, for the
-     patterns, the vulnerability settings, offline and the cache-fill action), the limits of the repository (a link to R-UI-180),
-     created and last changed.
+  4. **Details**, closed: **Listed by** (the virtual repositories by qualified name, as links to their settings, as far as the caller
+     reads them, and the number of the others: `listedByNames` and `listedBy` of the item read,
+     [Q-API-363](#q-api-363--the-item-counts-the-listing-virtual-repositories-and-their-projects-and-an-answer-about-one-repository-names-them)), the settings an
+     administrator narrows (a link to the repository's settings page, R-UI-190, for the patterns, offline and the notes), the
+     limits of the repository (a link to the same page, whose section R-UI-180 is), created and last changed (read from the
+     repository's document when Details is first opened).
 - A retired repository's page says "Quader no longer offers this registry. Its cached content is being removed." and shows only
   **Listed by**.
 - Read-only for a caller without `repositories:write-config`.
@@ -8258,6 +8264,15 @@ Priority: **MVP** · Covers: quader-only
   not read through it unless a global policy names them."
 - **The section's head** says how many members take no part, when any: "1 member takes no part: upstream/npmjs." The "Effective
   resolution order" view marks placeholders as skipped.
+- **Where the states come from.** A caller with `repositories:read-config` reads the states above from `listUpstreamRepositories`.
+  Whoever may write the member list, the creation form and the editor of a caller who may change the repository (an Owner of its
+  project or a holder of `repositories:write-config`), reads the state and the level of each preset of the format that is not
+  retired from `listFormatUpstreamRepositories` ([Q-API-364](#q-api-364--a-writer-of-a-virtual-repository-reads-the-state-and-the-level-of-a-formats-well-known-repositories-through-an-operation-of-its-own)); a member that names none of them is **No longer offered**.
+  A caller who reads the member list but may not change it, and one that read refuses, is offered the format's upstream presets and
+  learns of each only what the repository list answers: one it reads that is disabled is **Off** ("Skipped until an administrator of
+  Quader switches it on."), one it does not read shows no state ([Q-UI-840](#q-ui-840--a-reader-who-may-not-change-a-virtual-repository-learns-a-registrys-state-from-what-it-reads)).
+- **Explain a path** names a placeholder by its state, from `upstreamState` of the resolution explanation, in the words of its badge:
+  "Not switched on, so not asked", "Switched off, so not asked", "No longer offered, so not asked".
 - The repository's header and the members list show nothing else of it; the client setup of the virtual repository is unchanged.
 
 Acceptance criteria (Vitest, the member editor's spec, about 1 s; journey `R-UI-022` unchanged): the picker of an npm virtual repository
@@ -8273,16 +8288,23 @@ Priority: **MVP** · Covers: quader-only
   projects shows it with the same badge and no **Delete**. It stands first in every list of projects it is in, above the other
   projects whatever the list is sorted by (a filter that does not match it takes it out), and its mark carries an arrow pointing
   up where every other project's carries its initial
-  ([Q-UI-837](#q-ui-837--the-project-upstream-stands-first-in-a-list-of-projects-and-its-mark-is-an-arrow-pointing-up)).
+  ([Q-UI-837](#q-ui-837--the-project-upstream-stands-first-in-a-list-of-projects-and-its-mark-is-an-arrow-pointing-up)). It shows no
+  level of its own: its Visibility cell is the en dash, heard as "Each registry has its own visibility.", and no level icon stands
+  beside its name in the lists, the switcher or a header ([Q-UI-844](#q-ui-844--the-project-upstream-shows-no-level-of-its-own-each-registry-has-one)).
 - **Its side bar**: the switcher, **Repositories**, **Packages**, **Vulnerabilities**; no **Access** group (it has no members,
   policies, service accounts or CI mappings) and no **Settings** entry. Its repository list is the project list of R-UI-020 with the
   state of each repository as a badge (**Off**, **No longer offered**) for a caller with `repositories:read-config`; a caller without
   it sees only what it reads.
 - **A repository's settings page** (R-UI-087): Key and Description read-only; **Visibility** and **Upstream** read-only, each with the
-  line "Managed in Admin area › Upstream registries." linked to R-UI-188 for an administrator; **Access details** (include and exclude
+  line "Managed in Admin area › Upstream registries." linked to R-UI-188 for an administrator; **Visibility** has no fold **Wiki
+  visibility**, because the repository's one level covers its packages and its documentation and the repository document refuses a
+  change of either (`422 managed_by_product` at `/visibility`, R-REPO-069); **Access details** (include and exclude
   patterns), the vulnerability settings, **Offline** and the cache-fill action editable for `repositories:write-config`; no
   **Mirror**, no **Disable repository**, no **Move to another project**, no **Delete repository**. `scanner-trivy` shows everything
-  read-only.
+  read-only, its level as one statement in place of the group of levels, "Its visibility is always Private: only Quader's image
+  scanning reads it.", without the line "Managed in …", which stays under **Upstream**, where its address is managed. The format's settings are read-only, **Hide existence** and **Service accounts** are absent, **Administrator notes**
+  stays editable; the vulnerability settings and the cache-fill action have no field on the settings page of any repository and
+  are set through the API ([Q-UI-842](#q-ui-842--the-settings-page-of-a-well-known-repository-reads-what-the-product-holds-and-edits-what-an-administrator-narrows)).
 - **Set up client** of a well-known repository is the page of R-UI-120, as for any remote; for `scanner-trivy` the page says "Quader's
   image scanning reads its database through this repository. Clients cannot use it." and shows no snippet.
 - **Search, Recently opened and the guides** list well-known repositories like any repository the caller reads, with the project's
@@ -8300,7 +8322,7 @@ Priority: **MVP** · Covers: quader-only
 - In the form of a new remote repository (R-UI-082), when the chosen preset's well-known repository is active and the caller reads
   it, one muted line under the presets says: "Docker Hub is offered to every project as upstream/docker-hub. A virtual repository can
   list it instead of a remote of your own." with the link **New virtual repository** to the form of a virtual repository of the same
-  format ([Q-UI-836](#q-ui-836--the-form-of-a-new-remote-names-the-central-repository-and-does-not-stop-the-create)). The create is not
+  format (the creation form with `?class=virtual`, which starts it at that class, [Q-UI-843](#q-ui-843--the-form-of-a-new-repository-starts-at-the-class-of-its-address); [Q-UI-836](#q-ui-836--the-form-of-a-new-remote-names-the-central-repository-and-does-not-stop-the-create)). The create is not
   stopped: a project's own remote repositories stay possible (owner).
 
 Acceptance criteria (Vitest, about 1 s): with `upstream/docker-hub` active and readable, **New OCI (Docker) repository** of class
@@ -20079,6 +20101,137 @@ without reading the list; the arrow says upstream where a letter would say "U" l
 agent would revisit which lists it holds for if the owner misses it in **Recently opened**, or if a second built-in project appears.
 
 **Applied in the spec:** R-UI-190, R-UI-102; [authorization.md](authorization.md) R-AUTHZ-041.
+
+### Q-UI-838 · Upstream registries takes the icon `cloud_download` of the admin area's side bar
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-187 named the icon `public` for the entry. The side bar of the admin area already shows `public` for **Bastions**,
+two entries below, and `public` is the icon of the level Public in every list (Q-UI-230): the entry would have looked like a
+second Bastions and like a level.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `cloud_download` (chosen) | A cloud with an arrow down | What the page offers: registries elsewhere that Quader pulls from; no other entry or level uses it | — |
+| (b) `public`, as written | A globe | The registries are public | The same icon as Bastions and as the level Public |
+| (c) `arrow_upward`, the project's mark | The arrow of Q-UI-837 | One sign for the project and its page | An arrow alone in a side bar of objects reads as a sort or a navigation |
+
+**Choice:** (a).
+
+**Rationale:** an icon tells entries apart; two equal icons in one side bar do the opposite. The development agent would revisit this
+if the owner wants the project's arrow on the entry as well.
+
+**Applied in the spec:** R-UI-187. Code: [navigation.ts](../../web/src/app/core/navigation.ts).
+
+### Q-UI-839 · A row's level is an inline select without a visible label, the level's icon before it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-187 named `<quader-select-field>` with the levels' icons. That field is a labelled form field (a visible label above
+the select), and a native select cannot draw an icon in its options.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The members list's inline select, `aria-label` "Visibility of Docker Hub", the current level's icon before it (chosen) | As a member's role is changed in place (the style guide's lists) | One way to change a value in a row across the app; the icon shows the level as the read-only column does | The icon names the stored level only |
+| (b) `<quader-select-field>` | A label in every row | The named control | A label "Visibility level" in twelve rows under a column of that name |
+| (c) A menu of three items with icons | Icons in the choices | Icons in the list | A second kind of control for one choice; a menu is no form control |
+
+**Choice:** (a). A level the caller may not choose is a disabled option; the reason is the server's answer under the select
+(`public_not_allowed`, `visibility_level_restricted`), as R-UI-187 has it. The note of a private registry that is on stands under
+the registry's name with the row's other notes, not under the select: the cell holds its control alone, so the row reads along one
+line (R-UI-176; under the select, the note was the cell's first text and stood 24 px below the row's line in the render).
+
+**Rationale:** the inline select is the app's form for a value saved at once in a row. The development agent would revisit this
+if the owner wants each option's icon in the choice, which needs a listbox of its own.
+
+**Applied in the spec:** R-UI-187. Code: [upstream-registries.ts](../../web/src/app/features/upstream/upstream-registries.ts).
+
+### Q-UI-840 · A reader who may not change a virtual repository learns a registry's state from what it reads
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the member editor of R-UI-189 shows the state of each registry of the format, in the picker and on a placeholder. A holder
+of `repositories:read-config` reads the states from `listUpstreamRepositories`, and whoever may write the member list reads them with
+the levels from `listFormatUpstreamRepositories` ([Q-API-364](#q-api-364--a-writer-of-a-virtual-repository-reads-the-state-and-the-level-of-a-formats-well-known-repositories-through-an-operation-of-its-own)). The settings page also shows the member list, read-only, to a
+member of the project below the Owner, who holds neither; the repository list answers such a caller `disabled` only for a registry it
+reads.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The format's presets are the registries offered; a read one that is disabled is **Off**, an unread one has no state; a member naming no preset is **No longer offered** (chosen) | What the API answers a reader, said as far as it goes | No request a reader is refused; nothing claimed the caller cannot know | "Not switched on" and "Switched off" read the same for a reader |
+| (b) Ask `listFormatUpstreamRepositories` for every caller and say nothing on its `403` | One source | Exact for a writer, as (a) is | A refused request on every view of a reader's settings page |
+| (c) Admit every reader of a virtual repository to the read of a format | Exact for everyone | The three words exact for a reader too | The API's decision, which chose the writers (Q-API-364 (a')): a reader would learn the state and the level of registries it can neither list nor read |
+
+**Choice:** (a), also for a writer whose read of the format answers an error.
+
+**Rationale:** the screen says what the caller's reads show and no more; a reader changes nothing about a member, so the two states
+that tell an administrator's two actions apart are not what it needs. The development agent would revisit this if the read of a
+format ever admits the readers of a virtual repository.
+
+**Applied in the spec:** R-UI-189. Code: [well-known-members.ts](../../web/src/app/features/repositories/well-known-members.ts).
+
+### Q-UI-842 · The settings page of a well-known repository reads what the product holds and edits what an administrator narrows
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-190 lists the sections that are read-only and those that stay editable; it names neither the format's settings,
+**Hide existence**, **Administrator notes** nor the repository's service accounts, and it names the vulnerability settings and the
+cache-fill action as editable, which the settings page of no repository has a field for.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The table of R-REPO-069 decides: the format's settings read-only, Hide existence absent, notes editable, no service accounts (chosen) | Every member as R-REPO-069 says who sets it | One rule, the server's | — |
+| (b) Leave out every section R-UI-190 does not name | A shorter page | Simple | An administrator could not read the format's settings or write notes |
+
+**Choice:** (a). The upstream's section shows the address and the account read-only with the line of R-UI-190 and keeps **Offline**
+with its own save; the vulnerability settings and the cache-fill action are set through the API, as on every repository, until the
+settings page has fields for them.
+
+**Rationale:** R-REPO-069 is the table of who sets what; the page follows it. The development agent sees no case for revisiting
+this.
+
+**Applied in the spec:** R-UI-190. Code: [repository-detail.html](../../web/src/app/features/repositories/repository-detail.html).
+
+### Q-UI-843 · The form of a new repository starts at the class of its address
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-191's link leads to "the form of a virtual repository of the same format". The creation form starts at local
+(Q-UI-341) and had no way to be opened at another class.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `?class=virtual` on the form's address, used where it is one of the format's classes (chosen) | `/projects/web/repositories/new/oci?class=virtual` | The link opens what it says; the address can be shared | One more query parameter |
+| (b) The form of the format, at local | No change | — | The link says virtual and opens local |
+
+**Choice:** (a). A draft kept across a sign-in still wins (R-UI-043).
+
+**Rationale:** a link names what it opens. The development agent sees no case for revisiting this.
+
+**Applied in the spec:** R-UI-191. Code: [repository-create.ts](../../web/src/app/features/repositories/repository-create.ts).
+
+### Q-UI-844 · The project `upstream` shows no level of its own: each registry has one
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the project is stored `public` so that each well-known repository can take any level (Q-AUTHZ-301), and that stored level
+admits nobody: the project is seen by the holders of `projects:read` and by whoever reads one of its repositories (R-AUTHZ-041).
+The lists of projects showed **Public** with the globe, which by the owner's definition says that anyone reads it, also without
+signing in.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The en dash in the Visibility cell, heard as "Each registry has its own visibility.", and no level icon beside the project's name (chosen) | The lists, the switcher's head and a header show no level for it | Says nothing false; the reader learns where the levels are | One project of the list without a level |
+| (b) The stored level, **Public** | As stored | One rule for every project | Public means "anyone, also without signing in", which is false here |
+| (c) The highest level among the registries that are on | Derived | A level that is true of one registry | Says nothing of the others, changes when one is switched; the list does not read the registries |
+
+**Choice:** (a). `<quader-project-level>` of [project-mark.ts](../../web/src/app/shared/ui/project-mark.ts) draws a project's level in
+the start page, the admin area's projects and the search's **Projects**; the switcher leaves the icon out of its head for the project.
+
+**Rationale:** a level shown is a promise of who reads; the project makes none, its registries do. The development agent would
+revisit this if the project ever has a level that decides something.
+
+**Applied in the spec:** R-UI-190.
 
 ### Q-UI-850 · The sources screen names the database's repository, links it, and shows how to fill a local one
 

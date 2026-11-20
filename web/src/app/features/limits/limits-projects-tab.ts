@@ -7,6 +7,7 @@ import { ApiError } from '../../api/problem';
 import { ProjectsApi } from '../../api/projects-api';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
+import { upstreamFirst } from '../../core/upstream-project';
 import { Confirm } from '../../shared/confirm-dialog';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -129,10 +130,12 @@ export class LimitsProjectsTab {
   protected readonly rows = signal<readonly ProjectLimitsRow[] | null>(null);
   private readonly profiles = signal<readonly LimitProfile[]>([]);
   protected readonly failure = signal<ApiError | null>(null);
+  /** The rows that match the search, the built-in project `upstream` first (Q-UI-837). */
   protected readonly shown = computed(() => {
     const q = this.q().trim().toLocaleLowerCase();
-    return (this.rows() ?? []).filter(
-      (r) => !q || r.project.includes(q) || r.displayName.toLocaleLowerCase().includes(q),
+    return upstreamFirst(
+      (this.rows() ?? []).filter((r) => !q || r.project.includes(q) || r.displayName.toLocaleLowerCase().includes(q)),
+      (r) => r.project,
     );
   });
   protected readonly emptyText = computed(() =>
@@ -172,7 +175,10 @@ export class LimitsProjectsTab {
 
   protected async add(): Promise<void> {
     const withMaximum = new Set((this.rows() ?? []).filter((r) => r.maximum).map((r) => r.project));
-    const projects = (await collectAll(this.projectsApi.list({}))).filter((p) => !withMaximum.has(p.key));
+    const projects = upstreamFirst(
+      (await collectAll(this.projectsApi.list({}))).filter((p) => !withMaximum.has(p.key)),
+      (p) => p.key,
+    );
     await this.open({ maximum: null, projects: projects.map((p) => ({ key: p.key, displayName: p.displayName })) });
   }
 

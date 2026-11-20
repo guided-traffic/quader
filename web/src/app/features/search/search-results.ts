@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { isUpstreamProject } from '../../core/upstream-project';
+import { NoValue } from '../../shared/ui/no-value';
 import { Router, RouterLink } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../api/packages-api';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
@@ -8,8 +10,8 @@ import { PagedResource, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TabContent, TabGroup, TabPage } from '../../shared/ui/tabs';
-import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
-import { ProjectLink, ProjectMark } from '../../shared/ui/project-mark';
+import { VisibilityIcon } from '../../shared/ui/visibility-level';
+import { ProjectLevel, ProjectLink, ProjectMark } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { packageCommands } from '../packages/package-links';
 import { projectRoleLabel } from '../projects/project-roles';
@@ -33,7 +35,7 @@ const PAGE = 25;
  */
 @Component({
   selector: 'quader-search-results',
-  imports: [RouterLink, DataTable, FormatIconView, PageHeader, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, VisibilityIcon],
+  imports: [RouterLink, DataTable, FormatIconView, PageHeader, NoValue, ProjectLevel, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [description]="description()" />
 
@@ -143,15 +145,25 @@ const PAGE = 25;
                     <quader-project-mark [key]="p.key" [name]="p.displayName" size="medium" />
                     <span class="icon-name-text">
                       <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
+                      <!-- The product's project, as the start page shows it (R-UI-190): its badge, no role and no members. -->
+                      @if (builtIn(p.key)) {
+                        &ngsp;<span class="badge" i18n="@@projects.built-in">Built-in</span>
+                      }
                       <span class="secondary" translate="no">{{ p.key }}</span>
                     </span>
                   </span>
                 </th>
                 <td>{{ p.description }}</td>
-                <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
+                <td class="level"><quader-project-level [key]="p.key" [level]="p.visibility" /></td>
                 <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
                 <td class="num">{{ p.repositories }}</td>
-                <td class="num">{{ p.members }}</td>
+                <td class="num">
+                  @if (builtIn(p.key)) {
+                    <quader-no-value />
+                  } @else {
+                    {{ p.members }}
+                  }
+                </td>
               </tr>
             }
           </quader-data-table>
@@ -256,7 +268,6 @@ export class SearchResults {
   ];
   protected readonly refOf = refOf;
   protected readonly classText = classLabel;
-  protected readonly levelText = levelName;
 
   constructor() {
     // Each tab reads its list when it is shown, with the text; a text of fewer than two characters asks nothing.
@@ -294,6 +305,8 @@ export class SearchResults {
   }
 
   protected readonly classIcon = classIcon;
+
+  protected readonly builtIn = isUpstreamProject;
 
   protected roleLabel(role: ProjectRole): string {
     return projectRoleLabel(role);

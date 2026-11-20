@@ -138,6 +138,9 @@
           [fieldErrors]="fieldErrors()"
           [defaults]="defaultDocument()"
           [submitted]="submitted()"
+          [central]="activeCentral()"
+          [virtualLink]="newVirtualLink()"
+          [virtualQuery]="newVirtualQuery()"
         />
       </div>
     }
@@ -145,11 +148,13 @@
     @if (cls() === 'virtual') {
       <section class="group" aria-labelledby="g-members">
         <h2 id="g-members" i18n="@@repo.create.members">Members</h2>
-        <p class="hint" i18n="@@repo.create.members-hint">
-          The repositories this one serves from, asked in this order. Only local and remote repositories of this project and format are offered.
+        <p class="hint" i18n="@@repo.create.members-hint-upstream">
+          The repositories this one serves from, asked in this order: the local and remote repositories of this project and format, and
+          the registries Quader offers to every project.
         </p>
         <quader-member-picker
           [pool]="pool()"
+          [wellKnown]="wellKnown()"
           [(members)]="members"
           [emptyText]="membersEmpty"
           (added)="presetTarget()"

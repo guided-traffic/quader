@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, inject, input, signal, viewChild } fro
 import { RouterLink } from '@angular/router';
 import { Project } from '../../api/projects-api';
 import { ProjectContext } from '../../core/project-context';
+import { isUpstreamProject, upstreamFirst } from '../../core/upstream-project';
 import { ProjectMark } from '../../shared/ui/project-mark';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
 
@@ -33,8 +34,11 @@ const SHOWN = 20;
       <quader-project-mark [key]="current() ?? ''" [name]="label()" size="medium" />
       <span class="switcher-text">
         <span class="switcher-name" translate="no">
+          <!-- The built-in project has no level of its own: each registry has one (Q-UI-844). -->
           @if (context.current(); as project) {
-            <quader-visibility-icon [level]="project.visibility" />
+            @if (!builtIn(project.key)) {
+              <quader-visibility-icon [level]="project.visibility" />
+            }
           }
           {{ label() }}
         </span>
@@ -109,6 +113,7 @@ export class ProjectSwitcher {
   protected readonly open = signal(false);
   protected readonly query = signal('');
   protected readonly current = this.context.key;
+  protected readonly builtIn = isUpstreamProject;
 
   /** The recently visited projects that still exist, newest first, without the current one. */
   protected readonly recent = computed<readonly Project[]>(() => {
@@ -121,12 +126,13 @@ export class ProjectSwitcher {
         return p ? [p] : [];
       });
   });
+  /** The matches, the built-in project `upstream` first while it matches (Q-UI-837); the recent ones keep their own order. */
   protected readonly matches = computed<readonly Project[]>(() => {
     const q = this.query().trim().toLowerCase();
-    return this.context
-      .projects()
-      .filter((p) => !q || p.key.includes(q) || p.displayName.toLowerCase().includes(q))
-      .slice(0, SHOWN);
+    return upstreamFirst(
+      this.context.projects().filter((p) => !q || p.key.includes(q) || p.displayName.toLowerCase().includes(q)),
+      (p) => p.key,
+    ).slice(0, SHOWN);
   });
 
   protected toggle(): void {

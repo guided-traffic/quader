@@ -62,6 +62,9 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/admin/permissions/team-a', 'Permission policy', 'team-a'],
   ['/admin/roles', 'System roles'],
   ['/admin/tokens', 'Tokens'],
+  // The heading carries the number of the registries (Q-UI-550).
+  ['/admin/upstream', 'Upstream registries', 'Upstream registries 12'],
+  ['/admin/upstream/docker-hub', 'Upstream registry', 'Docker Hub'],
   ['/admin/endpoints', 'Endpoints'],
   ['/admin/bastions', 'Bastions'],
   // >>> M4b vulnerabilities

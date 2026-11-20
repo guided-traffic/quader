@@ -109,6 +109,12 @@ export const routes: Routes = [
             loadChildren: () =>
               import('./features/repositories/repositories.routes').then((m) => m.REPOSITORIES_ROUTES),
           },
+          // The well-known repositories of the built-in project `upstream` (R-UI-187, R-UI-188).
+          {
+            path: 'upstream',
+            data: wrapper($localize`:@@wellknown.heading:Upstream registries`),
+            loadChildren: () => import('./features/upstream/upstream.routes').then((m) => m.UPSTREAM_ROUTES),
+          },
           {
             path: 'users',
             data: wrapper($localize`:@@route.users.title:Users`),

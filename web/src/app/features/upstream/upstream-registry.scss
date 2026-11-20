@@ -1,0 +1,220 @@
+// The page of one registry (R-UI-188): the style guide's settings page, one column of at most the settings measure, the open
+// sections with a heading over a hairline, as the repository's settings page has them (repository-detail.scss).
+
+.settings {
+  max-inline-size: var(--quader-settings-measure);
+}
+
+// The format's icon and name, the repository's name and the kind's badge on one line, wrapping as a line of facts does.
+.subject {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-1) var(--quader-space-2);
+  margin: var(--quader-space-1) 0 0;
+  line-height: var(--quader-text-line);
+
+  // The format's icon (20 px) on the middle of the line of its name (R-UI-175): a logo's box was 24 px and stood 1.6 px low.
+  > quader-format-icon {
+    display: inline-flex;
+    flex: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    margin-block: calc((var(--quader-text-line) - 1.25rem) / 2);
+  }
+
+  > .badge {
+    flex: none;
+  }
+
+  // The dot has the same space on both sides: the row's gap stands before it already.
+  > .dot-before {
+    margin-inline-start: calc(-1 * var(--quader-space-2));
+  }
+}
+
+.open-section {
+  padding-block: var(--quader-space-4) var(--quader-space-5);
+  border-block-start: 1px solid var(--quader-border);
+
+  &.first {
+    border-block-start: 0;
+    padding-block-start: 0;
+  }
+
+  // A section's head is the document's h2, as Visibility and Upstream of a repository's settings page are (Q-UI-351), so that a
+  // section reads above the fields under it.
+  > h2 {
+    font: revert;
+    margin: revert;
+  }
+
+  > .hint {
+    margin: 0 0 var(--quader-space-3);
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  margin-block-end: var(--quader-space-4);
+
+  .hint {
+    margin: 0;
+  }
+}
+
+// The switch with its word and a state's badge, under its label, as a field stands under its label.
+.state-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  margin-block-end: var(--quader-space-4);
+}
+
+.state-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+}
+
+.level-row {
+  display: flex;
+  align-items: center;
+  gap: var(--quader-space-2);
+
+  > .level-select {
+    inline-size: auto;
+  }
+}
+
+.differs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-1) var(--quader-space-2);
+  margin-block-end: var(--quader-space-3);
+
+  // Quader's address at the text's size, so that the badge beside it stands on the middle of its line (R-UI-175).
+  > .product-address {
+    color: var(--quader-text-muted);
+    overflow-wrap: anywhere;
+  }
+}
+
+// A date in a notice is one piece (Q-UI-428).
+.banner-warning time {
+  white-space: nowrap;
+}
+
+.plain {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.scanner-link {
+  margin: calc(-1 * var(--quader-space-2)) 0 var(--quader-space-4);
+}
+
+// A further host: its pattern, whether it receives the credential and its Remove, on one line where they fit.
+.host-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2) var(--quader-space-4);
+  margin-block-end: var(--quader-space-2);
+
+  > .check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--quader-space-2);
+  }
+}
+
+.keys {
+  margin: 0 0 var(--quader-space-2);
+  padding: 0;
+  list-style: none;
+
+  li {
+    margin-block-end: var(--quader-space-1);
+  }
+
+  code {
+    font-family: var(--quader-font-mono);
+    overflow-wrap: anywhere;
+  }
+
+  .secondary {
+    display: block;
+    color: var(--quader-text-muted);
+    font-size: var(--quader-text-muted-size);
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-3);
+  margin-block-start: var(--quader-space-3);
+}
+
+.credential-line {
+  margin: calc(-1 * var(--quader-space-2)) 0 var(--quader-space-3);
+}
+
+.test-result {
+  margin-block-start: var(--quader-space-3);
+
+  // The verdict's icon in a column of its own, so that a sentence that wraps keeps it on its first line (R-UI-170).
+  .verdict {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--quader-space-2);
+    margin: 0;
+  }
+
+  .ok-icon {
+    color: var(--quader-status-ok);
+  }
+
+  .warn-icon {
+    color: var(--quader-status-warn);
+  }
+
+  .secondary {
+    grid-column: 2;
+    color: var(--quader-text-muted);
+  }
+}
+
+.system-use,
+.listed {
+  margin: 0;
+}
+
+/* The listing virtual repositories, one per line under the count, as the names of a list (R-UI-188). */
+.listed-names {
+  margin: var(--quader-space-1) 0 0;
+  padding: 0;
+  list-style: none;
+
+  a {
+    overflow-wrap: anywhere;
+  }
+}
+
+.listed-others {
+  margin: var(--quader-space-1) 0 0;
+  color: var(--quader-text-muted);
+}
+
+.details {
+  border-block-start: 1px solid var(--quader-border);
+}

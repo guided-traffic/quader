@@ -16,6 +16,8 @@ import {
 import { Notifier } from '../../core/notifier';
 import { ServerAddress } from '../../core/server-address';
 import { SessionStore } from '../../core/session-store';
+import { UPSTREAM_PROJECT, isUpstreamProject } from '../../core/upstream-project';
+import { WellKnownMembers } from './well-known-members';
 import { SelectOption } from '../../shared/access/fields';
 import { DraftStore } from '../../shared/drafts';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -137,6 +139,11 @@ export class RepositoryCreate implements HasUnsavedChanges {
   readonly project = input<string | undefined>();
   /** Route parameter `:format`: the format the form is for. */
   readonly format = input<string | undefined>();
+  /**
+   * The query parameter `class`: the class the form starts with where it is one of the format's. The line under the presets of a
+   * new remote leads to a new virtual repository of the same format with it (R-UI-191).
+   */
+  readonly class = input<string | undefined>();
 
   private readonly summaryView = viewChild(ErrorSummary);
 
@@ -209,7 +216,8 @@ export class RepositoryCreate implements HasUnsavedChanges {
   protected readonly loadingProjects = $localize`:@@repo.create.project-loading:Loading projects…`;
   protected readonly projectOptions = computed<readonly SelectOption[]>(() => [
     { value: '', label: $localize`:@@repo.create.project-choose:Choose a project` },
-    ...(valueOf(this.projects) ?? []).map((k) => ({ value: k, label: k })),
+    // Nothing is created in the built-in project `upstream` (R-REPO-069).
+    ...(valueOf(this.projects) ?? []).filter((k) => !isUpstreamProject(k)).map((k) => ({ value: k, label: k })),
   ]);
 
   // ---- Class and the defaults of the class (R-REPO-063) ----
@@ -219,7 +227,9 @@ export class RepositoryCreate implements HasUnsavedChanges {
   private restoredClass: RepositoryClass | null = null;
   protected readonly cls = linkedSignal<RepositoryClass>(() => {
     const f = this.descriptor();
-    return this.restoredClass !== null && f?.classes.includes(this.restoredClass) ? this.restoredClass : presetClass(f);
+    if (this.restoredClass !== null && f?.classes.includes(this.restoredClass)) return this.restoredClass;
+    const start = this.class() as RepositoryClass | undefined;
+    return start && f?.classes.includes(start) ? start : presetClass(f);
   });
   protected readonly defaults = resource({
     params: () => {
@@ -323,6 +333,42 @@ export class RepositoryCreate implements HasUnsavedChanges {
     ),
   );
   private readonly poolClasses = computed(() => new Map(this.pool().map((s) => [s.key, s.class] as const)));
+  private readonly wellKnownMembers = inject(WellKnownMembers);
+  /** The format's well-known repositories of the project `upstream`, the group of the picker (R-UI-189); null while they load. */
+  private readonly wellKnownRead = resource({
+    params: () => {
+      const readable = valueOf(this.candidates);
+      return readable && this.cls() === 'virtual' ? { format: this.descriptor(), readable } : undefined;
+    },
+    // Whoever creates a virtual repository writes its member list.
+    loader: ({ params }) => this.wellKnownMembers.of(params.format, params.readable, true),
+  });
+  protected readonly wellKnown = computed(() => valueOf(this.wellKnownRead) ?? null);
+
+  // ---- The central repository of a preset (R-UI-191, Q-UI-836) ----
+
+  /** The keys of the format's well-known repositories that are active and that the caller reads. */
+  private readonly centralRead = resource({
+    params: () => (this.cls() === 'remote' ? this.descriptor()?.name : undefined),
+    loader: async ({ params }): Promise<ReadonlySet<string>> => {
+      try {
+        const rows = await collectAll(this.api.list({ project: UPSTREAM_PROJECT, format: params }));
+        return new Set(rows.filter((r) => !r.disabled && r.lifecycle !== 'deleting').map((r) => r.key));
+      } catch {
+        return new Set();
+      }
+    },
+  });
+  protected readonly activeCentral = computed<ReadonlySet<string>>(() => valueOf(this.centralRead) ?? new Set());
+  /** The form of a new virtual repository of the same format, where the line under the presets leads. */
+  protected readonly newVirtualLink = computed(() =>
+    this.inProject()
+      ? ['/projects', this.chosenProject(), 'repositories', 'new', this.format() ?? '']
+      : ['/admin/repositories/new', this.format() ?? ''],
+  );
+  protected readonly newVirtualQuery = computed<Readonly<Record<string, string>>>(() =>
+    this.inProject() ? { class: 'virtual' } : { class: 'virtual', ...(this.chosenProject() ? { project: this.chosenProject() } : {}) },
+  );
   protected readonly targetOptions = computed<readonly SelectOption[]>(() => [
     { value: '', label: $localize`:@@virtual.target.none:None: the repository is read-only` },
     ...this.members()

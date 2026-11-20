@@ -40,6 +40,7 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   // <<< W-26 limits
   ['/admin/projects', { section: 'admin', page: 'projects' }],
   ['/admin/repositories', { section: 'admin', page: 'repositories' }],
+  ['/admin/upstream', { section: 'admin', page: 'upstream-registries' }],
   ['/admin/endpoints', { section: 'admin', page: 'endpoints' }],
   // >>> M5b bastion
   ['/admin/bastions', { section: 'admin', page: 'bastion' }],

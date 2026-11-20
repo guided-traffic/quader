@@ -1,0 +1,341 @@
+@if (loadError(); as e) {
+  <quader-page-header [heading]="key()" [name]="true" />
+  <quader-error-notice [error]="e" (retry)="load()" />
+} @else if (item(); as r) {
+  <!-- The header names the registry and its kind (the style guide's detail page): the format's icon and the repository's name as
+       its facts, Open repository as the page's one action (R-UI-188). No tabs. -->
+  <quader-page-header [heading]="r.displayName" [name]="true">
+    <p meta class="subject">
+      <quader-format-icon [format]="r.format" /><span class="format-label" translate="no">{{ formatLabel() }}</span>
+      <span class="dot-before" translate="no">{{ r.name }}</span>
+      <span class="badge" i18n="@@wellknown.badge">Upstream registry</span>
+    </p>
+    <a actions class="btn btn-default" [routerLink]="projectLink()" i18n="@@wellknown.open">Open repository</a>
+  </quader-page-header>
+
+  <div class="settings">
+    @if (retired()) {
+      <p class="banner-warning" role="status">
+        <span class="material-icons inline warn" aria-hidden="true">warning</span>
+        <span i18n="@@wellknown.retired">Quader no longer offers this registry. Its cached content is being removed.</span>
+      </p>
+      <section class="open-section" aria-labelledby="wk-listed">
+        <h2 id="wk-listed" i18n="@@wellknown.col.listed">Listed by</h2>
+        <ng-container *ngTemplateOutlet="listed; context: { $implicit: r }" />
+      </section>
+    } @else {
+      <!-- 1 · State and visibility, open. -->
+      <section class="open-section first" aria-labelledby="wk-state">
+        <h2 id="wk-state" i18n="@@wellknown.state.heading">State and visibility</h2>
+        @if (stateError(); as e) {
+          <quader-error-notice [error]="e" />
+        }
+        @if (system()) {
+          <p class="system-use">
+            @if (r.inUse) {
+              <span i18n="@@wellknown.system.in-use-text">In use by the image scanning. Its visibility is always Private.</span>
+            } @else {
+              <span i18n="@@wellknown.system.not-in-use-text">Not in use by the image scanning. Its visibility is always Private.</span>
+            }
+          </p>
+        } @else {
+          <div class="state-row">
+            <span class="field-label" id="wk-state-label" i18n="@@wellknown.state.label">State</span>
+            <div class="state-value">
+              @if (canWrite()) {
+                <quader-switch
+                  [checked]="r.state === 'active'"
+                  [label]="switchName(r)"
+                  [busy]="busy() === 'state'"
+                  (checkedChange)="toggle($event)"
+                />
+              } @else {
+                <span class="word">{{ word(r) }}</span>
+              }
+              @if (badge(r); as b) {
+                <span class="badge warn"><span class="material-icons" aria-hidden="true">warning</span>{{ b }}</span>
+              }
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="wk-level" i18n="@@repo.visibility.level">Visibility level</label>
+            <div class="level-row">
+              <quader-visibility-icon [level]="r.visibility" />
+              @if (canWrite()) {
+                <select
+                  id="wk-level"
+                  class="select-input level-select"
+                  [attr.aria-invalid]="levelError() ? 'true' : null"
+                  [attr.aria-describedby]="levelError() ? 'wk-level-error' : null"
+                  [disabled]="busy() !== null"
+                  (change)="setLevel($any($event.target))"
+                >
+                  @for (o of levels; track o.value) {
+                    <option [value]="o.value" [selected]="o.value === r.visibility" [disabled]="!!reasons()[o.value] && o.value !== r.visibility">
+                      {{ o.label }}
+                    </option>
+                  }
+                </select>
+              } @else {
+                <span id="wk-level">{{ levelText(r.visibility) }}</span>
+              }
+            </div>
+            @if (levelError(); as message) {
+              <p class="field-error" id="wk-level-error" role="alert">{{ message }}</p>
+            }
+            @if (r.visibility === 'private' && r.state === 'active') {
+              <p class="hint">{{ privateNote }}</p>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- 2 · Address, open (Q-UI-831): the product's unless an administrator set another. -->
+      <form class="open-section" aria-labelledby="wk-address" (submit)="saveAddress($event)" novalidate>
+        <h2 id="wk-address" i18n="@@wellknown.address.heading">Address</h2>
+        @if (r.address.overridden) {
+          <div class="differs">
+            <span class="badge warn"><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@wellknown.address.differs">Differs from Quader's</ng-container></span>
+            <span class="product-address" i18n="@@wellknown.address.product">Quader's address is <span translate="no">{{ productUrl() }}</span>.</span>
+          </div>
+        } @else {
+          <p class="hint" i18n="@@wellknown.address.is-product">This is Quader's address.</p>
+        }
+        @if (addressError(); as e) {
+          <quader-error-notice [error]="e" />
+        }
+        <fieldset class="plain" [disabled]="!canWrite()">
+          <quader-text-field
+            width="full"
+            i18n-label="@@upstream.url"
+            label="Upstream URL"
+            name="wkUrl"
+            [readonly]="!canWrite()"
+            [value]="url()"
+            (valueChange)="url.set($event)"
+          />
+          <!-- What scanner-trivy's registry must serve, with the setting for one that names the database otherwise (R-UI-188). -->
+          @if (system()) {
+            <p class="hint scanner-link" i18n="@@wellknown.scanner.hint">
+              The registry must serve the image aquasec/trivy-db. For a registry that names it otherwise, see
+              <a routerLink="/help/admin/vulnerability-sources" fragment="container-images">the image scanning's database setting</a>.
+            </p>
+          }
+
+          <div class="field" role="group" aria-labelledby="wk-hosts-label">
+            <span id="wk-hosts-label" class="field-label" i18n="@@upstream.hosts">Further hosts</span>
+            <p class="hint" i18n="@@wellknown.hosts.hint">Hosts the registry's documents and its login may lead to. Only a host that receives the credential gets it.</p>
+            @for (h of hosts(); track $index; let i = $index) {
+              <div class="host-row">
+                <label class="visually-hidden" [for]="'wk-host-' + i" i18n="@@upstream.hosts.pattern">Host pattern</label>
+                <input
+                  class="text-input field-w-name"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  translate="no"
+                  [id]="'wk-host-' + i"
+                  [readonly]="!canWrite()"
+                  [value]="h.pattern"
+                  (input)="setHost(i, { pattern: $any($event.target).value })"
+                />
+                <label class="check-row">
+                  <input type="checkbox" [checked]="h.sendCredentials" (change)="setHost(i, { sendCredentials: $any($event.target).checked })" />
+                  <span i18n="@@upstream.hosts.send">Receives the credential</span>
+                </label>
+                @if (canWrite()) {
+                  <button class="btn btn-tertiary" type="button" (click)="removeHost(i)">
+                    <ng-container i18n="@@upstream.hosts.remove">Remove</ng-container>
+                    <span class="visually-hidden" translate="no"> {{ h.pattern }}</span>
+                  </button>
+                }
+              </div>
+            } @empty {
+              <p class="hint" i18n="@@upstream.hosts.none">No further host.</p>
+            }
+            @if (canWrite()) {
+              <div>
+                <button class="btn btn-default" type="button" (click)="addHost()" i18n="@@upstream.hosts.add">Add host</button>
+              </div>
+            }
+          </div>
+
+          @if (archiveKeys(); as keyList) {
+            <div class="field" role="group" aria-labelledby="wk-keys-label">
+              <span id="wk-keys-label" class="field-label" i18n="@@wellknown.keys.heading">Archive keys</span>
+              <p class="hint" i18n="@@wellknown.keys.hint">The keys that sign the archive's indexes. Quader checks every index it fetches against them.</p>
+              @if (keyList.length === 0) {
+                <p class="hint" i18n="@@wellknown.keys.none">No key is stored.</p>
+              } @else {
+                <ul class="keys">
+                  @for (k of keyList; track k.fingerprint) {
+                    <li>
+                      <code translate="no" [attr.title]="k.fingerprint">{{ grouped(k.fingerprint) }}</code>
+                      <span class="secondary" translate="no">{{ k.userId }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+              @if (canWrite()) {
+                <quader-disclosure [inline]="true" i18n-heading="@@wellknown.keys.replace" heading="Replace the keys" [(expanded)]="keysOpen">
+                  <quader-text-field
+                    width="full"
+                    type="textarea"
+                    i18n-label="@@wellknown.keys.block"
+                    label="Armored public keys"
+                    name="wkKeys"
+                    i18n-hint="@@wellknown.keys.block-hint"
+                    hint="Paste the archive's public keys as one armored block. Empty keeps the keys above."
+                    [value]="keys()"
+                    (valueChange)="keys.set($event)"
+                  />
+                </quader-disclosure>
+              }
+            </div>
+          }
+        </fieldset>
+        @if (canWrite()) {
+          <div class="actions">
+            <button class="btn btn-confirm" type="submit" [disabled]="!addressDirty() || busy() !== null" i18n="@@wellknown.address.save">Save address</button>
+            @if (addressDirty()) {
+              <button class="btn btn-tertiary" type="button" (click)="discardAddress()" i18n="@@repo.edit.reset">Discard changes</button>
+            }
+            @if (r.address.overridden) {
+              <button class="btn btn-default" type="button" [disabled]="busy() !== null" (click)="resetAddress()" i18n="@@wellknown.address.reset">Reset to Quader's address</button>
+            }
+          </div>
+        }
+      </form>
+
+      <!-- 3 · Account, open: a credential every reader pulls with (data-and-secret-flow.md). -->
+      <form class="open-section" aria-labelledby="wk-account" (submit)="saveAccount($event)" novalidate>
+        <h2 id="wk-account" i18n="@@wellknown.account.heading">Account</h2>
+        <p class="hint" i18n="@@wellknown.account.hint">An account counts the pulls of every project against this account's allowance, and whoever can read this registry pulls with it.</p>
+        @if (r.account.removedByUpdateAt; as at) {
+          <p class="banner-warning" role="note">
+            <span class="material-icons inline warn" aria-hidden="true">warning</span>
+            <span i18n="@@wellknown.account.removed-by-update">The account was removed when Quader's address moved to another host on <time [attr.datetime]="at">{{ at | date: 'mediumDate' }}</time>; enter it again.</span>
+          </p>
+        }
+        @if (accountError(); as e) {
+          <quader-error-notice [error]="e" />
+        }
+        <fieldset class="plain" [disabled]="!canWrite()">
+          <quader-select-field
+            i18n-label="@@upstream.auth"
+            label="Authentication"
+            name="wkAuth"
+            [options]="authModes"
+            [value]="authMode()"
+            (valueChange)="authMode.set($any($event))"
+          />
+          @if (authMode() === 'basic') {
+            <quader-text-field width="name" i18n-label="@@upstream.username" label="Username" name="wkUser" [readonly]="!canWrite()" [value]="username()" (valueChange)="username.set($event)" />
+          }
+          <!-- The secret is written and never read (Q-UI-123): a reader has no field for it. -->
+          @if (authMode() !== 'none' && canWrite()) {
+            <quader-text-field
+              width="name"
+              type="password"
+              [secret]="true"
+              autocomplete="new-password"
+              i18n-label="@@upstream.password"
+              label="Password or token"
+              name="wkPassword"
+              [value]="password()"
+              (valueChange)="password.set($event)"
+              [hint]="passwordStored() ? storedHint : ''"
+            />
+          }
+          @if (credentialLine(); as line) {
+            <p class="hint credential-line">{{ line }}</p>
+          }
+        </fieldset>
+        <!-- Testing, saving and removing are a writer's: the upstream test needs the right to change the repository. -->
+        @if (canWrite()) {
+          <div class="actions">
+            <button class="btn btn-default" type="button" [disabled]="testing()" (click)="test()" i18n="@@upstream.test">Test connection</button>
+            <button class="btn btn-confirm" type="submit" [disabled]="!accountDirty() || busy() !== null" i18n="@@wellknown.account.save">Save account</button>
+            @if (accountDirty()) {
+              <button class="btn btn-tertiary" type="button" (click)="discardAccount()" i18n="@@repo.edit.reset">Discard changes</button>
+            }
+            @if (accountStored()) {
+              <button class="btn btn-default" type="button" [disabled]="busy() !== null" (click)="removeAccount()" i18n="@@wellknown.account.remove">Remove account</button>
+            }
+          </div>
+        }
+        <div class="test-result" role="status" aria-live="polite">
+          @if (testing()) {
+            <span i18n="@@upstream.test.running">Testing the connection.</span>
+          }
+          @if (testError(); as e) {
+            <quader-error-notice [error]="e" />
+          }
+          @if (testSummary(); as s) {
+            <p class="verdict">
+              <span class="material-icons inline" [class.ok-icon]="s.good" [class.warn-icon]="!s.good" aria-hidden="true">{{ s.good ? 'check_circle' : 'warning' }}</span>
+              <strong>{{ s.text }}</strong>
+              @if (s.error; as err) {
+                <span class="secondary">{{ err.message }}</span>
+              }
+            </p>
+          }
+        </div>
+      </form>
+    }
+
+    <!-- 4 · Details, closed: who lists it, where its narrowing settings and limits are, and its dates. -->
+    @if (!retired()) {
+      <div class="details">
+        <quader-disclosure
+          i18n-heading="@@repo.settings.details"
+          heading="Details"
+          i18n-hint="@@wellknown.details.hint"
+          hint="Who lists the registry, its settings for teams, its limits and its dates."
+          [(expanded)]="detailsOpen"
+        >
+          <dl class="facts">
+            <dt i18n="@@wellknown.col.listed">Listed by</dt>
+            <dd><ng-container *ngTemplateOutlet="listed; context: { $implicit: r }" /></dd>
+            <dt i18n="@@wellknown.details.narrowing">Settings</dt>
+            <dd>
+              <a [routerLink]="settingsLink()" i18n="@@wellknown.details.narrowing-link">Include and exclude patterns, offline and the administrator's notes</a>
+            </dd>
+            <dt i18n="@@wellknown.details.limits">Download limits</dt>
+            <dd>
+              <a [routerLink]="settingsLink()" i18n="@@wellknown.details.limits-link">The repository's limits, on its settings page</a>
+            </dd>
+            @if (documentValue(); as doc) {
+              @if (doc.createdAt; as at) {
+                <dt i18n="@@repo.detail.created">Created</dt>
+                <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+              }
+              @if (doc.updatedAt; as at) {
+                <dt i18n="@@repo.detail.updated">Last changed</dt>
+                <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+              }
+            }
+          </dl>
+        </quader-disclosure>
+      </div>
+    }
+  </div>
+} @else {
+  <p role="status" i18n="@@repo.loading">Loading.</p>
+}
+
+<!-- Listed by (R-UI-188, Q-API-363): how many virtual repositories in how many projects, each named one as a link to its settings,
+     where its members are, and the number of the others the answer does not name. -->
+<ng-template #listed let-r>
+  <p class="listed">{{ listedText(r.listedBy, r.listedByProjects) }}</p>
+  @if (r.listedByNames?.length) {
+    <ul class="listed-names">
+      @for (name of r.listedByNames; track name) {
+        <li><a [routerLink]="listingLink(name)" translate="no">{{ name }}</a></li>
+      }
+    </ul>
+    @if (r.listedBy - r.listedByNames.length; as others) {
+      <p class="listed-others">{{ othersText(others) }}</p>
+    }
+  }
+</ng-template>

@@ -1,5 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, LOCALE_ID, computed, inject, input, model, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { upstreamName } from '../../core/upstream-project';
 import { ApiError, FieldProblem } from '../../api/problem';
 import {
   FormatDescriptor,
@@ -88,7 +90,7 @@ export function upstreamPointerLabel(pointer: string): string | null {
  */
 @Component({
   selector: 'quader-upstream-settings',
-  imports: [DatePipe, Disclosure, ErrorNotice],
+  imports: [DatePipe, Disclosure, ErrorNotice, RouterLink],
   template: `
     <section class="upstream" [id]="sectionId" tabindex="-1" aria-labelledby="upstream-heading">
       <h2 id="upstream-heading" i18n="@@upstream.heading">Upstream</h2>
@@ -111,6 +113,12 @@ export function upstreamPointerLabel(pointer: string): string | null {
                 </button>
               }
             </div>
+            <!-- The registry is offered to every project already (R-UI-191, Q-UI-836): one line, and nothing stops the create. -->
+            @if (centralOf(); as c) {
+              <p class="hint central" data-testid="upstream-central">
+                <ng-container i18n="@@wellknown.central">{{ c.displayName }} is offered to every project as <span translate="no">{{ c.name }}</span>. A virtual repository can list it instead of a remote of your own.</ng-container>&ngsp;<a [routerLink]="virtualLink()" [queryParams]="virtualQuery()" i18n="@@wellknown.central.link">New virtual repository</a>
+              </p>
+            }
           </div>
         }
 
@@ -483,6 +491,9 @@ export function upstreamPointerLabel(pointer: string): string | null {
       flex-wrap: wrap;
       gap: var(--quader-space-2);
     }
+    .central {
+      margin: var(--quader-space-2) 0 0;
+    }
     .preset[aria-pressed='true'] {
       background: var(--quader-accent-container);
       color: var(--quader-on-accent-container);
@@ -549,6 +560,14 @@ export class UpstreamSettings {
   readonly edit = input(false);
   /** The form was sent: a missing URL shows its error whether or not the field was left (R-UI-086). */
   readonly submitted = input(false);
+  /**
+   * The creation form's: the keys of the format's well-known repositories that are active and that the caller reads (R-UI-191).
+   * While the chosen preset's is one of them, a line under the presets names it and leads to a new virtual repository.
+   */
+  readonly central = input<ReadonlySet<string>>(new Set());
+  /** The router commands and the query of the form of a new virtual repository of the same format. */
+  readonly virtualLink = input<readonly string[]>([]);
+  readonly virtualQuery = input<Readonly<Record<string, string>>>({});
 
   protected readonly sectionId = UPSTREAM_SECTION_ID;
   protected readonly hostsId = controlIdOf('/remote/extraHosts');
@@ -582,6 +601,13 @@ export class UpstreamSettings {
       this.detailsOpened() ||
       [...this.fieldErrors().keys()].some((p) => DETAIL_POINTERS.some((d) => p === d || p.startsWith(`${d}/`))),
   );
+
+  /** The chosen preset's well-known repository, where it is active and read (R-UI-191); never on the settings page. */
+  protected readonly centralOf = computed(() => {
+    if (this.edit()) return null;
+    const chosen = this.presets().find((p) => this.pressed(p));
+    return chosen && this.central().has(chosen.id) ? { displayName: chosen.displayName, name: upstreamName(chosen.id) } : null;
+  });
 
   /** A format without presets needs the URL: once the field was left empty, it says what to type (R-UI-086). */
   protected readonly urlError = computed(

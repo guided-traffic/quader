@@ -11,7 +11,7 @@ export type VisibilityLevel = Schema<'VisibilityLevel'>;
 export const VISIBILITY_LEVELS: readonly VisibilityLevel[] = ['private', 'internal', 'public'];
 
 /** What the control is choosing the level of; it decides the sentence under each option (Q-UI-228). */
-export type VisibilitySubject = 'new-projects' | 'project' | 'artifacts' | 'wiki';
+export type VisibilitySubject = 'new-projects' | 'project' | 'artifacts' | 'wiki' | 'upstream';
 
 /** The icon of each level, the ones the owner's GitLab uses: a lock, a shield, a globe (Q-UI-230). */
 const ICONS: Readonly<Record<VisibilityLevel, string>> = { private: 'lock', internal: 'shield', public: 'public' };
@@ -156,6 +156,18 @@ function sentence(subject: VisibilitySubject, level: VisibilityLevel): string {
           return $localize`:@@visibility.wiki.internal:Everyone signed in, service accounts and CI jobs included, except external users.`;
         case 'public':
           return $localize`:@@visibility.wiki.public:Anyone, also without signing in.`;
+      }
+      break;
+    // A well-known repository of the project `upstream` (R-UI-187): the project has no members, and a team reads it through its
+    // virtual repositories by the repository's own level (R-AUTHZ-041).
+    case 'upstream':
+      switch (level) {
+        case 'private':
+          return $localize`:@@visibility.upstream.private:Only administrators and the principals a global policy names. Teams' virtual repositories skip a private registry.`;
+        case 'internal':
+          return $localize`:@@visibility.upstream.internal:Everyone signed in, service accounts and CI jobs included, except external users, directly and through every virtual repository that lists it.`;
+        case 'public':
+          return $localize`:@@visibility.upstream.public:Anyone, also without signing in, on this installation's bandwidth and the registry's pull allowance.`;
       }
   }
 }

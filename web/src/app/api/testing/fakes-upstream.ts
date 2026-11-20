@@ -1,0 +1,301 @@
+import { Injectable, Provider } from '@angular/core';
+import { ApiError } from '../problem';
+import { UpstreamPreset, UpstreamTestResult } from '../repositories-api';
+import {
+  LoadedUpstreamRepository,
+  UpstreamApi,
+  UpstreamRepository,
+  UpstreamRepositoryAccount,
+  UpstreamRepositoryAddress,
+  UpstreamRepositoryBulkResult,
+  UpstreamRepositoryState,
+  UpstreamRepositorySummary,
+  UpstreamVisibilityLevel,
+} from '../upstream-api';
+import { ANSIBLE_PRESETS, DEB_PRESETS, NPM_PRESETS, NUGET_PRESETS, OCI_PRESETS } from './fakes-catalog';
+
+/** The format of each fake preset list, in catalog order: the formats by their ID, the presets in the format's order (R-REPO-073). */
+const CATALOG: readonly (readonly [string, readonly UpstreamPreset[]])[] = [
+  ['ansible', ANSIBLE_PRESETS],
+  ['deb', DEB_PRESETS],
+  ['npm', NPM_PRESETS],
+  ['nuget', NUGET_PRESETS],
+  ['oci', OCI_PRESETS],
+];
+
+/**
+ * One well-known repository of a preset as a fresh installation stores it: off, never switched on, Internal (the owner's decision
+ * Q-REPO-388), with the product's address.
+ */
+export function presetRepository(format: string, p: UpstreamPreset, over: Partial<UpstreamRepository> = {}): UpstreamRepository {
+  const extraHosts = p.extraHosts.map((h) => ({ pattern: h.pattern, sendCredentials: h.sendCredentials }));
+  const keys = format === 'deb' ? [{ fingerprint: 'A7236886F3CCCAAD148A27F80E98404D386FA1D9', userId: 'Debian Archive Automatic Signing Key (12/bookworm) <ftpmaster@debian.org>' }] : null;
+  return {
+    key: p.id,
+    name: `upstream/${p.id}`,
+    format,
+    kind: 'preset',
+    displayName: p.displayName,
+    state: 'not-switched-on',
+    inUse: null,
+    visibility: 'internal',
+    fixed: [],
+    address: {
+      url: p.url,
+      extraHosts,
+      upstreamKeys: keys,
+      overridden: false,
+      product: { url: p.url, extraHosts, upstreamKeys: keys },
+    },
+    account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+    listedBy: 0,
+    listedByProjects: 0,
+    configVersion: 1,
+    ...over,
+  };
+}
+
+/** `scanner-trivy`, the system repository of the image scanning's database (R-REPO-070). */
+export function scannerTrivy(over: Partial<UpstreamRepository> = {}): UpstreamRepository {
+  const product = { url: 'https://mirror.gcr.io/', extraHosts: [], upstreamKeys: null };
+  return {
+    key: 'scanner-trivy',
+    name: 'upstream/scanner-trivy',
+    format: 'oci',
+    kind: 'system',
+    displayName: 'Image scanning database',
+    state: null,
+    inUse: true,
+    visibility: 'private',
+    fixed: ['state', 'visibility'],
+    address: { ...product, overridden: false, product },
+    account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+    listedBy: 0,
+    listedByProjects: 0,
+    configVersion: 1,
+    ...over,
+  };
+}
+
+/** The twelve preset repositories of the fake catalog and `scanner-trivy`, every one as a fresh installation has it. */
+export function upstreamFixture(): UpstreamRepository[] {
+  return [...CATALOG.flatMap(([format, presets]) => presets.map((p) => presetRepository(format, p))), scannerTrivy()];
+}
+
+function notFound(key: string): ApiError {
+  return new ApiError(404, { code: 'not_found', detail: `No repository ${key} in the project upstream.`, requestId: 'rid-upstream-404' }, 'rid-upstream-404');
+}
+
+/** A test that reached the upstream and was let in. */
+export const REACHED: UpstreamTestResult = {
+  reachable: true,
+  httpStatus: 200,
+  authenticated: true,
+  durationMs: 84,
+  tls: { peerSubject: 'CN=registry-1.docker.io', notAfter: '2027-05-01T00:00:00Z' },
+  outboundProxy: null,
+  sourceAddress: null,
+  tokenService: null,
+  error: null,
+};
+
+/**
+ * The well-known repositories in memory (R-REPO-073), with the rules the screens rely on: switching sets the state and counts
+ * the first switch-on; Switch all on makes what is off `internal` and active and leaves the system repository; the level of every
+ * preset follows Set visibility of all; an address that differs from the product's is `overridden`; an address that moves the
+ * hosts of a stored account without `account` answers `422 secret_value_required`. The list answers the counts of the listing
+ * virtual repositories, every other answer also `listedByNames` (Q-API-363); the read of a format answers its presets that are not
+ * retired (Q-API-364). Every call is recorded; `failure` makes the next write fail, `formatFailure` the read of a format.
+ */
+@Injectable()
+export class FakeUpstreamApi extends UpstreamApi {
+  items: UpstreamRepository[] = upstreamFixture();
+  failure: ApiError | null = null;
+  listFailure: ApiError | null = null;
+  formatFailure: ApiError | null = null;
+  /** The qualified names of the virtual repositories that list a repository, by its key; `listedBy` counts more where it is set so. */
+  listedByNames: Record<string, string[]> = {};
+  readonly calls: { op: string; key?: string; body?: unknown; etag?: string; removeAccount?: boolean }[] = [];
+  testResult: UpstreamTestResult = REACHED;
+
+  /** Replaces one repository of the fixture by its key. */
+  set(key: string, over: Partial<UpstreamRepository>): void {
+    this.items = this.items.map((r) => (r.key === key ? { ...r, ...over } : r));
+  }
+
+  override async list(): Promise<readonly UpstreamRepository[]> {
+    if (this.listFailure) throw this.listFailure;
+    return structuredClone(this.items);
+  }
+
+  override async listForFormat(format: string): Promise<readonly UpstreamRepositorySummary[]> {
+    this.calls.push({ op: 'format', body: { format } });
+    if (this.formatFailure) throw this.formatFailure;
+    return this.items
+      .filter((r) => r.kind === 'preset' && r.format === format && r.state !== 'retired' && r.state !== null)
+      .map((r) => ({ key: r.key, name: r.name, displayName: r.displayName, state: r.state!, visibility: r.visibility }));
+  }
+
+  override async get(key: string): Promise<LoadedUpstreamRepository> {
+    return this.loaded(this.find(key));
+  }
+
+  override async setState(key: string, state: 'on' | 'off'): Promise<LoadedUpstreamRepository> {
+    this.calls.push({ op: 'state', key, body: { state } });
+    this.fail();
+    const r = this.find(key);
+    const next: UpstreamRepositoryState = state === 'on' ? 'active' : 'switched-off';
+    return this.store({ ...r, state: next, configVersion: r.configVersion + 1 });
+  }
+
+  override async switchOnAll(): Promise<UpstreamRepositoryBulkResult> {
+    this.calls.push({ op: 'switch-on-all' });
+    this.fail();
+    const changed: UpstreamRepository[] = [];
+    this.items = this.items.map((r) => {
+      if (r.kind !== 'preset' || r.state === 'active' || r.state === 'retired') return r;
+      const next = { ...r, state: 'active' as const, visibility: 'internal' as const, configVersion: r.configVersion + 1 };
+      changed.push(next);
+      return next;
+    });
+    return { items: changed.map((r) => this.loaded(r).value), bulkId: '6f1c2e8a-1d6b-4d3f-9c43-2f9b4f1c0a77' };
+  }
+
+  override async setVisibility(key: string, level: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository> {
+    this.calls.push({ op: 'visibility', key, body: { level } });
+    this.fail();
+    const r = this.find(key);
+    return this.store({ ...r, visibility: level, configVersion: r.configVersion + 1 });
+  }
+
+  override async setAllVisibility(level: UpstreamVisibilityLevel): Promise<UpstreamRepositoryBulkResult> {
+    this.calls.push({ op: 'set-visibility', body: { level } });
+    this.fail();
+    const changed: UpstreamRepository[] = [];
+    this.items = this.items.map((r) => {
+      if (r.kind !== 'preset' || r.state === 'retired' || r.visibility === level) return r;
+      const next = { ...r, visibility: level, configVersion: r.configVersion + 1 };
+      changed.push(next);
+      return next;
+    });
+    return { items: changed.map((r) => this.loaded(r).value), bulkId: '0d1f7b52-74c4-4c8e-8a8d-3e0f1e9f5b21' };
+  }
+
+  override async setAddress(key: string, address: UpstreamRepositoryAddress, etag: string): Promise<LoadedUpstreamRepository> {
+    this.calls.push({ op: 'address', key, body: structuredClone(address), etag });
+    this.fail();
+    const r = this.find(key);
+    const url = address.url ?? r.address.product.url;
+    const extraHosts = address.extraHosts ?? r.address.product.extraHosts;
+    const hostOf = (u: string): string => {
+      try {
+        return new URL(u).host;
+      } catch {
+        return u;
+      }
+    };
+    const moved = hostOf(url) !== hostOf(r.address.url);
+    if (moved && r.account.authMode !== 'none' && address.account === undefined) {
+      throw new ApiError(
+        422,
+        {
+          code: 'validation_failed',
+          detail: 'The account goes to the old host only.',
+          requestId: 'rid-422',
+          errors: [{ pointer: '/account/password', code: 'secret_value_required', detail: 'Enter the account again or remove it.' }],
+        },
+        'rid-422',
+      );
+    }
+    const overridden = url !== r.address.product.url || JSON.stringify(extraHosts) !== JSON.stringify(r.address.product.extraHosts);
+    const account =
+      address.account === null
+        ? { authMode: 'none' as const, username: null, password: null, removedByUpdateAt: null }
+        : address.account
+          ? this.accountOf(address.account)
+          : r.account;
+    return this.store({
+      ...r,
+      address: { ...r.address, url, extraHosts, overridden },
+      account,
+      configVersion: r.configVersion + 1,
+    });
+  }
+
+  override async resetAddress(key: string, etag: string, removeAccount = false): Promise<LoadedUpstreamRepository> {
+    this.calls.push({ op: 'reset-address', key, etag, removeAccount });
+    this.fail();
+    const r = this.find(key);
+    const p = r.address.product;
+    return this.store({
+      ...r,
+      address: { url: p.url, extraHosts: p.extraHosts, upstreamKeys: p.upstreamKeys, overridden: false, product: p },
+      account: removeAccount ? { authMode: 'none', username: null, password: null, removedByUpdateAt: null } : r.account,
+      configVersion: r.configVersion + 1,
+    });
+  }
+
+  override async setAccount(key: string, account: UpstreamRepositoryAccount, etag: string): Promise<LoadedUpstreamRepository> {
+    this.calls.push({ op: 'account', key, body: structuredClone(account), etag });
+    this.fail();
+    const r = this.find(key);
+    return this.store({ ...r, account: this.accountOf(account), configVersion: r.configVersion + 1 });
+  }
+
+  override async removeAccount(key: string, etag: string): Promise<LoadedUpstreamRepository> {
+    this.calls.push({ op: 'remove-account', key, etag });
+    this.fail();
+    const r = this.find(key);
+    return this.store({
+      ...r,
+      account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+      configVersion: r.configVersion + 1,
+    });
+  }
+
+  override async testSaved(key: string): Promise<UpstreamTestResult> {
+    this.calls.push({ op: 'test-saved', key });
+    return structuredClone(this.testResult);
+  }
+
+  override async testUnsaved(format: string, remote: Readonly<Record<string, unknown>>): Promise<UpstreamTestResult> {
+    this.calls.push({ op: 'test-unsaved', body: structuredClone({ format, remote }) });
+    return structuredClone(this.testResult);
+  }
+
+  private accountOf(a: UpstreamRepositoryAccount): UpstreamRepository['account'] {
+    return {
+      authMode: a.authMode,
+      username: a.authMode === 'basic' ? (a.username ?? null) : null,
+      password: a.authMode === 'none' ? null : { set: true },
+      removedByUpdateAt: null,
+    };
+  }
+
+  private find(key: string): UpstreamRepository {
+    const r = this.items.find((x) => x.key === key);
+    if (!r) throw notFound(key);
+    return r;
+  }
+
+  private fail(): void {
+    if (this.failure) {
+      const e = this.failure;
+      this.failure = null;
+      throw e;
+    }
+  }
+
+  private store(next: UpstreamRepository): LoadedUpstreamRepository {
+    this.items = this.items.map((r) => (r.key === next.key ? next : r));
+    return this.loaded(next);
+  }
+
+  private loaded(r: UpstreamRepository): LoadedUpstreamRepository {
+    return { value: { ...structuredClone(r), listedByNames: [...(this.listedByNames[r.key] ?? [])] }, etag: `"${r.configVersion}"` };
+  }
+}
+
+export function provideUpstreamFakes(): Provider[] {
+  return [{ provide: UpstreamApi, useClass: FakeUpstreamApi }];
+}

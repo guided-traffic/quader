@@ -1,6 +1,9 @@
 import { Listbox, Option } from '@angular/aria/listbox';
 import { Component, computed, input, model, output, signal } from '@angular/core';
 import { RepositorySummary } from '../../api/repositories-api';
+import { upstreamKeyOf } from '../../core/upstream-project';
+import { placeholderSentence, privateMemberSentence, stateBadge } from '../upstream/upstream-words';
+import { WellKnownCandidate, memberState } from './well-known-members';
 
 /** A member's class as the picker names it: a virtual repository is never offered (R-REPO-017). */
 export type MemberClass = 'local' | 'remote' | 'unknown';
@@ -14,6 +17,11 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
  *
  * `pool` is every repository that may be a member (the screen filters project, format, class and lifecycle); what is not a
  * member yet is offered. A refusal of the server at `/virtual/members/<i>` is shown on that member (`errorAt`).
+ *
+ * `wellKnown` is the format's well-known repositories of the project `upstream` (R-UI-189, Q-UI-832): a listbox of its own under
+ * the project's repositories, **Upstream registries**, each by its display name and `upstream/<key>`, with its state where it is
+ * not active; a retired one is not offered. A member that is not active keeps its place in the member list with its state's
+ * badge and one sentence (Q-UI-833); an active private one says that the virtual repository's readers do not read through it.
  */
 @Component({
   selector: 'quader-member-picker',
@@ -43,11 +51,36 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
         @if (available().length === 0) {
           <p class="hint" i18n="@@virtual.available-empty">No other local or remote repository of this project and format is left to add.</p>
         }
+        @if (availableWellKnown().length > 0) {
+          <h3 [id]="ids.wellKnown" class="group-heading" i18n="@@wellknown.picker.heading">Upstream registries</h3>
+          <div
+            ngListbox
+            class="listbox"
+            [multi]="true"
+            selectionMode="explicit"
+            [attr.aria-labelledby]="ids.wellKnown"
+            [value]="pickedWellKnown()"
+            (valueChange)="pickedWellKnown.set($event)"
+            data-testid="vm-upstream"
+          >
+            @for (c of availableWellKnown(); track c.name) {
+              <div ngOption class="option" [value]="c.name" [label]="c.name">
+                <span class="member-key">
+                  <span translate="no">{{ c.displayName }}</span>
+                  <span class="secondary" translate="no">{{ c.name }}</span>
+                </span>
+                @if (c.state; as state) {
+                  <span class="badge warn"><span class="material-icons" aria-hidden="true">warning</span>{{ badge(state) }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
       </div>
 
       <div class="buttons" role="group" [attr.aria-labelledby]="ids.actions">
         <h3 [id]="ids.actions" class="visually-hidden" i18n="@@virtual.actions">Change the members</h3>
-        <button class="btn btn-default" type="button" [disabled]="!canWrite() || pickedAvailable().length === 0" (click)="add()" i18n="@@virtual.add">Add</button>
+        <button class="btn btn-default" type="button" [disabled]="!canWrite() || (pickedAvailable().length === 0 && pickedWellKnown().length === 0)" (click)="add()" i18n="@@virtual.add">Add</button>
         <button class="btn btn-default" type="button" [disabled]="!canWrite() || selectedIndex() < 0" (click)="remove()" i18n="@@virtual.remove">Remove</button>
         <button class="btn btn-default" type="button" [disabled]="!canMoveUp()" (click)="moveUp()" i18n="@@virtual.move-up">Move up</button>
         <button class="btn btn-default" type="button" [disabled]="!canMoveDown()" (click)="moveDown()" i18n="@@virtual.move-down">Move down</button>
@@ -71,6 +104,15 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
               <span class="position">{{ i + 1 }}.</span>&ngsp;
               <span class="member-key" translate="no">{{ key }}</span>&ngsp;
               <span class="class-tag">{{ classText(key) }}</span>
+              <!-- A placeholder keeps its place: its state and why the virtual repository skips it (Q-UI-833). -->
+              @if (stateOf(key); as state) {
+                <span class="member-note" data-testid="vm-placeholder">
+                  <span class="badge warn"><span class="material-icons" aria-hidden="true">warning</span>{{ badge(state) }}</span>
+                  <span class="note-text">{{ sentence(state) }}</span>
+                </span>
+              } @else if (privateWellKnown(key)) {
+                <span class="member-note"><span class="note-text">{{ privateSentence }}</span></span>
+              }
               @if (errorAt()(i); as message) {
                 <span class="field-error" role="alert" data-testid="vm-member-error">{{ message }}</span>
               }
@@ -151,6 +193,28 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
       gap: var(--quader-space-2);
       align-self: center;
     }
+    .group-heading {
+      margin-block-start: var(--quader-space-4);
+    }
+    .secondary {
+      display: block;
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
+      font-weight: 400;
+    }
+    /* The state's badge and its sentence under the member's key, in the key's column. */
+    .member-note {
+      grid-column: 2 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: var(--quader-space-1) var(--quader-space-2);
+      font-weight: 400;
+    }
+    .note-text {
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
+    }
     .field-error {
       grid-column: 1 / -1;
       color: var(--quader-status-bad);
@@ -171,6 +235,8 @@ export type MemberClass = 'local' | 'remote' | 'unknown';
 export class MemberPicker {
   /** Every repository that may be a member; those that are not members yet are offered. */
   readonly pool = input.required<readonly RepositorySummary[]>();
+  /** The format's well-known repositories of the project `upstream`; null while they are being read (R-UI-189). */
+  readonly wellKnown = input<readonly WellKnownCandidate[] | null>(null);
   /** The members in resolution order. */
   readonly members = model.required<readonly string[]>();
   readonly canWrite = input(true);
@@ -192,6 +258,7 @@ export class MemberPicker {
       available: `mp-${n}-available`,
       actions: `mp-${n}-actions`,
       members: `mp-${n}-members`,
+      wellKnown: `mp-${n}-upstream`,
       keys: `mp-${n}-keys`,
     };
   })();
@@ -199,6 +266,7 @@ export class MemberPicker {
   /** The listbox values: the options that are selected, one list each. */
   protected readonly pickedAvailable = signal<string[]>([]);
   protected readonly pickedMember = signal<string[]>([]);
+  protected readonly pickedWellKnown = signal<string[]>([]);
   /** The text of the live region. */
   protected readonly announcement = signal('');
 
@@ -211,6 +279,28 @@ export class MemberPicker {
       .sort((a, b) => a.key.localeCompare(b.key));
   });
 
+  /** The well-known repositories that are not members yet and still offered, in catalog order (Q-UI-832). */
+  protected readonly availableWellKnown = computed<readonly WellKnownCandidate[]>(() => {
+    const taken = new Set(this.members());
+    return (this.wellKnown() ?? []).filter((c) => c.state !== 'retired' && !taken.has(c.name));
+  });
+
+  protected readonly badge = stateBadge;
+  protected readonly sentence = placeholderSentence;
+  protected readonly privateSentence = privateMemberSentence();
+
+  /** The state of a member that is not active, a placeholder (R-UI-189); null for every other member. */
+  stateOf(key: string): ReturnType<typeof memberState> {
+    return memberState(key, this.wellKnown());
+  }
+
+  /** An active well-known member whose level is private: its readers do not read through it (R-UI-189). */
+  protected privateWellKnown(key: string): boolean {
+    if (upstreamKeyOf(key) === null) return false;
+    const c = (this.wellKnown() ?? []).find((x) => x.name === key);
+    return c !== undefined && c.state === null && c.level === 'private';
+  }
+
   protected readonly selectedIndex = computed(() => {
     const picked = this.pickedMember()[0];
     return picked === undefined ? -1 : this.members().indexOf(picked);
@@ -221,6 +311,8 @@ export class MemberPicker {
   );
 
   classOf(key: string): MemberClass {
+    // A well-known repository is a remote (R-REPO-066).
+    if (upstreamKeyOf(key) !== null) return 'remote';
     const c = this.byKey().get(key)?.class;
     return c === 'local' || c === 'remote' ? c : 'unknown';
   }
@@ -241,12 +333,18 @@ export class MemberPicker {
   }
 
   protected add(): void {
-    const keys = this.available()
-      .map((s) => s.key)
-      .filter((k) => this.pickedAvailable().includes(k));
+    const keys = [
+      ...this.available()
+        .map((s) => s.key)
+        .filter((k) => this.pickedAvailable().includes(k)),
+      ...this.availableWellKnown()
+        .map((c) => c.name)
+        .filter((k) => this.pickedWellKnown().includes(k)),
+    ];
     if (!this.canWrite() || keys.length === 0) return;
     this.members.update((m) => [...m, ...keys]);
     this.pickedAvailable.set([]);
+    this.pickedWellKnown.set([]);
     const last = keys[keys.length - 1]!;
     this.pickedMember.set([last]);
     const total = this.members().length;
