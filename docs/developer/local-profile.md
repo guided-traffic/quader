@@ -270,9 +270,11 @@ operator writes the StatefulSets, Services, ConfigMaps, the certificate request 
   values Quader's spec names). After a failover the Sentinels refuse another automatic one for twice the failover
   timeout (120 s); a `SENTINEL FAILOVER` does not wait for that.
 - The operator's NetworkPolicy admits only its own components; `quader-valkey-clients` (in valkey.yaml) admits the pods
-  labelled `app.kubernetes.io/name=quader` and `quader/serve=true` whose component is `api`, `packages`, `worker` or `e2e-driver`
-  on 16379 and 36379: not the `scanner`, which carries the serve label for the ops Service and holds no Valkey credential
-  (Q-HA-344). kind's CNI enforces both.
+  labelled `app.kubernetes.io/name=quader` and `quader/serve=true` whose component is `api`, `packages`, `worker`, `e2e-driver`
+  or `e2e-replica` (the extra replicas of `TestE12Valkey`) on 16379 and 36379, the data pods and the Sentinels alike: not the
+  `scanner`, which carries the serve label for the ops Service and holds no Valkey credential (Q-HA-344; the E0.12 case with
+  every Sentinel unreachable starts a replica with the scanner's component label and shows the policy drops it). A pod the
+  suite adds that needs Valkey gets a component this list names. kind's CNI enforces both.
 - Pods are spread by zone (`antiAffinity` `hard` on `topology.kubernetes.io/zone`, each StatefulSet repels its own
   kind) and have PodDisruptionBudgets (data `maxUnavailable: 1`, Sentinel `minAvailable` = quorum).
 - `kubectl rollout status` does not work on these StatefulSets (update strategy `OnDelete`): the scripts wait for

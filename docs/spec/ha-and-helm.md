@@ -11316,6 +11316,11 @@ Valkey connections of every serving pod's address; the scanner has none, so it i
 ops Service selects; who may reach Valkey is said where Valkey is. The development agent would revisit this if the chart rendered Valkey's
 policy itself.
 
+The list missed the component `e2e-replica` of the extra replicas that `TestE12Valkey` starts (Test and Release 44803754281, `e2e (push)`:
+they reached no Sentinel and could not see their misconfiguration); `valkey.yaml` names it now, and the E0.12 case with every Sentinel
+unreachable starts its replica with the scanner's component label, so the leg shows that the policy drops the scanner. `restore-ns.yaml`
+keeps its list: the suite starts no extra replica in the restore namespace.
+
 **Applied in the spec:** R-HA-065; [local-profile.md](../developer/local-profile.md), [e2e.md](../developer/e2e.md#the-driver).
 
 ### Q-HA-345 · Every kind of pod has a TLS pair and a name of its own, and the chart issues the pairs

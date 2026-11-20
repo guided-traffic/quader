@@ -42,8 +42,9 @@ func valkeyPrimaryPod(t testing.TB) string {
 
 // clonedReplica starts a pod from the packages Deployment's template with a mutation applied: a
 // replica that joins the release, for the start-up cases of E0.12. The pod keeps the readiness
-// probe, so its Ready condition is the answer of /readyz.
-func clonedReplica(t *testing.T, name string, mutate func(spec map[string]any)) {
+// probe, so its Ready condition is the answer of /readyz. Its component label is e2e-replica, which the
+// profile's Valkey policy admits (deploy/dev/valkey.yaml); mutate may change the labels too.
+func clonedReplica(t *testing.T, name string, mutate func(spec, labels map[string]any)) {
 	t.Helper()
 	raw := kn(t, "get", "deployment", "quader-packages", "-o", "json")
 	var d map[string]any
@@ -56,7 +57,7 @@ func clonedReplica(t *testing.T, name string, mutate func(spec map[string]any)) 
 	spec["terminationGracePeriodSeconds"] = 20
 	labels := tmpl["metadata"].(map[string]any)["labels"].(map[string]any)
 	labels["app.kubernetes.io/component"] = "e2e-replica" // not selected by the Services or the PodDisruptionBudgets
-	mutate(spec)
+	mutate(spec, labels)
 	p := map[string]any{"apiVersion": "v1", "kind": "Pod", "metadata": map[string]any{"name": name, "namespace": cfg.namespace, "labels": labels}, "spec": spec}
 	b, _ := json.Marshal(p)
 	f := filepath.Join(cfg.out, name+".json")
@@ -143,7 +144,7 @@ func TestE12Valkey(t *testing.T) {
 
 	t.Run("R-HA-056 R-HA-008 E0.12 a new replica with a wrong primary_name stays not ready and logs the cause", func(t *testing.T) {
 		expectStuckWithCause(t, "quader-e2e-wrong-primary", func(t *testing.T, name string) {
-			clonedReplica(t, name, func(spec map[string]any) { addEnv(spec, "QUADER_VALKEY_SENTINEL_PRIMARY_NAME", "wrong-primary") })
+			clonedReplica(t, name, func(spec, _ map[string]any) { addEnv(spec, "QUADER_VALKEY_SENTINEL_PRIMARY_NAME", "wrong-primary") })
 		})
 	})
 
@@ -152,7 +153,7 @@ func TestE12Valkey(t *testing.T) {
 		kn(t, "create", "secret", "generic", "quader-e2e-valkey-wrong", "--from-literal=password=not-the-password")
 		t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "delete", "secret", "quader-e2e-valkey-wrong") })
 		expectStuckWithCause(t, "quader-e2e-wrong-password", func(t *testing.T, name string) {
-			clonedReplica(t, name, func(spec map[string]any) {
+			clonedReplica(t, name, func(spec, _ map[string]any) {
 				for _, v := range spec["volumes"].([]any) {
 					vol := v.(map[string]any)
 					if vol["name"] == "secret-valkey" {
@@ -166,8 +167,13 @@ func TestE12Valkey(t *testing.T) {
 	t.Run("R-HA-056 R-HA-008 E0.12 with every Sentinel unreachable at its first start a new replica becomes ready after valkey.startup_answer_timeout, degraded valkey", func(t *testing.T) {
 		// The replica holds its first readiness for the bound and then becomes ready degraded. The bound is set to 5 s
 		// here instead of the default 30 s: what the case shows does not depend on its length, and the leg keeps its time.
-		clonedReplica(t, "quader-e2e-no-sentinel", func(spec map[string]any) {
-			addEnv(spec, "QUADER_VALKEY_SENTINEL_ADDRESSES", `["127.0.0.1:36379"]`)
+		// The Sentinels are unreachable because the replica carries the scanner's component label, which the profile's
+		// Valkey policy does not admit (Q-HA-344), so the case also shows that a scanner pod cannot reach a Sentinel. The
+		// release's instance label is removed so that neither the scanner's Services, its PodDisruptionBudget nor the
+		// chart's policy for the scanner select the replica; the Valkey policy reads name, serve and component only.
+		clonedReplica(t, "quader-e2e-no-sentinel", func(spec, labels map[string]any) {
+			labels["app.kubernetes.io/component"] = "scanner"
+			delete(labels, "app.kubernetes.io/instance")
 			addEnv(spec, "QUADER_VALKEY_STARTUP_ANSWER_TIMEOUT", "5s")
 		})
 		var body string
@@ -184,7 +190,7 @@ func TestE12Valkey(t *testing.T) {
 			t.Fatalf("readyz body %q: %v", body, err)
 		}
 		if len(r.Degraded) != 1 || r.Degraded[0] != "valkey" {
-			t.Errorf(`readyz degraded = %v, want ["valkey"]; body %s`, r.Degraded, strings.TrimSpace(body))
+			t.Errorf(`readyz degraded = %v, want ["valkey"] (a pod with the scanner's component label must not reach Valkey); body %s`, r.Degraded, strings.TrimSpace(body))
 		}
 		t.Logf("ready after %s: %s", took.Round(time.Second), strings.TrimSpace(body))
 	})
