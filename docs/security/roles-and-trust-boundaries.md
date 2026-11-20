@@ -66,7 +66,8 @@ What the backup, restore and post-restore Jobs hold, and what each of them never
 
 ## The product, the administrators and the teams around the well-known repositories
 
-Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-073). The built-in project
+Built but for the member lists and the placeholders ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to
+R-REPO-073; R-REPO-071 and R-REPO-072 are not built). The built-in project
 `upstream` puts three parties around one set of repositories, each trusted with one decision:
 
 ```text

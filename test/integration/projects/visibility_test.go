@@ -329,7 +329,7 @@ func TestR_AUTHZ_035_TheProjectsAnInternalUserSees(t *testing.T) {
 		wantStatus(t, f.cl.Do("", "GET", base+"/open", nil), 200, "")
 	})
 	t.Run("R-AUTHZ-035 the auditor lists every project, and the members of a visible project stay hidden", func(t *testing.T) {
-		if got := keys(f.do(f.auditor, "GET", base, nil)); got != "[inner:<nil> open:<nil> shut:<nil>]" {
+		if got := keys(f.do(f.auditor, "GET", base, nil)); got != "[upstream:<nil> inner:<nil> open:<nil> shut:<nil>]" { // R-AUTHZ-041, first in the list (Q-UI-837)
 			t.Errorf("auditor sees %s", got)
 		}
 		wantStatus(t, f.do(f.bob, "GET", base+"/inner", nil), 200, "")

@@ -2306,6 +2306,7 @@ export interface paths {
          *     `If-Match` is required: without it `428` and nothing changes, `*` is the deliberate blind write, a stale tag answers
          *     `412` with `currentEtag`. The version moves with these two fields only, not with members or repositories
          *     (Q-AUTHZ-185). An Owner of the project, or a holder of `projects:write`, may call it. Records `authz.project.updated`.
+         *     The built-in project `upstream` answers `409 managed_by_product`: its display name and description are fixed (R-AUTHZ-041).
          */
         put: operations["replaceProject"];
         post?: never;
@@ -4066,6 +4067,272 @@ export interface paths {
          *     nothing to refer to here. The result is that of `testRepositoryUpstream`.
          */
         post: operations["testUpstream"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the well-known repositories of the project upstream
+         * @description Every repository of the built-in project `upstream` (R-REPO-073): the preset repositories in catalog order (the formats by
+         *     their ID, the presets in the format's order), then the system repositories. Not paged: the set is the catalog's. Each item
+         *     carries its state, its level, the address the product declares beside the stored one, its account without the secret and
+         *     the number of virtual repositories that list it and of their projects, without their names (Q-API-363).
+         */
+        get: operations["listUpstreamRepositories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read one well-known repository
+         * @description The item of `listUpstreamRepositories` for one key with `listedByNames`, the virtual repositories that list it (Q-API-363),
+         *     and its `ETag` (the repository's `config_version`), which the address and the account operations take in `If-Match`. A key
+         *     of no repository of the project `upstream` answers `404`.
+         */
+        get: operations["getUpstreamRepository"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories/{key}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Switch a well-known repository on or off
+         * @description `on` sets `disabled: false` and, the first time, `first_switched_on_at`; `off` sets `disabled: true` (R-REPO-068). Every
+         *     replica serves the change within the bound of R-REPO-049; the virtual repositories that list the repository change
+         *     nothing and take it up or skip it from the next request. Switching on records `repository.updated` with `reason:
+         *     switched_on`; switching off records `repository.updated` and `repository.disabled`, both with `reason: switched_off`, the
+         *     latter with `listedBy` and journaled (R-AUTHZ-031). The level stays as it is. Sets one value and takes no `If-Match`. A
+         *     write that changes nothing records nothing. `409 upstream_retired` for a repository the product no longer offers, `409
+         *     managed_by_product` for a system repository, which has no state of its own.
+         */
+        put: operations["setUpstreamRepositoryState"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories/switch-on-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch on every well-known repository that is off
+         * @description In one transaction, every preset repository that is neither `active` nor `retired` is switched on as by
+         *     `setUpstreamRepositoryState` and both its levels are set to `internal`; an active one keeps its levels; a system repository
+         *     is never touched (R-REPO-068, Q-REPO-384). It never sets `public`. Each repository it changes records its events with the
+         *     one `bulkId` of the answer. Making a repository `internal` raises its level, which asks for a recent sign-in where the
+         *     session needs one (R-API-007, inside the write). With nothing off the answer lists nothing and nothing is recorded.
+         */
+        post: operations["switchOnAllUpstreamRepositories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories/{key}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the level of a well-known repository
+         * @description Sets both levels of the repository, its artifacts and its wiki, to one level (R-REPO-069, R-AUTHZ-041). The project
+         *     `upstream` is stored `public`, so every level passes rule 2 of R-AUTHZ-038; the other refusals of R-AUTHZ-038 apply in its
+         *     order: `403 visibility_level_restricted` for a level the installation restricts, to a caller without
+         *     `security-settings:write`, and `409 public_not_allowed` while the default endpoint admits no request without a credential.
+         *     Raising the level asks for a recent sign-in where the session needs one (R-API-007, inside the write). Sets one value and
+         *     takes no `If-Match`. The answer carries `warnings`, `public_populates_remote` when `public` lets a request without a
+         *     credential fill the cache (R-AUTHZ-008). `409 managed_by_product` for a system repository, whose level is fixed.
+         */
+        put: operations["setUpstreamRepositoryVisibility"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories/set-visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set the level of every well-known repository
+         * @description In one transaction, both levels of every preset repository that is not retired are set to the level, under the rules of
+         *     `setUpstreamRepositoryVisibility`; a refusal changes none (Q-API-361). A system repository is never touched. Each
+         *     repository it changes records its events with the one `bulkId` of the answer; one that already has the level records
+         *     nothing and is not listed.
+         */
+        post: operations["setAllUpstreamRepositoriesVisibility"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories/{key}/address": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Override the address of a well-known repository
+         * @description Sets `remote.url`, `remote.extraHosts` and, for an APT archive, `deb.upstreamKeys` (R-REPO-069): each member is optional,
+         *     an omitted one is the product's. Validated as a remote's (R-REPO-008, R-REPO-024, the egress rules of R-REPO-038);
+         *     `upstreamKeys` of another format is `422 not_applicable`. The repository reads `overridden: true` while the result differs
+         *     from the product's address and `false` when it equals it. A stored account stays only while the hosts that receive it
+         *     stay (R-REPO-033): a change of the origin of `url`, a new `extraHosts` entry with `sendCredentials: true`, or
+         *     `forwardAuthOnRedirect` while an account is stored answers `422 secret_value_required` at `/account/password` unless the
+         *     body carries `account`, a new one or `null` to remove it. Raises `config_version`, records `repository.updated` (secrets as
+         *     fingerprints) and invalidates the repository's metadata and negative entries (R-REPO-011).
+         */
+        put: operations["setUpstreamRepositoryAddress"];
+        post?: never;
+        /**
+         * Reset the address of a well-known repository to the product's
+         * @description Writes the product's address (`url`, `extraHosts` and, for an APT archive, the archive keys) and clears `overridden`
+         *     (R-REPO-069). When the product's hosts that receive a credential differ from the override's while an account is stored, the
+         *     reset answers `422 secret_value_required` unless it carries `removeAccount=true`, which removes the account in the same
+         *     write. Raises `config_version` and records `repository.updated`; a reset of an address that is the product's changes
+         *     nothing and records nothing.
+         */
+        delete: operations["resetUpstreamRepositoryAddress"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upstream-repositories/{key}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Store an account for a well-known repository
+         * @description Stores `authMode`, `username` and `password` of R-REPO-033 for the repository's upstream: the password as a value, or, for a
+         *     holder of `repositories:write-config`, as a `secretRef` of R-OPS-029; it is never returned (`{"set": true}`). The account
+         *     counts the pulls of every project that reads the repository against the account's allowance. Raises `config_version`,
+         *     records `repository.updated` (the secret as a fingerprint), clears the account's removal by a release and invalidates the
+         *     repository's metadata and negative entries. `422 invalid_secret` for a password outside the rules of R-REPO-033.
+         */
+        put: operations["setUpstreamRepositoryAccount"];
+        post?: never;
+        /**
+         * Remove the account of a well-known repository
+         * @description Removes the stored account (`authMode: none`, the secret rows deleted). Raises `config_version` and records
+         *     `repository.updated`; a repository without an account changes nothing and records nothing.
+         */
+        delete: operations["removeUpstreamRepositoryAccount"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/formats/{format}/upstream-repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A format of `GET /api/v1/formats`. */
+                format: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List the well-known repositories a virtual repository of a format can list
+         * @description The preset repositories of the format that are not retired, in catalog order, each with its state and its level and nothing
+         *     of its address, its account or who lists it (Q-API-364): what the member picker of a virtual repository shows (R-UI-189).
+         *     A system repository is never a member (R-REPO-070) and is not listed; a format without presets answers an empty list. For
+         *     whoever holds `repositories:write-config` and for the Owner of any project, the callers who write a virtual repository's
+         *     member list and learn a listed member's state from its resolution and its save already (R-REPO-072). An unknown format
+         *     answers `404`.
+         */
+        get: operations["listFormatUpstreamRepositories"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8414,6 +8681,158 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * @description The state of a preset repository of the project `upstream`, derived from what is stored (R-REPO-068, Q-REPO-375):
+         *     `active` serves and takes part as a member; `switched-off` was switched on before and is off; `not-switched-on` was never
+         *     switched on; `retired` is no longer offered by Quader. Every state but `active` answers `404 repository_disabled` to a
+         *     request addressed to it and is a placeholder as a member of a virtual repository (R-REPO-072).
+         * @enum {string}
+         */
+        UpstreamRepositoryState: "active" | "switched-off" | "not-switched-on" | "retired";
+        /**
+         * @description `preset`: a repository of an upstream preset of the format catalog; `system`: a repository of Quader's own work (R-REPO-066).
+         * @enum {string}
+         */
+        UpstreamRepositoryKind: "preset" | "system";
+        /**
+         * @description What the product holds of a repository beyond the table of R-REPO-069.
+         * @enum {string}
+         */
+        UpstreamRepositoryFixed: "state" | "visibility";
+        UpstreamArchiveKey: {
+            /** @description The fingerprint of an OpenPGP key of `deb.upstreamKeys`, upper-case hexadecimal. */
+            fingerprint: string;
+            /** @description The key's primary user ID as the key states it. */
+            userId: string;
+        };
+        /** @description The address the catalog of the running binary declares for the repository (R-REPO-062). */
+        UpstreamProductAddress: {
+            url: string;
+            extraHosts: components["schemas"]["RemoteExtraHost"][];
+            /** @description The archive keys of an APT archive; `null` for another format. */
+            upstreamKeys: components["schemas"]["UpstreamArchiveKey"][] | null;
+        };
+        /**
+         * @description The stored address (`remote.url`, `remote.extraHosts`, for an APT archive the keys of `deb.upstreamKeys`), whether it differs
+         *     from the product's, and the product's (R-REPO-069, R-REPO-073).
+         */
+        UpstreamRepositoryAddressInfo: {
+            url: string;
+            extraHosts: components["schemas"]["RemoteExtraHost"][];
+            /** @description The fingerprints of the stored archive keys of an APT archive; `null` for another format. */
+            upstreamKeys: components["schemas"]["UpstreamArchiveKey"][] | null;
+            /** @description An administrator set an address that differs from the product's; a release keeps it (Q-REPO-377). */
+            overridden: boolean;
+            product: components["schemas"]["UpstreamProductAddress"];
+        };
+        /** @description The stored account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073). */
+        UpstreamRepositoryAccountInfo: {
+            /** @enum {string} */
+            authMode: "none" | "basic" | "bearer";
+            /** @description The account name; `null` without an account. */
+            username: string | null;
+            /** @description `{"set": true}` for a sealed value, the `secretRef` as stored, or `null` without one. The value is never returned. */
+            password: components["schemas"]["SecretField"] | null;
+            /**
+             * Format: date-time
+             * @description When the reconcile of a release removed the account because the product moved its hosts (Q-REPO-377); `null` otherwise.
+             */
+            removedByUpdateAt: string | null;
+        };
+        /**
+         * @description A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
+         *     repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
+         *     (`[state, visibility]` for `scanner-trivy`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+         *     repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
+         *     `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
+         *     answered.
+         */
+        UpstreamRepository: {
+            /** @description The repository key in the project `upstream`, the preset's id. */
+            key: string;
+            /** @description The qualified name, `upstream/<key>`. */
+            name: string;
+            /** @description The repository's format (a name of `GET /api/v1/formats`); the class is always `remote`. */
+            format: string;
+            kind: components["schemas"]["UpstreamRepositoryKind"];
+            /** @description The preset's display name, a product name the UI does not translate; the system repository's name. */
+            displayName: string;
+            state: components["schemas"]["UpstreamRepositoryState"] | null;
+            /** @description For a system repository, whether the work it serves reads through it, from the configuration of the replica that answers (R-REPO-070). */
+            inUse: boolean | null;
+            visibility: components["schemas"]["VisibilityLevel"];
+            fixed: components["schemas"]["UpstreamRepositoryFixed"][];
+            address: components["schemas"]["UpstreamRepositoryAddressInfo"];
+            account: components["schemas"]["UpstreamRepositoryAccountInfo"];
+            /** @description The number of virtual repositories whose member lists or pin rules name the repository. */
+            listedBy: number;
+            /** @description The number of projects those virtual repositories are in. */
+            listedByProjects: number;
+            /**
+             * @description The qualified names (`<project>/<key>`) of those virtual repositories in byte order, at most 100; `listedBy` minus their
+             *     number is the number of the others. Absent on the answer of `listUpstreamRepositories`, which carries the numbers only.
+             *     The caller holds `repositories:read-config` and so reads the configuration of each of them.
+             */
+            listedByNames?: string[];
+            /** @description The repository's `config_version`, the value of the `ETag`. */
+            configVersion: number;
+            warnings?: components["schemas"]["RepositoryWarning"][];
+        };
+        UpstreamRepositoryList: {
+            items: components["schemas"]["UpstreamRepository"][];
+        };
+        /**
+         * @description A preset repository as a writer of a virtual repository sees it (Q-API-364): the key a member list writes as `name`, the
+         *     preset's display name, the state (never `retired`: a retired repository is not listed) and the level. Nothing of the
+         *     address, the account or who lists it.
+         */
+        UpstreamRepositorySummary: {
+            /** @description The repository key in the project `upstream`, the preset's id. */
+            key: string;
+            /** @description The qualified name, `upstream/<key>`, as a member list writes it (R-REPO-071). */
+            name: string;
+            /** @description The preset's display name, a product name the UI does not translate. */
+            displayName: string;
+            state: components["schemas"]["UpstreamRepositoryState"];
+            visibility: components["schemas"]["VisibilityLevel"];
+        };
+        UpstreamRepositorySummaryList: {
+            items: components["schemas"]["UpstreamRepositorySummary"][];
+        };
+        /** @description What a bulk operation changed, in one transaction, and the ID every event of it carries (Q-API-361). */
+        UpstreamRepositoryBulkResult: {
+            items: components["schemas"]["UpstreamRepository"][];
+            /** Format: uuid */
+            bulkId: string;
+        };
+        UpstreamRepositoryStateRequest: {
+            /** @enum {string} */
+            state: "on" | "off";
+        };
+        UpstreamRepositoryVisibilityRequest: {
+            level: components["schemas"]["VisibilityLevel"];
+        };
+        /**
+         * @description An administrator's address for a well-known repository (R-REPO-069): every member is optional, and an omitted one is the
+         *     product's. `account` replaces the stored account in the same write (a new one, or `null` to remove it); it is needed when
+         *     the hosts that receive the stored account change.
+         */
+        UpstreamRepositoryAddress: {
+            /** @description The upstream base URL, as `remote.url` (R-REPO-024). */
+            url?: string;
+            extraHosts?: components["schemas"]["RemoteExtraHost"][];
+            /** @description The armored OpenPGP public keys of an APT archive, as `deb.upstreamKeys` (R-DEB-020); `not_applicable` for another format. */
+            upstreamKeys?: string;
+            account?: components["schemas"]["UpstreamRepositoryAccount"] | null;
+        };
+        /** @description An account for the repository's upstream (R-REPO-033). `basic` needs a username or a password, `bearer` a password. */
+        UpstreamRepositoryAccount: {
+            /** @enum {string} */
+            authMode: "none" | "basic" | "bearer";
+            /** @description Sent with `basic`; it must not contain a colon. */
+            username?: string;
+            password?: components["schemas"]["SecretField"];
+        };
         FormatList: {
             formats: components["schemas"]["FormatDescriptor"][];
             /**
@@ -12061,6 +12480,11 @@ export interface components {
         ProjectKey: string;
         /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
         RepoKey: string;
+        /**
+         * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+         *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+         */
+        UpstreamRepositoryKey: string;
         /** @description The v4 fingerprint of a Debian signing key, upper-case hexadecimal (R-DEB-015). */
         DebFingerprint: string;
         /**
@@ -17201,6 +17625,7 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
@@ -21189,6 +21614,470 @@ export interface operations {
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listUpstreamRepositories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The well-known repositories. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepositoryList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getUpstreamRepository: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The well-known repository. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setUpstreamRepositoryState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "state": "on"
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpstreamRepositoryStateRequest"];
+            };
+        };
+        responses: {
+            /** @description The well-known repository after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    switchOnAllUpstreamRepositories: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The repositories it switched on, after the change. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepositoryBulkResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setUpstreamRepositoryVisibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "level": "internal"
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpstreamRepositoryVisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description The well-known repository after the change, with the warnings of the write. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setAllUpstreamRepositoriesVisibility: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "level": "internal"
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpstreamRepositoryVisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description The repositories whose level it changed, after the change. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepositoryBulkResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setUpstreamRepositoryAddress: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "url": "https://mirror.example.com/",
+                 *       "account": null
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpstreamRepositoryAddress"];
+            };
+        };
+        responses: {
+            /** @description The well-known repository after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    resetUpstreamRepositoryAddress: {
+        parameters: {
+            query?: {
+                /** @description Remove the stored account with the reset, where the product's hosts would not receive it otherwise. */
+                removeAccount?: boolean;
+            };
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The well-known repository after the reset. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setUpstreamRepositoryAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "authMode": "basic",
+                 *       "username": "quader-pull",
+                 *       "password": {
+                 *         "value": "s3cr3t-t0k3n"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpstreamRepositoryAccount"];
+            };
+        };
+        responses: {
+            /** @description The well-known repository after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    removeUpstreamRepositoryAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The well-known repository after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listFormatUpstreamRepositories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A format of `GET /api/v1/formats`. */
+                format: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The preset repositories of the format. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "key": "npmjs",
+                     *           "name": "upstream/npmjs",
+                     *           "displayName": "npm public registry",
+                     *           "state": "active",
+                     *           "visibility": "internal"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpstreamRepositorySummaryList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

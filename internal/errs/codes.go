@@ -385,6 +385,21 @@ const (
 
 // <<< M1 repository
 //
+// >>> upstream
+
+// Codes of the built-in project upstream (R-REPO-066 to R-REPO-073, R-AUTHZ-041, R-API-083).
+const (
+	// CodeManagedByProduct: the object, or a member of it, is the product's (Q-REPO-386, Q-AUTHZ-300): 409 for an operation on
+	// the whole object (a create, delete or move in the project upstream, a write of its members, policies, accounts or CI
+	// mappings), and the field code at each member a merge patch of a well-known repository may not change (a 422
+	// validation_failed).
+	CodeManagedByProduct = "managed_by_product"
+	// CodeUpstreamRetired: a well-known repository the product no longer offers is not switched on (R-REPO-068).
+	CodeUpstreamRetired = "upstream_retired"
+)
+
+// <<< upstream
+//
 // >>> M1 files
 // Files transfer and items (R-STOR-007, R-STOR-012, R-GENERIC-002). invalid_path
 // and not_admitted are registered with the repository codes above.
@@ -880,6 +895,11 @@ var registry = []CodeInfo{
 	{CodeInvalidPath, Invalid, "Invalid path", "The path has an empty, \".\" or \"..\" segment, a NUL, a backslash or a control character, is not valid UTF-8, or exceeds the length limits."},
 	{CodeNotAdmitted, Forbidden, "Path not admitted", "The path does not match the repository's include patterns, or matches an exclude pattern."},
 	// <<< M1 repository
+	//
+	// >>> upstream
+	{CodeManagedByProduct, Conflict, "Managed by the product", "The object, or the member, belongs to the product: the project upstream and its repositories are maintained by Quader. Nothing is created, moved or deleted there, and the project holds no members, policies, service accounts or CI mappings. An administrator switches a well-known repository on and off, sets its level, its address and its account through the operations of /api/v1/upstream-repositories, and the settings that narrow what it serves through its document. In a 422 the code stands at each member the request may not change."},
+	{CodeUpstreamRetired, Conflict, "Upstream retired", "Quader no longer offers this well-known repository, so it is not switched on. A virtual repository that lists it keeps it as a member that takes no part; remove it from the members."},
+	// <<< upstream
 	//
 	// >>> M1 files
 	{CodePathConflict, Conflict, "Path conflict", "A path names a file or a folder, never both: the deploy would put a file below an existing file, or a file or folder where the other kind exists."},

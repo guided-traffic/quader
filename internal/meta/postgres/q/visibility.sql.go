@@ -276,10 +276,14 @@ func (q *Queries) VisibilityDefaultSet(ctx context.Context, arg VisibilityDefaul
 }
 
 const visibilityPublicProjects = `-- name: VisibilityPublicProjects :many
-SELECT key FROM project WHERE visibility = 'public' ORDER BY key COLLATE "C" LIMIT $1::int
+SELECT key FROM project
+ WHERE visibility = 'public' AND id <> '00000000-0000-0000-0000-000000000100'
+ ORDER BY key COLLATE "C" LIMIT $1::int
 `
 
-// The projects whose level is public, in key order; one more than the cap tells the caller to set truncated.
+// The projects whose level is public, in key order; one more than the cap tells the caller to set truncated. The built-in project
+// upstream is stored public so that its repositories can take any level, and its level opens nothing: it is not listed, its public
+// repositories are (R-AUTHZ-041, Q-AUTHZ-301).
 func (q *Queries) VisibilityPublicProjects(ctx context.Context, max int32) ([]string, error) {
 	rows, err := q.db.Query(ctx, visibilityPublicProjects, max)
 	if err != nil {

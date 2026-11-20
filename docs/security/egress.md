@@ -129,7 +129,8 @@ The advisory provider of an npm audit forward is reached through the same client
 
 ## The well-known repositories: what an installation reaches by default
 
-Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-070). The built-in project
+Built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-070; the image scanning's reading of
+`scanner-trivy` is [vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-044's and not built). The built-in project
 `upstream` holds a remote repository per well-known public registry of the format catalog (Docker Hub, Quay, `ghcr.io`, GitLab's
 registry, the npm registry, nuget.org, the Debian and Ubuntu archives, Ansible Galaxy) and `scanner-trivy` for the analyser's database.
 
@@ -211,10 +212,10 @@ The gaps of the spec pages whose mechanism this page describes:
 
 ### H-1023 · An address override of a well-known repository moves every project's traffic to a host of the administrator's choice
 
-Stage: `setUpstreamRepositoryAddress` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069, specified, not built).
+Stage: `setUpstreamRepositoryAddress` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069, built).
 Subject: the requests of every team whose virtual repository lists the repository, and the content they receive.
 
-- **Dormant until built; live by design, the owner's escape hatch** ("für solche Fälle …, wo wir eine solche Anpassung übersehen haben
+- **Live by design, the owner's escape hatch** ("für solche Fälle …, wo wir eine solche Anpassung übersehen haben
   und wir nicht schnell genug einen Patch bereitstellen"). One administrator's write makes every project's misses for that registry go to
   another host, which then decides what every team installs. The address policy keeps it off denied ranges, the account stays only with
   its hosts, the write needs recent authentication and is audited, and the admin page marks the repository **Differs from Quader's**;
@@ -225,10 +226,9 @@ Subject: the requests of every team whose virtual repository lists the repositor
 
 ### H-1024 · A release moves the well-known repositories' traffic without an administrator's act
 
-Stage: the reconcile of `quader migrate` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-067, specified, not
-built). Subject: the hosts the installation contacts for the registries an administrator switched on.
+Stage: the reconcile of `quader migrate` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-067, built). Subject: the hosts the installation contacts for the registries an administrator switched on.
 
-- **Dormant until built; live by design.** A new release that changes a preset's address or hosts changes them in every installation
+- **Live by design.** A new release that changes a preset's address or hosts changes them in every installation
   that upgrades, for every repository whose address no administrator overrode; the change is in the release's code and in an audit
   event with the actor `system:catalog`, and a stored account is removed rather than sent to the new hosts (Q-REPO-377). An
   installation trusts its releases' choice of registry hosts as it trusts their code.

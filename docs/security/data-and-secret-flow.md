@@ -89,7 +89,7 @@ without a new client; a rotated inline value moves the repository's `config_vers
 
 ### An account on a well-known repository
 
-Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069, R-REPO-073). An administrator may store
+Built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069, R-REPO-073; `setUpstreamRepositoryAccount`). An administrator may store
 an account on a repository of the built-in project `upstream` (owner, 2026-11-20: "um zum Beispiel Rate-Limits zu umgehen oder besser
 umzugehen"). It is stored and sealed as every remote's credential, in the rows above; what differs is who uses it.
 
@@ -259,10 +259,10 @@ The gaps of the spec pages whose mechanism this page describes:
 ### H-1025 · An account stored on a well-known repository pulls for everyone who reads it
 
 Stage: the account of a repository of the project `upstream` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069,
-specified, not built). Subject: whatever the account can read at its registry beyond the public content, and the account's pull
+built). Subject: whatever the account can read at its registry beyond the public content, and the account's pull
 allowance.
 
-- **Dormant until built; live by design from then on.** Quader does not know what an account can read; a fetch through the repository
+- **Live by design.** Quader does not know what an account can read; a fetch through the repository
   sends it for every miss of every caller the repository's level and the global policies on it admit. An account with access to private content at
   the registry turns that content into content of the installation, readable by those callers without any grant that names it. The
   admin page says so beside the account's fields (R-UI-188); nothing checks it.

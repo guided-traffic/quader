@@ -72,6 +72,12 @@ const opMoved = "moved"
 // decided before that the actor may move it: repositories:write-config, or Owner of both projects, which
 // is restricted.
 func (s *service) MoveRepository(ctx context.Context, actor authz.Subject, from qname.Repo, toProject string, restricted bool) (qname.Repo, int64, error) {
+	if err := refuseUpstream(from.Project, "its repositories do not move."); err != nil {
+		return qname.Repo{}, 0, err
+	}
+	if err := refuseUpstream(toProject, "no repository moves into it."); err != nil {
+		return qname.Repo{}, 0, err
+	}
 	to := qname.Repo{Project: toProject, Key: from.Key}
 	var epoch int64
 	err := s.inTx(ctx, func(tx meta.Tx, qs *q.Queries) error {

@@ -12,6 +12,8 @@ import (
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/project"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // The project operations (R-AUTHZ-026, R-API-047). The handlers are thin: the rules
@@ -97,10 +99,9 @@ func (s *Server) ListProjects(w http.ResponseWriter, r *http.Request, _ gen.List
 		err = s.anonymousGate(r.Context())
 	}
 	sub := caller(r)
-	var roles map[string]authz.ProjectRole // the caller's memberships with its role
-	var all bool                           // the caller holds projects:read and sees every project
+	var sight projectSight
 	if err == nil {
-		roles, all, err = s.memberProjects(r.Context(), "projects:read")
+		sight, err = s.sight(r.Context())
 	}
 	var list []project.Project
 	if err == nil {
@@ -111,15 +112,11 @@ func (s *Server) ListProjects(w http.ResponseWriter, r *http.Request, _ gen.List
 		return
 	}
 	rows := make([]project.Project, 0, lq.FetchLimit())
-	for i := range list {
-		p := list[i]
-		if lq.Desc {
-			p = list[len(list)-1-i]
-		}
-		if !projectListed(sub, p, roles, all, membership) || !projectMatches(p, lq.First("q")) {
+	for _, p := range projectOrder(list, lq.Desc) {
+		if !sight.listed(sub, p, membership) || !projectMatches(p, lq.First("q")) {
 			continue
 		}
-		if lq.After != nil && (lq.Desc && p.Key >= lq.After[0] || !lq.Desc && p.Key <= lq.After[0]) {
+		if lq.After != nil && !projectAfter(p.Key, lq.After[0], lq.Desc) {
 			continue
 		}
 		if rows = append(rows, p); len(rows) == lq.FetchLimit() {
@@ -127,13 +124,49 @@ func (s *Server) ListProjects(w http.ResponseWriter, r *http.Request, _ gen.List
 		}
 	}
 	page := NewPage(lq, rows, func(p project.Project) []string { return []string{p.Key} })
-	WritePage(w, r, MapPage(page, func(p project.Project) gen.Project { return toProject(p, roles[p.Key]) }))
+	WritePage(w, r, MapPage(page, func(p project.Project) gen.Project { return toProject(p, sight.roles[p.Key]) }))
+}
+
+// projectOrder is the order of the list of projects (Q-UI-837): the built-in project upstream first, whatever the sort, then the
+// projects by key, ascending or descending. list is sorted by key.
+func projectOrder(list []project.Project, desc bool) []project.Project {
+	out := make([]project.Project, 0, len(list))
+	for i := range list {
+		p := list[i]
+		if desc {
+			p = list[len(list)-1-i]
+		}
+		if wellknown.IsProject(p.Key) {
+			out = append([]project.Project{p}, out...)
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+// projectAfter reports whether a project comes after the cursor's key in the order of projectOrder: after upstream every other
+// project does, and upstream comes after none.
+func projectAfter(key, cursor string, desc bool) bool {
+	switch {
+	case wellknown.IsProject(key):
+		return false
+	case wellknown.IsProject(cursor):
+		return true
+	case desc:
+		return key < cursor
+	}
+	return key > cursor
 }
 
 // levelAdmits reports whether a project's level admits the caller: internal for an internal subject (every authenticated subject
 // but an external user, R-AUTHZ-030), public for every request (R-AUTHZ-035 rule 8). The token scope does not narrow it: the
-// project is named, its content is decided repository by repository.
+// project is named, its content is decided repository by repository. The level of the built-in project upstream admits nobody: it
+// is stored public so that its repositories can take any level (Q-AUTHZ-301).
 func levelAdmits(sub authz.Subject, p project.Project) bool {
+	if wellknown.IsProject(p.Key) {
+		return false
+	}
 	switch p.Visibility {
 	case "public":
 		return true
@@ -143,16 +176,65 @@ func levelAdmits(sub authz.Subject, p project.Project) bool {
 	return false
 }
 
-// projectListed decides whether the list shows the project: a holder of projects:read sees every project, a member its own, and
-// any caller the projects its level admits, without a role. membership keeps the caller's own projects (R-API-057).
-func projectListed(sub authz.Subject, p project.Project, roles map[string]authz.ProjectRole, all, membership bool) bool {
-	if _, member := roles[p.Key]; member {
+// projectSight is what decides which projects the caller of a request sees: its memberships with the role, whether it holds
+// projects:read and so sees every project, and whether it reads a repository of the built-in project upstream, which is how a
+// caller without the capability sees that project (R-AUTHZ-041, Q-AUTHZ-301).
+type projectSight struct {
+	roles    map[string]authz.ProjectRole
+	all      bool
+	upstream bool
+}
+
+// listed decides whether the list shows the project: a holder of projects:read sees every project, a member its own, and any
+// caller the projects its level admits, without a role, and the project upstream when it reads one of its repositories.
+// membership keeps the caller's own projects (R-API-057).
+func (v projectSight) listed(sub authz.Subject, p project.Project, membership bool) bool {
+	if _, member := v.roles[p.Key]; member {
 		return true
 	}
 	if membership {
 		return false
 	}
-	return all || levelAdmits(sub, p)
+	return v.all || levelAdmits(sub, p) || v.upstream && wellknown.IsProject(p.Key)
+}
+
+// sight reads the caller's projectSight on the request's index. Whether the caller reads a repository of the project upstream is
+// decided only for a caller that does not see every project.
+func (s *Server) sight(ctx context.Context) (projectSight, error) {
+	roles, all, err := s.memberProjects(ctx, string(authz.ProjectsRead))
+	if err != nil || all {
+		return projectSight{roles: roles, all: all}, err
+	}
+	reads, err := s.readsUpstream(ctx)
+	return projectSight{roles: roles, upstream: reads}, err
+}
+
+// readsUpstream reports whether the caller reads a repository of the built-in project upstream that serves: one that is switched
+// on, not being deleted and no system repository (R-AUTHZ-041, Q-AUTHZ-301). Without a snapshot reader nothing is read.
+func (s *Server) readsUpstream(ctx context.Context) (bool, error) {
+	reader := s.o.Repositories.Reader
+	if reader == nil {
+		return false, nil
+	}
+	repos, err := reader.ListProject(ctx, wellknown.ProjectKey)
+	if err != nil {
+		return false, err
+	}
+	names := make([]qname.Repo, 0, len(repos))
+	for _, r := range repos {
+		if upstreamServes(r) {
+			names = append(names, r.Name)
+		}
+	}
+	if len(names) == 0 {
+		return false, nil
+	}
+	ctx, acc, err := requestHolder(ctx, s.o.Repositories.Authz)
+	if err != nil {
+		return false, err
+	}
+	visible, err := s.visibleKeys(ctx, acc, names, false)
+	return len(visible) > 0, err
 }
 
 // memberProjects returns the caller's memberships with its role, and whether the caller holds the
@@ -260,15 +342,14 @@ func (s *Server) GetProject(w http.ResponseWriter, r *http.Request, key string) 
 	if err == nil {
 		p, err = svc.Get(r.Context(), key)
 	}
-	var roles map[string]authz.ProjectRole
-	var all bool
+	var sight projectSight
 	if err == nil {
 		err = s.anonymousGate(r.Context())
 	}
 	if err == nil {
-		roles, all, err = s.memberProjects(r.Context(), "projects:read")
+		sight, err = s.sight(r.Context())
 	}
-	if err == nil && !projectListed(caller(r), p, roles, all, false) {
+	if err == nil && !sight.listed(caller(r), p, false) {
 		err = notFoundProject(key)
 	}
 	if err != nil {
@@ -276,7 +357,7 @@ func (s *Server) GetProject(w http.ResponseWriter, r *http.Request, key string) 
 		return
 	}
 	SetETag(w, p.Version, "")
-	writeJSON(w, r, http.StatusOK, toProject(p, roles[key]))
+	writeJSON(w, r, http.StatusOK, toProject(p, sight.roles[key]))
 }
 
 // ReplaceProject implements PUT /api/v1/projects/{key}. The binder answers 428 for a

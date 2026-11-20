@@ -3,9 +3,11 @@ package principal
 import (
 	"context"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // The service accounts of a project (Q-AUTHZ-169, Q-AUTHZ-209) are addressed by a [qname.Object]: the
@@ -59,6 +61,9 @@ func (m *Manager) CreateProjectServiceAccount(ctx context.Context, c Caller, pro
 func (m *Manager) CreateProjectServiceAccountTx(ctx context.Context, tx meta.Tx, c Caller, project string, in NewServiceAccount) (ServiceAccount, error) {
 	if project == "" {
 		return ServiceAccount{}, NotFound("The project")
+	}
+	if wellknown.IsProject(project) {
+		return ServiceAccount{}, errs.E(errs.Conflict, errs.CodeManagedByProduct, "The project upstream has no service accounts (R-AUTHZ-041).")
 	}
 	return m.createAccountTx(ctx, tx, c, project, in)
 }

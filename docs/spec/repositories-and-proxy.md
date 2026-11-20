@@ -1775,9 +1775,12 @@ Priority: **MVP** · Covers: quader-only
   while the image scanning reads its database through it (R-REPO-070).
 - **What a preset repository is created with**: the document a create of only `key`, `class: remote` and `format` would store
   (R-REPO-063), with the preset's `url`, `extraHosts` and format settings, the preset's display name as `description` ("Docker
-  Hub"), `disabled: true`, no account, and both levels at the installation's `defaultLevel` (the lower of the default and the
-  project's `public`, R-AUTHZ-033), as any repository of a public project
-  ([Q-REPO-388](#q-repo-388--a-well-known-repository-takes-the-installations-default-level-when-it-is-created)).
+  Hub"), `disabled: true`, no account, and both levels `internal`, whatever the installation's `defaultLevel`
+  ([Q-REPO-388](#q-repo-388--a-well-known-repository-starts-switched-off-and-internal), the owner's): one switch-on is all a team
+  needs. An installation that does not let a non-administrator choose `internal` gets the highest level below it that it does, and
+  `private` where there is none; the reconcile never fails on the restrictions
+  ([Q-REPO-393](#q-repo-393--where-the-installation-restricts-internal-a-preset-repository-is-created-private)). The reconcile never
+  writes a level after the create.
 - **Addresses.** A well-known repository is addressed like any repository of its project: `/api/npm/upstream/npmjs/`,
   `/v2/upstream/docker-hub/…` (`docker pull quader.example.com/upstream/docker-hub/library/nginx:1.27`),
   `/files/upstream/debian/…`, `/api/v1/projects/upstream/repositories/npmjs`. Binding a host to one at its root stays what
@@ -1806,7 +1809,8 @@ CREATE TABLE upstream_repository (
 The guards the database holds whatever the API checked (SQLSTATE `AI010`): the built-in project is not deleted and its display
 name, description and level do not change; a member, a policy, a service account or a CI mapping of it is not written; a repository
 of it exists only with its `upstream_repository` row (a deferred constraint trigger) and its `project_id`, `key`, `class` and
-`format` do not change; a repository of another project never moves into it. The foreign key `ON DELETE RESTRICT` keeps a
+`format` do not change; a row of `upstream_repository` names a repository of it and of no other project; a repository of another project
+never moves into it; the purge function `upstream_repository_purge` takes only a retired repository (Q-REPO-391). The foreign key `ON DELETE RESTRICT` keeps a
 well-known repository's row. The same-project guard of the member tables (`virtual_same_project_guard`, AI006, migration 00045)
 admits a member of the built-in project in `virtual_members` and `virtual_pin_members` and keeps `virtual_deploy_targets` to the
 own project (R-REPO-071). `upstream_repository` is exported with the class `Data` (`tables.Register`, R-BAK-004); a restore truncates
@@ -1815,8 +1819,8 @@ the seeded project row and loads the backup's (R-BAK-021 step 4).
 Acceptance criteria:
 
 - A fresh installation after `quader migrate` lists the project `upstream` to an administrator with 13 repositories: the twelve
-  preset repositories of the table of R-REPO-062, each `disabled` with the state `not-switched-on`, and `scanner-trivy`
-  (integration area `upstream`, part of `TestR_REPO_067_Reconcile`).
+  preset repositories of the table of R-REPO-062, each `disabled` with the state `not-switched-on` and both levels `internal`, and
+  `scanner-trivy`, `private` (integration area `upstream`, part of `TestR_REPO_067_Reconcile`).
 - `POST /api/v1/projects` with the key `upstream` answers 409 `already_exists`; `DELETE /api/v1/projects/upstream` answers 409
   `managed_by_product`; a direct `DELETE FROM project` of its row fails with SQLSTATE `AI010` (integration, area `upstream`).
 
@@ -1835,7 +1839,9 @@ management API above). For each declaration of `wellknown.Declared(catalog)`, an
 
 1. **Missing**: the repository is created as R-REPO-066 says, with its row (`kind`), and `repository.created` is recorded.
 2. **Present, not retired, and a member the product holds differs from the declaration** (R-REPO-069: the `url`, `extraHosts` and
-   preset settings while `address_overridden` is false, and every fixed member, such as the include patterns of a system repository):
+   preset settings while `address_overridden` is false, and the members a system repository's declaration fixes: its include patterns,
+   levels, scanning and cache period; the other members the product holds are kept by the refusals of R-REPO-069,
+   [Q-REPO-390](#q-repo-390--the-reconcile-compares-the-address-and-a-system-repositorys-fixed-members-the-refusals-keep-the-rest)):
    they are written to the declaration's in one update that raises `config_version`, invalidates the repository's metadata and negative
    entries as a change of the `url` does (R-REPO-011), and records `repository.updated` with `reason: catalog`. When the hosts that
    receive a credential change (the origin of the `url`, or the `extraHosts` entries with `sendCredentials: true`) and an account
@@ -1847,8 +1853,10 @@ management API above). For each declaration of `wellknown.Declared(catalog)`, an
 4. **Retired and declared again**: `retired_at` is cleared; the repository stays switched off.
 5. **A row whose key no declaration names, not retired yet**: the repository is retired
    ([Q-REPO-376](#q-repo-376--a-preset-the-product-no-longer-offers-leaves-a-tombstone-without-content)): `retired_at` set,
-   `disabled: true` with `repository.disabled` and `reason: retired` (journaled, R-AUTHZ-031), and a purge job enqueued that removes
-   its items, cache entries, URL mappings and invalidations in batches, as the deletion job of R-REPO-013 does without removing the
+   `disabled: true` with `repository.disabled` and `reason: retired` (journaled, R-AUTHZ-031; also when it was off already), and the job
+   `upstream-purge` enqueued that removes its items in batches and then the content rows of every other table
+   ([Q-REPO-391](#q-repo-391--the-purge-of-a-retired-repository-is-a-function-of-the-schema-held-to-its-foreign-keys-by-a-test)): its
+   cache entries, URL mappings and invalidations, the format's rows, as the deletion job of R-REPO-013 does without removing the
    row. The repository row and its `upstream_repository` row stay as a tombstone: the virtual repositories that list it keep a
    placeholder (R-REPO-072), its key is never given to another repository, and its usage and findings rows go with the purge.
 6. **A declared key that a repository of another format or class holds in `upstream`**: nothing is written and `quader migrate`
@@ -1884,11 +1892,18 @@ The state of a preset repository is derived from what is stored
 | `not-switched-on` | `disabled: true`, `first_switched_on_at` null | 404 `repository_disabled` | a placeholder |
 | `retired` | `retired_at` set (and `disabled: true`) | 404 `repository_disabled` | a placeholder; no new member names it (R-REPO-071) |
 
+Every read of a repository carries the kind and the state with it: `Repository.Upstream` (`repository.UpstreamFacts`, nil for a
+repository of another project) holds `wellknown.Kind` and `wellknown.State`, derived by `wellknown.StateOf` from the row of
+`upstream_repository` and `disabled`, in the snapshot of every replica as in the management reads
+([wellknown.go](../../internal/wellknown/wellknown.go), [repository/wellknown.go](../../internal/repository/wellknown.go)).
+
 - **Switching on** (`setUpstreamRepositoryState` with `{"state": "on"}`, R-REPO-073) sets `disabled: false` and, when it is null,
   `first_switched_on_at`, raises `config_version`, records `repository.updated` with `changes.disabled` and `reason: switched_on`,
   and notifies `repo_config` in its transaction, so every replica serves it within the bound of R-REPO-049 (2 s). It leaves the
-  levels as they are. A retired repository is not switched on (409 `upstream_retired`); a system repository has no state (409
-  `managed_by_product`).
+  levels as they are; a preset repository nobody lowered is `internal` (Q-REPO-388), so this one switch makes it readable by every
+  signed-in subject that is not external, people's pipelines and service accounts included, directly and through every virtual
+  repository that lists it ([H-1052](../security/visibility.md#h-1052--a-technical-token-or-a-ci-token-reads-every-internal-repository-not-only-what-it-was-made-for)). A retired repository is not switched on (409
+  `upstream_retired`); a system repository has no state (409 `managed_by_product`).
 - **Switching off** sets `disabled: true` and records `repository.updated` and `repository.disabled`, both with `reason:
   switched_off`; `repository.disabled` carries `listedBy`, the qualified names of the virtual repositories whose member lists or pin
   rules name the repository (at most 100, and their number), and its journal entry (R-AUTHZ-031, Q-AUTHZ-238), so a restore keeps it
@@ -1897,7 +1912,9 @@ The state of a preset repository is derived from what is stored
 - **Switch all on** (`switchOnAllUpstreamRepositories`): in one transaction, every preset repository that is neither `active` nor
   `retired` is switched on as above and both its levels are set to `internal`; an `active` one keeps its levels; a system repository
   is never touched ([Q-REPO-384](#q-repo-384--switch-all-on-switches-on-what-is-off-and-makes-those-internal)). It never sets
-  `public` (owner). Each repository it changes records its events with one bulk ID.
+  `public` (owner). Each repository it changes records its events with one bulk ID. On a fresh installation every preset repository
+  is `internal` already (Q-REPO-388), so there it only switches them on; it sets a level only where an administrator changed one
+  before.
 - **What off means.** Nothing is fetched, served, probed in the background (R-REPO-065) or mirrored (a well-known repository is never
   a mirror, R-REPO-069) for it; what it cached stays stored until the cleanup of R-REPO-046 removes it, and its findings stay as they
   were. Switching on serves the cache again.
@@ -1931,7 +1948,7 @@ on and off, sets its level, may set its address and an account (owner), and may 
 | `visibility` (both parts, one level) | an administrator | `setUpstreamRepositoryVisibility`, `setAllUpstreamRepositoriesVisibility` (R-REPO-073) |
 | `remote.url`, `remote.extraHosts`, and for an APT archive `deb.upstreamKeys` | the product; an administrator may override them | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` |
 | `remote.authMode`, `remote.username`, `remote.password` | an administrator | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount` |
-| `adminNotes`, `includePatterns`, `excludePatterns`, `vulnerabilities`, `remote.offline`, `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`) |
+| `adminNotes`, `includePatterns`, `excludePatterns`, `vulnerabilities`, offline (`remote.availability.mode`), `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`) |
 | every other member: `hideExistence`, `priorityMember`, `remote.mode` (always `pullThrough`) and `remote.mirror`, the cache periods, `remote.downloadOnProbe`, `remote.headers`, `remote.clientCertificate`, `remote.outboundProxy`, `remote.sourceNetwork`, `remote.forwardAuthOnRedirect`, the size and integrity settings, `storage`, the format members but `deb.upstreamKeys` | the product | fixed at the format's defaults of R-REPO-063 |
 
 - **The document.** A merge patch of an `upstream` repository that changes a member of the product's rows, or one that a dedicated
@@ -1941,7 +1958,8 @@ on and off, sets its level, may set its address and an account (owner), and may 
   ([Q-REPO-386](#q-repo-386--the-repository-routes-refuse-what-the-product-manages-with-managed_by_product)).
 - **Refused with 409 `managed_by_product`**: a create in the project `upstream` (R-REPO-009), an entry of `batch-create` that names
   it and an entry of `batch-update` or `batch-delete` that names one of its repositories (each failing its batch as an invalid entry
-  does, R-REPO-014), `DELETE` (R-REPO-013), `POST …/move` from or to it (R-REPO-060), a quick setup in it (R-REPO-015).
+  does, R-REPO-014), `DELETE` (R-REPO-013), `POST …/move` from or to it (R-REPO-060), a quick setup in it (R-REPO-015). The batch
+  operations and quick setup are not built; their refusal of the project `upstream` is part of them when they are.
 - **As for every remote**: the reads, `upstream-test` (R-REPO-024), the cache view and the items API (a holder of `delete` on the
   repository, `content:bypass` among them, removes cached items), cache invalidation (R-REPO-045), the limits' places and ceilings
   ([usage-and-limits.md](usage-and-limits.md) R-LIM-015, Q-LIM-62).
@@ -1988,7 +2006,9 @@ off unless an administrator wants it; there is no second way that falls back to 
   registry, the address the scanning's task used before [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044), both levels
   `private`, `vulnerabilities: {"enabled": false}` where the format has the member (the scanning does not scan its own database),
   `remote.cache.unusedRetentionHours: 48`, `disabled: false`. The include patterns, the levels, the vulnerabilities member and the cache
-  period are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422 `managed_by_product` for them. The include
+  period are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422 `managed_by_product` for them. The cache
+  period is stored before the cleanup of R-REPO-046 that applies it is built
+  ([Q-REPO-392](#q-repo-392--scanner-trivy-stores-its-cache-period-before-the-cleanup-that-applies-it-exists)). The include
   pattern is a name pattern ([formats/oci.md](formats/oci.md): OCI matches the image name): it admits that one image, its tags, manifests
   and blobs, and nothing else of the registry; the scanning reads the tag `2` and its layer only.
 - **Only for the scanner** ([Q-REPO-380](#q-repo-380--scanner-trivy-answers-no-client-and-is-in-use-while-the-image-scanning-reads-through-it)):
@@ -2131,12 +2151,12 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
 
 | Operation | Method and path | Body | Success | Errors |
 |---|---|---|---|---|
-| `listUpstreamRepositories` | `GET /api/v1/upstream-repositories` | — | 200 `{"items": [...]}`, every well-known repository in catalog order, then the system repositories; not paged | 401, 403 |
+| `listUpstreamRepositories` | `GET /api/v1/upstream-repositories` | — | 200 `{"items": [...]}`, every well-known repository: the presets in catalog order (the formats by ID, the presets in the format's order), a retired one after them by key, then the system repositories; not paged | 401, 403 |
 | `getUpstreamRepository` | `GET /api/v1/upstream-repositories/{key}` | — | 200 one item, `ETag: "<config_version>"` | 404 |
 | `setUpstreamRepositoryState` | `PUT /api/v1/upstream-repositories/{key}/state` | `{"state": "on" \| "off"}` | 200 the item | 404; 409 `upstream_retired`; 409 `managed_by_product` (a system repository) |
 | `switchOnAllUpstreamRepositories` | `POST /api/v1/upstream-repositories/switch-on-all` | — | 200 `{"items": [the repositories it switched on], "bulkId"}` | — |
 | `setUpstreamRepositoryVisibility` | `PUT /api/v1/upstream-repositories/{key}/visibility` | `{"level": "private" \| "internal" \| "public"}` | 200 the item, with `warnings` (`public_populates_remote`, R-AUTHZ-008) | 404; 409 `managed_by_product`; the refusals of R-AUTHZ-038 in its order |
-| `setAllUpstreamRepositoriesVisibility` | `POST /api/v1/upstream-repositories/set-visibility` | `{"level": …}` | 200 `{"items": [...], "bulkId"}`: every preset repository that is not retired | the refusals of R-AUTHZ-038 |
+| `setAllUpstreamRepositoriesVisibility` | `POST /api/v1/upstream-repositories/set-visibility` | `{"level": …}` | 200 `{"items": [...], "bulkId"}`: of the preset repositories that are not retired, the ones whose level it changed (Q-API-361) | the refusals of R-AUTHZ-038 |
 | `setUpstreamRepositoryAddress` | `PUT /api/v1/upstream-repositories/{key}/address` | `{"url", "extraHosts", "upstreamKeys", "account"}`, `If-Match` | 200 the item | 404; 412; 422 (R-REPO-008, `secret_value_required`, `not_applicable` for `upstreamKeys` of another format); 428 |
 | `resetUpstreamRepositoryAddress` | `DELETE /api/v1/upstream-repositories/{key}/address` | `If-Match` | 200 the item | 404; 412; 422 `secret_value_required` (the product's hosts differ from the override's while an account is stored: the reset carries `?removeAccount=true`); 428 |
 | `setUpstreamRepositoryAccount` | `PUT /api/v1/upstream-repositories/{key}/account` | `{"authMode", "username", "password"}`, `If-Match` | 200 the item | 404; 412; 422 (`invalid_secret`, R-REPO-033); 428 |
@@ -2145,8 +2165,9 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
 - **Permission.** The reads need `repositories:read-config` (`admin`, `security-admin`, `auditor`, `repository-admin`); every write
   `repositories:write-config` (`admin`, `repository-admin`); a level the installation restricts is chosen only by whoever holds
   `security-settings:write` (R-AUTHZ-037); raising a level, and every address and account write, need recent authentication
-  (R-API-007). A caller without the read capability gets 403 on the collection and 404 on an item, as for a hidden resource
-  ([authorization.md](authorization.md) R-AUTHZ-016).
+  (R-API-007). A caller without the read capability gets 403 on the collection and on an item: the declaration decides, and the keys
+  of the project are the product's, so there is nothing to hide
+  ([api-and-ui.md](api-and-ui.md) [Q-API-362](api-and-ui.md#q-api-362--a-caller-without-repositoriesread-config-gets-403-on-an-item-of-the-well-known-repositories-as-on-the-collection)).
 - **Concurrency.** The state and the level set one value and take no `If-Match`, as a project's level does (Q-AUTHZ-280); the address
   and the account replace what an administrator typed and need `If-Match` (R-API-012). A bulk operation is one transaction: it changes
   every repository it names or none ([Q-API-361](api-and-ui.md#q-api-361--a-bulk-operation-of-the-well-known-repositories-is-one-transaction-and-answers-what-it-changed)).
@@ -2177,7 +2198,9 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
     }
   },
   "account": { "authMode": "none", "username": null, "password": null, "removedByUpdateAt": null },
-  "listedBy": 0,
+  "listedBy": 3,
+  "listedByProjects": 2,
+  "listedByNames": ["ops/docker-all", "web/docker-all", "web/docker-build"],
   "configVersion": 1
 }
 ```
@@ -2186,13 +2209,24 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
   (`["state", "visibility"]` for `scanner-trivy`); `upstreamKeys` lists the fingerprints of the keys of an APT archive
   (`[{"fingerprint", "userId"}]`), `null` for another format; `password` is `{"set": true}`, a `secretRef` as stored, or `null`;
   `removedByUpdateAt` is `account_removed_at`; `listedBy` is the number of virtual repositories whose member lists or pin rules
-  name it.
+  name it and `listedByProjects` the number of their projects, on every item; `listedByNames` names them by qualified name in byte
+  order, at most 100, on every answer but `listUpstreamRepositories` (the item above is that of `getUpstreamRepository`), and
+  `listedBy` minus their number is the number of the others
+  ([api-and-ui.md](api-and-ui.md) [Q-API-363](api-and-ui.md#q-api-363--the-item-counts-the-listing-virtual-repositories-and-their-projects-and-an-answer-about-one-repository-names-them)).
+- **The member picker's read** ([api-and-ui.md](api-and-ui.md) [Q-API-364](api-and-ui.md#q-api-364--a-writer-of-a-virtual-repository-reads-the-state-and-the-level-of-a-formats-well-known-repositories-through-an-operation-of-its-own)):
+  `listFormatUpstreamRepositories`, `GET /api/v1/formats/{format}/upstream-repositories`, answers whoever holds
+  `repositories:write-config` and the Owner of any project `{"items": [{"key", "name", "displayName", "state", "visibility"}]}`: the
+  preset repositories of the format that are not retired, in catalog order, without address, account or listing; a system
+  repository is never a member and is not listed. An unknown format answers 404, an anonymous caller 401, any other caller 403.
 - **Audit.** Each write records the events of R-REPO-068 and R-REPO-069 in its transaction; a bulk write one event per repository with
   its `bulkId`. A write that changes nothing records nothing.
 
 Acceptance criteria (integration area `upstream`, about 6 s): each operation's success and each error of the table once, the
-recent-authentication refusal of `setUpstreamRepositoryAddress` with an old session, `If-Match` on the address, and the 403 and 404
-of a caller without the read capability.
+recent-authentication refusal of `setUpstreamRepositoryAddress` with an old session, `If-Match` on the address, and the 403 on the
+collection and on an item for a caller without the read capability. `upstream/npmjs` listed by `web/npm-all`, `web/npm-build` and
+`ops/npm-all` answers `listedBy: 3` and `listedByProjects: 2` in the list, without names, and the three names on its item and on the
+answer of its switch-off. The member picker's read answers the Owner of `web` the npm, OCI and APT presets with their state and
+level, neither `scanner-trivy` nor a retired one, and refuses a reader of `web` (403) and an anonymous caller (401).
 
 ### R-REPO-074 · The tests of the built-in project, their tier and their cost
 Priority: **MVP** · Covers: quader-only
@@ -9758,23 +9792,40 @@ development agent would revisit this if two formats need the same natural name.
 
 **Applied in the spec:** R-REPO-062, R-REPO-066, R-REPO-067 step 6.
 
-### Q-REPO-388 · A well-known repository takes the installation's default level when it is created
+### Q-REPO-388 · A well-known repository starts switched off and internal
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the owner on 2026-11-20**, from the options below as they were put to him. Replaces the development agent's
+choice of the installation's default level.
+
+Context: the reconcile creates a preset repository switched off (R-REPO-066, R-REPO-068). Which level do its two parts take at the
+create? The reconcile never writes a level afterwards.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The installation's `defaultLevel`, as for any repository of a public project (chosen) | `private` in a fresh installation | One rule for every repository; an installation whose default is `internal` gets `internal` | A single switch-on of a `private` repository serves only administrators and global grants until its level is raised |
-| (b) Always `internal` | Ready for teams | Switching one on is enough | The product chooses a level the installation's default does not |
-| (c) Always `private` | Closed | Safest | Ignores an installation's default |
+| (a) The installation's `defaultLevel`, as for any repository of a public project | `private` in a fresh installation | One rule for every repository | A switch-on serves only administrators and global grants until someone raises the level, which is easy to forget |
+| (b) `private` | Closed | Nothing is read before an administrator chooses who reads it | Two steps for every registry a team needs |
+| (c) `internal` (the owner's choice) | Off and internal | One switch is all a team needs; nothing is served while it is off | One switch opens the registry to every signed-in subject that is not external, technical tokens included (H-1052) |
 
-**Choice:** (a). The admin page shows the level beside the switch, and Switch all on sets `internal` (Q-REPO-384).
+**Choice:** (c), the owner's: "upstream projekte sollen vom Standard aber nicht aus und privat sein, sondern aus und internal."
 
-**Rationale:** the product should not choose a wider level than the installation does; the row makes the level visible when the
-repository is switched on. The development agent would revisit this if administrators switch repositories on one by one and forget
-the level.
+**What follows:**
 
-**Applied in the spec:** R-REPO-066.
+- The reconcile creates a preset repository with both levels `internal`, whatever the installation's default; `scanner-trivy` stays
+  `private` and fixed (R-REPO-070). A repository that exists keeps the level it has.
+- Switching a preset repository on (R-REPO-068) makes it readable by every signed-in subject that is not external, people's pipelines
+  and service accounts included, directly and through every virtual repository that lists it
+  ([security/visibility.md](../security/visibility.md),
+  [H-1052](../security/visibility.md#h-1052--a-technical-token-or-a-ci-token-reads-every-internal-repository-not-only-what-it-was-made-for)).
+  The admin page shows the level beside the switch; an administrator who wants fewer readers lowers it first.
+- **Switch all on** (Q-REPO-384) stays as it is: on a fresh installation its registries are `internal` already, and it sets a level only
+  where an administrator changed one.
+- An installation that restricts `internal` (R-AUTHZ-037) gets `private`
+  ([Q-REPO-393](#q-repo-393--where-the-installation-restricts-internal-a-preset-repository-is-created-private)).
+- While off, nobody but the holders of `repositories:read-config` sees the project or its repositories in a list or a suggestion
+  (Q-AUTHZ-305, [authorization.md](authorization.md) Q-AUTHZ-306): `internal` and off shows a team nothing.
+
+**Applied in the spec:** R-REPO-066, R-REPO-068; [authorization.md](authorization.md) R-AUTHZ-041;
+[security/visibility.md](../security/visibility.md).
 
 ### Q-REPO-389 · A virtual repository moves with its `upstream` members
 
@@ -9791,6 +9842,94 @@ Status: **Decided by the development agent** — selected from the options below
 an `upstream` member is valid in every project. The development agent sees no case for revisiting this.
 
 **Applied in the spec:** R-REPO-060, R-REPO-071.
+
+### Q-REPO-390 · The reconcile compares the address and a system repository's fixed members; the refusals keep the rest
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-REPO-067 step 2 wrote "every fixed member" back when it differs. The table of R-REPO-069 makes most members of a well-known
+repository the product's at the format's defaults (cache periods, mode, headers, the size settings), and a release can change a format's
+default. Which members does the reconcile compare and write?
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The address (`url`, `extraHosts`, the format members a preset carries) and, of a system repository, the members the declaration fixes (include patterns, levels, scanning, cache period) (chosen) | `wellknown.Address`, `wellknown.Fixed` | What the product declares is compared; a run against the same catalog writes nothing; an administrator's narrowing settings are never touched | A format default that a release changes reaches a well-known repository only through its own migration, as for every repository |
+| (b) The whole document against the defaults of R-REPO-063 plus the declaration | Every fixed member | A release's new default reaches the well-known repositories | The comparison must know which members are an administrator's in every format; a new member of a format is a write to every well-known repository at the next upgrade |
+
+**Choice:** (a). The members the product holds and does not compare are kept by the refusals of R-REPO-069: no caller but the product
+writes them.
+
+**Rationale:** the declaration is the product's statement of what a well-known repository is; the defaults of a format belong to the format
+and are the same for every repository of it. The development agent would revisit this if a release has to change a default on the
+well-known repositories only.
+
+**Applied in the spec:** R-REPO-067 step 2. Code: `wellknown.Plan`, `AddressEqual`, `FixedEqual` ([reconcile.go](../../internal/wellknown/reconcile.go)).
+
+### Q-REPO-391 · The purge of a retired repository is a function of the schema, held to its foreign keys by a test
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-REPO-067 step 5 removes a retired repository's content "as the deletion job of R-REPO-013 does without removing the row". The
+deletion job removes the items and then the row, whose cascading foreign keys take every other row with it; a retirement keeps the row.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The items in batches, then `upstream_repository_purge(id)` of migration 00086 deletes the content rows of every cascading table and keeps the configuration (chosen) | One explicit list, one transaction | The content goes as with a deletion; the placeholders' member rows, the grants and the limits that name the repository stay | A table a later migration adds must be named; a test holds the list to `pg_constraint` and fails until it is |
+| (b) Only the items | The job of R-REPO-013 without its last step | No list | The format's rows, the cache's entries and mappings, the usage and the findings of a repository that holds nothing stay |
+| (c) A list built at run time from the catalog | No list to keep | — | SQL built at run time (R-ARCH-019), and no decision for each new table between content and configuration |
+
+**Choice:** (a). The job is `upstream-purge`, exclusive per repository; a repository the catalog declares again before the end keeps
+what is left.
+
+**Rationale:** whether a table holds content or configuration is a decision, which a list makes and a test enforces; the deletion job
+needs no list because its last step removes the row. The development agent would revisit this if retirements became frequent.
+
+**Applied in the spec:** R-REPO-067 step 5. Code: `RunUpstreamPurgeJob` ([upstream_store.go](../../internal/repository/upstream_store.go)),
+`upstream_repository_purge` ([00086_upstream.sql](../../internal/meta/postgres/migrations/00086_upstream.sql)),
+`TestR_REPO_067_ThePurgeOfARetiredRepository`.
+
+### Q-REPO-392 · `scanner-trivy` stores its cache period before the cleanup that applies it exists
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-REPO-070 fixes `remote.cache.unusedRetentionHours: 48` on `scanner-trivy`. The cleanup of R-REPO-046 (P1) is not built, and the
+validation refuses a value above 0 on every repository with `not_applicable` until it is.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The product stores 48 on `scanner-trivy`; the validation passes it where it is the product's (a write of the product, or a write that leaves it as stored) and refuses it elsewhere (chosen) | The declaration as specified | The repository holds what R-REPO-070 says, and the cleanup applies it the day it is built, with no release of the declaration | The document shows a period that does nothing yet |
+| (b) Store 0 until the cleanup is built | Nothing that does not work is shown | — | The declaration changes with the cleanup, and the reconcile writes every installation again then |
+| (c) Lift the refusal for every repository | One rule | — | Every remote would store a period that does nothing |
+
+**Choice:** (a). `dropProductHeld` ([upstream_managed.go](../../internal/repository/upstream_managed.go)) takes the `not_applicable` of that
+member out of a validation where the value is the product's.
+
+**Rationale:** the value is the product's declaration and harmless while nothing reads it. The development agent would revisit this when
+R-REPO-046 is built: the exception goes then.
+
+**Applied in the spec:** R-REPO-070.
+
+### Q-REPO-393 · Where the installation restricts `internal`, a preset repository is created `private`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's `internal` (Q-REPO-388) meets an installation that lets only administrators choose `internal`
+(`restrictedLevels`, R-AUTHZ-037), possibly `private` as well while its default is `public` (Q-AUTHZ-284 admits that). The reconcile
+runs in `quader migrate`, where a refusal fails the upgrade. Switching on needs `repositories:write-config`, not
+`security-settings:write`, and leaves the level as it is.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reconcile is held like any create: the highest level at or below `internal` a non-administrator may choose (Q-AUTHZ-286), and `private` where there is none; a level its declaration names (`scanner-trivy`'s `private`) is no choice (chosen) | `levelChoice.productLevel` in [visibility.go](../../internal/repository/visibility.go) | A repository-admin's switch-on never opens a registry at a level the installation keeps for its security administrators; the reconcile never fails on a restriction; one rule with the creates of every repository | A restricting installation's registries need a second step by a security administrator, as any repository there does |
+| (b) The product creates `internal` regardless | The owner's level everywhere | One level in every installation | The restriction is bypassed by the next switch-on of someone who may not choose `internal` |
+| (c) Refuse: the reconcile fails until the restriction is lifted | — | Nothing is chosen behind anybody's back | An upgrade fails on a setting that is valid |
+
+**Choice:** (a). The repositories that exist keep their levels; lifting the restriction later changes nothing of them.
+
+**Rationale:** a restricted level is one only a security administrator opens (R-AUTHZ-037); a default the product chooses must not
+open it for them. The development agent would revisit this if the owner wants the product's level to hold in a restricting installation.
+
+**Applied in the spec:** R-REPO-066. Test: `TestR_AUTHZ_037_TheLevelsAWriteStores` (the product's create, three cases).
 
 ## What this does not cover
 

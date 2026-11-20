@@ -10,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // The writes of a mapping (R-CI-009, R-CI-017, R-CI-019, R-CI-020). Every write runs in one READ COMMITTED
@@ -107,6 +108,9 @@ func (s *MappingService) Create(ctx context.Context, caller Actor, issuer string
 
 // CreateIn creates a mapping of the project's tier on the issuer named by in.Issuer (Q-CI-26).
 func (s *MappingService) CreateIn(ctx context.Context, caller Actor, project string, in MappingInput) (MappingResult, error) {
+	if wellknown.IsProject(project) {
+		return MappingResult{}, errs.E(errs.Conflict, errs.CodeManagedByProduct, "The project upstream has no CI mappings (R-AUTHZ-041).")
+	}
 	if in.Issuer == "" {
 		return MappingResult{}, mappingViolation([]errs.FieldError{field("/issuer", "required", "A project's mapping names its issuer.")})
 	}

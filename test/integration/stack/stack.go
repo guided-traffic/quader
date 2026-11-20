@@ -356,7 +356,9 @@ type repositories struct{ e *Env }
 func (s repositories) list(ctx context.Context, where string, args ...any) ([]repository.Repository, error) {
 	s.e.mu.Lock()
 	defer s.e.mu.Unlock()
-	rows, err := s.e.admin.Query(ctx, "SELECT r.id, p.key, r.key, r.class, r.format, r.config, r.project_id::text FROM repositories r JOIN project p ON p.id = r.project_id "+where+" ORDER BY p.key, r.key", args...)
+	// disabled as the snapshot reader reads it from the stored document: a switched-off repository of the project upstream is then
+	// seen as off by the callers of the reader (the project's sight, Q-AUTHZ-305).
+	rows, err := s.e.admin.Query(ctx, "SELECT r.id, p.key, r.key, r.class, r.format, r.config, r.project_id::text, coalesce((r.config->>'disabled')::boolean, false) FROM repositories r JOIN project p ON p.id = r.project_id "+where+" ORDER BY p.key, r.key", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +368,7 @@ func (s repositories) list(ctx context.Context, where string, args ...any) ([]re
 		var r repository.Repository
 		var id int64
 		var class string
-		if err := rows.Scan(&id, &r.Name.Project, &r.Name.Key, &class, &r.Format, &r.Config, &r.ProjectID); err != nil {
+		if err := rows.Scan(&id, &r.Name.Project, &r.Name.Key, &class, &r.Format, &r.Config, &r.ProjectID, &r.Disabled); err != nil {
 			return nil, err
 		}
 		r.ID, r.Class = strconv.FormatInt(id, 10), repository.Class(class)

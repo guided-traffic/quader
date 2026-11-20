@@ -27,6 +27,9 @@ var ifMatchExempt = map[string]string{
 	"deployFile":       "file content on /files (R-API-012)",
 	"deployContent":    "file content on the content route (R-API-012, Q-UI-106)",
 	"setAvatar":        "an image replaced as a whole and addressed by its digest (R-API-012, R-API-055)",
+	// R-REPO-073: the state and the level of a well-known repository set one value each, as a project's level does (Q-AUTHZ-280).
+	"setUpstreamRepositoryState":      "sets one value; the last write wins and a repeat changes nothing (R-REPO-073)",
+	"setUpstreamRepositoryVisibility": "sets one value; the last write wins and a repeat changes nothing (R-REPO-073, Q-AUTHZ-280)",
 }
 
 // ifMatchOnReplace are the PUT operations that create a resource where none exists and replace it where one does (Q-API-354):

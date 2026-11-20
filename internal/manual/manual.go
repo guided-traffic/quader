@@ -47,7 +47,7 @@ func contents() toc {
 		}},
 		{"admin", "Administrator guide", []string{
 			"overview", "installation", "configuration", "tls-and-certificates", "endpoints", "bastion", "sign-in-and-identity",
-			"permissions", "projects", "tokens", "download-limits", "gitlab-ci", "repositories", "container-repositories", "apt-repositories", "ansible-repositories", "import", "vulnerability-sources", "dashboard", "operations", "backup-and-restore", "runbook", "upgrades",
+			"permissions", "projects", "tokens", "download-limits", "gitlab-ci", "repositories", "upstream-registries", "container-repositories", "apt-repositories", "ansible-repositories", "import", "vulnerability-sources", "dashboard", "operations", "backup-and-restore", "runbook", "upgrades",
 			"limitations",
 		}},
 	}

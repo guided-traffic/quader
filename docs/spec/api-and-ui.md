@@ -2423,12 +2423,16 @@ Owned by [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073 (sema
 | POST | `/api/v1/upstream-repositories/set-visibility` | `setAllUpstreamRepositoriesVisibility` | as the one above; `Idempotency-Key` accepted |
 | PUT, DELETE | `/api/v1/upstream-repositories/{key}/address` | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` | `repositories:write-config`; `x-quader-recent-auth: true`; `If-Match` |
 | PUT, DELETE | `/api/v1/upstream-repositories/{key}/account` | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount` | `repositories:write-config`; `x-quader-recent-auth: true`; `If-Match` |
+| GET | `/api/v1/formats/{format}/upstream-repositories` | `listFormatUpstreamRepositories` | `repositories:write-config` or an Owner of any project (`projectRole: owner` without `project`, [Q-API-364](#q-api-364--a-writer-of-a-virtual-repository-reads-the-state-and-the-level-of-a-formats-well-known-repositories-through-an-operation-of-its-own)) |
 
 - `switch-on-all` and `set-visibility` are reserved names of the collection (R-API-004) and listed in the `key` schema's
   `x-quader-reserved-names`.
-- Schemas: `UpstreamRepository` (the item of R-REPO-073), `UpstreamRepositoryState` (enum `active`, `switched-off`,
-  `not-switched-on`, `retired`), `UpstreamRepositoryAddress`, `UpstreamRepositoryAccount`, `UpstreamRepositoryBulkResult`
-  (`items`, `bulkId`).
+- Schemas: `UpstreamRepository` (the item of R-REPO-073, with `listedBy`, `listedByProjects` and, on every answer but
+  `listUpstreamRepositories`, `listedByNames`,
+  [Q-API-363](#q-api-363--the-item-counts-the-listing-virtual-repositories-and-their-projects-and-an-answer-about-one-repository-names-them)),
+  `UpstreamRepositoryState` (enum `active`, `switched-off`, `not-switched-on`, `retired`), `UpstreamRepositoryAddress`,
+  `UpstreamRepositoryAccount`, `UpstreamRepositoryBulkResult` (`items`, `bulkId`), `UpstreamRepositorySummary` (`key`, `name`,
+  `displayName`, `state`, `visibility`) and `UpstreamRepositorySummaryList` (`items`) of `listFormatUpstreamRepositories`.
 - Error codes, registered in `internal/errs/codes.go`: `managed_by_product` (409, or at a member of a 422), `upstream_retired` (409);
   the warning `member_inactive` of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-071.
 - A bulk operation is one transaction and answers what it changed
@@ -2440,6 +2444,8 @@ Acceptance criteria:
   R-API-004 pass.
 - The `auditor` lists the well-known repositories (200) and gets 403 on `setUpstreamRepositoryState`; a `repository-admin` switches
   one on (200).
+- `listFormatUpstreamRepositories` answers an anonymous caller 401, a reader of a project 403 and the Owner of a project who holds no
+  capability of the instance the preset repositories of the format with `state` and `visibility` and without address and account.
 
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
@@ -8182,7 +8188,7 @@ action that switches all on and one that sets the visibility of all
 - **Switching** sends `setUpstreamRepositoryState` at once, without a dialog; the switch shows the server's answer and a `role="status"`
   line "Docker Hub is on." Switching off a repository that virtual repositories list asks first: "Switch off Docker Hub? 3 virtual
   repositories in 2 projects list it. They skip it until it is on again; nothing of theirs changes." with **Switch off**.
-- **Switch all on** opens a dialog: "Switch on 11 registries? Each becomes Internal: everyone signed in who is not marked external,
+- **Switch all on** opens a dialog: "Switch on 11 registries? Each is Internal once it is on: everyone signed in who is not marked external,
   people and their pipelines and service accounts, can pull through it, directly and through every virtual repository that lists it.
   Quader contacts each registry when a client asks for something it has not stored." with the names of the registries it switches on, and **Switch all on**. It never offers Public (owner).
 - **Set visibility of all** opens a dialog with the radio group of the levels (`<quader-visibility-level>`, Q-UI-228) and **Set
@@ -16255,6 +16261,82 @@ Status: **Decided by the development agent** — selected from the options below
 revisit this if a catalog grows past a few hundred presets.
 
 **Applied in the spec:** R-API-083; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-068, R-REPO-073.
+
+### Q-API-362 · A caller without `repositories:read-config` gets 403 on an item of the well-known repositories, as on the collection
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-REPO-073 asked for 403 on `listUpstreamRepositories` and 404 on `getUpstreamRepository` for a caller without the read
+capability, "as for a hidden resource" (R-AUTHZ-016), and R-API-083 declares both operations with `repositories:read-config`. A
+permission declaration is decided by the shared authorization step before the handler runs, and its refusal is 403
+([authorize.go](../../internal/api/v1/authorize.go)): the two statements cannot both hold.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The declaration decides: 403 on the collection and on an item (chosen) | `x-quader-permission: {permission: repositories:read-config}` on both reads | The shared step enforces what the document declares, and the declaration test of R-API-008 sees the capability; the keys of the project `upstream` are the product's and the same in every installation, so a 404 would hide nothing | The item's refusal differs from the 404 of a repository hidden from its caller |
+| (b) 404 on an item: `{authenticated: true}` and the capability checked in the handler | As R-AUTHZ-016 for a hidden resource | One answer for every unseen item | The declaration no longer names the capability the operation needs; the handler repeats the shared step's work for a resource whose existence is public |
+
+**Choice:** (a).
+
+**Rationale:** R-AUTHZ-016 hides that a resource exists from a caller who could learn something from it; which well-known repositories
+exist is written in the catalog of every release and in this specification. The development agent would revisit this if a well-known
+repository ever has a key that only one installation has (T-21b's own registries, should they ever join the project).
+
+**Applied in the spec:** [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073 (the permission bullet and the acceptance
+criteria); R-API-083 (unchanged: the declarations were already these).
+
+### Q-API-363 · The item counts the listing virtual repositories and their projects, and an answer about one repository names them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the question before a switch-off reads "3 virtual repositories in 2 projects list it" (R-UI-187), and the details of a
+well-known repository list them "by qualified name, as links, as far as the caller reads them, and the number of the others"
+(R-UI-188). The item of R-REPO-073 carried `listedBy`, a number and nothing else, so the page could say neither.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `listedBy` and `listedByProjects` on every item; `listedByNames` on every answer but `listUpstreamRepositories` (chosen) | The list counts; `getUpstreamRepository`, the writes and the bulk answers also name, in byte order, at most 100 | The list stays three queries whatever the number of repositories (the rows, their facts, one count that also counts projects); a write's answer replaces the item the details show, so a switch-off from there keeps the names without a second read | One bounded query more per repository a write answers |
+| (b) The names on `getUpstreamRepository` only | As (a), the writes answering the numbers | The fewest queries | The details page loses the names after a write of its own, or reads the item again |
+| (c) The names on every item, the list included | One shape everywhere | No absent member | The list's cost grows with the virtual repositories of every team, for a page that shows numbers |
+| (d) An operation of its own, `GET /api/v1/upstream-repositories/{key}/listed-by` | — | The item keeps its shape | One more operation and one more request for one bounded list |
+
+**Choice:** (a).
+
+**Rationale:** the names are those `repository.disabled` records already (Q-REPO-383), from the same query and with the same bound,
+so `listedBy` minus their number is the number of the others. "As far as the caller reads them" holds for every name: each operation
+of R-API-083 needs `repositories:read-config`, which reads the configuration of every repository of the instance. The development
+agent would revisit the bound if a page ever needs more than 100 names; a page then reads the virtual repositories through the
+repository search.
+
+**Applied in the spec:** R-API-083; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073 (the item).
+
+### Q-API-364 · A writer of a virtual repository reads the state and the level of a format's well-known repositories through an operation of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the member picker of a virtual repository lists every well-known repository of its format that is not retired, with the
+badge **Not switched on** or **Switched off**, and an active member at `private` says its own sentence (R-UI-189). Its caller is the
+Owner of a team's project, who holds no `repositories:read-config`; no read answered them the state or the level. Whoever writes a
+member list learns both already: listing `upstream/<key>` answers the warning `member_inactive` on the save and `upstreamState` in
+the resolution explanation, and the explanation's `no-read` tells whether the caller reads the member (R-REPO-072).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/formats/{format}/upstream-repositories` with a schema of its own, for whoever holds `repositories:write-config` and the Owner of any project (chosen) | `UpstreamRepositorySummary`: `key`, `name`, `displayName`, `state`, `visibility`; nothing of the address, the account or who lists it | The callers are the ones who write a member list, and they learn nothing they could not learn by listing a key; the declaration form exists (`{permission, projectRole: owner}` without a project, [Q-API-355](#q-api-355--projectrole-owner-without-a-project-admits-an-owner-of-any-project)); under the format no reserved key of the project `upstream` is added (R-API-004) | One operation more |
+| (a') The same operation for every signed-in caller | `{authenticated: true}` | The simplest declaration | A reader, a user flagged external, a service account or a CI token would learn the state and the level of repositories they can neither list nor read |
+| (b) The repository summaries of the project `upstream` shown to every signed-in caller, with the state | — | No operation more | Changes what a repository list hides, in the path every project uses |
+| (c) The UI's fallback stays | — | Nothing to build | Contradicts R-UI-189: "Not switched on" and "Switched off" are not told apart, and a repository the caller does not read is not shown |
+
+**Choice:** (a).
+
+**Rationale:** the read answers exactly the callers who could find each answer out by writing a member list, and nothing those callers
+could not find out; that a preset exists was public already (`GET /api/v1/formats` lists the presets of every format). An anonymous
+caller gets `401`, a signed-in caller who holds neither the capability nor an Owner's role `403`. A system repository is never a
+member (R-REPO-070) and a retired one is not offered (R-REPO-071), so neither is listed. The development agent would revisit the
+callers if a role other than the Owner's ever writes a member list.
+
+**Applied in the spec:** R-API-083; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073; [authorization.md](authorization.md)
+R-AUTHZ-041 (who reads the state); [security/visibility.md](../security/visibility.md).
 
 ### Q-API-345 · The usage list is one operation per scope, with the period, the kind, the state and the sort as parameters
 

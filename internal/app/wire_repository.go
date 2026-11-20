@@ -72,4 +72,9 @@ func (a *App) registerRepositoryJobs(r *jobs.Registry) {
 		a.repoSvc.handler("repository service", func(ctx context.Context, svc *repository.Service, run *jobs.Run) error {
 			return svc.RunDeleteJob(ctx, run)
 		})))
+	// The purge of a retired well-known repository, enqueued by the reconcile of quader migrate (R-REPO-067 step 5).
+	r.RegisterKind(repository.UpstreamPurgeJobKind, repository.UpstreamPurgeJobSpec(
+		a.repoSvc.handler("repository service", func(ctx context.Context, svc *repository.Service, run *jobs.Run) error {
+			return svc.RunUpstreamPurgeJob(ctx, run)
+		})))
 }

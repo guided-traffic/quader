@@ -55,6 +55,7 @@ func toRepository(r q.Repository, project string, cat *catalog.Registry) (Reposi
 		HideExistence: HideInherit, Lifecycle: Lifecycle(r.Lifecycle), Version: r.ConfigVersion,
 		Visibility: Visibility{Artifacts: r.VisibilityArtifacts, Wiki: r.VisibilityWiki},
 		Config:     r.Config, CreatedAt: r.CreatedAt.Time, UpdatedAt: r.UpdatedAt.Time,
+		rid: r.ID,
 	}
 	if r.LastActivityAt.Valid {
 		out.LastActivityAt = r.LastActivityAt.Time

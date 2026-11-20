@@ -271,31 +271,42 @@ func (d *Document) renderVirtual(rel *virtualRel) {
 	d.Virtual = &v
 }
 
+// snapshotRows are the rows a snapshot is built from: the repositories, the relational part of the virtual repositories, the
+// project keys by project ID and the facts of the repositories of the project upstream by repository ID.
+type snapshotRows struct {
+	rows     []q.Repository
+	rels     map[int64]*virtualRel
+	projects map[string]string
+	upstream map[int64]q.UpstreamRepository
+}
+
 // readSnapshot reads the repository table and then the relational part of the
 // virtual repositories. The two reads are not one snapshot: a member created
 // between them is missing from the list and is left out of its virtual
 // repository (fail closed). That creation is a repo_config change, for which the
 // fill rule of the cache (R-ARCH-018) discards the load or flushes the stored
-// snapshot, so the next load sees both.
-func readSnapshot(ctx context.Context, run meta.Runner) ([]q.Repository, map[int64]*virtualRel, map[string]string, error) {
-	var rows []q.Repository
-	var rels map[int64]*virtualRel
-	var projects map[string]string
+// snapshot, so the next load sees both. The facts of the project upstream are read
+// in the same transaction; a write of them is a repo_config change as well.
+func readSnapshot(ctx context.Context, run meta.Runner) (snapshotRows, error) {
+	var out snapshotRows
 	err := run.InTx(ctx, func(tx meta.Tx) error {
 		qs, err := queries(tx)
 		if err != nil {
 			return err
 		}
-		if rows, err = qs.ListRepositories(ctx); err != nil {
+		if out.rows, err = qs.ListRepositories(ctx); err != nil {
 			return err
 		}
-		if projects, err = projectKeys(ctx, qs); err != nil {
+		if out.projects, err = projectKeys(ctx, qs); err != nil {
 			return err
 		}
-		rels, err = loadVirtualRels(ctx, qs, virtualIDs(rows))
+		if out.upstream, err = upstreamFactsByID(ctx, qs); err != nil {
+			return err
+		}
+		out.rels, err = loadVirtualRels(ctx, qs, virtualIDs(out.rows))
 		return err
 	})
-	return rows, rels, projects, err
+	return out, err
 }
 
 // linkVirtual gives every virtual repository of repos its routing view: the

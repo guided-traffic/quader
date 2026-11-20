@@ -3442,10 +3442,19 @@ administered by the installation's administrators, not by a team.
   of `vulnerabilities` follows R-VULN-002. The limits' rules at the project `upstream` and at its repositories are written with
   `limits:write`, its ceilings with `limits:write` or `repositories:write-config` ([usage-and-limits.md](usage-and-limits.md)
   R-LIM-016, Q-LIM-62): no Owner writes a capped rule there.
+- **Who reads their state without administering them** ([api-and-ui.md](api-and-ui.md) [Q-API-364](api-and-ui.md#q-api-364--a-writer-of-a-virtual-repository-reads-the-state-and-the-level-of-a-formats-well-known-repositories-through-an-operation-of-its-own)):
+  whoever writes a member list, the holder of `repositories:write-config` and the Owner of any project, reads the state and the level
+  of a format's preset repositories through `GET /api/v1/formats/{format}/upstream-repositories`, and nothing of their address, their
+  account or who lists them. Listing a key in a member list tells them as much (R-REPO-072).
 - **Its level** ([Q-AUTHZ-301](#q-authz-301--the-project-upstream-is-stored-public-and-seen-by-whoever-reads-one-of-its-repositories)):
   stored `public` and fixed, so that a well-known repository can take any level an administrator chooses (R-AUTHZ-033 rule 2). The
   stored level admits nobody: the project is listed and read by the holders of `projects:read` and by a caller that reads one of its
-  repositories, and its members list is empty. `GET /api/v1/projects` returns it first, before the other projects in the order of
+  repositories that serve (switched on, not being deleted, no system repository,
+  [Q-AUTHZ-305](#q-authz-305--a-caller-sees-the-project-upstream-through-a-repository-of-it-that-serves)), and its members list is empty.
+  Its preset repositories are created `internal` and switched off ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-388,
+  the owner's), so one switch-on opens a registry to every signed-in subject that is not external; while off, a repository of it is
+  listed and suggested only to the holders of `repositories:read-config`
+  ([Q-AUTHZ-306](#q-authz-306--a-repository-of-upstream-that-does-not-serve-is-listed-and-suggested-only-to-the-holders-of-repositoriesread-config)). `GET /api/v1/projects` returns it first, before the other projects in the order of
   their keys ([api-and-ui.md](api-and-ui.md) Q-UI-837, the owner's). It is not one of the `publicObjects` of `GET /api/v1/settings/visibility`
   ([api-and-ui.md](api-and-ui.md) R-API-056); its repositories are, when they are `public`. A repository's levels follow the order
   of R-AUTHZ-038: rule 2 always passes, rules 3 to 5 apply as for any repository.
@@ -7359,6 +7368,51 @@ the triage capability is. The development agent would revisit this if teams need
 project, a model of their own.
 
 **Applied in the spec:** R-AUTHZ-041; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013, R-VULN-019 (unchanged).
+
+### Q-AUTHZ-305 · A caller sees the project `upstream` through a repository of it that serves
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-AUTHZ-301 shows the project to "a caller that reads one of its repositories". A well-known repository that is switched off
+answers `404 repository_disabled` to every request, but its level may already be `internal` (an administrator set it before switching it
+on). Does such a repository show the project?
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only a repository that serves counts: switched on, not being deleted, not a system repository; read by its level or a grant (chosen) | `readsUpstream` in [projects_api.go](../../internal/api/v1/projects_api.go) | The project appears when there is something to read in it, which is what R-AUTHZ-041's criterion says ("once upstream/npmjs is active and internal") | A level set ahead of the switch-on shows nothing yet |
+| (b) Any repository the caller's level or grants admit | The decision alone | One question fewer | An installation whose registries are all off but set to `internal` shows an empty project to everyone |
+
+**Choice:** (a). `scanner-trivy` never counts: it answers no client.
+
+**Rationale:** the project is a container the product owns and holds nothing of its own; a caller should find it when it leads somewhere.
+The development agent would revisit this if administrators want teams to see the switched-off registries in the project.
+
+**Applied in the spec:** R-AUTHZ-041.
+
+### Q-AUTHZ-306 · A repository of `upstream` that does not serve is listed and suggested only to the holders of `repositories:read-config`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: since the owner's Q-REPO-388 every preset repository is `internal` from its create, switched off. The list of repositories
+(`GET /api/v1/repositories`) and the search's suggestions show what the caller reads by level and grant, and neither the grant index
+nor the level knows `disabled`: every signed-in user who is not external would find the twelve switched-off registries there while
+the project that holds them stays hidden (Q-AUTHZ-305).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The rule of Q-AUTHZ-305 for the repositories too: to a caller without `repositories:read-config`, a repository of the project `upstream` is listed and suggested only while it serves (switched on, not being deleted, no system repository) (chosen) | `upstreamServes` in [upstream_repositories_api.go](../../internal/api/v1/upstream_repositories_api.go), used by the project's sight, `visibleRepositories` and the suggestions (from the replica's snapshot) | A team sees a registry where it sees the project: once it is on; one predicate for the three places; no query more per keystroke | A direct read of `GET /api/v1/projects/upstream/repositories/<key>` still answers by level, as for any repository |
+| (b) Leave the lists as the decision makes them | Nothing to build | — | Twelve rows nobody can use in every user's list and in the search, of a project the user cannot open |
+| (c) Add `disabled` to the grant index | The decision hides them | One place | Changes the index every read uses, for a rule that only lists need |
+
+**Choice:** (a). The member picker of a virtual repository reads its own operation (Q-API-364) and shows the switched-off registries
+to whoever writes a member list.
+
+**Rationale:** a switched-off registry answers `404 repository_disabled` to every request, so listing it leads nowhere; Q-AUTHZ-305
+already decided that for the project. The development agent would revisit this if teams should see which registries they could ask
+an administrator for.
+
+**Applied in the spec:** R-AUTHZ-041. Test: `TestR_REPO_069_TheProductKeepsTheProjectUpstream` (Q-AUTHZ-301 subtest: before and after
+one switch-on, the list and the suggestions of a plain user).
 
 ### Q-AUTHZ-320 · A Bastion registration is not internal; a Bastion reads for the caller it forwards for
 

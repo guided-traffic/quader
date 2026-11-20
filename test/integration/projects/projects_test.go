@@ -85,19 +85,20 @@ func TestR_AUTHZ_026_ProjectLifecycleOverHTTP(t *testing.T) {
 		}
 		all := f.do(f.admin, "GET", base, nil)
 		wantStatus(t, all, 200, "")
-		if got := keys(all, t); got != "docs,ops,web" {
+		// A holder of projects:read sees the built-in project upstream as well (R-AUTHZ-041), first in every order (Q-UI-837).
+		if got := keys(all, t); got != "upstream,docs,ops,web" {
 			t.Fatalf("keys = %s", got)
 		}
 		first := f.do(f.admin, "GET", base+"?limit=2", nil)
 		next, _ := first.JSON(t)["nextCursor"].(string)
-		if keys(first, t) != "docs,ops" || next == "" {
+		if keys(first, t) != "upstream,docs" || next == "" {
 			t.Fatalf("first page %s, cursor %q", keys(first, t), next)
 		}
 		second := f.do(f.admin, "GET", base+"?limit=2&cursor="+next, nil)
-		if keys(second, t) != "web" || second.JSON(t)["nextCursor"] != nil {
+		if keys(second, t) != "ops,web" || second.JSON(t)["nextCursor"] != nil {
 			t.Errorf("second page %s", keys(second, t))
 		}
-		if got := keys(f.do(f.admin, "GET", base+"?sort=-key", nil), t); got != "web,ops,docs" {
+		if got := keys(f.do(f.admin, "GET", base+"?sort=-key", nil), t); got != "upstream,web,ops,docs" {
 			t.Errorf("descending: %s", got)
 		}
 		if got := keys(f.do(f.admin, "GET", base+"?q=PROJECT%20DO", nil), t); got != "docs" {
@@ -156,7 +157,7 @@ func TestR_AUTHZ_026_AReplaceNeedsTheCurrentIfMatch(t *testing.T) {
 	t.Run("R-AUTHZ-026 the auditor reads every project and is refused the writes", func(t *testing.T) {
 		list := f.do(f.auditor, "GET", base, nil)
 		wantStatus(t, list, 200, "")
-		if keys(list, t) != "web" {
+		if keys(list, t) != "upstream,web" { // the built-in project upstream, read by projects:read (R-AUTHZ-041)
 			t.Errorf("the auditor lists %s", keys(list, t))
 		}
 		wantStatus(t, f.do(f.auditor, "GET", base+"/web", nil), 200, "")

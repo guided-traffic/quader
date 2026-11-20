@@ -732,6 +732,7 @@ catalog.UpstreamPreset: field Default bool
 catalog.UpstreamPreset: field DisplayName string
 catalog.UpstreamPreset: field ExtraHosts []PresetHost
 catalog.UpstreamPreset: field ID string
+catalog.UpstreamPreset: field Settings json.RawMessage
 catalog.UpstreamPreset: field URL string
 catalog.Versioning: method InRange(string, string) bool
 catalog.Versioning: method Prerelease(string) (bool, bool)
@@ -741,6 +742,7 @@ catalog.NewRegistry: func() *Registry
 catalog.Or: func(*Registry) *Registry
 catalog.PackageChanged: func(int64, string) string
 catalog.ParsePackageChanged: func(string) (int64, [32]byte, bool)
+catalog.ReservedPresetIDs: func() []string
 catalog.FormatAreas: value = []string{MetadataChangedArea}
 catalog.KindArtifact: value RequestKind = "artifact"
 catalog.KindMetadata: value RequestKind = "metadata"

@@ -11,7 +11,7 @@ import (
 type layer int
 
 const (
-	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, formats/untrusted, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
+	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
 	layerInfra               // meta/postgres, blob, cluster, outbound, secrets
 	layerDomain              // repository, proxy, virtual, formatdata, authz, project, auth, jobs, audit, backup, manual, mirror
 	layerEdge                // httpserver, api/v1, webui, formats
@@ -70,6 +70,10 @@ func layerTable() []layerRule {
 		// repository service's creation hook can all use it.
 		{"internal/openpgp", layerLeaf},
 		{"internal/formats/catalog", layerLeaf},
+		// The built-in project upstream (R-REPO-066 to R-REPO-070, ADR-209): its names, the states of its repositories and the
+		// repositories the product declares from the catalog. The catalog, qname and the standard library only, so that the
+		// repository model, the project service, the authorization engine and the edge read one set of names.
+		{"internal/wellknown", layerLeaf},
 		// The rows a serve-time check decides on, read by the item lookup (R-ARCH-027): plain types, no imports. A leaf so that
 		// the item store, the format contract and the remote engine spell one type.
 		{"internal/servefacts", layerLeaf},

@@ -70,6 +70,9 @@ type Repository struct {
 	// LastActivityAt is the latest upload or download as the replicas flushed it
 	// (R-REPO-012); zero when there was none.
 	LastActivityAt time.Time
+	// Upstream holds the kind and the state of a repository of the built-in project
+	// upstream (R-REPO-066, R-REPO-068); nil for a repository of any other project.
+	Upstream *UpstreamFacts
 
 	// adm is the compiled include and exclude lists of Config. The snapshot and
 	// the store fill it; a Repository built by hand admits everything.

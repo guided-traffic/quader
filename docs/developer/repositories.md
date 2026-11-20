@@ -37,6 +37,10 @@ virtual class (members, deploy target, pin rules, claims and their routing) is b
 | [validate_remote.go](../../internal/repository/validate_remote.go) | `validateRemote`: defaults from the catalog, ranges, `normalizeUpstreamURL`, the warnings, the refusal of the P1 members, the secret fields into `pendingSecret`s |
 | [secrets_store.go](../../internal/repository/secrets_store.go) | `SealSecret`, `OpenSecret`, `SecretStore` (rows for the clients), `RemoteDeps` and `Service.Bind`, `writeSecrets`, `ResealSecrets` |
 | [upstream.go](../../internal/repository/upstream.go) | `UpstreamProber`, `UpstreamTestResult`, `Service.UpstreamTest(ctx, name)`, `Service.UpstreamTestUnsaved(ctx, body)` |
+| [wellknown.go](../../internal/repository/wellknown.go) | the repositories of the built-in project `upstream`: `UpstreamFacts` (`Repository.Upstream`, the kind and the state read from `upstream_repository`), `WarningMemberInactive`; the package `internal/wellknown` and the rest are in [wellknown.md](wellknown.md) |
+| [upstream_store.go](../../internal/repository/upstream_store.go) | the reconcile's `wellknown.Store` (`Service.UpstreamStore`), `CatalogActor`, the reasons of the product's writes, the job `upstream-purge` |
+| [upstream_ops.go](../../internal/repository/upstream_ops.go) | the operations of the well-known repositories (R-REPO-073): `UpstreamItem(s)`, the state, the levels, the address, the account; `UpstreamPointers` |
+| [upstream_managed.go](../../internal/repository/upstream_managed.go) | what the product manages (R-REPO-069): `managedMembers`, `dropProductHeld`, `applyPresetSettings` (a preset's format members on a create from its URL), `listedBy` |
 | [formats/catalog/catalog.go](../../internal/formats/catalog/catalog.go) | the format catalog (a leaf): `Facts`, `Names`, `Exposure`, `Entry`, `Registry`, `Default` |
 | [formats/formats.go](../../internal/formats/formats.go) | `Descriptor` (the catalog's `Facts` plus the contract's own members), `Format`, `Register` (validates and fills the catalog), `Lookup`, `Descriptors`, and the aliases of the catalog's types; the contract is described in [formats.md](formats.md) |
 | [formats/generic/generic.go](../../internal/formats/generic/generic.go) | the generic format: descriptor and request classification |
@@ -67,6 +71,10 @@ virtual class (members, deploy target, pin rules, claims and their routing) is b
 
 A row whose stored document does not decode, or whose patterns do not compile, is loaded `Disabled` and logged: it takes
 no part in resolution, download or deploy.
+
+A repository of the built-in project `upstream` carries `Repository.Upstream`, read from its row of `upstream_repository` in
+the same transaction as the snapshot (and with the single row of the lookup in step 3); every other repository carries nil
+([wellknown.md](wellknown.md)).
 
 Everything here works without Valkey: the PostgreSQL change log brings a change to the other replicas within
 `cluster.epoch_poll_interval`. [test/integration/repository](../../test/integration/repository/) runs two replicas without

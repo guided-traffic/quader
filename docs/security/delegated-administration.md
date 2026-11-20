@@ -195,8 +195,10 @@ drives every rule over HTTP as an Owner and as an administrator.
 
 ## The built-in project `upstream`: where a project's boundary is crossed
 
-Specified, not built (the owner's decisions of 2026-11-20, [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to
-R-REPO-074, [authorization.md](../spec/authorization.md) R-AUTHZ-041). Every repository still belongs to one project,
+Partly built (the owner's decisions of 2026-11-20, [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to
+R-REPO-074, [authorization.md](../spec/authorization.md) R-AUTHZ-041): the project, its well-known repositories, the operations of the admin page, the API's refusals and the database's guards below (AI006,
+AI010, [00086_upstream.sql](../../internal/meta/postgres/migrations/00086_upstream.sql)) are built; the member lists that name a
+well-known repository and the placeholders are not ([wellknown.md](../developer/wellknown.md)). Every repository still belongs to one project,
 but one project's repositories are listed by every other project's virtual repositories: the remote repositories of the well-known
 public registries that the product declares in the project `upstream`.
 
@@ -262,11 +264,11 @@ pulls from, and the installation's egress and storage, which a pass loads.
 
 ### H-1021 · A well-known repository shows every project's fetched packages to everyone who reads it
 
-Stage: the cache of a well-known repository of the project `upstream` (specified, not built: R-REPO-066, the list of what a remote
+Stage: the cache of a well-known repository of the project `upstream` (R-REPO-066, built; the list of what a remote
 fetched, [api-and-ui.md](../spec/api-and-ui.md) R-API-081, and the packages view). Subject: which public packages, and which versions,
 the teams of the installation pull.
 
-- **Dormant until R-REPO-066 is built; live by design from then on.** A team's own remote shows its cache to the readers of that team's
+- **Live by design.** A team's own remote shows its cache to the readers of that team's
   repository; the central repository caches what every team fetched through it, and a reader of it, which at `internal` is every
   signed-in subject that is not external, technical ones included ([Q-AUTHZ-302](../spec/authorization.md#q-authz-302--internal-admits-every-signed-in-subject-that-is-not-external-so-a-teams-ci-job-reads-a-well-known-member-by-its-level)), lists those
   packages and versions and learns what other teams build with (a vulnerable version a team still pulls,
@@ -279,9 +281,9 @@ the teams of the installation pull.
 ### H-1022 · A team cannot keep a central repository's state, level or address from changing under it
 
 Stage: the operations of [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-073 and the reconcile of R-REPO-067
-(specified, not built). Subject: what a team's virtual repository resolves through a well-known member.
+(built; the member lists that name a well-known repository are R-REPO-071's). Subject: what a team's virtual repository resolves through a well-known member.
 
-- **Dormant until built; live by design, the owner's decision ("Ein virtuelles Repo, das auf unser zentrales zeigt, kann keine
+- **Live by design, the owner's decision ("Ein virtuelles Repo, das auf unser zentrales zeigt, kann keine
   Deaktivierung durch einen Admin verhindern").** An administrator switches a central repository off or makes it `private`, and every
   team's builds stop getting its packages at once; an administrator's address override or a release's new address sends every team's
   misses to another host; nothing of this changes a team's document or writes to a team's audit. The placeholder's 404 and the settings

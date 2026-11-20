@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // payloadVersion is the version of the change payloads authz writes.
@@ -116,6 +117,11 @@ func (s *Service) Create(ctx context.Context, actor Subject, in PolicyInput, opt
 // hooks in registration order). The returned policy is complete, with the
 // warnings of the validation.
 func (s *Service) CreateIn(ctx context.Context, tx meta.Tx, actor Subject, in PolicyInput, epoch *int64, opts ...WriteOption) (Policy, error) {
+	if in.Project != nil && wellknown.IsProject(*in.Project) {
+		// The built-in project has no policies; global policies name its repositories (R-AUTHZ-041, Q-AUTHZ-300).
+		return Policy{}, errs.E(errs.Conflict, errs.CodeManagedByProduct,
+			"The project upstream has no policies: a global policy names its repositories as upstream/<key>.")
+	}
 	qs, err := queriesOf(tx)
 	if err != nil {
 		return Policy{}, err

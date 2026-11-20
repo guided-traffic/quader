@@ -116,6 +116,15 @@ tags:
     description: The Ansible Galaxy format's management operations - import tasks and tombstones (F0).
   # <<< M1 repository
   #
+  # >>> upstream
+  - name: upstream
+    description: |
+      The well-known repositories of the built-in project `upstream` (R-REPO-066 to R-REPO-073, R-API-083): one remote repository
+      per upstream preset of the format catalog and the system repositories of the product's own work. An administrator switches
+      each on and off, sets its level, overrides its address and stores an account; the repository document takes the settings
+      that narrow what it serves.
+  # <<< upstream
+  #
   # >>> M1 files
   - name: items
     description: Files and folders of a repository, their listing, statistics and deletion.
@@ -6551,6 +6560,7 @@ paths:
         `If-Match` is required: without it `428` and nothing changes, `*` is the deliberate blind write, a stale tag answers
         `412` with `currentEtag`. The version moves with these two fields only, not with members or repositories
         (Q-AUTHZ-185). An Owner of the project, or a holder of `projects:write`, may call it. Records `authz.project.updated`.
+        The built-in project `upstream` answers `409 managed_by_product`: its display name and description are fixed (R-AUTHZ-041).
       x-quader-recent-auth: true
       x-quader-permission:
         permission: projects:write
@@ -6585,6 +6595,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "412":
           $ref: "#/components/responses/PreconditionFailed"
         "413":
@@ -11623,6 +11635,564 @@ paths:
           $ref: "#/components/responses/Unavailable"
   # <<< M2 proxy
   #
+  # >>> upstream
+  /api/v1/upstream-repositories:
+    get:
+      operationId: listUpstreamRepositories
+      tags: [upstream]
+      summary: List the well-known repositories of the project upstream
+      description: |
+        Every repository of the built-in project `upstream` (R-REPO-073): the preset repositories in catalog order (the formats by
+        their ID, the presets in the format's order), then the system repositories. Not paged: the set is the catalog's. Each item
+        carries its state, its level, the address the product declares beside the stored one, its account without the secret and
+        the number of virtual repositories that list it and of their projects, without their names (Q-API-363).
+      x-quader-permission:
+        permission: repositories:read-config
+      responses:
+        "200":
+          description: The well-known repositories.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepositoryList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/upstream-repositories/{key}:
+    parameters:
+      - $ref: "#/components/parameters/UpstreamRepositoryKey"
+    get:
+      operationId: getUpstreamRepository
+      tags: [upstream]
+      summary: Read one well-known repository
+      description: |
+        The item of `listUpstreamRepositories` for one key with `listedByNames`, the virtual repositories that list it (Q-API-363),
+        and its `ETag` (the repository's `config_version`), which the address and the account operations take in `If-Match`. A key
+        of no repository of the project `upstream` answers `404`.
+      x-quader-permission:
+        permission: repositories:read-config
+      responses:
+        "200":
+          description: The well-known repository.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepository"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/upstream-repositories/{key}/state:
+    parameters:
+      - $ref: "#/components/parameters/UpstreamRepositoryKey"
+    put:
+      operationId: setUpstreamRepositoryState
+      tags: [upstream]
+      summary: Switch a well-known repository on or off
+      description: |
+        `on` sets `disabled: false` and, the first time, `first_switched_on_at`; `off` sets `disabled: true` (R-REPO-068). Every
+        replica serves the change within the bound of R-REPO-049; the virtual repositories that list the repository change
+        nothing and take it up or skip it from the next request. Switching on records `repository.updated` with `reason:
+        switched_on`; switching off records `repository.updated` and `repository.disabled`, both with `reason: switched_off`, the
+        latter with `listedBy` and journaled (R-AUTHZ-031). The level stays as it is. Sets one value and takes no `If-Match`. A
+        write that changes nothing records nothing. `409 upstream_retired` for a repository the product no longer offers, `409
+        managed_by_product` for a system repository, which has no state of its own.
+      x-quader-permission:
+        permission: repositories:write-config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpstreamRepositoryStateRequest"
+            example:
+              state: "on"
+      responses:
+        "200":
+          description: The well-known repository after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepository"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/upstream-repositories/switch-on-all:
+    post:
+      operationId: switchOnAllUpstreamRepositories
+      tags: [upstream]
+      summary: Switch on every well-known repository that is off
+      description: |
+        In one transaction, every preset repository that is neither `active` nor `retired` is switched on as by
+        `setUpstreamRepositoryState` and both its levels are set to `internal`; an active one keeps its levels; a system repository
+        is never touched (R-REPO-068, Q-REPO-384). It never sets `public`. Each repository it changes records its events with the
+        one `bulkId` of the answer. Making a repository `internal` raises its level, which asks for a recent sign-in where the
+        session needs one (R-API-007, inside the write). With nothing off the answer lists nothing and nothing is recorded.
+      x-quader-permission:
+        permission: repositories:write-config
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The repositories it switched on, after the change.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepositoryBulkResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/upstream-repositories/{key}/visibility:
+    parameters:
+      - $ref: "#/components/parameters/UpstreamRepositoryKey"
+    put:
+      operationId: setUpstreamRepositoryVisibility
+      tags: [upstream]
+      summary: Set the level of a well-known repository
+      description: |
+        Sets both levels of the repository, its artifacts and its wiki, to one level (R-REPO-069, R-AUTHZ-041). The project
+        `upstream` is stored `public`, so every level passes rule 2 of R-AUTHZ-038; the other refusals of R-AUTHZ-038 apply in its
+        order: `403 visibility_level_restricted` for a level the installation restricts, to a caller without
+        `security-settings:write`, and `409 public_not_allowed` while the default endpoint admits no request without a credential.
+        Raising the level asks for a recent sign-in where the session needs one (R-API-007, inside the write). Sets one value and
+        takes no `If-Match`. The answer carries `warnings`, `public_populates_remote` when `public` lets a request without a
+        credential fill the cache (R-AUTHZ-008). `409 managed_by_product` for a system repository, whose level is fixed.
+      x-quader-permission:
+        permission: repositories:write-config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpstreamRepositoryVisibilityRequest"
+            example:
+              level: internal
+      responses:
+        "200":
+          description: The well-known repository after the change, with the warnings of the write.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepository"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/upstream-repositories/set-visibility:
+    post:
+      operationId: setAllUpstreamRepositoriesVisibility
+      tags: [upstream]
+      summary: Set the level of every well-known repository
+      description: |
+        In one transaction, both levels of every preset repository that is not retired are set to the level, under the rules of
+        `setUpstreamRepositoryVisibility`; a refusal changes none (Q-API-361). A system repository is never touched. Each
+        repository it changes records its events with the one `bulkId` of the answer; one that already has the level records
+        nothing and is not listed.
+      x-quader-permission:
+        permission: repositories:write-config
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpstreamRepositoryVisibilityRequest"
+            example:
+              level: internal
+      responses:
+        "200":
+          description: The repositories whose level it changed, after the change.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepositoryBulkResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/upstream-repositories/{key}/address:
+    parameters:
+      - $ref: "#/components/parameters/UpstreamRepositoryKey"
+    put:
+      operationId: setUpstreamRepositoryAddress
+      tags: [upstream]
+      summary: Override the address of a well-known repository
+      description: |
+        Sets `remote.url`, `remote.extraHosts` and, for an APT archive, `deb.upstreamKeys` (R-REPO-069): each member is optional,
+        an omitted one is the product's. Validated as a remote's (R-REPO-008, R-REPO-024, the egress rules of R-REPO-038);
+        `upstreamKeys` of another format is `422 not_applicable`. The repository reads `overridden: true` while the result differs
+        from the product's address and `false` when it equals it. A stored account stays only while the hosts that receive it
+        stay (R-REPO-033): a change of the origin of `url`, a new `extraHosts` entry with `sendCredentials: true`, or
+        `forwardAuthOnRedirect` while an account is stored answers `422 secret_value_required` at `/account/password` unless the
+        body carries `account`, a new one or `null` to remove it. Raises `config_version`, records `repository.updated` (secrets as
+        fingerprints) and invalidates the repository's metadata and negative entries (R-REPO-011).
+      x-quader-recent-auth: true
+      x-quader-permission:
+        permission: repositories:write-config
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpstreamRepositoryAddress"
+            example:
+              url: https://mirror.example.com/
+              account: null
+      responses:
+        "200":
+          description: The well-known repository after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepository"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: resetUpstreamRepositoryAddress
+      tags: [upstream]
+      summary: Reset the address of a well-known repository to the product's
+      description: |
+        Writes the product's address (`url`, `extraHosts` and, for an APT archive, the archive keys) and clears `overridden`
+        (R-REPO-069). When the product's hosts that receive a credential differ from the override's while an account is stored, the
+        reset answers `422 secret_value_required` unless it carries `removeAccount=true`, which removes the account in the same
+        write. Raises `config_version` and records `repository.updated`; a reset of an address that is the product's changes
+        nothing and records nothing.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        permission: repositories:write-config
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - name: removeAccount
+          in: query
+          required: false
+          description: Remove the stored account with the reset, where the product's hosts would not receive it otherwise.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: The well-known repository after the reset.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepository"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/upstream-repositories/{key}/account:
+    parameters:
+      - $ref: "#/components/parameters/UpstreamRepositoryKey"
+    put:
+      operationId: setUpstreamRepositoryAccount
+      tags: [upstream]
+      summary: Store an account for a well-known repository
+      description: |
+        Stores `authMode`, `username` and `password` of R-REPO-033 for the repository's upstream: the password as a value, or, for a
+        holder of `repositories:write-config`, as a `secretRef` of R-OPS-029; it is never returned (`{"set": true}`). The account
+        counts the pulls of every project that reads the repository against the account's allowance. Raises `config_version`,
+        records `repository.updated` (the secret as a fingerprint), clears the account's removal by a release and invalidates the
+        repository's metadata and negative entries. `422 invalid_secret` for a password outside the rules of R-REPO-033.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        permission: repositories:write-config
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpstreamRepositoryAccount"
+            example:
+              authMode: basic
+              username: quader-pull
+              password:
+                value: s3cr3t-t0k3n
+      responses:
+        "200":
+          description: The well-known repository after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepository"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: removeUpstreamRepositoryAccount
+      tags: [upstream]
+      summary: Remove the account of a well-known repository
+      description: |
+        Removes the stored account (`authMode: none`, the secret rows deleted). Raises `config_version` and records
+        `repository.updated`; a repository without an account changes nothing and records nothing.
+      x-quader-recent-auth: true
+      x-quader-permission:
+        permission: repositories:write-config
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: The well-known repository after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepository"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/formats/{format}/upstream-repositories:
+    parameters:
+      - name: format
+        in: path
+        required: true
+        description: A format of `GET /api/v1/formats`.
+        schema:
+          type: string
+          pattern: "^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 32
+    get:
+      operationId: listFormatUpstreamRepositories
+      tags: [upstream]
+      summary: List the well-known repositories a virtual repository of a format can list
+      description: |
+        The preset repositories of the format that are not retired, in catalog order, each with its state and its level and nothing
+        of its address, its account or who lists it (Q-API-364): what the member picker of a virtual repository shows (R-UI-189).
+        A system repository is never a member (R-REPO-070) and is not listed; a format without presets answers an empty list. For
+        whoever holds `repositories:write-config` and for the Owner of any project, the callers who write a virtual repository's
+        member list and learn a listed member's state from its resolution and its save already (R-REPO-072). An unknown format
+        answers `404`.
+      x-quader-permission:
+        permission: repositories:write-config
+        projectRole: owner
+      responses:
+        "200":
+          description: The preset repositories of the format.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamRepositorySummaryList"
+              example:
+                items:
+                  - {key: npmjs, name: upstream/npmjs, displayName: npm public registry, state: active, visibility: internal}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  # <<< upstream
+  #
   # >>> M2 virtual
   /api/v1/projects/{projectKey}/repositories/{repoKey}/claims:
     parameters:
@@ -16081,6 +16651,19 @@ components:
         minLength: 2
         maxLength: 64
         x-quader-reserved-names: [batch-create, batch-update, batch-get, batch-delete, quick-setup]
+    UpstreamRepositoryKey:
+      name: key
+      in: path
+      required: true
+      description: |
+        The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+        and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+      schema:
+        type: string
+        pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+        minLength: 2
+        maxLength: 64
+        x-quader-reserved-names: [switch-on-all, set-visibility]
     DebFingerprint:
       name: fingerprint
       in: path
@@ -19913,6 +20496,269 @@ components:
             every member of `RemoteSettings`; a virtual's has no members and no deploy target; a local's `packageOwnership` is the
             format's. The format's own member is absent: its defaults are the `default`s of the format's `settingsSchema`.
     # <<< T-21b presets
+    #
+    # >>> upstream
+    UpstreamRepositoryState:
+      type: string
+      description: |
+        The state of a preset repository of the project `upstream`, derived from what is stored (R-REPO-068, Q-REPO-375):
+        `active` serves and takes part as a member; `switched-off` was switched on before and is off; `not-switched-on` was never
+        switched on; `retired` is no longer offered by Quader. Every state but `active` answers `404 repository_disabled` to a
+        request addressed to it and is a placeholder as a member of a virtual repository (R-REPO-072).
+      enum: [active, switched-off, not-switched-on, retired]
+    UpstreamRepositoryKind:
+      type: string
+      description: "`preset`: a repository of an upstream preset of the format catalog; `system`: a repository of Quader's own work (R-REPO-066)."
+      enum: [preset, system]
+    UpstreamRepositoryFixed:
+      type: string
+      description: What the product holds of a repository beyond the table of R-REPO-069.
+      enum: [state, visibility]
+    UpstreamArchiveKey:
+      type: object
+      required: [fingerprint, userId]
+      properties:
+        fingerprint:
+          type: string
+          description: The fingerprint of an OpenPGP key of `deb.upstreamKeys`, upper-case hexadecimal.
+        userId:
+          type: string
+          description: The key's primary user ID as the key states it.
+    UpstreamProductAddress:
+      type: object
+      description: The address the catalog of the running binary declares for the repository (R-REPO-062).
+      required: [url, extraHosts, upstreamKeys]
+      properties:
+        url:
+          type: string
+        extraHosts:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteExtraHost"
+        upstreamKeys:
+          oneOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/UpstreamArchiveKey"
+            - type: "null"
+          description: The archive keys of an APT archive; `null` for another format.
+    UpstreamRepositoryAddressInfo:
+      type: object
+      description: |
+        The stored address (`remote.url`, `remote.extraHosts`, for an APT archive the keys of `deb.upstreamKeys`), whether it differs
+        from the product's, and the product's (R-REPO-069, R-REPO-073).
+      required: [url, extraHosts, upstreamKeys, overridden, product]
+      properties:
+        url:
+          type: string
+        extraHosts:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteExtraHost"
+        upstreamKeys:
+          oneOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/UpstreamArchiveKey"
+            - type: "null"
+          description: The fingerprints of the stored archive keys of an APT archive; `null` for another format.
+        overridden:
+          type: boolean
+          description: An administrator set an address that differs from the product's; a release keeps it (Q-REPO-377).
+        product:
+          $ref: "#/components/schemas/UpstreamProductAddress"
+    UpstreamRepositoryAccountInfo:
+      type: object
+      description: The stored account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073).
+      required: [authMode, username, password, removedByUpdateAt]
+      properties:
+        authMode:
+          type: string
+          enum: [none, basic, bearer]
+        username:
+          type: [string, "null"]
+          description: The account name; `null` without an account.
+        password:
+          oneOf:
+            - $ref: "#/components/schemas/SecretField"
+            - type: "null"
+          description: '`{"set": true}` for a sealed value, the `secretRef` as stored, or `null` without one. The value is never returned.'
+        removedByUpdateAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the reconcile of a release removed the account because the product moved its hosts (Q-REPO-377); `null` otherwise.
+    UpstreamRepository:
+      type: object
+      description: |
+        A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
+        repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
+        (`[state, visibility]` for `scanner-trivy`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+        repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
+        `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
+        answered.
+      required: [key, name, format, kind, displayName, state, inUse, visibility, fixed, address, account, listedBy, listedByProjects, configVersion]
+      properties:
+        key:
+          type: string
+          description: The repository key in the project `upstream`, the preset's id.
+        name:
+          type: string
+          description: The qualified name, `upstream/<key>`.
+        format:
+          type: string
+          description: The repository's format (a name of `GET /api/v1/formats`); the class is always `remote`.
+        kind:
+          $ref: "#/components/schemas/UpstreamRepositoryKind"
+        displayName:
+          type: string
+          description: The preset's display name, a product name the UI does not translate; the system repository's name.
+        state:
+          oneOf:
+            - $ref: "#/components/schemas/UpstreamRepositoryState"
+            - type: "null"
+        inUse:
+          type: [boolean, "null"]
+          description: For a system repository, whether the work it serves reads through it, from the configuration of the replica that answers (R-REPO-070).
+        visibility:
+          $ref: "#/components/schemas/VisibilityLevel"
+        fixed:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamRepositoryFixed"
+        address:
+          $ref: "#/components/schemas/UpstreamRepositoryAddressInfo"
+        account:
+          $ref: "#/components/schemas/UpstreamRepositoryAccountInfo"
+        listedBy:
+          type: integer
+          minimum: 0
+          description: The number of virtual repositories whose member lists or pin rules name the repository.
+        listedByProjects:
+          type: integer
+          minimum: 0
+          description: The number of projects those virtual repositories are in.
+        listedByNames:
+          type: array
+          maxItems: 100
+          description: |
+            The qualified names (`<project>/<key>`) of those virtual repositories in byte order, at most 100; `listedBy` minus their
+            number is the number of the others. Absent on the answer of `listUpstreamRepositories`, which carries the numbers only.
+            The caller holds `repositories:read-config` and so reads the configuration of each of them.
+          items:
+            type: string
+        configVersion:
+          type: integer
+          minimum: 1
+          description: The repository's `config_version`, the value of the `ETag`.
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/RepositoryWarning"
+    UpstreamRepositoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamRepository"
+    UpstreamRepositorySummary:
+      type: object
+      description: |
+        A preset repository as a writer of a virtual repository sees it (Q-API-364): the key a member list writes as `name`, the
+        preset's display name, the state (never `retired`: a retired repository is not listed) and the level. Nothing of the
+        address, the account or who lists it.
+      required: [key, name, displayName, state, visibility]
+      properties:
+        key:
+          type: string
+          description: The repository key in the project `upstream`, the preset's id.
+        name:
+          type: string
+          description: The qualified name, `upstream/<key>`, as a member list writes it (R-REPO-071).
+        displayName:
+          type: string
+          description: The preset's display name, a product name the UI does not translate.
+        state:
+          $ref: "#/components/schemas/UpstreamRepositoryState"
+        visibility:
+          $ref: "#/components/schemas/VisibilityLevel"
+    UpstreamRepositorySummaryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamRepositorySummary"
+    UpstreamRepositoryBulkResult:
+      type: object
+      description: What a bulk operation changed, in one transaction, and the ID every event of it carries (Q-API-361).
+      required: [items, bulkId]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamRepository"
+        bulkId:
+          type: string
+          format: uuid
+    UpstreamRepositoryStateRequest:
+      type: object
+      additionalProperties: false
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: ["on", "off"]
+    UpstreamRepositoryVisibilityRequest:
+      type: object
+      additionalProperties: false
+      required: [level]
+      properties:
+        level:
+          $ref: "#/components/schemas/VisibilityLevel"
+    UpstreamRepositoryAddress:
+      type: object
+      additionalProperties: false
+      description: |
+        An administrator's address for a well-known repository (R-REPO-069): every member is optional, and an omitted one is the
+        product's. `account` replaces the stored account in the same write (a new one, or `null` to remove it); it is needed when
+        the hosts that receive the stored account change.
+      properties:
+        url:
+          type: string
+          maxLength: 2048
+          description: The upstream base URL, as `remote.url` (R-REPO-024).
+        extraHosts:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/RemoteExtraHost"
+        upstreamKeys:
+          type: string
+          maxLength: 262144
+          description: The armored OpenPGP public keys of an APT archive, as `deb.upstreamKeys` (R-DEB-020); `not_applicable` for another format.
+        account:
+          oneOf:
+            - $ref: "#/components/schemas/UpstreamRepositoryAccount"
+            - type: "null"
+    UpstreamRepositoryAccount:
+      type: object
+      additionalProperties: false
+      description: An account for the repository's upstream (R-REPO-033). `basic` needs a username or a password, `bearer` a password.
+      required: [authMode]
+      properties:
+        authMode:
+          type: string
+          enum: [none, basic, bearer]
+        username:
+          type: string
+          maxLength: 256
+          description: Sent with `basic`; it must not contain a colon.
+        password:
+          $ref: "#/components/schemas/SecretField"
+    # <<< upstream
     FormatList:
       type: object
       required: [formats, baseUrl]

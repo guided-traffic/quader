@@ -31,6 +31,10 @@ type levelChoice struct {
 	cur          *Visibility
 	named        Visibility
 	publicOK     bool
+	// productLevel is set for the reconcile's create of a well-known repository (Q-REPO-388, Q-REPO-393): an absent member takes
+	// it instead of the installation's default, lowered as for any create to the highest level a non-administrator may choose,
+	// and to private where there is none; a level the declaration names (scanner-trivy's private) is the product's, not a choice.
+	productLevel string
 }
 
 // levelOutcome is the decision: the levels the write stores, the levels it is measured against (the stored ones, or on a create
@@ -49,7 +53,11 @@ type levelOutcome struct {
 // (Q-AUTHZ-286), and refused when there is none. For an update an absent level stays as stored, so a PUT without the member
 // changes no level, and a named level equal to the stored one is no choice (Q-AUTHZ-285).
 func (lc levelChoice) decide() (levelOutcome, error) {
-	baseline := Visibility{Artifacts: visibility.Lower(lc.rules.Default, lc.projectLevel)}
+	def := lc.rules.Default
+	if lc.productLevel != "" {
+		def = lc.productLevel
+	}
+	baseline := Visibility{Artifacts: visibility.Lower(def, lc.projectLevel)}
 	baseline.Wiki = baseline.Artifacts
 	if lc.cur != nil {
 		baseline = *lc.cur
@@ -108,7 +116,7 @@ func (lc levelChoice) decide() (levelOutcome, error) {
 // member has no such level at or below the one it would take is refused with that level.
 func (lc levelChoice) fallBack(o *levelOutcome, got Visibility) error {
 	if got.Artifacts == "" {
-		level := lc.rules.Highest(o.out.Artifacts, lc.admin)
+		level := lc.highest(o.out.Artifacts)
 		if level == "" {
 			return visibility.LevelRestricted(o.out.Artifacts, "/visibility/artifacts")
 		}
@@ -118,7 +126,7 @@ func (lc levelChoice) fallBack(o *levelOutcome, got Visibility) error {
 		}
 	}
 	if got.Wiki == "" {
-		level := lc.rules.Highest(o.out.Wiki, lc.admin)
+		level := lc.highest(o.out.Wiki)
 		if level == "" {
 			return visibility.LevelRestricted(o.out.Wiki, "/visibility/wiki")
 		}
@@ -127,10 +135,22 @@ func (lc levelChoice) fallBack(o *levelOutcome, got Visibility) error {
 	return nil
 }
 
+// highest is the level an absent member of a create takes at or below ceiling: the highest the caller may choose; for the
+// product's create private where there is none, because the reconcile of `quader migrate` may not fail on an installation's
+// restrictions (Q-REPO-393).
+func (lc levelChoice) highest(ceiling string) string {
+	level := lc.rules.Highest(ceiling, lc.admin)
+	if level == "" && lc.productLevel != "" {
+		return visibility.Private
+	}
+	return level
+}
+
 // chosen refuses a level the client named when it is restricted and the caller may not choose it. On an update the level the
-// part already has is no choice: it may be kept (Q-AUTHZ-285).
+// part already has is no choice: it may be kept (Q-AUTHZ-285). A level the product's declaration names on its create is no
+// choice either (scanner-trivy's private, R-REPO-070).
 func (lc levelChoice) chosen(level, pointer string) error {
-	if level == "" || lc.rules.Allows(level, lc.admin) {
+	if level == "" || lc.productLevel != "" || lc.rules.Allows(level, lc.admin) {
 		return nil
 	}
 	if lc.cur != nil {
@@ -155,6 +175,9 @@ func (s *Service) resolveLevels(ctx context.Context, qs *q.Queries, v *validatio
 		return Visibility{}, err
 	}
 	lc := levelChoice{rules: rules, admin: c.MayChooseRestricted, projectLevel: projectLevel, cur: cur, named: d.Visibility, publicOK: s.publicAvailable()}
+	if cur == nil && c.product.on {
+		lc.productLevel = c.product.level
+	}
 	o, err := lc.decide()
 	// A document with field errors answers its 422 first, with the container rules beside them.
 	if len(v.fields) > 0 {

@@ -293,3 +293,56 @@ func TestR_REPO_062_RegisterRefusesPresetsThatBreakTheRules(t *testing.T) {
 		}
 	})
 }
+
+// TestR_REPO_062_APresetsIDIsARepositoryKeyOfTheProjectUpstream: a preset's id is the key of a repository of the project upstream
+// (R-REPO-066, Q-REPO-387), so the registry refuses an id another registered format's preset has, an id that is no repository key,
+// a reserved key, and settings the format's schema refuses for a remote repository.
+func TestR_REPO_062_APresetsIDIsARepositoryKeyOfTheProjectUpstream(t *testing.T) {
+	mustPanic := func(t *testing.T, r *Registry, e Entry) {
+		t.Helper()
+		defer func() {
+			if recover() == nil {
+				t.Fatal("no panic")
+			}
+		}()
+		r.Register(e)
+	}
+	t.Run("Q-REPO-387 an id another format's preset has is refused", func(t *testing.T) {
+		r := NewRegistry()
+		r.Register(remoteWith("probe-first", preset("shared", "https://a.example.com/", true)))
+		mustPanic(t, r, remoteWith("probe-second", preset("shared", "https://b.example.com/", true)))
+		if _, ok := r.Lookup("probe-second"); ok {
+			t.Error("the refused format was registered")
+		}
+		r.Register(remoteWith("probe-third", preset("shared-too", "https://b.example.com/", true)))
+	})
+	t.Run("Q-REPO-387 an id that is no repository key is refused", func(t *testing.T) {
+		mustPanic(t, NewRegistry(), remoteWith("probe-short", preset("a", "https://a.example.com/", true)))
+		mustPanic(t, NewRegistry(), remoteWith("probe-long", preset(strings.Repeat("a", 65), "https://a.example.com/", true)))
+	})
+	for _, id := range ReservedPresetIDs() {
+		t.Run("Q-REPO-387 the reserved id "+id+" is refused", func(t *testing.T) {
+			mustPanic(t, NewRegistry(), remoteWith("probe-reserved", preset(id, "https://a.example.com/", true)))
+		})
+	}
+	withSettings := func(id string, settings string) Entry {
+		e := remoteWith(id, preset("alpha", "https://a.example.com/", true))
+		e.SettingsSchema = []byte(testSchema)
+		e.UpstreamPresets[0].Settings = []byte(settings)
+		return e
+	}
+	t.Run("R-REPO-062 settings the format's schema refuses for a remote repository are refused", func(t *testing.T) {
+		mustPanic(t, NewRegistry(), withSettings("probe-badset", `{"limit": 0}`))
+		mustPanic(t, NewRegistry(), withSettings("probe-localset", `{"guard": true}`))
+	})
+	t.Run("R-REPO-062 settings that validate are kept with the preset, as a copy", func(t *testing.T) {
+		r := NewRegistry()
+		e := withSettings("probe-set", `{"limit": 3}`)
+		r.Register(e)
+		e.UpstreamPresets[0].Settings[1] = 'X'
+		got, _ := r.Lookup("probe-set")
+		if string(got.UpstreamPresets[0].Settings) != `{"limit": 3}` {
+			t.Fatalf("settings = %s", got.UpstreamPresets[0].Settings)
+		}
+	})
+}

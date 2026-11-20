@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // DeleteJobKind is the job kind that removes a repository's items and then its
@@ -74,6 +75,10 @@ func (s *Service) Delete(ctx context.Context, c Caller, name qname.Repo, detach 
 // of R-API-012 (a delete honours it when it is sent): a version that differs from
 // the stored one answers 412 and nothing changes.
 func (s *Service) DeleteTx(ctx context.Context, tx meta.Tx, c Caller, name qname.Repo, detach bool, pre *Precondition) (DeleteResult, error) {
+	if wellknown.IsProject(name.Project) {
+		// A well-known repository is never deleted (R-REPO-066, R-REPO-069); the catalog retires one it no longer declares.
+		return DeleteResult{}, managedByProduct("A repository of the project upstream is never deleted: it is the product's. An administrator switches it off.")
+	}
 	qs, err := queries(tx)
 	if err != nil {
 		return DeleteResult{}, err

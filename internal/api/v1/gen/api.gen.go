@@ -972,22 +972,22 @@ func (e DebSigningKeyOrigin) Valid() bool {
 
 // Defines values for DebSigningKeyState.
 const (
-	Next     DebSigningKeyState = "next"
-	Primary  DebSigningKeyState = "primary"
-	Retired  DebSigningKeyState = "retired"
-	Withheld DebSigningKeyState = "withheld"
+	DebSigningKeyStateNext     DebSigningKeyState = "next"
+	DebSigningKeyStatePrimary  DebSigningKeyState = "primary"
+	DebSigningKeyStateRetired  DebSigningKeyState = "retired"
+	DebSigningKeyStateWithheld DebSigningKeyState = "withheld"
 )
 
 // Valid indicates whether the value is a known member of the DebSigningKeyState enum.
 func (e DebSigningKeyState) Valid() bool {
 	switch e {
-	case Next:
+	case DebSigningKeyStateNext:
 		return true
-	case Primary:
+	case DebSigningKeyStatePrimary:
 		return true
-	case Retired:
+	case DebSigningKeyStateRetired:
 		return true
-	case Withheld:
+	case DebSigningKeyStateWithheld:
 		return true
 	default:
 		return false
@@ -3541,6 +3541,126 @@ func (e TokenScopeGrantActions) Valid() bool {
 	case TokenScopeGrantActionsOverwrite:
 		return true
 	case TokenScopeGrantActionsRead:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamRepositoryAccountAuthMode.
+const (
+	UpstreamRepositoryAccountAuthModeBasic  UpstreamRepositoryAccountAuthMode = "basic"
+	UpstreamRepositoryAccountAuthModeBearer UpstreamRepositoryAccountAuthMode = "bearer"
+	UpstreamRepositoryAccountAuthModeNone   UpstreamRepositoryAccountAuthMode = "none"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryAccountAuthMode enum.
+func (e UpstreamRepositoryAccountAuthMode) Valid() bool {
+	switch e {
+	case UpstreamRepositoryAccountAuthModeBasic:
+		return true
+	case UpstreamRepositoryAccountAuthModeBearer:
+		return true
+	case UpstreamRepositoryAccountAuthModeNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamRepositoryAccountInfoAuthMode.
+const (
+	UpstreamRepositoryAccountInfoAuthModeBasic  UpstreamRepositoryAccountInfoAuthMode = "basic"
+	UpstreamRepositoryAccountInfoAuthModeBearer UpstreamRepositoryAccountInfoAuthMode = "bearer"
+	UpstreamRepositoryAccountInfoAuthModeNone   UpstreamRepositoryAccountInfoAuthMode = "none"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryAccountInfoAuthMode enum.
+func (e UpstreamRepositoryAccountInfoAuthMode) Valid() bool {
+	switch e {
+	case UpstreamRepositoryAccountInfoAuthModeBasic:
+		return true
+	case UpstreamRepositoryAccountInfoAuthModeBearer:
+		return true
+	case UpstreamRepositoryAccountInfoAuthModeNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamRepositoryFixed.
+const (
+	State      UpstreamRepositoryFixed = "state"
+	Visibility UpstreamRepositoryFixed = "visibility"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryFixed enum.
+func (e UpstreamRepositoryFixed) Valid() bool {
+	switch e {
+	case State:
+		return true
+	case Visibility:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamRepositoryKind.
+const (
+	UpstreamRepositoryKindPreset UpstreamRepositoryKind = "preset"
+	UpstreamRepositoryKindSystem UpstreamRepositoryKind = "system"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryKind enum.
+func (e UpstreamRepositoryKind) Valid() bool {
+	switch e {
+	case UpstreamRepositoryKindPreset:
+		return true
+	case UpstreamRepositoryKindSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamRepositoryState.
+const (
+	UpstreamRepositoryStateActive        UpstreamRepositoryState = "active"
+	UpstreamRepositoryStateNotSwitchedOn UpstreamRepositoryState = "not-switched-on"
+	UpstreamRepositoryStateRetired       UpstreamRepositoryState = "retired"
+	UpstreamRepositoryStateSwitchedOff   UpstreamRepositoryState = "switched-off"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryState enum.
+func (e UpstreamRepositoryState) Valid() bool {
+	switch e {
+	case UpstreamRepositoryStateActive:
+		return true
+	case UpstreamRepositoryStateNotSwitchedOn:
+		return true
+	case UpstreamRepositoryStateRetired:
+		return true
+	case UpstreamRepositoryStateSwitchedOff:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamRepositoryStateRequestState.
+const (
+	UpstreamRepositoryStateRequestStateOff UpstreamRepositoryStateRequestState = "off"
+	UpstreamRepositoryStateRequestStateOn  UpstreamRepositoryStateRequestState = "on"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryStateRequestState enum.
+func (e UpstreamRepositoryStateRequestState) Valid() bool {
+	switch e {
+	case UpstreamRepositoryStateRequestStateOff:
+		return true
+	case UpstreamRepositoryStateRequestStateOn:
 		return true
 	default:
 		return false
@@ -11293,6 +11413,15 @@ type TokenScopePatterns struct {
 	Include *[]string `json:"include,omitempty"`
 }
 
+// UpstreamArchiveKey defines model for UpstreamArchiveKey.
+type UpstreamArchiveKey struct {
+	// Fingerprint The fingerprint of an OpenPGP key of `deb.upstreamKeys`, upper-case hexadecimal.
+	Fingerprint string `json:"fingerprint"`
+
+	// UserId The key's primary user ID as the key states it.
+	UserId string `json:"userId"`
+}
+
 // UpstreamPreset defines model for UpstreamPreset.
 type UpstreamPreset struct {
 	// Default The format's default upstream; exactly one preset of a format has it.
@@ -11318,6 +11447,206 @@ type UpstreamPresetHost struct {
 	// Pattern A host name pattern of `remote.extraHosts` (R-REPO-024).
 	Pattern         string `json:"pattern"`
 	SendCredentials bool   `json:"sendCredentials"`
+}
+
+// UpstreamProductAddress The address the catalog of the running binary declares for the repository (R-REPO-062).
+type UpstreamProductAddress struct {
+	ExtraHosts []RemoteExtraHost `json:"extraHosts"`
+
+	// UpstreamKeys The archive keys of an APT archive; `null` for another format.
+	UpstreamKeys *[]UpstreamArchiveKey `json:"upstreamKeys"`
+	Url          string                `json:"url"`
+}
+
+// UpstreamRepository A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
+// repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
+// (`[state, visibility]` for `scanner-trivy`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+// repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
+// `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
+// answered.
+type UpstreamRepository struct {
+	// Account The stored account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073).
+	Account UpstreamRepositoryAccountInfo `json:"account"`
+
+	// Address The stored address (`remote.url`, `remote.extraHosts`, for an APT archive the keys of `deb.upstreamKeys`), whether it differs
+	// from the product's, and the product's (R-REPO-069, R-REPO-073).
+	Address UpstreamRepositoryAddressInfo `json:"address"`
+
+	// ConfigVersion The repository's `config_version`, the value of the `ETag`.
+	ConfigVersion int `json:"configVersion"`
+
+	// DisplayName The preset's display name, a product name the UI does not translate; the system repository's name.
+	DisplayName string                    `json:"displayName"`
+	Fixed       []UpstreamRepositoryFixed `json:"fixed"`
+
+	// Format The repository's format (a name of `GET /api/v1/formats`); the class is always `remote`.
+	Format string `json:"format"`
+
+	// InUse For a system repository, whether the work it serves reads through it, from the configuration of the replica that answers (R-REPO-070).
+	InUse *bool `json:"inUse"`
+
+	// Key The repository key in the project `upstream`, the preset's id.
+	Key string `json:"key"`
+
+	// Kind `preset`: a repository of an upstream preset of the format catalog; `system`: a repository of Quader's own work (R-REPO-066).
+	Kind UpstreamRepositoryKind `json:"kind"`
+
+	// ListedBy The number of virtual repositories whose member lists or pin rules name the repository.
+	ListedBy int `json:"listedBy"`
+
+	// ListedByNames The qualified names (`<project>/<key>`) of those virtual repositories in byte order, at most 100; `listedBy` minus their
+	// number is the number of the others. Absent on the answer of `listUpstreamRepositories`, which carries the numbers only.
+	// The caller holds `repositories:read-config` and so reads the configuration of each of them.
+	ListedByNames *[]string `json:"listedByNames,omitempty"`
+
+	// ListedByProjects The number of projects those virtual repositories are in.
+	ListedByProjects int `json:"listedByProjects"`
+
+	// Name The qualified name, `upstream/<key>`.
+	Name  string                   `json:"name"`
+	State *UpstreamRepositoryState `json:"state"`
+
+	// Visibility A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
+	// principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
+	// request, also one without a credential.
+	Visibility VisibilityLevel      `json:"visibility"`
+	Warnings   *[]RepositoryWarning `json:"warnings,omitempty"`
+}
+
+// UpstreamRepositoryAccount An account for the repository's upstream (R-REPO-033). `basic` needs a username or a password, `bearer` a password.
+type UpstreamRepositoryAccount struct {
+	AuthMode UpstreamRepositoryAccountAuthMode `json:"authMode"`
+
+	// Password A secret member of a document (R-REPO-033). A request sends `value`, which is sealed at once, or
+	// `secretRef`, or `set: true`, which keeps the stored value; a document that was read can therefore
+	// be sent back without blanking or leaking the secret. A read shows `{"set": true}` for a sealed
+	// value and the reference itself for a reference. The value is never returned. `value` and
+	// `secretRef` together, an empty value, a reference outside the rules of R-OPS-029 (a file directly
+	// under `config_as_code.secrets_dir`; a variable named `QUADER_CAC_<NAME>`) and `set: false` are
+	// `422 invalid_secret`.
+	Password *SecretField `json:"password,omitempty"`
+
+	// Username Sent with `basic`; it must not contain a colon.
+	Username *string `json:"username,omitempty"`
+}
+
+// UpstreamRepositoryAccountAuthMode defines model for UpstreamRepositoryAccount.AuthMode.
+type UpstreamRepositoryAccountAuthMode string
+
+// UpstreamRepositoryAccountInfo The stored account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073).
+type UpstreamRepositoryAccountInfo struct {
+	AuthMode UpstreamRepositoryAccountInfoAuthMode `json:"authMode"`
+
+	// Password `{"set": true}` for a sealed value, the `secretRef` as stored, or `null` without one. The value is never returned.
+	Password *SecretField `json:"password"`
+
+	// RemovedByUpdateAt When the reconcile of a release removed the account because the product moved its hosts (Q-REPO-377); `null` otherwise.
+	RemovedByUpdateAt *time.Time `json:"removedByUpdateAt"`
+
+	// Username The account name; `null` without an account.
+	Username *string `json:"username"`
+}
+
+// UpstreamRepositoryAccountInfoAuthMode defines model for UpstreamRepositoryAccountInfo.AuthMode.
+type UpstreamRepositoryAccountInfoAuthMode string
+
+// UpstreamRepositoryAddress An administrator's address for a well-known repository (R-REPO-069): every member is optional, and an omitted one is the
+// product's. `account` replaces the stored account in the same write (a new one, or `null` to remove it); it is needed when
+// the hosts that receive the stored account change.
+type UpstreamRepositoryAddress struct {
+	Account    *UpstreamRepositoryAccount `json:"account,omitempty"`
+	ExtraHosts *[]RemoteExtraHost         `json:"extraHosts,omitempty"`
+
+	// UpstreamKeys The armored OpenPGP public keys of an APT archive, as `deb.upstreamKeys` (R-DEB-020); `not_applicable` for another format.
+	UpstreamKeys *string `json:"upstreamKeys,omitempty"`
+
+	// Url The upstream base URL, as `remote.url` (R-REPO-024).
+	Url *string `json:"url,omitempty"`
+}
+
+// UpstreamRepositoryAddressInfo The stored address (`remote.url`, `remote.extraHosts`, for an APT archive the keys of `deb.upstreamKeys`), whether it differs
+// from the product's, and the product's (R-REPO-069, R-REPO-073).
+type UpstreamRepositoryAddressInfo struct {
+	ExtraHosts []RemoteExtraHost `json:"extraHosts"`
+
+	// Overridden An administrator set an address that differs from the product's; a release keeps it (Q-REPO-377).
+	Overridden bool `json:"overridden"`
+
+	// Product The address the catalog of the running binary declares for the repository (R-REPO-062).
+	Product UpstreamProductAddress `json:"product"`
+
+	// UpstreamKeys The fingerprints of the stored archive keys of an APT archive; `null` for another format.
+	UpstreamKeys *[]UpstreamArchiveKey `json:"upstreamKeys"`
+	Url          string                `json:"url"`
+}
+
+// UpstreamRepositoryBulkResult What a bulk operation changed, in one transaction, and the ID every event of it carries (Q-API-361).
+type UpstreamRepositoryBulkResult struct {
+	BulkId openapi_types.UUID   `json:"bulkId"`
+	Items  []UpstreamRepository `json:"items"`
+}
+
+// UpstreamRepositoryFixed What the product holds of a repository beyond the table of R-REPO-069.
+type UpstreamRepositoryFixed string
+
+// UpstreamRepositoryKind `preset`: a repository of an upstream preset of the format catalog; `system`: a repository of Quader's own work (R-REPO-066).
+type UpstreamRepositoryKind string
+
+// UpstreamRepositoryList defines model for UpstreamRepositoryList.
+type UpstreamRepositoryList struct {
+	Items []UpstreamRepository `json:"items"`
+}
+
+// UpstreamRepositoryState The state of a preset repository of the project `upstream`, derived from what is stored (R-REPO-068, Q-REPO-375):
+// `active` serves and takes part as a member; `switched-off` was switched on before and is off; `not-switched-on` was never
+// switched on; `retired` is no longer offered by Quader. Every state but `active` answers `404 repository_disabled` to a
+// request addressed to it and is a placeholder as a member of a virtual repository (R-REPO-072).
+type UpstreamRepositoryState string
+
+// UpstreamRepositoryStateRequest defines model for UpstreamRepositoryStateRequest.
+type UpstreamRepositoryStateRequest struct {
+	State UpstreamRepositoryStateRequestState `json:"state"`
+}
+
+// UpstreamRepositoryStateRequestState defines model for UpstreamRepositoryStateRequest.State.
+type UpstreamRepositoryStateRequestState string
+
+// UpstreamRepositorySummary A preset repository as a writer of a virtual repository sees it (Q-API-364): the key a member list writes as `name`, the
+// preset's display name, the state (never `retired`: a retired repository is not listed) and the level. Nothing of the
+// address, the account or who lists it.
+type UpstreamRepositorySummary struct {
+	// DisplayName The preset's display name, a product name the UI does not translate.
+	DisplayName string `json:"displayName"`
+
+	// Key The repository key in the project `upstream`, the preset's id.
+	Key string `json:"key"`
+
+	// Name The qualified name, `upstream/<key>`, as a member list writes it (R-REPO-071).
+	Name string `json:"name"`
+
+	// State The state of a preset repository of the project `upstream`, derived from what is stored (R-REPO-068, Q-REPO-375):
+	// `active` serves and takes part as a member; `switched-off` was switched on before and is off; `not-switched-on` was never
+	// switched on; `retired` is no longer offered by Quader. Every state but `active` answers `404 repository_disabled` to a
+	// request addressed to it and is a placeholder as a member of a virtual repository (R-REPO-072).
+	State UpstreamRepositoryState `json:"state"`
+
+	// Visibility A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
+	// principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
+	// request, also one without a credential.
+	Visibility VisibilityLevel `json:"visibility"`
+}
+
+// UpstreamRepositorySummaryList defines model for UpstreamRepositorySummaryList.
+type UpstreamRepositorySummaryList struct {
+	Items []UpstreamRepositorySummary `json:"items"`
+}
+
+// UpstreamRepositoryVisibilityRequest defines model for UpstreamRepositoryVisibilityRequest.
+type UpstreamRepositoryVisibilityRequest struct {
+	// Level A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
+	// principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
+	// request, also one without a credential.
+	Level VisibilityLevel `json:"level"`
 }
 
 // UpstreamTestRequest defines model for UpstreamTestRequest.
@@ -12451,6 +12780,9 @@ type ProjectKey = string
 
 // RepoKey defines model for RepoKey.
 type RepoKey = string
+
+// UpstreamRepositoryKey defines model for UpstreamRepositoryKey.
+type UpstreamRepositoryKey = string
 
 // BadGateway RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`.
 type BadGateway = Problem
@@ -14048,6 +14380,45 @@ type RotateTokenParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// SetAllUpstreamRepositoriesVisibilityParams defines parameters for SetAllUpstreamRepositoriesVisibility.
+type SetAllUpstreamRepositoriesVisibilityParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// SwitchOnAllUpstreamRepositoriesParams defines parameters for SwitchOnAllUpstreamRepositories.
+type SwitchOnAllUpstreamRepositoriesParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// RemoveUpstreamRepositoryAccountParams defines parameters for RemoveUpstreamRepositoryAccount.
+type RemoveUpstreamRepositoryAccountParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// SetUpstreamRepositoryAccountParams defines parameters for SetUpstreamRepositoryAccount.
+type SetUpstreamRepositoryAccountParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ResetUpstreamRepositoryAddressParams defines parameters for ResetUpstreamRepositoryAddress.
+type ResetUpstreamRepositoryAddressParams struct {
+	// RemoveAccount Remove the stored account with the reset, where the product's hosts would not receive it otherwise.
+	RemoveAccount *bool `form:"removeAccount,omitempty" json:"removeAccount,omitempty"`
+
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// SetUpstreamRepositoryAddressParams defines parameters for SetUpstreamRepositoryAddress.
+type SetUpstreamRepositoryAddressParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // ListUsageParams defines parameters for ListUsage.
 type ListUsageParams struct {
 	// Project Narrow the instance's overview to the repositories of one project (Q-API-353).
@@ -14655,6 +15026,21 @@ type RevokeTokenByValueJSONRequestBody = RevokeByValueRequest
 
 // RotateTokenJSONRequestBody defines body for RotateToken for application/json ContentType.
 type RotateTokenJSONRequestBody = RotateRequest
+
+// SetAllUpstreamRepositoriesVisibilityJSONRequestBody defines body for SetAllUpstreamRepositoriesVisibility for application/json ContentType.
+type SetAllUpstreamRepositoriesVisibilityJSONRequestBody = UpstreamRepositoryVisibilityRequest
+
+// SetUpstreamRepositoryAccountJSONRequestBody defines body for SetUpstreamRepositoryAccount for application/json ContentType.
+type SetUpstreamRepositoryAccountJSONRequestBody = UpstreamRepositoryAccount
+
+// SetUpstreamRepositoryAddressJSONRequestBody defines body for SetUpstreamRepositoryAddress for application/json ContentType.
+type SetUpstreamRepositoryAddressJSONRequestBody = UpstreamRepositoryAddress
+
+// SetUpstreamRepositoryStateJSONRequestBody defines body for SetUpstreamRepositoryState for application/json ContentType.
+type SetUpstreamRepositoryStateJSONRequestBody = UpstreamRepositoryStateRequest
+
+// SetUpstreamRepositoryVisibilityJSONRequestBody defines body for SetUpstreamRepositoryVisibility for application/json ContentType.
+type SetUpstreamRepositoryVisibilityJSONRequestBody = UpstreamRepositoryVisibilityRequest
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = NewUser
@@ -15536,6 +15922,9 @@ type ServerInterface interface {
 	// GetFormatGuide The guide of a format for one class and client
 	// (GET /api/v1/formats/{format}/guide)
 	GetFormatGuide(w http.ResponseWriter, r *http.Request, format string, params GetFormatGuideParams)
+	// ListFormatUpstreamRepositories List the well-known repositories a virtual repository of a format can list
+	// (GET /api/v1/formats/{format}/upstream-repositories)
+	ListFormatUpstreamRepositories(w http.ResponseWriter, r *http.Request, format string)
 	// ListGroups List groups
 	// (GET /api/v1/groups)
 	ListGroups(w http.ResponseWriter, r *http.Request, params ListGroupsParams)
@@ -16160,6 +16549,36 @@ type ServerInterface interface {
 	// RotateToken Rotate a token
 	// (POST /api/v1/tokens/{id}/rotate)
 	RotateToken(w http.ResponseWriter, r *http.Request, id string, params RotateTokenParams)
+	// ListUpstreamRepositories List the well-known repositories of the project upstream
+	// (GET /api/v1/upstream-repositories)
+	ListUpstreamRepositories(w http.ResponseWriter, r *http.Request)
+	// SetAllUpstreamRepositoriesVisibility Set the level of every well-known repository
+	// (POST /api/v1/upstream-repositories/set-visibility)
+	SetAllUpstreamRepositoriesVisibility(w http.ResponseWriter, r *http.Request, params SetAllUpstreamRepositoriesVisibilityParams)
+	// SwitchOnAllUpstreamRepositories Switch on every well-known repository that is off
+	// (POST /api/v1/upstream-repositories/switch-on-all)
+	SwitchOnAllUpstreamRepositories(w http.ResponseWriter, r *http.Request, params SwitchOnAllUpstreamRepositoriesParams)
+	// GetUpstreamRepository Read one well-known repository
+	// (GET /api/v1/upstream-repositories/{key})
+	GetUpstreamRepository(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey)
+	// RemoveUpstreamRepositoryAccount Remove the account of a well-known repository
+	// (DELETE /api/v1/upstream-repositories/{key}/account)
+	RemoveUpstreamRepositoryAccount(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey, params RemoveUpstreamRepositoryAccountParams)
+	// SetUpstreamRepositoryAccount Store an account for a well-known repository
+	// (PUT /api/v1/upstream-repositories/{key}/account)
+	SetUpstreamRepositoryAccount(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey, params SetUpstreamRepositoryAccountParams)
+	// ResetUpstreamRepositoryAddress Reset the address of a well-known repository to the product's
+	// (DELETE /api/v1/upstream-repositories/{key}/address)
+	ResetUpstreamRepositoryAddress(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey, params ResetUpstreamRepositoryAddressParams)
+	// SetUpstreamRepositoryAddress Override the address of a well-known repository
+	// (PUT /api/v1/upstream-repositories/{key}/address)
+	SetUpstreamRepositoryAddress(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey, params SetUpstreamRepositoryAddressParams)
+	// SetUpstreamRepositoryState Switch a well-known repository on or off
+	// (PUT /api/v1/upstream-repositories/{key}/state)
+	SetUpstreamRepositoryState(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey)
+	// SetUpstreamRepositoryVisibility Set the level of a well-known repository
+	// (PUT /api/v1/upstream-repositories/{key}/visibility)
+	SetUpstreamRepositoryVisibility(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey)
 	// ListUsage Every subject's usage
 	// (GET /api/v1/usage)
 	ListUsage(w http.ResponseWriter, r *http.Request, params ListUsageParams)
@@ -18501,6 +18920,32 @@ func (siw *ServerInterfaceWrapper) GetFormatGuide(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetFormatGuide(w, r, format, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListFormatUpstreamRepositories operation middleware
+func (siw *ServerInterfaceWrapper) ListFormatUpstreamRepositories(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "format" -------------
+	var format string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "format", r.PathValue("format"), &format, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListFormatUpstreamRepositories(w, r, format)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -29053,6 +29498,409 @@ func (siw *ServerInterfaceWrapper) RotateToken(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// ListUpstreamRepositories operation middleware
+func (siw *ServerInterfaceWrapper) ListUpstreamRepositories(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUpstreamRepositories(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAllUpstreamRepositoriesVisibility operation middleware
+func (siw *ServerInterfaceWrapper) SetAllUpstreamRepositoriesVisibility(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetAllUpstreamRepositoriesVisibilityParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAllUpstreamRepositoriesVisibility(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SwitchOnAllUpstreamRepositories operation middleware
+func (siw *ServerInterfaceWrapper) SwitchOnAllUpstreamRepositories(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SwitchOnAllUpstreamRepositoriesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SwitchOnAllUpstreamRepositories(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUpstreamRepository operation middleware
+func (siw *ServerInterfaceWrapper) GetUpstreamRepository(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUpstreamRepository(w, r, key)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveUpstreamRepositoryAccount operation middleware
+func (siw *ServerInterfaceWrapper) RemoveUpstreamRepositoryAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RemoveUpstreamRepositoryAccountParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveUpstreamRepositoryAccount(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUpstreamRepositoryAccount operation middleware
+func (siw *ServerInterfaceWrapper) SetUpstreamRepositoryAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetUpstreamRepositoryAccountParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUpstreamRepositoryAccount(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResetUpstreamRepositoryAddress operation middleware
+func (siw *ServerInterfaceWrapper) ResetUpstreamRepositoryAddress(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ResetUpstreamRepositoryAddressParams
+
+	// ------------- Optional query parameter "removeAccount" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "removeAccount", r.URL.Query(), &params.RemoveAccount, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "removeAccount"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "removeAccount", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResetUpstreamRepositoryAddress(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUpstreamRepositoryAddress operation middleware
+func (siw *ServerInterfaceWrapper) SetUpstreamRepositoryAddress(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetUpstreamRepositoryAddressParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUpstreamRepositoryAddress(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUpstreamRepositoryState operation middleware
+func (siw *ServerInterfaceWrapper) SetUpstreamRepositoryState(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUpstreamRepositoryState(w, r, key)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUpstreamRepositoryVisibility operation middleware
+func (siw *ServerInterfaceWrapper) SetUpstreamRepositoryVisibility(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUpstreamRepositoryVisibility(w, r, key)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListUsage operation middleware
 func (siw *ServerInterfaceWrapper) ListUsage(w http.ResponseWriter, r *http.Request) {
 
@@ -31407,6 +32255,17 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/cache/entries", wrapper.ListCacheEntries)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream-test", wrapper.TestRepositoryUpstream)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/upstream-tests", wrapper.TestUpstream)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/upstream-repositories", wrapper.ListUpstreamRepositories)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}", wrapper.GetUpstreamRepository)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/state", wrapper.SetUpstreamRepositoryState)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/upstream-repositories/switch-on-all", wrapper.SwitchOnAllUpstreamRepositories)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/visibility", wrapper.SetUpstreamRepositoryVisibility)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/upstream-repositories/set-visibility", wrapper.SetAllUpstreamRepositoriesVisibility)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/address", wrapper.ResetUpstreamRepositoryAddress)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/address", wrapper.SetUpstreamRepositoryAddress)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/account", wrapper.RemoveUpstreamRepositoryAccount)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/account", wrapper.SetUpstreamRepositoryAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/formats/{format}/upstream-repositories", wrapper.ListFormatUpstreamRepositories)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/claims", wrapper.GetRepositoryClaims)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/claims", wrapper.PutRepositoryClaims)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/resolution", wrapper.GetRepositoryResolution)

@@ -49,6 +49,8 @@ var recentAuthOperations = []string{
 	"removePackageOwner", "removeProjectMember", "replaceCiIssuer", "replaceCiMapping", "replaceProjectCiMapping", "replaceExposureRule",
 	"replacePermissionPolicy", "replaceProjectPermissionPolicy", "replaceProject", "rotateToken", "setProjectMember", "unbindRole", "updateAuthSettings",
 	"setProjectVisibility", "updateVisibilitySettings", "updateLimitSettings",
+	// R-REPO-073: the address and the account of a well-known repository; raising its level asks inside the write.
+	"setUpstreamRepositoryAddress", "resetUpstreamRepositoryAddress", "setUpstreamRepositoryAccount", "removeUpstreamRepositoryAccount",
 }
 
 func TestR_API_007_DocumentDeclaresRecentAuth(t *testing.T) {

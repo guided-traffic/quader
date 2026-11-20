@@ -669,6 +669,7 @@ quader/
 │   ├── auth/jws/                # compact JWS and JWK sets, shared by the login and the CI exchange (leaf layer, Q-CI-19)
 │   ├── authz/
 │   ├── repository/              # model, snapshot, CleanPath, classification, routing of virtual repositories (members, claims, pins)
+│   ├── wellknown/               # the built-in project upstream: its names, the states of its repositories, the declarations from the catalog (leaf layer, R-REPO-066)
 │   ├── items/                   # the item store: spool, the one commit, stat, open, listing rows, subtree delete, statistics; no authz (Q-ARCH-207)
 │   ├── files/                   # the generic layer: decides on the request's index, resolves and admits, over items (R-STOR-007 to R-STOR-018, Q-ARCH-206)
 │   ├── formats/                 # contract (Format, Host), registry

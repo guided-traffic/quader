@@ -58,6 +58,9 @@ func (s *service) publicAvailable() bool { return s.o.PublicAvailable != nil && 
 // them. The level it already has changes nothing and records nothing. A restricted level is refused to a caller who is not an
 // administrator (admin false, R-AUTHZ-037), after the refusal of public.
 func (s *service) SetVisibility(ctx context.Context, actor authz.Subject, key string, expected int64, level string, admin bool) (Project, []Lowered, int64, error) {
+	if err := refuseUpstream(key, "its level is stored public and fixed; an administrator sets the level of each of its repositories."); err != nil {
+		return Project{}, nil, 0, err
+	}
 	if !visibility.Valid(level) {
 		return Project{}, nil, 0, errs.E(errs.Invalid, errs.CodeValidation, "The level is one of private, internal and public.",
 			errs.WithFields(visibility.InvalidLevel("/level")))

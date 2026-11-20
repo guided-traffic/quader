@@ -179,6 +179,9 @@ func firstOwners(ctx context.Context, qs *q.Queries, projectID string, refs []st
 // Replace changes display name and description under the version check
 // (R-API-012). The version moves with these two fields only (Q-AUTHZ-185).
 func (s *service) Replace(ctx context.Context, actor authz.Subject, key string, expected int64, in Input) (Project, int64, error) {
+	if err := refuseUpstream(key, "its display name and description do not change."); err != nil {
+		return Project{}, 0, err
+	}
 	if err := problems(in, false); err != nil {
 		return Project{}, 0, err
 	}
@@ -235,6 +238,9 @@ const maxJournaledPolicies = 1000
 // foreign keys of repositories, service accounts and CI mappings are the safety
 // net behind the count.
 func (s *service) Delete(ctx context.Context, actor authz.Subject, key string, expected int64) (int64, error) {
+	if err := refuseUpstream(key, "it is never deleted."); err != nil {
+		return 0, err
+	}
 	var deleted []string
 	for range maxDeleteRounds {
 		policies, err := s.precheckDelete(ctx, key, expected)

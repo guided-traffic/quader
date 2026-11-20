@@ -14,7 +14,8 @@ This page explains how administrators create, configure, edit and delete reposit
 
 A **local** repository holds what is uploaded or published to it. A **remote** repository fetches from an upstream registry and caches what it fetched. A **virtual** repository combines local and remote repositories behind one address. How users see the classes is described in [Repositories](../user/repositories.md).
 
-Every repository belongs to exactly one [project](projects.md), and its key is unique within that project. Viewing configurations needs the capability `repositories:read-config`; creating, changing, deleting and moving needs `repositories:write-config`. Both come with the roles `admin` and `repository-admin` and act in every project; see [Permissions](permissions.md). The Owner of a project does the same for the project's repositories without a system role ([Projects](projects.md#what-an-owner-may-do)).
+Every repository belongs to exactly one [project](projects.md), and its key is unique within that project. The repositories of the
+built-in project Upstream are Quader's own: the public registries every project may use, managed under [Upstream registries](upstream-registries.md). Viewing configurations needs the capability `repositories:read-config`; creating, changing, deleting and moving needs `repositories:write-config`. Both come with the roles `admin` and `repository-admin` and act in every project; see [Permissions](permissions.md). The Owner of a project does the same for the project's repositories without a system role ([Projects](projects.md#what-an-owner-may-do)).
 
 ## The Repositories screen
 

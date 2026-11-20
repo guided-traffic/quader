@@ -247,7 +247,7 @@ no log line, no state.
 
 | File | Responsibility |
 |---|---|
-| [openpgp.go](../../internal/openpgp/openpgp.go) | `Limits` and `DefaultLimits`, the error classes, `Key` and `Certificate`, `BoundSince` |
+| [openpgp.go](../../internal/openpgp/openpgp.go) | `Limits` and `DefaultLimits`, the error classes, `Key` and `Certificate` (with `BoundSince`, and the primary identity's `UserID` and the key's `Expires` that the well-known repositories list and the archive keys' test reads) |
 | [secret.go](../../internal/openpgp/secret.go) | `Generate`, `ParseSecret` and the import rules of R-DEB-015, `Key.SecretArmored` |
 | [certs.go](../../internal/openpgp/certs.go) | `ParseCertificates` (the rules of `deb.upstreamKeys`), `ParseStoredCertificates`, `ArmorCertificates` |
 | [sign.go](../../internal/openpgp/sign.go) | `ClearSign`, `DetachSign`, `Key.EarliestSignature` (Q-DEB-40) |
@@ -352,6 +352,36 @@ an update that removes fingerprints runs the keys-removed hook (the data port cl
 
 **Dispatcher.** `deb <URL> ./` requests `<URL>/./InRelease`; the router has no redirect for it (`HandleUncleaned`), the dispatcher cleans the path after
 dropping the first `.` segment and hands the format the path as received, and `Format.Match` reads the leading `./` (Q-ARCH-385, Q-DEB-39).
+
+### The archive keys of the presets
+
+The five presets carry `deb.upstreamKeys` (`UpstreamPreset.Settings`, [format.go](../../internal/formats/deb/format.go), Q-REPO-379, which supersedes
+Q-REPO-326): the well-known repositories of the project `upstream` are the product's ([wellknown.md](wellknown.md)), and a remote of a project created
+from a preset's URL takes them as it takes the preset's hosts (`applyPresetSettings`,
+[upstream_managed.go](../../internal/repository/upstream_managed.go)). The keys are embedded from [archivekeys/](../../internal/formats/deb/archivekeys/):
+
+| File | Source | Keys | Signs |
+|---|---|---|---|
+| `debian-archive-keyring.asc` | `/usr/share/keyrings/debian-archive-keyring.gpg` of `debian-archive-keyring` 2025.1 (Debian 13) | the archive, security and stable release keys of Debian 11, 12 and 13 (nine) | `deb.debian.org/debian`, `deb.debian.org/debian-security` |
+| `ubuntu-archive-keyring.asc` | `/usr/share/keyrings/ubuntu-archive-keyring.gpg` of `ubuntu-keyring` 2023.11.28.1 (Ubuntu 24.04) | the archive keys of 2012 and 2018 and the CD image key of 2012 | `archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com` (the 2018 key today) |
+
+How they were obtained and checked, on 2026-11-20 (the procedure for the next key change):
+
+1. The packages were downloaded from the archives' pools (`deb.debian.org/debian/pool/main/d/debian-archive-keyring/`,
+   `archive.ubuntu.com/ubuntu/pool/main/u/ubuntu-keyring/`); their SHA-256 equals the one the signed `Packages` index of `trixie` (main, `binary-all`)
+   and of `noble` (main, `binary-amd64`) lists, and the hash of each index equals the one its `InRelease` lists.
+2. The keyring file extracted from each package is byte for byte the file of the official container image `debian:13` and `ubuntu:24.04`, which
+   also report the package versions above.
+3. `gpgv` with the image's keyring verifies the `InRelease` of `trixie`, `bookworm`, `trixie-security`, `noble`, `noble-security`, `noble-updates` and
+   of the ports' `noble`; so do the armored files of this directory, converted back to binary keyrings.
+4. Every Debian fingerprint is listed on `ftp-master.debian.org/keys.html`; every Ubuntu fingerprint is published by `keyserver.ubuntu.com`, and the
+   2018 key's on `wiki.ubuntu.com/SecurityTeam/FAQ`.
+
+The armored files are `gpg --armor --export` of the keyring imported into an empty home: the keys and their signatures, unchanged.
+`TestQ_REPO_379_TheArchiveKeys` ([archivekeys_test.go](../../internal/formats/deb/archivekeys_test.go)) parses each file as `deb.upstreamKeys` parses a
+remote's keys (strictly: no expired, revoked or weak key), pins the fingerprints, and fails 90 days before a key expires (the first, the Debian 11 keys,
+expire on 2029-01-15). A key change of either keyring is a release of Quader; an administrator who cannot wait sets the keys with the address of the
+well-known repository (`setUpstreamRepositoryAddress`, `upstreamKeys`).
 
 ## The mirror
 

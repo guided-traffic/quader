@@ -73,17 +73,45 @@ a row real.
 No policy entry, role binding, project membership or owner record can name `anonymous` or `authenticated` (422
 `principal_not_allowed`, refused by the database with `AI009`, Q-AUTHZ-279), so no grant can open what the levels keep closed.
 
-**The built-in project `upstream`** (specified, not built, [authorization.md](../spec/authorization.md) R-AUTHZ-041) is
-stored `public` and fixed, so that an administrator may give a well-known repository any level; the stored level admits nobody to the
-project, which is seen only by whoever reads one of its repositories. The levels of its repositories are an administrator's
-(`repositories:write-config`, `security-settings:write` for a restricted one), never an Owner's: it has none. **Switch all on** sets
-`internal`, never `public`; choosing `public` asks first with the sentence the owner asked for, because a public well-known repository
+**The built-in project `upstream`** ([authorization.md](../spec/authorization.md) R-AUTHZ-041, built) is stored `public` and fixed (migration 00086, AI010), so that an administrator may give a
+well-known repository any level; the stored level admits nobody to the project, which is listed only for a holder of `projects:read`
+and for whoever reads one of its repositories that is switched on (`projectSight` in
+[projects_api.go](../../internal/api/v1/projects_api.go), Q-AUTHZ-305), first in every list of projects (Q-UI-837), and is not one of the `publicObjects`. The levels of its repositories are an administrator's
+(`repositories:write-config`, `security-settings:write` for a restricted one), never an Owner's: it has none.
+
+**Switching a registry on opens it to everyone signed in who is not external.** A preset repository is created switched off and
+`internal` (the owner's Q-REPO-388; `wellknown.PresetLevel`), so the one switch of `setUpstreamRepositoryState`, held by
+`repositories:write-config`, makes it readable by every signed-in subject that is not a user flagged external, people's pipelines and
+service accounts included, directly and through every virtual repository that lists it: the technical tokens and CI tokens of every
+project read it ([H-1052](#h-1052--a-technical-token-or-a-ci-token-reads-every-internal-repository-not-only-what-it-was-made-for)).
+An administrator who wants fewer readers lowers the level before switching on. An installation that restricts `internal` to its
+security administrators (R-AUTHZ-037) gets its registries `private` instead (Q-REPO-393, `levelChoice.productLevel` in
+[visibility.go](../../internal/repository/visibility.go)), so the switch of a repository-admin never opens a level they may not
+choose. While a registry is off it serves nothing, and a caller without `repositories:read-config` neither lists nor is suggested it,
+nor sees the project because of it (Q-AUTHZ-305, Q-AUTHZ-306, `upstreamServes` in
+[upstream_repositories_api.go](../../internal/api/v1/upstream_repositories_api.go)).
+
+**Switch all on** sets `internal`, never `public`; choosing `public` asks first with the sentence the owner asked for, because a public well-known repository
 lets anyone on the internet pull through the installation ([H-881](#h-881--anyone-can-make-a-public-remote-repository-fetch-from-its-upstream)
 applies to it as to every public remote). Through a team's virtual repository a well-known repository is read by its own level, never
 by the team's grants ([permissions.md](permissions.md#a-well-known-member-read-through-a-teams-virtual-repository)): at `internal` by every
 caller of the table above that reads `internal`, the technical tokens and CI tokens of every project included
 ([H-1052](#h-1052--a-technical-token-or-a-ci-token-reads-every-internal-repository-not-only-what-it-was-made-for) applies to it), and not
 by a user flagged external ([authorization.md](../spec/authorization.md) R-AUTHZ-030, Q-AUTHZ-302).
+
+**What a signed-in caller learns about the well-known repositories.** Which preset repositories exist is public: `GET /api/v1/formats`
+lists the presets of every format, and the keys are the same in every installation. Their state and their level are told to two kinds
+of caller. An administrator with `repositories:read-config` reads the whole item, address and account without the secret included
+(R-REPO-073). Whoever writes a virtual repository's member list, the holder of `repositories:write-config` and the Owner of any
+project, reads the state and the level of a format's presets through `GET /api/v1/formats/{format}/upstream-repositories`
+(`listFormatUpstreamRepositories` in [upstream_repositories_api.go](../../internal/api/v1/upstream_repositories_api.go), Q-API-364)
+and nothing of the address, the account or which virtual repositories list it. That is no more than such a caller learns already:
+listing `upstream/<key>` in a member list answers the warning `member_inactive` on the save and the member's `upstreamState` in the
+resolution explanation, and the explanation names the member as `no-read` to a caller who cannot read it, which tells whether its
+level admits them (R-REPO-072). A reader, a user flagged external who owns no project, a service account or a CI token without an Owner's role gets
+403, and an anonymous caller 401: they learn the state of a well-known repository only by reading it once it serves or through a
+virtual repository that lists it. That the presets are `internal` from their create tells them nothing more: the lists and the
+suggestions leave out what does not serve (Q-AUTHZ-306), and a direct request answers `404 repository_disabled`.
 
 ## Who may open
 

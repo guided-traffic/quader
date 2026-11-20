@@ -17,6 +17,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // Names of the caches of this package (R-ARCH-018).
@@ -232,19 +233,21 @@ func (r *SnapshotReader) snapshot(ctx context.Context) (*snapshot, error) {
 }
 
 func (r *SnapshotReader) load(ctx context.Context) (*snapshot, error) {
-	rows, rels, projects, err := readSnapshot(ctx, r.run)
+	sr, err := readSnapshot(ctx, r.run)
 	if err != nil {
 		return nil, err
 	}
+	rows := sr.rows
 	repos := make([]Repository, 0, len(rows))
 	for _, row := range rows {
-		repo, err := toRepository(row, projects[row.ProjectID.String()], r.cat)
+		repo, err := toRepository(row, sr.projects[row.ProjectID.String()], r.cat)
 		if err != nil {
 			r.log.Error("repository: stored configuration does not load; the repository is disabled", "name", repo.Name.String(), "error", err)
 		}
+		withUpstream(&repo, sr.upstream)
 		repos = append(repos, repo)
 	}
-	linkVirtual(repos, rels, r.cat, r.log)
+	linkVirtual(repos, sr.rels, r.cat, r.log)
 	s := &snapshot{
 		byName: make(map[qname.Repo]Repository, len(rows)), list: make([]Repository, 0, len(rows)),
 		keys: make(map[int64]qname.Repo, len(rows)), containing: map[int64][]Repository{},
@@ -279,9 +282,15 @@ var errPresent = errors.New("repository: the key exists")
 // lookup resolves a key the snapshot does not hold.
 func (r *SnapshotReader) lookup(ctx context.Context, name qname.Repo) (Repository, error) {
 	var row q.Repository
+	var facts map[int64]q.UpstreamRepository
 	loader := func(ctx context.Context) (struct{}, error) {
 		rows, err := readRows(ctx, r.run, func(qs *q.Queries) ([]q.Repository, error) {
-			return qs.GetRepositoryByName(ctx, q.GetRepositoryByNameParams{Project: name.Project, Key: name.Key})
+			rows, err := qs.GetRepositoryByName(ctx, q.GetRepositoryByNameParams{Project: name.Project, Key: name.Key})
+			if err != nil || len(rows) == 0 || !wellknown.IsProject(name.Project) {
+				return rows, err
+			}
+			facts, err = upstreamFactsOf(ctx, qs, rows[0].ID)
+			return rows, err
 		})
 		if err != nil {
 			return struct{}{}, err
@@ -332,6 +341,7 @@ func (r *SnapshotReader) lookup(ctx context.Context, name qname.Repo) (Repositor
 	if err != nil {
 		r.log.Error("repository: stored configuration does not load; the repository is disabled", "name", name.String(), "error", err)
 	}
+	withUpstream(&repo, facts)
 	return repo, nil
 }
 

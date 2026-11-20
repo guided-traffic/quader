@@ -16,6 +16,8 @@
 package deb
 
 import (
+	_ "embed" // the archive keys of the presets
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"slices"
@@ -35,16 +37,44 @@ const ID formats.ID = "deb"
 const Layout = "deb"
 
 // upstreamPresets are the public archives of Debian and Ubuntu a remote proposes (R-DEB-001, R-REPO-062, Q-REPO-321), Debian the
-// default. Ubuntu's arm64 and other ports are on ports.ubuntu.com, not on the archive. No preset carries archive keys: they stay the
-// operator's deb.upstreamKeys (Q-REPO-326, Q-DEB-14).
+// default. Ubuntu's arm64 and other ports are on ports.ubuntu.com, not on the archive. Each carries the archive keys its distribution's
+// keyring package ships as deb.upstreamKeys (Q-REPO-379, which supersedes Q-REPO-326): the well-known repositories of the project
+// upstream are the product's, and a remote created from a preset's URL takes them as it takes the preset's hosts.
 func upstreamPresets() []catalog.UpstreamPreset {
+	debian, ubuntu := archiveKeySettings(debianArchiveKeyring), archiveKeySettings(ubuntuArchiveKeyring)
 	return []catalog.UpstreamPreset{
-		{ID: "debian", DisplayName: "Debian", URL: "https://deb.debian.org/debian/", Default: true},
-		{ID: "debian-security", DisplayName: "Debian security updates", URL: "https://deb.debian.org/debian-security/"},
-		{ID: "ubuntu", DisplayName: "Ubuntu", URL: "https://archive.ubuntu.com/ubuntu/"},
-		{ID: "ubuntu-security", DisplayName: "Ubuntu security updates", URL: "https://security.ubuntu.com/ubuntu/"},
-		{ID: "ubuntu-ports", DisplayName: "Ubuntu ports", URL: "https://ports.ubuntu.com/ubuntu-ports/"},
+		{ID: "debian", DisplayName: "Debian", URL: "https://deb.debian.org/debian/", Default: true, Settings: debian},
+		{ID: "debian-security", DisplayName: "Debian security updates", URL: "https://deb.debian.org/debian-security/", Settings: debian},
+		{ID: "ubuntu", DisplayName: "Ubuntu", URL: "https://archive.ubuntu.com/ubuntu/", Settings: ubuntu},
+		{ID: "ubuntu-security", DisplayName: "Ubuntu security updates", URL: "https://security.ubuntu.com/ubuntu/", Settings: ubuntu},
+		{ID: "ubuntu-ports", DisplayName: "Ubuntu ports", URL: "https://ports.ubuntu.com/ubuntu-ports/", Settings: ubuntu},
 	}
+}
+
+// The archive keys of the presets (Q-REPO-379): the keyring files apt verifies the archives with, armored, unchanged in their keys.
+//   - debian-archive-keyring.asc is /usr/share/keyrings/debian-archive-keyring.gpg of the package debian-archive-keyring 2025.1
+//     (Debian 13 trixie): the archive, security and stable release keys of Debian 11, 12 and 13. It signs deb.debian.org/debian and
+//     deb.debian.org/debian-security.
+//   - ubuntu-archive-keyring.asc is /usr/share/keyrings/ubuntu-archive-keyring.gpg of the package ubuntu-keyring 2023.11.28.1 (Ubuntu
+//     24.04 noble): the archive keys of 2012 and 2018 and the CD image key of 2012. The 2018 key signs the archive, its security
+//     updates and its ports.
+//
+// How they were obtained and checked is in docs/developer/deb.md (The archive keys of the presets); TestQ_REPO_379_TheArchiveKeys
+// pins every fingerprint and fails 90 days before a key expires. A key change of either keyring is a release of Quader.
+var (
+	//go:embed archivekeys/debian-archive-keyring.asc
+	debianArchiveKeyring string
+	//go:embed archivekeys/ubuntu-archive-keyring.asc
+	ubuntuArchiveKeyring string
+)
+
+// archiveKeySettings is the deb member a preset carries: its keys as deb.upstreamKeys.
+func archiveKeySettings(armored string) json.RawMessage {
+	raw, err := json.Marshal(map[string]string{"upstreamKeys": armored})
+	if err != nil {
+		panic("deb: the archive keys do not marshal: " + err.Error())
+	}
+	return raw
 }
 
 // MaxDocumentBytes bounds an upstream document held in memory: a release document is at most 16 MiB (R-DEB-034) and the largest

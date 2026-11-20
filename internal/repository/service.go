@@ -22,6 +22,7 @@ import (
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // The audit event types of this area (R-OPS-016), registered in
@@ -188,6 +189,24 @@ type Caller struct {
 	// (Q-AUTHZ-283): it may choose a level the installation restricts (R-AUTHZ-037). Everyone else keeps and lowers such a
 	// level but does not choose it anew.
 	MayChooseRestricted bool
+
+	// product is set by this package for a write of the product itself in the project upstream: the reconcile and the
+	// operations of R-REPO-073 (upstream_ops.go). The refusals of R-REPO-069 hold for every other write.
+	product productWrite
+}
+
+// productWrite is what a write of the product carries into its events (R-REPO-067, R-REPO-068, R-REPO-073).
+type productWrite struct {
+	on bool
+	// reason is the reason of repository.updated and repository.disabled: catalog, switched_on, switched_off, retired.
+	reason string
+	// bulkID is the ID of a bulk operation that every event of it carries (Q-API-361).
+	bulkID string
+	// accountRemoved marks a write of the reconcile that removes the account (Q-REPO-377).
+	accountRemoved bool
+	// level is the level an absent member of the reconcile's create takes instead of the installation's default (a preset's
+	// internal, Q-REPO-388); empty for every other write.
+	level string
 }
 
 // principalID returns the actor id when it is a uuid and "" otherwise (a break-glass
@@ -245,7 +264,19 @@ func (s *Service) CreateTx(ctx context.Context, tx meta.Tx, c Caller, project st
 	if err != nil {
 		return Stored{}, err
 	}
+	return s.createTx(ctx, tx, c, project, d, "")
+}
+
+// createTx creates the repository of d in project. kind is the kind of a well-known repository the reconcile creates, with its row
+// of upstream_repository; nothing else is created in the project upstream (R-REPO-069: 409 managed_by_product).
+func (s *Service) createTx(ctx context.Context, tx meta.Tx, c Caller, project string, d Document, kind wellknown.Kind) (Stored, error) {
+	if wellknown.IsProject(project) && (!c.product.on || kind == "") {
+		return Stored{}, managedByProduct("Nothing is created in the project upstream: its repositories are the ones Quader declares.")
+	}
 	_, v := validate(s.cat, &d, true)
+	if c.product.on {
+		dropProductHeld(v, nil, &d)
+	}
 	if d.Project != "" && d.Project != project {
 		v.add("/project", codeImmutable, "the project is the one of the address; a repository changes it only by a move")
 	}
@@ -294,6 +325,11 @@ func (s *Service) CreateTx(ctx context.Context, tx meta.Tx, c Caller, project st
 	}
 	if d.Class == Remote {
 		if err := s.writeSecrets(ctx, tx, rows[0].ID, d.pending); err != nil {
+			return Stored{}, err
+		}
+	}
+	if kind != "" {
+		if err := qs.InsertUpstreamRepository(ctx, q.InsertUpstreamRepositoryParams{RepositoryID: rows[0].ID, Kind: string(kind)}); err != nil {
 			return Stored{}, err
 		}
 	}
@@ -355,6 +391,10 @@ func (s *Service) Get(ctx context.Context, name qname.Repo) (Stored, error) {
 // omitted settings revert to their defaults. Key, class and format must equal the
 // stored ones (422 validation_failed with the field code immutable otherwise).
 func (s *Service) Replace(ctx context.Context, c Caller, name qname.Repo, pre Precondition, body []byte) (Stored, error) {
+	if wellknown.IsProject(name.Project) {
+		// The document of a well-known repository is not the caller's to replace (R-REPO-069, Q-REPO-386).
+		return Stored{}, managedByProduct("The document of a repository of the project upstream is the product's: change what an administrator may change with a merge patch or the operations of /api/v1/upstream-repositories.")
+	}
 	return s.update(ctx, c, name, pre, func(Document) (Document, error) { return DecodeDocument(body) })
 }
 
@@ -384,87 +424,98 @@ func (s *Service) Patch(ctx context.Context, c Caller, name qname.Repo, pre Prec
 func (s *Service) update(ctx context.Context, c Caller, name qname.Repo, pre Precondition,
 	build func(cur Document) (Document, error),
 ) (Stored, error) {
-	if !pre.Any && pre.Version < 1 {
-		return Stored{}, errors.New("repository: an update needs a precondition")
-	}
 	var out Stored
 	err := s.run.InTx(ctx, func(tx meta.Tx) error {
-		qs, err := queries(tx)
-		if err != nil {
-			return err
-		}
-		row, projectLevel, err := lockForUpdate(ctx, qs, name, pre)
-		if err != nil {
-			return err
-		}
-		cur, curRel, err := s.document(ctx, qs, row, name.Project)
-		if err != nil {
-			return fmt.Errorf("repository: stored document of %q: %w", name, err)
-		}
-		before, _ := toRepository(row, name.Project, s.cat)
-		nd, v, rel, err := s.updatedDocument(ctx, qs, c, row.ID, name.Project, projectLevel, &cur, build)
-		if err != nil {
-			return err
-		}
-		newCfg, err := nd.marshalConfig()
-		if err != nil {
-			return err
-		}
-		changes, err := updateChanges(&cur, &nd)
-		if err != nil {
-			return err
-		}
-		if len(changes) == 0 {
-			out, err = s.stored(ctx, qs, row, name.Project, v.warnings) // nothing to write: same version, no event
-			return err
-		}
-		updated, err := qs.UpdateRepositoryConfig(ctx, q.UpdateRepositoryConfigParams{
-			ID: row.ID, Version: row.ConfigVersion, Config: string(newCfg), Actor: c.principalID(),
-			VisibilityArtifacts: nd.Visibility.Artifacts, VisibilityWiki: nd.Visibility.Wiki,
-		})
-		if err != nil {
-			return err
-		}
-		if len(updated) == 0 {
-			return errors.New("repository: the update matched no row although the row was locked")
-		}
-		if nd.Class == Remote {
-			if err := s.writeSecrets(ctx, tx, row.ID, nd.pending); err != nil {
-				return err
-			}
-			if err := s.upstreamChanged(ctx, tx, c, cur, nd, before); err != nil {
-				return err
-			}
-		}
-		// >>> M2 virtual
-		pinsChanged := false
-		if rel != nil {
-			if _, pinsChanged, err = writeVirtual(ctx, qs, row.ID, rel, curRel); err != nil {
-				return err
-			}
-		}
-		// <<< M2 virtual
-		out, err = s.stored(ctx, qs, updated[0], name.Project, v.warnings)
-		if err != nil {
-			return err
-		}
-		if err := s.recordUpdate(ctx, tx, c, out.Repository, changes, &cur, &nd, curRel, rel); err != nil {
-			return err
-		}
-		// >>> M2 virtual
-		if pinsChanged {
-			if err := s.notifyPins(tx, out.Repository); err != nil {
-				return err
-			}
-		}
-		// <<< M2 virtual
-		if s.hooks != nil {
-			return s.hooks.OnUpdated(ctx, tx, c, before, out.Repository)
-		}
-		return nil
+		var err error
+		out, err = s.updateTx(ctx, tx, c, name, pre, build)
+		return err
 	})
 	if err != nil {
 		return Stored{}, err
+	}
+	return out, nil
+}
+
+// updateTx is the update of R-REPO-011 in a transaction the caller owns: the product's writes of the project upstream run several
+// in one transaction (the reconcile, a bulk operation, Q-API-361) and add the rows of upstream_repository to it.
+func (s *Service) updateTx(ctx context.Context, tx meta.Tx, c Caller, name qname.Repo, pre Precondition,
+	build func(cur Document) (Document, error),
+) (Stored, error) {
+	if !pre.Any && pre.Version < 1 {
+		return Stored{}, errors.New("repository: an update needs a precondition")
+	}
+	qs, err := queries(tx)
+	if err != nil {
+		return Stored{}, err
+	}
+	row, projectLevel, err := lockForUpdate(ctx, qs, name, pre)
+	if err != nil {
+		return Stored{}, err
+	}
+	cur, curRel, err := s.document(ctx, qs, row, name.Project)
+	if err != nil {
+		return Stored{}, fmt.Errorf("repository: stored document of %q: %w", name, err)
+	}
+	before, _ := toRepository(row, name.Project, s.cat)
+	nd, v, rel, err := s.updatedDocument(ctx, qs, c, row.ID, name.Project, projectLevel, &cur, build)
+	if err != nil {
+		return Stored{}, err
+	}
+	newCfg, err := nd.marshalConfig()
+	if err != nil {
+		return Stored{}, err
+	}
+	changes, err := updateChanges(&cur, &nd)
+	if err != nil {
+		return Stored{}, err
+	}
+	if len(changes) == 0 {
+		return s.stored(ctx, qs, row, name.Project, v.warnings) // nothing to write: same version, no event
+	}
+	updated, err := qs.UpdateRepositoryConfig(ctx, q.UpdateRepositoryConfigParams{
+		ID: row.ID, Version: row.ConfigVersion, Config: string(newCfg), Actor: c.principalID(),
+		VisibilityArtifacts: nd.Visibility.Artifacts, VisibilityWiki: nd.Visibility.Wiki,
+	})
+	if err != nil {
+		return Stored{}, err
+	}
+	if len(updated) == 0 {
+		return Stored{}, errors.New("repository: the update matched no row although the row was locked")
+	}
+	if nd.Class == Remote {
+		if err := s.writeSecrets(ctx, tx, row.ID, nd.pending); err != nil {
+			return Stored{}, err
+		}
+		if err := s.upstreamChanged(ctx, tx, c, cur, nd, before); err != nil {
+			return Stored{}, err
+		}
+	}
+	// >>> M2 virtual
+	pinsChanged := false
+	if rel != nil {
+		if _, pinsChanged, err = writeVirtual(ctx, qs, row.ID, rel, curRel); err != nil {
+			return Stored{}, err
+		}
+	}
+	// <<< M2 virtual
+	out, err := s.stored(ctx, qs, updated[0], name.Project, v.warnings)
+	if err != nil {
+		return Stored{}, err
+	}
+	if err := s.recordUpdate(ctx, tx, c, out.Repository, changes, &cur, &nd, curRel, rel); err != nil {
+		return Stored{}, err
+	}
+	// >>> M2 virtual
+	if pinsChanged {
+		if err := s.notifyPins(tx, out.Repository); err != nil {
+			return Stored{}, err
+		}
+	}
+	// <<< M2 virtual
+	if s.hooks != nil {
+		if err := s.hooks.OnUpdated(ctx, tx, c, before, out.Repository); err != nil {
+			return Stored{}, err
+		}
 	}
 	return out, nil
 }
@@ -506,7 +557,21 @@ func (s *Service) updatedDocument(ctx context.Context, qs *q.Queries, c Caller, 
 	if err != nil {
 		return Document{}, nil, nil, err
 	}
+	var managed []errs.FieldError
+	if wellknown.IsProject(project) {
+		if managed, err = s.managedMembers(ctx, qs, c, id, cur, &nd); err != nil {
+			return Document{}, nil, nil, err
+		}
+	}
 	nd, v := s.checkUpdate(*cur, nd)
+	if wellknown.IsProject(project) {
+		held := cur
+		if c.product.on {
+			held = nil // the product writes its own value
+		}
+		dropProductHeld(v, held, &nd)
+		v.fields = append(v.fields, managed...)
+	}
 	levels, err := s.resolveLevels(ctx, qs, v, c, projectLevel, &cur.Visibility, &nd)
 	if err != nil {
 		return Document{}, nil, nil, err
@@ -601,7 +666,8 @@ func changedMembers(a, b []byte) []string {
 
 // stored renders a row as the management API shows it. The members, the deploy
 // target and the pin rules of a virtual repository are read from their rows
-// through qs (M2 virtual).
+// through qs (M2 virtual), and so are the facts of a repository of the project
+// upstream.
 func (s *Service) stored(ctx context.Context, qs *q.Queries, row q.Repository, project string, warnings []Warning) (Stored, error) {
 	var rel *virtualRel
 	if Class(row.Class) == Virtual {
@@ -611,14 +677,22 @@ func (s *Service) stored(ctx context.Context, qs *q.Queries, row q.Repository, p
 		}
 		rel = rels[row.ID]
 	}
-	return s.storedRel(row, project, rel, warnings)
+	var facts map[int64]q.UpstreamRepository
+	if wellknown.IsProject(project) {
+		var err error
+		if facts, err = upstreamFactsOf(ctx, qs, row.ID); err != nil {
+			return Stored{}, err
+		}
+	}
+	return s.storedRel(row, project, rel, facts, warnings)
 }
 
-func (s *Service) storedRel(row q.Repository, project string, rel *virtualRel, warnings []Warning) (Stored, error) {
+func (s *Service) storedRel(row q.Repository, project string, rel *virtualRel, facts map[int64]q.UpstreamRepository, warnings []Warning) (Stored, error) {
 	r, err := toRepository(row, project, s.cat)
 	if err != nil {
 		s.log.Warn("repository: stored configuration does not load", "name", r.Name.String(), "error", err)
 	}
+	withUpstream(&r, facts)
 	d, derr := toDocument(row, s.cat)
 	if derr != nil {
 		return Stored{}, fmt.Errorf("repository: stored document of %q: %w", r.Name.String(), derr)
@@ -704,6 +778,11 @@ type eventDetails struct {
 	// repository, and Weakened names the members (R-VULN-002, Q-VULN-69): one audit filter finds every such write.
 	Block    string   `json:"block,omitempty"`
 	Weakened []string `json:"weakened,omitempty"`
+	// Reason, BulkID and AccountRemoved are those of a write of the product in the project upstream (R-REPO-067, R-REPO-068,
+	// Q-API-361): catalog, switched_on, switched_off or retired; the bulk operation's ID; the account the reconcile removed.
+	Reason         string `json:"reason,omitempty"`
+	BulkID         string `json:"bulkId,omitempty"`
+	AccountRemoved bool   `json:"accountRemoved,omitempty"`
 }
 
 // withSecretChange adds "remote" to the changes of a write that sends a new secret value. A new secret value reads like the old
@@ -768,7 +847,9 @@ func (s *Service) recordAndNotify(ctx context.Context, tx meta.Tx, c Caller, eve
 func (s *Service) recordUpdate(ctx context.Context, tx meta.Tx, c Caller, r Repository, changes []string, cur, nd *Document,
 	curRel, rel *virtualRel,
 ) error {
-	if err := s.recordAndNotify(ctx, tx, c, EventUpdated, r, updateDetails(r, changes, cur, nd), strings.TrimPrefix(EventUpdated, "repository.")); err != nil {
+	details := updateDetails(r, changes, cur, nd)
+	details.Reason, details.BulkID, details.AccountRemoved = c.product.reason, c.product.bulkID, c.product.accountRemoved
+	if err := s.recordAndNotify(ctx, tx, c, EventUpdated, r, details, strings.TrimPrefix(EventUpdated, "repository.")); err != nil {
 		return err
 	}
 	narrowed := s.narrowing(r, cur, nd, curRel, rel)
@@ -789,9 +870,23 @@ func (s *Service) recordUpdate(ctx context.Context, tx meta.Tx, c Caller, r Repo
 // restore to a point before the update (R-AUTHZ-031, Q-AUTHZ-238). An update that clears disabled narrows nothing and
 // records only repository.updated.
 func (s *Service) recordDisabled(ctx context.Context, tx meta.Tx, c Caller, r Repository) error {
-	d := map[string]string{"class": string(r.Class), "format": r.Format}
+	d := map[string]any{"class": string(r.Class), "format": r.Format}
 	if r.Name.Project != "" {
 		d["project"] = r.Name.Project
+	}
+	if c.product.reason != "" {
+		d["reason"] = c.product.reason
+	}
+	if c.product.bulkID != "" {
+		d["bulkId"] = c.product.bulkID
+	}
+	if wellknown.IsProject(r.Name.Project) {
+		// Switching a well-known repository off names the virtual repositories that list it (R-REPO-068, Q-REPO-383).
+		names, total, err := listedBy(ctx, tx, r.NumericID())
+		if err != nil {
+			return err
+		}
+		d["listedBy"], d["listedByCount"] = names, total
 	}
 	raw, err := json.Marshal(d)
 	if err != nil {
@@ -847,26 +942,11 @@ type ListResult struct {
 // parameters. The number of repositories of an installation is small, so the
 // filter runs over one read of the table.
 func (s *Service) List(ctx context.Context, f ListFilter) (ListResult, error) {
-	var rows []q.Repository
-	var rels map[int64]*virtualRel
-	var projects map[string]string
-	err := s.run.InTx(ctx, func(tx meta.Tx) error {
-		qs, err := queries(tx)
-		if err != nil {
-			return err
-		}
-		if rows, err = qs.ListRepositories(ctx); err != nil {
-			return err
-		}
-		if projects, err = projectKeys(ctx, qs); err != nil {
-			return err
-		}
-		rels, err = loadVirtualRels(ctx, qs, virtualIDs(rows))
-		return err
-	})
+	sr, err := readSnapshot(ctx, s.run)
 	if err != nil {
 		return ListResult{}, err
 	}
+	rows, rels, projects := sr.rows, sr.rels, sr.projects
 	needle := strings.ToLower(f.Query)
 	var res ListResult
 	for _, row := range rows {
@@ -892,7 +972,7 @@ func (s *Service) List(ctx context.Context, f ListFilter) (ListResult, error) {
 		if len(f.Names) > 0 && !slices.Contains(f.Names, qname.Repo{Project: project, Key: row.Key}) {
 			continue
 		}
-		st, err := s.storedRel(row, project, rels[row.ID], nil)
+		st, err := s.storedRel(row, project, rels[row.ID], sr.upstream, nil)
 		if err != nil {
 			return ListResult{}, err
 		}

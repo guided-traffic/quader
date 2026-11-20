@@ -161,6 +161,9 @@ func (s *service) SetRole(ctx context.Context, actor authz.Subject, key, ref str
 }
 
 func (s *service) putMember(ctx context.Context, actor authz.Subject, key, ref string, role Role, bypass, mayAdd bool) (Member, bool, int64, error) {
+	if err := refuseUpstream(key, "it has no members; its repositories are read by their levels and by global policies."); err != nil {
+		return Member{}, false, 0, err
+	}
 	if err := validRole(role); err != nil {
 		return Member{}, false, 0, err
 	}

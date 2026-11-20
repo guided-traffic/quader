@@ -700,7 +700,8 @@ func repositoryFilter(lq ListQuery) (repository.ListFilter, string, error) {
 // else those it may read, which the exposure narrows as well (R-AUTHZ-016,
 // R-EP-014). An Owner of a project sees the repositories of its project in the same
 // way, those being deleted included (Q-AUTHZ-208); full documents (view=full) are those
-// of such repositories only. The filtering runs over the rows after the cursor, in
+// of such repositories only. A repository of the project upstream that does not serve
+// is listed only to a holder of repositories:read-config (Q-AUTHZ-306). The filtering runs over the rows after the cursor, in
 // (project, key) order, so the cursor stays the name of the last row of the page.
 func (s *Server) visibleRepositories(ctx context.Context, acc *edge.Access, svc *repository.Service, f repository.ListFilter, own *configScope, full bool) ([]repository.Stored, error) {
 	res, err := svc.List(ctx, f)
@@ -734,6 +735,7 @@ func (s *Server) visibleRepositories(ctx context.Context, acc *edge.Access, svc 
 		mine := own.sees(st.Repository.Name.Project)
 		switch {
 		case !allowed[st.Repository.Name]:
+		case !own.global && !upstreamServes(st.Repository): // Q-AUTHZ-306
 		case !mine && (full || st.Repository.Lifecycle != repository.Active):
 		default:
 			kept = append(kept, st)

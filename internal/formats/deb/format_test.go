@@ -24,13 +24,14 @@ func TestDescriptor(t *testing.T) {
 		t.Errorf("addresses = %q %q", d.ProtocolBasePath, d.ProbePath)
 	}
 	// R-REPO-062: Debian (the default), Debian's security updates and Ubuntu's archive, security updates and ports, without hosts
-	// and without keys (Q-REPO-326).
+	// and with the archive keys of their distribution (Q-REPO-379).
+	debian, ubuntu := archiveKeySettings(debianArchiveKeyring), archiveKeySettings(ubuntuArchiveKeyring)
 	wantPresets := []catalog.UpstreamPreset{
-		{ID: "debian", DisplayName: "Debian", URL: "https://deb.debian.org/debian/", Default: true},
-		{ID: "debian-security", DisplayName: "Debian security updates", URL: "https://deb.debian.org/debian-security/"},
-		{ID: "ubuntu", DisplayName: "Ubuntu", URL: "https://archive.ubuntu.com/ubuntu/"},
-		{ID: "ubuntu-security", DisplayName: "Ubuntu security updates", URL: "https://security.ubuntu.com/ubuntu/"},
-		{ID: "ubuntu-ports", DisplayName: "Ubuntu ports", URL: "https://ports.ubuntu.com/ubuntu-ports/"},
+		{ID: "debian", DisplayName: "Debian", URL: "https://deb.debian.org/debian/", Default: true, Settings: debian},
+		{ID: "debian-security", DisplayName: "Debian security updates", URL: "https://deb.debian.org/debian-security/", Settings: debian},
+		{ID: "ubuntu", DisplayName: "Ubuntu", URL: "https://archive.ubuntu.com/ubuntu/", Settings: ubuntu},
+		{ID: "ubuntu-security", DisplayName: "Ubuntu security updates", URL: "https://security.ubuntu.com/ubuntu/", Settings: ubuntu},
+		{ID: "ubuntu-ports", DisplayName: "Ubuntu ports", URL: "https://ports.ubuntu.com/ubuntu-ports/", Settings: ubuntu},
 	}
 	if !reflect.DeepEqual(d.UpstreamPresets, wantPresets) {
 		t.Errorf("R-REPO-062 presets = %+v", d.UpstreamPresets)

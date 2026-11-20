@@ -1307,6 +1307,15 @@ type UploadSessionTail struct {
 	Sha256    []byte
 }
 
+type UpstreamRepository struct {
+	RepositoryID      int64
+	Kind              string
+	FirstSwitchedOnAt pgtype.Timestamptz
+	RetiredAt         pgtype.Timestamptz
+	AddressOverridden bool
+	AccountRemovedAt  pgtype.Timestamptz
+}
+
 type UsageBucket struct {
 	Granularity       string
 	BucketStart       pgtype.Timestamptz

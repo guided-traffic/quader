@@ -78,6 +78,26 @@ func TestR_AUTHZ_037_TheLevelsAWriteStores(t *testing.T) {
 			"visibility_above_project", "/visibility/artifacts",
 		},
 		{
+			"Q-REPO-388 the reconcile creates a preset internal, whatever the installation's default",
+			levelChoice{rules: restricted(), projectLevel: "public", productLevel: "internal"},
+			"internal/internal", "",
+		},
+		{
+			"Q-REPO-393 where internal is restricted the preset is created private",
+			levelChoice{rules: restricted("internal"), projectLevel: "public", productLevel: "internal"},
+			"private/private", "",
+		},
+		{
+			"Q-REPO-393 where nothing at or below internal is open, private, and the reconcile goes on",
+			levelChoice{rules: restricted("private", "internal"), projectLevel: "public", productLevel: "internal"},
+			"private/private", "",
+		},
+		{
+			"Q-REPO-393 scanner-trivy's private is the declaration's, not a choice",
+			levelChoice{rules: restricted("private"), projectLevel: "public", productLevel: "private", named: Visibility{Artifacts: "private", Wiki: "private"}},
+			"private/private", "",
+		},
+		{
 			"public unavailable comes before the restriction",
 			levelChoice{rules: visibility.Rules{Default: visibility.Private, Restricted: []string{"public"}}, projectLevel: "public", named: Visibility{Artifacts: "public"}},
 			errs.CodePublicNotAllowed, "",

@@ -146,6 +146,12 @@ type Certificate struct {
 	Created time.Time
 	// BoundSince is the creation time of the earliest valid binding self-signature (Q-DEB-40).
 	BoundSince time.Time
+	// UserID is the name of the primary identity as the certificate states it, "" without one: what the list of an archive's keys
+	// shows beside the fingerprint (R-REPO-073).
+	UserID string
+	// Expires is when the primary key expires by the self-signature of its primary identity; the zero time for a key that does not
+	// expire. The shipped archive keys of the Debian and Ubuntu presets are held 90 days away from it by a test (Q-REPO-379).
+	Expires time.Time
 
 	entity *pgp.Entity
 }
@@ -156,7 +162,7 @@ func (k Key) Certificate() Certificate { return newCertificate(k.entity) }
 func newCertificate(e *pgp.Entity) Certificate {
 	pub := publicCopy(e)
 	since, _ := boundSince(pub)
-	return Certificate{
+	c := Certificate{
 		Fingerprint: fingerprint(pub.PrimaryKey),
 		Algorithm:   uint8(pub.PrimaryKey.PubKeyAlgo),
 		Bits:        keyBits(pub.PrimaryKey),
@@ -164,6 +170,14 @@ func newCertificate(e *pgp.Entity) Certificate {
 		BoundSince:  since.UTC(),
 		entity:      pub,
 	}
+	self, id := pub.PrimarySelfSignature()
+	if id != nil {
+		c.UserID = id.Name
+	}
+	if self != nil && self.KeyLifetimeSecs != nil && *self.KeyLifetimeSecs > 0 {
+		c.Expires = c.Created.Add(time.Duration(*self.KeyLifetimeSecs) * time.Second)
+	}
+	return c
 }
 
 // publicCopy is the entity without any private material, sharing the public packets.

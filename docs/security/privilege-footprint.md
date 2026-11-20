@@ -162,7 +162,7 @@ rules of the image scanning are the only ones that admit one Quader pod from ano
 
 No egress policy is rendered, so a compromised replica can reach any address the pod network reaches
 ([H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods)). The well-known repositories of the project `upstream`
-(specified, not built, [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066) add no right and no connection: the
+([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066) add no right and no connection: the
 migration Job's reconcile writes their rows with the login it already holds for the schema and contacts no upstream, and a replica
 reaches a public registry only after an administrator switched its repository on, through the client and the address policy every
 remote uses ([egress.md](egress.md#the-well-known-repositories-what-an-installation-reaches-by-default)). With no egress policy, that

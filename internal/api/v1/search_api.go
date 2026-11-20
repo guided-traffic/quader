@@ -17,6 +17,7 @@ import (
 	"github.com/guided-traffic/quader/internal/packages/view"
 	"github.com/guided-traffic/quader/internal/project"
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // The suggestions of the UI's search field (R-API-060 to R-API-064): one request answers the best matches of a text for each kind
@@ -29,7 +30,7 @@ import (
 //   - a repository over the repositories of the request's index, in memory: readable, or exposed to a holder of
 //     repositories:read-config or to an Owner of its project, as GET /api/v1/repositories decides;
 //   - a package through the read scope of GET /api/v1/packages (view.Service.Suggest);
-//   - a project by the rule of GET /api/v1/projects (projectListed);
+//   - a project by the rule of GET /api/v1/projects (projectSight.listed);
 //   - a user, a group or a service account for a holder of identities:read, through the principal manager; these are also what
 //     the fields of the admin area that name a principal search (R-UI-150).
 
@@ -231,9 +232,34 @@ func (s *Server) suggestRepositories(ctx context.Context, acc *edge.Access, sr s
 				owned = append(owned, n)
 			}
 		}
-		return append(out, acc.Exposed(owned)...), nil
+		return s.servingUpstream(ctx, append(out, acc.Exposed(owned)...))
 	}
 	return repositorySuggestions(sr, acc.Index().Repositories(), visible)
+}
+
+// servingUpstream drops the repositories of the project upstream that do not serve from names (Q-AUTHZ-306), as the list of
+// repositories does: the replica's snapshot says which serve. Without a snapshot reader nothing of upstream is kept.
+func (s *Server) servingUpstream(ctx context.Context, names []qname.Repo) ([]qname.Repo, error) {
+	if !slices.ContainsFunc(names, func(n qname.Repo) bool { return wellknown.IsProject(n.Project) }) {
+		return names, nil
+	}
+	serves := map[string]bool{}
+	if reader := s.o.Repositories.Reader; reader != nil {
+		repos, err := reader.ListProject(ctx, wellknown.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range repos {
+			serves[r.Name.Key] = upstreamServes(r)
+		}
+	}
+	out := names[:0:0]
+	for _, n := range names {
+		if !wellknown.IsProject(n.Project) || serves[n.Key] {
+			out = append(out, n)
+		}
+	}
+	return out, nil
 }
 
 // repositorySuggestions keeps the repositories that match the text and that visible admits, ranks them and cuts them at the limit
@@ -314,13 +340,13 @@ func (s *Server) suggestProjects(r *http.Request, sr suggestRequest) (*gen.Proje
 	}); err != nil {
 		return nil, errs.Wrap(err, "search.projects")
 	}
-	roles, all, err := s.memberProjects(ctx, string(authz.ProjectsRead))
+	sight, err := s.sight(ctx)
 	if err != nil {
 		return nil, err
 	}
 	sub := caller(r)
 	listed := func(key, visibility string) bool {
-		return projectListed(sub, project.Project{Key: key, Visibility: visibility}, roles, all, false)
+		return sight.listed(sub, project.Project{Key: key, Visibility: visibility}, false)
 	}
 	return projectSuggestions(sr, rows, listed), nil
 }

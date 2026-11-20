@@ -248,7 +248,8 @@ func (h *Catalog) candidates(r *http.Request) ([]catalogRepo, error) {
 	}
 	var out []catalogRepo
 	for _, repo := range all {
-		if repo.Format != h.o.Format || repo.Disabled || repo.Lifecycle == repository.Deleting ||
+		// A system repository of the project upstream answers no client and lists nothing (R-REPO-070).
+		if repo.Format != h.o.Format || repo.Disabled || repo.Lifecycle == repository.Deleting || repo.Upstream.System() ||
 			(repo.Class != repository.Local && repo.Class != repository.Remote) {
 			continue
 		}

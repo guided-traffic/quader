@@ -13,8 +13,10 @@
 package catalog
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -92,12 +94,14 @@ type Facts struct {
 	// Q-OCI-4). At most one registered format declares it; the catalog refuses a second.
 	RegistryRoot bool
 	// UpstreamPresets are the well-known public registries of the format's ecosystem, in the format's order (R-REPO-062):
-	// the one-click choices of a remote repository's upstream. Exactly one is the Default, the upstream an omitted url
-	// takes (R-REPO-024); a create whose url is a preset's and that omits extraHosts stores that preset's hosts; and every
-	// preset's URL needs a bound for a mirror (R-REPO-052). Empty for a format without a well-known upstream, which makes
-	// the url of a remote required. Register refuses presets on a format without the remote class, no default or two, an
-	// id or a URL twice, and a host pattern twice within one preset; formats.Register also refuses a URL that is not in
-	// the form R-REPO-024 normalizes to.
+	// the one-click choices of a remote repository's upstream, and each a repository of the built-in project upstream keyed
+	// by its id (R-REPO-066). Exactly one is the Default, the upstream an omitted url takes (R-REPO-024); a create whose url
+	// is a preset's and that omits extraHosts stores that preset's hosts; and every preset's URL needs a bound for a mirror
+	// (R-REPO-052). Empty for a format without a well-known upstream, which makes the url of a remote required. Register
+	// refuses presets on a format without the remote class, no default or two, an id or a URL twice, an id another
+	// registered format's preset has, an id that is no repository key or is one of [ReservedPresetIDs], settings the
+	// format's schema refuses for a remote repository, and a host pattern twice within one preset; formats.Register also
+	// refuses a URL that is not in the form R-REPO-024 normalizes to.
 	UpstreamPresets []UpstreamPreset
 	// ProbePath is the resource the upstream test of a remote repository requests
 	// (R-REPO-024), relative to the upstream URL: "-/ping" for npm. Empty: the
@@ -176,6 +180,12 @@ type UpstreamPreset struct {
 	ExtraHosts []PresetHost
 	// Default marks the format's default upstream; exactly one preset of a format has it.
 	Default bool
+	// Settings is the value of the format's settings member (the member of the repository document named after the format)
+	// that a repository of this upstream needs, nil for none: the Debian and Ubuntu presets carry deb.upstreamKeys, the
+	// archive keys of their archive (Q-REPO-379). Register validates it against the format's settings schema for a remote
+	// repository. A create from the preset's URL that omits those members stores them, as it stores the preset's hosts, and
+	// the well-known repository holds them as part of the product's address (R-REPO-062, R-REPO-069).
+	Settings json.RawMessage
 }
 
 // PresetHost is one entry of a preset's ExtraHosts: a host pattern of R-REPO-024 and whether the repository's credential
@@ -348,6 +358,9 @@ func (r *Registry) Register(e Entry) {
 			panic(fmt.Sprintf("catalog: %v", err))
 		}
 	}
+	if err := checkPresetSettings(Entry{Facts: e.Facts, settings: compiled}); err != nil {
+		panic(fmt.Sprintf("catalog: %v", err))
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.frozen {
@@ -355,6 +368,9 @@ func (r *Registry) Register(e Entry) {
 	}
 	if _, dup := r.by[e.ID]; dup {
 		panic(fmt.Sprintf("catalog: %q is registered twice", e.ID))
+	}
+	if err := r.checkPresetIDsFree(e.Facts); err != nil {
+		panic(fmt.Sprintf("catalog: %v", err))
 	}
 	if e.RegistryRoot {
 		for id, other := range r.by {
@@ -364,8 +380,61 @@ func (r *Registry) Register(e Entry) {
 		}
 	}
 	e.Classes = append([]Class(nil), e.Classes...)
+	e.UpstreamPresets = clonePresets(e.UpstreamPresets)
 	e.settings = compiled
 	r.by[e.ID] = e
+}
+
+// ReservedPresetIDs are the ids no upstream preset may take, because a preset's id is the key of a repository of the project
+// upstream (R-REPO-062, R-REPO-066, Q-REPO-387): the reserved repository keys of R-REPO-002 (repository.ReservedKeys), the
+// literal sub-paths of /api/v1/upstream-repositories and the keys of the product's system repositories (wellknown.ReservedKeys).
+// The catalog is a leaf and imports neither; the test of internal/wellknown holds the three lists together.
+func ReservedPresetIDs() []string {
+	return []string{
+		"batch-create", "batch-update", "batch-get", "batch-delete", "quick-setup", // R-REPO-002
+		"switch-on-all", "set-visibility", // R-REPO-073
+		"scanner-trivy", // R-REPO-070
+	}
+}
+
+// checkPresetIDsFree refuses a preset whose id another registered format's preset has (Q-REPO-387): in the project upstream
+// both would be one repository key. The caller holds the lock.
+func (r *Registry) checkPresetIDsFree(f Facts) error {
+	for _, p := range f.UpstreamPresets {
+		for id, other := range r.by {
+			if slices.ContainsFunc(other.UpstreamPresets, func(o UpstreamPreset) bool { return o.ID == p.ID }) {
+				return fmt.Errorf("%q has the upstream preset %q, which %q has: a preset's id is a repository key of the project upstream (Q-REPO-387)", f.ID, p.ID, id)
+			}
+		}
+	}
+	return nil
+}
+
+// checkPresetSettings refuses a preset whose settings the format's schema refuses for a remote repository (R-REPO-062).
+func checkPresetSettings(e Entry) error {
+	for _, p := range e.UpstreamPresets {
+		if len(p.Settings) == 0 {
+			continue
+		}
+		if v := e.ValidateSettings(Remote, p.Settings); len(v) > 0 {
+			return fmt.Errorf("%q: the settings of the upstream preset %q do not validate: %s %s", e.ID, p.ID, v[0].Pointer, v[0].Detail)
+		}
+	}
+	return nil
+}
+
+// clonePresets copies the presets, so that the registry holds what was registered whatever the caller does with its slices.
+func clonePresets(in []UpstreamPreset) []UpstreamPreset {
+	if in == nil {
+		return nil
+	}
+	out := make([]UpstreamPreset, len(in))
+	for i, p := range in {
+		p.ExtraHosts = slices.Clone(p.ExtraHosts)
+		p.Settings = slices.Clone(p.Settings)
+		out[i] = p
+	}
+	return out
 }
 
 func check(e Entry) error {
@@ -421,8 +490,10 @@ func checkPresets(f Facts) error {
 	ids, urls := map[string]bool{}, map[string]bool{}
 	for _, p := range f.UpstreamPresets {
 		switch {
-		case !presetID.MatchString(p.ID):
-			return fmt.Errorf("%q has an upstream preset with the id %q", f.ID, p.ID)
+		case !presetID.MatchString(p.ID) || !qname.ValidKey(p.ID):
+			return fmt.Errorf("%q has an upstream preset with the id %q, which is not a repository key of that shape", f.ID, p.ID)
+		case slices.Contains(ReservedPresetIDs(), p.ID):
+			return fmt.Errorf("%q has an upstream preset with the reserved id %q (Q-REPO-387)", f.ID, p.ID)
 		case p.DisplayName == "" || p.URL == "":
 			return fmt.Errorf("%q: the upstream preset %q needs a display name and a URL", f.ID, p.ID)
 		case ids[p.ID]:

@@ -367,6 +367,10 @@ func (d *Dispatcher) resolve(ctx context.Context, f formats.Format, key qname.Re
 	switch {
 	case repo.Lifecycle == repository.Deleting:
 		return repository.Repository{}, errs.E(errs.NotFound, errs.CodeRepositoryNotFound, "No repository has the requested key.")
+	case repo.Upstream.System():
+		// A system repository of the project upstream answers no client, administrators included: only the product's own work
+		// reads it, in process (R-REPO-070, Q-REPO-380). It answers as a repository that does not exist.
+		return repository.Repository{}, errs.E(errs.NotFound, errs.CodeRepositoryNotFound, "No repository has the requested key.")
 	case repo.Format != string(f.Descriptor().ID):
 		name := f.Descriptor().DisplayName
 		if name == "" {

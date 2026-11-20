@@ -21,6 +21,7 @@ func TestR_UI_021_FormatDescriptorMirrorFact(t *testing.T) {
 	on, off := npm, npm
 	on.ID, on.Mirror = "listing-fmt", true
 	off.ID, off.Mirror = "plain-fmt", false
+	off.UpstreamPresets = nil // a preset's id is unique across the formats of a registry (Q-REPO-387)
 	reg.Register(on)
 	reg.Register(off)
 	for format, want := range map[string]bool{"listing-fmt": true, "plain-fmt": false, "unknown-fmt": false} {

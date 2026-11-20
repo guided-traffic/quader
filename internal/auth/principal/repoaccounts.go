@@ -10,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // The service accounts of a repository (R-AUTH-046, R-AUTHZ-039, Q-AUTHZ-296, Q-AUTHZ-297). Such an account belongs to one
@@ -81,6 +82,9 @@ func actionsInvalid(detail string) error {
 // transaction: unique within the repository (409 already_exists), no role (in.Admin: 422 role_not_allowed), the repository
 // active (404 otherwise). actions nil is read. The authorization area learns the new grant in the same transaction.
 func (m *Manager) CreateRepositoryServiceAccountTx(ctx context.Context, tx meta.Tx, c Caller, repo qname.Repo, in NewServiceAccount, actions []string) (ServiceAccount, error) {
+	if wellknown.IsProject(repo.Project) {
+		return ServiceAccount{}, errs.E(errs.Conflict, errs.CodeManagedByProduct, "A repository of the project upstream has no service accounts (R-AUTHZ-041).")
+	}
 	if !ValidServiceAccountName(in.Name) {
 		return ServiceAccount{}, errs.E(errs.Invalid, errs.CodeValidation, "The service-account name does not match ^[a-z0-9][a-z0-9-]{1,62}$.")
 	}

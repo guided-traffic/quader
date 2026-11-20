@@ -251,6 +251,12 @@ type Options struct {
 	// Reindexers are the formats with a job-built index by format ID (reindex.go); a format not listed answers the reindex with 405.
 	Reindexers map[string]Reindexer
 	// <<< T-17 deb
+
+	// >>> upstream
+	// Upstream holds what the operations of the well-known repositories need beyond the repository service
+	// (upstream_repositories_api.go).
+	Upstream UpstreamServices
+	// <<< upstream
 }
 
 // Server implements gen.ServerInterface.

@@ -210,17 +210,27 @@ func (s *Settings) normalize() {
 // named after the format.
 func formatMembers() []formatMember {
 	return []formatMember{
-		{"npm", func(s *Settings) json.RawMessage { return s.NPM }},
-		{"nuget", func(s *Settings) json.RawMessage { return s.NuGet }},
-		{"oci", func(s *Settings) json.RawMessage { return s.OCI }},
-		{"deb", func(s *Settings) json.RawMessage { return s.Deb }},
-		{"ansible", func(s *Settings) json.RawMessage { return s.Ansible }},
+		{"npm", func(s *Settings) json.RawMessage { return s.NPM }, func(s *Settings, v json.RawMessage) { s.NPM = v }},
+		{"nuget", func(s *Settings) json.RawMessage { return s.NuGet }, func(s *Settings, v json.RawMessage) { s.NuGet = v }},
+		{"oci", func(s *Settings) json.RawMessage { return s.OCI }, func(s *Settings, v json.RawMessage) { s.OCI = v }},
+		{"deb", func(s *Settings) json.RawMessage { return s.Deb }, func(s *Settings, v json.RawMessage) { s.Deb = v }},
+		{"ansible", func(s *Settings) json.RawMessage { return s.Ansible }, func(s *Settings, v json.RawMessage) { s.Ansible = v }},
 	}
 }
 
 type formatMember struct {
 	format string
 	read   func(*Settings) json.RawMessage
+	write  func(*Settings, json.RawMessage)
+}
+
+// formatMemberOf returns the settings member of a format, ok false for a format without one.
+func formatMemberOf(format string) (formatMember, bool) {
+	i := slices.IndexFunc(formatMembers(), func(m formatMember) bool { return m.format == format })
+	if i < 0 {
+		return formatMember{}, false
+	}
+	return formatMembers()[i], true
 }
 
 // HasFormatMember reports whether the repository document has a settings member for

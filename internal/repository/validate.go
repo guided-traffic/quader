@@ -122,6 +122,7 @@ func validateSections(v *validation, info catalog.Entry, d *Document) {
 	}
 	if d.Class == Remote {
 		validateRemote(v, info, d)
+		applyPresetSettings(info, d)
 	}
 	if d.Local != nil {
 		validateLocal(v, info, d, na)
