@@ -2076,6 +2076,19 @@ agent** is not decided until the owner has said so.
     **twice**, once from a GitHub-hosted job (zstd) and once from a self-hosted one (gzip, no `zstd` in the runners'
     image), 165 and 161 MB for the modules, 136 and 121 MB for the npm clients. With all five clients images that is
     nearer 6 GB than the estimated 4; `zstd` in the runners' image would halve it.
+- **F-165 · One instance of the request pooler had no server for 33.7 s after a PostgreSQL switchover** (the full nightly on
+  a quiet `main`, 44653040868, `e2e (ha-pooler)`, 2026-11-20 05:15 UTC; `TestHAPooler_Switchover`, R-HA-058, Q-HA-302: the
+  bound is `health.database_outage_grace`, 20 s). `quader-db-pooler-rw-…-82mgv` refused 1,248 clients with
+  `server_login_retry` from 05:15:07 to 05:15:41; its sibling of the same pool was back after 8.1 s, the two instances of
+  the control pooler after 7.3 and 7.8 s. Everything the load asserts held: 16,118 k6 requests with no failure (p99 8.27 s
+  over the switchover), 96 `npm ci` and 14 publishes all exit 0, every acknowledged publish installs, no restart, `/readyz`
+  200 on every replica. The four pooler faults before it in the same leg were clean (k6 p99 174 to 191 ms). Nothing of the
+  download limits is in it. Cause not known (why one of two instances of the same Deployment needed 25 s longer to find the
+  new primary); one red run, not re-run: the owner ended the nightly for the day when he saw it ("Nagut das war mal wieder
+  nix. … der Nightly ist damit für heute beendet"), and the development agent cancelled the legs that had not run
+  (`nuget-ha`, `drain-load-b`, `-c`, `-e`, `cold-crash`, `Latency`, the vulnerability scanning performance; all of them
+  were green with the limits in the nightly before, 44625277245). Green in this run, 19 legs: among them `backup`,
+  `npm-ha-soak` and `drain-load-pooler`, the three that were red the night before.
 - **F-164 · The drain load with the request pooler was six to nine times slower in the nightly on the limits, and then met
   the parallel figure** (nightly 44625277245, `e2e (drain-load-pooler)`, 2026-11-20 00:28 to 00:44 UTC, on `2621e9e9`). Of
   55,602 k6 requests of npm, 227 tarball requests were answered `429`, the first after 13.0 s, which is the ten-second wait
@@ -2206,11 +2219,13 @@ machen"); the checks ran as a timer of the session.
     until retention (Q-LIM-49); a project without a maximum is read as 200 with `maximum: null` (Q-API-356); a registry
     request that is answered with the challenge is not charged (Q-API-357); the token command's `--replace`
     (Q-AUTH-421).
-- **To check, not yet seen:** the pipeline of the last push (Test and Release 44646960056: the kind legs with W-25 for the
-  first time; its Semantic Release is through); the rest of the nightly 44625277245 (the lane of `nuget-ha`,
-  `drain-load-b`, `-c`, `-e`, `cold-crash` had not run at 02:00: the first numbers of those legs with the limits, against
-  the evening's baseline of 479 to 532 ms); then **a full nightly on a quiet `main`**, which decides F-164 and shows
-  `backup` (F-162) and the capacity test (F-163) after their changes. No leg of the kind cluster has run with W-25.
+- **Seen since (state at 06:45):** the pipeline of the last push was green in every job, the kind legs with W-25 among
+  them (Test and Release 44646960056). The nightly 44625277245 ended with its three read legs red and everything else
+  green, the plain drain variants faster with the limits than the evening's baseline. The full nightly on a quiet `main`
+  (44653040868) showed `backup`, the capacity test and `drain-load-pooler` green (F-162, F-163 and F-164 closed by it) and
+  one new red leg, `ha-pooler` (F-165); the owner ended it there and the rest was cancelled. The timer of the night is
+  stopped. **To check, in the next nightly:** F-165; no nightly leg has run with W-25 (`072f4949` came after the first
+  nightly's commit; the quiet one ran on it, 19 legs green).
 - **For the next landing of a builder's work:** three times this night a render run passed on the builder's filled UI
   database and stopped on a new one, which CI always has (a migration's checksum, the write budget, a lookup right
   after a pull). A builder may not purge the database; the development agent purges and runs the full set before every
