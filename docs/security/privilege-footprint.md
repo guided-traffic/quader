@@ -141,6 +141,13 @@ images, the parser of the most hostile input Quader reads, has the smallest foot
 What an analyser that an image took over can do with this footprint is on [image-scanning.md](image-scanning.md). What it does not bound is
 the network: [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner).
 
+The malware scanner (specified, not built; [R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) has the same
+footprint, with a read of one blob instead of one image, and a second container `clamd` of ClamAV's official image that mounts no TLS
+pair and no configuration of Quader and opens no network listener. The `freshclam` container of the worker pods that claim `malware`
+([R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-freshclam-container-of-the-worker)) holds no credential and mounts no Secret; it shares
+the worker pod's network ([H-1113](malware-scanning.md#h-1113--a-taken-over-freshclam-has-the-worker-pods-network-position)). What
+`clamd` and `freshclam` can do when taken over is on [malware-scanning.md](malware-scanning.md).
+
 ## Network
 
 The chart renders one ingress `NetworkPolicy` per Deployment, named as the Deployment, and one per Job, when `networkPolicy.enabled`
@@ -155,6 +162,7 @@ another, because replicas never talk to each other:
 | the endpoint pools of further endpoints | the endpoint's port, from its `networkPolicy.from`; `:8081` from the ops sources | not rendered |
 | `worker` and its pools | `:8081` only, from the ops sources | not rendered |
 | `scanner` (specified, not built) | `:8080` from the pods of the worker Deployment that claims the queue `vuln` only; `:8081` from the ops sources | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
+| malware scanner (specified, not built) | `:8080` from the pods of the worker Deployments that claim the queue `malware` only; `:8081` from the ops sources; the scan listener `:8082` of `packages` also admits it ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
 | migration Job, backup CronJob's pods, restore Job, post-restore Job | nothing (`ingress: []`) | not rendered |
 
 With no ops source at all the `:8081` rule is left out rather than rendered with an empty `from`, which would admit every peer. The two

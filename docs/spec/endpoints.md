@@ -242,7 +242,7 @@ Priority: **MVP** · Covers: quader-only
   `packages` serves `packages` and `files`). The development roles `web` and `all`, which the chart never renders, serve every family.
 - **The scan listener** (specified, not built; [architecture.md](architecture.md) R-ARCH-037, ADR-212). A `packages` process, and `all`
   and `web`, opens one more listener on `server.scan_listen` when it is set (the chart sets `:8082` on the main `packages` Deployment while
-  the image scanning is on, never on a pool). Its endpoint is the reserved `scan`: built in, never configured, with the surface
+  the image scanning or the malware scanning is on, never on a pool). Its endpoint is the reserved `scan`: built in, never configured, with the surface
   `[packages]`, no host check (no `421`), no rate-limit class of R-EP-015, its own in-flight bound of 64, no exposure rules, the cache-fill
   policy `false`, and the credential rules of R-EP-010 below. It serves `server.tls.certificates` and requires a client certificate that
   chains to `server.internal_tls.ca_file` (R-ARCH-038). It is bound before readiness and drained like every listener; the route-table test
@@ -739,6 +739,10 @@ lookup that a rule makes unnecessary:
   without a credential, is refused with `401` `invalid_token` (`credentials_required` for none) and no challenge, before any lookup; it has
   no `auth` settings an operator could change. A scan token is refused on every other endpoint by its endpoint claim, so it works nowhere
   else. Refusals here do not count towards the failed-credential throttle of R-AUTH-038 (identity-and-authentication.md R-AUTH-038).
+  The malware scanning (specified, not built; [malware-scanning.md](malware-scanning.md) R-MAL-006, [Q-EP-95](#q-ep-95--the-endpoint-scan-admits-a-blob-token-and-on-the-database-routes-a-certificate-name))
+  adds a scan token of the kind `blob`, accepted on `/scan/v1/blobs/` only, and the database routes `/scan/v1/malware-database…`, which take
+  no token and admit a client whose certificate carries the malware scanner's name ([ha-and-helm.md](ha-and-helm.md) R-HA-063 to
+  R-HA-066); every other request on them is refused like any other credential here.
 
 Acceptance criteria:
 
@@ -2615,6 +2619,20 @@ them. The development agent would revisit this if the owner wants hosts per regi
 
 **Applied in the spec:** R-EP-006 and R-EP-012 (unchanged, read with this); [repositories-and-proxy.md](repositories-and-proxy.md)
 R-REPO-066.
+
+### Q-EP-95 · The endpoint `scan` admits a blob token, and on the database routes a certificate name
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows the
+owner's decisions of 2026-11-20 on the malware scanning ([malware-scanning.md](malware-scanning.md) Q-MAL-7) and on a certificate and a name
+per kind of pod.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One endpoint `scan`: an image scan token below `/v2/`, a blob token on `/scan/v1/blobs/`, the malware scanner's certificate name on the database routes (chosen) | Each credential on its routes only | One listener, one in-flight bound, one ingress rule; no credential reaches a route of another | The endpoint's rule is a table, not one sentence |
+| (b) A second listener for the malware scanning | A port of its own | Separate rules | A second port, Service and ingress rule for the same peer kind and the same trust |
+| (c) The blob token on the database routes too | One credential | — | A new pod cannot load its database before its first call ([malware-scanning.md](malware-scanning.md) Q-MAL-27) |
+
+**Choice:** (a). **Applied in the spec:** R-EP-010; [architecture.md](architecture.md) R-ARCH-037.
 
 ## What this does not cover
 

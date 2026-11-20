@@ -189,12 +189,16 @@ Principal kinds and their reference syntax in this page's API:
   ([identity-and-authentication.md](identity-and-authentication.md)); authorization never sees them.
 - **System subjects** (kind `system`): work of the product itself, never a principal row, a grant, a role, a membership or an owner
   record (a reference to one answers 422 `principal_not_allowed`), never internal or external. Beside the actors `system:catalog`,
-  `system:configuration` and `system:background-download` of other requirements, two name the image scanning's work, each once, here:
+  `system:configuration` and `system:background-download` of other requirements, two name the image scanning's work and three the malware
+  scanning's, each once, here:
 
   | Name | What it is | Its fixed rule | Recorded as |
   |---|---|---|---|
   | `system:image-scanner` | the subject of a scan token: the scanner's pull of one image on the scan listener of `packages` ([formats/oci.md](formats/oci.md) R-OCI-037, [architecture.md](architecture.md) R-ARCH-037) | `read` of the one repository its token names, while that repository exists, is of the format `oci`, is local or remote and is not disabled; never `populate`, a write or a capability (R-AUTHZ-015) | the principal of the scan listener's request log, with the scan ID; it writes no event, because it never fills or writes |
   | `system:image-database` | the image scanning's task that makes the database's repository hold the database's layer ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044) | none per request: system work in process through the remote engine, as a mirror pass fills, within the repository's include and exclude patterns | the actor of the populate event of each fill, `reason: image-database` (R-AUTHZ-008) |
+  | `system:malware-scanner` (specified, not built) | the subject of a blob token: the malware scanner's read of one blob on the scan listener of `packages` ([malware-scanning.md](malware-scanning.md) R-MAL-006, [Q-AUTHZ-340](#q-authz-340--the-malware-scanner-reads-one-blob-of-one-repository-that-holds-it)) | `read` of the one blob its token names, through the one repository its token names, while that repository holds an item over it, is local or remote and is not disabled, whatever its level and whatever blocks the blob; never `populate`, a write or a capability; decided by the route, not by the decision point's grants | the principal of the scan listener's request log, with the scan ID; no audit event, no download |
+  | `system:malware-database` (specified, not built) | the malware scanning's task that stores each database version in `upstream/scanner-clamav` ([malware-scanning.md](malware-scanning.md) R-MAL-010) | none per request: system work in process through the item store | the actor of the items' audit events and of `malware.database.imported` |
+  | `system:malware-scan` (specified, not built) | the malware scanning's job that writes verdicts ([malware-scanning.md](malware-scanning.md) R-MAL-004) | none per request | the actor of `malware.found` and `malware.cleared` |
 
   **Why the scanner needs a rule and a token of its own**, although `internal` admits every signed-in subject but an external user,
   technical ones included (R-AUTHZ-030): the scanner must read `private` repositories, which no level opens to anybody; it must read
@@ -1246,7 +1250,7 @@ lists as system scope items (R-AUTH-025) use the same names; the others extend t
 | `security-settings:write`: the authorization settings of this page | yes | yes | — | — | — |
 | `audit:read` | yes | yes | yes | — | — |
 | `endpoints:read`, `endpoints:write`: endpoints and their exposure rules ([endpoints.md](endpoints.md) R-EP-016), and Bastion registrations with their tokens ([bastion.md](bastion.md) R-BAS-004) | yes, yes | yes, yes | yes, — | yes, — | — |
-| `vulnerabilities:triage`, from M4b: change the status of vulnerability findings, which sets, lifts or restores download blocks (a block on a confirmed finding, the dismissal of a malicious one); effective only together with `read` on the finding's repository or `content:metadata-read` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013, Q-VULN-8, Q-VULN-20) | yes | yes | yes | — | — |
+| `vulnerabilities:triage`, from M4b: change the status of vulnerability findings, which sets, lifts or restores download blocks (a block on a confirmed finding, the dismissal of a malicious one); effective only together with `read` on the finding's repository or `content:metadata-read` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013, Q-VULN-8, Q-VULN-20). Together with `content:metadata-read` only, also grant and withdraw the release of a blob the malware scanning refuses, which holds in every repository ([malware-scanning.md](malware-scanning.md) R-MAL-021, Q-MAL-21; specified, not built) | yes | yes | yes | — | — |
 | `content:metadata-read`: read the metadata of every repository (package lists, versions, documents, search, package pages, vulnerability findings), never an artifact (owner, [Q-AUTHZ-172](#q-authz-172--the-auditor-reads-every-repositorys-metadata-and-triages-but-downloads-nothing)) | yes | — | yes | — | — |
 | `limits:read`, `limits:write`: download limits, their profiles, rules, ceilings, project maxima, the mode and blocks ([usage-and-limits.md](usage-and-limits.md) R-LIM-016, R-AUTHZ-040) | yes, yes | yes, — | yes, — | — | — |
 | `usage:read`: the usage of every caller, with addresses ([usage-and-limits.md](usage-and-limits.md) R-LIM-029, R-AUTHZ-040) | yes | yes | yes | — | — |
@@ -7468,6 +7472,21 @@ records no revisit condition.
 **Applied in the spec:** R-AUTHZ-030; [bastion.md](bastion.md) R-BAS-008, R-BAS-011, Q-BAS-151; code:
 [authz.go](../../internal/authz/authz.go) (`Subject`), [subject.go](../../internal/api/edge/subject.go) (`SubjectOf`),
 [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go).
+
+### Q-AUTHZ-340 · The malware scanner reads one blob of one repository that holds it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
+owner's (2026-11-20, [malware-scanning.md](malware-scanning.md) Q-MAL-7): a route that names no format, with a token for one digest.
+
+Context: `system:image-scanner`'s rule is decided in the decision point by the repository and the image name its grant names
+(R-AUTHZ-015); a blob token names a digest and the repository it is read through, and its route is no route of a format.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The route decides: the token's repository exists, is local or remote, is not disabled, and holds an item over the token's digest; no level, grant or block counts (chosen) | One fixed rule in one handler | The rule cannot be widened by a binding; a private or blocked blob is readable, as the scan needs; the decision point keeps one system rule | A second place that decides a system subject's read |
+| (b) Through the decision point, with a coordinate of the repository and the item's path | The image scanner's way | One place for every decision | The route knows a digest, not a path; it would pick one of the item's paths to ask about |
+
+**Choice:** (a). **Applied in the spec:** R-AUTHZ-002; [malware-scanning.md](malware-scanning.md) R-MAL-006.
 
 ## What this does not cover
 

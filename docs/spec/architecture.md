@@ -584,6 +584,14 @@ nothing worth taking.
 - **Holds.** The TLS pair it serves and presents, the internal CA, and, for the length of a call, the call's scan token and the image's
   bytes. It never opens a connection to PostgreSQL, Valkey, the object store, an upstream or the Kubernetes API, and never calls a worker.
 - **Never** claims jobs, holds leases, writes the replica registry, enqueues, or keeps anything between two calls.
+- **Kinds** ([Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration)). `process.scanner_kind` chooses what a
+  scanner process does: `image` (the default, everything above) or `malware`, the malware scanning's scanner
+  ([malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-007; specified, not built). A malware scanner builds the same area with
+  its malware parts instead of the analyser: the handler of `POST /scan/v1/malware`, the reader of the scan listener's blob and database
+  routes, the unpacking of `ar` and zstd, and the client of `clamd` on the Unix socket of its pod; it reads `malware` instead of
+  `vulnerabilities.images`, and its readiness waits for its first database (R-MAL-007). It holds what an image scanner holds, a call's blob
+  token instead of a scan token, and the loaded database. The chart renders it as a Deployment of its own with a container `clamd`
+  beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-068).
 - **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's
   `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. In the role `all` both are empty and mean the
   process's own listeners over loopback (Q-ARCH-531).
@@ -605,7 +613,7 @@ host allowlist, the endpoint's token types and anonymous rule, mutual TLS toward
 scanner's pull, and no client can use a scan token.
 
 - **Where.** A `packages` process (and `all`) opens it on `server.scan_listen` (default empty: no listener; the chart sets `:8082` on the main
-  `packages` Deployment while the image scanning is on). `web` opens it when the setting is set, for the integration stack.
+  `packages` Deployment while the image scanning or the malware scanning is on). `web` opens it when the setting is set, for the integration stack.
 - **Its endpoint** ([endpoints.md](endpoints.md) R-EP-001, R-EP-002, R-EP-010). The listener's endpoint is named `scan` (a reserved name, never an entry of `server.endpoints`): its surface is the
   family `packages`; it checks no host; it accepts one credential, a scan token of [formats/oci.md](formats/oci.md) R-OCI-037, and refuses
   every other credential, the anonymous request included, with `401` and no challenge. A registry token is a credential only below `/v2/`
@@ -618,6 +626,11 @@ scanner's pull, and no client can use a scan token.
   point of the registry checks the token's digest pin, and the decision point decides by the scan subject's rule.
 - A scan token presented on any other listener is refused by the endpoint check of R-OCI-005, because its endpoint claim is `scan`; a Quader
   token, a registry token of a client or no credential on the scan listener is refused there.
+- **The malware scanning's routes** (specified, not built; [malware-scanning.md](malware-scanning.md) R-MAL-006). Beside the registry's routes
+  the listener serves `GET /scan/v1/blobs/sha256:<hex>`, which accepts a scan token of the kind `blob` and nothing else, and
+  `GET /scan/v1/malware-database[/<version>/<file>]`, which admits a client whose certificate carries the malware scanner's name
+  ([ha-and-helm.md](ha-and-helm.md) R-HA-063 to R-HA-066) and takes no token. A scan token of an image is refused on these routes, a blob
+  token below `/v2/`.
 
 Acceptance criteria:
 
@@ -11251,6 +11264,22 @@ for them (and for `e2e-oci`, which was missing from their needs). About 230 minu
 more formats of the mean size before a night grows.
 
 **Applied:** [performance.yml](../../.github/workflows/performance.yml); [releasing.md](../developer/releasing.md#order-and-wall-time).
+
+### Q-ARCH-560 · A scanner is of a kind, image or malware, chosen by configuration
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
+owner's (2026-11-20, [malware-scanning.md](malware-scanning.md) Q-MAL-6): a Deployment of its own of the role `scanner`, with a container
+`clamd` beside it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `process.scanner_kind`, `image` or `malware`, one role, one area (chosen) | The chart renders two Deployments of the role | One role, one set of rules of R-ARCH-036 (no data credential, no state between calls), one ops surface; the role table of R-ARCH-001 is unchanged | A key that only the role `scanner` reads |
+| (b) A role `malware-scanner` | A seventh role | The role names the work | A second role with the same rules, its own table row, its own wiring tests and its own place in INV-2 |
+| (c) One scanner process that does both | Both analysers in each pod | One Deployment | `clamd`'s memory in every image scanner, and slots that a download waits behind (Q-MAL-6's option (a), which the owner did not choose) |
+
+**Choice:** (a). The role `all` runs neither kind's malware part unless `process.scanner_kind` is set; development runs the malware scanner
+as a second process of the role `scanner` with `clamd` beside it. **Applied in the spec:** R-ARCH-036;
+[ha-and-helm.md](ha-and-helm.md) R-HA-068.
 
 ## What this does not cover
 

@@ -284,6 +284,7 @@ read (R-REPO-010) and the object body of configuration as code
 | `virtual` | R-REPO-017 | — | this page |
 | `storage` | Upload size, quota, presigned downloads, client checksum policy | see owner | [storage.md](storage.md) |
 | `vulnerabilities` | From M4b: scanning and download blocking of a local or remote repository of a format with the vulnerability adapter (`enabled`, `matchPublicAdvisories`, `blockMalicious`, `onMissingData`; no severity threshold, Q-VULN-20); `not_applicable` on virtual repositories and other formats | see owner | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-002 |
+| `malware` | `onlyChecked`: only checked artifacts are served from this repository, also while the installation's switch is off; on every class of every format; it only adds strictness ([malware-scanning.md](malware-scanning.md) R-MAL-020; specified, not built) | `{"onlyChecked": false}` | [malware-scanning.md](malware-scanning.md) |
 | `npm`, `nuget`, … | Format settings, under a member named after the format. The service validates it against the JSON Schema the format registers (`GET /api/v1/formats` serves it as `settingsSchema`), reports a violation as 422 `validation_failed` at `/<format>/<member>` (`invalid_value`), and answers `not_applicable` for a setting of another class and for the member of another format (Q-ARCH-229, Q-REPO-122). Built: `npm`; `nuget` joins with its format | see owner | format page |
 
 - A class section that does not match the class (for example `virtual` on a local repository)
@@ -882,6 +883,7 @@ transaction that writes them (the comparison that fills `changes`):
 | `virtual.members` (R-REPO-017) | a member of the old list is not in the new one, compared by repository ID | `membersRemoved`: `[{repositoryId, key}]` |
 | `virtual.pinning` (R-REPO-023) | a pattern that no rule held is held by a rule, or a pattern that a rule held before and after loses members | `pinsAdded`: `[{pattern, members: [{repositoryId, key}]}]`; `pinMembersRemoved`: the same shape, with the members the pattern lost |
 | `vulnerabilities` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-002) | a member moves towards more blocking, in the order of Q-VULN-69: `enabled` to true, `matchPublicAdvisories` to a higher rank, `blockMalicious` to true, `onMissingData` to `block` | `vulnerabilities`: the member before and after, an absent member as its defaults |
+| `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020) | `onlyChecked` goes from false to true | `malware: {"onlyChecked": true}`; replay sets it on |
 
 The other members are not journaled ([Q-REPO-246](#q-repo-246--patterns-auto-claims-virtual-members-pin-rules-and-the-vulnerabilities-member-are-journaled-upstream-storage-and-format-settings-are-not)):
 `description`, `adminNotes`, `priorityMember`, `virtual.deployTarget`, `virtual.mergedMetadataTtlSeconds`, the `remote` section
@@ -1232,7 +1234,10 @@ For a request to virtual repository V with descriptor d (R-REPO-003) by caller c
    another member cannot continue it (Q-REPO-111). A remote member whose cache holds the item with
    its object lost has failed transiently with `503 content_unavailable`, whether or not the caller
    may populate it: the walk goes on, and that is the answer when nothing serves the item (Q-REPO-205). A 404 for a name that a
-   placeholder would have been asked for carries the sentence of R-REPO-072 as its detail.
+   placeholder would have been asked for carries the sentence of R-REPO-072 as its detail. A member that holds the item and refuses
+   it by a block of the vulnerability scanning or by the malware gate, or holds it pending a malware verdict (`503
+   malware_check_pending`), is no failure: its answer ends the walk in every tier ([vulnerability-scanning.md](vulnerability-scanning.md)
+   R-VULN-015, [malware-scanning.md](malware-scanning.md) R-MAL-018).
 
 - Artifact responses MUST carry `Quader-Resolved-From: <member key>`, a member of the project `upstream` as `upstream/<key>`;
   the member is one the caller can read, so the header discloses nothing new. On an endpoint with exposure rules the header is
@@ -1768,12 +1773,15 @@ Priority: **MVP** · Covers: quader-only
     (Q-REPO-379); today twelve: `docker-hub`, `quay`, `ghcr`, `gitlab` (OCI), `npmjs` (npm), `nuget-org` (NuGet), `debian`,
     `debian-security`, `ubuntu`, `ubuntu-security`, `ubuntu-ports` (Debian), `galaxy` (Ansible Galaxy). A new format's presets
     appear with the release that brings the format (R-REPO-067);
-  - the **system repositories** the product declares for its own work, today one: `scanner-trivy` (R-REPO-070).
+  - the **system repositories** the product declares for its own work, today two: `scanner-trivy` (R-REPO-070), a remote of the
+    format `oci`, and `scanner-clamav` (R-REPO-075), a local repository of the format `generic`. A system repository's class is the
+    declaration's ([Q-REPO-411](#q-repo-411--a-declaration-names-its-class)); a preset repository is always `remote`.
 - **Nothing else.** No caller creates, moves, renames or deletes a repository in it (R-REPO-069): its repositories are maintained by
   the product and cannot be deleted (owner).
 - **Off until switched on.** A preset repository is created switched off and stays off until an administrator switches it on
   (R-REPO-068): nothing a new installation or a new release declares contacts an upstream unasked. `scanner-trivy` is in use only
-  while the image scanning reads its database through it (R-REPO-070).
+  while the image scanning reads its database through it (R-REPO-070), `scanner-clamav` while the malware scanning keeps its database
+  in it (R-REPO-075).
 - **What a preset repository is created with**: the document a create of only `key`, `class: remote` and `format` would store
   (R-REPO-063), with the preset's `url`, `extraHosts` and format settings, the preset's display name as `description` ("Docker
   Hub"), `disabled: true`, no account, and both levels `internal`, whatever the installation's `defaultLevel`
@@ -1819,9 +1827,9 @@ the seeded project row and loads the backup's (R-BAK-021 step 4).
 
 Acceptance criteria:
 
-- A fresh installation after `quader migrate` lists the project `upstream` to an administrator with 13 repositories: the twelve
+- A fresh installation after `quader migrate` lists the project `upstream` to an administrator with 14 repositories: the twelve
   preset repositories of the table of R-REPO-062, each `disabled` with the state `not-switched-on` and both levels `internal`, and
-  `scanner-trivy`, `private` (integration area `upstream`, part of `TestR_REPO_067_Reconcile`).
+  `scanner-trivy` and `scanner-clamav`, `private` (integration area `upstream`, part of `TestR_REPO_067_Reconcile`).
 - `POST /api/v1/projects` with the key `upstream` answers 409 `already_exists`; `DELETE /api/v1/projects/upstream` answers 409
   `managed_by_product`; a direct `DELETE FROM project` of its row fails with SQLSTATE `AI010` (integration, area `upstream`).
 
@@ -1870,7 +1878,7 @@ records nothing. It never contacts an upstream.
 Acceptance criteria (`TestR_REPO_067_Reconcile`, integration area `upstream`, against the migration session of a test database, about
 3 s, no upstream):
 
-- A fresh database ends with the 13 repositories of R-REPO-066; a second run records no event.
+- A fresh database ends with the 14 repositories of R-REPO-066; a second run records no event.
 - With a test catalog whose `npmjs` URL differs, the stored URL follows and `repository.updated` carries `reason: catalog`; with
   an account stored and the new URL on another host, the account is gone and `accountRemoved: true`; with `address_overridden`
   true on `quay`, a changed catalog URL of `quay` leaves the stored one.
@@ -1931,7 +1939,7 @@ Acceptance criteria (integration area `upstream`, about 5 s, the stub npm upstre
 - Switching `npmjs` off records `repository.disabled` with `listedBy: ["web/npm-all"]` while `web/npm-all` lists it; the document of
   `web/npm-all` keeps its `config_version`.
 - After **Switch all on**, every preset repository that was off reads `internal/internal` and `active`; `npmjs`, which was `active`
-  and `private` before, stays `private`; `scanner-trivy` is unchanged.
+  and `private` before, stays `private`; `scanner-trivy` and `scanner-clamav` are unchanged.
 - A Quader backup taken while `npmjs` is `active`, then `npmjs` switched off: after the restore (`journal.Replay` in process)
   `npmjs` is `switched-off`.
 
@@ -1949,7 +1957,7 @@ on and off, sets its level, may set its address and an account (owner), and may 
 | `visibility` (both parts, one level) | an administrator | `setUpstreamRepositoryVisibility`, `setAllUpstreamRepositoriesVisibility` (R-REPO-073) |
 | `remote.url`, `remote.extraHosts`, and for an APT archive `deb.upstreamKeys` | the product; an administrator may override them | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` |
 | `remote.authMode`, `remote.username`, `remote.password` | an administrator | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount` |
-| `adminNotes`, `includePatterns`, `excludePatterns`, `vulnerabilities`, offline (`remote.availability.mode`), `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`) |
+| `adminNotes`, `includePatterns`, `excludePatterns`, `vulnerabilities`, `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020), offline (`remote.availability.mode`), `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`); a system repository's `vulnerabilities` and `malware` are the product's (R-REPO-070, R-REPO-075) |
 | every other member: `hideExistence`, `priorityMember`, `remote.mode` (always `pullThrough`) and `remote.mirror`, the cache periods, `remote.downloadOnProbe`, `remote.headers`, `remote.clientCertificate`, `remote.outboundProxy`, `remote.sourceNetwork`, `remote.forwardAuthOnRedirect`, the size and integrity settings, `storage`, the format members but `deb.upstreamKeys` | the product | fixed at the format's defaults of R-REPO-063 |
 
 - **The document.** A merge patch of an `upstream` repository that changes a member of the product's rows, or one that a dedicated
@@ -2049,6 +2057,40 @@ Acceptance criteria (integration area `upstream`, about 2 s, a stub registry ser
   another URL answers 200 and the next in-process resolution goes there.
 - Two layers of `aquasec/trivy-db` stored three days ago, the older one replaced, the newer one the digest in use: a run of
   `remote-cache-cleanup` removes the older one and keeps the one in use (integration area `upstream`, about 2 s, items of bytes).
+
+### R-REPO-075 · `scanner-clamav`: the database of the malware scanning
+Priority: **P1** · Covers: quader-only
+
+The owner's decision of 2026-11-20 ([malware-scanning.md](malware-scanning.md) Q-MAL-8): `freshclam` fetches ClamAV's signature database
+beside the worker, and Quader keeps each version in a system repository of `upstream`, `scanner-clamav`, generic, local and private, from
+which the malware scanners load it. Specified, not built.
+
+- **Declaration** (`wellknown.Declared`, kind `system`, [Q-REPO-410](#q-repo-410--scanner-clamav-is-a-local-generic-system-repository)):
+  the key `scanner-clamav`, the format `generic`, the class `local`, no upstream, both levels `private`, the member `malware` at its
+  default (it is never scanned, [malware-scanning.md](malware-scanning.md) R-MAL-001), `disabled: false`. Its levels and its `malware`
+  member are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422 `managed_by_product` for them. It has no
+  address and no account, so `setUpstreamRepositoryAddress` and `setUpstreamRepositoryAccount` answer 409 `managed_by_product`.
+- **No client.** Every protocol request addressed to it (`/files/upstream/scanner-clamav/…`, a host bound to it) answers 404 as for a
+  repository that does not exist, for every caller, administrators included; it is never a member of a virtual repository (422
+  `invalid_member`, R-REPO-071), and no deploy reaches it. The management API reads its document and lists its items as for any
+  repository (`repositories:read-config`, `content:metadata-read`); a holder of `delete` may remove an item.
+- **Who writes and reads it.** The malware scanning's task `malware-sync-db` commits each database version into it at `<version>/<file>`
+  in process, as system work with the actor `system:malware-database`; the worker seeds `freshclam` from it, and the malware scanners read
+  the version in use through the database route of the scan listener of `packages` ([malware-scanning.md](malware-scanning.md) R-MAL-006,
+  R-MAL-010). The task removes versions older than 48 hours that are not in use.
+- **In use exactly while** the malware scanning is on and `malware.database.repository` names it (its default). It has no switch and no
+  state of its own, and Switch all on never touches it. The admin page of the upstream registries shows "In use by the malware scan" or
+  "Not in use" (R-UI-187).
+- **The guards of R-REPO-066** hold for it as for every repository of `upstream`: its key, class and format do not change, and it is not
+  deleted.
+
+Acceptance criteria (integration area `upstream`, about 2 s):
+
+- A fresh installation lists `scanner-clamav` with the format `generic`, the class `local` and the level `private`; an administrator's
+  `GET /files/upstream/scanner-clamav/x` and `PUT` of a file there answer 404; `setUpstreamRepositoryVisibility` answers 409
+  `managed_by_product`.
+- A system caller's commit of a file at `main-1.daily-1.bytecode-1/main.cvd` through the item store succeeds and the items API lists it to
+  an auditor.
 
 ### R-REPO-071 · Members of `upstream` in a virtual repository
 Priority: **MVP** · Covers: quader-only
@@ -9984,6 +10026,37 @@ a mistake to show, not a case to serve. The development agent would revisit this
 central one in one virtual repository under the same key.
 
 **Applied in the spec:** R-REPO-008, R-REPO-017, R-REPO-071.
+
+### Q-REPO-410 · `scanner-clamav` is a local generic system repository
+
+Status: **Decided by the owner on 2026-11-20** in its frame ([malware-scanning.md](malware-scanning.md) Q-MAL-8: "a system repository,
+generic, local, private"); the mechanisms decided by the development agent — selected from the options below; the owner reviews them at
+the walkthrough.
+
+Context: `scanner-trivy` is a remote, because the analyser's database is an OCI artifact a registry serves. ClamAV's database is plain files
+that ClamAV's network serves to `freshclam` and `cvdupdate` only ([malware-scanning.md](malware-scanning.md) R-MAL-010); the generic
+format has the local class only ([formats/generic.md](formats/generic.md)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A local generic repository, written by the task in process, each version under `<version>/` (chosen) | The task commits what `freshclam` fetched | The files are items: backed up, listed, deduplicated across versions; no remote class to build | The first local repository in `upstream`; its writes come only from the product |
+| (b) A remote generic repository whose upstream is ClamAV's network | The image scanning's shape | — | A remote class the generic format does not have, and a client of the network that its rules deny |
+| (c) No repository: the database in a private slot of the object store | As the image scanning had before ADR-214 | Simple | Against the owner's decision that Quader is the cache of the scanners' databases, and no way to fill it without internet |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-066, R-REPO-075; [malware-scanning.md](malware-scanning.md) R-MAL-010, R-MAL-011.
+
+### Q-REPO-411 · A declaration names its class
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `wellknown.Declaration` carries no class: every repository of `upstream` was a remote ([wellknown.go](../../internal/wellknown/wellknown.go)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A member `Class` of the declaration; a preset is always `remote`, a system repository says its own (chosen) | One list of declarations | The reconcile creates and checks every repository from one shape; the guard on the class (R-REPO-066) holds unchanged | A preset that names a class other than `remote` must be refused by the catalog's test |
+| (b) A second list for local system repositories | Two lists | The remote declarations stay as they are | Two reconciles of one project |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-066, R-REPO-067, R-REPO-075.
 
 ## What this does not cover
 

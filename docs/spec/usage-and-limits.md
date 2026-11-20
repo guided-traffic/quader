@@ -157,6 +157,7 @@ place that counts.
 | The Bastion's own interface requests (principal kind `bastion`) | none | — | They are not protocol paths; R-API-016 and R-BAS-016 bound them. |
 | System work: mirror passes, the Debian index parse, the Ansible documentation job, every background request of the engine (`proxy.PriorityBackground`) | `system` | `system` | Recorded per repository, limited by nothing of this page ([Q-LIM-19](#q-lim-19--mirror-passes-and-other-system-work-are-recorded-and-not-limited)). |
 | A scan token of the image scanning's pull on the scan listener (principal kind `system`, name `image-scanner`; [formats/oci.md](formats/oci.md) R-OCI-037) | `system` | `system` | Recorded under the repository with the credential `image-scanner`; checked against no figure, no ceiling and no block, and it takes no parallel lease ([Q-LIM-66](#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing)). |
+| A blob token of the malware scanning's read on the scan listener (principal kind `system`, name `malware-scanner`; [malware-scanning.md](malware-scanning.md) R-MAL-006; specified, not built) | `system` | `system` | Recorded under the repository the token names, with the credential `malware-scanner`; checked against nothing ([Q-LIM-80](#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names)) |
 
 - A subject identifier never contains a token secret or a hash of one.
 - A request on a protocol path whose principal kind is none of the above (a future kind) is charged to the client address until
@@ -2817,6 +2818,21 @@ what a central member adds is the bytes and requests it served, which is what th
 if Owners ask for the limits their callers met at a central repository.
 
 **Applied in the spec:** R-LIM-027.
+
+### Q-LIM-80 · The malware scanner's reads are recorded under the repository its token names
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a blob token reads a blob by its digest through one repository that holds it ([malware-scanning.md](malware-scanning.md) R-MAL-006);
+the same bytes may be in many repositories, and the usage store records per repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The subject `system`, under the repository the token names, with the credential `malware-scanner`, checked against nothing (chosen) | As Q-LIM-66 for the image scanner | The overview shows what the scanning read and where; one repository per read, the one the job chose | A blob shared by many repositories is recorded under one of them |
+| (b) Not recorded | — | Smaller store | The rejected option (c) of Q-LIM-66: the overview could not show where the cache's bytes went |
+| (c) Under every repository that holds the blob | — | Fair | One read counted many times |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-001; [malware-scanning.md](malware-scanning.md) R-MAL-006.
 
 ## What this does not cover
 

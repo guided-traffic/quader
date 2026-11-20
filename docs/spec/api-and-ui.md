@@ -3521,7 +3521,8 @@ Priority: **MVP** · Covers: UI-001, UI-004
   and the client setup opens from its repository (R-UI-120). The sections are the routes of R-UI-003. Inside the admin area, the single entries
   (repositories, upstream registries (R-UI-187), endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
-  log, advisory sources) and, last, settings (General, then Authentication; Q-UI-326). Every entry has an icon, which is decoration: the label is the accessible name.
+  log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on;
+  Q-UI-326, [Q-UI-870](#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group)). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.
 - Layout and density (Q-UI-2, Q-UI-68, Q-UI-127): the navigation is a left side bar below the top bar, on the
   same fill, and the content is a panel set into them; the side bar is visible at viewport widths of 1024 CSS px and
@@ -3611,6 +3612,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
 | `/security` (`?q=&advisory=&project=&severity=&…`), `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}` | The security dashboard over every project, its finding and advisory; for the holder of `content:metadata-read`, else not found | R-UI-158, R-UI-159, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
+| `/security/malware` (specified, not built) | The malware view of the security dashboard: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)) | R-MAL-025 |
 | `/admin/trash` | Trash can of the installation, for administrators (P1, not built) | R-UI-014 |
 | `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1) | R-UI-040 |
 | `/guides`, `/guides/{format}` | Guides: the formats as tiles, the repositories of one format | R-UI-124 |
@@ -3634,6 +3636,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/endpoints`, `/admin/endpoints/{endpoint}`, `/admin/endpoints/{endpoint}/rules/new`, `/admin/endpoints/{endpoint}/rules/{name}` | Endpoints and exposure rules | [endpoints.md](endpoints.md) R-EP-017 |
 | `/admin/system`, `/admin/system/jobs`, `/admin/system/backups` | System status, jobs, backups | R-UI-038, R-UI-048 |
 | `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/sign-in` (P1), `/admin/settings/storage` (P1) | The group Settings: General, Authentication (Q-UI-326) | R-UI-031 to R-UI-034 |
+| `/admin/settings/malware` (specified, not built) | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
 | `/admin/projects` | Every project, to create and edit them | R-UI-041 |
 | `/login` (`?auto_sign_in=false`), `/logged-out` | Sign-in, signed out | R-UI-004 |
 | `/cli-login/{publicId}` | Command-line login approval of `npm login` (P1; R-AUTH-034) | R-UI-004 |
@@ -7364,6 +7367,9 @@ Instanz-Administratoren."
   answers **Page not found** ([Q-UI-622](#q-ui-622--a-caller-without-the-capability-gets-page-not-found-at-security)). The role
   `security-admin` holds `vulnerabilities:triage` without `content:metadata-read` and has no dashboard: it triages on the screens of
   the projects whose repositories it may read.
+- **Two views** (specified, not built; [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)): **Vulnerabilities**
+  (`/security`) and **Malware** (`/security/malware`, [malware-scanning.md](malware-scanning.md) R-MAL-025), as two links under the page's
+  title; the side bar keeps its one entry.
 - **On the page** (R-UI-005): the selection, **Change status** and the finding's status buttons for the holder of
   `vulnerabilities:triage`; **Advisory sources** for the holder of `settings:read`; nothing else leads into the admin area; a
   package opens in its project.
@@ -8187,7 +8193,9 @@ action that switches all on and one that sets the visibility of all
 - **Used by Quader.** Below the table a second table, **Used by Quader**, holds the system repositories: `scanner-trivy` with the
   display name "Image scanning database", the state as a badge, **In use** (`ok`) "In use by the image scanning" or **Not in use**,
   the level as text (Private, with the lock icon) and **Details**; no switch and no select
-  ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)).
+  ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)). `scanner-clamav` (specified, not
+  built; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-075) stands below it the same way, with the display name "Malware
+  scan database" and "In use by the malware scan".
 - **Switching** sends `setUpstreamRepositoryState` at once, without a dialog; the switch shows the server's answer and a `role="status"`
   line "Docker Hub is on." Switching off a repository that virtual repositories list asks first: "Switch off Docker Hub? 3 virtual
   repositories in 2 projects list it. They skip it until it is on again; nothing of theirs changes." with **Switch off** (`listedBy`
@@ -20336,6 +20344,53 @@ revisits it if a longer range than 365 days comes (the API answers up to 400).
 **Applied in the spec:** R-VULN-022. Code: [report-trend.ts](../../web/src/app/features/vulnerabilities/report-trend.ts),
 [_vulnerabilities.scss](../../web/src/styles/_vulnerabilities.scss).
 
+
+### Q-API-370 · The malware scan's operations, and the member `malware` of a file
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Operations of their own under `/api/v1/malware/` (settings, finds, a blob's status, releases, rescan) and a member `malware` on every answer that describes a stored file (chosen) | One tag `malware` | The verdict belongs to a blob, not to a finding of an advisory; a client sees a file's state where it reads the file | A second family beside `/api/v1/vulnerabilities/` |
+| (b) Malware finds as findings of the vulnerability API with the kind `malicious` | One findings API | The dashboard's list as it is | A finding is per repository, package, version and advisory: a generic file has none, and a release per digest does not fit triage per finding |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-022.
+
+### Q-UI-870 · Malware scanning is the third page of the settings group
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner decided
+the page and its place on 2026-11-20 ([malware-scanning.md](malware-scanning.md) Q-MAL-13: "Admin area › Settings › Malware scanning").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/admin/settings/malware`, after General and Authentication, shown while the malware scanning is on (chosen) | A page per topic, as Q-UI-326 holds | The administrator finds the switch by its topic | A third entry in the group |
+| (b) A section of General | No new page | One page fewer | General holds the base URL, the visibility, the banner and the maintenance; the switch and the database's state are a topic of their own |
+
+**Choice:** (a). **Applied in the spec:** R-UI-002, the route table; [malware-scanning.md](malware-scanning.md) R-MAL-023.
+
+### Q-UI-871 · The security dashboard has two views, Vulnerabilities and Malware
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner: "Funde
+gehen in Security-Dashboard" ([malware-scanning.md](malware-scanning.md) Q-MAL-5).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two views of the dashboard, `/security` and `/security/malware`, as two links under the title, each its own address (chosen) | One entry in the side bar | The finds are in the dashboard, as the owner said; each view keeps its own filters and its own address | Two lists of different shapes on one page title |
+| (b) A second entry **Malware finds** under **Security audit** | Two entries | Each list its own page | The owner named the dashboard as the place |
+| (c) Malware finds as rows of the vulnerability report | One list | One table | A blob is no finding of an advisory; its filters (severity, advisory) do not apply |
+
+**Choice:** (a). **Applied in the spec:** R-UI-158, the route table; [malware-scanning.md](malware-scanning.md) R-MAL-025.
+
+### Q-UI-872 · The malware status sits where a file is shown
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A fact **Malware scan** in the version's Files tab and on a repository's file page, and a banner on the version's page only when a file is refused (chosen) | The verdict is per file | A plain user sees why a download is refused where the file is; nothing is shown for the normal case but the fact | A fact more per file |
+| (b) A badge in every list of packages | Visible everywhere | — | Lists of packages are per version, a verdict per file; most rows would say "No malware found" |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024.
 
 ## What this does not cover
 

@@ -14,7 +14,9 @@ trusts; from phase T-16 the OCI registry: the token service and the registry tok
 so: the built-in project `upstream` with the well-known repositories of the public registries, on
 [roles-and-trust-boundaries.md](roles-and-trust-boundaries.md), [delegated-administration.md](delegated-administration.md),
 [permissions.md](permissions.md), [visibility.md](visibility.md), [egress.md](egress.md), [data-and-secret-flow.md](data-and-secret-flow.md),
-[repository-model.md](repository-model.md) and [privilege-footprint.md](privilege-footprint.md).
+[repository-model.md](repository-model.md) and [privilege-footprint.md](privilege-footprint.md); the malware scanning of every downloaded
+artifact with ClamAV, on [malware-scanning.md](malware-scanning.md), [roles-and-trust-boundaries.md](roles-and-trust-boundaries.md),
+[data-and-secret-flow.md](data-and-secret-flow.md) and [privilege-footprint.md](privilege-footprint.md).
 
 This directory describes Quader's security architecture, with one page per perspective. It is deliberately not one document that
 covers everything, because nobody finishes such a document and so nobody checks it. The file names are the index.

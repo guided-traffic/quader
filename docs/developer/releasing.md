@@ -525,6 +525,12 @@ the database with `freshclam` first. The scan excludes `.git`, `node_modules` an
 `.out`, `.bin`, `.dev` and `bin`. The report is `.out/clamav-report.txt`; the job fails when it does
 not end with `Infected files: 0`, so a scan that did not finish is a failure too.
 
+This job checks Quader's own source and is not the malware scanning of stored artifacts
+([malware-scanning.md](../spec/malware-scanning.md)). Its ClamAV comes from the runner's package manager without a pin; once the
+product pins ClamAV (`CLAMAV_IMAGE` in `tools/versions.env`), the job runs `clamscan` from that image instead, so that one version of
+ClamAV is in use ([R-MAL-031](../spec/malware-scanning.md#r-mal-031--the-source-trees-malware-scan-runs-the-products-clamav); specified,
+not built).
+
 ### SBOM generator
 
 The job `sbom-generator` runs `make sbom-generator-check` ([check.sh](../../tools/sbom-generator/check.sh)) on every push and pull request, and Semantic Release needs it. It builds the

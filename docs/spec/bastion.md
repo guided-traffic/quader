@@ -785,6 +785,8 @@ the content events below ([Q-BAS-29](#q-bas-29--the-feed-reads-the-journals-even
 | `user.external_changed` | `principal` with the user when the flag was set: the user read by `internal` through a Bastion as at the main installation (Q-BAS-148), and the flag ends that, so every answer the Bastion keeps for the user's credentials goes; clearing the flag only widens and yields none |
 | `npm.unpublish`, `package.deleted` | `{"kind": "content", "repositories": [<projectKey>/<repoKey>, …]}`: the repository and every virtual repository that includes it, recursively, at the time the feed is read, by their qualified names |
 | from M4b: `vulnerability.finding.status_changed` and `vulnerability.finding.reopened` with `block: set` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013) | `content` for the finding's repository and its virtual repositories |
+| `malware.found`, `malware.release.withdrawn` ([malware-scanning.md](malware-scanning.md) R-MAL-021, R-MAL-026; specified, not built) | `content` for every repository that holds the blob when the feed is read, and their virtual repositories ([Q-BAS-164](#q-bas-164--the-malware-scannings-events-in-the-feed-a-find-and-a-withdrawn-release-are-content)) |
+| `malware.settings.changed` that turns the switch on (R-MAL-019) | none: it changes which bytes the main installation serves in every repository, and a `content` entry for every repository would empty every Bastion's cache; the Bastion learns it at its next revalidation ([H-1102](#h-1102--the-bastion-serves-what-it-cached-for-up-to-ten-minutes-after-the-switch-is-turned-on)) |
 | `repository.moved` | `grants`: the repository left its project's roles and policies behind and changed its address ([Q-BAS-120](#q-bas-120--unassigning-a-repository-from-a-project-drops-every-permission-answer-and-every-journaled-event-is-classified), [repositories-and-proxy.md](repositories-and-proxy.md#r-repo-060--move-a-repository-to-another-project)) |
 | `authz.project.member_removed`, `authz.project.member_changed` | `grants`: a member's role grants reads on every repository of the project ([authorization.md](authorization.md) R-AUTHZ-026), so a removal or a lower role narrows them |
 | `repository.disabled`, `repository.deleted` | `grants`: the repository takes no part in resolution or download any more, and a `content` entry would keep its shape answers ([Q-AUTHZ-238](authorization.md#q-authz-238--disabling-a-repository-is-journaled-as-repositorydisabled-with-a-handler-of-its-own), [Q-AUTHZ-239](authorization.md#q-authz-239--a-deleted-repository-is-journaled-and-replayed-as-disabled)) |
@@ -5573,6 +5575,23 @@ agent records no revisit condition.
 **Applied in the spec:** R-BAS-033, R-BAS-045; code: `deploy/helm/quader-bastion/templates/ingress.yaml`; `TestR_BAS_033_RouteByPath`,
 `TestBastion_R_BAS_049_RoutingByPath` (the warm-up finds every path on the replica the cold runs filled).
 
+
+### Q-BAS-164 · The malware scanning's events in the feed: a find and a withdrawn release are `content`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner decided
+on 2026-11-20 that a later find reaches the Bastions as a feed entry ([malware-scanning.md](malware-scanning.md) Q-MAL-12).
+
+Context: a verdict belongs to a blob, and a blob may be held by many repositories; the journal's entries of `malware.found` and
+`malware.release.withdrawn` name the digest, not a repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `content` for every repository that holds the blob when the feed is read, and their virtual repositories (chosen) | The main installation resolves the digest to repositories as it resolves virtual repositories today | Only the caches that may hold the bytes are touched | A blob held by many repositories names them all |
+| (b) `grants` | Every answer of the Bastion is asked again | Simple | Empties the Bastion's whole cache for one find |
+| (c) A new kind `blob` with the digest | The Bastion drops entries by digest | Exact | A new kind in the Bastion's interface, and the Bastion's cache is keyed by URL, not by digest |
+
+**Choice:** (a); the switch turned on maps to no entry (H-1102). **Applied in the spec:** R-BAS-015.
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -6095,3 +6114,14 @@ managers of the suite (npm, pnpm, Yarn 4, `dotnet restore`) were served from the
 installation's `Vary` names (R-BAS-018); the cause is probably a variant that is keyed by `Accept-Encoding` and never becomes fresh, and it was not found. Live for a client that sends the header
 and reads a cached artifact: it costs the main installation one conditional request per read, never the bytes. What makes it real: a client built on a library that compresses by default
 and reads the same artifacts many times; the Bastion's concurrency budget (R-BAS-025) bounds what reaches the main installation.
+
+### H-1102 · The Bastion serves what it cached for up to ten minutes after the switch is turned on
+
+Stage: R-BAS-022, a read of a cached artifact; the switch of [malware-scanning.md](malware-scanning.md) R-MAL-019. Subject: callers of a
+Bastion after an administrator turned on **Only checked artifacts can be downloaded**, or a repository's stricter setting (R-MAL-020).
+Specified, not built. The switch makes `pending`, `unscannable` and `failed` content unservable at the main installation, and no feed entry
+carries that change ([Q-BAS-164](#q-bas-164--the-malware-scannings-events-in-the-feed-a-find-and-a-withdrawn-release-are-content)): an
+artifact the Bastion cached before stays servable from its cache until its next revalidation, at most `artifact_revalidate_after`
+(10 minutes by default), as [H-385](#h-385--a-withdrawal-the-feed-does-not-carry-reaches-the-bastion-within-the-artifact-revalidation-period)
+says of the withdrawals the feed does not carry. A find (`malware.found`) and a withdrawn release reach it through the feed within seconds.
+What makes it real: content that was served before the switch, read through a Bastion in the minutes after it.

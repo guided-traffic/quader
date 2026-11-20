@@ -1005,6 +1005,10 @@ Virtual resolution follows R-REPO-019 with these format rules (Q-OCI-18):
   repository first (grants, the endpoint's exposure, the repository's patterns), then planned for the image name as the client typed it; every
   member answers through the handler a direct request meets, on a request made for the member, so the addressed repository of each decision stays the
   virtual one. A member that does not have the item, that the caller may not read in, or whose cache the caller may not fill, is a miss and the walk goes on; a
+  member that refuses the item by a block (`403` with `vulnerability_blocked`, `vulnerability_data_missing`, `malware_found` or `malware_not_checked`) or holds it
+  pending a malware verdict (`503 malware_check_pending`) ends the walk with that answer, because the member that holds the item decides
+  ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-015, [malware-scanning.md](../malware-scanning.md) R-MAL-018,
+  [Q-OCI-240](#q-oci-240--a-block-of-a-member-ends-the-walk)); a
   member that cannot be asked or whose stored object is lost is remembered, and its failure is the answer only when no member serves the item (`404` would be a
   false statement about an item that may exist). A digest is taken in three passes: the local members, the caches of the remote members, then the upstreams of
   the remote members the caller may fill.
@@ -1022,6 +1026,8 @@ Acceptance criteria:
 - A claim `acme/*` for `docker-local`: `…/docker/acme/tool:1`, which only the stub has, answers 404, and the stub records no
   request.
 - `tags/list` through `docker` lists the union of `docker-local`'s and the stub's tags of the name.
+- A manifest blocked by a confirmed finding in `docker-local`, while the stub behind `docker-hub` serves the same tag, answers `403 DENIED` through `docker`,
+  and the stub records no request (the OCI area, about 2 s, bytes; the malware gate's case is [malware-scanning.md](../malware-scanning.md) R-MAL-018's).
 - With two remote members, the first in member order is asked first although the second holds a stored copy of the tag; a digest that only the second
   holds in its cache is served from it before the first member's upstream is asked, and the first member's stub records no request.
 
@@ -3829,6 +3835,24 @@ content. The development agent would revisit this if a further system reader app
 
 **Applied in the spec:** R-OCI-037; [vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-037, R-VULN-042;
 [usage-and-limits.md](../usage-and-limits.md) Q-LIM-66.
+
+### Q-OCI-240 · A block of a member ends the walk
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner decided
+on 2026-11-20 that a refusal ends resolution in every virtual repository ([malware-scanning.md](../malware-scanning.md) Q-MAL-12).
+
+Context, verified in [virtual_read.go](../../../internal/formats/oci/virtual_read.go): `isMemberMiss` counts every `Forbidden` as a miss, so a
+manifest blocked in one member was served from the next member that holds the name, or answered `404 MANIFEST_UNKNOWN`. R-VULN-015 says a
+block ends resolution, and the generic engine of the other formats ends it ([virtual/artifact.go](../../../internal/virtual/artifact.go)).
+The walk has no test with a blocked member.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A `Forbidden` with a code of a block, and the malware gate's pending `503`, end the walk; other `Forbidden` answers (no read, `populate_not_permitted`) stay misses (chosen) | The codes decide | The same rule as every other format; the member that holds the item decides | The walk reads error codes, not only kinds |
+| (b) Every `Forbidden` ends the walk | — | Simple | A member the caller may not read would hide the next member's image, against R-REPO-019 |
+| (c) Leave it | — | — | A blocked image is served from another member |
+
+**Choice:** (a). **Applied in the spec:** R-OCI-027; [malware-scanning.md](../malware-scanning.md) R-MAL-018.
 
 ## What this does not cover
 

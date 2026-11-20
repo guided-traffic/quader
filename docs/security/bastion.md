@@ -288,6 +288,8 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
   and security fixes after the metadata period;
 - [H-385](../spec/bastion.md#h-385--a-withdrawal-the-feed-does-not-carry-reaches-the-bastion-within-the-artifact-revalidation-period):
   withdrawals and automatic blocks the feed does not carry;
+- [H-1102](../spec/bastion.md#h-1102--the-bastion-serves-what-it-cached-for-up-to-ten-minutes-after-the-switch-is-turned-on):
+  the malware scanning's switch turned on, until the cached artifact's next revalidation;
 - [H-386](../spec/bastion.md#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events):
   what the holder of the Bastion token can do;
 - [H-387](../spec/bastion.md#h-387--the-signing-key-and-write-access-to-the-bastions-valkey-or-bucket-together-forge-answers-and-entries):

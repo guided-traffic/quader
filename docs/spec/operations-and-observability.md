@@ -1959,6 +1959,11 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `vulnerability.claimed_name_match` | A | — | From M4b, security event: a public advisory names a claimed internal name, once per advisory and name (R-VULN-010) | `package`, `advisory`, `kind`, `claimRepository` |
 | `vulnerability.source.failed` | A | — | From M4b: an advisory sync run failed; at most once an hour per source and ecosystem (R-VULN-004) | `source`, `ecosystem`, `code` |
 | `vulnerability.source.imported` | T | — | From M4b: a sync run in mode `repository` imported an item (R-VULN-005) | `source`, `ecosystem`, `sha256`, `deployedBy`, `acceptShrink` |
+| `malware.found`, `malware.cleared` | T | — | Specified, not built: a scan made a blob `infected`, or a rescan `clean` again ([malware-scanning.md](malware-scanning.md) R-MAL-026); `malware.found` carries the journal flag (Q-MAL-35) | `sha256`, `signature`, `part`, `database`, `repositories` |
+| `malware.release.granted`, `malware.release.withdrawn` | T | — | Specified, not built: an instance auditor released a blob, or withdrew the release (R-MAL-021); the withdrawal carries the journal flag | `sha256`, `state`, `signature`, `reason` |
+| `malware.download_blocked` | A | — | Specified, not built, security event: the malware gate refused a download (R-MAL-013, R-MAL-014); at most once a minute per repository, path and client address | `path`, `sha256`, `reason` |
+| `malware.settings.changed` | T | — | Specified, not built: the switch **Only checked artifacts can be downloaded** changed (R-MAL-019); journal flag when it is switched on | `before`, `after` |
+| `malware.database.imported`, `malware.database.failed` | T, A | — | Specified, not built: the task stored a new database version, or failed, at most once an hour per code (R-MAL-010) | `version`, `files`, `builtAt`; `code`, `detail` |
 | `limits.profile.created`, `limits.profile.updated`, `limits.profile.deleted` | T | — | A profile of the download limits changed ([usage-and-limits.md](usage-and-limits.md) R-LIM-031) | `key`, `changes` |
 | `limits.assignment.created`, `limits.assignment.updated`, `limits.assignment.deleted` | T | — | A rule at the instance, a project or a repository changed, by the API or by the task `limits-cleanup` (R-LIM-032) | `place`, `who`, `profile`, `overrides`, `capped` |
 | `limits.ceiling.changed` | T | — | A remote repository's ceilings changed (R-LIM-015) | `repository`, `before`, `after` |
@@ -2249,6 +2254,8 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `vuln-sync-kev` | From M4b, R-VULN-008: the known-exploited catalog | `41 */6 * * *` (proposed, vulnerability-scanning.md) |
 | `limits-cleanup` | [usage-and-limits.md](usage-and-limits.md) R-LIM-028: folds hourly usage rows older than 30 days into the daily sums, deletes expired usage rows, sums and blocks, and the rules and usage of deleted users, groups and technical tokens | `25 3 * * *` (proposed, usage-and-limits.md) |
 | `vuln-findings-retention` | From M4b, R-VULN-014: deletes findings resolved longer than `vulnerabilities.findings.resolved_retention` ago | `50 3 * * *` (proposed, vulnerability-scanning.md) |
+| `malware-scan` | [malware-scanning.md](malware-scanning.md) R-MAL-004 (specified, not built): discovery of blobs without a verdict, orphans, the cycle's marks; enqueues the job of the same name on the queue `malware` | `*/5 * * * *` (proposed, malware-scanning.md) |
+| `malware-sync-db` | [malware-scanning.md](malware-scanning.md) R-MAL-010 (specified, not built): stores a new version of ClamAV's database from `freshclam`'s directory, or reads it from the repository an installation names | `*/30 * * * *` (proposed, malware-scanning.md) |
 
 Retention policies ([storage.md](storage.md)) carry their own schedules and appear in the job list,
 not in the task list.
