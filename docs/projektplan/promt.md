@@ -547,10 +547,6 @@ agent** is not decided until the owner has said so.
 W-1 to W-26 are built and on `main`; their decisions are in the specification. What the owner has to decide or look at is in the
 list [With the owner](#with-the-owner); what is untested is in section 12. Open as work:
 
-- **W-20:** a repository deleted during a session stays in **Recently opened** until the next sign-in or change of permissions and
-  then leads to "not found".
-- **The power user's screens** (the development agent's own list, after the owner said on 2026-11-18 that "nothing gross struck
-  me"): the wiki's visibility behind a disclosure on the repository's settings is not done; it waited for W-11 in the same forms.
 - **W-27 · Set up client is dreary and has too much text** (**owner**, 2026-11-20): "unsere Seiten von 'Set up client' [brauchen]
   mehr Bilder oder [müssen] etwas farbenfroher aufgebaut werden. Diese Code- oder Text-Blöcke sollten in keinen 'VSCode'-Fenster
   aufgelistet sein. Das hier ist so trist. Beim drauf schauen auf diese Anleitung hat man überhaupt keine Lust das mitzumachen.
@@ -587,11 +583,15 @@ list [With the owner](#with-the-owner); what is untested is in section 12. Open 
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20** (`main` at `38b1d1ec`).
+**State on 2026-11-20**, 10:45.
 
-- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: a builder builds variant A, the owner's choice (started a second time at 10:00, on the model the owner named); a builder for W-20 and
-  the wiki's visibility behind a disclosure. W-12 is decided and not built now: the owner chose an invitation by e-mail, later
-  ("Option c, aber erst später", 2026-11-20); it stands in [FULL.md](FULL.md#m9--automation-and-integration), M9.
+- **Landed on 2026-11-20:** W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
+  visibility behind a fold, and the measurement of what a format costs ([test-cost.md](../developer/test-cost.md)).
+- **In work:** W-27, a builder builds variant A, the owner's choice, in a worktree (nothing landed yet).
+- **Waits for the owner:** which of the measurement's candidates is cut first (section 12 A); put to him: whether a format's
+  e2e leg runs on a push only when that format changed.
+- **Decided, not built now:** W-12, an invitation by e-mail, later ("Option c, aber erst später", 2026-11-20;
+  [FULL.md](FULL.md#m9--automation-and-integration), M9).
 - **To check first:** F-165 in the next full nightly; then section 12.
 
 ### With the owner
@@ -639,6 +639,12 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - The lists (W-4, Q-UI-426): the description stays under the key instead of in a column of its own, so that every repository list
   is built from the same cell; the admin area's repository list keeps its copy button for the address, because his objection named
   the project's list.
+- The wiki's visibility behind a fold (2026-11-20): a wiki without a level of its own follows the repository's level up as
+  well as down, so raising a repository to Public makes its wiki public (Q-UI-771; before, the wiki kept its level); a
+  repository deleted by someone else stays in **Recently opened** until its entry is opened once (Q-UI-769).
+- W-14 (2026-11-20): no break-glass event is a success, sign-in, lock and unlock are warnings, and the model has no severity
+  (Q-AUTH-423); a skipped group name is an event when the set of skipped names changes (Q-AUTH-422); a backup that completed
+  with warnings is a warning (Q-BAK-61).
 - W-24: the column is named **Last download** where his word was "Last fetched" (a version a mirror pass stored was fetched by
   Quader and by no client); **Published** of a version that exists in a remote only is the time it was cached, not the upstream's
   date.
@@ -685,7 +691,7 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - `client-setup?client=docker` of a public remote offers a visitor `docker login … --username quader` as its first snippet, though
   the pull that follows needs no credential.
 - `repository-settings-*`: several **Save changes** buttons, one under each open section; the header's only button is
-  **Vulnerabilities**; the visibility is two groups of three choices, **Artifacts** and **Wiki**, in the main view.
+  **Vulnerabilities**.
 - `roles`: the capabilities are 25 codes in four columns, in no order.
 - `dashboard`: a component is called "all".
 - A user's page in the admin area is titled with the username, not the name; the **ID** and the origin stand in the main form;
@@ -746,6 +752,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
   an average format adds 183 s; (6) `vuln-long` and `vuln-pooler`, 50.2 per nightly; (7) client images loaded per leg, 11.9 per
   push and 24.2 per nightly; (8) the leg `e2e (bastion)` takes a runner for 2.2 minutes when it has nothing to run. Refuted as
   a large cost: the three integration stacks (3.0 minutes per push). **Next:** the owner decides which of these is cut first.
+- **A builder in a worktree cannot run `make ui-renders`** without replacing the running containers of the UI development
+  profile ([web-ui.md](../developer/web-ui.md), found on 2026-11-20): two builders rendered by hand with a dev server of
+  their own. Nothing automates it.
 - **A builder cannot render on a new UI database**, which CI always has: three landings in one night passed on a filled
   database and stopped on a new one (2026-11-19/20: a migration's checksum, the write budget, a lookup right after a pull;
   a builder may not purge the database, and the development agent's full render set on a new one before the landing found

@@ -155,6 +155,15 @@ through the dev server works only against a Quader whose base URL is `https://lo
   `.dev/ui-dev/certs` and `.dev/ui-dev/secrets` from the first checkout before `make ui-dev-up`, or start with
   `make ui-dev-down PURGE=1`. A database that applied a migration which has changed since is refused by `migrate up`
   ("a changed migration needs a new database"): `make ui-dev-down PURGE=1` and `make ui-dev-up`.
+- **`make ui-renders` and `make ui-dev-up` from a second checkout or worktree recreate the running containers.** The three
+  services mount the checkout's own `.dev/ui-dev/certs` (`CERT_DIR` in [compose.yaml](../../deploy/ui-dev/compose.yaml)), so
+  the compose configuration of another checkout differs from the containers that run, and `up.sh`, which
+  [renders.sh](../../deploy/ui-dev/renders.sh) always calls, replaces them under whoever is looking at the stack. The dev
+  server on port 4200 also serves the first checkout's UI, not the worktree's. To render a worktree beside a running stack:
+  copy `.dev/ui-dev/certs` and `.dev/ui-dev/secrets` from the first checkout, start the worktree's dev server on another
+  port against the running backend, and run the render configuration (`web/e2e/renders`) by hand with the browser mapping
+  `localhost:4200` to that port; stop the dev server and remove the copied secrets afterwards. Nothing automates this
+  (found on 2026-11-20; two builders rendered this way).
 
 The browser warns about the dev server's certificate until the CA is trusted. Trusting it system-wide is your choice,
 not something the scripts do (macOS: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain .dev/ui-dev/certs/ca.crt`).
