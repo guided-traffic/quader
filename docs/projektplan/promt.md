@@ -513,6 +513,9 @@ records the recorder that tells such a stall apart).
 - `api-and-ui.md` has Q-API-260 to 263 after its first `## What this does not cover` and a second such heading after them.
 - R-UI-002 and `_shell.scss` cite UI-A-48, an item of the T-21 audit that no longer exists.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
+- An opened audit event at 390 px breaks its **Time** over two lines (the layout check's "a time in 2 lines", seen on
+  2026-11-20 with a probe; not fixed). **No render opens an audit event**, so its facts never pass the layout check:
+  the copy buttons of its two IDs stood 6 px off their line until 2026-11-20. A walk that opens one event closes it.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -702,18 +705,25 @@ runs are in `git log`; this section holds the current state.
   remote `platform/debian` the copy button beside each fingerprint of an upstream key stands 3.5 px above the
   fingerprint's line, at all three widths. The component (`web/src/app/features/repositories/deb-upstream-keys.ts`) is
   old and never had data in the renders; since package 1 the Debian preset carries the archive's keys, so the seeded
-  remote shows nine fingerprints for the first time. A builder fixes it (below). The run ended at 19:22 with that one job red; every other job is green, the three
-  integration shards and `e2e (vuln)` among them.
-- **In work** (19:20), three builders:
+  remote shows nine fingerprints for the first time. The run ended at 19:22 with that one job red; every other job is green, the three integration shards and
+  `e2e (vuln)` among them. **Fixed and landed at 19:40** by the builder of the `upstream` screens: the row is a flex
+  row with the button on the fingerprint's first line by its margins (the convention the digest facts use), so a
+  row is as high as its text and a fingerprint that wraps at 390 px keeps the button on its first line; the list
+  had no style of its own before (the parent's `.plain` does not reach into the component). **The same defect in
+  one more place, fixed with it:** the **Event ID** and the **Trace ID** of an opened audit event, whose button
+  stood 6 px below the line; no render opens an audit event, so the check never saw it (section 8). Looked at by
+  the development agent: the list in both schemes at 1440 and 390 px, the audit event's facts at 1440 px. Gates of
+  the builder: the component tests (1,779 in 28 s), the UI lint, the layout check's own tests, and the render cases
+  `repository-settings-deb-remote`, `repository-settings-deb` and `admin-upstream-registry` on a stack of its own,
+  without a finding. No test added: the render's layout check is the test of record. **Not verified until its
+  pipeline:** the job `UI layout checks` on every screen.
+- **In work** (19:40), two builders:
   - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
     two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
     start on its branch; then the gate in the two serve points, the fills of remote repositories, virtual
     repositories, the walk of an OCI virtual repository, the repository's stricter-only setting, the audit events, the
     Bastion feed and the backup. It has to be landable alone: before a scanner exists, an installation behaves by
     default as it does today.
-  - **The copy button beside a Debian upstream key's fingerprint** (since 19:15, the builder of the `upstream` screens
-    in its worktree, on a branch from `main`): the row by the convention of R-UI-175 and R-UI-176, a look for the same
-    markup elsewhere without data in the renders, the screen rendered in both schemes and three widths.
   - **Package A of the scanner, first stage reported:** `0f23ad8ed` on `7fe52214` (143 files), the role `scanner`
     with its token, its listener on `packages`, the chart's objects and the tests up to the integration tier; no
     migration. Gates green but one: `make versions-check` fails on this machine's Docker buildx (F-17, the owner's
