@@ -6858,7 +6858,8 @@ The owner chose the design on 2026-11-20 (W-27, [Q-UI-800](#q-ui-800--set-up-cli
   names the file and shows the command; an install command has none). A name of a file, a setting or a command in it is code. A
   second way of a step (an image pull secret for a Kubernetes cluster, the same command in PowerShell or cmd, a `nuget.config`
   beside the command, a one-line `.list` file, a `requirements.yml`, the `~/.netrc` line of roles, the scoped variant) stands after
-  the step's own snippets behind an inline fold titled with the way. A snippet that only works with a credential (the pull secret,
+  the step's own snippets behind an inline fold titled with the way, a label of one line at 390 px in every locale (Q-UI-810). A
+  snippet that only works with a credential (the pull secret,
   the token variable in PowerShell and cmd, the `~/.netrc` line) is not shown to an anonymous visitor.
 - **A snippet is a window** ([Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)):
   a file (its `fileName`) is an editor window, its tab the file's name, its lines numbered, **Download** and the copy button in its
@@ -6887,7 +6888,8 @@ Acceptance criteria:
 - Unit tests (`code-window.spec.ts`, `code-syntax.spec.ts`): the window's text is the snippet's exactly and the copy button copies
   it; the marks are laid over the colours wherever their text stands; a terminal prompts a command once; the wrap rule keeps a
   flag, a mark and a token's reference whole and breaks an address after its slashes; `clients.spec.ts`: every snippet id the API
-  renders is known to the page, no sentence is longer than 20 words.
+  renders is known to the page, no sentence is longer than 20 words, every fold's label (a second way and **More options**) has at
+  most 32 characters in English and in German, and every fold the page shows is one of them (Q-UI-810).
 - Renders (rule 11): the screens `setup-*` at 1440, 1024 and 390 px, light and dark, as each kind of user, with no layout finding
   and nothing that scrolls sideways.
 
@@ -7604,8 +7606,10 @@ Priority: **MVP** · Covers: quader-only
 
 A status or a badge, a chip, a button's label, a tab, a table's header, a date or a time, a key or an identifier in a cell (an
 element the app marks `translate="no"`), a number with its unit, a format, a class and a visibility level stand on one line
-(R-UI-145, Q-UI-428, Q-UI-563). Not covered: a name that breaks inside itself beside its icon (Q-UI-425), a key a list lets
-break after its hyphens (`th.wrap-name`, Q-UI-303), and the name of a row that stands as a block (R-UI-174).
+(R-UI-145, Q-UI-428, Q-UI-563). The toggle of an inline fold is a button, so its label stays on one line too; only the toggle
+that is a section's heading wraps as the heading does (Q-UI-810). Not covered: a name that breaks inside itself beside its icon
+(Q-UI-425), a key a list lets break after its hyphens (`th.wrap-name`, Q-UI-303), and the name of a row that stands as a block
+(R-UI-174).
 
 A word of a list's cell does not break inside itself: a column that wraps declares a least width that holds its words (the
 audit log's project broke into "Platfor" / "m enginee" / "ring" beside a target that took the room). A token longer than any
@@ -19521,8 +19525,9 @@ format and client was left to the builder, by the same rule.
 | (c) No sentences at all | The windows alone | The least text | A file's place (next to the solution, in the home directory) is not in the window |
 
 **Choice:** (a). The folds: **For a Kubernetes cluster** (OCI), **In PowerShell** and **In cmd** (NuGet, Ansible), **As a
-nuget.config file** (.NET CLI, NuGet CLI), **As a one-line .list file** and **For a remote repository without upstream keys**
-(APT), **To install roles** and **With a requirements.yml** (Ansible), **For one scope only** (npm). A snippet that only works with
+nuget.config file** (.NET CLI, NuGet CLI), **As a one-line .list file** and **Remote without upstream keys** (APT; at first **For a
+remote repository without upstream keys**, which broke into two lines at 390 px, [Q-UI-810](#q-ui-810--a-folds-label-is-a-buttons-label-at-most-32-characters-in-every-locale)),
+**To install roles** and **With a requirements.yml** (Ansible), **For one scope only** (npm). A snippet that only works with
 a credential is not shown to an anonymous visitor, and an anonymous visitor of a public image reads "Not needed to pull: this
 repository can be read without signing in." instead of being asked to sign in. Measured from the `h1` to the end of step 2 without
 code, as the mockup counted, as the power user: see the table in [web-ui.md](../developer/web-ui.md#set-up-client-and-the-guides).
@@ -19551,6 +19556,36 @@ agent revisits it if readers open the first row on most visits.
 
 **Applied in the spec:** R-UI-125. Code: [guide-view.ts](../../web/src/app/features/guides/guide-view.ts),
 [disclosure.ts](../../web/src/app/shared/ui/disclosure.ts).
+
+### Q-UI-810 · A fold's label is a button's label: at most 32 characters, in every locale
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the render run on a new database (Test and Release 44715970992) found the fold **For a remote repository without upstream
+keys** of the Debian setup page in two lines at 390 px, for each kind of user (R-UI-171). The step is 350 px wide there, the chevron
+and its gap take 24 px; Inter at 14 px, weight 600, set the 45 characters at 315 px on a Mac and wider than 326 px on the runner. The
+finding named it "… upstream keys container": the check read the comment Angular leaves for a block (`<!--container-->`) as text.
+The German labels are longer, and no render shows them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The toggle stays a button of one line; every fold label of Set up client (`setup.fold.*`, `setup.more`) has at most 32 characters in English and in German, held by `clients.spec.ts`, which reads the German targets from `messages.de.xlf`; the APT label becomes **Remote without upstream keys** (28) / **Remote ohne Upstream-Schlüssel** (30) (chosen) | Short labels | The rule of the render guard holds where it cannot look (German, a format the seed has no repository of); a millisecond test | A count of characters stands for a width |
+| (b) The inline toggle wraps as a section's heading toggle does | One more exception in `broken` | Any label fits | A two-line button beside a chevron reads as a paragraph; the style guide lets only a heading wrap, and the guard would lose the case |
+| (c) Measure every label in the app's font in the unit tier | The width itself | Exact | The unit tier renders in jsdom, without layout or fonts; only the renders measure, and only in English |
+
+**Choice:** (a). The bound: 326 px of room (292 px for **More options** in the credential's row); the labels of the page set at 5.9 to
+7.7 px a character on a Mac, the runner wider, so 32 characters at 7.7 px and a tenth more are 271 px, and a label breaks the bound only
+where it averages more than 9.1 px a character, which only runs of capitals and of "m" and "w" do. The layout check names an element by
+its text and its elements' text, without a comment (`textOf` of [layout.ts](../../web/e2e/renders/layout.ts), a fixture in
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts)); the guard itself is unchanged.
+
+**Rationale:** the cheapest test that sees both locales and every format; a fold is a control, and a control's label of one line is
+the rule the other buttons keep. The development agent revisits the bound if a label of 32 characters is measured in two lines, or if
+a third locale or a narrower place for a fold comes.
+
+**Applied in the spec:** R-UI-121, R-UI-171, Q-UI-804. Code: [clients.ts](../../web/src/app/features/setup/clients.ts),
+[clients.spec.ts](../../web/src/app/features/setup/clients.spec.ts), [messages.de.xlf](../../web/src/locale/messages.de.xlf),
+[layout.ts](../../web/e2e/renders/layout.ts).
 
 ## What this does not cover
 

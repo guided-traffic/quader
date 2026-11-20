@@ -158,7 +158,7 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
     case 'apt.configure.shell.configure-scoped':
       return text(
         $localize`:@@setup.caption.apt-upstream:Verifies against the archive's own keyring instead of a key of Quader's.`,
-        $localize`:@@setup.fold.apt-upstream:For a remote repository without upstream keys`,
+        $localize`:@@setup.fold.apt-upstream:Remote without upstream keys`,
       );
     case 'apt.configure.list':
     case 'apt.configure.list-scoped':

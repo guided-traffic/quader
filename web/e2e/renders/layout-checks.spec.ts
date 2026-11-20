@@ -117,6 +117,18 @@ test.describe('a label kept on one line (R-UI-171)', () => {
     const found = await check(page, '<div class="box"><h2 class="heading"><button type="button" class="toggle" aria-expanded="false">Remove a version, import tasks and tombstones</button></h2></div>', narrow);
     expect(only(found, 'broken'), describe(found)).toHaveLength(0);
   });
+
+  test('Q-UI-810 an inline fold\'s toggle is a button: its broken label is found, named by its label and not by the anchor Angular leaves', async ({ page }) => {
+    // As the shared disclosure builds it: the chevron, the label, and the comment of its `@if (note())` block.
+    const fold =
+      '<div class="box"><div class="disclosure"><button type="button" class="inline-toggle" aria-expanded="false">' +
+      '<span class="material-icons" aria-hidden="true">chevron_right</span><span>For a remote repository without upstream keys</span><!--container-->' +
+      '</button></div></div>';
+    const found = await check(page, fold, `${narrow} .inline-toggle { all: unset; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }`);
+    const broken = only(found, 'broken');
+    expect(broken, describe(found)).toHaveLength(1);
+    expect(broken[0]!.text).toBe('For a remote repository without upstream keys');
+  });
 });
 
 test.describe('a button joined to a field (R-UI-175)', () => {

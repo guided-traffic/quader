@@ -38664,8 +38664,8 @@
         <note category="location">src/app/features/setup/clients.ts:161</note>
       </notes>
       <segment>
-        <source>For a remote repository without upstream keys</source>
-        <target>Für ein Remote-Repository ohne Upstream-Schlüssel</target>
+        <source>Remote without upstream keys</source>
+        <target>Remote ohne Upstream-Schlüssel</target>
       </segment>
     </unit>
     <unit id="setup.caption.apt-list">

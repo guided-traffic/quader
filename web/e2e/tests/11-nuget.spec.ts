@@ -59,9 +59,16 @@ test('R-UI-018 R-UI-019 the NuGet clients, their snippets with the index.json UR
 
   await test.step('the .NET CLI: the source command with the clear-text flag and a nuget.config that clears other sources', async () => {
     await client.selectOption({ label: '.NET CLI (dotnet)' });
-    // The server renders the shell form, the PowerShell form and the nuget.config, in that order; the source is
+    // The server renders the shell form, the PowerShell form and the nuget.config, in that order; the page shows the shell form
+    // and folds the other two as second ways of the step (Q-UI-804), opened here as a reader opens them. The source is
     // always the index.json URL, and the push names the repository the caller chose (a virtual one forwards it).
     await expect(configure.first()).toContainText(`dotnet nuget add source ${feed(virtualKey)} --name quader`);
+    const configureStep = page.locator('section[aria-labelledby="step-configure"]');
+    for (const [fold, index] of [['In PowerShell', 1], ['As a nuget.config file', 2]] as const) {
+      await expect(configure.nth(index)).toBeHidden();
+      await configureStep.getByRole('button', { name: fold, exact: true }).click();
+      await expect(configure.nth(index)).toBeVisible();
+    }
     await expect(configure.nth(1)).toContainText(`dotnet nuget add source ${feed(virtualKey)} --name quader`);
     await expect(configure.nth(2)).toContainText('<clear />');
     await expect(configure.nth(2)).toContainText(`value="${feed(virtualKey)}" protocolVersion="3"`);

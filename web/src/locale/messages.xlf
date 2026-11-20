@@ -25657,7 +25657,7 @@
         <note category="location">src/app/features/setup/clients.ts:161</note>
       </notes>
       <segment>
-        <source>For a remote repository without upstream keys</source>
+        <source>Remote without upstream keys</source>
       </segment>
     </unit>
     <unit id="setup.caption.apt-list">

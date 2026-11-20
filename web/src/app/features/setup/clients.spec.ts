@@ -1,5 +1,24 @@
+import german from '../../../locale/messages.de.xlf' with { loader: 'text' };
 import { clientsOf, snippetText } from './clients';
 import { RENDERED_SNIPPET_IDS } from './snippet-ids.fixture';
+
+/** A unit of the translation file: its id, the English source and the German target. */
+interface Unit {
+  readonly id: string;
+  readonly en: string;
+  readonly de: string;
+}
+
+const xmlText = (s: string): string =>
+  s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+
+/** The labels of the folds of Set up client in both locales: the second ways (`setup.fold.*`) and **More options** (`setup.more`). */
+function foldUnits(): Unit[] {
+  const out: Unit[] = [];
+  const unit = /<unit id="(setup\.fold\.[^"]+|setup\.more)">[\s\S]*?<source>([\s\S]*?)<\/source>\s*<target>([\s\S]*?)<\/target>/g;
+  for (const m of german.matchAll(unit)) out.push({ id: m[1]!, en: xmlText(m[2]!), de: xmlText(m[3]!) });
+  return out;
+}
 
 describe('Snippet words', () => {
   for (const [client, ids] of Object.entries(RENDERED_SNIPPET_IDS)) {
@@ -22,6 +41,38 @@ describe('Snippet words', () => {
     expect(snippetText('dotnet.configure.powershell')?.fold).toBe('In PowerShell');
     expect(snippetText('apt.configure.list')?.fold).toBe('As a one-line .list file');
     expect(snippetText('docker.configure.shell')?.fold).toBeNull();
+  });
+
+  // A fold's toggle is a button, and a button's label stays on one line (R-UI-171): the render guard measures it at 390 px, but
+  // only in English and only for the repositories the seed has. So every fold label is held here, in both locales, to a number of
+  // characters (Q-UI-810). At 390 px a step is 350 px wide, the chevron and its gap take 24 px: 326 px for the label (the credential
+  // row's More options has 292). Inter at 14 px, weight 600, sets the labels of this page at 5.9 to 7.7 px a character on a Mac,
+  // and the runner's Chromium sets them wider: a label of 45 characters, 315 px on a Mac, broke at 326 px on the runner. 32
+  // characters at 7.7 px plus a tenth are 271 px; the bound holds as long as a label averages less than 9.1 px a character
+  // (292 / 32), which only runs of capitals and of "m" and "w" reach.
+  const FOLD_LABEL_MAX = 32;
+
+  it('Q-UI-810 every fold label of every format and client fits one line at 390 px, in English and in German', () => {
+    const folds = foldUnits();
+    expect(folds.map((u) => u.id)).toContain('setup.more');
+    expect(folds.length).toBeGreaterThanOrEqual(11);
+    const tooLong = folds.flatMap((u) => [u.en, u.de].filter((label) => [...label].length > FOLD_LABEL_MAX).map((label) => `${u.id}: ${label}`));
+    expect(tooLong).toEqual([]);
+  });
+
+  it('Q-UI-810 every fold the page shows for a snippet the API renders is one of those labels', () => {
+    const folds = foldUnits().filter((u) => u.id !== 'setup.more');
+    const shown = new Set<string>();
+    for (const ids of Object.values(RENDERED_SNIPPET_IDS)) {
+      for (const id of ids) {
+        for (const anonymous of [false, true]) {
+          const fold = snippetText(id, { anonymous })?.fold;
+          if (fold) shown.add(fold);
+        }
+      }
+    }
+    expect(shown.size).toBeGreaterThanOrEqual(9);
+    expect([...shown].filter((label) => !folds.some((u) => u.en === label))).toEqual([]);
   });
 
   it('R-UI-123 an anonymous visitor of a public image is not told to sign in to pull, and gets no pull secret', () => {

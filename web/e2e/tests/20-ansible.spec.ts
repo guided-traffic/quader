@@ -1,8 +1,9 @@
 import { e2eProject, expect, expectAccessible, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journey "ansible" (R-ANS-025, R-ANS-026, R-ANS-012, R-UI-049, R-UI-120): the repository's page Set up client renders
-// the ansible.cfg with the address of the repository and no token, and below it the guide with the sections for a local repository
-// and the netrc line the roles need; the repository's page leads there with Set up client; the edit form
+// the ansible.cfg with the address of the repository and no token, the netrc line the roles need behind its fold, and below them
+// the guide as closed rows under the heading Guide, the local repository's first (R-UI-125, Q-UI-805); the repository's page leads
+// there with Set up client; the edit form
 // has the tabs for the import tasks and the tombstones, which say so when there is nothing yet. Every screen passes axe in the
 // light and in the dark colour scheme. The journey creates its own repository and publishes nothing: the screens of a published
 // collection are covered by the component tier (package-detail.spec.ts) and by the ansible-galaxy matrix of the end-to-end suite.
@@ -45,13 +46,28 @@ test('R-ANS-025 R-UI-049 R-UI-120 Set up client of a local repository renders th
     }
   });
 
-  await test.step('the guide below the snippets: what a local repository is open, the other sections under their headings', async () => {
-    await expect(page.getByRole('heading', { name: 'What a local repository is', level: 2 })).toBeVisible();
+  await test.step('the netrc line of the roles is a second way of Configure, behind its fold, and opens as a reader opens it', async () => {
+    const configure = page.locator('section[aria-labelledby="step-configure"]');
+    const netrc = configure.locator('[data-snippet="ansible-galaxy.configure.netrc"]');
+    await expect(netrc).toBeHidden();
+    const roles = configure.getByRole('button', { name: 'To install roles', exact: true });
+    await roles.click();
+    await expect(roles).toHaveAttribute('aria-expanded', 'true');
+    await expect(netrc).toBeVisible();
+    await expect(netrc).toContainText('~/.netrc');
+    await expect(netrc).toContainText('QUADER_TOKEN');
+  });
+
+  await test.step('the guide below the snippets: the heading Guide over closed rows, what a local repository is first', async () => {
+    // Every section of the guide is a closed row titled with an h3, the class's own first (R-UI-125, Q-UI-805).
+    const guide = page.getByRole('region', { name: 'Guide' });
+    await expect(guide.getByRole('heading', { name: 'Guide', level: 2 })).toBeVisible();
+    await expect(guide.getByRole('heading', { level: 3 }).first()).toHaveAccessibleName('What a local repository is');
+    await expect(guide.getByRole('button', { name: 'What a local repository is', exact: true })).toHaveAttribute('aria-expanded', 'false');
     // The owner of the journey's repository may publish, so the publishing sections are there (R-API-070).
     for (const name of ['Which credential ansible-galaxy sends', 'Remove a version, import tasks and tombstones']) {
-      await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+      await expect(guide.getByRole('button', { name, exact: true })).toBeVisible();
     }
-    await expect(page.locator('body')).toContainText('~/.netrc');
     await page.goto(`/ui/en/projects/${e2eProject}/repositories/${localKey}`);
     await expect(page.locator('quader-page-header').getByRole('link', { name: 'Set up client', exact: true })).toHaveAttribute(
       'href',

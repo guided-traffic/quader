@@ -90,9 +90,16 @@ export function layoutFindings(): LayoutFinding[] {
     return lines.length;
   }
 
+  // The text of a finding is what the element shows: its text and its elements' text, without an icon's glyph name and without a
+  // comment, whose `textContent` is the comment itself (the anchor Angular leaves for a block, `<!--container-->`, read
+  // "For a remote repository without upstream keys container" as a fold's label, Q-UI-810).
   const textOf = (el: Element): string =>
     Array.from(el.childNodes)
-      .map((n) => (n.nodeType === Node.ELEMENT_NODE && inIcon(n as Element) ? '' : (n.textContent ?? '')))
+      .map((n) => {
+        if (n.nodeType === Node.TEXT_NODE) return n.textContent ?? '';
+        if (n.nodeType === Node.ELEMENT_NODE && !inIcon(n as Element)) return n.textContent ?? '';
+        return '';
+      })
       .join(' ');
 
   // ---- icon-apart and off-line: a control or an icon off the line of its text (R-UI-170, R-UI-175) ---------------------------
