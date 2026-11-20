@@ -21,7 +21,7 @@ func TestAPISection(t *testing.T) {
 			rl.Read.RequestsPerSecond != 50 || rl.Read.Burst != 200 ||
 			rl.Write.RequestsPerSecond != 10 || rl.Write.Burst != 50 ||
 			rl.Anonymous.RequestsPerSecond != 5 || rl.Anonymous.Burst != 20 ||
-			rl.PackageWrite.RequestsPerSecond != 10 || rl.PackageWrite.Burst != 50 {
+			rl.PackageWrite.RequestsPerSecond != 10 || rl.PackageWrite.Burst != 400 {
 			t.Fatalf("%+v", rl)
 		}
 	})

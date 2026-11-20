@@ -260,7 +260,7 @@ Each class allows `requests_per_second` on average and `burst` at once. The limi
 | `api.rate_limits.exempt_admins` | `false` | Whether administrators bypass the limits |
 | `api.rate_limits.read`, `.write` | `50`/`200`, `10`/`50` | Reading and changing requests to the management API |
 | `api.rate_limits.anonymous` | `5`/`20` | Management API requests without a credential, per client address |
-| `api.rate_limits.package_write` | `10`/`50` | Changing requests (publish, delete) on the package and registry addresses, per caller, while the download limits are in **Enforce**; reading requests there are limited by the download limits ([Download limits](download-limits.md)), and in **Audit** nothing there is limited |
+| `api.rate_limits.package_write` | `10`/`400` | Changing requests (publish, delete) on the package and registry addresses, per caller, while the download limits are in **Enforce**; reading requests there are limited by the download limits ([Download limits](download-limits.md)), and in **Audit** nothing there is limited |
 | `server.endpoint_rate_limits.external` | `50`/`200`, per principal | The class further endpoints use by default |
 
 </details>

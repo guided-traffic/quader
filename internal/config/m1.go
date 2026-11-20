@@ -126,11 +126,12 @@ type APIRateLimitAnonymous struct {
 }
 
 // APIRateLimitPackageWrite is the class of unsafe methods on the package protocols
-// (R-API-016, limiter api_package_write): publish, unpublish, dist-tags; in enforce
-// only (Q-LIM-4).
+// (R-API-016, limiter api_package_write): publish, unpublish, dist-tags, a registry push; in
+// enforce only (Q-LIM-4). The burst holds the push of the largest image a client builds,
+// 127 layers of three unsafe requests each (Q-LIM-56).
 type APIRateLimitPackageWrite struct {
 	RequestsPerSecond float64 `yaml:"requests_per_second" default:"10" validate:"min=0.001"`
-	Burst             int     `yaml:"burst" default:"50" validate:"min=1"`
+	Burst             int     `yaml:"burst" default:"400" validate:"min=1" doc:"Most writes one window admits: a registry push sends three per layer, and an image has at most 127 layers."`
 }
 
 // Repositories is the repositories section (R-REPO-009 to R-REPO-015): batch

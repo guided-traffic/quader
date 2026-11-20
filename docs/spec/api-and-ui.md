@@ -921,7 +921,7 @@ api:
     read:      {requests_per_second: 50, burst: 200}     # default (proposed)
     write:     {requests_per_second: 10, burst: 50}      # default (proposed)
     anonymous: {requests_per_second: 5,  burst: 20}      # default (proposed)
-    package_write: {requests_per_second: 10, burst: 50}  # default (proposed); in force while the mode is enforce
+    package_write: {requests_per_second: 10, burst: 400} # default (proposed); in force while the mode is enforce; the burst holds an image push (Q-LIM-56)
 ```
 
 Acceptance criteria:

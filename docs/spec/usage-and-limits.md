@@ -2118,7 +2118,7 @@ to `enforce` by the owner's Q-LIM-4 (2026-11-19): in `audit` nothing on a protoc
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `package_write` (10 per second, burst 50) holds in `enforce` on every protocol path (chosen) | — | A publish's cost (spool, validation) stays bounded; uploads are Later by the owner | Writes count against the request figures and `package_write` both |
+| (a) `package_write` (10 per second, burst 50; the burst is 400 since Q-LIM-56) holds in `enforce` on every protocol path (chosen) | — | A publish's cost (spool, validation) stays bounded; uploads are Later by the owner | Writes count against the request figures and `package_write` both |
 | (b) Writes under the request figures only | — | One system | A publish loop gets 200 per second under Standard |
 
 **Choice:** (a). **Applied in the spec:** R-LIM-005; [api-and-ui.md](api-and-ui.md) R-API-016.
@@ -2338,6 +2338,33 @@ Revisit if a subject's reference must not be stored in job arguments.
 **Applied in the spec:** R-LIM-037. Code: [background.go](../../internal/limits/background.go), `fetcher.run` in
 [fetch.go](../../internal/proxy/fetch.go). Tests: `TestR_LIM_037_ABackgroundDownloadIsChargedToTheProbe` in
 [background_test.go](../../internal/limits/background_test.go).
+
+### Q-LIM-56 · The burst of package_write holds the push of the largest image
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The class
+holds on the registry's paths in Enforce by Q-LIM-27 and the owner's Q-LIM-4; its numbers are the development agent's estimates.
+
+Context: measured on the kind cluster on 2026-11-20 (`linux/arm64`, the profile `scatter`): `docker push` of an image of 40 layers of a
+few bytes each sends three unsafe requests per layer (the upload session's `POST`, `PATCH` and `PUT`) and the manifest's `PUT`, five
+layers at a time: 60 unsafe requests in 0.4 s, 44 in its busiest second. With the class at 10 a second and a burst of 50 per caller,
+the 51st was answered 429 by `package_write`, docker printed `error from registry: Too many requests; retry after the period in the
+Retry-After header.` and exited 1 without a retry. So in Enforce every push of an image of more than about 16 layers failed. An image
+built by docker has at most about 127 layers (its storage driver refuses a deeper one with `max depth exceeded`; a limit of the
+client, not checked in this repository): 3 × 127 + the configuration's 3 + a manifest is 385.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A higher default: the burst 400, the rate 10 a second (chosen) | One number; the burst holds the push of any image, and the rate refills it in 40 s | No code, no new concept; a publish loop is still bounded to 10 a second after the burst | A caller may send 400 writes at once on every format, not only on the registry |
+| (b) A class of its own for the registry's upload steps | The `PATCH` and `PUT` of an upload session do not count, only its `POST` and the manifest | Counts a push as layers, not requests | A new rule in the request path for one format; an image of more than 48 layers still meets a burst of 50 |
+| (c) The upload figures of Q-LIM-27 now | Bytes and requests of writes as figures of the profiles | The model the owner named as Later | A feature of its own, not a default; the owner put it after the first step |
+
+**Choice:** (a). **Rationale:** the measurement shows the refusal is the burst, not the rate: a push is short and dense. A burst that
+holds the largest image keeps the class's purpose (a publish loop runs at 10 a second) and removes the failure without a new concept.
+After the change the same push of 40 layers passes in Enforce (`TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass`).
+Revisit when the upload figures of Q-LIM-27 come, or if a client pushes several large images within seconds.
+
+**Applied in the spec:** [api-and-ui.md](api-and-ui.md) R-API-016's configuration. Code: `APIRateLimitPackageWrite` in
+[m1.go](../../internal/config/m1.go).
 
 ## What this does not cover
 
