@@ -402,7 +402,7 @@ func (s *Store) linkFile(ctx context.Context, tx meta.Tx, repo RepoRef, spec Com
 		out.ref = ref
 		if err := s.hooks.OnCommit(ctx, tx, CommitEvent{
 			Origin: spec.Origin, Repo: repo, Item: ref, Lead: spec.lead, Digests: sp.Digests, MediaType: spec.MediaType,
-			UpstreamURL: spec.UpstreamURL, Payload: spec.Payload, Actor: p.actor, Replaced: out.overwritten,
+			UpstreamURL: spec.UpstreamURL, Payload: spec.Payload, Actor: p.actor, Replaced: out.overwritten, Generated: spec.generated,
 		}); err != nil {
 			return err
 		}

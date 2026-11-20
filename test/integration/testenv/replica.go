@@ -54,6 +54,11 @@ type ReplicaOptions struct {
 	Extra func(*httpserver.Router)
 	// Vuln replaces ports of the vulnerability scanning (app.Options.Vuln).
 	Vuln *app.VulnOverride
+	// Malware replaces the signature database of a malware scanner (app.Options.Malware).
+	Malware *app.MalwareOverride
+	// Pair is the role whose pair the replica serves and presents on a stack with TLS; empty is Role. A malware scanner is a process of
+	// the role scanner with the pair of the kind malware-scanner (R-HA-068).
+	Pair string
 	// Mirror replaces the host, the clock and the jitter of the mirror engine (app.Options.Mirror).
 	Mirror *app.MirrorOverride
 	// DialOverride connects the outbound clients to other addresses than the URLs name ("registry.npmjs.org:443" to the
@@ -95,7 +100,11 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 	// The ops listener's address must differ from server.listen as written, so it
 	// gets a free port of its own.
 	environ := append(append([]string{}, s.base...), "QUADER_POD_NAME="+o.Name, "QUADER_SERVER_OPS_LISTEN="+FreeAddr(tb))
-	if p, ok := s.pairs[o.Role]; ok {
+	pairRole := o.Pair
+	if pairRole == "" {
+		pairRole = o.Role
+	}
+	if p, ok := s.pairs[pairRole]; ok {
 		// The pair of the replica's role (StackOptions.TLS, R-HA-063).
 		environ = append(environ, `QUADER_SERVER_TLS_CERTIFICATES=[{"cert_file":`+strconv.Quote(p[0])+`,"key_file":`+strconv.Quote(p[1])+`}]`)
 	}
@@ -114,7 +123,7 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 		tb.Fatalf("config: %v", err)
 	}
 	logs := &SyncBuffer{}
-	a, err := app.New(app.Options{Loaded: loaded, Role: o.Role, Environ: environ, LogWriter: logs, Extra: o.Extra, Vuln: o.Vuln, Mirror: o.Mirror, DialOverride: o.DialOverride, Database: o.Database, UIAssets: o.UI})
+	a, err := app.New(app.Options{Loaded: loaded, Role: o.Role, Environ: environ, LogWriter: logs, Extra: o.Extra, Vuln: o.Vuln, Malware: o.Malware, Mirror: o.Mirror, DialOverride: o.DialOverride, Database: o.Database, UIAssets: o.UI})
 	if err != nil {
 		tb.Fatalf("new %s: %v", o.Name, err)
 	}

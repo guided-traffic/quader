@@ -39,6 +39,7 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 	a.registerIdentityJobs(r)
 	a.registerCIJobs(r)
 	a.registerVulnJobs(r)
+	a.registerMalwareJobs(r)
 	a.registerSecretsReencrypt(r)
 	a.registerAuditJobs(r)
 	a.registerInvalidationJobs(r)

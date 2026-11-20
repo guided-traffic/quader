@@ -10018,6 +10018,15 @@
         <target>Valkey: Keine Anfrage scheitert, aber Remote-Abrufe werden nur pro Replikat zusammengefasst, der Negativ-Cache gilt pro Replikat, Ratenbegrenzungen fallen auf Anteile pro Replikat zurück, und Änderungen kommen über die Abfrage des Änderungsprotokolls an.</target>
       </segment>
     </unit>
+    <unit id="system.check.malwareScanner">
+      <notes>
+        <note category="location">src/app/features/system/system-status.ts:273</note>
+      </notes>
+      <segment>
+        <source>Malware scan: this worker has no malware scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.</source>
+        <target>Malware-Prüfung: Dieser Worker hat keinen Malware-Scanner, den er aufrufen kann (malware.scanner.url ist leer), daher bleiben neue Artefakte ungeprüft.</target>
+      </segment>
+    </unit>
     <unit id="bastion-create.created">
       <notes>
         <note category="location">src/app/features/bastions/bastion-dialogs.ts:86</note>

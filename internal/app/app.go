@@ -67,6 +67,8 @@ type Options struct {
 	// Vuln replaces ports of the vulnerability scanning with fakes; tests only (the integration tests of the download
 	// block name the data state and the verdict of a remote miss without the sync and the evaluation). Production passes nil.
 	Vuln *VulnOverride
+	// Malware replaces the signature database of a malware scanner; tests only (wire_malware_scanner.go). Production passes nil.
+	Malware *MalwareOverride
 	// Mirror replaces the host, the clock and the jitter of the mirror engine; tests only. Production passes nil.
 	Mirror *MirrorOverride
 	// DialOverride points the connections of the outbound clients at other addresses (outbound.WithDialOverride): a test

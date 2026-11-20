@@ -292,7 +292,7 @@ type hostBinder interface {
 // ownership (R-AUTHZ-018) and the namespace auto claim (R-REPO-023) are bound to
 // the seams of the package writer; a seam that is not bound makes the writer refuse
 // the claim, so a publish is never let through unchecked (fail closed).
-func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr virtualArea, ow ownershipArea, vz vulnArea) (formatsArea, error) {
+func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr virtualArea, ow ownershipArea, vz vulnArea, mw malwareArea) (formatsArea, error) {
 	if err := requireInputs(AreaFormats, given("format data ports", fp.bindings)); err != nil {
 		return formatsArea{}, err
 	}
@@ -319,7 +319,7 @@ func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr vi
 		}
 		return h, nil
 	}, d)
-	return formatsArea{deps: d, hooks: vz.hooks(formathost.NewHooks(d)), seam: seam}, nil
+	return formatsArea{deps: d, hooks: mw.hooks(vz.hooks(formathost.NewHooks(d))), seam: seam}, nil
 }
 
 // The routing is the link's router of a virtual source: a drift of its method would silently turn every mount from a virtual repository into a

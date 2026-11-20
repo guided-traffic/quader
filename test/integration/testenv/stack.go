@@ -178,7 +178,11 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 		s.pairs = rolePairs(tb, dir)
 		s.base = append(s.base, "QUADER_SERVER_INTERNAL_TLS_CA_FILE="+CAFile(tb),
 			"QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME="+KindName("scanner"), "QUADER_VULNERABILITIES_IMAGES_SCANNER_CLIENT_NAME="+KindName("worker"),
-			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_SERVER_NAME="+KindName("packages"), `QUADER_SERVER_SCAN_CLIENTS=["`+KindName("scanner")+`"]`)
+			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_SERVER_NAME="+KindName("packages"),
+			`QUADER_SERVER_SCAN_CLIENTS=["`+KindName("scanner")+`","`+KindName("malware-scanner")+`"]`,
+			// The links of the malware scanning, named as the chart names them (R-HA-068, Q-MAL-61).
+			"QUADER_MALWARE_SCANNER_SERVER_NAME="+KindName("malware-scanner"), "QUADER_MALWARE_SCANNER_CLIENT_NAME="+KindName("worker"),
+			"QUADER_MALWARE_SCAN_LISTENER_SERVER_NAME="+KindName("packages"), "QUADER_MALWARE_SCAN_LISTENER_CLIENT_NAME="+KindName("malware-scanner"))
 	}
 	s.base = append(s.base, o.Env...)
 	s.Project(DefaultProject)

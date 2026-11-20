@@ -586,11 +586,12 @@ nothing worth taking.
 - **Never** claims jobs, holds leases, writes the replica registry, enqueues, or keeps anything between two calls.
 - **Kinds** ([Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration)). `process.scanner_kind` chooses what a
   scanner process does: `image` (the default, everything above) or `malware`, the malware scanning's scanner
-  ([malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-007; the key and the sections the kind reads are built, its parts are not:
-  a scanner of the kind `malware` refuses to start until they are). A malware scanner builds the same area with
-  its malware parts instead of the analyser: the handler of `POST /scan/v1/malware`, the reader of the scan listener's blob and database
-  routes, the unpacking of `ar` and zstd, and the client of `clamd` on the Unix socket of its pod; it reads `malware` instead of
-  `vulnerabilities.images`, and its readiness waits for its first database (R-MAL-007). It holds what an image scanner holds, a call's blob
+  ([malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-007). A malware scanner builds the same area with
+  its malware parts instead of the analyser ([wire_malware_scanner.go](../../internal/app/wire_malware_scanner.go)): the handler of
+  `POST /scan/v1/malware`, the reader of the scan listener's blob route, the unpacking of `ar` and zstd, the client of `clamd` on the Unix
+  socket of its pod, and the loader of its database from the scan listener's database routes (`scanner.Database`, the database work's;
+  until it is built a malware scanner has none); it reads `malware` instead of `vulnerabilities.images`, and its readiness, the check
+  `scanner`, waits for its first database ("no database loaded yet") and for `clamd` (R-MAL-007). The role `all` builds no malware scanner. It holds what an image scanner holds, a call's blob
   token instead of a scan token, and the loaded database. The chart renders it as a Deployment of its own with a container `clamd`
   beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-068).
 - **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's

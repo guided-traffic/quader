@@ -29086,6 +29086,14 @@
         <source>Valkey: no request fails, but remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to per-replica shares, and changes arrive through the change-log poll.</source>
       </segment>
     </unit>
+    <unit id="system.check.malwareScanner">
+      <notes>
+        <note category="location">src/app/features/system/system-status.ts:274</note>
+      </notes>
+      <segment>
+        <source>Malware scan: this worker has no malware scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.</source>
+      </segment>
+    </unit>
     <unit id="route.system.jobs.title">
       <notes>
         <note category="location">src/app/features/system/system.routes.ts:19</note>

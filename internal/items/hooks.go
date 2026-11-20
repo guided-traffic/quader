@@ -60,6 +60,9 @@ type CommitEvent struct {
 	Actor string
 	// Replaced is true when the commit replaced other content at the path.
 	Replaced bool
+	// Generated is true for an item Quader derived from the lead (CommitSpec.Generated): its bytes are Quader's own writing, which the
+	// malware scanning does not scan (malware-scanning.md Q-MAL-22).
+	Generated bool
 }
 
 // Removed is an item a removal took away.

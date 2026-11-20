@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	mscanner "github.com/guided-traffic/quader/internal/malware/scanner"
 	"github.com/guided-traffic/quader/internal/observability/health"
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 	"github.com/guided-traffic/quader/internal/vuln/scanner"
@@ -25,9 +26,11 @@ import (
 // metrics of the role scanner (Q-ARCH-527).
 const AreaScanner Area = "scanner"
 
-// scannerArea is the scanner of the replica and the TLS of its listener and of its link to the scan listener.
+// scannerArea is the scanner of the replica and the TLS of its listener and of its link to the scan listener: the image scanner (svc),
+// or the malware scanner (malware) of a process of the kind malware (wire_malware_scanner.go).
 type scannerArea struct {
-	svc *scanner.Service
+	svc     *scanner.Service
+	malware *mscanner.Service
 	// listenerTLS serves the pair and requires a client certificate of the internal CA; nil without TLS.
 	listenerTLS *httpserver.ListenerTLS
 	// link is the scanner's side of its pull: the pair it presents and the CA it verifies the scan listener against; nil without TLS.
@@ -42,9 +45,8 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 	if a.id.Role == config.RoleAll && !a.imageScanningOn() {
 		return scannerArea{}, nil // the role all scans no image: no scanner and no listener
 	}
-	if a.id.Role == config.RoleScanner && a.cfg.Process.ScannerKind == config.ScannerKindMalware {
-		// The kind's configuration is read and checked (Q-ARCH-560); its handler, the unpacking and the client of clamd are not built.
-		return scannerArea{}, errors.New("process.scanner_kind malware: the malware scanner is not built into this release yet (malware-scanning.md R-MAL-007)")
+	if a.isMalwareScanner() {
+		return a.wireMalwareScanner(ctx)
 	}
 	cfg := a.cfg
 	images := cfg.Vulnerabilities.Images
@@ -197,10 +199,27 @@ func (c *scannerComponent) Start(ctx context.Context) error {
 	return nil
 }
 
-func (c *scannerComponent) Drain(context.Context)   { c.area.svc.Drain() }
-func (c *scannerComponent) Quiesce(context.Context) { c.area.svc.Stop() }
-func (c *scannerComponent) Stop(ctx context.Context) error {
+func (c *scannerComponent) Drain(context.Context) {
+	if c.area.malware != nil {
+		c.area.malware.Drain()
+		return
+	}
+	c.area.svc.Drain()
+}
+
+func (c *scannerComponent) Quiesce(context.Context) { c.stopScans() }
+
+// stopScans ends the scans still running: the analyses, or the malware scanner's calls.
+func (c *scannerComponent) stopScans() {
+	if c.area.malware != nil {
+		c.area.malware.Stop()
+		return
+	}
 	c.area.svc.Stop()
+}
+
+func (c *scannerComponent) Stop(ctx context.Context) error {
+	c.stopScans()
 	if c.link != nil {
 		return c.link.Stop(ctx)
 	}
@@ -216,16 +235,23 @@ func (a *App) scannerListenAddr() string {
 	return a.cfg.Server.Listen
 }
 
-// startScanner binds the scanner's listener and serves POST /scan/v1/analyses and nothing else (R-ARCH-036).
+// startScanner binds the scanner's listener and serves POST /scan/v1/analyses, or a malware scanner's POST /scan/v1/malware, and nothing
+// else (R-ARCH-036).
 func (a *App) startScanner() error {
 	s, ok := lookup[scannerArea](a.parts)
 	switch {
-	case ok && s.svc == nil && a.id.Role == config.RoleAll:
+	case ok && s.svc == nil && s.malware == nil && a.id.Role == config.RoleAll:
 		return nil
-	case !ok || s.svc == nil:
+	case !ok || (s.svc == nil && s.malware == nil):
 		return errors.New("the scanner's listener: the scanner area is not wired")
 	}
-	srv, err := a.newServer(httpserver.LinkScanner, a.scannerListenAddr(), scannerRouter(s.svc), s.listenerTLS)
+	var router http.Handler
+	if s.malware != nil {
+		router = malwareScannerRouter(s.malware)
+	} else {
+		router = scannerRouter(s.svc)
+	}
+	srv, err := a.newServer(httpserver.LinkScanner, a.scannerListenAddr(), router, s.listenerTLS)
 	if err != nil {
 		return err
 	}
