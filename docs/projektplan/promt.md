@@ -618,8 +618,15 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   repositories the product defines from the formats' upstream presets, nothing can be created in it, and every one is off
   until an administrator switches it on); a changed address is marked as differing from the product's and can be reset; a
   stored credential is entered again when its hosts change, as for every remote (R-REPO-033). Open: the project's key, the
-  binding of a host. Parked with it, on his word ("Das stellen wir kurz zurück"): in
-  which repository the analyser's database lies when Quader's own repository is its cache.
+  binding of a host. **The analyser's database** (owner, 2026-11-20, no longer parked): it must not make everybody use a
+  central `ghcr` ("Ich fände es doof, wenn Trivy … dazu führt, dass jeder auch das zentrale ghcr nutzen muss"), and there is
+  no second way that falls back to the public source. One repository of the well-known project holds it and lets nothing
+  else through: "Nenn es nicht trivy-db sondern 'scanner-trivy', es ist immer private und nur für unseren Scanner. Der Admin
+  kann das nicht anpassen. Ansonsten gehe ich voll mit." It is switched on with the image scanning and by nothing else; the
+  scanning's setting names the repository the database comes from, `scanner-trivy` by default, and an installation without
+  the internet names a local OCI repository of its own there (which replaces the file in a generic repository of today). The
+  development agent's reading, said to him: what he fixed is the visibility; the upstream address and an account for it stay
+  an administrator's, as for every well-known repository.
 - **Format logos** (Q-UI-225 to 227): npm, Ansible Galaxy and the Docker whale may be shown only with their owners' permission, so
   npm and Ansible Galaxy keep the neutral glyph (and Guides show it on the tiles of Ansible Galaxy, Generic and npm). To show them,
   the owner asks npm, Inc. and Red Hat for permission. At the walkthrough: the logos in the running app, light and dark, in Firefox
