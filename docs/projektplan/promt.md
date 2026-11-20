@@ -564,13 +564,16 @@ runs are in `git log`; this section holds the current state.
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
   **Recently opened**); the wiki's visibility behind a fold; W-27 (**Set up client** in variant A) with the fix of the two
   jobs it turned red; the limits' package (the built-in profiles from a measurement, a refused request not counted, waiting
-  downloads capped, a 429 not counting toward the block); the format legs of the pipeline (a `ci:` commit, no release).
-- **To read in the window from 17:00:** the runs of today's pushes. Test and Release 44715970992 of b74d0e98 had `UI layout
-  checks` and `e2e (access-long)` red from W-27 (fixed in `d46333ac`, not yet confirmed by a run) and `integration (shard
-  c)` red by `TestR_DEB_025` of section 12 D. The first run with the new format legs shows whether a skipped leg takes no
-  runner, how the evened-out shards really run (modelled 37.2, 38.1 and 38.8 minutes) and that the night does not get
-  longer. Each shard has room for about three more formats: a fourth shard, or moving the formats' repeated integration
-  tests into the kit, comes next (section 12 A; the other candidates there are not decided).
+  downloads capped, a 429 not counting toward the block); the format legs of the pipeline (a `ci:` commit, no release);
+  the bounded wait for Valkey's verdict before the first readiness (Q-HA-293, 30 s by default, the gaps H-1050 and
+  H-1051); the level `internal` by the owner's definition (the gap H-1052); one colour scale of the severities.
+- **The pipeline at 14:06:** Test and Release 44735324156 of `b261949f` was green in every job, the first run with the new
+  format legs: the deciding job took 30 s, the shards ran 35.4, 39.1 and 39.3 minutes (modelled 37.2, 38.1 and 38.8), and
+  `UI layout checks` and `e2e (access-long)`, red from W-27 at 12:15, are green again. Every leg ran, because that commit
+  touched every leg's job: that a leg which does not apply takes no runner shows in the next push of shared code. Each
+  shard has room for about three more formats: a fourth shard, or moving the formats' repeated integration tests into the
+  kit, comes next (section 12 A). `TestR_DEB_025` of section 12 D was green in this run. **In the window from 17:00:** the
+  runs of the afternoon's pushes.
 - **The level `internal`, the owner's definition of 2026-11-20, in work on `main`:** "internal sind alle angemeldeten User
   (auch technische) außer User und seine Tokens die das external-flag tragen. Internal ist einfach eine Sichtbarkeit für
   ein Projekt. Ist das Projekt privat, braucht man eine spezifische Einladung um das Projekt zu sehen. Ist es intern, kann
@@ -581,15 +584,21 @@ runs are in `git log`; this section holds the current state.
   other, so Q-BAS-148 goes; and a project's service account is no account of an external party and carries no flag ("Ein
   Service-Account für ein Projekt ist IMMER ein direkter Zugang zum Projekt. Mit genau den Berechtigungen die der
   Service-Account hat."). The development agent had taken both from the specification as settled and put a question on top
-  of them; they were its own earlier readings, not his. A builder changes the rule, the specification and the tests.
+  of them; they were its own earlier readings, not his. Built on 2026-11-20: a service-account token and a CI token read
+  what is `internal`, the Bastion's mark on a subject is gone, and a Bastion's own registration is not internal (Q-AUTHZ-320,
+  the development agent's: the Bastion reads nothing on its own credential). What it opens is H-1052 on
+  [visibility.md](../security/visibility.md): a technical or CI token reads every `internal` repository at every door; live
+  where a CI issuer is public, where a mapping admits fork pipelines to read, and for forks on a GitLab older than 18.4.
+  **To check before the owner's installation takes the release:** whether one of the three is configured there.
 - **Specified, not on `main`: the built-in project `upstream`** with the product's well-known repositories, on the local
   branch `spec/upstream-project` (one commit on `5dffd9bf`; ADR-209 and 211; the gaps H-1021 to H-1026), cut into three
   work packages: the project, the reconcile and the admin API (migration 00086); membership across the project line,
   placeholders and usage (00087); the UI. The lift its planner first specified for CI tokens went with the owner's
   definition of `internal`. **Confirmed by the owner on 2026-11-20** ("ja, Schlüssel mitbringen"): the Debian and Ubuntu
-  repositories carry their archive keys, so a key change of an archive needs a release (Q-REPO-379). **One decision of the
-  planner still goes to him before a builder starts:** an administrator also sets the settings that narrow what a
-  well-known repository serves, beside the two things the owner named (Q-REPO-378).
+  repositories carry their archive keys, so a key change of an archive needs a release (Q-REPO-379). **And** ("Option B", after he asked what
+  exactly): beside the two things he named, an administrator sets the six settings that only narrow what a well-known
+  repository serves: include and exclude patterns, offline, who may fill the cache, the repository's vulnerability settings
+  and the administrator's note; everything else stays the product's (Q-REPO-378).
 - **Specified, not on `main`: the role `scanner`** and the analyser's database in a repository, on the local branch
   `spec/scanner-role` (one commit on `5dffd9bf`; ADR-212 to 214), cut into two work packages: the scanner role (no
   migration), the database in a repository (one migration). **To do before a builder starts:** the branch is put on top of
@@ -602,15 +611,16 @@ runs are in `git log`; this section holds the current state.
   installation); the worker writes the scanner's package list anew before its own analyser reads it (Q-VULN-164), whose
   faithfulness only a test with the real analyser shows, and that test does not run in CI yet: the builder has to give it
   one that does.
-- **In work:** the builder for the level `internal`; a builder for the bounded wait for Valkey's verdict before the first
-  readiness (Q-HA-293).
+- **In work:** nothing. **Next:** `spec/scanner-role` is put on top of `spec/upstream-project` and `main`, the two are
+  reconciled, then the builders start (three packages for `upstream`, two for the scanner).
 - **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
   `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
   its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
   text's colour, Unknown is the bar's grey hatch everywhere and None a neutral grey, and the usage charts get a token of
   their own. He asked why the example showed no Critical finding: the mockup's bar had Critical at 0 and its trend at 2 to
   6 of 500, the development agent's brief had asked for a segment with 0 and the designer put it there; shown again with
-  27. A builder builds it.
+  27. Built on 2026-11-20 (Q-UI-860 to 862); in the dark scheme a very thin Critical band at 390 px is one faint row of
+  pixels, which the designer had named.
 - **Decided, not built now:** W-12, an invitation by e-mail, later; the logos of npm and Ansible Galaxy, he asks their
   owners later; presets of the installation's own registries, after the project `upstream`.
 - **Housekeeping:** nine worktrees are locked by another session of 2026-11-18 that still runs and were left alone.

@@ -57,7 +57,7 @@ write: a write is always a grant's, a role's or a capability's (R-AUTHZ-033 rule
 | Bastion token | nothing: it is refused by type on every route but the Bastion interface | the interface | revocation, expiry |
 | Session cookie of a user not flagged external | as a personal token, without a scope | every endpoint that accepts the session cookie; never through a Bastion, which forwards no cookie (R-BAS-003) | sign-out, session end |
 
-Every row is bounded by the exposure rules of the endpoint the request arrives on (R-EP-013). H-884 and H-1050 below say what makes
+Every row is bounded by the exposure rules of the endpoint the request arrives on (R-EP-013). H-884 and H-1052 below say what makes
 a row real.
 
 ## Who decides
@@ -184,7 +184,7 @@ until a restore goes back to a point before a level was restricted: the restored
 restricts the level again, Owners may choose it. Nothing opens by the restore itself; what an Owner opens in between stays open
 (H-1001).
 
-### H-1050 · A technical token or a CI token reads every `internal` repository, not only what it was made for
+### H-1052 · A technical token or a CI token reads every `internal` repository, not only what it was made for
 
 Component: the internal subject of R-AUTHZ-030 ([Q-AUTHZ-268](../spec/authorization.md#q-authz-268--every-authenticated-subject-is-internal-except-a-user-flagged-external-and-that-users-tokens)).
 Subject: the technical tokens of service accounts of every level and CI tokens. Live on every installation with an `internal`

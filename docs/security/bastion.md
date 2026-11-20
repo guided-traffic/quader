@@ -54,7 +54,7 @@ whose disagreement with the main installation could serve bytes.
   is decided as the same request at the main installation's door ([Q-BAS-148](../spec/bastion.md#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)).
   For a token of an internal caller - a personal token of a user not flagged external, a service account's technical token, a CI
   token - that is every `internal` repository besides its grants; a token of a user flagged external reads its grants and what is
-  `public` ([visibility.md](visibility.md#what-a-leaked-credential-reads), H-884, H-1050). The shape of the answer is the decision
+  `public` ([visibility.md](visibility.md#what-a-leaked-credential-reads), H-884, H-1052). The shape of the answer is the decision
   point's (R-BAS-012), a narrowed reader never receives a shared document (R-BAS-023), and a revocation at the main installation
   reaches every Bastion replica within the feed's poll interval and one round trip (R-BAS-026). During an outage of the main
   installation a revoked token reads on for the grace period (H-383).
