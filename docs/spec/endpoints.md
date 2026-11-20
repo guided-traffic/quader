@@ -2579,6 +2579,29 @@ this if further endpoints are configured with personal tokens in practice.
 
 **Applied in the spec:** R-EP-010; [authorization.md](authorization.md) R-AUTHZ-003, R-AUTHZ-035.
 
+### Q-EP-87 · A host-root binding and an exposure rule name a well-known repository as any repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the well-known repositories of the project `upstream` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066)
+are named `upstream/<key>` in instance contexts. Binding a host to a repository at its root stays what R-EP-006 and R-EP-007 say
+(owner's frame of 2026-11-20); an address without the project segment is not wanted (Q-REPO-370 (c)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Nothing new: `host_roots` may bind `upstream/docker-hub`, and an exposure rule may name `upstream/<key>` or a pattern over it; exposure through a team's virtual repository is decided on the addressed repository (Q-EP-11) (chosen) | The mechanisms read the repository per request | A Docker Engine mirror host can front the central Docker Hub repository; one rule set | A binding to a well-known repository that is off answers `404 repository_disabled` on the bound host, as for any disabled repository |
+| (b) A built-in binding per well-known repository | `docker-hub.quader.example.com` | Shorter client configuration | Host names are configuration of the installation's network (INV-15), not of the product; R-EP-006 stays as it is |
+
+**Choice:** (a). A binding to `upstream/scanner-trivy` binds nothing a client can use: every protocol request to it answers 404
+(R-REPO-070). An endpoint with exposure rules that exposes a team's virtual repository exposes what its well-known members serve under
+the rule's patterns, as far as the members' levels and grants let the endpoint's principals read them (H-61 applies).
+
+**Rationale:** the well-known repositories are repositories with qualified names; every mechanism that names a repository works for
+them. The development agent would revisit this if the owner wants hosts per registry.
+
+**Applied in the spec:** R-EP-006 and R-EP-012 (unchanged, read with this); [repositories-and-proxy.md](repositories-and-proxy.md)
+R-REPO-066.
+
 ## What this does not cover
 
 ### H-57 · A further endpoint runs with every credential of a `web` replica

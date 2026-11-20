@@ -265,6 +265,17 @@ cases above one by one, a token of a user without the right included) and
 `TestR_AUTHZ_013_ASetupTokenOfAVirtualRepositoryReadsThroughIt` (over HTTP through a virtual npm repository, with the direct read of the
 member refused).
 
+## A well-known member read through a team's virtual repository
+
+Specified, not built ([authorization.md](../spec/authorization.md) R-AUTHZ-041, Q-AUTHZ-302). A member of the built-in project
+`upstream` is decided through a team's virtual repository as every member is: on its own level and the grants that name it. Nothing of
+the virtual repository's grants or roles reaches it, so listing it in a virtual repository opens it to nobody its level does not
+already admit. By the level `internal` of R-AUTHZ-030, an `internal` well-known repository is read by every signed-in
+subject that is not a user flagged external or that user's token: a team's CI tokens and service-account tokens read it (a service
+account carries no external flag), an external member of the team skips it. A `private` one is read only by whom a global policy or a
+capability admits. A request through a Bastion is decided as the same request at the main installation's own door (R-AUTHZ-030,
+Q-BAS-148); the endpoint's exposure decides what is served.
+
 ## What Valkey can do to authorization
 
 Nothing is written to Valkey or read from it by `internal/authz`. The change log delivers Valkey messages to the engine's

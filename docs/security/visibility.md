@@ -73,6 +73,18 @@ a row real.
 No policy entry, role binding, project membership or owner record can name `anonymous` or `authenticated` (422
 `principal_not_allowed`, refused by the database with `AI009`, Q-AUTHZ-279), so no grant can open what the levels keep closed.
 
+**The built-in project `upstream`** (specified, not built, [authorization.md](../spec/authorization.md) R-AUTHZ-041) is
+stored `public` and fixed, so that an administrator may give a well-known repository any level; the stored level admits nobody to the
+project, which is seen only by whoever reads one of its repositories. The levels of its repositories are an administrator's
+(`repositories:write-config`, `security-settings:write` for a restricted one), never an Owner's: it has none. **Switch all on** sets
+`internal`, never `public`; choosing `public` asks first with the sentence the owner asked for, because a public well-known repository
+lets anyone on the internet pull through the installation ([H-881](#h-881--anyone-can-make-a-public-remote-repository-fetch-from-its-upstream)
+applies to it as to every public remote). Through a team's virtual repository a well-known repository is read by its own level, never
+by the team's grants ([permissions.md](permissions.md#a-well-known-member-read-through-a-teams-virtual-repository)): at `internal` by every
+caller of the table above that reads `internal`, the technical tokens and CI tokens of every project included
+([H-1052](#h-1052--a-technical-token-or-a-ci-token-reads-every-internal-repository-not-only-what-it-was-made-for) applies to it), and not
+by a user flagged external ([authorization.md](../spec/authorization.md) R-AUTHZ-030, Q-AUTHZ-302).
+
 ## Who may open
 
 An administrator restricts levels to administrators (R-AUTHZ-037, ADR-204): a level in `restrictedLevels` of the installation's

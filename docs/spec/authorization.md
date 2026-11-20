@@ -495,6 +495,8 @@ func leveled(sub Subject, idx *Index, a Action, c Coordinate) bool {
 8. **Projects.** A project is visible to a caller its level admits, besides its members and the holders of `projects:read`:
    `GET /api/v1/projects` lists it without a role and `GET /api/v1/projects/{projectKey}` reads it; its members list stays
    with its members and `projects:read` ([Q-AUTHZ-277](#q-authz-277--a-project-is-seen-by-whom-its-level-admits-and-its-members-stay-with-its-members)).
+   The built-in project `upstream` is the exception: its stored `public` bounds its repositories and admits nobody; it is seen by
+   the holders of `projects:read` and by whoever reads one of its repositories (R-AUTHZ-041).
 9. **Explanation and audit.** A read allowed by a level has the reason `allow.visibility` and the source `visibility:<level>`
    (R-AUTHZ-024, R-AUTHZ-029); a wiki read refused where the artifacts read is allowed has the reason `deny.wiki`.
 
@@ -1142,7 +1144,8 @@ Priority: **MVP** · Covers: IAM-024, PKG-NPM-042, PKG-NPM-045, PKG-NUGET-027
    subject holds `read` on the member for that coordinate. Members the subject cannot read are
    skipped silently. Nested virtual repositories (P1) apply rule 1 at each level.
    A token scope that admits `read` on the virtual repository admits these member reads for the
-   request that went through it (R-AUTHZ-013, Q-AUTHZ-163).
+   request that went through it (R-AUTHZ-013, Q-AUTHZ-163). A member of the project `upstream` is decided the same way, on its
+   own level and the grants that name it (R-AUTHZ-041).
 3. **Fetching through a virtual repository** is checked on the remote member with that member's
    `cacheFillAction` (R-AUTHZ-008).
 4. **Merged metadata** (npm package documents, NuGet registrations, search results) MUST be built
@@ -1178,10 +1181,10 @@ own (IAM-024). Policies MAY name virtual repositories by key, by pattern and by 
 catalog leaves open whether a policy may hold a virtual repository key, and Quader allows it. The
 gate lets administrators decide which aggregated endpoints a group uses, at the cost of one extra
 selector (`@any-virtual:npm` covers all npm virtual repositories). A virtual repository's members are repositories of
-its own project ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-017), so a gate and its members are
-always decided within one project. Because content is always
-decided on the member, rearranging the members of a virtual repository never exposes content to
-someone who could not read it directly. Q-AUTHZ-1 records the decision;
+its own project and of the built-in project `upstream` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-017,
+R-REPO-071), so a gate and its members are decided within one project, or across the line to `upstream` and nowhere else.
+Because content is always decided on the member, rearranging the members of a virtual repository never exposes content to
+someone who could not read it directly, a member of `upstream` included. Q-AUTHZ-1 records the decision;
 [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-019 step 1 applies the gate.
 
 Acceptance criteria:
@@ -2421,10 +2424,14 @@ of its partners without a system administrator. Delegation per policy (`manage`,
   every later operation (`/api/v1/projects/<projectKey>/repositories/<repoKey>`, `/api/<format>/<projectKey>/<repoKey>/…`,
   [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-002, R-REPO-009), and a repository changes project only
   through a move ([R-REPO-060](repositories-and-proxy.md#r-repo-060--move-a-repository-to-another-project)). Its key is
-  unique within the project: `web` and `mobile` can each have `npm-remote`. A virtual repository lists only repositories
-  of its own project, a remote repository of a public registry exists in each project that needs it (the blob store
-  deduplicates, INV-4), and a project's policies, CI mappings and deployment targets name only its repositories
-  (R-AUTHZ-004).
+  unique within the project: `web` and `mobile` can each have `npm-remote`. A virtual repository lists repositories of its own
+  project and of the built-in project `upstream` (R-AUTHZ-041, [repositories-and-proxy.md](repositories-and-proxy.md)
+  R-REPO-071), a project that needs a public registry lists the central repository of `upstream` or keeps a remote repository
+  of its own (the blob store deduplicates, INV-4), and a project's policies, CI mappings and deployment targets name only its
+  repositories (R-AUTHZ-004).
+- **The built-in project `upstream`** (amendment of Q-AUTHZ-206 on 2026-11-20) is no project of a team: it has no members,
+  policies, service accounts or CI mappings, it is not deleted, and its repositories are the product's; R-AUTHZ-041 states what
+  this requirement's rules become for it.
 - A project holds its repositories, its members, its policies, its service accounts and the CI mappings of its tier
   `project:<projectKey>` ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-009). The names of its policies, service accounts
   and CI mappings are unique among the objects of the project, and among those of no project; the same name may exist in
@@ -2541,7 +2548,8 @@ through `projects:read` answers 404 on every route below it, exactly like a proj
 is too low gets 403.
 
 **Deleting a project.** Only a holder of `projects:write` deletes a project, and only when no repository, in any lifecycle
-state, belongs to it, no service account belongs to it and no CI mapping has its tier (409 `project_not_empty`). Its
+state, belongs to it, no service account belongs to it and no CI mapping has its tier (409 `project_not_empty`). The built-in project
+`upstream` is never deleted (409 `managed_by_product`, R-AUTHZ-041). Its
 policies are deleted with it, each through the policy store (audited and journaled like any policy deletion), and its
 member entries go ([Q-AUTHZ-185](#q-authz-185--versions-delete-order-the-epoch-and-the-journal-of-project-writes)).
 Each deletion carries the version read before it as its `If-Match` and names the project, so a policy that took the name in
@@ -3374,6 +3382,80 @@ Acceptance criteria:
 
 - The `auditor` reads `GET /api/v1/usage` (200) and gets 403 on `PATCH /api/v1/limits/settings`; a `security-admin` gets 403 on
   `POST /api/v1/limits/profiles`.
+
+### R-AUTHZ-041 · The built-in project `upstream` in the permission model
+Priority: **MVP** · Covers: quader-only
+
+The project `upstream` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066, the amendment of
+[Q-AUTHZ-206](#q-authz-206--every-repository-belongs-to-exactly-one-project) of 2026-11-20) holds the product's repositories and is
+administered by the installation's administrators, not by a team.
+
+- **No members and no project objects** ([Q-AUTHZ-300](#q-authz-300--the-project-upstream-has-no-members-policies-or-accounts-administrators-act-through-their-capabilities)):
+  adding a member, creating a project policy, a project service account, a service account of one of its repositories
+  (R-AUTHZ-039) or a CI mapping of the tier `project:upstream` answers 409 `managed_by_product`; the database refuses the rows
+  (SQLSTATE `AI010`, R-REPO-066). Changing its display name, description or level (`PUT /api/v1/projects/upstream`,
+  `PUT /api/v1/projects/upstream/visibility`) and deleting it answer 409 `managed_by_product`. Nobody holds a role in it, so
+  `projectRole` declarations admit nobody there and the project's screens are read-only for everyone.
+- **Who reads its repositories**: whom their levels admit (R-AUTHZ-035), the principals a global policy names (an instance context,
+  R-AUTHZ-004: `upstream/npmjs`, `upstream/*`, a class such as `@any-remote:npm`, which covers the remote repositories of every
+  project), and the holders of a capability that reads every repository (`content:bypass`, `content:metadata-read`). A project context
+  never names them: a selector with a `/` is refused there as before.
+- **Through a team's virtual repository** a member of `upstream` is decided as every member is, on its own level and on the grants
+  that name it (R-AUTHZ-009 rule 2); nothing of the virtual repository's grants or roles reaches it
+  ([Q-AUTHZ-302](#q-authz-302--internal-admits-every-signed-in-subject-that-is-not-external-so-a-teams-ci-job-reads-a-well-known-member-by-its-level)). `internal` admits every signed-in subject that is not a user flagged external or
+  that user's token, technical subjects included: a CI token and a service-account token read an `internal` well-known member
+  (R-AUTHZ-030). A service account carries no external flag; the flag is a user's (R-AUTH-044) and reaches that user's own tokens. A user flagged external who holds a role on the team's project reads the virtual
+  repository's local members and skips an `internal` member of `upstream` silently, as step 4 of R-REPO-019 skips every unreadable
+  member. A request through a Bastion is decided as the same request at the main installation's own door: the channel plays no part
+  (R-AUTHZ-030, [bastion.md](bastion.md) Q-BAS-148), and the exposure of the endpoint decides what is served (R-EP-013). A `private` member is read through it only by whom a global policy or a capability admits.
+- **Who administers them** ([Q-AUTHZ-303](#q-authz-303--repositorieswrite-config-administers-the-well-known-repositories)): the
+  operations of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073 read with `repositories:read-config` and write with
+  `repositories:write-config`; a level the installation restricts is chosen only by a holder of `security-settings:write`
+  (R-AUTHZ-037); raising a level, setting an address and setting an account need recent authentication
+  ([api-and-ui.md](api-and-ui.md) R-API-007). The narrowing settings of R-REPO-069 need `repositories:write-config`, and a weakening
+  of `vulnerabilities` follows R-VULN-002. The limits' rules at the project `upstream` and at its repositories are written with
+  `limits:write`, its ceilings with `limits:write` or `repositories:write-config` ([usage-and-limits.md](usage-and-limits.md)
+  R-LIM-016, Q-LIM-62): no Owner writes a capped rule there.
+- **Its level** ([Q-AUTHZ-301](#q-authz-301--the-project-upstream-is-stored-public-and-seen-by-whoever-reads-one-of-its-repositories)):
+  stored `public` and fixed, so that a well-known repository can take any level an administrator chooses (R-AUTHZ-033 rule 2). The
+  stored level admits nobody: the project is listed and read by the holders of `projects:read` and by a caller that reads one of its
+  repositories, and its members list is empty. It is not one of the `publicObjects` of `GET /api/v1/settings/visibility`
+  ([api-and-ui.md](api-and-ui.md) R-API-056); its repositories are, when they are `public`. A repository's levels follow the order
+  of R-AUTHZ-038: rule 2 always passes, rules 3 to 5 apply as for any repository.
+- **Findings** ([Q-AUTHZ-304](#q-authz-304--a-finding-of-a-well-known-repository-is-read-through-a-teams-virtual-repository-and-triaged-by-the-triage-capability)):
+  a finding of a well-known repository is read by whoever reads the repository, through a team's virtual repository as well (the
+  members it expands to are decided on their own levels, R-VULN-019), and changed by the holders of `vulnerabilities:triage` ([vulnerability-scanning.md](vulnerability-scanning.md)
+  R-VULN-013); no project role reaches it. A block a triager sets holds for every team that lists the repository.
+- **The audit** of its repositories names the project `upstream` and the actors of their writes: administrators, and
+  `system:catalog` for the reconcile ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-067).
+
+Acceptance criteria (integration area `upstream`, about 2 s):
+
+- `PUT /api/v1/projects/upstream/members/user:alice` with `{"role": "reader"}`, `POST /api/v1/projects/upstream/policies`,
+  `POST /api/v1/projects/upstream/service-accounts` and `PUT /api/v1/projects/upstream/visibility` each answer 409
+  `managed_by_product`; a direct `INSERT INTO project_member` for the project fails with SQLSTATE `AI010`.
+- An administrator's global policy `ci-read-upstream` on the selector `upstream/npmjs` is stored by the repository's ID; a policy of
+  project `web` with the selector `upstream/npmjs` answers 422 `invalid_pattern`.
+- An internal user who reads no repository of `upstream` does not find the project in `GET /api/v1/projects` and gets 404 on
+  `GET /api/v1/projects/upstream`; once `upstream/npmjs` is `active` and `internal`, both list and read it.
+- Reads through a team's virtual repository, by the member's level (project `web`; `npm-all` virtual over `npm-local` and
+  `upstream/npmjs`; the CI mapping `web-build` grants `read` on `npm-all` only; Erin is a user flagged external with the role `reader`
+  in `web`; the project service account `sa:web/deployer` holds `read` on `npm-all`; `npm-local` holds `@web/ui`, `upstream/npmjs`
+  serves `lodash`):
+
+  | # | Subject | `upstream/npmjs` | Request | Result |
+  |---|---|---|---|---|
+  | 1 | CI token of `web-build` | `internal`, `active` | `npm install lodash` via `npm-all` | 200 from `upstream/npmjs`, read by its level |
+  | 2 | CI token of `web-build` | `private`, `active` | the same | `upstream/npmjs` skipped: 404 |
+  | 3 | Erin's personal token | `internal`, `active` | the same | `upstream/npmjs` skipped (external): 404, no sentence |
+  | 4 | Erin's personal token | `internal`, `active` | `npm install @web/ui` via `npm-all` | 200 from `npm-local` |
+  | 5 | `sa:web/deployer` through a Bastion | `internal`, `active` | `lodash` via `npm-all` | 200 from `upstream/npmjs`: through a Bastion the level reads as without it |
+  | 6 | CI token of `web-build` | `internal`, `not-switched-on` | `lodash` via `npm-all` | placeholder: 404 with the sentence of R-REPO-072 |
+  | 7 | Erin's personal token | `internal`, `not-switched-on` | the same | 404 without the sentence: she would not read it once it is on |
+
+  Each row is a unit test of `internal/authz` and `internal/virtual` on the R-AUTHZ fixture (under 1 s). In the integration area
+  `upstream`, against the stub npm upstream (about 2 s), a CI token and a service-account token read `lodash` through `npm-all` by
+  the member's level (row 1), and an external user's token does not (row 3).
 
 ## Worked examples
 
@@ -5645,6 +5727,21 @@ project), R-AUTHZ-009; [repositories-and-proxy.md](repositories-and-proxy.md) R-
 R-REPO-009, R-REPO-013, R-REPO-017, R-REPO-021, R-REPO-060 (the move, [Q-REPO-217](repositories-and-proxy.md#q-repo-217--a-repository-moves-to-another-project-through-an-operation-of-its-own-and-only-while-nothing-of-its-project-names-it));
 [storage.md](storage.md) R-STOR-003 (`project_id` required); [README.md](README.md) INV-5; [ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project).
 
+**Amended by the owner on 2026-11-20**, narrowly. Every repository still belongs to exactly one project, and no repository exists
+without one; what option (a) offered and the owner refused, a built-in project as the place for repositories without a project, stays
+refused. What is new is a built-in project of another kind: `upstream`, which holds only the repositories the product defines, one
+remote repository per well-known public registry of the format catalog and the system repositories of the product's own work, and
+which a virtual repository of any project may list ("Ich bin gerne bei Option B"; "die well-known Repos werden von uns gepflegt und
+sind nicht löschbar"; the key: "Okay, lass uns upstream nehmen"). Nobody creates, moves, renames or deletes a repository in it, and
+the project cannot be deleted. "There are no shared repositories" holds for every other project: a virtual repository lists the
+repositories of its own project and of `upstream`, and of no other
+([repositories-and-proxy.md](repositories-and-proxy.md) [Q-REPO-370](repositories-and-proxy.md#q-repo-370--a-built-in-project-upstream-holds-the-products-well-known-repositories),
+[Q-REPO-371](repositories-and-proxy.md#q-repo-371--a-virtual-repository-lists-repositories-of-its-own-project-and-of-upstream)).
+Applied in R-AUTHZ-026, R-AUTHZ-041, R-AUTHZ-009; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-017,
+R-REPO-066 to R-REPO-074; [README.md](README.md) INV-5;
+[ADR-209](../decisions.md#adr-209--the-built-in-project-upstream-holds-the-products-well-known-repositories-and-a-virtual-repository-may-list-them),
+which amends ADR-156.
+
 ### Q-AUTHZ-207 · A user or group is a member of a project with a role, and the role grants the project's repositories
 
 Status: **Decided by the owner on 2026-11-06.** Built.
@@ -7109,6 +7206,131 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). `security-admin` reads both and writes none: raising a limit is the instance administrator's (owner, decision 14).
 **Applied in the spec:** R-AUTHZ-040, R-AUTHZ-010.
+
+### Q-AUTHZ-300 · The project `upstream` has no members, policies or accounts; administrators act through their capabilities
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a project has members with roles, policies, service accounts and CI mappings, administered by its Owner (R-AUTHZ-026). The
+project `upstream` holds only the product's repositories (the amendment of Q-AUTHZ-206 of 2026-11-20); the owner gave their
+administration to the installation's administrators and an admin page.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) None of them; administrators act through `repositories:read-config` and `repositories:write-config`, global policies grant what a level does not (chosen) | Every project object of `upstream` is refused with 409 `managed_by_product`, in the API and in the database | The project stays the product's; nobody is the Owner of a repository that every team lists; one place, the admin page, decides | An administrator who wants a group to read a `private` well-known repository writes a global policy |
+| (b) Administrators are its Owners | The `owner` role for the holders of `projects:write` | The project screens work as for any project | An Owner creates, moves and deletes repositories, which the product forbids here; two ways to administer one thing |
+| (c) Members allowed, policies and accounts not | Reader roles for groups | A group reads a `private` well-known repository without a global policy | A role is a project's grant for every repository of it, which here means every public registry at once |
+
+**Choice:** (a).
+
+**Rationale:** what an Owner does is exactly what the product keeps for itself here, and what a reader role would do is better said by
+a level or by a global policy that names the repository. The development agent would revisit this if administrators need to delegate
+the admin page to a group without system roles; then a capability of its own.
+
+**Applied in the spec:** R-AUTHZ-041, R-AUTHZ-026; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066 (the database
+guard `AI010`).
+
+### Q-AUTHZ-301 · The project `upstream` is stored `public` and seen by whoever reads one of its repositories
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a repository's level is never above its project's (R-AUTHZ-033 rule 2), and an administrator may make a well-known
+repository `public` (owner). A project is seen by whom its level admits (rule 8 of R-AUTHZ-035).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Stored `public` and fixed; the project is seen through its repositories, not through its level (chosen) | Rule 2 always passes; rule 8 has one exception | Every level an administrator chooses works; an installation whose repositories are all off shows no empty project to anybody | One exception to rule 8 |
+| (b) The project's level follows the highest level of its repositories | Raised and lowered with them | No exception to rule 8 | Every level write of a repository writes the project too; the cascade of rule 3 would run backwards |
+| (c) No level for this project; rule 2 skips it | — | — | The database's guard (AI008) and every reader of the project's level learn an exception |
+
+**Choice:** (a). It is not listed in `publicObjects`; its `public` repositories are.
+
+**Rationale:** the project is a container the product owns; its level only has to let the repositories take theirs, and who sees it is
+best decided by what they can read in it. The development agent would revisit this if the project ever holds something to read of its
+own.
+
+**Applied in the spec:** R-AUTHZ-041, R-AUTHZ-035 rule 8; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066;
+[api-and-ui.md](api-and-ui.md) R-API-056 (`publicObjects`).
+
+### Q-AUTHZ-302 · `internal` admits every signed-in subject that is not external, so a team's CI job reads a well-known member by its level
+
+Status: **Decided by the owner on 2026-11-20.**
+
+Context: the owner's bulk action makes the well-known repositories `internal`. The development agent's reading of 2026-11-11
+(R-AUTHZ-030, Q-AUTHZ-268) admitted to `internal` only users who act through a session or a personal token and are not external; under
+it a team's CI job, its service accounts and its external members read what grants name, no project can grant on `upstream`
+(R-AUTHZ-041), and no global policy can name every CI job. A team's pipeline would have got its local packages through its virtual
+repository and none of the public ones. This feature's first specification therefore lifted the read: a grant or a role on a virtual
+repository let its subject read an `internal` or `public` member of `upstream` through it (then R-AUTHZ-042, ADR-210). The question how
+a CI job reaches the central repositories went to the owner.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A lift through the virtual repository (first specified, withdrawn) | A grant or a role on the virtual repository reads an `internal` member of `upstream` through it | Works under the narrow reading of `internal` | A second way to read beside the level, for one project only; it would have opened an `internal` registry to a team's external members through the team's grants, which no administrator sees |
+| (b) `internal` admits every signed-in subject that is not external, technical subjects included (chosen) | A CI token and a service-account token read an `internal` repository; a user flagged external and that user's tokens do not; a request through a Bastion reads as without it | One rule for every repository and every channel; no exception for `upstream`; a pipeline reads what its people read | A technical credential of one project reads the `internal` repositories of every project, as the project's people do |
+
+**Choice:** (b), the owner's: "internal sind alle angemeldeten User (auch technische) außer User und seine Tokens die das
+external-flag tragen. Internal ist einfach eine Sichtbarkeit für ein Projekt. Ist das Projekt privat, braucht man eine spezifische
+Einladung um das Projekt zu sehen. Ist es intern, kann man es als nicht externer und angemeldeter User direkt sehen und lesen. Für
+Schreiben braucht es wieder eine gesonderte Berechtigung. Ist es public, darf jeder lesen, auch nicht angemeldete User, Schreiben ist
+nicht möglich."
+
+**Consequence for this feature: no lift is needed.** A member of `upstream` is decided through a team's virtual repository as every
+member is, on its own level and the grants that name it (R-AUTHZ-009 rule 2): an `internal` well-known repository is read by the
+team's CI jobs and its service accounts by its level, and not by a user flagged external, who reads the virtual repository's local
+members and skips the central member silently (R-REPO-019 step 4), and whose 404 does not name a placeholder it would not read
+(R-REPO-072). Two corrections of the owner on the same day hold for it as well: a request through a Bastion reads by `internal` like
+any other request, the Bastion being a channel through which a subject has the same rights, while the exposure rules keep deciding
+what an endpoint serves (R-EP-012, R-EP-013); and a service account carries no external flag, "Ein Service-Account für ein Projekt ist
+IMMER ein direkter Zugang zum Projekt. Mit genau den Berechtigungen die der Service-Account hat.": it reads what is `internal` and, in
+its project, exactly what it was given. The external flag stays a user's (R-AUTH-044) and reaches that user's own tokens.
+R-AUTHZ-042, ADR-210, H-1020 and the reason `allow.via_virtual` went with the lift; R-AUTHZ-042 and ADR-210 stay unused. The owner's
+definition itself is R-AUTHZ-030 ([Q-AUTHZ-268](#q-authz-268--every-authenticated-subject-is-internal-except-a-user-flagged-external-and-that-users-tokens),
+[bastion.md](bastion.md) Q-BAS-148); a Bastion's own registration is not internal (Q-AUTHZ-320).
+
+**Applied in the spec:** R-AUTHZ-041 (who reads through a virtual repository, the worked rows), R-AUTHZ-009;
+[repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-072 (the sentence only for a caller who would read the member),
+R-REPO-074; [api-and-ui.md](api-and-ui.md) R-UI-187 (the sentence of **Switch all on**).
+
+### Q-AUTHZ-303 · `repositories:write-config` administers the well-known repositories
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `repositories:read-config` reads, `repositories:write-config` writes; a restricted level needs `security-settings:write`; recent authentication to raise a level and to set an address or an account (chosen) | The capabilities that already administer every project's repositories | `admin` and `repository-admin` hold it; the auditor reads; the restricted-level rule of W-11 holds unchanged | — |
+| (b) A capability of its own (`upstream:write`) | A new system scope item | Delegable separately | A role holding `repositories:write-config` can already create a remote of any upstream in any project |
+| (c) `settings:write` | As an installation setting | It reads like a setting | The objects are repositories, with documents, items and audit as such |
+
+**Choice:** (a).
+
+**Rationale:** whoever may configure every project's remote repositories may configure the central ones; the restricted levels and
+recent authentication guard what is wider. The development agent would revisit this if the owner wants the page delegable without
+the repository administrator's other rights.
+
+**Applied in the spec:** R-AUTHZ-041; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-069, R-REPO-073;
+[api-and-ui.md](api-and-ui.md) R-API-007, R-API-083.
+
+### Q-AUTHZ-304 · A finding of a well-known repository is read through a team's virtual repository and triaged by the triage capability
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a team that listed `upstream/npmjs` gets its public packages from there, so their findings live on `upstream/npmjs`, whose
+Owner is nobody (R-AUTHZ-041).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read by whoever reads the repository, by its level or a grant, also on the version and package views of a virtual repository, in `npm audit` and in the report filtered by the virtual repository; triaged by `vulnerabilities:triage` only (chosen) | R-VULN-013 and R-VULN-019 unchanged | A block set on a central version holds for every team; a team cannot lift it for others | A team cannot dismiss a finding for itself; its project report lists its own repositories' findings unless filtered by its virtual repository |
+| (b) Each team triages its view of a central finding | Triage per project | A team's own judgement | One version would be blocked for one team and allowed for another through the same repository |
+| (c) The project report lists every finding of every listed well-known repository | — | Visible by default | A team would see what other teams fetched through the central repository, and a long list of findings in packages it never used |
+
+**Choice:** (a). A team that wants its own triage keeps a remote of its own.
+
+**Rationale:** a central repository has one state per version; who changes it must be someone every team trusts with it, which is what
+the triage capability is. The development agent would revisit this if teams need dismissals of their own; then dismissals per
+project, a model of their own.
+
+**Applied in the spec:** R-AUTHZ-041; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013, R-VULN-019 (unchanged).
 
 ### Q-AUTHZ-320 · A Bastion registration is not internal; a Bastion reads for the caller it forwards for
 

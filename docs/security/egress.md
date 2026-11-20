@@ -127,6 +127,23 @@ The advisory provider of an npm audit forward is reached through the same client
 `sendCredentials` host, gets the credential, and one on any other host gets none
 ([data-and-secret-flow.md](data-and-secret-flow.md#the-audit-forward)).
 
+## The well-known repositories: what an installation reaches by default
+
+Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-070). The built-in project
+`upstream` holds a remote repository per well-known public registry of the format catalog (Docker Hub, Quay, `ghcr.io`, GitLab's
+registry, the npm registry, nuget.org, the Debian and Ubuntu archives, Ansible Galaxy) and `scanner-trivy` for the analyser's database.
+
+- **Nothing reaches out unasked.** Every preset repository is created off and stays off until an administrator switches it on; a new
+  release's new registries arrive off. An off repository answers `404 repository_disabled` and opens no connection; the reconcile in
+  `quader migrate` that creates them contacts no upstream. `scanner-trivy` connects only when the image scanning's job asks
+  ([vulnerability-scanning.md](../spec/vulnerability-scanning.md)); no client request reaches it.
+- **The same checks as every remote.** Their connections are of the purpose `remote`, under the address policy, the credential rows
+  above and the redirect rules; an administrator's address override is validated as a remote's URL and passes the same policy at dial
+  time ([H-1023](#h-1023--an-address-override-of-a-well-known-repository-moves-every-projects-traffic-to-a-host-of-the-administrators-choice)).
+- **Who opens the door.** Only a holder of `repositories:write-config` switches one on; **Switch all on** opens every registry of the
+  catalog at once, at `internal`, never `public`. Which teams then cause traffic is their virtual repositories' choice, and the volume is
+  bounded by the remote's ceilings, not by the switch ([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-015).
+
 ## Requests of a mirror's discovery
 
 A remote repository in mode `mirror` discovers the packages of its upstream through requests that the format's lister names
@@ -191,6 +208,32 @@ The gaps of the spec pages whose mechanism this page describes:
 - [H-56](../spec/architecture.md#h-56--the-object-store-endpoint-skips-the-egress-address-policy): the object-store endpoint, and with it the backup target, skips the egress address policy.
 - [H-504](../spec/repositories-and-proxy.md#h-504--npms-replication-host-is-contacted-although-it-is-not-an-extrahosts-entry): npm's replication host is contacted although it is not an `extraHosts` entry.
 - [H-971](#h-971--the-upstream-test-tells-its-caller-whether-a-credential-is-accepted-from-quaders-address): the upstream test tells its caller whether a credential is accepted, from Quader's address.
+
+### H-1023 · An address override of a well-known repository moves every project's traffic to a host of the administrator's choice
+
+Stage: `setUpstreamRepositoryAddress` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069, specified, not built).
+Subject: the requests of every team whose virtual repository lists the repository, and the content they receive.
+
+- **Dormant until built; live by design, the owner's escape hatch** ("für solche Fälle …, wo wir eine solche Anpassung übersehen haben
+  und wir nicht schnell genug einen Patch bereitstellen"). One administrator's write makes every project's misses for that registry go to
+  another host, which then decides what every team installs. The address policy keeps it off denied ranges, the account stays only with
+  its hosts, the write needs recent authentication and is audited, and the admin page marks the repository **Differs from Quader's**;
+  nothing tells the teams, and nothing compares what the new host serves with the public registry (an integrity check against the
+  upstream's own digests still applies where the format has one, R-REPO-041).
+- What makes it real: a compromised administrator session or a mistyped host. Reset it to the product's address
+  (`resetUpstreamRepositoryAddress`); the audit filter `repository.updated` with `remote.url` finds every override.
+
+### H-1024 · A release moves the well-known repositories' traffic without an administrator's act
+
+Stage: the reconcile of `quader migrate` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-067, specified, not
+built). Subject: the hosts the installation contacts for the registries an administrator switched on.
+
+- **Dormant until built; live by design.** A new release that changes a preset's address or hosts changes them in every installation
+  that upgrades, for every repository whose address no administrator overrode; the change is in the release's code and in an audit
+  event with the actor `system:catalog`, and a stored account is removed rather than sent to the new hosts (Q-REPO-377). An
+  installation trusts its releases' choice of registry hosts as it trusts their code.
+- What makes it real: a release with a wrong or hijacked registry host. An administrator's override keeps the old address until it is
+  reset.
 
 ### H-78 · The NAT64 check knows only the well-known prefix
 

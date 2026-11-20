@@ -82,6 +82,27 @@ again only for the hosts of [egress.md](egress.md#which-hosts-receive-credential
 `https`; a URL in the upstream's metadata cannot move a fetch to `http` (Q-ARCH-224). A rotated reference reaches a replica within 10 s
 without a new client; a rotated inline value moves the repository's `config_version`, which replaces the client.
 
+### An account on a well-known repository
+
+Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069, R-REPO-073). An administrator may store
+an account on a repository of the built-in project `upstream` (owner, 2026-11-20: "um zum Beispiel Rate-Limits zu umgehen oder besser
+umzugehen"). It is stored and sealed as every remote's credential, in the rows above; what differs is who uses it.
+
+- **Said plainly: whoever reads the repository pulls with the account.** A well-known repository at `internal` is read by every
+  signed-in subject that is not a user flagged external or that user's token, people, CI tokens and service-account tokens alike,
+  directly and through every team's virtual repository that lists it ([authorization.md](../spec/authorization.md) R-AUTHZ-030,
+  Q-AUTHZ-302); at `public`, by anyone on the internet. Every one of their misses is fetched with the account. An account
+  that can read more than the public registry's public content (a Docker Hub account with private repositories, a GitHub token with
+  access to an organization's packages, a GitLab token of a project) hands that content to every one of those callers, under the
+  installation's name ([H-1025](#h-1025--an-account-stored-on-a-well-known-repository-pulls-for-everyone-who-reads-it)). The
+  installation's own private registries are not presets for that reason (T-21b).
+- **The account stays with its hosts, for every caller.** The rule that an Owner's write of a project's remote must enter a stored
+  credential again when its hosts change binds every caller here, holders of `repositories:write-config` included: an address override
+  that moves the hosts that receive the account carries a new account or removes it (422 `secret_value_required` otherwise). A release
+  that moves the product's hosts removes a stored account in the reconcile of `quader migrate` and records `accountRemoved: true`
+  (Q-REPO-377), so a credential never follows the product to a host nobody entered it for.
+- **Every account write** needs recent authentication and is recorded with the secret as a fingerprint (R-API-007, R-OPS-016).
+
 ## The stored-secret key ring
 
 A key ring holds the keys with which the database's sealed columns are encrypted (R-ARCH-021). Keys are loaded from
@@ -229,6 +250,19 @@ The gaps of the spec pages whose mechanism this page describes:
 - [H-34](../spec/formats/npm.md#h-34--audit-forwarding-discloses-the-dependency-set): the audit forward discloses the dependency set.
 - [H-79](../spec/ha-and-helm.md#h-79--artifacts-are-unsigned-and-nothing-checks-their-origin): the image and the chart are unsigned, and nothing checks their origin.
 - [H-80](../spec/ha-and-helm.md#h-80--self-hosted-runners-build-the-code-of-every-pull-request): self-hosted runners build the code of every pull request, and its jobs hold `DOCKERHUB_PAT`.
+
+### H-1025 · An account stored on a well-known repository pulls for everyone who reads it
+
+Stage: the account of a repository of the project `upstream` ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-069,
+specified, not built). Subject: whatever the account can read at its registry beyond the public content, and the account's pull
+allowance.
+
+- **Dormant until built; live by design from then on.** Quader does not know what an account can read; a fetch through the repository
+  sends it for every miss of every caller the repository's level and the global policies on it admit. An account with access to private content at
+  the registry turns that content into content of the installation, readable by those callers without any grant that names it. The
+  admin page says so beside the account's fields (R-UI-188); nothing checks it.
+- What makes it real: an administrator who stores a personal or organization account instead of an account that reads only public
+  content. Use an account made for pulling public content, or keep the repository `private` and grant it through global policies.
 
 ### H-768 · The dev stack archives PostgreSQL with the blob bucket's login
 

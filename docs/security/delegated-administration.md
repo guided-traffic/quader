@@ -193,6 +193,28 @@ who holds the capability, is bound by none of the rules; the Owner's answers are
 `TestR_AUTHZ_026_AnOwnerWritesRemoteRepositoriesWithinTheRules` ([owner_repositories_test.go](../../test/integration/projects/owner_repositories_test.go))
 drives every rule over HTTP as an Owner and as an administrator.
 
+## The built-in project `upstream`: where a project's boundary is crossed
+
+Specified, not built (the owner's decisions of 2026-11-20, [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to
+R-REPO-074, [authorization.md](../spec/authorization.md) R-AUTHZ-041). Every repository still belongs to one project,
+but one project's repositories are listed by every other project's virtual repositories: the remote repositories of the well-known
+public registries that the product declares in the project `upstream`.
+
+| Who | Decides | Cannot |
+|---|---|---|
+| The product (the catalog of the running binary, applied by `quader migrate`) | which well-known repositories exist, their keys, their default address and archive keys, every setting an administrator does not set | switch one on, open one, store a credential |
+| An administrator (`repositories:write-config`; `security-settings:write` for a restricted level) | which are on, their levels, an overriding address, an account, the narrowing settings | delete one, create one, give a team a role in the project |
+| A team's Owner | whether its virtual repositories list a well-known repository, and who reads those virtual repositories | change anything of the well-known repository; keep it on by listing it |
+| A team's members and machines | nothing of `upstream` | read a well-known repository that its level does not admit them to, also through their team's virtual repository: a member flagged external skips an `internal` one ([Q-AUTHZ-302](../spec/authorization.md#q-authz-302--internal-admits-every-signed-in-subject-that-is-not-external-so-a-teams-ci-job-reads-a-well-known-member-by-its-level)) |
+
+- **The line is crossed in one direction and one place.** A virtual repository lists its own project's repositories and `upstream/<key>`,
+  never another team's; the database's same-project guard (AI006) admits only the built-in project's ID for member rows, and never
+  for a deployment target, so no write reaches into `upstream` through a virtual repository.
+- **The project has no Owner.** No member, policy, service account or CI mapping of `upstream` can be written (AI010), so no team can
+  grant itself more on a central repository than its level gives; global policies, written by administrators, are the only grants.
+- **A reference protects nothing.** A team's member list never keeps a well-known repository on: switching it off records one
+  `repository.disabled` naming the virtual repositories that list it, and they skip it from the next request.
+
 ## What this does not cover
 
 The gaps of these mechanisms recorded on the spec pages are linked here; the ones only this page describes follow.
@@ -237,3 +259,32 @@ pulls from, and the installation's egress and storage, which a pass loads.
   storage. The audit event `mirror.pass_requested` names every request and its caller.
 - What makes it real: a member that is not trusted with the upstream's goodwill, on an upstream that throttles or bills by request.
 - What would close it: a minimum time between requests per repository.
+
+### H-1021 · A well-known repository shows every project's fetched packages to everyone who reads it
+
+Stage: the cache of a well-known repository of the project `upstream` (specified, not built: R-REPO-066, the list of what a remote
+fetched, [api-and-ui.md](../spec/api-and-ui.md) R-API-081, and the packages view). Subject: which public packages, and which versions,
+the teams of the installation pull.
+
+- **Dormant until R-REPO-066 is built; live by design from then on.** A team's own remote shows its cache to the readers of that team's
+  repository; the central repository caches what every team fetched through it, and a reader of it, which at `internal` is every
+  signed-in subject that is not external, technical ones included ([Q-AUTHZ-302](../spec/authorization.md#q-authz-302--internal-admits-every-signed-in-subject-that-is-not-external-so-a-teams-ci-job-reads-a-well-known-member-by-its-level)), lists those
+  packages and versions and learns what other teams build with (a vulnerable version a team still pulls,
+  a package that names an unreleased product). The project's own report and its package lists show none of it, only the central
+  repository's views do.
+- What makes it real: a level `internal` or `public` on a central repository in an installation whose teams do not share what they
+  use. A team that must not disclose its dependencies keeps a remote of its own; an administrator keeps the central repository
+  `private` and grants it through global policies.
+
+### H-1022 · A team cannot keep a central repository's state, level or address from changing under it
+
+Stage: the operations of [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-073 and the reconcile of R-REPO-067
+(specified, not built). Subject: what a team's virtual repository resolves through a well-known member.
+
+- **Dormant until built; live by design, the owner's decision ("Ein virtuelles Repo, das auf unser zentrales zeigt, kann keine
+  Deaktivierung durch einen Admin verhindern").** An administrator switches a central repository off or makes it `private`, and every
+  team's builds stop getting its packages at once; an administrator's address override or a release's new address sends every team's
+  misses to another host; nothing of this changes a team's document or writes to a team's audit. The placeholder's 404 and the settings
+  page say why (R-REPO-072), and the administrator's switch-off records the virtual repositories it affects.
+- What makes it real: a team that depends on a central repository for a release build. A team that cannot accept it keeps a remote of
+  its own beside or instead of the central one.

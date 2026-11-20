@@ -139,7 +139,12 @@ another, because replicas never talk to each other:
 With no ops source at all the `:8081` rule is left out rather than rendered with an empty `from`, which would admit every peer.
 
 No egress policy is rendered, so a compromised replica can reach any address the pod network reaches
-([H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods)).
+([H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods)). The well-known repositories of the project `upstream`
+(specified, not built, [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066) add no right and no connection: the
+migration Job's reconcile writes their rows with the login it already holds for the schema and contacts no upstream, and a replica
+reaches a public registry only after an administrator switched its repository on, through the client and the address policy every
+remote uses ([egress.md](egress.md#the-well-known-repositories-what-an-installation-reaches-by-default)). With no egress policy, that
+switch is the installation's only gate to those registries.
 The ingress policy is enforced on the kind profile's CNI, which is verified in the end-to-end suite; other CNIs are not verified.
 
 Each further endpoint adds a listener on its own port and a Service, and its pods run with the credentials of their role

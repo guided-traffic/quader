@@ -2056,7 +2056,10 @@ development agent would revisit (b) for a remote only together with a feature th
 
 ### Q-DEB-14 · Upstream signatures are verified against configured keys; required for a mirror and for a virtual member
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Option (d)
+was taken up on 2026-11-20 for the Debian and Ubuntu presets only, once they became repositories the product maintains in the project
+`upstream` (the owner's decision, [repositories-and-proxy.md](../repositories-and-proxy.md) Q-REPO-379); the rule that keys are required
+for a mirror and a virtual member stands.
 
 | Option | What it means | For | Against |
 |---|---|---|---|

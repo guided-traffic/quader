@@ -709,7 +709,11 @@ belongs to the installation).
 - A request that needs the upstream must fit its subject's budget **and** the ceiling of its class at the remote that fetches
   (through a virtual repository: the remote member). The ceiling is checked at step 9a of R-REPO-025 with the subject's upstream
   figures, charged by the same exchange, and answered as they are (R-LIM-022). A ceiling slows nothing.
-- System work is in neither class and is not charged to a ceiling.
+- System work is in neither class and is not charged to a ceiling, the image scanning's reads through `upstream/scanner-trivy`
+  included ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-070).
+- A well-known repository of the project `upstream` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066) has its
+  ceilings like any remote; they bound every project's callers that reach it, directly or through a virtual repository, together
+  ([Q-LIM-62](#q-lim-62--a-request-through-a-virtual-repository-to-a-well-known-member-is-decided-at-the-addressed-repository-and-the-members-ceilings-bound-it)).
 - The owner's example of a public remote, all signed-in callers 50 GB and 2,000 upstream requests per hour, all anonymous callers
   10 GB and 100, is the example of the API (R-LIM-032), not a default.
 
@@ -740,6 +744,7 @@ Priority: **MVP** · Covers: BEYOND-030
 | A project's maximum | `limits:write` |
 | Rules at a project and at its repositories | `limits:write`, uncapped; an Owner of the project (R-AUTHZ-026), capped |
 | Ceilings of the project's remote repositories | `limits:write`; `repositories:write-config`; an Owner of the project. A ceiling only narrows and is never capped |
+| Rules and ceilings at the built-in project `upstream` and its repositories | `limits:write`; ceilings also `repositories:write-config`; the project has no Owner ([authorization.md](authorization.md) R-AUTHZ-041, Q-LIM-62) |
 | Lift a block | `limits:write` every block; an Owner of the project the blocks whose place is the project or one of its repositories |
 
 - **The project's maximum** is a profile with optional overrides that an instance administrator gives a project; a project has none
@@ -1180,6 +1185,7 @@ CREATE TABLE usage_bucket (
   credential_ref       text NOT NULL DEFAULT '',
   place                text NOT NULL,
   repository_id        bigint NULL REFERENCES repositories (id) ON DELETE CASCADE,
+  via_repository_id    bigint NULL REFERENCES repositories (id) ON DELETE CASCADE,  -- Q-LIM-63; migration 00087
   requests             bigint NOT NULL DEFAULT 0,
   refused              bigint NOT NULL DEFAULT 0,
   cached_bytes         bigint NOT NULL DEFAULT 0,
@@ -1193,7 +1199,7 @@ CREATE TABLE usage_bucket (
   limit_bytes_day      bigint NULL
 );
 CREATE UNIQUE INDEX usage_bucket_key ON usage_bucket
-  (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, repository_id) NULLS NOT DISTINCT;
+  (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, repository_id, via_repository_id) NULLS NOT DISTINCT;
 
 CREATE TABLE usage_limit_event (
   granularity   text NOT NULL,
@@ -1228,6 +1234,11 @@ CREATE UNIQUE INDEX usage_daily_summary_key ON usage_daily_summary (day, reposit
 
 A deleted repository takes its rows with it; a moved repository keeps them, and the overview of a project reads them through the
 repository's current project.
+
+`via_repository_id` is the virtual repository the client addressed when the repository that served is a well-known repository of the
+project `upstream` and the virtual repository belongs to another project; null otherwise
+([Q-LIM-63](#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository)).
+The daily sums keep the serving repository only.
 
 ### R-LIM-028 · Writing the usage store, erasure and addresses
 Priority: **MVP** · Covers: BEYOND-030
@@ -1279,7 +1290,7 @@ Priority: **MVP** · Covers: BEYOND-030
 | Caller | Sees |
 |---|---|
 | Holder of `usage:read` (`admin`, `security-admin`, `auditor`, R-AUTHZ-040) | every subject in every scope, with addresses, the detail, the explanation of any subject, the CSV export |
-| An Owner of a project | the usage rows whose repository belongs to the project now, of every subject kind, with the names of users and technical tokens and the addresses of anonymous callers ([Q-LIM-21](#q-lim-21--a-project-owner-sees-the-addresses-of-the-anonymous-callers-of-its-repositories)); a subject's detail restricted to those rows; the explanation for its repositories; the CSV export of its scope |
+| An Owner of a project | the usage rows whose repository belongs to the project now, or whose `via_repository_id` does (what its virtual repositories took from a well-known repository, Q-LIM-63), of every subject kind, with the names of users and technical tokens and the addresses of anonymous callers ([Q-LIM-21](#q-lim-21--a-project-owner-sees-the-addresses-of-the-anonymous-callers-of-its-repositories)); a subject's detail restricted to those rows; the explanation for its repositories; the CSV export of its scope |
 | Every signed-in user | its own subject: consumption, limits, the explanation for any repository it can read, blocks of its subject (`/api/v1/users/me/usage`, `/api/v1/users/me/limits`) |
 | A technical token, a CI token | nothing of this page through its own credential, unless its scope and its account's role give `usage:read` |
 
@@ -2713,6 +2724,50 @@ disagreed. The development agent would revisit this if a class of the management
 `Limiter.TakeNAt`, `Limiter.BatchTake` in [limiter.go](../../internal/cluster/limiter.go), `windowTake` in
 [valkey_ratelimit.go](../../internal/cluster/valkey_ratelimit.go). Tests: `TestLimiterCluster` in
 [limiter_test.go](../../internal/cluster/limiter_test.go).
+
+### Q-LIM-62 · A request through a virtual repository to a well-known member is decided at the addressed repository, and the member's ceilings bound it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a virtual repository of any project may list a well-known repository of the project `upstream`
+([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-071). [Q-LIM-2](#q-lim-2--a-request-through-a-virtual-repository-is-decided-at-the-repository-the-client-addressed)
+decides every figure at the addressed repository and applies the remote member's ceilings; the project `upstream` has no Owner.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Q-LIM-2 unchanged: the team's rules decide at its virtual repository, the well-known member's ceilings bound all callers of a class together; rules at `upstream` and its repositories apply to requests addressed there; `limits:write` writes them, ceilings also `repositories:write-config` (chosen) | One resolution per request, as everywhere | "Which limit applies to me here" keeps one answer, the repository the client configured; the installation's upstream allowance is still protected at one place, the ceiling | An administrator's rule on `upstream/docker-hub` does not apply to a team that reaches it through its virtual repository |
+| (b) Decide at the well-known member | The central repository's rules for every team | An administrator's rule reaches every team | The request figures are decided before the member is known (Q-LIM-2 (c)); two answers to "which limit applies" |
+| (c) An Owner of the listing project writes the member's ceiling | Teams protect the upstream | — | One team's ceiling would bound every other team |
+
+**Choice:** (a). System work through `upstream/scanner-trivy` is charged to no budget and no ceiling (R-LIM-015).
+
+**Rationale:** the ceiling is the instrument for the upstream's quota, which is the installation's; the rules are the instrument for a
+caller's share, which the addressed repository decides. The development agent would revisit this if administrators need a per-team
+bound on a central repository; then a ceiling per listing project.
+
+**Applied in the spec:** R-LIM-015, R-LIM-016; [authorization.md](authorization.md) R-AUTHZ-041; [repositories-and-proxy.md](repositories-and-proxy.md)
+R-REPO-069.
+
+### Q-LIM-63 · The usage of a well-known member through a team's virtual repository is recorded with that virtual repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: usage is recorded at the member that served (Q-LIM-2), and an Owner sees the rows whose repository belongs to its project
+(R-LIM-029). A team whose public packages come from `upstream/npmjs` instead of a remote of its own would no longer see that traffic.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row gains `via_repository_id`, the addressed virtual repository of another project, and the Owner of that project sees those rows (chosen) | One column in the key of `usage_bucket`, migration 00087 | A team keeps seeing what its builds take from the public registries; an administrator still sees each central repository's total | One more key column; a request through a virtual repository of the same project writes nothing new |
+| (b) Record at the addressed virtual repository instead | — | No new column | The central repository's usage disappears from its own rows, which is what an administrator watches |
+| (c) Nothing | — | No change | Teams lose sight of their public-registry traffic when they move to the central repository |
+
+**Choice:** (a). The daily sums without a person stay per serving repository.
+
+**Rationale:** both views are needed: the team's (what did my builds pull) and the installation's (what does the central repository
+cost); one column gives both without a second write. The development agent would revisit this if the extra key column measurably
+grows the hourly rows (one virtual repository per team and format adds none in the common case).
+
+**Applied in the spec:** R-LIM-027, R-LIM-029.
 
 ## What this does not cover
 

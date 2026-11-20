@@ -61,6 +61,32 @@ What the backup, restore and post-restore Jobs hold, and what each of them never
 | Replicas to the identity provider | the IdP's signed ID token and its claims, after the checks of a login | sign in a user whose token fails a check or a claim gate | `auth.oidc.providers` | [login-and-sessions.md](login-and-sessions.md#parties-and-what-each-is-trusted-with) |
 | Replicas to upstream registries | the bytes and documents an upstream answers, after the checks of the fill path | reach an address the egress policy refuses; grant access | the remote repository's settings, `proxy.outbound` | [remote-repositories.md](remote-repositories.md#who-is-trusted-with-what), [egress.md](egress.md) |
 
+## The product, the administrators and the teams around the well-known repositories
+
+Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-073). The built-in project
+`upstream` puts three parties around one set of repositories, each trusted with one decision:
+
+```text
+   release (catalog in the binary)        administrator (repositories:write-config)        team (Owner of project web)
+            |                                       |                                            |
+            | quader migrate: create, follow,       | switch on/off, level, address override,     | list upstream/<key> in its
+            | retire (actor system:catalog)         | account, narrowing settings                 | virtual repositories; grant
+            v                                       v                                            v  readers of those
+   +------------------------------- project upstream (no members, no Owner) -------------------------------+
+   |  upstream/docker-hub   upstream/npmjs   …   upstream/scanner-trivy (system: only the image scanning)  |
+   +-------------------------------------------------------------------------------------------------------+
+                         ^ read by its own level, directly or through web/npm-all (R-AUTHZ-009, R-AUTHZ-041)
+```
+
+| Boundary | Trusted party and for what | What it cannot do | Configured by |
+|---|---|---|---|
+| Release to installation | the catalog of the running binary decides which well-known repositories exist and their default address and keys, applied once per upgrade by `quader migrate` with the schema owner's login | switch one on, change a level, keep an account across a host change ([H-1024](egress.md#h-1024--a-release-moves-the-well-known-repositories-traffic-without-an-administrators-act)) | the release |
+| Administrator to every project | decides what the installation reaches out to and who may read it | create, delete or rename one; give a team a role in `upstream` | the admin page, R-API-083 |
+| Team to its virtual repositories | decides whether its builds resolve through a central repository, and whom it lets read them | keep a central repository on; change it; reach into another team's project | its virtual repositories' members and grants |
+
+The reconcile is the declared-state step that already writes the role bindings and CI issuers of the configuration; it runs in the
+migration Job, opens no connection to an upstream and is the only writer of the product's values.
+
 ## The cut into `api` and `packages`
 
 A role is a unit of trust as well as of load ([architecture.md](../spec/architecture.md) R-ARCH-001, ADR-155). `api` serves humans and holds

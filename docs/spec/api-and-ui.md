@@ -355,7 +355,7 @@ operations that require it when called with a session; the OpenAPI document mark
 | Package ownership | Adding and removing package owners, releasing a name ([authorization.md](authorization.md) R-AUTHZ-019, Q-AUTHZ-157) |
 | CI identity | Creating, replacing and deleting CI issuers, identity mappings and delegations (R-API-035) |
 | Settings | Changing authentication settings (R-API-037); changing the mode or the block time of the download limits (`updateLimitSettings`, [usage-and-limits.md](usage-and-limits.md) R-LIM-026: the whole operation is marked, the block time with the mode, [Q-API-350](#q-api-350--the-settings-of-the-download-limits-need-recent-authentication-as-one-operation)) |
-| Repositories | Deleting a repository (R-API-022) |
+| Repositories | Deleting a repository (R-API-022); setting and resetting the address and setting and removing the account of a well-known repository, and raising its level ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073, R-API-083) |
 | Endpoints | Creating, replacing, changing and deleting exposure rules ([endpoints.md](endpoints.md) R-EP-016) |
 | Configuration | Applying configuration as code (R-API-044) |
 
@@ -1370,6 +1370,10 @@ Semantics, payloads and status codes: [repositories-and-proxy.md](repositories-a
 `POST /api/v1/repositories` and the item routes `/api/v1/repositories/{key}…` do not exist: a repository is created
 in its project and addressed inside it ([Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)).
 
+For the built-in project `upstream` these routes read as for any project and refuse what the product manages: a create, a `PUT`, a
+delete and a move answer 409 `managed_by_product`, and a merge patch answers 422 with `managed_by_product` at each member the product
+holds or the operations of R-API-083 own ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-069).
+
 Mapping of catalog operations: API-058 (format-filtered configuration) is the regular read, which
 contains only fields that apply to the class and format; API-059 (configurations by key) and
 API-060 (all configurations) are the list with `view` and the batch read of R-API-023.
@@ -1395,7 +1399,7 @@ Owned by [repositories-and-proxy.md](repositories-and-proxy.md):
 | POST | `/api/v1/projects/{projectKey}/repositories/batch-update` | Merge-patch several repositories of the project with per-entry `ifMatch` (required per entry, R-API-012), all or nothing | as update |
 | POST | `/api/v1/projects/{projectKey}/repositories/batch-get` | Read several configurations of the project | as read, per key |
 | POST | `/api/v1/projects/{projectKey}/repositories/batch-delete` | Delete several repositories of the project, best effort; 202 with per-key job references | as delete |
-| POST | `/api/v1/projects/{projectKey}/repositories/quick-setup` | Create local, remote and virtual repositories of the project per format from a prefix (R-UI-023) | as create |
+| POST | `/api/v1/projects/{projectKey}/repositories/quick-setup` | Create a local and a virtual repository of the project per format from a prefix, the virtual one over the local one and the format's default well-known repository of `upstream` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-015, R-UI-023) | as create |
 
 The sub-path verbs follow R-API-004 (Q-API-7); `batch-create`, `batch-update`, `batch-get`,
 `batch-delete` and `quick-setup` are therefore reserved repository keys in every project. All of them accept
@@ -2153,7 +2157,9 @@ restricted levels, R-API-075):
 - `publicAvailable` is the default endpoint's `auth.anonymous` ([endpoints.md](endpoints.md) R-EP-010). While it is `false`,
   a `defaultLevel` of `public` answers 409 `public_not_allowed`.
 - `publicObjects` lists the projects and the repositories whose artifacts are `public`, at most 100 of each in key order,
-  `truncated` when there are more; the UI shows it as the summary of what anyone can read (R-UI-032, R-UI-053).
+  `truncated` when there are more; the UI shows it as the summary of what anyone can read (R-UI-032, R-UI-053). The built-in project
+  `upstream` is not listed: its stored `public` admits nobody ([authorization.md](authorization.md) R-AUTHZ-041); its `public`
+  repositories are.
 - `restrictedLevels` is R-API-075.
 - A change writes `settings.visibility.changed` with `defaultLevel` and `restrictedLevels` before and after
   ([Q-API-332](#q-api-332--one-audit-event-carries-both-settings-before-and-after)); it is not journaled, because it decides only later writes
@@ -2397,6 +2403,41 @@ Acceptance criteria:
   member of `web` who is no Owner gets 403 on `GET /api/v1/projects/web/usage`, a non-member 404.
 - `GET /api/v1/usage` with a token scoped `{"system": ["usage:read"]}` of a service account bound to `auditor` answers 200; the same
   token gets 403 on `PATCH /api/v1/limits/settings`.
+
+### R-API-083 · The operations of the well-known repositories
+Priority: **MVP** · Covers: quader-only
+
+Owned by [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073 (semantics, bodies, the item, errors) and
+[authorization.md](authorization.md) R-AUTHZ-041 (who), under the OpenAPI tag `upstream`
+([Q-API-360](#q-api-360--the-well-known-repositories-have-operations-of-their-own-beside-the-repository-document)):
+
+| Method | Path | operationId | Declaration |
+|---|---|---|---|
+| GET | `/api/v1/upstream-repositories` | `listUpstreamRepositories` | `repositories:read-config` |
+| GET | `/api/v1/upstream-repositories/{key}` | `getUpstreamRepository` | `repositories:read-config` |
+| PUT | `/api/v1/upstream-repositories/{key}/state` | `setUpstreamRepositoryState` | `repositories:write-config` |
+| POST | `/api/v1/upstream-repositories/switch-on-all` | `switchOnAllUpstreamRepositories` | `repositories:write-config`; `Idempotency-Key` accepted (R-API-014) |
+| PUT | `/api/v1/upstream-repositories/{key}/visibility` | `setUpstreamRepositoryVisibility` | `repositories:write-config`; recent authentication inside the write when it raises the level (Q-AUTHZ-281) |
+| POST | `/api/v1/upstream-repositories/set-visibility` | `setAllUpstreamRepositoriesVisibility` | as the one above; `Idempotency-Key` accepted |
+| PUT, DELETE | `/api/v1/upstream-repositories/{key}/address` | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` | `repositories:write-config`; `x-quader-recent-auth: true`; `If-Match` |
+| PUT, DELETE | `/api/v1/upstream-repositories/{key}/account` | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount` | `repositories:write-config`; `x-quader-recent-auth: true`; `If-Match` |
+
+- `switch-on-all` and `set-visibility` are reserved names of the collection (R-API-004) and listed in the `key` schema's
+  `x-quader-reserved-names`.
+- Schemas: `UpstreamRepository` (the item of R-REPO-073), `UpstreamRepositoryState` (enum `active`, `switched-off`,
+  `not-switched-on`, `retired`), `UpstreamRepositoryAddress`, `UpstreamRepositoryAccount`, `UpstreamRepositoryBulkResult`
+  (`items`, `bulkId`).
+- Error codes, registered in `internal/errs/codes.go`: `managed_by_product` (409, or at a member of a 422), `upstream_retired` (409);
+  the warning `member_inactive` of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-071.
+- A bulk operation is one transaction and answers what it changed
+  ([Q-API-361](#q-api-361--a-bulk-operation-of-the-well-known-repositories-is-one-transaction-and-answers-what-it-changed)).
+
+Acceptance criteria:
+
+- `api/openapi.yaml` holds the operations with their declarations; the declaration test of R-API-008 and the reserved-names check of
+  R-API-004 pass.
+- The `auditor` lists the well-known repositories (200) and gets 403 on `setUpstreamRepositoryState`; a `repository-admin` switches
+  one on (200).
 
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
@@ -3470,7 +3511,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   audit** with **Security dashboard** (R-UI-158); the admin area's one block is titled **Admin area**, a project's one block by
   its switcher. The guides also open from the user menu,
   and the client setup opens from its repository (R-UI-120). The sections are the routes of R-UI-003. Inside the admin area, the single entries
-  (repositories, endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
+  (repositories, upstream registries (R-UI-187), endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
   log, advisory sources) and, last, settings (General, then Authentication; Q-UI-326). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.
@@ -3539,7 +3580,7 @@ Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filte
 selected tab live in query parameters; a version of a package is an object with a path of its own (R-UI-111).
 
 <details>
-<summary>Route table (42)</summary>
+<summary>Route table (47)</summary>
 
 | Route | Screen | Requirement |
 |---|---|---|
@@ -3570,6 +3611,8 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/integrations/webhooks`, `/integrations/webhooks/{key}` | Webhooks (P1) | R-UI-039 |
 | `/admin/repositories`, `/admin/repositories/new` | Repositories of every project, each row naming its project | R-UI-020, R-UI-021 |
 | `/admin/repositories/quick-setup` | Quick setup (P1) | R-UI-023 |
+| `/admin/upstream` (`?q=`) | Upstream registries: the well-known repositories of the project `upstream`, switched on and off | R-UI-187 |
+| `/admin/upstream/{key}` | One well-known repository: its state, level, address and account | R-UI-188 |
 | `/admin/users`, `/admin/users/{username}` | Users | R-UI-024 |
 | `/admin/groups`, `/admin/groups/{name}` | Groups | R-UI-025 |
 | `/admin/service-accounts`, `/admin/service-accounts/{name}` (an account of no project) | Service accounts of every project, with a project column | R-UI-026 |
@@ -4552,8 +4595,10 @@ Priority: **MVP** · Covers: UI-032
 - The editor is the section **Members** of the settings page (R-UI-087); its picker is also the group **Members** of the creation
   form (R-UI-081).
 - Two lists: available (repositories of the virtual repository's own project and the same format, excluding the
-  repository itself and anything that would create a cycle; a virtual repository never lists a repository of another
-  project, [Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared))
+  repository itself and anything that would create a cycle, then, in a group **Upstream registries**, the well-known repositories of
+  the format that are not retired, each with its state where it is not `active` (R-UI-189); a virtual repository lists no repository
+  of any other project, [Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared),
+  [Q-REPO-371](repositories-and-proxy.md#q-repo-371--a-virtual-repository-lists-repositories-of-its-own-project-and-of-upstream))
   and selected (ordered). Buttons Add, Remove, Move up, Move down, Move to top work with
   keyboard and single pointer (WCAG 2.5.7); drag and drop is an optional extra. Both lists are
   listboxes of `@angular/aria` (R-UI-001, Q-UI-1).
@@ -4574,14 +4619,16 @@ Built as [Q-UI-210](#q-ui-210--the-member-editor-is-a-tab-with-its-own-save-offe
 Priority: **P1** · Covers: UI-033, REPO-008
 
 Administrators and the project's Owners pick a project, formats and a prefix; the preview shows the keys that
-`POST /api/v1/projects/{projectKey}/repositories/quick-setup` ([repositories-and-proxy.md](repositories-and-proxy.md))
-will create in the project (local, remote with the public upstream preset, virtual over both), then creates them in
-one request and offers client setup for the virtual repository.
+`POST /api/v1/projects/{projectKey}/repositories/quick-setup` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-015)
+will create in the project (local, and virtual over the local one and the format's default well-known repository `upstream/<id>`,
+with its state where it is not switched on), then creates them in one request and offers client setup for the virtual repository
+([Q-REPO-385](repositories-and-proxy.md#q-repo-385--quick-setup-lists-the-formats-default-well-known-repository-instead-of-creating-a-remote)).
 
 Acceptance criteria:
 
-- Quick setup for npm with prefix `team-a` creates the three repositories of the owner's naming
-  rule, and `npm install` through the virtual one fetches a public package.
+- With `upstream/npmjs` switched on, quick setup for npm with prefix `team-a` creates `team-a-npm-local` and `team-a-npm`, and
+  `npm install` through the virtual one fetches a public package; with it off, the preview says "upstream/npmjs is not switched on
+  yet: the virtual repository serves your own packages until an administrator switches it on."
 
 ### R-UI-024 · Users and system roles
 Priority: **MVP** · Covers: UI-035, UI-036
@@ -5429,6 +5476,8 @@ the model gives the screens:
 - The `auditor` and the other holders of `projects:read` see every project, its members and its screens read-only.
 - The admin area's lists (repositories, service accounts, permission policies, audit log) name the project of each item in a
   column and link to the project's screen; the project is also a filter of the repository and policy lists.
+- The built-in project `upstream` is listed where its rule of [authorization.md](authorization.md) R-AUTHZ-041 admits the caller,
+  with the badge **Built-in** after its name and no role, members or Owners (R-UI-190).
 
 Acceptance criteria:
 
@@ -6229,6 +6278,8 @@ The settings page follows the style guide's settings pages: one column of at mos
   A caller the server refuses them to sees the stored members only.
 - A caller who may not change the repository sees the fields read-only and no save; the reduced view of a caller without
   `repositories:read-config` is unchanged.
+- A repository of the project `upstream` shows what R-UI-190 says: the product's members read-only, the state, the level, the
+  address and the account with a link to its page in the admin area, and the narrowing settings editable.
 
 Acceptance criteria:
 
@@ -8091,6 +8142,154 @@ Acceptance criteria:
 
 - A file download refused with `too_many_parallel_downloads` shows the notice with the problem's text and the link, and the page
   stays as it was.
+
+### R-UI-187 · Upstream registries in the admin area
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision of 2026-11-20 ([repositories-and-proxy.md](repositories-and-proxy.md)
+[Q-REPO-370](repositories-and-proxy.md#q-repo-370--a-built-in-project-upstream-holds-the-products-well-known-repositories)): a page of
+its own in the admin area on which an administrator switches each well-known repository on or off and sets its visibility, with one
+action that switches all on and one that sets the visibility of all
+([Q-UI-830](#q-ui-830--upstream-registries-is-one-list-grouped-by-format-with-a-switch-and-a-level-in-each-row)).
+
+- **Where.** The admin area's single entry **Upstream registries** after **Repositories** (R-UI-002), icon `public`, route
+  `/admin/upstream`, for a caller with `repositories:read-config`; the page reads `listUpstreamRepositories` (R-API-083).
+- **Header.** Title **Upstream registries**, with the number of preset repositories as its badge; the sentence "The public
+  registries this installation offers to every project. Each is off until you switch it on." The primary action **Switch all on**
+  (`btn btn-confirm`), the second **Set visibility of all** (`btn btn-default`); both only for `repositories:write-config`, and
+  **Switch all on** disabled with the reason "Every registry is on." when nothing is off.
+- **The list**: the head of every list with **Filter registries** (by display name and key, R-UI-100); one table whose rows are grouped
+  by format in catalog order, each group headed by a row with the format's icon and display name (`<quader-format-icon>`, R-UI-145).
+  Columns:
+  1. **Registry**: the display name (the link to R-UI-188) and, muted under it, `upstream/<key>` as a name.
+  2. **On**: a switch (`role="switch"`, `aria-checked`, the shared `<quader-switch>`, its accessible name "Switch on Docker Hub") with
+     the word **On** or **Off** after it, and, where the state says more than off, a `warn` badge **Switched off** for one switched
+     off before, **No longer offered** for a retired one; a retired row has no switch. Read-only callers see the word only.
+  3. **Visibility**: `<quader-select-field>` of Private, Internal and Public with their icons, as wide as "Internal"; a level the
+     caller may not choose is disabled with its reason (R-UI-141). A row whose repository is `private` and on says under the select,
+     muted: "Only administrators and the principals a global policy names read it; teams' virtual repositories skip it."
+  4. **Listed by**: the number of virtual repositories that list it (`num`), or the en dash.
+  5. One action, **Details** (R-UI-163), which opens R-UI-188.
+  A note under the name, muted, where it applies: "Address differs from Quader's"; "The account was removed when Quader's address moved
+  to another host; enter it again."
+- **Used by Quader.** Below the table a second table, **Used by Quader**, holds the system repositories: `scanner-trivy` with the
+  display name "Image scanning database", the state as a badge, **In use** (`ok`) "In use by the image scanning" or **Not in use**,
+  the level as text (Private, with the lock icon) and **Details**; no switch and no select
+  ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)).
+- **Switching** sends `setUpstreamRepositoryState` at once, without a dialog; the switch shows the server's answer and a `role="status"`
+  line "Docker Hub is on." Switching off a repository that virtual repositories list asks first: "Switch off Docker Hub? 3 virtual
+  repositories in 2 projects list it. They skip it until it is on again; nothing of theirs changes." with **Switch off**.
+- **Switch all on** opens a dialog: "Switch on 11 registries? Each becomes Internal: everyone signed in who is not marked external,
+  people and their pipelines and service accounts, can pull through it, directly and through every virtual repository that lists it.
+  Quader contacts each registry when a client asks for something it has not stored." with the names of the registries it switches on, and **Switch all on**. It never offers Public (owner).
+- **Set visibility of all** opens a dialog with the radio group of the levels (`<quader-visibility-level>`, Q-UI-228) and **Set
+  visibility**. **Public** in either place, the dialog or a row's select, asks first with the sentence the owner asked for:
+  "Public: anyone on the internet can pull through this installation, on its bandwidth and on its upstream allowance (Docker Hub's pull
+  limit, for example)." with **Make public**; the request then asks for a recent sign-in where the session needs one (R-API-007).
+- **Errors and conflicts** follow R-UI-042; `public_not_allowed` and `visibility_level_restricted` stand at the row's select.
+
+Acceptance criteria (Vitest, `upstream-registries.spec.ts`, about 2 s; the screens rendered under rule 11 of promt.md, light and
+dark, wide and narrow, with the twelve presets and one retired fixture):
+
+- The page shows the groups OCI (Docker), npm, NuGet, Debian and Ansible Galaxy with their rows, and `scanner-trivy` under **Used by
+  Quader**; an auditor sees no switch, no select, no header actions.
+- Switching Docker Hub on sends `PUT …/upstream-repositories/docker-hub/state` with `{"state": "on"}`; switching off `npmjs`, which one
+  virtual repository lists, asks first.
+- **Switch all on** names the registries that are off and sends `switch-on-all`; choosing Public in a row asks with the sentence above.
+
+### R-UI-188 · A well-known repository's page in the admin area
+Priority: **MVP** · Covers: quader-only
+
+- `/admin/upstream/{key}`: the header names the registry (`<h1>` "Docker Hub", the badge **Upstream registry**, `upstream/docker-hub`
+  as a name, the format's icon), with **Open repository** (`btn btn-default`, to `/projects/upstream/repositories/docker-hub`). No tabs.
+- Sections, one column (the style guide's settings pages, Q-UI-351):
+  1. **State and visibility**, open: the switch and the level of R-UI-187, with the same dialogs; for a system repository the use and
+     the fixed level as text ("In use by the image scanning. Its visibility is always Private.").
+  2. **Address**, open ([Q-UI-831](#q-ui-831--the-address-the-archive-keys-and-the-account-are-on-the-registrys-own-page)):
+     **Upstream URL** (a URL field), **Further hosts** (the editor of R-UI-082) and, for a Debian or Ubuntu archive, **Archive keys**
+     (the fingerprints of the keys and a text area for an armored block, behind the fold **Replace the keys**). While the address is
+     Quader's, a muted line says "This is Quader's address."; while it is overridden, a `warn` badge **Differs from Quader's** and the
+     line "Quader's address is https://registry-1.docker.io/." with **Reset to Quader's address**. **Save address** sends
+     `setUpstreamRepositoryAddress` with `If-Match`. When the hosts that receive the account change and an account is stored, the save
+     asks "The account goes to registry-1.docker.io only. Enter it again for the new address, or remove it." with the account fields
+     and **Remove account**, and sends both in one request.
+  3. **Account**, open: **Authentication** (None, Username and password, Bearer token), **Username**, **Password or token**
+     (write-only, Q-UI-123), the line that names where the credential goes (R-UI-082), **Test connection** (`upstream-test` of the
+     saved repository after the save; the unsaved test of R-REPO-024 before it), **Save account** and **Remove account**. A muted
+     sentence above: "An account counts the pulls of every project against this account's allowance, and whoever can read this
+     registry pulls with it." ([security/data-and-secret-flow.md](../security/data-and-secret-flow.md)).
+  4. **Details**, closed: **Listed by** (the virtual repositories by qualified name, as links, as far as the caller reads them, and the
+     number of the others), the settings an administrator narrows (a link to the repository's settings page, R-UI-190, for the
+     patterns, the vulnerability settings, offline and the cache-fill action), the limits of the repository (a link to R-UI-180),
+     created and last changed.
+- A retired repository's page says "Quader no longer offers this registry. Its cached content is being removed." and shows only
+  **Listed by**.
+- Read-only for a caller without `repositories:write-config`.
+
+Acceptance criteria (Vitest, `upstream-registry.spec.ts`, about 2 s; rendered under rule 11):
+
+- On the page of `quay` with an overridden URL the badge **Differs from Quader's** and **Reset to Quader's address** show; the reset
+  sends `DELETE …/quay/address` with `If-Match`.
+- Saving a new URL on `docker-hub` with an account stored asks for the account and sends one `PUT …/address` with `account`.
+
+### R-UI-189 · A well-known repository as a member of a virtual repository
+Priority: **MVP** · Covers: quader-only
+
+- **The picker** (R-UI-022, R-UI-081's group **Members**): under the project's repositories, the group **Upstream registries** lists the
+  well-known repositories of the virtual repository's format that are not retired: the display name, `upstream/<key>` as a name, and a
+  `warn` badge **Not switched on** or **Switched off** where the repository is not active
+  ([Q-UI-832](#q-ui-832--the-picker-offers-the-upstream-registries-of-the-format-as-a-group-of-their-own)). A team may pick one that is
+  off; the save then shows the warning `member_inactive` in words.
+- **A placeholder** in the selected list keeps its place and shows its state: the badge (**Not switched on**, **Switched off**, **No
+  longer offered**) and one muted sentence under it ([Q-UI-833](#q-ui-833--a-placeholder-keeps-its-place-with-a-badge-and-one-sentence)):
+  "Skipped until an administrator of Quader switches it on." / "Skipped: an administrator of Quader switched it off." / "Skipped: Quader
+  no longer offers it. Remove it." An active member whose level is `private` says "Private: the readers of this virtual repository do
+  not read through it unless a global policy names them."
+- **The section's head** says how many members take no part, when any: "1 member takes no part: upstream/npmjs." The "Effective
+  resolution order" view marks placeholders as skipped.
+- The repository's header and the members list show nothing else of it; the client setup of the virtual repository is unchanged.
+
+Acceptance criteria (Vitest, the member editor's spec, about 1 s; journey `R-UI-022` unchanged): the picker of an npm virtual repository
+lists `npm-local` and, in **Upstream registries**, `npm public registry` with `upstream/npmjs` and **Not switched on**; adding it and
+saving sends `members: ["npm-local", "upstream/npmjs"]`; the selected list shows the badge and the sentence.
+
+### R-UI-190 · The project `upstream` in the main area
+Priority: **MVP** · Covers: quader-only
+
+- **Lists.** The project is listed where R-AUTHZ-041 admits the caller, by its mark and display name **Upstream** with the badge
+  **Built-in** after the name, its key, its description, the number of repositories the caller reads and no role or members
+  ([Q-UI-835](#q-ui-835--the-project-upstream-is-a-project-with-the-badge-built-in-and-no-administration)). The admin area's list of
+  projects shows it with the same badge and no **Delete**.
+- **Its side bar**: the switcher, **Repositories**, **Packages**, **Vulnerabilities**; no **Access** group (it has no members,
+  policies, service accounts or CI mappings) and no **Settings** entry. Its repository list is the project list of R-UI-020 with the
+  state of each repository as a badge (**Off**, **No longer offered**) for a caller with `repositories:read-config`; a caller without
+  it sees only what it reads.
+- **A repository's settings page** (R-UI-087): Key and Description read-only; **Visibility** and **Upstream** read-only, each with the
+  line "Managed in Admin area › Upstream registries." linked to R-UI-188 for an administrator; **Access details** (include and exclude
+  patterns), the vulnerability settings, **Offline** and the cache-fill action editable for `repositories:write-config`; no
+  **Mirror**, no **Disable repository**, no **Move to another project**, no **Delete repository**. `scanner-trivy` shows everything
+  read-only.
+- **Set up client** of a well-known repository is the page of R-UI-120, as for any remote; for `scanner-trivy` the page says "Quader's
+  image scanning reads its database through this repository. Clients cannot use it." and shows no snippet.
+- **Search, Recently opened and the guides** list well-known repositories like any repository the caller reads, with the project's
+  mark (R-UI-095, R-UI-167, R-UI-124).
+- **The admin area's repository list** (R-UI-020) shows them with their project and offers no **Delete** and no **Move** for them.
+
+Acceptance criteria (Vitest, about 1 s; rendered under rule 11): the project list shows **Upstream** with **Built-in**; its side bar
+has no **Access** and no **Settings**; the settings page of `upstream/npmjs` for an administrator shows **Upstream** read-only with the
+link and the include patterns editable, and no **Delete repository**.
+
+### R-UI-191 · A new remote repository names the central one
+Priority: **MVP** · Covers: quader-only
+
+- In the form of a new remote repository (R-UI-082), when the chosen preset's well-known repository is active and the caller reads
+  it, one muted line under the presets says: "Docker Hub is offered to every project as upstream/docker-hub. A virtual repository can
+  list it instead of a remote of your own." with the link **New virtual repository** to the form of a virtual repository of the same
+  format ([Q-UI-836](#q-ui-836--the-form-of-a-new-remote-names-the-central-repository-and-does-not-stop-the-create)). The create is not
+  stopped: a project's own remote repositories stay possible (owner).
+
+Acceptance criteria (Vitest, about 1 s): with `upstream/docker-hub` active and readable, **New OCI (Docker) repository** of class
+Remote shows the line under the presets; with it off, it does not.
 
 ## Deferred
 
@@ -16010,6 +16209,44 @@ behind one address is the same case. A client that receives `429` where it expec
 [ratelimit.go](../../internal/api/v1/ratelimit.go), tested in `TestR_API_016_ChallengedByLevels` and by the OCI conformance suite
 of the integration tests.
 
+### Q-API-360 · The well-known repositories have operations of their own beside the repository document
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the admin page switches, sets levels one by one and all at once, overrides and resets an address, and stores an account
+(owner, 2026-11-20). The repository document already has `disabled`, `visibility`, `remote.url` and the account members.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/api/v1/upstream-repositories` with an item per repository and operations for the state, the level, the address and the account, and two bulk operations; the document stays readable and takes the narrowing settings (chosen) | R-API-083 | Each operation carries its own rule: the override flag and the reset, the account's host rule for every caller, the bulk in one transaction, the product's address beside the stored one | Two ways into one row: the operations and the merge patch of the narrowing settings |
+| (b) Everything through the document of `/api/v1/projects/upstream/repositories/{key}` and two bulk sub-paths there | One document | Fewer operations | A merge patch of `remote.url` cannot say "reset to the product's"; the item the page needs (state, product address, `listedBy`) is not the document |
+| (c) A settings resource `/api/v1/settings/upstream` with every repository inside | One object | One `GET` | One `ETag` for every repository: two administrators editing two registries conflict |
+
+**Choice:** (a). The operations write the same columns as the document; the document's merge patch refuses what they own with
+`managed_by_product`.
+
+**Rationale:** the admin page's verbs (switch, set for all, reset) are not merge patches of a document, and the item carries facts the
+document has no place for. The development agent would revisit this if configuration as code (R-OPS-029) needs to declare the state of
+well-known repositories; then a document kind of its own.
+
+**Applied in the spec:** R-API-083; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-069, R-REPO-073.
+
+### Q-API-361 · A bulk operation of the well-known repositories is one transaction and answers what it changed
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One transaction; the answer lists the repositories it changed and a `bulkId` that every event carries (chosen) | All or nothing | A refused level (restricted, no anonymous door) leaves nothing half done; one audit filter finds the bulk | One slow repository holds the transaction (a dozen rows, not slow) |
+| (b) Best effort per repository, one result each | As `batch-delete` | Partial progress | A half-switched installation after an error |
+
+**Choice:** (a). `Idempotency-Key` is accepted, so a retried request after a lost answer does not run twice.
+
+**Rationale:** the set is small and bounded by the catalog; an administrator expects "all" to mean all. The development agent would
+revisit this if a catalog grows past a few hundred presets.
+
+**Applied in the spec:** R-API-083; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-068, R-REPO-073.
+
 ### Q-API-345 · The usage list is one operation per scope, with the period, the kind, the state and the sort as parameters
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -19603,6 +19840,131 @@ a third locale or a narrower place for a fold comes.
 [clients.spec.ts](../../web/src/app/features/setup/clients.spec.ts), [messages.de.xlf](../../web/src/locale/messages.de.xlf),
 [layout.ts](../../web/e2e/renders/layout.ts).
 
+### Q-UI-830 · Upstream registries is one list grouped by format, with a switch and a level in each row
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's page: each repository on or off, its visibility, one action that switches all on, one that sets the visibility of
+all ([CLAUDE.md](../../CLAUDE.md), simple by default, details on demand).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One table grouped by format; per row a switch, a level select, the count of listing virtual repositories and **Details**; the two bulk actions in the header (chosen) | R-UI-187 | Everything the owner named is on the first screen, nothing else; the groups keep 25 formats readable | A new shared control, the switch |
+| (b) Tiles per registry, as the guides' format tiles | Pictures | Inviting | A level and a switch per tile do not fit a tile; a list is the admin area's form |
+| (c) A table without groups, the format a column | Sortable | One table construction | Docker Hub and Debian side by side; the format repeats in every row |
+
+**Choice:** (a). The switch is the shared `<quader-switch>` (`role="switch"`, the 24 px target of R-UI-044, the accent colour when on,
+never green, which is for positive status only), written once in `web/src/app/shared/ui/`.
+
+**Rationale:** the plain path of this page is "switch on what we use"; the level beside it is the one decision the owner wants made
+with it. The development agent would revisit the switch if the style guide's checkbox is enough for the owner.
+
+**Applied in the spec:** R-UI-187; [ui-style-guide.md](../developer/ui-style-guide.md) gains the switch when it is built.
+
+### Q-UI-831 · The address, the archive keys and the account are on the registry's own page
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A page per registry, `/admin/upstream/{key}`, opened by its name and **Details** (chosen) | R-UI-188 | The escape hatch and the account are details on demand, off the main list; a page has a deep link | One page more |
+| (b) A drawer over the list | As the filters | Stays on the list | A form with a test, a confirmation and two saves in a drawer is crowded; no deep link |
+| (c) In the repository's settings page | Existing page | One place for everything of a repository | The settings page is a team's; the admin's escape hatch would sit beside fields the product holds |
+
+**Choice:** (a).
+
+**Rationale:** the address is rarely changed and should not tempt; the account is a credential and belongs behind a deliberate step.
+The development agent would revisit this if administrators set accounts on most registries.
+
+**Applied in the spec:** R-UI-188.
+
+### Q-UI-832 · The picker offers the upstream registries of the format as a group of their own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A group **Upstream registries** under the project's repositories, every one of the format but the retired, with its state (chosen) | R-UI-189 | A team sees what the installation offers, also before it is switched on, and lists it in one step | Offers registries that are off |
+| (b) Only the active ones | Fewer entries | Nothing that does not serve | A team cannot list one before it is switched on, which the owner wants possible |
+| (c) Mixed into one list | — | One list | A central registry looks like the team's own repository |
+
+**Choice:** (a).
+
+**Rationale:** the owner's "a team may list `upstream/npmjs` before the administrator switches it on" needs the picker to offer it,
+and the badge says what it does then. The development agent would revisit this if teams pick registries that stay off for good.
+
+**Applied in the spec:** R-UI-189, R-UI-022.
+
+### Q-UI-833 · A placeholder keeps its place, with a badge and one sentence
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) In its place in the selected list, a `warn` badge with the state and one muted sentence; the section's head counts them (chosen) | R-UI-189 | The order the team chose stays visible; the reason is where the member is | — |
+| (b) A notice above the editor only | — | One place | The member itself looks active |
+| (c) Greyed out without a word | — | Quiet | Colour alone, and no reason (R-UI-044) |
+
+**Choice:** (a). The words are the states of R-REPO-068 in the owner's terms: **Not switched on**, **Switched off**, **No longer
+offered**.
+
+**Rationale:** the owner asked for the reason in the virtual repository's settings; a badge and a sentence at the member is the app's
+status form (the style guide's lists). The development agent sees no case for revisiting this.
+
+**Applied in the spec:** R-UI-189.
+
+### Q-UI-834 · The system repositories stand in a table of their own, without a switch
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Used by Quader** under the registries, with their use and their fixed level as text (chosen) | R-UI-187 | `scanner-trivy` is visible with its address and account, and nothing suggests it can be switched | A second table |
+| (b) Hidden | — | A simpler page | Its address and account, which an administrator may change, have no place |
+| (c) A row of the OCI group with a disabled switch | — | One table | A disabled switch invites the question why; **Switch all on** would seem to skip a registry |
+
+**Choice:** (a).
+
+**Rationale:** the owner fixed its level and its switch; the page shows that as fact, not as controls that do not work. The
+development agent would revisit this if the product gains many system repositories.
+
+**Applied in the spec:** R-UI-187, R-UI-188.
+
+### Q-UI-835 · The project `upstream` is a project with the badge **Built-in** and no administration
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Listed like any project the caller may see, with **Built-in**; its side bar without Access and Settings; its repositories' settings read-only but for the narrowing settings (chosen) | R-UI-190 | A plain user finds `upstream/docker-hub` to pull from directly, and sees the cached packages | One more project in the list |
+| (b) Hidden from the main area; reached only through virtual repositories and the admin area | — | Fewer projects | A plain user cannot pull from a central registry directly or browse what it holds |
+| (c) A section of its own on the start page | — | Prominent | A second construction of the projects list (R-UI-166) |
+
+**Choice:** (a). It is listed only to whoever reads one of its repositories (R-AUTHZ-041), so an installation whose registries are off
+shows it to nobody but administrators.
+
+**Rationale:** a well-known repository is a repository; the project is how the app shows repositories. The development agent would
+revisit this if plain users find the project confusing beside their own.
+
+**Applied in the spec:** R-UI-190, R-UI-041.
+
+### Q-UI-836 · The form of a new remote names the central repository and does not stop the create
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One muted line under the presets with a link to a new virtual repository, when the preset's central repository is active and readable (chosen) | R-UI-191 | A team learns the central repository exists where it was about to duplicate it; nothing is refused | One line more in the form |
+| (b) Nothing | — | The form stays as it is | Teams keep creating their own Docker Hub remotes, each with its own pull allowance |
+| (c) Refuse a remote of a preset whose central repository is active | — | One cache per registry | The owner keeps a project's own remotes possible |
+
+**Choice:** (a).
+
+**Rationale:** the plain path should lead to the central repository without forbidding the expert's own remote. The development agent
+would revisit this if teams ignore the line and the duplicated remotes cost upstream allowance.
+
+**Applied in the spec:** R-UI-191.
+
 ### Q-UI-860 · One severity scale for the bar, the trend and the badge: the bar's fills with a mark tone of the same hue
 
 Status: **Decided by the owner on 2026-11-20** ("Option C" of three candidates a designer drew).
@@ -19686,6 +20048,7 @@ revisits it if a longer range than 365 days comes (the API answers up to 400).
 
 **Applied in the spec:** R-VULN-022. Code: [report-trend.ts](../../web/src/app/features/vulnerabilities/report-trend.ts),
 [_vulnerabilities.scss](../../web/src/styles/_vulnerabilities.scss).
+
 
 ## What this does not cover
 

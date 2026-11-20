@@ -164,10 +164,13 @@ default deployment target). Federated repositories are not part of the MVP. A re
 path components of every container image reference, so both are components in the grammar of the OCI distribution
 specification ([Q-OCI-3](formats/oci.md#q-oci-3--repository-and-project-keys-follow-the-oci-component-grammar-for-every-format)):
 repository keys match `^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$` with 2 to 64 characters, project keys
-`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` with 2 to 32. No repository is shared: a virtual repository lists
-only repositories of its own project. Outside its project a repository is named `<projectKey>/<repoKey>`. Owner's
+`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` with 2 to 32. No repository is shared but those of the built-in project `upstream`: a
+virtual repository lists repositories of its own project and of `upstream`, whose remote repositories of the well-known public
+registries the product declares and an administrator switches on ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066,
+R-REPO-071). Outside its project a repository is named `<projectKey>/<repoKey>`. Owner's
 decision of 2026-11-06 ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project),
-[authorization.md](authorization.md) R-AUTHZ-026); until then keys were unique in the installation.
+[authorization.md](authorization.md) R-AUTHZ-026); until then keys were unique in the installation. The project `upstream` is the
+owner's amendment of 2026-11-20 ([ADR-209](../decisions.md#adr-209--the-built-in-project-upstream-holds-the-products-well-known-repositories-and-a-virtual-repository-may-list-them)).
 
 **INV-6 · URL layout.** One client listener per endpoint and one listener for operations (port
 8081). The default endpoint listens on port 8080 with `server.base_url`; further endpoints each
@@ -414,7 +417,7 @@ acceptance criteria.
 | Page | Requirement prefix | Scope |
 |---|---|---|
 | [architecture.md](architecture.md) | `R-ARCH` | Components, Go and Angular code layout, request paths, format plug-in interface, background jobs, caching |
-| [repositories-and-proxy.md](repositories-and-proxy.md) | `R-REPO` | Repository model and API, virtual resolution, pull-through proxy semantics, the mirror mode of remote repositories (background passes as jobs on the queue `mirror`, discovery, bounds, throttling, clients first, status; R-REPO-050 to R-REPO-059), proxy state across replicas, without Valkey and during a drain (R-REPO-049) |
+| [repositories-and-proxy.md](repositories-and-proxy.md) | `R-REPO` | Repository model and API, virtual resolution, the built-in project `upstream` with the product's well-known repositories, their state, the admin operations and the placeholders of virtual repositories (R-REPO-066 to R-REPO-074), pull-through proxy semantics, the mirror mode of remote repositories (background passes as jobs on the queue `mirror`, discovery, bounds, throttling, clients first, status; R-REPO-050 to R-REPO-059), proxy state across replicas, without Valkey and during a drain (R-REPO-049) |
 | [storage.md](storage.md) | `R-STOR` | Blob store on S3, metadata schema, upload/download pipeline, garbage collection, quotas, cleanup, storage work per role and across replicas, storage state in backups |
 | [identity-and-authentication.md](identity-and-authentication.md) | `R-AUTH` | OIDC login, sessions, users, groups, service accounts, tokens, client authentication |
 | [authorization.md](authorization.md) | `R-AUTHZ` | Permission model, visibility levels and the wiki, evaluation, package ownership, administration roles |

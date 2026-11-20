@@ -140,6 +140,21 @@ The routing above is the same for everybody; the engine ([virtual.md](../develop
   negative entry is read or written, so a forged entry in Valkey cannot admit a write. Each remote repository is probed once per publish
   (Q-REPO-115).
 
+## Members of the project `upstream` and placeholders
+
+Specified, not built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-071, R-REPO-072). A virtual repository lists
+`upstream/<key>` beside its own project's repositories. What the routing above does with such a member:
+
+- **It is a remote member like any other.** Pin rules may name it; a `members` claim of a local member keeps the claimed names away from
+  it; a `global` claim and remote refusal hold for it, also addressed directly; `dependency_confusion_unprotected` counts it, active or
+  not. Its key is the same in every installation, so the explanation names it to every caller.
+- **A member that is not switched on is a placeholder**, dropped as a disabled member (`Routing.Route`), and skipped by the shadowing
+  check and the auto claim (`Routing.ExposureSet`, both in [routing.go](../../internal/repository/routing.go)). It takes effect again
+  on every replica when an administrator switches the repository on, with no write to the virtual repository
+  ([H-1026](#h-1026--switching-a-well-known-repository-on-widens-every-virtual-repository-that-lists-it)).
+- **The 404 says why** only where the placeholder would have been consulted (patterns, pin rules, claims), so the sentence never names
+  a member for a name it would not have served.
+
 ## What this does not cover
 
 The gaps of the spec pages whose mechanism this page describes:
@@ -148,6 +163,22 @@ The gaps of the spec pages whose mechanism this page describes:
 - [H-9](../spec/repositories-and-proxy.md#h-9--member-scoped-claims-do-not-protect-other-virtual-repositories): member-scoped claims do not protect other virtual repositories.
 - [H-10](../spec/repositories-and-proxy.md#h-10--deploy-on-a-local-member-shadows-public-packages-for-every-consumer): deploy on a local member shadows public packages for every consumer.
 - [H-404](../spec/repositories-and-proxy.md#h-404--the-repository-key-column-carries-the-databases-collation): the repository key column carries the database's collation.
+
+### H-1026 · Switching a well-known repository on widens every virtual repository that lists it
+
+Stage: the state of a well-known repository and the placeholders of R-REPO-072 (specified, not built). Subject: the names that the
+virtual repositories listing it resolve.
+
+- **Dormant until built; live by design (the owner's placeholder, "b").** While a listed well-known repository is off, a name that no
+  local member holds answers 404 through the virtual repository. The moment an administrator switches it on, such a name resolves from
+  the public registry in every virtual repository that lists it, with no change there and no event in the team's audit. A team that
+  listed `upstream/npmjs` while it was off, did not claim its internal names and relies on the 404 for a name it has not published yet,
+  gets the public package of that name: the dependency-confusion case of R-REPO-023, opened by someone outside the team. The first
+  publishes made while it was off were not checked against it (the shadowing check skips a placeholder), so a public package of a name
+  a team published in that time is shadowed without the check's `manage` decision; the auto claim then keeps it local.
+- **What protects**: the auto claim of every first publish (on by default), manual claims and pin rules, which hold for the member before
+  and after the switch; the warning `dependency_confusion_unprotected` counts a placeholder as a remote member when the list is saved.
+- What makes it real: a virtual repository with `local.autoClaim: false` or without claims for names it means to publish later.
 
 ### H-303 · A format setting is stored and returned as given, so a format's schema must not hold a secret
 

@@ -1905,8 +1905,8 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `authz.denied` | A | — | An authenticated principal was refused an action; with `audit.record_anonymous_denials`, also an anonymous caller, deduplicated per client address (R-OPS-015) | `operation`, `required_action`, `count`, `repeat_of` (summaries only) |
 | `oidc_provider.created`, `oidc_provider.updated`, `oidc_provider.deleted` | T | — | Trusted issuer change | `changes` |
 | `ci.issuer.created`, `.updated`, `.disabled`, `.enabled`, `.deleted`, `ci.mapping.created`, `.updated`, `.disabled`, `.enabled`, `.deleted` | T | — | CI issuer and identity mapping change ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-020; they replace the earlier `oidc_provider.*` and `identity_mapping.*` rows for CI); `.updated`, `.disabled` and `.deleted` carry the journal flag | `before`, `after` |
-| `repository.created`, `repository.updated`, `repository.deleted` | T | — | Repository configuration change; `repository.deleted` carries the journal flag ([authorization.md](authorization.md) R-AUTHZ-031, Q-AUTHZ-239) | `changes` |
-| `repository.disabled` | T | — | An update set `disabled` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-004), recorded next to its `repository.updated`; journal flag (R-AUTHZ-031, Q-AUTHZ-238) | `class`, `format`, `project` |
+| `repository.created`, `repository.updated`, `repository.deleted` | T | — | Repository configuration change; `repository.deleted` carries the journal flag ([authorization.md](authorization.md) R-AUTHZ-031, Q-AUTHZ-239). For a well-known repository of the project `upstream` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-067 to R-REPO-069): the reconcile's create and update with the actor `system:catalog` and `reason: catalog` (`accountRemoved` when it removed an account), an administrator's switch-on with `reason: switched_on`, a bulk write with `bulkId` | `changes`, and for a well-known repository `reason`, `accountRemoved`, `bulkId` |
+| `repository.disabled` | T | — | An update set `disabled` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-004), recorded next to its `repository.updated`; journal flag (R-AUTHZ-031, Q-AUTHZ-238). A well-known repository switched off (`reason: switched_off`, with `listedBy`, the qualified names of the virtual repositories that list it, at most 100, and `listedByCount`) or retired by the reconcile (`reason: retired`, actor `system:catalog`) (R-REPO-067, R-REPO-068) | `class`, `format`, `project`, and for a well-known repository `reason`, `listedBy`, `listedByCount`, `bulkId` |
 | `repository.narrowed` | T | — | An update narrowed what the repository serves (patterns, `autoClaim`, virtual members, pin rules, a stronger `vulnerabilities` member), recorded next to its `repository.updated`; journal flag ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-061, Q-REPO-245) | `class`, `format`, `project`, `parts` |
 | `repository.claims_changed` | T | — | The claims of a repository changed, through the API or by the auto claim of a first publish (R-REPO-023); journal flag with the added claims (R-REPO-061, Q-REPO-250) | `source`, `added`, `removed`, `claimsVersion` |
 | `repository.cache_invalidated` | T | — | R-OPS-021 | `path`, `scope`, `count` |
@@ -3138,7 +3138,9 @@ what a Git review shows. There is no partial-patch form, and there is no `null`-
 convention: an object is deleted by removing it from a document that has `prune: true`.
 
 **Ownership.** Each object is owned by at most one document, recorded in
-`config_managed_object`.
+`config_managed_object`. The built-in project `upstream` and its repositories are the product's and never part of a document: a
+document that declares them answers 422 `managed_by_product`, while a virtual repository it declares may list `upstream/<key>`
+([Q-OPS-211](#q-ops-211--configuration-as-code-declares-no-part-of-the-project-upstream-and-managed-by-the-product-is-a-mechanism-of-its-own)).
 
 - **Conflicts.** A document that declares an object owned by another document, or an existing
   unmanaged object with the same key, has a conflict (R-OPS-030), unless the apply request sets
@@ -6290,6 +6292,27 @@ the state `draining` past its grace period, which the shutdown plan of R-ARCH-02
 in [cluster.sql](../../internal/meta/postgres/queries/cluster.sql), [replica_list.go](../../internal/cluster/replica_list.go),
 [builtin.go](../../internal/jobs/builtin.go); tests `TestReplicaSignOff` in
 [registry_test.go](../../test/integration/coordination/registry_test.go).
+
+### Q-OPS-211 · Configuration as code declares no part of the project `upstream`, and "managed by the product" is a mechanism of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-OPS-029 (P1, not built: no `config_managed_object` table exists) makes a document the owner of the objects it declares and
+locks them against the API with 409. The well-known repositories of the project `upstream` are owned by the product
+([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066 to R-REPO-069), with some members an administrator sets.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A mechanism of its own: the product's ownership is the project, refused with `managed_by_product`; a document that declares the project `upstream` or a repository in it answers 422 `managed_by_product`; a virtual repository's `members` in a document may name `upstream/<key>` (chosen) | Two kinds of ownership, each with its own code | An administrator keeps switching registries on in the UI; a document cannot take a product repository over with `adopt: true` | Configuration as code cannot declare which registries are on (a later document kind could) |
+| (b) A built-in document `quader:upstream` owns the repositories in `config_managed_object` | One ownership mechanism | Familiar to a document author | The lock forbids the admin page's own writes; the reconcile would have to be a document apply; R-OPS-029 is not built |
+
+**Choice:** (a).
+
+**Rationale:** configuration as code locks whole objects to a text a person writes; the product holds only some members and leaves
+the rest to administrators, which a whole-object lock cannot express. The development agent would revisit this when R-OPS-029 is
+built and administrators want the state and the levels of the registries in a document; then a document kind `upstreamRegistries`.
+
+**Applied in the spec:** R-OPS-029 (the refusal); [repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-374, Q-REPO-386.
 
 ## What this does not cover
 
