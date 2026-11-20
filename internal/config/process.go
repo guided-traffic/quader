@@ -36,7 +36,15 @@ type Process struct {
 	// Role has no default: the chart sets it per Deployment and `quader serve
 	// --role` overrides it.
 	Role string `yaml:"role" validate:"oneof=api|packages|worker|scanner|web|all" doc:"Role of this replica: api, packages, worker, scanner (the analysis of container images, holding no secret of the installation, R-ARCH-036), web (api and packages in one process, development and tests only) or all (local development only). No default."`
+	// ScannerKind chooses what a process of the role scanner does (R-ARCH-036, Q-ARCH-560).
+	ScannerKind string `yaml:"scanner_kind" default:"image" validate:"oneof=image|malware" doc:"What a process of the role scanner does: image, the analysis of container images (R-VULN-041), or malware, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007). The chart sets malware on the Deployment <fullname>-malware-scanner. A scanner of the kind malware reads the section malware instead of vulnerabilities.images. Read by the role scanner only."`
 }
+
+// The kinds of a scanner (Q-ARCH-560).
+const (
+	ScannerKindImage   = "image"
+	ScannerKindMalware = "malware"
+)
 
 // RoleError is the message `quader serve` prints when no valid role is set.
 const RoleError = "process.role must be api, packages, worker, scanner, web or all"

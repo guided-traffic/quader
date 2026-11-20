@@ -40,10 +40,14 @@ func CertDir(tb testing.TB) string {
 func KindName(kind string) string { return kind + ".quader.test" }
 
 // roleKinds are the kinds whose names the pair of a role carries: web serves api and packages, all is every kind in one process.
+// malware-scanner is the pair of a scanner of the kind malware (R-HA-068), a kind of pod of its own with a name of its own.
 var roleKinds = map[string][]string{
 	"web": {"api", "packages"}, "api": {"api"}, "packages": {"packages"}, "worker": {"worker"}, "scanner": {"scanner"},
-	"all": {"api", "packages", "worker", "scanner"},
+	"malware-scanner": {"malware-scanner"}, "all": {"api", "packages", "worker", "scanner"},
 }
+
+// clientRoles are the roles whose pair a link presents as a client, and so carries the usage client auth.
+var clientRoles = map[string]bool{"worker": true, "scanner": true, "malware-scanner": true, "all": true}
 
 // rolePairs issues a pair per role from the stack's CA into dir: the names of its kinds, localhost, 127.0.0.1 and ::1 (the harness
 // verifies the replicas by address), server authentication, and client authentication for the roles that call a link (worker,
@@ -58,7 +62,7 @@ func rolePairs(tb testing.TB, dir string) map[string][2]string {
 			names = append(names, KindName(k))
 		}
 		usages := []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
-		if role == "worker" || role == "scanner" || role == "all" {
+		if clientRoles[role] {
 			usages = append(usages, x509.ExtKeyUsageClientAuth)
 		}
 		leaf := ca.Issue(tb, tlstest.Options{

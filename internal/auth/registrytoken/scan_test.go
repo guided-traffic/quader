@@ -155,6 +155,9 @@ func forge(t *testing.T, s *Signer, c Claims) string {
 		IssuedAt: c.IssuedAt.Unix(), ExpiresAt: c.ExpiresAt.Unix(), Catalog: c.Grant.Catalog,
 		System: c.System, ScanID: c.ScanID, Digest: c.Digest, TokenID: c.Binding.TokenID, TokenType: c.Binding.TokenType,
 	}
+	if !c.Repo.IsZero() {
+		w.Repo = c.Repo.String()
+	}
 	if c.Binding.SecretSHA256 != ([32]byte{}) {
 		w.TokenHash = b64(c.Binding.SecretSHA256[:])
 	}

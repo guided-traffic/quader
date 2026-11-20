@@ -68,6 +68,10 @@ func principalFromResult(r auth.Result) httpserver.Principal {
 			ScanID: r.Credential.ScanID,
 		},
 	}
+	if b := r.Credential.Blob; b != nil {
+		// The reach of a blob token, the malware scanner's read (R-MAL-006).
+		p.Credential.ScanBlob = &httpserver.ScanBlob{Repo: b.Repo, Digest: b.Digest}
+	}
 	for _, g := range r.Groups {
 		p.Groups = append(p.Groups, httpserver.GroupRef{ID: g.ID, Name: g.Name})
 	}

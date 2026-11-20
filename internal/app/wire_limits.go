@@ -13,6 +13,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/api/edge"
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/ci"
 	"github.com/guided-traffic/quader/internal/cluster"
@@ -162,6 +163,13 @@ func (c ciIssuerNames) IssuerName(ctx context.Context, id string) (string, bool,
 // (dispatch.Dispatcher.BoundRepository). The format host's area is read when a request asks, after every area was wired.
 func (a *App) limitsRepo(r *http.Request) qname.Repo {
 	p := r.URL.Path
+	if strings.HasPrefix(p, registrytoken.BlobPathPrefix) {
+		// The malware scanner's read is recorded under the repository its blob token names (Q-LIM-80); the path names none.
+		if b := httpserver.PrincipalFrom(r.Context()).Credential.ScanBlob; b != nil {
+			return b.Repo
+		}
+		return qname.Repo{}
+	}
 	if strings.HasPrefix(p, "/v2/") && p != "/v2/" && p != "/v2/_catalog" && p != httplimit.TokenPath {
 		if disp := part[formatHostArea](a.parts).disp; disp != nil {
 			if bound, ok, err := disp.BoundRepository(r); err == nil && ok {

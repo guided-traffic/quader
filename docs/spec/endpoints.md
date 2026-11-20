@@ -739,10 +739,12 @@ lookup that a rule makes unnecessary:
   without a credential, is refused with `401` `invalid_token` (`credentials_required` for none) and no challenge, before any lookup; it has
   no `auth` settings an operator could change. A scan token is refused on every other endpoint by its endpoint claim, so it works nowhere
   else. Refusals here do not count towards the failed-credential throttle of R-AUTH-038 (identity-and-authentication.md R-AUTH-038).
-  The malware scanning (specified, not built; [malware-scanning.md](malware-scanning.md) R-MAL-006, [Q-EP-95](#q-ep-95--the-endpoint-scan-admits-a-blob-token-and-on-the-database-routes-a-certificate-name))
-  adds a scan token of the kind `blob`, accepted on `/scan/v1/blobs/` only, and the database routes `/scan/v1/malware-database…`, which take
-  no token and admit a client whose certificate carries the malware scanner's name ([ha-and-helm.md](ha-and-helm.md) R-HA-063 to
-  R-HA-066); every other request on them is refused like any other credential here.
+  The malware scanning ([malware-scanning.md](malware-scanning.md) R-MAL-006, [Q-EP-95](#q-ep-95--the-endpoint-scan-admits-a-blob-token-and-on-the-database-routes-a-certificate-name))
+  adds a scan token of the kind `blob`, accepted on `/scan/v1/blobs/` only and for the digest of the path, and the database routes
+  `/scan/v1/malware-database…`, which take no token and admit a client whose certificate carries the malware scanner's name
+  ([ha-and-helm.md](ha-and-helm.md) R-HA-063 to R-HA-066; the name is `malware.scan_listener.client_name`,
+  [malware-scanning.md](malware-scanning.md) Q-MAL-61); every other request on them, a token on the database routes included, is refused
+  like any other credential here.
 
 Acceptance criteria:
 

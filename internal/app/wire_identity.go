@@ -231,8 +231,12 @@ func (a *App) wireAuth(_ context.Context, id identityArea, lim limitsArea, ss se
 		if signer, err = registrytoken.NewSigner(ring, a.cfg.OCI.TokenLifetime); err != nil {
 			return authArea{}, err
 		}
-		// The scan listener verifies the worker's scan tokens, which live as long as the scanner's pull may take (R-OCI-037).
+		// The scan listener verifies the worker's scan tokens, which live as long as the scanner's pull may take (R-OCI-037), and its
+		// blob tokens, which live as long as the malware scanner's read may take (R-MAL-006).
 		if signer, err = signer.ForScans(a.cfg.Vulnerabilities.Images.PullTimeout); err != nil {
+			return authArea{}, err
+		}
+		if signer, err = signer.ForBlobs(a.cfg.Malware.ReadTimeout); err != nil {
 			return authArea{}, err
 		}
 	}
@@ -260,6 +264,9 @@ func (a *App) credentialRules(rt *endpointRuntime) auth.EndpointRules {
 	rules.APIKeyRoute = a.apiKeyRoute()
 	rules.TokenSchemeRoute = a.tokenSchemeRoute()
 	rules.Refused = a.credentialRefused(rt)
+	if isScanListener(rt) {
+		rules.MalwareScanner = a.malwareScannerPeer() // the malware routes admit the malware scanner's name (Q-MAL-61)
+	}
 	return rules
 }
 

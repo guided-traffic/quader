@@ -42,6 +42,10 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 	if a.id.Role == config.RoleAll && !a.imageScanningOn() {
 		return scannerArea{}, nil // the role all scans no image: no scanner and no listener
 	}
+	if a.id.Role == config.RoleScanner && a.cfg.Process.ScannerKind == config.ScannerKindMalware {
+		// The kind's configuration is read and checked (Q-ARCH-560); its handler, the unpacking and the client of clamd are not built.
+		return scannerArea{}, errors.New("process.scanner_kind malware: the malware scanner is not built into this release yet (malware-scanning.md R-MAL-007)")
+	}
 	cfg := a.cfg
 	images := cfg.Vulnerabilities.Images
 	log := a.log.With("component", "scanner")

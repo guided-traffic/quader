@@ -23,6 +23,7 @@ import (
 	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // The in-process harness: one Stack is an installation (a migrated database of
@@ -269,6 +270,17 @@ func (s *Stack) KeyFile(name string, key []byte) string {
 // Validator checks API answers against the OpenAPI document and records which
 // operations the suite reached.
 func (s *Stack) Validator() *apitest.Validator { return s.val }
+
+// KeyRing is the stack's default key ring, the one every replica loads: a test signs what a worker signs with it, such as the
+// blob token of the malware scanner's read (R-MAL-006).
+func (s *Stack) KeyRing(tb testing.TB) *secrets.KeyRing {
+	tb.Helper()
+	ring, err := secrets.Load(config.Secrets{EncryptionKeyFiles: []string{s.sealed}, ActiveKeyID: "2026-10"})
+	if err != nil {
+		tb.Fatalf("the stack's key ring: %v", err)
+	}
+	return ring
+}
 
 // LimitsMode sets the mode of the download limits (R-LIM-026). A new instance starts in enforce; a test of another mechanism
 // that sends more than a profile admits (many parallel downloads of one user, a load) asks for audit, in which nothing on a

@@ -3226,7 +3226,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-IMP-009 | The seam for a format | P1 | [import.md](../spec/import.md) |
 | R-MAL-003 (implemented) | The name and the promise | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-005 | The call from the worker to the malware scanner | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-006 | The scanner's read of a blob: the route on the scan listener and its token | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-006 (implemented) | The scanner's read of a blob: the route on the scan listener and its token | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-007 | The malware scanner: what it unpacks and what it hands to `clamd` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-008 | Limits | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-010 | `freshclam` beside the worker, and the task `malware-sync-db` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
@@ -3238,7 +3238,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-021 (implemented) | Releasing a blob | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-023 (implemented) | Admin area › Settings › Malware scanning | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-026 (implemented) | Audit events, metrics and alerts | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-027 | Configuration, the chart's defaults and what the scanning costs | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-027 (implemented) | Configuration, the chart's defaults and what the scanning costs | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-028 (implemented) | Backups, restores and replicas | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-029 (implemented) | What a format brings | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-030 | The tests and what they cost | P1 | [malware-scanning.md](../spec/malware-scanning.md) |

@@ -92,6 +92,9 @@ type Claims struct {
 	System string
 	ScanID string
 	Digest string
+	// Repo is set on a blob token only (malware-scanning.md R-MAL-006, blob.go): the one repository that holds its blob, whose
+	// item the scan listener's blob route requires. Digest is then the blob's.
+	Repo qname.Repo
 }
 
 // wire is the JSON of the claims. The names are short because the token travels in every request.
@@ -111,6 +114,8 @@ type wire struct {
 	System string `json:"s,omitempty"`
 	ScanID string `json:"sid,omitempty"`
 	Digest string `json:"d,omitempty"`
+	// The repository of a blob token (R-MAL-006).
+	Repo string `json:"rp,omitempty"`
 }
 
 type wireEntry struct {
@@ -130,6 +135,8 @@ type Signer struct {
 	lifetime time.Duration
 	// scanLifetime is vulnerabilities.images.pull_timeout, the bound of a scan token (Q-OCI-229); 0 issues and accepts none.
 	scanLifetime time.Duration
+	// blobLifetime is malware.read_timeout, the bound of a blob token (R-MAL-006); 0 issues and accepts none.
+	blobLifetime time.Duration
 }
 
 // NewSigner derives the MAC keys from every key of the ring (R-ARCH-021, info [KeyInfo]): the active key's derivation
@@ -168,6 +175,9 @@ func (s *Signer) Issue(c Claims) (string, error) {
 		Anonymous: c.Anonymous, Kind: c.PrincipalKind, Principal: c.PrincipalID, Endpoint: c.Endpoint,
 		IssuedAt: c.IssuedAt.Unix(), ExpiresAt: c.ExpiresAt.Unix(), Catalog: c.Grant.Catalog,
 		System: c.System, ScanID: c.ScanID, Digest: c.Digest,
+	}
+	if !c.Repo.IsZero() {
+		w.Repo = c.Repo.String()
 	}
 	if !c.Anonymous && c.System == "" {
 		w.TokenID, w.TokenType = c.Binding.TokenID, c.Binding.TokenType
@@ -259,6 +269,13 @@ func decode(kid string, body []byte) (Claims, error) {
 		Binding: Binding{TokenID: w.TokenID, TokenType: w.TokenType}, Grant: Grant{Catalog: w.Catalog},
 		System: w.System, ScanID: w.ScanID, Digest: w.Digest,
 	}
+	if w.Repo != "" {
+		repo, err := qname.ParseRepo(w.Repo)
+		if err != nil {
+			return Claims{}, ErrMalformed
+		}
+		c.Repo = repo
+	}
 	if w.TokenHash != "" {
 		h, err := base64.RawURLEncoding.Strict().DecodeString(w.TokenHash)
 		if err != nil || len(h) != len(c.Binding.SecretSHA256) {
@@ -291,11 +308,20 @@ func (c Claims) check() error {
 	case len(c.Grant.Entries) > MaxEntries:
 		return fmt.Errorf("%w: more than %d grant entries", ErrMalformed, MaxEntries)
 	}
-	if c.System != "" {
+	switch c.System {
+	case "":
+	case ScanSubject:
+		if !c.Repo.IsZero() {
+			return fmt.Errorf("%w: a scan token of an image names its repository in its grant entry, not as a blob token's", ErrMalformed)
+		}
 		return c.checkScan()
+	case BlobSubject:
+		return c.checkBlob()
+	default:
+		return fmt.Errorf("%w: the system subject %q is no scan subject", ErrMalformed, c.System)
 	}
-	if c.ScanID != "" || c.Digest != "" {
-		return fmt.Errorf("%w: a token without a system subject carries no scan ID and no digest", ErrMalformed)
+	if c.ScanID != "" || c.Digest != "" || !c.Repo.IsZero() {
+		return fmt.Errorf("%w: a token without a system subject carries no scan ID, no digest and no repository", ErrMalformed)
 	}
 	if c.Anonymous {
 		if c.PrincipalID != "" || c.Binding != (Binding{}) {

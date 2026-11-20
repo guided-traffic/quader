@@ -157,7 +157,7 @@ place that counts.
 | The Bastion's own interface requests (principal kind `bastion`) | none | — | They are not protocol paths; R-API-016 and R-BAS-016 bound them. |
 | System work: mirror passes, the Debian index parse, the Ansible documentation job, every background request of the engine (`proxy.PriorityBackground`) | `system` | `system` | Recorded per repository, limited by nothing of this page ([Q-LIM-19](#q-lim-19--mirror-passes-and-other-system-work-are-recorded-and-not-limited)). |
 | A scan token of the image scanning's pull on the scan listener (principal kind `system`, name `image-scanner`; [formats/oci.md](formats/oci.md) R-OCI-037) | `system` | `system` | Recorded under the repository with the credential `image-scanner`; checked against no figure, no ceiling and no block, and it takes no parallel lease ([Q-LIM-66](#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing)). |
-| A blob token of the malware scanning's read on the scan listener (principal kind `system`, name `malware-scanner`; [malware-scanning.md](malware-scanning.md) R-MAL-006; specified, not built) | `system` | `system` | Recorded under the repository the token names, with the credential `malware-scanner`; checked against nothing ([Q-LIM-80](#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names)) |
+| A blob token of the malware scanning's read on the scan listener (principal kind `system`, name `malware-scanner`; [malware-scanning.md](malware-scanning.md) R-MAL-006) | `system` | `system` | Recorded under the repository the token names, with the credential `malware-scanner`; checked against nothing ([Q-LIM-80](#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names)) |
 
 - A subject identifier never contains a token secret or a hash of one.
 - A request on a protocol path whose principal kind is none of the above (a future kind) is charged to the client address until
@@ -247,8 +247,9 @@ Priority: **MVP** · Covers: BEYOND-030
 
 - **A request** is every HTTP request on a protocol path that reaches stage 7 of R-ARCH-005: every method, `HEAD` and a request
   answered `304` included, a request the handler refuses included. The protocol paths are `/api/<format>/…` (every path below
-  `/api/` that is not `/api/v1/`), `/files/…` and everything below `/v2/` (the version check `/v2/`, `/v2/_catalog` and `/v2/_token`
-  included). F-155 of the project plan is closed by this: the registry's paths are counted like every other protocol path.
+  `/api/` that is not `/api/v1/`), `/files/…`, everything below `/v2/` (the version check `/v2/`, `/v2/_catalog` and `/v2/_token`
+  included), and the malware scanner's blob route `/scan/v1/blobs/…` of the scan listener, whose reads are system work (Q-LIM-80). F-155
+  of the project plan is closed by this: the registry's paths are counted like every other protocol path.
 - **Not counted as a request**: a request without a credential that the decision point is certain to answer with the challenge
   (the rule of Q-API-290 in [api-and-ui.md](api-and-ui.md): a NuGet client's first attempt without its credentials; and by
   Q-API-357 the same on the registry's paths: the version check `/v2/` and a registry client's first attempt at a repository

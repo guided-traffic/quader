@@ -586,7 +586,8 @@ nothing worth taking.
 - **Never** claims jobs, holds leases, writes the replica registry, enqueues, or keeps anything between two calls.
 - **Kinds** ([Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration)). `process.scanner_kind` chooses what a
   scanner process does: `image` (the default, everything above) or `malware`, the malware scanning's scanner
-  ([malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-007; specified, not built). A malware scanner builds the same area with
+  ([malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-007; the key and the sections the kind reads are built, its parts are not:
+  a scanner of the kind `malware` refuses to start until they are). A malware scanner builds the same area with
   its malware parts instead of the analyser: the handler of `POST /scan/v1/malware`, the reader of the scan listener's blob and database
   routes, the unpacking of `ar` and zstd, and the client of `clamd` on the Unix socket of its pod; it reads `malware` instead of
   `vulnerabilities.images`, and its readiness waits for its first database (R-MAL-007). It holds what an image scanner holds, a call's blob
@@ -626,11 +627,14 @@ scanner's pull, and no client can use a scan token.
   point of the registry checks the token's digest pin, and the decision point decides by the scan subject's rule.
 - A scan token presented on any other listener is refused by the endpoint check of R-OCI-005, because its endpoint claim is `scan`; a Quader
   token, a registry token of a client or no credential on the scan listener is refused there.
-- **The malware scanning's routes** (specified, not built; [malware-scanning.md](malware-scanning.md) R-MAL-006). Beside the registry's routes
-  the listener serves `GET /scan/v1/blobs/sha256:<hex>`, which accepts a scan token of the kind `blob` and nothing else, and
+- **The malware scanning's routes** ([malware-scanning.md](malware-scanning.md) R-MAL-006). Beside the registry's routes the listener serves
+  `GET /scan/v1/blobs/sha256:<hex>`, which accepts a scan token of the kind `blob` and nothing else, and
   `GET /scan/v1/malware-database[/<version>/<file>]`, which admits a client whose certificate carries the malware scanner's name
-  ([ha-and-helm.md](ha-and-helm.md) R-HA-063 to R-HA-066) and takes no token. A scan token of an image is refused on these routes, a blob
-  token below `/v2/`.
+  ([ha-and-helm.md](ha-and-helm.md) R-HA-063 to R-HA-066) and takes no token. Both narrow the listener's admission to the name of
+  `malware.scan_listener.client_name`, which must be one of `server.scan_clients` ([malware-scanning.md](malware-scanning.md) Q-MAL-61). A
+  scan token of an image is refused on these routes, a blob token below `/v2/`. The paths below `/scan/` belong to the family `packages`,
+  the listener's surface, and no other endpoint registers them ([internal/auth/scan.go](../../internal/auth/scan.go),
+  [internal/api/scanlisten](../../internal/api/scanlisten/scanlisten.go)).
 
 Acceptance criteria:
 

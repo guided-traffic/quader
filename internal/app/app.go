@@ -620,6 +620,10 @@ func (a *App) startClient() error {
 		if err := a.registerRegistry(rt, router); err != nil {
 			return err
 		}
+		if isScanListener(rt) {
+			// The malware scanning's routes of the scan listener, beside the registry's (wire_malware_scanlisten.go).
+			a.registerMalwareScanRoutes(router)
+		}
 		router.Handle(webui.MountPath, ui)
 		if a.o.Extra != nil {
 			a.o.Extra(router)

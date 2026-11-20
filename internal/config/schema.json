@@ -2290,6 +2290,13 @@
               "type": "integer",
               "x-quader-env": "QUADER_JOBS_WORKERS_MAINTENANCE"
             },
+            "malware": {
+              "default": 1,
+              "description": "The malware scanning's job and its database task (malware-scanning.md R-MAL-004, R-MAL-010): one job at a time in the installation keeps malware.concurrency calls in flight, so one slot is enough.",
+              "minimum": 0,
+              "type": "integer",
+              "x-quader-env": "QUADER_JOBS_WORKERS_MALWARE"
+            },
             "mirror": {
               "default": 2,
               "description": "The passes of mirrored remote repositories and their dispatch (R-REPO-053).",
@@ -2570,6 +2577,14 @@
     "malware": {
       "additionalProperties": false,
       "properties": {
+        "concurrency": {
+          "default": 4,
+          "description": "Calls to the malware scanners the one job of the installation has in flight; one of them is kept for blobs a download waits for while any is due (R-MAL-004). The chart's capacity is malwareScanner.replicaCount times scanner.slots (2 x 2); a call above it is put off with scanner_busy.",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_MALWARE_CONCURRENCY"
+        },
         "database": {
           "additionalProperties": false,
           "properties": {
@@ -2578,6 +2593,36 @@
               "description": "true: the freshclam container beside the worker fetches the database from ClamAV's network; false: an administrator fills the repository by hand with the files of cvdupdate, and the settings page shows the commands (R-MAL-012).",
               "type": "boolean",
               "x-quader-env": "QUADER_MALWARE_DATABASE_FRESHCLAM"
+            },
+            "freshclam_dir": {
+              "default": "/var/lib/quader/freshclam",
+              "description": "The directory freshclam writes and the worker reads, the volume the two containers of a worker pod share (R-MAL-010, R-HA-069).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_DATABASE_FRESHCLAM_DIR"
+            },
+            "keep": {
+              "default": "48h",
+              "description": "How long the task keeps the items of versions that are not in use in upstream/scanner-clamav; the version in use is never removed (R-MAL-010).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_DATABASE_KEEP",
+              "x-quader-type": "duration"
+            },
+            "max_file_size": {
+              "default": "512MiB",
+              "description": "Largest file of a signature database the task reads; a larger one is refused database_invalid (R-MAL-010).",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_MALWARE_DATABASE_MAX_FILE_SIZE",
+              "x-quader-type": "bytes"
+            },
+            "proxy": {
+              "default": "",
+              "description": "An HTTP proxy for freshclam, http://\u003chost\u003e:\u003cport\u003e, rendered into freshclam.conf by the chart; Quader's own outbound proxy does not reach freshclam (H-1106).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_DATABASE_PROXY"
             },
             "repository": {
               "default": "upstream/scanner-clamav",
@@ -2610,6 +2655,24 @@
           "type": "boolean",
           "x-quader-env": "QUADER_MALWARE_ENABLED"
         },
+        "max_attempts": {
+          "default": 5,
+          "description": "Attempts at a scan that ends for a reason that may pass (blob_missing, timeout, scan_failed, scanner_lost); after the last the blob is failed, refused under the switch, and scanned again in the cycle (R-MAL-005).",
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_MALWARE_MAX_ATTEMPTS"
+        },
+        "max_size": {
+          "default": "4GiB",
+          "description": "Largest blob scanned at all; a larger one is unscannable too_large without a call, refused under the switch until an instance auditor releases it (R-MAL-008). The worker checks it before the call and the malware scanner before it reads.",
+          "type": [
+            "string",
+            "integer"
+          ],
+          "x-quader-env": "QUADER_MALWARE_MAX_SIZE",
+          "x-quader-type": "bytes"
+        },
         "max_waiting": {
           "default": 512,
           "description": "Downloads one replica holds waiting for a verdict; a further one is answered 503 malware_check_pending at once (R-MAL-014).",
@@ -2617,6 +2680,159 @@
           "minimum": 1,
           "type": "integer",
           "x-quader-env": "QUADER_MALWARE_MAX_WAITING"
+        },
+        "read_timeout": {
+          "default": "10m",
+          "description": "The malware scanner's read of one blob through the scan listener, and the lifetime of its blob token (R-MAL-006). The worker's call has the deadline read_timeout plus scanner.scan_timeout plus 1m.",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_MALWARE_READ_TIMEOUT",
+          "x-quader-type": "duration"
+        },
+        "rescan": {
+          "additionalProperties": false,
+          "properties": {
+            "cycle": {
+              "default": "720h",
+              "description": "Every verdict older than this is scanned again at the lowest priority, while nothing else is due (R-MAL-009); a cold blob is checked against signatures up to this old (H-1111).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_RESCAN_CYCLE",
+              "x-quader-type": "duration"
+            },
+            "cycle_batch": {
+              "default": 10000,
+              "description": "Verdicts one run of the job marks for the cycle, oldest first (R-MAL-009).",
+              "maximum": 1000000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_MALWARE_RESCAN_CYCLE_BATCH"
+            },
+            "recent": {
+              "default": "168h",
+              "description": "Content downloaded within this span is scanned again within a day of a new signature database, at the priority recent (R-MAL-009).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_RESCAN_RECENT",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
+        "run_slice": {
+          "default": "10m",
+          "description": "How long one job keeps its slot on the queue malware before the rest of the work goes to the next job; a call in flight is finished first (R-MAL-004).",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_MALWARE_RUN_SLICE",
+          "x-quader-type": "duration"
+        },
+        "scan_listener": {
+          "additionalProperties": false,
+          "properties": {
+            "client_name": {
+              "default": "",
+              "description": "The name the scan listener's malware routes (the blob and the signature database, R-MAL-006) require in a client certificate, listed exactly among its DNS names, so that no other kind of pod the listener admits reads them (Q-MAL-27, Q-MAL-61). It must be one of server.scan_clients when that list is set. Empty: the routes admit whatever the listener admits (the role all, and an installation that has not set it). The chart sets \u003cfullname\u003e-malware-scanner.\u003cnamespace\u003e.svc.",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_CLIENT_NAME"
+            },
+            "server_name": {
+              "default": "",
+              "description": "The name the malware scanner requires in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-packages.\u003cnamespace\u003e.svc, the name of packages (R-HA-063).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_SERVER_NAME"
+            },
+            "url": {
+              "default": "",
+              "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a malware scanner; empty in the role all, where it means the process's own scan listener. The scanner reads no other address: a call cannot point it elsewhere.",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_URL"
+            }
+          },
+          "type": "object"
+        },
+        "scanner": {
+          "additionalProperties": false,
+          "properties": {
+            "client_name": {
+              "default": "",
+              "description": "The name the malware scanner's listener requires in a client certificate, listed exactly among its DNS names (Q-ARCH-552): the worker's. Required in a malware scanner while server.tls serves TLS; empty in the role all, where the CA alone admits (Q-ARCH-553). The chart sets \u003cfullname\u003e-worker.\u003cnamespace\u003e.svc.",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCANNER_CLIENT_NAME"
+            },
+            "max_entries": {
+              "default": 5000000,
+              "description": "Entries the malware scanner's own unpacking reads from one blob; content past it is unscannable limits_exceeded (R-MAL-007).",
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_MALWARE_SCANNER_MAX_ENTRIES"
+            },
+            "max_file_size": {
+              "default": "1GiB",
+              "description": "Largest part handed to clamd whole, and clamd's MaxFileSize and StreamMaxLength; a larger part that is gzip, xz, zstd or a tar is unpacked by the scanner, any other is unscannable limits_exceeded (R-MAL-007, R-MAL-008). At most 2GiB less one byte: ClamAV scans nothing larger.",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_MALWARE_SCANNER_MAX_FILE_SIZE",
+              "x-quader-type": "bytes"
+            },
+            "max_scan_size": {
+              "default": "2GiB",
+              "description": "clamd's MaxScanSize: what it unpacks of one part; content past it is unscannable limits_exceeded (R-MAL-008). At least max_file_size.",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_MALWARE_SCANNER_MAX_SCAN_SIZE",
+              "x-quader-type": "bytes"
+            },
+            "max_uncompressed_size": {
+              "default": "32GiB",
+              "description": "Bytes the malware scanner's own unpacking of ar, zstd and large containers produces from one blob; content past it is unscannable limits_exceeded (R-MAL-007).",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_MALWARE_SCANNER_MAX_UNCOMPRESSED_SIZE",
+              "x-quader-type": "bytes"
+            },
+            "scan_timeout": {
+              "default": "5m",
+              "description": "clamd's MaxScanTime for one part, and the malware scanner's bound on the work of one call after its read; a call past it ends timeout (R-MAL-008).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCANNER_SCAN_TIMEOUT",
+              "x-quader-type": "duration"
+            },
+            "server_name": {
+              "default": "",
+              "description": "The name the worker requires in the malware scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-malware-scanner.\u003cnamespace\u003e.svc, the name of the malware scanner's own pair (R-HA-063).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCANNER_SERVER_NAME"
+            },
+            "slots": {
+              "default": 2,
+              "description": "Calls one malware scanner runs at a time, and clamd's MaxThreads; a call while every slot holds one is answered 503 scanner_busy. One clamd serves every slot of its pod, so more than one slot lets the artifacts scanned at the same time reach each other through a taken-over clamd (H-1105).",
+              "maximum": 64,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_MALWARE_SCANNER_SLOTS"
+            },
+            "socket": {
+              "default": "/run/clamd/clamd.sock",
+              "description": "The Unix socket of the clamd beside the malware scanner, on the volume the two containers share (R-MAL-007).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCANNER_SOCKET"
+            },
+            "url": {
+              "default": "",
+              "description": "The malware scanner's listener, an origin: https://\u003cfullname\u003e-malware-scanner.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Empty: the worker's job makes no call and its check malware_scanner reports why (Q-MAL-60); the blobs wait pending.",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCANNER_URL"
+            }
+          },
+          "type": "object"
         }
       },
       "type": "object"
@@ -2950,6 +3166,16 @@
           ],
           "type": "string",
           "x-quader-env": "QUADER_PROCESS_ROLE"
+        },
+        "scanner_kind": {
+          "default": "image",
+          "description": "What a process of the role scanner does: image, the analysis of container images (R-VULN-041), or malware, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007). The chart sets malware on the Deployment \u003cfullname\u003e-malware-scanner. A scanner of the kind malware reads the section malware instead of vulnerabilities.images. Read by the role scanner only.",
+          "enum": [
+            "image",
+            "malware"
+          ],
+          "type": "string",
+          "x-quader-env": "QUADER_PROCESS_SCANNER_KIND"
         }
       },
       "type": "object"

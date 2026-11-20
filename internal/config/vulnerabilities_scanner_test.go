@@ -80,12 +80,12 @@ func TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile(t *t
 	// What the role reads is still validated.
 	containsAll(t, issuesOf(t, loadRole(t, "scanner", testRegistryURL, "QUADER_SERVER_LISTEN=nonsense")), "server.listen")
 	for _, path := range []string{"server.listen", "server.internal_tls.ca_file", "vulnerabilities.images.registry.url", "storage.spool.max_bytes", "health.check_interval"} {
-		if !ScannerReads(path) {
+		if !ScannerReads(path, ScannerKindImage) {
 			t.Errorf("the scanner does not read %s", path)
 		}
 	}
 	for _, path := range []string{"database.password_file", "valkey.password_file", "storage.s3.bucket", "secrets.encryption_key_files", "auth.oidc.issuer", "proxy.outbound.proxy_from_environment", "vulnerabilities.sources.osv.mode"} {
-		if ScannerReads(path) {
+		if ScannerReads(path, ScannerKindImage) {
 			t.Errorf("the scanner reads %s", path)
 		}
 	}

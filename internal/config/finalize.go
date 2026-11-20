@@ -58,6 +58,8 @@ func (c *Config) Validate(r *Report) {
 	}
 	c.validateShutdownBudget(r)
 	c.validateLinkNames(r)
+	c.validateMalwareScanner(r)
+	c.validateMalwareRouteName(r)
 	if c.System.BootstrapAnonymousRead {
 		// Every endpoint's origin counts: the bridge is checked against the origins
 		// that reach the edge, not only the default one (SA3).

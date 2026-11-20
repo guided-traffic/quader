@@ -48,3 +48,28 @@ func TestQ_LIM_66_TheImageScanningsPullIsRecordedUnderSystemAndLimitedByNothing(
 		}
 	}
 }
+
+// Q-LIM-80: the malware scanner's read with a blob token is system work with the credential malware-scanner, and limited by nothing;
+// a system subject of another name keeps the image scanner's credential.
+func TestQ_LIM_80_TheMalwareScannersReadIsRecordedUnderSystemWithItsOwnCredential(t *testing.T) {
+	s, ok := SubjectOf(Caller{Kind: CallerSystem, System: MalwareScanCredential})
+	if !ok || s.Kind != KindSystem || s.Credential != MalwareScanCredential || s.String() != "system" {
+		t.Fatalf("subject %+v", s)
+	}
+	if s, _ := SubjectOf(Caller{Kind: CallerSystem, System: "image-scanner"}); s.Credential != ScanCredential {
+		t.Fatalf("the image scanner: %+v", s)
+	}
+	r := newRig(t, ModeEnforce, BuiltinProfiles()[ProfileAnonymous])
+	c := r.e.Begin(Caller{Kind: CallerSystem, System: MalwareScanCredential}, qname.Repo{Project: "web", Key: "npm-local"})
+	if st := r.e.Check(context.Background(), c, r.clk.now(), nil); st.Err != nil {
+		t.Fatalf("checked: %v", st.Err)
+	}
+	c.AddCached(68)
+	r.e.Finish(c)
+	r.e.Flush(context.Background())
+	r.usage.mu.Lock()
+	defer r.usage.mu.Unlock()
+	if len(r.usage.d) == 0 || r.usage.d[0].Subject.Credential != MalwareScanCredential {
+		t.Fatalf("recorded %+v", r.usage.d)
+	}
+}

@@ -201,7 +201,7 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 | Roles | `api`, `packages`, `worker`, `scanner`, `web`, `all` (`web` and `all` are for runs outside the chart) | `cmd/quader/serve.go`, `internal/config/process.go` |
 | Default client listener | `:8080` (`server.listen`) | `internal/config/server.go` |
 | Scanner's listener | `:8080` (`server.listen`) of the role `scanner`, route `POST /scan/v1/analyses`, mutual TLS; in `all` a loopback port | `internal/app/wire_scanner.go`, `internal/vuln/scanner` |
-| Scan listener | `server.scan_listen` (the chart: `:8082` on the main `packages` Deployment), the reserved endpoint `scan`, mutual TLS, scan tokens only | `internal/app/wire_scan_listener.go`, `internal/config/server_scanner.go` |
+| Scan listener | `server.scan_listen` (the chart: `:8082` on the main `packages` Deployment), the reserved endpoint `scan`, mutual TLS; scan tokens of images below `/v2/`, blob tokens on `/scan/v1/blobs/`, the malware scanner's certificate on `/scan/v1/malware-database` | `internal/app/wire_scan_listener.go`, `internal/config/server_scanner.go` |
 | Ops listener | `:8081` (`server.ops_listen`) | `internal/config/server.go` |
 | Further endpoint listener | any free port, one per endpoint, name `^[a-z][a-z0-9-]{0,19}$` (`server.endpoints.<name>.listen`) | `internal/config/endpoints.go` |
 | Endpoint name in metrics, logs and spans | `default` for the default endpoint, the configured name otherwise; a name outside the configured set folds into `_other` | `internal/observability` |
@@ -1237,6 +1237,7 @@ struct tags (for example `database.password_file`) takes a file path only, read 
 ```yaml
 process:
   role: ""                              # no default: api, packages, worker, scanner, web or all; required by serve
+  scanner_kind: image                   # default; malware: a malware scanner, which reads the section malware instead of vulnerabilities.images (the role scanner only)
 server:
   listen: ":8080"                       # default: the default endpoint's listener; in the role scanner the scanner's listener
   ops_listen: ":8081"                   # default
@@ -1553,6 +1554,7 @@ jobs:
     delivery: 8                         # webhook deliveries (P1)
     mirror: 2                           # the passes of mirrored remote repositories
     vuln: 1                             # the advisory sync (vuln-sync-osv, vuln-sync-osv-full, vuln-sync-kev)
+    malware: 1                          # the malware scanning's job and database task
   queues: []                            # default: every queue; the queues this worker claims, for example ["index"] on a worker pool
   exclude_queues: []                    # default: none; the queues this worker does not claim; not together with queues. As variables: QUADER_JOBS_QUEUES='["index"]' (one JSON list)
   poll_interval: 2s                     # default; at least 100ms; below health.watchdog_timeout
@@ -2222,20 +2224,49 @@ and the problem details of R-ARCH-023 with the `deb_*` codes of [error codes](#e
 </details>
 
 <details>
-<summary>Malware scanning: the keys of the gate and the settings page, and the repository document member</summary>
+<summary>Malware scanning: the keys of the scanning, its links and its database, and the repository document member</summary>
 
-The keys come from the struct tags of [internal/config/malware.go](internal/config/malware.go) (R-MAL-027); the keys of the job, the
-scanner and the database task join as they are built. The member `malware` is part of the repository document, not of `quader.yaml`
+The keys come from the struct tags of [internal/config/malware.go](internal/config/malware.go) (R-MAL-027); the job, the malware scanner
+and the database task that read most of them are not built yet. No key is required outside a malware scanner: a worker without
+`scanner.url` keeps the job idle and reports it (Q-MAL-60). The member `malware` is part of the repository document, not of `quader.yaml`
 ([malware.md](docs/developer/malware.md)).
 
 ```yaml
 malware:
   enabled: true                         # default; false: no scan, no verdict, nothing refused for malware; the stored verdicts stay
+  max_size: 4GiB                        # default; a larger blob is unscannable too_large, refused under the switch until released
   download_wait: 25s                    # default; 0s to 60s, counted from the request's arrival: how long a download of unchecked content waits where only checked artifacts are served
   max_waiting: 512                      # default; 1 to 100000 waiting downloads per replica
+  concurrency: 4                        # default; calls the one job keeps in flight, one kept for downloads that wait
+  run_slice: 10m                        # default
+  max_attempts: 5                       # default; then the blob is failed, refused under the switch
+  read_timeout: 10m                     # default; 1m to 1h: the malware scanner's read of one blob and the blob token's lifetime
+  rescan:
+    recent: 168h                        # default; downloaded within: scanned again within a day of a new database
+    cycle: 720h                         # default; every verdict at least this often (H-1111)
+    cycle_batch: 10000                  # default
+  scanner:                              # the worker's call (R-MAL-005) and the malware scanner's own bounds (R-MAL-007, R-MAL-008)
+    url: ""                             # example: https://quader-malware-scanner.quader.svc:8080 (the chart sets it); empty: the job makes no call
+    server_name: ""                     # the chart sets <fullname>-malware-scanner.<namespace>.svc
+    client_name: ""                     # the worker's name the malware scanner admits; required in a malware scanner with TLS; the chart sets it
+    slots: 2                            # default; calls one malware scanner runs at a time, clamd's MaxThreads; more than 1 lets one pod's scans reach each other through clamd (H-1105)
+    socket: /run/clamd/clamd.sock       # default
+    max_file_size: 1GiB                 # default; at most 2GiB less one byte (ClamAV's ceiling)
+    max_scan_size: 2GiB                 # default; at least max_file_size
+    max_uncompressed_size: 32GiB        # default; the scanner's own unpacking of ar, zstd and large containers
+    max_entries: 5000000                # default
+    scan_timeout: 5m                    # default
+  scan_listener:                        # the malware scanner's read from the scan listener of packages (R-MAL-006)
+    url: ""                             # example: https://quader-packages-scan.quader.svc:8082 (the chart sets it); required in a malware scanner
+    server_name: ""                     # the chart sets <fullname>-packages.<namespace>.svc
+    client_name: ""                     # read by packages: the name its malware routes admit, one of server.scan_clients; empty: whatever the listener admits
   database:
     repository: upstream/scanner-clamav # default; or a local generic repository of an own project (no internet); whoever holds deploy on it decides the signatures
     freshclam: true                     # default; false: the repository is filled by hand and the settings page shows the commands
+    freshclam_dir: /var/lib/quader/freshclam  # default; the volume freshclam and the worker share
+    proxy: ""                           # example: http://proxy.example.com:3128, for freshclam only (H-1106)
+    max_file_size: 512MiB               # default
+    keep: 48h                           # default; versions not in use are removed after this
     stale_after: 48h                    # default; 1h to 8760h: an older database is stale; scanning goes on with it
 ```
 
@@ -2258,6 +2289,7 @@ malware:                                # repository document member, every clas
 | `tracing.incoming_context`, `tracing.trusted_peers` | `trusted_peers`, `[]` | No incoming trace context is continued by default; only the listed peers can choose the trace ID. `server.trusted_proxies` grants no trace trust. | [roles and trust boundaries](docs/security/roles-and-trust-boundaries.md), [Q-OPS-32](docs/spec/operations-and-observability.md) |
 | `server.base_url` | empty | Empty is for development only. Set the `https` origin of the edge. | [R-OPS-005](docs/spec/operations-and-observability.md) |
 | `server.internal_tls.ca_file`, `vulnerabilities.images.scanner.client_name`, `server.scan_clients`, Helm `tls.certManager.issuerRef` | the chart's: `ca.crt` of the pod's own Secret and the kinds' names, `ClusterIssuer` `""` | The links of the image scanning are mutual TLS against this CA, and each end admits only the other kind's name: a pod of another kind, or a wildcard certificate of the same CA, is refused. Every kind of pod holds its own pair, so an analyser that a hostile image took over holds the scanner's only. The names are only as strong as the issuer's rule of who may request them: a `ClusterIssuer` that any namespace may use lets anyone who creates Certificates there request the worker's name. With `tls.enabled: false` both links are plain HTTP. | [H-1035](docs/security/image-scanning.md#h-1035--a-taken-over-analyser-holds-the-scanners-pair), [H-1072](docs/security/transport-encryption.md#h-1072--the-name-check-is-as-strong-as-the-issuers-rule-of-who-may-request-a-name), [H-1043](docs/security/image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated) |
+| `malware.scan_listener.client_name`, `malware.scanner.client_name` | empty; the chart sets the malware scanner's and the worker's names | The first narrows the scan listener's blob and database routes to the malware scanner's certificate, so the image scanner, which the same listener admits, reads neither; empty, both routes admit every kind the listener admits (the blob route still needs a blob token). The second is the one name the malware scanner's listener admits; a malware scanner with TLS refuses to start without it. | [Q-MAL-61](docs/spec/malware-scanning.md#q-mal-61--the-scan-listeners-malware-routes-admit-the-malware-scanners-name-from-a-key-of-their-own), [H-1108](docs/security/malware-scanning.md#h-1108--with-tlsenabled-false-the-malware-scanners-links-are-not-authenticated) |
 | `vulnerabilities.images.scanner.slots` | `1` | Above 1, the analyses of one scanner pod share its user: one hostile image can read the others' images and tokens. Raise the scanner's replicas instead. | [H-1037](docs/security/image-scanning.md#h-1037--analyses-that-share-a-scanner-share-its-user) |
 | `system.bootstrap_anonymous_read` | `false` | `true` lets anonymous callers read the installation facts and the replica list on the client port. Startup refuses it with an `https` base URL that is not localhost. | [H-63](docs/security/roles-and-trust-boundaries.md), [Q-API-14](docs/spec/api-and-ui.md) |
 | `metrics.auth` | `none` | With `none`, whoever reaches port 8081 reads the metrics; the chart's NetworkPolicy limits that. `static` requires a bearer token file. | [H-41](docs/spec/operations-and-observability.md), [R-OPS-006](docs/spec/operations-and-observability.md) |

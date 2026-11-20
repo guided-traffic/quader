@@ -64,6 +64,9 @@ const (
 	MethodBasic AuthMethod = "basic"
 	// MethodSession is the session cookie (R-AUTH-001 item 3).
 	MethodSession AuthMethod = "session"
+	// MethodClientCertificate is the client certificate of a link between Quader's pods: the one credential of the scan listener's
+	// database routes, which admit the malware scanner by its name (malware-scanning.md Q-MAL-27).
+	MethodClientCertificate AuthMethod = "client_certificate"
 )
 
 // TokenType is the type of a quader token, from its prefix (R-AUTH-022).
@@ -118,6 +121,17 @@ type Credential struct {
 	// ScanID is the scan's ID of a scan token (R-OCI-037): what joins the request log of
 	// the scan listener with the worker's and the scanner's log lines. It is no secret.
 	ScanID string
+	// ScanBlob is what a blob token reaches (malware-scanning.md R-MAL-006): the one repository
+	// and the one blob of the malware scanner's read. Nil for every other credential.
+	ScanBlob *ScanBlob
+}
+
+// ScanBlob is the reach of a blob token as the edge carries it: the repository that holds the
+// blob, which the decision point's rule of system:malware-scanner reads and the usage store
+// records the read under (Q-LIM-80), and the blob's digest, sha256:<64 hex>.
+type ScanBlob struct {
+	Repo   qname.Repo
+	Digest string
 }
 
 // RegistryGrant is the grant of a registry token as the edge carries it: at most

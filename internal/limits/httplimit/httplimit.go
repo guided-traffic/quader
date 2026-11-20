@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/observability"
@@ -17,10 +18,11 @@ import (
 )
 
 // ProtocolPath reports whether a path is a protocol path (R-LIM-005): every path below /api/ that is not /api/v1/, /files/
-// and everything below /v2/ (the version check /v2/ and /v2 themselves included).
+// and everything below /v2/ (the version check /v2/ and /v2 themselves included), and the malware scanner's blob route of the scan
+// listener, whose reads the usage store records under the subject system (Q-LIM-80).
 func ProtocolPath(p string) bool {
 	switch {
-	case p == "/v2" || strings.HasPrefix(p, "/v2/"), strings.HasPrefix(p, "/files/"):
+	case p == "/v2" || strings.HasPrefix(p, "/v2/"), strings.HasPrefix(p, "/files/"), strings.HasPrefix(p, registrytoken.BlobPathPrefix):
 		return true
 	case p == "/api/v1" || strings.HasPrefix(p, "/api/v1/"):
 		return false
@@ -54,6 +56,9 @@ func CallerOf(r *http.Request, p httpserver.Principal, admin bool) limits.Caller
 	}
 	if p.Anonymous {
 		c.Kind = limits.CallerAnonymous
+	}
+	if c.Kind == limits.CallerSystem {
+		c.System = p.Name // image-scanner or malware-scanner: the credential its reads are recorded with (Q-LIM-80)
 	}
 	if p.CI != nil {
 		c.CIIssuerID, c.CIProjectID = p.CI.IssuerID, p.CI.ProjectID

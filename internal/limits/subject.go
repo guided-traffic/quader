@@ -97,6 +97,10 @@ func KnownCallerKinds() []CallerKind {
 // (Q-LIM-66): the usage store shows what the scanner read per repository.
 const ScanCredential = "image-scanner"
 
+// MalwareScanCredential is the credential column of the malware scanner's reads of a blob on the scan listener, charged to the
+// subject system under the repository its blob token names (Q-LIM-80).
+const MalwareScanCredential = "malware-scanner"
+
 // Caller is what the authentication stage decided about a request, as plain values (the edge converts its principal).
 type Caller struct {
 	Kind      CallerKind
@@ -117,6 +121,9 @@ type Caller struct {
 	Admin bool
 	// Client is the client address after the trusted-proxy rule (R-ARCH-006).
 	Client netip.Addr
+	// System is the name of a system subject (CallerSystem): image-scanner or malware-scanner, the credential column its reads
+	// are recorded with (Q-LIM-66, Q-LIM-80). Empty is the image scanner's.
+	System string
 }
 
 // SubjectOf derives the subject of a request from what authentication decided (R-LIM-001). It reads nothing else.
@@ -149,10 +156,13 @@ func SubjectOf(c Caller) (Subject, bool) {
 	case CallerAnonymous:
 		return anon, true
 	case CallerSystem:
-		// The image scanning's pull is the installation's own work: recorded under the repository, limited by nothing, and it
-		// takes no parallel lease (Q-LIM-66).
+		// The image scanning's pull and the malware scanner's read are the installation's own work: recorded under the repository,
+		// with the scanner's name as the credential, limited by nothing, and they take no parallel lease (Q-LIM-66, Q-LIM-80).
 		s := System()
 		s.Credential = ScanCredential
+		if c.System == MalwareScanCredential {
+			s.Credential = MalwareScanCredential
+		}
 		return s, true
 	}
 	return anon, false

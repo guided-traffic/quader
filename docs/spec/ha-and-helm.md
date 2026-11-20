@@ -572,7 +572,12 @@ names it the kind `malware-scanner` and leaves their text to them.
   (R-HA-042): `:8080` from the pods of the worker Deployments that claim the queue `malware`; `:8081` from the ops sources; the scan listener
   `:8082` of `packages` also from the malware scanner pods. The chart sets `config.malware.scanner.url` and `config.malware.scan_listener.url`
   as R-HA-066 sets the image scanning's, refused when set by hand (R-HA-029), and renders `QUADER_SERVER_SCAN_LISTEN=:8082` on the main
-  `packages` Deployment while either scanning is on.
+  `packages` Deployment while either scanning is on. The names of the two links, chart-managed as well: `malware.scanner.server_name`
+  `<fullname>-malware-scanner.<namespace>.svc` and `malware.scanner.client_name` `<fullname>-worker.<namespace>.svc` (the call),
+  `malware.scan_listener.server_name` `<fullname>-packages.<namespace>.svc` and `malware.scan_listener.client_name`
+  `<fullname>-malware-scanner.<namespace>.svc` (the read, [malware-scanning.md](malware-scanning.md) Q-MAL-61), and the malware scanner's
+  name as one more entry of `server.scan_clients` (the configuration refuses a `scan_listener.client_name` outside that list). The pool
+  list of the worker accepts the queue `malware` (R-HA-062).
 - **Alerts.** The chart's rules carry the four alerts of [malware-scanning.md](malware-scanning.md) R-MAL-026.
 - **Chart checks** (R-HA-029): `clamd-tmp`'s size at least `slots × (max_file_size + max_scan_size)`, the failure naming the three values;
   `clamd`'s memory limit at least 1.5 GiB; `malwareScanner.replicaCount` at least 1.

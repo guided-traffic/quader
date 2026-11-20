@@ -31,6 +31,9 @@ const (
 	MethodBearer      Method = "bearer"
 	MethodBasic       Method = "basic"
 	MethodSession     Method = "session"
+	// MethodClientCertificate is the client certificate of a link between Quader's pods, the one credential of the scan listener's
+	// database routes, which admit the malware scanner by its name (malware-scanning.md R-MAL-006, Q-MAL-27).
+	MethodClientCertificate Method = "client_certificate"
 )
 
 // HeaderAPIKey is the NuGet API-key header (R-AUTH-001 item 1, R-AUTH-033). The
@@ -58,6 +61,8 @@ type Credential struct {
 	Registry *registrytoken.Grant
 	// ScanID is the scan's ID of a scan token (R-OCI-037), for the request log; empty for every other credential.
 	ScanID string
+	// Blob is what a blob token reaches (malware-scanning.md R-MAL-006): one repository and one blob. Nil for every other credential.
+	Blob *registrytoken.BlobRef
 }
 
 // Result is what the stage yields for an authenticated or anonymous request. A
@@ -124,10 +129,14 @@ type EndpointRules struct {
 	// records token.rejected with reason endpoint_not_accepted (R-EP-009). The
 	// answer is the 401 of an unknown token or of a missing credential either way.
 	Refused func(r *http.Request, f Refusal)
-	// ScanOnly marks the endpoint of the scan listener (R-ARCH-037, R-EP-010): it accepts a scan token below /v2/ and nothing
-	// else, the anonymous request included, with 401 and no challenge, and counts nothing towards the failed-credential
-	// throttle (R-AUTH-038). scan.go.
+	// ScanOnly marks the endpoint of the scan listener (R-ARCH-037, R-EP-010): it accepts a scan token of an image below /v2/, a
+	// blob token on the blob route and the malware scanner's certificate on the database routes, and nothing else, the anonymous
+	// request included, with 401 and no challenge, and counts nothing towards the failed-credential throttle (R-AUTH-038). scan.go.
 	ScanOnly bool
+	// MalwareScanner reports whether the client certificate of a request on the scan listener is the malware scanner's
+	// (malware.scan_listener.client_name): the malware scanning's routes admit no other kind of pod (Q-MAL-27, Q-MAL-61). A request
+	// without TLS has no certificate to ask and passes (H-1108). Nil admits every client the listener's handshake admitted.
+	MalwareScanner func(*http.Request) bool
 }
 
 // The reasons of an endpoint's refusal, the values of the reason label of

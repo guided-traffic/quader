@@ -11,13 +11,20 @@ import (
 // test fixtures. Only the default endpoint registers it.
 const FamilyOther = "other"
 
+// ScanPrefix is the path of the routes the scan listener of packages serves beside the
+// registry's (malware-scanning.md R-MAL-006, R-ARCH-037). They belong to the family
+// packages, the listener's surface; no other endpoint registers them, so a client
+// listener answers them like any unknown path.
+const ScanPrefix = "/scan"
+
 // FamilyOf classifies a ServeMux pattern into the route families of R-EP-005:
 //
 //	ui           /ui/…, GET /{$}, /auth/…
 //	ci_exchange  POST /api/v1/auth/oidc/token and the npm trusted-publishing
 //	             exchange (R-NPM-022) at the host root or below a registry URL
 //	api          /api/v1/…
-//	packages     /api/<format>/<projectKey>/<repoKey>/…, /v2/…, /.well-known/…
+//	packages     /api/<format>/<projectKey>/<repoKey>/…, /v2/…, /.well-known/…,
+//	             /scan/… (the malware scanning's routes, which only the scan listener registers)
 //	files        /files/…
 //
 // Anything else is FamilyOther.
@@ -50,7 +57,8 @@ func familyOfPath(path string) string {
 	case path == "/files" || strings.HasPrefix(path, "/files/"):
 		return config.SurfaceFiles
 	case path == ReservedOCIPrefix || strings.HasPrefix(path, ReservedOCIPrefix+"/"),
-		path == ReservedWellKnownPrefix || strings.HasPrefix(path, ReservedWellKnownPrefix+"/"):
+		path == ReservedWellKnownPrefix || strings.HasPrefix(path, ReservedWellKnownPrefix+"/"),
+		path == ScanPrefix || strings.HasPrefix(path, ScanPrefix+"/"):
 		return config.SurfacePackages
 	}
 	return FamilyOther

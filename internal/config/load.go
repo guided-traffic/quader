@@ -399,14 +399,26 @@ func (l *loader) role() string {
 	return ""
 }
 
+// scannerKind returns process.scanner_kind, empty when the root has no such field.
+func (l *loader) scannerKind() string {
+	p := l.root.FieldByName("Process")
+	if !p.IsValid() {
+		return ""
+	}
+	if f := p.FieldByName("ScannerKind"); f.IsValid() && f.Kind() == reflect.String {
+		return f.String()
+	}
+	return ""
+}
+
 // validate runs the tag rules, the section validators and the command checks.
 func (l *loader) validate() {
-	scanner := l.role() == RoleScanner
+	scanner, kind := l.role() == RoleScanner, l.scannerKind()
 	for _, k := range l.schema.Keys {
 		if !l.opts.Command.needsDatabase() && strings.HasPrefix(k.Path, "database.") {
 			continue
 		}
-		if scanner && !scannerReads(k.Path) {
+		if scanner && !scannerReads(k.Path, kind) {
 			continue
 		}
 		for _, msg := range k.check(l.field(k)) {
@@ -427,7 +439,7 @@ func (l *loader) validate() {
 		}
 		ptr := sec.Addr().Interface()
 		rep := &Report{prefix: prefix, issues: &l.issues, role: l.role()}
-		if scanner && !scannerReads(s.Path) {
+		if scanner && !scannerReads(s.Path, kind) {
 			if v, ok := ptr.(scannerValidator); ok {
 				v.validateForScanner(rep)
 			}

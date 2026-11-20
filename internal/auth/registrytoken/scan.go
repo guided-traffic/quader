@@ -44,17 +44,21 @@ func (s *Signer) ForScans(pullTimeout time.Duration) (*Signer, error) {
 	return &out, nil
 }
 
-// boundOf is the longest span the claims may have: the scan lifetime for a scan token, oci.token_lifetime for every other.
+// boundOf is the longest span the claims may have: the scan lifetime for a scan token of an image, the blob lifetime for a blob
+// token, oci.token_lifetime for every other.
 func (s *Signer) boundOf(c Claims) time.Duration {
-	if c.System != "" {
-		return s.scanLifetime
+	switch c.System {
+	case "":
+		return s.lifetime
+	case BlobSubject:
+		return s.blobLifetime
 	}
-	return s.lifetime
+	return s.scanLifetime
 }
 
-// ScanToken is a scan token as the worker holds it (R-OCI-037 "Where it is never written"): String, GoString, LogValue and
-// MarshalJSON render nothing of it, so it reaches no log line, no error text and no document by accident. The call's body takes it
-// through [ScanToken.Reveal], explicitly.
+// ScanToken is a scan token as the worker holds it, of an image or of a blob (R-OCI-037 "Where it is never written", R-MAL-006):
+// String, GoString, LogValue and MarshalJSON render nothing of it, so it reaches no log line, no error text and no document by
+// accident. The call's body takes it through [ScanToken.Reveal], explicitly.
 type ScanToken struct{ v *string }
 
 const redacted = "[REDACTED]"
@@ -110,8 +114,6 @@ func (s *Signer) IssueScan(repo qname.Repo, name, digest string, now time.Time) 
 // no quader token, not anonymous, exactly one entry with pull alone, a digest, a scan ID, no catalog and the endpoint scan.
 func (c Claims) checkScan() error {
 	switch {
-	case c.System != ScanSubject:
-		return fmt.Errorf("%w: the system subject %q is no scan subject", ErrMalformed, c.System)
 	case c.Anonymous || c.PrincipalID != "" || c.PrincipalKind != "" || c.Binding != (Binding{}):
 		return fmt.Errorf("%w: a scan token names no principal and no Quader token", ErrMalformed)
 	case c.Endpoint != ScanEndpoint:
