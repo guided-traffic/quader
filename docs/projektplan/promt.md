@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 18:05): no registry task; a malware scan of every artifact with ClamAV, asked for by the owner that day and being prepared for him ([With the owner](#with-the-owner)); the role `scanner`, built and waiting on its branch for a certificate for each kind of pod, which the owner decided that day, and after it the analyser's database in a repository (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 18:05): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers and being specified ([With the owner](#with-the-owner)); the role `scanner`, built and waiting on its branch for a certificate for each kind of pod, which the owner decided that day, and after it the analyser's database in a repository (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -696,8 +696,8 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (18:40), one builder (package A's, for the certificates); the malware scan's working paper is with the
-  owner ([With the owner](#with-the-owner)):
+- **In work** (18:40), one builder (package A's, for the certificates) and a planner (the malware scan's specification,
+  [With the owner](#with-the-owner)):
   - **Package A of the scanner, first stage reported:** `0f23ad8ed` on `7fe52214` (143 files), the role `scanner`
     with its token, its listener on `packages`, the chart's objects and the tests up to the integration tier; no
     migration. Gates green but one: `make versions-check` fails on this machine's Docker buildx (F-17, the owner's
@@ -774,12 +774,48 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 **Questions he has not answered**
 
+- **The binding of a host to a repository of `upstream`** at its root (`docker pull mirror.example.com/library/alpine`, a Docker
+  Engine's `registry-mirrors`; R-EP-006, R-OCI-029): named to him on 2026-11-20 as the second step after the project is
+  built; today it is a configuration at start, not a click of the admin area. An address without the project segment, which
+  he had thought of ("den Root unserer API"), the development agent advised against: the path would be ambiguous between a
+  project's key and a repository's (Q-REPO-212). He did not come back to it.
+- **The next lever of the test suite** (section 12 A): each integration shard has room for about three more formats; a fourth
+  shard, or moving the formats' repeated integration tests into the format contract's kit. And the other candidates of the
+  measurement: the fixed cost of every kind leg, the fault scenarios repeated per client in the nightly, the behaviour
+  repeated inside the formats' e2e legs.
+- **What frees a release once the full gate returns** with the first stable release, when a format's client runs only on its
+  own change and in the nightly (said to him on 2026-11-20 as a question for later; a green nightly on the commit is one way).
+
+**Decided by the owner on 2026-11-20, in work or waiting to be built**
+
 - **A malware scan of every artifact with ClamAV** (2026-11-20, his words): "Kannst du gleich mal mit mir einen ClamAV
   Scanner nach dem Schema von Trivy vorbereiten. Brauchen wir auch. Alle Artefakte müssen Viren-geprüft werden. Es muss im
   Admin-Bereich einen Schalter geben, der es ermöglicht, dass nur geprüfte Artefakte gedownloaded werden können."
-  **Prepared and put to him at 18:40 as a working paper he answers in** (as the download limits were): three readings of
-  his words and fourteen decisions, each with options and the development agent's favourite, and a sketch of what each
-  client is answered. Nothing of it is decided or specified. What the planner established, read in the code and in
+  **Decided by him on 2026-11-20 in a working paper** (three readings of his words and fourteen decisions, each with
+  options and the development agent's favourite; read out at 18:45 on his word "Ließ die Antworten aus und lass uns mit
+  der Entwicklung fortfahren"). **His answers:** the three readings hold (every stored item a client downloads; one
+  setting of the installation, in the database, switched in the UI; "geprüft" means a verdict exists). The verdict
+  hangs on the blob, installation-wide (1 a). A scan runs in the background after the commit, with a priority scan
+  and a bounded wait when a pending blob is asked for under the switch (2 c). Under the switch a pending blob is held
+  up to 25 s, then answered 503 with `Retry-After` (3 a). **The switch is the installation's, plus a setting per
+  repository that can only make it stricter, as a detail on demand (4 b, against the development agent's favourite
+  of the installation only).** An infected blob is blocked always while the scanning is on, kept, and released per
+  digest with a reason (5 a), with his note: "Das ist eindeutig etwas das eher der Instanz-Auditor bewertet im
+  Security-Dashboard als der Administrator. Der Administrator hat das Settings, Funde gehen in Security-Dashboard."
+  The development agent reads that as: the settings page is the administrator's and holds the switch, the backlog,
+  the database and the scanner's state, and no list of finds; a find is assessed and released in the security
+  dashboard by whoever holds the instance's auditing rights there. `clamd` runs in a Deployment of its own of the role
+  `scanner` (6 b). The scanner reads one blob by digest through a route of the scan listener (7 a). `freshclam` runs
+  beside the worker and each database version is kept in the system repository `upstream/scanner-clamav` (8 b). A new
+  database reaches what was downloaded lately within a day and the rest in a cycle of 30 days (9 c). The limits go
+  toward ClamAV's ceiling of 2 GB a file, the scanner unpacks outer containers itself, and above a size of Quader's
+  own an artifact is not scannable (10 b). For OCI the gate sits on the blobs and the two scans are independent
+  (11 a). A refusal ends a virtual repository's resolution, a later find goes to the Bastions at once, and the
+  window of up to 10 minutes after switching on is stated (12 a). A page **Admin area › Settings › Malware scanning**,
+  the status at file and version, a malware view in the security dashboard (13 a). The scanning is on in the chart,
+  the switch off (14 a). **In work since 18:45:** the planner writes the specification on a branch of its own; the
+  build follows in four work packages, of which the gate and the verdicts need nothing but `main`, and the scanner's
+  side and the database need the scanner role on `main`. What the planner had established, read in the code and in
   ClamAV's own documentation:
   - **One place every download passes** (`itemStore.Serve` in `internal/formathost/ingest.go`, where the block of the
     vulnerability scanning sits; `/files/` has a copy), and it reads the blob's row in the same statement: a verdict per
@@ -798,28 +834,6 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
     advisories (npm and NuGet only) find those by identity. The switch should be named for what it is.
   - **Not verified:** `clamd`'s memory with today's smaller database (the documentation's figures, upwards of 1.2 GiB,
     are older); any terms for passing the signatures on; apt's behaviour on a 503.
-  The favourites in short: the verdict on the blob; scanned in the background with a priority scan and a bounded wait
-  when a pending blob is asked for; under the switch a pending blob is held up to 25 s and then answered 503, the rest
-  403 in each client's shape, a first pull through a remote stored before it is served; the switch for the
-  installation only; an infected blob blocked always and released by an administrator per digest; `clamd` in a
-  Deployment of its own of the role `scanner`; a route for one blob by digest on the scan listener; `freshclam` beside
-  the worker, the database kept in a system repository `upstream/scanner-clamav`; a new database reaches what was
-  downloaded lately within a day and the rest in a cycle of 30 days; four work packages, after the scanner role and
-  the project `upstream` are on `main`.
-- **The binding of a host to a repository of `upstream`** at its root (`docker pull mirror.example.com/library/alpine`, a Docker
-  Engine's `registry-mirrors`; R-EP-006, R-OCI-029): named to him on 2026-11-20 as the second step after the project is
-  built; today it is a configuration at start, not a click of the admin area. An address without the project segment, which
-  he had thought of ("den Root unserer API"), the development agent advised against: the path would be ambiguous between a
-  project's key and a repository's (Q-REPO-212). He did not come back to it.
-- **The next lever of the test suite** (section 12 A): each integration shard has room for about three more formats; a fourth
-  shard, or moving the formats' repeated integration tests into the format contract's kit. And the other candidates of the
-  measurement: the fixed cost of every kind leg, the fault scenarios repeated per client in the nightly, the behaviour
-  repeated inside the formats' e2e legs.
-- **What frees a release once the full gate returns** with the first stable release, when a format's client runs only on its
-  own change and in the nightly (said to him on 2026-11-20 as a question for later; a green nightly on the commit is one way).
-
-**Decided by the owner on 2026-11-20, in work or waiting to be built**
-
 - **A certificate for each kind of pod, decided by the owner on 2026-11-20** ("Option c"). How it came up: his
   installation takes every release within a minute, and its certificate allows server authentication only, so the
   scanner pods of package A would have stayed not ready and the upgrade would have failed. Asked to add `client auth`,
