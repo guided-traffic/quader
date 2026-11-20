@@ -616,9 +616,13 @@ runs are in `git log`; this section holds the current state.
   bytes, where the plan had assumed about 60 MB (corrected in Q-VULN-175: the 48 hours keep about 1.1 GB of older layers).
   Not checked: what the module download of the fidelity test adds to the job `container-scan`; the certificate of the
   owner's installation (section 12 E).
-- **In work** (15:00): the builder of package 1 of `upstream` (its contract commit); the builder of package A of the
-  scanner. **Waiting:** packages 2 and 3 for the contract commit; package B for a free builder (at most four) and for
-  `upstream/scanner-trivy`.
+- **In work** (15:10): the builder of package 1 of `upstream` (its contract commit); the builder of package A of the
+  scanner, in two stages: everything up to the integration tier and the chart tests with the e2e case written, then, when
+  the host is quiet and it is told to, the one run of that case on a kind cluster of its own. **Waiting:** packages 2 and 3
+  for the contract commit; package B for a free builder (at most four) and for `upstream/scanner-trivy`. **Numbers the
+  builders hold** for decisions and gaps of their own: package 1 from Q-REPO-390, Q-AUTHZ-305, Q-API-362 and H-1053;
+  package A from Q-VULN-180, Q-ARCH-550, Q-HA-340, Q-OCI-235, Q-AUTHZ-330, Q-LIM-70, Q-OPS-220, Q-EP-90, H-1070 and
+  ADR-215. The next builder gets ranges above those.
 - **One colour scale of the severities, chosen by the owner on 2026-11-20** ("Option C", from three candidates of a designer,
   `.out/sev/scale.html`, not committed): the bar of the counts stays exactly as it is, the trend takes the bar's fills for
   its bands with an edge in a mark tone of the same hue, a badge's icon takes that mark tone and its word stays in the
