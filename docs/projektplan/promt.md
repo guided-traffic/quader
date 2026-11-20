@@ -603,8 +603,18 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   das Hinzufügen eines Remote-Repos zu einem virtuellen nicht dafür genutzt werden, dass das Remote nicht gelöscht werden
   kann. Das musst du besser lösen als das Remote zu sperren." Read for it: resolution already drops a member that is disabled
   or being deleted (R-REPO-019), and a delete with `detach=true` already takes a repository out of every member list in its
-  transaction (R-REPO-013), today inside one project. Open: the project's key, the binding of a host, the page of the admin
-  area. Parked with it, on his word ("Das stellen wir kurz zurück"): in
+  transaction (R-REPO-013), today inside one project. **Decided next** (owner, 2026-11-20): a member whose repository is not
+  there stays in the virtual repository as a placeholder and takes effect again when the repository is ("b"); "die well-known
+  Repos werden von uns gepflegt und sind nicht löschbar"; the admin area gets a page of its own on which an administrator
+  switches each one on or off and sets its visibility, with one button that switches all on and one that sets the visibility
+  of all; an administrator may change a repository's upstream address and store an account for it ("um zum Beispiel
+  Rate-Limits zu umgehen oder besser umzugehen"), the address "für solche Fälle …, wo wir eine solche Anpassung übersehen
+  haben und wir nicht schnell genug einen Patch bereitstellen". What follows, the development agent's reading, to be written
+  into the specification by a planner: the project is built in (an amendment of Q-AUTHZ-206, narrow: it holds only the
+  repositories the product defines from the formats' upstream presets, nothing can be created in it, and every one is off
+  until an administrator switches it on); a changed address is marked as differing from the product's and can be reset; a
+  stored credential is entered again when its hosts change, as for every remote (R-REPO-033). Open: the project's key, the
+  binding of a host. Parked with it, on his word ("Das stellen wir kurz zurück"): in
   which repository the analyser's database lies when Quader's own repository is its cache.
 - **Format logos** (Q-UI-225 to 227): npm, Ansible Galaxy and the Docker whale may be shown only with their owners' permission, so
   npm and Ansible Galaxy keep the neutral glyph (and Guides show it on the tiles of Ansible Galaxy, Generic and npm). To show them,
