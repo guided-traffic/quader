@@ -1,7 +1,7 @@
 # Quader · Full product plan after the beta
 
 **Status:** ⚪ not started · 🟡 in progress or partly done · 🟢 done
-**Last updated:** 2026-11-10
+**Last updated:** 2026-11-20
 
 Everything that goes beyond the beta release in [BETA.md](BETA.md): the beta phase, the remaining
 registry types, and platform features. Releases after the beta are cut by Semantic Release from the
@@ -131,6 +131,10 @@ parallel.
 - ⚪ Configuration as code (declarative repositories, policies, CI mappings)
 - ⚪ Build metadata (spec page to write)
 - ⚪ Notifications
+- ⚪ Invitation by e-mail of a person who has never signed in, from the field that chooses a person (the owner's decision of
+  2026-11-20 at W-12: "Option c, aber erst später"). It needs what Quader does not have: sending mail (SMTP). Until then the
+  field says that a person can be found after their first sign-in
+  ([Q-UI-585](../spec/api-and-ui.md#q-ui-585--a-person-who-has-never-signed-in-is-not-found-and-the-field-says-so))
 
 ### M10 · Identity, access and CI breadth
 - ⚪ SCIM provisioning of users and groups; auto-join groups; deactivation of dormant users

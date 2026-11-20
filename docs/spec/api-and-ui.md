@@ -17502,6 +17502,9 @@ administrator ([identity-and-authentication.md](identity-and-authentication.md) 
 **Choice:** (a). **Rationale:** the sign-in is how nearly every person becomes a user; an administrator's pre-provisioning is an
 admin task with its own screen. Open: an invitation of a person who has never signed in (not built).
 
+**Revisited on 2026-11-20 by the owner:** (a) stays for now. The invitation is to be one by e-mail, option (b), built later
+with the sending of mail that Quader does not have yet; a pending membership without mail was offered and not chosen.
+
 **Applied in the spec:** R-UI-150.
 
 ### Q-UI-620 · The security dashboard is `/security` of the main area, under the second context title Security audit

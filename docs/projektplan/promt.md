@@ -545,7 +545,6 @@ agent** is not decided until the owner has said so.
 W-1 to W-26 are built and on `main`; their decisions are in the specification. What the owner has to decide or look at is in the
 list [With the owner](#with-the-owner); what is untested is in section 12. Open as work:
 
-- **W-12:** a person who has never signed in cannot be found by the person field, and nothing invites one.
 - **W-14, from the builder's report:** the spec calls two more events warnings that are not written as one: a result of a group
   rule that violates the group-name rule is "skipped with a warning event" (R-AUTH-008), but only logged
   ([claims.go](../../internal/auth/oidc/claims.go)); `system.backup.completed` with `completed_with_warnings` is written as success.
@@ -590,8 +589,8 @@ runs are in `git log`; this section holds the current state.
 
 - **In work** (started 2026-11-20, 09:30, nothing landed yet): the measurement of section 12 A (read from the reports of the
   runs, no change); W-27, a designer's three variants in the session's scratchpad; a builder for W-14; a builder for W-20 and
-  the wiki's visibility behind a disclosure. W-12 is not built: what is open there is a decision of the owner (whether and how
-  a person who has never signed in is invited), to be put to him.
+  the wiki's visibility behind a disclosure. W-12 is decided and not built now: the owner chose an invitation by e-mail, later
+  ("Option c, aber erst später", 2026-11-20); it stands in [FULL.md](FULL.md#m9--automation-and-integration), M9.
 - **To check first:** F-165 in the next full nightly; then section 12.
 
 ### With the owner
