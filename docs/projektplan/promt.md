@@ -2482,3 +2482,98 @@ v0.56.1 to v0.56.4).
   layout before anything else, and makes the recorder follow the daemon's cgroup parent.
 - For the owner, one at a time: the schedule that GitHub starts 5.5 to 8.5 hours late; the decision Q-ARCH-500; the branches `stab/*` on the remote, which can go once
   `stab/oom-2` has landed.
+
+## 12 · To test and to refactor
+
+What is known to be untested, unverified or wrongly shaped, in one place (owner, 2026-11-20: "Es wäre schön wenn du alles was
+wir mal testen und ggf. refactoren sollten mal in die docs/projektplan/promt.md aufnimmst"). An entry says what is missing, why
+it matters and where the details are; it is removed in the commit that closes it. Nothing here is started by being listed. The
+rule every entry is built by is "Tests stay runnable" of [CLAUDE.md](../../CLAUDE.md): once, at the cheapest tier that can show
+it; a format adds a constant; no more data than the assertion needs. **Collected on 2026-11-20 from this plan** (the findings,
+the walk items and the run record); what the code holds beyond the plan has not been searched.
+
+### A · The shape of the test suite (refactor)
+
+- **What a format costs is not known.** One push to `main` cost 384 runner minutes in 46 minutes of wall clock (Test and
+  Release 44646960056: ten e2e legs 161 minutes, the three integration shards 114); one full nightly 682 runner minutes over
+  27 legs (44625277245). About twenty more formats are planned. **First step, a measurement and no change:** per leg and per
+  test the run time from the reports of the last green runs, each put into one of three classes (what the format's client
+  does; format-independent behaviour repeated per format; infrastructure: the cluster, the images), and from it what a format
+  costs today and what it may cost by the rule. Proposed to the owner on 2026-11-20, not started.
+- **Candidates, named in the runs and not measured:** the load legs repeat the same drain, failover and switchover scenario
+  with npm and with NuGet (`npm-ha`, `nuget-ha`, the drain variants b to e and the pooler variant run both clients); every
+  kind leg brings up a cluster of its own with the whole dev profile (two to three minutes) and loads its client images; the
+  three integration shards each bring up the stack; the render set walks 378 screens in 25 minutes and grows with every
+  screen and every format's settings page.
+- **A builder cannot render on a new UI database**, which CI always has: three landings in one night passed on a filled
+  database and stopped on a new one (the run record of 2026-11-19/20). Either builders get a database of their own, or the
+  seed is made independent of what the database holds.
+- **A code push during a nightly costs the nightly its numbers** (F-164: ten kind legs of Test and Release beside a load leg
+  made it six to nine times slower). The latency conditions of the load legs are only as good as the runner is quiet; either
+  the nightly holds the runners, or its latency conditions compare against a measurement of the same run.
+- **A partial dispatch of the nightly takes a large pod for every leg of a lane it does not run** (the run record of
+  2026-11-18); in a full pool one leg waited 40 minutes.
+- **The render guard's blind spots** (W-23, the builder's list): a control beside a framed box, absolutely placed elements and
+  text drawn by CSS, states the set does not render (open menus, hover, most dialogs, error states), an offset of 1 px or
+  less. **The two newest checks** (`stacked-offset`, `label-apart`) were each wrong once on older screens before they were
+  right; `joined` has run in one full set.
+
+### B · The download limits (W-26) and a probe starts the download (W-25)
+
+- **A CI token on the request path** is not tested anywhere above the unit test of its subject: the integration stack has no
+  issuer.
+- **A crashed replica's leases** of parallel downloads (R-LIM-039 names the case): the integration stack can only stop a
+  replica gracefully, which releases them.
+- **End to end, not verified:** the `RateLimit` policies of the parallel, upstream and refused figures; the charging of a host
+  bound to a repository (no test); the daily fold's sums with rows older than 30 days (only that the query runs).
+- **`TestR_LIM_001`** failed once in 13 runs of its builder with "1 request charged to an address", not reproduced; it prints
+  the rows if it happens again.
+- **A multi-platform push** against the write class was not measured (single-platform, 40 layers: Q-LIM-56).
+- **The new client cases have run on `linux/arm64` only** when this was written; the first pipeline on the runners shows
+  them on `linux/amd64`.
+- **W-25 through a virtual repository** has integration tests of its own for OCI and npm; NuGet, Ansible and Debian have unit
+  tests only; OCI through a virtual address has no unit test. The background path's own refusal by include and exclude
+  patterns is exercised through one case.
+- **Under overload a caller at its parallel figure waits ten seconds for its refusal** while the server sheds at once (F-163):
+  not a test, a question for the owner, listed here because the capacity test only passes with its tokens exempted.
+- **The four behaviours of clients the owner has not decided on** (the run record of 2026-11-20): docker gives up on any 429;
+  a client retrying a second apart is never admitted at a tight request limit; podman's 16 minutes at a byte limit; the
+  client cases run on changes of their format only.
+- **Refactor, named by the builders:** the class `package_write` is a stand-in until upload figures exist (Q-LIM-27); a
+  screen cannot change a technical token's description or delete one (API only); the usage list's cursor is an offset
+  (Q-LIM-45).
+
+### C · The walk (W-12 to W-24)
+
+- **The kind test `e1_01_login_test.go`**, changed for the ended session at load (W-21), has not been run on a cluster.
+- **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
+  dispatch of the nightly that names `e2e-upgrade` shows it.
+- **The render run of the walk** (2026-11-18): `start-recent` as `plain` and `power` ran into the five minutes of the test
+  inside `settle`; cause not read. One screen stopped with "Timeout … exceeded" and no more; the report carries more lines
+  since, the cause was not seen again.
+- **No render walk switches a remote to mirror mode**: the OCI and Debian mirror settings are covered by unit tests only.
+- **Journey 23 (search)** failed once on a long-lived kind cluster and is green on CI's fresh one; not read.
+
+### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)
+
+- **F-165** one instance of the request pooler without a server for 33.7 s after a switchover (one red run).
+- **`TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`** red once by timing (F-162's entry).
+- **F-160** `drain-load-e` on latency alone; not reproduced in two later runs.
+- **F-126** `TestConcurrentWritersOnOnePath` refused one writer once; **F-127** `e2e (push)` with a certificate the job's own
+  CA did not verify, the secrets operator suspected and its kept log not read; **F-124** tarballs of 1 to 5 MB stalling at the
+  edge for about 40 s; **the 502 bursts at the edge (H-795)**, seen again as one upload probe per drain leg on 2026-11-19
+  and 20; the stall of the whole cluster in the set `push`; V-7b of the vulnerability scanning performance once above its
+  bound, the runner's load not measured.
+- **The internal secrets operator of the local kind cluster crash-loops** (hundreds of restarts on 2026-11-10 and 11).
+
+### E · Never run where it matters
+
+- **On the owner's installation:** the newest release (not reachable from the development machine); an image scan (none seen
+  there yet; not run: a push through the whole app with the real binary, a drain or worker loss in a cluster, the release
+  image and chart in a cluster).
+- **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
+  never measured on a cache with very many tags. W-25 adds rows to that view.
+- **Ansible Galaxy:** one name with versions in a local and a remote member is not run with the real clients (H-868); the hub
+  exchange is tested against the stub realm only (H-842).
+- **The CI caches:** a clients image loaded from the cache instead of built has not been read in a log since they landed
+  (F-158's list); every cache entry exists twice without `zstd` on the runners.
