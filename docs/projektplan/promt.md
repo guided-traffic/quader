@@ -562,7 +562,11 @@ runs are in `git log`; this section holds the current state.
 
 - **Landed on 2026-11-20:** W-27 (**Set up client** in variant A), W-14 (the audit log's warnings), W-20 (a deleted repository leaves **Recently opened**), the wiki's
   visibility behind a fold, and the measurement of what a format costs ([test-cost.md](../developer/test-cost.md)).
-- **In work:** nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
+- **Red on `main`, not gating** (Test and Release 44715970992 of b74d0e98, read at 12:15): `UI layout checks` (the screen
+  `setup-deb`: the label of a fold on two lines at 390 px) and `e2e (access-long)` (journey `20-ansible` expects the guide's
+  first section open) come from W-27, a builder fixes both; `integration (shard c)` is `TestR_DEB_025` of section 12 D.
+- **In work:** the fix above; the limits' package (larger bursts from a measurement, refused requests not counted, waiting
+  downloads capped, the manual). Else nothing is unlanded. To build next, as one package: the owner's decisions on the clients' behaviour at a limit
   (larger default bursts from a measurement of one pull; a refused request is not counted in the request windows; the
   manual names the job's timeout for podman).
 - **Waits for the owner:** which of the measurement's candidates is cut first (section 12 A); put to him: whether a format's
@@ -841,7 +845,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
 - **F-165** one instance of the request pooler without a server for 33.7 s after a switchover (one red run).
 - **`TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`** red once by timing (Test and Release 44632375471,
   `integration (shard c)`: "the build after the change left the suite current", while the log shows the build failing with
-  `member_unverified` in the second the replica shut down; no limit in it, first record of it).
+  `member_unverified` in the second the replica shut down; no limit in it, first record of it). **Again** in Test and
+  Release 44715970992 of b74d0e98 (2026-11-20, `integration (shard c)`, 14.58 s; nothing of that push touches the Debian
+  virtual repository): two occurrences in a day, to be read at its cause next, not re-run.
 - **F-160** `drain-load-e` on latency alone; not reproduced in two later runs.
 - **F-126** `TestConcurrentWritersOnOnePath` refused one writer once; **F-127** `e2e (push)` with a certificate the job's own
   CA did not verify, the secrets operator suspected and its kept log not read; **F-124** tarballs of 1 to 5 MB stalling at the
