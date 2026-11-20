@@ -2076,6 +2076,19 @@ agent** is not decided until the owner has said so.
     **twice**, once from a GitHub-hosted job (zstd) and once from a self-hosted one (gzip, no `zstd` in the runners'
     image), 165 and 161 MB for the modules, 136 and 121 MB for the npm clients. With all five clients images that is
     nearer 6 GB than the estimated 4; `zstd` in the runners' image would halve it.
+- **F-164 · The drain load with the request pooler was six to nine times slower in the nightly on the limits, and then met
+  the parallel figure** (nightly 44625277245, `e2e (drain-load-pooler)`, 2026-11-20 00:28 to 00:44 UTC, on `2621e9e9`). Of
+  55,602 k6 requests of npm, 227 tarball requests were answered `429`, the first after 13.0 s, which is the ten-second wait
+  for a parallel lease; 95 were in flight at the stop. R-HA-059: p99 of the warm-up 3.643 s, of the drain window 12.043 s.
+  The commands held (210 `npm ci`, 47 publishes, 225 restores, 51 pushes, all exit 0; the slowest 41.8 s and 44.6 s).
+  **Before the limits the same leg:** warm-up 397 ms and drain 448 ms (nightly 44414813006), 605 and 522 ms (44453781574).
+  **In the same nightly, `npm-ha`** (Enforce, three k6 tokens as here): warm-up 242 ms, drain 202 ms, no `429`. So the
+  latency rose first, and with answers of seconds three tokens that carry 120 requests a second pass 50 parallel downloads
+  each: the refusals are the consequence. **The cause of the latency is not known.** Two candidates: the neighbours (Test
+  and Release 44644745445 ran its ten kind legs at the same minutes; the evening's baseline run had nothing beside it), or
+  the limits together with this variant's request pooler (the usage flush of every replica goes through it every ten
+  seconds). The cluster-state artifact holds the pods after the teardown and says nothing. Decides: the same leg in a full
+  nightly on a quiet `main`, and `drain-load-b`, `-c` and `-e` of this nightly against their baseline of the evening.
 - **F-163 · The capacity test of npm met its own callers' limit in Enforce** (the full nightly on the download limits,
   44625277245 of 2026-11-19, `e2e (npm-ha-soak)`, `TestNPMPerf` P-8: of 1,000 requests a second for a cached 50 KiB
   tarball over 20 technical tokens, 1,922 were answered `429`; the replicas' logs name `limits.parallelDownloads` of the
@@ -2150,6 +2163,44 @@ agent** is not decided until the owner has said so.
 ## 11 · Run record
 
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details.
+
+**Night of 2026-11-19/20, state at 02:00 local time** (releases v0.64.0 to v0.66.0; `main` at `072f4949`, everything pushed;
+no builder running). The owner left at about 20:05 ("ich bin ab jetzt weg. 22 Uhr ist damit vorgezogen") and ordered a
+check every 30 minutes ("Ich möchte auf keinen Fall morgen aufwachen und du hast vergessen nach dem subagent weiter zu
+machen"); the checks ran as a timer of the session.
+
+- **Landed and released:** the download limits (W-26, v0.64.0: four packages and the owner's review of the eight open
+  decisions, Enforce as the state a new instance starts in); a registry client's first request is no longer refused by
+  them (F-161, v0.64.1); the token command issues again with `--replace` (F-162, v0.64.2); a probe starts the download
+  (W-25, v0.65.0), also through a virtual repository (v0.66.0).
+- **Found by the first pipelines and the first nightly on the limits, each read to its cause:** F-161 and F-162 (defects of
+  the limits' packages, fixed); F-163 (the capacity test met its callers' limit; the test changed); **F-164, open** (the
+  pooler variant of the drain load was slow by a factor of six to nine and then met the parallel figure; neighbours or the
+  limits with the request pooler, not decided); F-160 (`drain-load-e` on latency alone, before the limits);
+  `TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged` red once by timing (in F-162's entry).
+- **With the owner, new from this night** (each written where its mechanism is):
+  - of the limits: the class `package_write` now holds on registry pushes in Enforce (10 unsafe requests a second, burst
+    50; at F-161); under overload a caller at its parallel figure waits ten seconds for its refusal while the server
+    sheds at once (F-163); what Audit leaves open (H-1015), by his decision;
+  - of W-25: the switch per repository and its default on (Q-REPO-360), the bounds of one background download
+    (Q-REPO-363), a probe through a virtual repository (Q-REPO-367, decided by the development agent because his Q-LIM-2
+    already places the charge); Docker Hub counts the background manifests as pulls (H-1017); an index with stored
+    platform manifests and missing layers is not completed (H-1018); a NuGet virtual repository with several remote
+    members may start at a member whose upstream lacks the version (H-1019);
+  - of W-26's builders: an Owner does not rotate a technical token (Q-AUTH-419); the limit of a technical token is set
+    from its cell and the expiry stands beside the hint (Q-UI-759, Q-UI-761); a deleted technical token's usage stays
+    until retention (Q-LIM-49); a project without a maximum is read as 200 with `maximum: null` (Q-API-356); a registry
+    request that is answered with the challenge is not charged (Q-API-357); the token command's `--replace`
+    (Q-AUTH-421).
+- **To check, not yet seen:** the pipeline of the last push (Test and Release 44646960056: the kind legs with W-25 for the
+  first time; its Semantic Release is through); the rest of the nightly 44625277245 (the lane of `nuget-ha`,
+  `drain-load-b`, `-c`, `-e`, `cold-crash` had not run at 02:00: the first numbers of those legs with the limits, against
+  the evening's baseline of 479 to 532 ms); then **a full nightly on a quiet `main`**, which decides F-164 and shows
+  `backup` (F-162) and the capacity test (F-163) after their changes. No leg of the kind cluster has run with W-25.
+- **For the next landing of a builder's work:** three times this night a render run passed on the builder's filled UI
+  database and stopped on a new one, which CI always has (a migration's checksum, the write budget, a lookup right
+  after a pull). A builder may not purge the database; the development agent purges and runs the full set before every
+  landing, and that step found each of them. Keep it, or give builders a database of their own.
 
 **Run of 2026-11-18/19, state on 2026-11-19 at 14:30 local time** (releases v0.61.0 to v0.63.3; `main` at `ad01d57e`, everything
 pushed). The newest first, because this is where the next run starts.
