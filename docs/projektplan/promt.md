@@ -717,6 +717,29 @@ runs are in `git log`; this section holds the current state.
   `repository-settings-deb-remote`, `repository-settings-deb` and `admin-upstream-registry` on a stack of its own,
   without a finding. No test added: the render's layout check is the test of record. **Its pipeline** (run 44792888153) ended green at
   20:09, the job `UI layout checks` among its jobs, and its release was cut at 19:42.
+- **What the scanner's landing broke, found at 20:22 by the restart of the UI development backend, fixed and landed
+  at 20:34:** `make ui-dev-backend` ended at start with "scan listener: server.internal_tls.ca_file is required for the
+  links between quader's pods while server.tls serves TLS (R-ARCH-038)". The links of the image scanning need their trust
+  anchor wherever `server.tls` serves TLS, the UI development profile serves TLS with a CA of its own and named none for
+  the links, and the builder of the landing had not started that stack (it had named that as not verified). The same
+  start is the first step of `make ui-renders`, so the job `UI layout checks` of the landing's pipeline (run
+  44801198840) went red at 20:26 with that message, and the integration test `TestListenerRotation` (area `tls`), which
+  starts the role `all` with TLS, fails the same way. **The owner's stack** was down for two minutes and ran from
+  20:22 with the CA named through the environment, as a stopgap of the development agent. **The fix** (one commit, by
+  a builder of its own): the profile's configuration names its CA for the links (its one certificate lists
+  `127.0.0.1` with server and client authentication, which is what both loopback links of the role `all` present and
+  verify; no names of kinds there, Q-ARCH-553); the configuration is written by `deploy/ui-dev/config.sh`, which
+  `up.sh` and `serve.sh` both run, so `make ui-dev-backend` brings a change of the profile's configuration to an
+  existing `.dev/ui-dev` without `make ui-dev-up` (it creates no certificate, secret or container, and names a
+  missing file); the integration test names the listener's CA. Looked for the same failure and found none: the
+  other starts of `serve` in tests and profiles set no TLS or use the chart. Gates of the builder: build, the full
+  unit run, lint with the integration build tag, links, the white-label scan, `shellcheck`; the writer run on a copy
+  of the state (the only difference to the file in use is the new block), a handshake of both links with the
+  profile's certificate, and a start of the role `all` in process that failed without the CA and answered ready
+  with it. **Not verified at the landing:** the start against the profile's services without the environment variable
+  (the development agent's restart of the owner's backend, right after); the path of a fresh state in the job `UI
+  layout checks`; `TestListenerRotation` itself. **A consequence the developer page now states:** on these loopback links any certificate of the profile's
+  CA is admitted, the ones of its PostgreSQL and object store among them.
 - **In work** (20:19), two builders:
   - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
     two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
