@@ -580,10 +580,15 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - **Q-HA-293**, to be discussed, not decided: a replica whose first Valkey attempts get no answer becomes ready degraded (Q-HA-13
   (d)), so a wrong password behind an unanswered first attempt is noticed only later. Should the first readiness wait for a verdict?
   Waiting would stall a replica started during a Valkey failover, which Q-HA-13 (c) rejected ([ha-and-helm.md](../spec/ha-and-helm.md)).
-- **H-812** ([image-scanning.md](../security/image-scanning.md)): Trivy shares the file system and network of the worker pod, so a
-  crafted image that compromises it can read the secrets mounted there. Close it before images from untrusted remotes are scanned
-  (a sandbox or a pod per scan, a further component), or accept it? A dedicated `vuln` worker pool would shrink it; the owner kept
-  the plain workers on 2026-11-10 (Q-VULN-137).
+- **H-812** ([image-scanning.md](../security/image-scanning.md)), **decided by the owner on 2026-11-20** ("Perfekt, machen wir wie
+  du analysiert hast", after he asked for a look at how Harbor's scanner adapter does it): the analysis of an image moves into
+  a role `scanner` of the same binary with a Deployment of its own and no secret of the database, the object store or Valkey.
+  The worker keeps the job and calls the scanner over HTTPS with the repository, the digest and a registry token (pull, that
+  repository, minutes); the scanner pulls the image through Quader's own registry API, checks the layers as the worker does
+  today, runs the analyser and answers the package list. The detection stays in the worker, so the scanner needs neither the
+  vulnerability database nor the internet. To settle first by the builder: a blocked image must still be pulled by the scanner,
+  and its pull is not charged to the download limits. Not built; after the limits' package. Open with it, to be worked out
+  for him: Quader's own repository as the cache of the analyser's database.
 - **Format logos** (Q-UI-225 to 227): npm, Ansible Galaxy and the Docker whale may be shown only with their owners' permission, so
   npm and Ansible Galaxy keep the neutral glyph (and Guides show it on the tiles of Ansible Galaxy, Generic and npm). To show them,
   the owner asks npm, Inc. and Red Hat for permission. At the walkthrough: the logos in the running app, light and dark, in Firefox
