@@ -187,6 +187,21 @@ Principal kinds and their reference syntax in this page's API:
   external user does.
 - A disabled or deleted principal's credentials are refused by authentication
   ([identity-and-authentication.md](identity-and-authentication.md)); authorization never sees them.
+- **System subjects** (kind `system`): work of the product itself, never a principal row, a grant, a role, a membership or an owner
+  record (a reference to one answers 422 `principal_not_allowed`), never internal or external. Beside the actors `system:catalog`,
+  `system:configuration` and `system:background-download` of other requirements, two name the image scanning's work, each once, here:
+
+  | Name | What it is | Its fixed rule | Recorded as |
+  |---|---|---|---|
+  | `system:image-scanner` | the subject of a scan token: the scanner's pull of one image on the scan listener of `packages` ([formats/oci.md](formats/oci.md) R-OCI-037, [architecture.md](architecture.md) R-ARCH-037) | `read` of the one repository its token names, while that repository exists, is of the format `oci`, is local or remote and is not disabled; never `populate`, a write or a capability (R-AUTHZ-015) | the principal of the scan listener's request log, with the scan ID; it writes no event, because it never fills or writes |
+  | `system:image-database` | the image scanning's task that makes the database's repository hold the database's layer ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044) | none per request: system work in process through the remote engine, as a mirror pass fills, within the repository's include and exclude patterns | the actor of the populate event of each fill, `reason: image-database` (R-AUTHZ-008) |
+
+  **Why the scanner needs a rule and a token of its own**, although `internal` admits every signed-in subject but an external user,
+  technical ones included (R-AUTHZ-030): the scanner must read `private` repositories, which no level opens to anybody; it must read
+  the manifest of a blocked image by its digest, which the block of [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-037
+  refuses every reader whatever its level or grant; and it holds no credential of its own, so what it reads must be what the worker
+  decided for this one call. A principal with a grant over every repository would read every image for as long as its credential
+  lived; the scan token reads one image for minutes, and the fixed rule cannot be widened by a binding.
 - A job that continues a request after it ended (the delete job of [storage.md](storage.md) R-STOR-018) carries the
   principal, the credential and the endpoint of the request and no principal set: before each step it reads the
   principal's status and groups, and the token's scope and bundle, as they are then, and stops when the principal is no
@@ -1076,6 +1091,12 @@ the remote request path (R-REPO-025, step 9) is this setting.
   ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065): only when the probe's caller may populate the repository
   (this check, asked as a question and audited nowhere). The download's fills write the populate event with
   `system:background-download` as actor and `reason: background-download` (Q-REPO-366); the caller is named in the usage store.
+- **The image scanning's database populates as the system.** The task `vuln-sync-trivy-db` makes the database's repository hold the
+  layer without a caller ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044, [repositories-and-proxy.md](repositories-and-proxy.md)
+  R-REPO-070): the decision to scan images is the populate decision, and each fill writes the populate event with
+  `system:image-database` as actor and `reason: image-database` (R-AUTHZ-002). The scanner's pull, `system:image-scanner`, never
+  populates: `MayPopulate` refuses every system subject, so a remote answers it from what it holds and a layer it lacks is
+  `populate_not_permitted` (R-AUTHZ-015).
 - Remote repositories never accept uploads, whatever the grants
   ([repositories-and-proxy.md](repositories-and-proxy.md)).
 - **No populating through the session cookie.** A request authenticated by the session cookie
@@ -1599,6 +1620,11 @@ func OwnershipCheckTx(tx Tx, sub Subject, idx *Index, c Coordinate, w Write) Dec
 }
 
 func Allowed(sub Subject, idx *Index, a Action, c Coordinate) bool {
+    if sub.Kind == System {                                         // R-AUTHZ-002: system:image-scanner, the one system
+        return a == Read && sub.Grant.Names(c.Repo) &&              // subject a request carries; read of the repository its
+            !c.Repo.Disabled && c.Repo.Class != Virtual &&          // scan token names, nothing else (formats/oci.md
+            c.Repo.Format == "oci"                                  // R-OCI-037, Q-OCI-228); no level, scope or grant counts
+    }
     if !idx.Exposure(sub.Endpoint).Admits(a, c.Addressed, c) {      // endpoints.md R-EP-013: every subject,
         return false                                                // decided on the addressed repository
     }
@@ -1669,8 +1695,8 @@ func MemberUsable(sub Subject, idx *Index, m Repo, c Coordinate) bool {
 
 // MayPopulate is the populate check of R-AUTHZ-008 (Q-AUTHZ-153).
 func MayPopulate(sub Subject, idx *Index, m Repo, mc Coordinate) bool {
-    if sub.Credential == SessionCookie {                            // never through the session cookie
-        return false
+    if sub.Credential == SessionCookie || sub.Kind == System {      // never through the session cookie; the scanner's
+        return false                                                // pull reads what the cache holds (R-AUTHZ-002)
     }
     if sub.Endpoint != "" && !sub.CacheFill {                       // the endpoint's cache_fill, endpoints.md R-EP-019
         return false

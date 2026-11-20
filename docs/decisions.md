@@ -209,6 +209,9 @@ checked every earlier decision against them:
 | [ADR-209](#adr-209--the-built-in-project-upstream-holds-the-products-well-known-repositories-and-a-virtual-repository-may-list-them) | The built-in project `upstream` holds the product's well-known repositories, and a virtual repository may list them | Accepted (owner decisions of 2026-11-20); the details decided by the development agent — owner review at the walkthrough; amends ADR-156 |
 | ADR-210 | Not used: the number was given to a read lift through virtual repositories, withdrawn before it landed when the owner defined `internal` on 2026-11-20 ([Q-AUTHZ-302](spec/authorization.md#q-authz-302--internal-admits-every-signed-in-subject-that-is-not-external-so-a-teams-ci-job-reads-a-well-known-member-by-its-level)); it stays unused | — |
 | [ADR-211](#adr-211--scanner-trivy-is-a-system-repository-of-upstream-that-only-the-image-scanning-reads) | `scanner-trivy` is a system repository of `upstream` that only the image scanning reads | Accepted (owner decision of 2026-11-20); the details decided by the development agent — owner review at the walkthrough |
+| [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) | The image analysis runs in a role `scanner` that holds no secret | Accepted (owner decision of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) | A scan token is a registry token a worker issues for one manifest, used only on the scan listener | Accepted in its frame (owner decision of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-214](#adr-214--the-analysers-database-lies-in-a-repository-of-quader) | The analyser's database lies in a repository of Quader | Accepted (owner decisions of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1316,6 +1319,131 @@ before (Q-REPO-373 (c)); a private repository like any other, which a global pol
 
 **Spec:** [repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-070.
 
+### ADR-212 · The image analysis runs in a role `scanner` that holds no secret
+
+**Status:** Accepted (owner decision of 2026-11-20: "Perfekt, machen wir wie du analysiert hast", after he asked for a look at how a
+comparable registry's scanner adapter does it); the mechanisms decided by the development agent — owner review at the walkthrough
+
+**Context.** The image scanning ran the analyser as a child process of a worker job, with an empty environment, on a layout the worker built
+from the object store after its own checks of every layer (Q-VULN-140). The analyser is a large parser of hostile input, and it shared the
+worker pod's file system, mounted secrets, network and memory limit: an escape reached the database's, the object store's and Valkey's
+credentials and the key ring (H-812), and a hostile image could end the worker pod (H-818). The design read for comparison runs its
+analyser in a service of its own without the registry's database or storage credentials, called with the registry's address, a credential,
+the repository and the digest, and pulls the image itself; it queues the work and keeps the reports in a shared store, through which the
+credential travels in clear and reaches a debug log, and its analyser inherits the service's environment and downloads its database from the
+internet.
+
+**Decision.**
+- A role `scanner` of the same binary and image, a Deployment of its own, with no secret of PostgreSQL, the object store or Valkey and no
+  key of the key ring ([architecture.md](spec/architecture.md) R-ARCH-036, [ha-and-helm.md](spec/ha-and-helm.md) R-HA-065).
+- The worker keeps the job: its lease, its time slice, its attempts and the deferrals. It calls the scanner with one HTTPS request per
+  manifest, naming the repository, the image, the digest and a scan token, and receives the package list as the answer
+  ([vulnerability-scanning.md](spec/vulnerability-scanning.md) R-VULN-041, Q-VULN-161, Q-VULN-162).
+- The scanner pulls the image through Quader's own registry, on a scan listener of `packages` that accepts scan tokens only, checks and bounds
+  every byte as the worker did, runs the analyser, and answers ([R-VULN-042](spec/vulnerability-scanning.md#r-vuln-042--the-scanners-pull-through-the-registry),
+  [architecture.md](spec/architecture.md) R-ARCH-037).
+- The detection stays in the worker, on a document the worker writes anew from the answer (R-VULN-043, Q-VULN-164).
+- What is not taken from the comparable design: a shared store for the queue and the reports, a credential in a message, an analyser that
+  inherits the service's environment, a database download by the analyser. Quader's scanner holds no state between calls.
+- The links are mutual TLS with the chart's pair and CA (R-ARCH-038), behind ingress rules on their ports (ADR-154, R-HA-042).
+
+**Consequences.** H-812 and H-818 are closed: an escape from the analyser reaches the scanner's own material (the image of the call, its
+scan token, the TLS pair and the CA), and a hostile image ends a scanner's analysis and spends an attempt, never a worker. The chart renders
+a fourth Deployment and two internal Services; the worker's spool shrinks back to 5 Gi and the scanner's is checked against its slots
+(Q-HA-318). The first network seam between Quader's roles exists (ADR-153 allows it at a trust boundary). What stays open is recorded on
+[security/image-scanning.md](security/image-scanning.md): no egress rule for the scanner (H-1036), the chart's key in the scanner by default
+(H-1035), analyses that share a pod with more than one slot (H-1037), the detection's analyser in the worker (H-1038).
+
+**Alternatives considered.** A sandbox for the analyser inside the worker pod (needs privileges the pod does not have); a Kubernetes Job per
+scan (needs a role that creates pods); the worker pushing the image's bytes to the scanner (the owner chose the pull); accept-and-poll with
+reports kept in a shared store (Q-VULN-161).
+
+**Revisit condition:** analyses that regularly outlast the scanner's drain window; a second caller of the scanner; a measured analyser that
+needs more than the pod's 2 GiB for ordinary images.
+
+**Spec:** [vulnerability-scanning.md](spec/vulnerability-scanning.md) R-VULN-033 to R-VULN-036, R-VULN-041 to R-VULN-043, R-VULN-046,
+Q-VULN-161 to Q-VULN-170; [architecture.md](spec/architecture.md) R-ARCH-001, R-ARCH-036 to R-ARCH-038, Q-ARCH-527 to Q-ARCH-531;
+[ha-and-helm.md](spec/ha-and-helm.md) R-HA-002, R-HA-042, R-HA-063, R-HA-065 to R-HA-067, Q-HA-316 to Q-HA-322;
+[operations-and-observability.md](spec/operations-and-observability.md) R-OPS-003, Q-OPS-215; [spec/README.md](spec/README.md) INV-2.
+
+### ADR-213 · A scan token is a registry token a worker issues for one manifest, used only on the scan listener
+
+**Status:** Accepted in its frame (owner decision of 2026-11-20: a registry token, pull only, that one repository, valid for minutes); the
+mechanisms decided by the development agent — owner review at the walkthrough
+
+**Context.** The scanner must read the image it analyses and nothing else, and it may hold no key with which it could make a credential
+itself. Quader's registry tokens (R-OCI-005) are self-contained, signed with a key derived from the key ring, and verified without a query;
+each is bound to a Quader token and an endpoint.
+
+**Decision.**
+- The worker signs the token in process with the registry token's key, for each call; no token service, no Quader token, no principal row
+  ([formats/oci.md](spec/formats/oci.md) R-OCI-037, Q-OCI-226).
+- Its claims name the system subject `image-scanner`, a scan ID, the endpoint `scan`, one grant entry of the repository and the image with
+  `pull`, and the manifest's digest; it reaches that manifest by its digest and the blobs of its name, nothing else (Q-OCI-227).
+- It lives `vulnerabilities.images.pull_timeout`, 10 minutes by default (Q-OCI-229), is accepted only on the scan listener of `packages`, and
+  is decided by one fixed rule: read the repository it names while it is not disabled, never fill (Q-OCI-228).
+- Its request is no delivery: no block gate, no download, no probe; it is system work, recorded under the repository and limited by nothing
+  (Q-OCI-230, [usage-and-limits.md](spec/usage-and-limits.md) Q-LIM-66).
+- It never reaches a log, a row, a job or an error text, and is not revoked one by one: it runs out.
+
+**Consequences.** The grammar of a registry token gains a second kind; the enforcement point of the registry gains a digest pin; the decision
+point gains a subject kind `system` (a rule of [authorization.md](spec/authorization.md) R-AUTHZ-015's evaluation). A compromised scanner
+holds the tokens of the calls it receives, each good for one image for minutes (H-1041).
+
+**Alternatives considered.** A built-in service account with a stored technical token (a long-lived secret in the worker); a grant of the
+whole image name (every tag of the name); a token per blob issued on the scanner's request (the scanner would call the worker).
+
+**Revisit condition:** a second system reader of the registry; pulls of the largest admitted image that do not fit the default lifetime.
+
+**Spec:** [formats/oci.md](spec/formats/oci.md) R-OCI-005, R-OCI-037, Q-OCI-226 to Q-OCI-230; [usage-and-limits.md](spec/usage-and-limits.md)
+R-LIM-001, Q-LIM-66; [architecture.md](spec/architecture.md) R-ARCH-037; [authorization.md](spec/authorization.md) R-AUTHZ-002, R-AUTHZ-008,
+R-AUTHZ-015 (the subject kind `system` and its fixed rule); [endpoints.md](spec/endpoints.md) R-EP-001, R-EP-002, R-EP-010 (the endpoint
+`scan`); [storage.md](spec/storage.md) R-STOR-015 and [api-and-ui.md](spec/api-and-ui.md) R-API-079 (no download);
+[identity-and-authentication.md](spec/identity-and-authentication.md) R-AUTH-038 (no throttle on the scan listener).
+
+### ADR-214 · The analyser's database lies in a repository of Quader
+
+**Status:** Accepted (owner decisions of 2026-11-20: Quader is the cache of the analyser's database; one repository of the project `upstream`
+holds it, `scanner-trivy`, always private, only for the scanner; switched on with the image scanning and by nothing else; no second way that
+falls back to the public source; an installation without the internet names a local OCI repository of its own; its upstream address and an
+account stay an administrator's, "scanner-trivy, genau wie von dir beschrieben"); the mechanisms decided by the development agent — owner
+review at the walkthrough
+
+**Context.** A task copied the database every six hours from the publisher into a private slot of the object store with a small OCI client of
+its own, and air-gapped installations uploaded a file into a generic repository (Q-VULN-139). The owner: "Ich fände es doof, wenn Trivy …
+dazu führt, dass jeder auch das zentrale ghcr nutzen muss", and the repository is called `scanner-trivy`, not `trivy-db`.
+
+**Decision.**
+- `vulnerabilities.images.database.repository` names the repository, `upstream/scanner-trivy` by default, and `database.image` the image,
+  `aquasec/trivy-db` (its name at `mirror.gcr.io`, the address of `upstream/scanner-trivy`); the tag is the schema version the release
+  reads (`2`), no setting (Q-VULN-171). A registry that publishes the database under another name is used through a remote of the
+  installation's own project, named in both settings (R-VULN-044).
+- The task resolves the tag through the repository in process, as the background download of R-REPO-065 runs a fill on the worker: the remote
+  engine as system work, the format's gate and the engine's integrity check, charged to `system` and limited by nothing; a local repository is
+  read through the item store (Q-VULN-172).
+- The database in use is the source state's digest; the layer stays an item of its repository, and a worker reads it from there and keeps
+  its unpacked copy by digest as before (Q-VULN-173).
+- A run that cannot use the repository fails with a code that says why, shown on the sources screen with a link to the repository; nothing
+  falls back (Q-VULN-174, R-VULN-045, Q-UI-850).
+- Removed with no path from the state before: the table `vuln_image_db`, `vulnerabilities.sources.trivy` and its modes, the task's own OCI
+  client, the file in a generic repository; the table goes with migration 00088.
+
+**Consequences.** The repository's upstream address and account, an administrator's for every well-known repository, decide the database
+(H-813 restated). The database's bytes are counted in the usage store under the repository. The cache cleanup keeps the layer in use and
+removes the older ones (R-REPO-070). The definition of `upstream/scanner-trivy` (its project, its fixed level, its include rule, that it
+answers no client and has no state of its own) is [ADR-211](#adr-211--scanner-trivy-is-a-system-repository-of-upstream-that-only-the-image-scanning-reads)'s.
+
+**Alternatives considered.** Keeping the private slot beside the repository (the owner removed it); pulling through Quader's registry like
+the scanner (a listener hop and a token for work in the process that has the engine); a setting for the tag.
+
+**Revisit condition:** the pinned analyser reads a second schema version; a repository's cleanup removes the layer often enough to show as
+skipped scans.
+
+**Spec:** [vulnerability-scanning.md](spec/vulnerability-scanning.md) R-VULN-025, R-VULN-026, R-VULN-035, R-VULN-044, R-VULN-045,
+Q-VULN-139, Q-VULN-171 to Q-VULN-176; [repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-070; [storage.md](spec/storage.md)
+R-STOR-045; [authorization.md](spec/authorization.md) R-AUTHZ-002, R-AUTHZ-008 (`system:image-database`); [api-and-ui.md](spec/api-and-ui.md)
+R-UI-188, Q-UI-850.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -1332,6 +1460,8 @@ and added INV-18 and INV-19:
   process, kept as the bridge of the upgrade across the cut ([Q-ARCH-295](spec/architecture.md#q-arch-295--what-becomes-of-the-role-name-web));
   since 2026-11-19 the chart renders it no longer, and the binary keeps it for development and tests
   ([Q-HA-315](spec/ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests)).
+  Since 2026-11-20 a role `scanner`, the analysis of container images without any secret of the database, the object store or Valkey
+  ([ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)).
 - **INV-3:** PostgreSQL is the system of record; Valkey holds shared ephemeral state only, and the
   change log in PostgreSQL replaces `LISTEN/NOTIFY` ([ADR-014](#adr-014--postgresql-is-the-system-of-record-valkey-holds-only-shared-ephemeral-state-inv-3)).
 - **INV-11:** cross-replica collapsing through a Valkey lock ([ADR-022](#adr-022--pull-through-proxy-semantics-inv-11)).
@@ -8727,6 +8857,11 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-ARCH-426](spec/architecture.md#q-arch-426--the-reader-of-a-release-is-a-leaf-shared-by-the-format-its-jobs-and-the-builds) | Where does the parse of a Release document sit? | (a) `formats/deb/release`, a leaf | — |
 | [Q-ARCH-427](spec/architecture.md#q-arch-427--the-jobs-of-a-data-port-reach-the-remote-engine-through-a-one-method-interface-of-the-composition-root) | How does a job of a format's data port get the background upstream? | (a) `debdata.Background`, implemented over the host's background upstream | — |
 | [Q-ARCH-428](spec/architecture.md#q-arch-428--the-upstream-of-a-pass-names-its-repository-by-an-optional-capability) | How does a lister that reads rows of its own learn which repository it works for? | (a) An optional `RepositoryID() int64` on the pass's upstream | — |
+| [Q-ARCH-527](spec/architecture.md#q-arch-527--the-scanner-builds-no-infrastructure-area-and-resolves-no-secret-file) | What does the scanner build? | (a) one area `scanner`; no secret file resolved | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-ARCH-528](spec/architecture.md#q-arch-528--the-scanners-pull-enters-packages-through-a-listener-of-its-own) | Where does the scanner's pull enter `packages`? | (a) a scan listener of its own, endpoint `scan` | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
+| [Q-ARCH-529](spec/architecture.md#q-arch-529--the-links-between-quaders-pods-authenticate-both-ends-with-the-listeners-pair-against-the-charts-ca) | How do the links between Quader's pods authenticate? | (a) the listener's pair against the chart's CA, both ends | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-ARCH-530](spec/architecture.md#q-arch-530--the-scanner-ends-every-other-process-of-its-container-when-no-analysis-runs) | Can a process outlive its analysis? | (a) no: the scanner ends every other process of its container when idle | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-ARCH-531](spec/architecture.md#q-arch-531--in-the-role-all-the-worker-calls-the-scanner-of-its-own-process-over-loopback) | The scanner in the role `all`? | (a) the same process over loopback, the same path | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-REPO-273](spec/repositories-and-proxy.md#q-repo-273--a-formats-data-port-adds-rows-in-the-transaction-that-creates-its-repository) | How does a format add rows when its repository is created? | (a) A creation hook the composition root registers per format, run inside the creating transaction | [ADR-171](#adr-171--every-debian-local-and-virtual-repository-has-its-own-eddsalegacy-signing-key-generated-by-quader-and-sealed-with-the-stored-secret-key-ring-rotation-by-a-co-signing-next-key-the-journal-withholds-keys-and-never-erases-them) |
 | [Q-REPO-280](spec/repositories-and-proxy.md#q-repo-280--the-upstream-test-reads-a-bearer-challenge-of-a-handshake-format-as-reachable) | How does the upstream test read a registry's `401` with a Bearer challenge? | (a) Reachable, `authenticated` null | [ADR-176](#adr-176--the-oci-remote-adapter-works-inside-the-contract-and-adds-a-catalog-fact-and-an-optional-interface) |
 | [Q-OCI-125](spec/formats/oci.md#q-oci-125--extrahosts-do-not-gate-redirects-so-the-docker-hub-defaults-list-the-realm-only) | Does the CDN host belong to the Docker Hub defaults? | (a) No: `extraHosts` do not gate redirects | [ADR-176](#adr-176--the-oci-remote-adapter-works-inside-the-contract-and-adds-a-catalog-fact-and-an-optional-interface) |
@@ -8765,6 +8900,11 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-OCI-164](spec/formats/oci.md#q-oci-164--the-link-step-reads-the-virtual-repository-by-name-and-links-an-indexs-manifests-after-their-blobs) | From where does a push through a virtual repository link what the target lacks? | (a) The virtual repository by name; an index's manifests after their blobs | [ADR-180](#adr-180--the-oci-write-routes-serve-the-class-virtual-and-the-handler-resolves-the-deployment-target) |
 | [Q-OCI-165](spec/formats/oci.md#q-oci-165--a-delete-through-a-virtual-repository-is-refused-by-the-handler) | Who refuses a delete through a virtual repository? | (a) The handler, 405 | [ADR-180](#adr-180--the-oci-write-routes-serve-the-class-virtual-and-the-handler-resolves-the-deployment-target) |
 | [Q-OCI-166](spec/formats/oci.md#q-oci-166--a-write-through-a-virtual-repository-without-a-deploy-target-is-refused-by-the-decision-point-before-the-handler) | What does a write to a virtual repository without a deploy target answer? | (a) The decision point's 403; the handler's 405 behind it | [ADR-180](#adr-180--the-oci-write-routes-serve-the-class-virtual-and-the-handler-resolves-the-deployment-target) |
+| [Q-OCI-226](spec/formats/oci.md#q-oci-226--the-worker-issues-the-scan-token-in-process-with-the-registry-key) | Who issues the scan token? | (a) the worker, in process, with the registry key | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
+| [Q-OCI-227](spec/formats/oci.md#q-oci-227--a-scan-token-reaches-one-manifest-by-its-digest-and-the-blobs-of-its-name) | What does a scan token reach? | (a) one manifest by digest and the blobs of its name | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
+| [Q-OCI-228](spec/formats/oci.md#q-oci-228--the-scan-subject-is-decided-by-one-fixed-rule-read-never-fill) | How is a scan token's request decided? | (a) the subject `system:image-scanner` by one fixed rule: read, never fill | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
+| [Q-OCI-229](spec/formats/oci.md#q-oci-229--a-scan-token-lives-as-long-as-the-pull-may-checked-against-its-own-bound) | How long does a scan token live? | (a) `pull_timeout`, checked against its own bound | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
+| [Q-OCI-230](spec/formats/oci.md#q-oci-230--a-scan-tokens-request-is-no-delivery-no-block-gate-no-download-no-probe) | Is the scanner's pull a delivery? | (a) no: no block gate, no download, no probe | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-GENERIC-1](spec/formats/generic.md#q-generic-1--the-format-is-generic-flat-paths-and-the-descriptor-lists-only-implemented-classes) | Is the format `generic` with flat paths, and which classes does the descriptor list? | (a) the implemented classes only | — |
 | [Q-GENERIC-2](spec/formats/generic.md#q-generic-2--path-limits-of-the-generic-format) | Path limits of the generic format? | (a) 4096 bytes per path, 255 bytes per segment, valid UTF-8 | — |
 | [Q-GENERIC-3](spec/formats/generic.md#q-generic-3--a-path-is-a-file-or-a-folder-not-both) | May a path be a file and a folder at once? | (a) refuse with 409 `path_conflict` | — |
@@ -8943,6 +9083,13 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-HA-144](spec/ha-and-helm.md#q-ha-144--how-the-shipper-is-triggered-and-what---credentials-file-holds) | How is the shipper triggered, and what does `--credentials-file` hold? | (a) a job enqueued every `ship_interval` while the outbox holds a row, `enabled: false` drains it; a strict YAML of the `storage.s3.credentials` keys |
 | [Q-HA-180](spec/ha-and-helm.md#q-ha-180--a-replay-handler-starts-follow-up-work-by-writing-a-job-row-in-its-own-transaction) | How does a replay handler start work that runs later? | (b) it writes the job row in its own transaction with the kind's spec from the owning package (`jobs.EnqueueTx`, `vuln.RescanKindSpec`) | — |
 | [Q-HA-181](spec/ha-and-helm.md#q-ha-181--variant-b-keeps-the-evicted-valkey-primary-lost-until-the-sentinels-name-another-one-and-asks-for-the-failover-when-they-do-not) | How does drain variant B get a Valkey failover deterministically? | (a) the test holds the evicted primary lost with a finalizer until the Sentinels name another one, and sends `SENTINEL FAILOVER` after 25 s when they have not | — |
+| [Q-HA-316](spec/ha-and-helm.md#q-ha-316--the-scanner-runs-as-two-replicas-of-one-slot-with-2-gib-of-memory-and-60-seconds-to-drain) | The scanner's defaults? | (a) 2 replicas × 1 slot, 2 GiB, 60 s grace | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-HA-317](spec/ha-and-helm.md#q-ha-317--the-scanner-serves-the-charts-pair-by-default-a-pair-of-its-own-is-a-value) | Which TLS pair does the scanner serve? | (a) the chart's by default; `scanner.tls.secretName` for its own | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-HA-318](spec/ha-and-helm.md#q-ha-318--the-working-space-moves-with-the-analysis-the-chart-checks-the-scanners-spool-and-the-workers-returns-to-5-gi) | Which spool holds the analysis, and what does the chart check? | (a) the scanner's, checked against its slots; the worker's back to 5 Gi | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-HA-319](spec/ha-and-helm.md#q-ha-319--the-two-links-get-clusterip-services-of-their-own-never-the-client-services) | Which Services carry the two links? | (a) two ClusterIP Services of their own | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-HA-320](spec/ha-and-helm.md#q-ha-320--the-scanner-admits-only-the-worker-deployment-that-claims-the-queue-vuln) | Who may reach the scanner? | (a) the worker Deployment that claims `vuln` | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-HA-321](spec/ha-and-helm.md#q-ha-321--the-shared-extras-of-the-chart-do-not-reach-the-scanner) | Do the chart's shared extras reach the scanner? | (a) no; `scanner.extraEnv` is its own | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-HA-322](spec/ha-and-helm.md#q-ha-322--with-tlsenabled-false-the-scanners-links-are-plain-as-every-link-of-such-an-installation) | The links with `tls.enabled: false`? | (a) plain, like every link of such an installation | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-OPS-1](spec/operations-and-observability.md#q-ops-1--couple-liveness-to-prolonged-unreadiness) | Couple liveness to prolonged unreadiness? | (d) never; liveness is a watchdog over Quader's own loops | [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
 | [Q-OPS-2](spec/operations-and-observability.md#q-ops-2--should-object-storage-reachability-gate-readiness) | Should object-storage reachability gate readiness? | (d) gate only the first readiness, then report and degrade; continuous gating as an opt-in; changes INV-12; same choice as Q-STOR-1 and Q-HA-1 | [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
 | [Q-OPS-3](spec/operations-and-observability.md#q-ops-3--anonymous-access-to-the-version-endpoint) | Anonymous access to the version endpoint? | (b) authenticated by default; `system.public_version: true` opens it | — |
@@ -9021,8 +9168,10 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-OPS-182](spec/operations-and-observability.md#q-ops-182--the-clause-of-quaderbackupstale-for-a-backup-that-never-succeeded-reads-its-window-from-the-chart) | How does `QuaderBackupStale` tell a backup that never succeeded from a young installation? | (b) the gauge of the expected interval, one interval back, and the same interval as the chart renders it | — |
 | [Q-OPS-188](spec/operations-and-observability.md#q-ops-188--the-statement-metrics-label-by-the-sqlc-query-name-and-are-recorded-by-the-pools-query-tracer) | How are `quader_db_slow_queries_total` and `quader_db_query_duration_seconds` recorded and labelled? | (a) by the pool's statement tracer, labelled with the sqlc query name (`begin`, `commit`, `rollback` for pgx's transaction statements, `unnamed` for other inline SQL, `pipeline` for a batch); the histogram exists only with the flag; a threshold of 0 counts none | — |
 | [Q-OPS-211](spec/operations-and-observability.md#q-ops-211--configuration-as-code-declares-no-part-of-the-project-upstream-and-managed-by-the-product-is-a-mechanism-of-its-own) | Is the product's ownership configuration as code? | (a) a mechanism of its own; documents refuse `upstream` | — |
+| [Q-OPS-215](spec/operations-and-observability.md#q-ops-215--the-scanner-has-no-row-in-the-replica-registry-and-shows-through-its-metrics-and-the-workers-codes) | Is the scanner in the replica registry? | (a) no; its metrics and the worker's codes show it | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-LIM-62](spec/usage-and-limits.md#q-lim-62--a-request-through-a-virtual-repository-to-a-well-known-member-is-decided-at-the-addressed-repository-and-the-members-ceilings-bound-it) | Which limits apply through a virtual repository to a central member? | (a) Q-LIM-2 unchanged; the member's ceilings | — |
 | [Q-LIM-63](spec/usage-and-limits.md#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository) | Does a team see its traffic through a central member? | (a) `via_repository_id`; the Owner sees those rows | — |
+| [Q-LIM-66](spec/usage-and-limits.md#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing) | How is the scanner's pull charged? | (a) the subject `system`, recorded, limited by nothing | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-API-1](spec/api-and-ui.md#q-api-1--openapi-generation-approach) | How is the OpenAPI document produced? | (a) spec-first: oapi-codegen models and `net/http` server interface, openapi-typescript types, thin hand-written Angular clients | [ADR-083](#adr-083--the-openapi-31-document-is-the-api-contract) |
 | [Q-API-2](spec/api-and-ui.md#q-api-2--is-if-match-mandatory-on-writes) | Is `If-Match` mandatory on writes? | (b) required on PUT and PATCH of revisioned resources; `If-Match: *` is the explicit blind write | [ADR-084](#adr-084--uniform-api-conventions-problem-details-cursors-merge-patch-etags-idempotency-keys) |
 | [Q-API-3](spec/api-and-ui.md#q-api-3--cluster-wide-rate-limiting) | Cluster-wide rate limiting? | (e) cluster-wide sliding-window counters in Valkey (R-ARCH-034) with a per-replica fallback; revisited 2026-10-28; H-43 narrowed; same choice as Q-ARCH-17 | [ADR-102](#adr-102--cluster-wide-rate-limits-in-valkey-with-a-per-replica-fallback) |
@@ -9240,6 +9389,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-UI-834](spec/api-and-ui.md#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch) | Where does `scanner-trivy` stand on the page? | (a) a table **Used by Quader** | — |
 | [Q-UI-835](spec/api-and-ui.md#q-ui-835--the-project-upstream-is-a-project-with-the-badge-built-in-and-no-administration) | How does the main area show the project? | (a) a project with **Built-in**, no Access and Settings | — |
 | [Q-UI-836](spec/api-and-ui.md#q-ui-836--the-form-of-a-new-remote-names-the-central-repository-and-does-not-stop-the-create) | Does a new remote point to the central one? | (a) one line with a link | — |
+| [Q-UI-850](spec/api-and-ui.md#q-ui-850--the-sources-screen-names-the-databases-repository-links-it-and-shows-how-to-fill-a-local-one) | What does the sources screen show of the database's repository? | (a) the repository as a link, the reference, the fill commands of a local one | [ADR-214](#adr-214--the-analysers-database-lies-in-a-repository-of-quader) |
 | [Q-EP-1](spec/endpoints.md#q-ep-1--how-the-endpoint-of-a-request-is-identified) | How is the endpoint of a request identified? | (a) by the listener the connection arrived on; `Host` only selects among the endpoint's own hosts, a foreign host answers `421` | [ADR-128](#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
 | [Q-EP-2](spec/endpoints.md#q-ep-2--where-endpoint-configuration-and-exposure-rules-live) | Where do endpoint configuration and exposure rules live? | (c) network binding in the file, exposure rules in PostgreSQL, compiled into the grant index | [ADR-128](#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
 | [Q-EP-3](spec/endpoints.md#q-ep-3--separate-pool-or-shared-pods-for-a-further-endpoint) | Separate pool or shared pods for a further endpoint? | (c) an optional pool per endpoint, off by default, recommended for endpoints with exposure rules | [ADR-128](#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
@@ -9390,6 +9540,22 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-VULN-130](spec/vulnerability-scanning.md#q-vuln-130--every-change-of-the-evaluation-that-sets-a-download-block-records-vulnerabilityfindingstatus_changed-with-block-set-its-cause-and-the-journal-entry) | How are the download blocks the evaluation sets journaled? | (a) `vulnerability.finding.status_changed` with `block: set`, a `cause` and the entry, for a first malicious detection, a kind change, a re-detection and a merge; rejected: a new event type, no journal | — |
 | [Q-VULN-131](spec/vulnerability-scanning.md#q-vuln-131--a-replayed-block-names-its-repository-and-package-version-creates-the-finding-the-restored-database-lacks-and-leaves-the-shape-both-download-gates-read) | What does a replayed block name and do when its finding is missing? | (c) by ID, then by repository, package version and advisory, else a created finding; `blocked` on a stored version, `resolved`/`version_removed` while `blocked` on one that is not; a forged entry only denies; rejected: ID only, a block marker table | — |
 | [Q-VULN-132](spec/vulnerability-scanning.md#q-vuln-132--a-blocked-finding-whose-version-is-gone-counts-until-its-ecosystem-has-synced-since-the-restore-at-the-remote-miss-and-at-a-commit) | When does a blocked finding of a gone version block without a matching advisory? | (c) while the data is incomplete or has not synced since the restore, at the remote miss and at a commit | — |
+| [Q-VULN-161](spec/vulnerability-scanning.md#q-vuln-161--the-call-is-one-request-that-answers-the-analysis-when-it-is-done) | How does the worker call the scanner? | (a) one request; the answer is the CycloneDX document | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-162](spec/vulnerability-scanning.md#q-vuln-162--a-reason-of-the-installation-puts-a-scan-off-without-an-attempt-a-broken-call-spends-one) | Which answers of the scanner spend an attempt? | (b) a reason of the installation puts the scan off; a call broken after the scanner took it spends one | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-163](spec/vulnerability-scanning.md#q-vuln-163--the-worker-proves-itself-to-the-scanner-with-the-charts-certificate) | What authenticates the worker to the scanner? | (a) mutual TLS with the chart's pair against the internal CA | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-164](spec/vulnerability-scanning.md#q-vuln-164--the-worker-writes-the-analysis-anew-before-it-keeps-or-reads-it) | What does the worker keep of the scanner's answer? | (b) the members the detection reads, decoded under limits and written anew | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-165](spec/vulnerability-scanning.md#q-vuln-165--the-scanner-reads-a-remote-image-from-what-the-repository-holds-and-sends-nothing-upstream) | Does the scanner fill a remote image's missing layers? | (a) no: it reads what the repository holds | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-166](spec/vulnerability-scanning.md#q-vuln-166--a-blocked-image-and-a-private-one-are-pulled-a-disabled-repository-pauses-a-deleted-one-is-not-addressed) | Blocked, private, disabled and deleted repositories? | (a) blocked and private pulled; disabled pauses; deleted not addressed | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-167](spec/vulnerability-scanning.md#q-vuln-167--every-bound-of-r-vuln-036-moves-with-the-analysis-into-the-scanner) | Where are the bounds of an untrusted image enforced? | (a) all in the scanner; the worker bounds the answer | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-168](spec/vulnerability-scanning.md#q-vuln-168--the-analysis-does-not-wait-for-the-database) | Does the analysis wait for the first database? | (b) no; rows stay pending until a database is in use | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-169](spec/vulnerability-scanning.md#q-vuln-169--the-analyser-stays-in-the-worker-for-the-detection-and-the-image-stays-one) | Where does the analyser run? | (a) one image; the scanner analyses, the worker detects | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-170](spec/vulnerability-scanning.md#q-vuln-170--a-call-opens-a-connection-of-its-own-and-the-jobs-concurrency-follows-the-scanners-capacity) | How are calls spread over the scanners? | (a) a new connection per call; `concurrency` 2 | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-VULN-171](spec/vulnerability-scanning.md#q-vuln-171--the-database-is-named-by-its-repository-and-image-and-the-tag-is-the-schema-version-of-the-release) | How is the database named? | (a) `database.repository` and `database.image`; the tag is the release's schema version | [ADR-214](#adr-214--the-analysers-database-lies-in-a-repository-of-quader) |
+| [Q-VULN-172](spec/vulnerability-scanning.md#q-vuln-172--the-task-resolves-the-tag-through-the-workers-format-host-as-system-work) | How does the task resolve the tag? | (a) the worker's format host and remote engine as system work | [ADR-214](#adr-214--the-analysers-database-lies-in-a-repository-of-quader) |
+| [Q-VULN-173](spec/vulnerability-scanning.md#q-vuln-173--the-database-in-use-is-a-row-of-the-source-state-and-the-layer-stays-an-item-of-its-repository) | What records the database in use? | (a) the source state of `trivy`; the layer stays an item of its repository | [ADR-214](#adr-214--the-analysers-database-lies-in-a-repository-of-quader) |
+| [Q-VULN-174](spec/vulnerability-scanning.md#q-vuln-174--a-run-that-cannot-use-the-repository-fails-with-a-code-that-names-why-and-nothing-falls-back) | What does a run that cannot use the repository do? | (a) one failure code per cause; nothing falls back | [ADR-214](#adr-214--the-analysers-database-lies-in-a-repository-of-quader) |
+| [Q-VULN-175](spec/vulnerability-scanning.md#q-vuln-175--the-databases-repository-keeps-the-layer-in-use-and-lets-the-older-ones-go-after-two-days) | How long does the repository keep the database's layers? | (a) the layer in use always; older ones 48 hours | [ADR-214](#adr-214--the-analysers-database-lies-in-a-repository-of-quader) |
+| [Q-VULN-176](spec/vulnerability-scanning.md#q-vuln-176--the-rewritten-analysis-is-checked-against-the-pinned-analyser-in-ci-in-the-job-that-has-it) | How is the rewritten analysis checked in CI? | (a) the pinned analyser in `container-scan`, a fixed image and a fixture database of kilobytes | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-BAS-1](spec/bastion.md#q-bas-1--the-bastion-asks-the-main-installation-and-keeps-no-copy-of-users-tokens-or-policies) | How does the Bastion know what a caller may read? | (a) it asks the main installation and keeps the answers briefly; no copy of users, tokens or policies (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-2](spec/bastion.md#q-bas-2--the-bastion-is-read-only-for-package-content) | May the Bastion take writes? | (a) read-only for package content; writes refused in the protocol's shape, pointing at the main installation (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-3](spec/bastion.md#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation) | What is the Bastion's credential towards the main installation? | (a) a token issued by an administrator of the main installation, not a client certificate (owner, 2026-11-02) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |

@@ -1985,11 +1985,12 @@ off unless an administrator wants it; there is no second way that falls back to 
 
 - **Declaration** (`wellknown.Declared`, kind `system`): the key `scanner-trivy`, the format `oci`, the class `remote`, the upstream
   `https://mirror.gcr.io/` without `extraHosts`, `includePatterns: ["aquasec/trivy-db"]` (the image name of the database at that
-  registry; the source today is `https://mirror.gcr.io/v2/aquasec/trivy-db/`, `vulnerabilities.sources.trivy.url` of
-  [vulnerabilities.go](../../internal/config/vulnerabilities.go)), both levels `private`, `vulnerabilities: {"enabled": false}` where
-  the format has the member (the scanning does not scan its own database), `disabled: false`. The include patterns, the levels and
-  the vulnerabilities member are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422
-  `managed_by_product` for them.
+  registry, the address the scanning's task used before [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044), both levels
+  `private`, `vulnerabilities: {"enabled": false}` where the format has the member (the scanning does not scan its own database),
+  `remote.cache.unusedRetentionHours: 48`, `disabled: false`. The include patterns, the levels, the vulnerabilities member and the cache
+  period are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422 `managed_by_product` for them. The include
+  pattern is a name pattern ([formats/oci.md](formats/oci.md): OCI matches the image name): it admits that one image, its tags, manifests
+  and blobs, and nothing else of the registry; the scanning reads the tag `2` and its layer only.
 - **Only for the scanner** ([Q-REPO-380](#q-repo-380--scanner-trivy-answers-no-client-and-is-in-use-while-the-image-scanning-reads-through-it)):
   every protocol request addressed to it (`/v2/upstream/scanner-trivy/…`, `/files/upstream/scanner-trivy/…`, a host bound to it)
   answers 404 as for a repository that does not exist, for every caller, administrators included; it is never a member of a virtual
@@ -1998,15 +1999,23 @@ off unless an administrator wants it; there is no second way that falls back to 
 - **The contract the image scanning relies on** ([vulnerability-scanning.md](vulnerability-scanning.md) specifies the reading): a
   repository `upstream/scanner-trivy` of the format `oci` and the class `remote` exists in every installation, and system work
   resolves a tag of `aquasec/trivy-db` through it in process: through the remote engine with a system caller, as a mirror pass fills
-  (Q-REPO-146), charged to no subject's budget and to no ceiling ([usage-and-limits.md](usage-and-limits.md) R-LIM-015), within its
-  include patterns (Q-REPO-365). `wellknown.ScannerTrivy` and `wellknown.ScannerTrivyImage` name the two.
+  (Q-REPO-146), its fills recorded with the actor `system:image-database` ([authorization.md](authorization.md) R-AUTHZ-008), charged to
+  no subject's budget and to no ceiling ([usage-and-limits.md](usage-and-limits.md) R-LIM-015), within its include patterns
+  (Q-REPO-365). `wellknown.ScannerTrivy` and `wellknown.ScannerTrivyImage` name the two.
+- **The cache keeps the database in use** ([vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-175). The cleanup of R-REPO-046
+  ([storage.md](storage.md) R-STOR-045) never removes the item of the layer that is the image scanning's database in use (the digest
+  of the source `trivy` in `vuln_source_state`, R-VULN-044), in this repository and in whichever repository
+  `vulnerabilities.images.database.repository` names; the worker's reads of it are no downloads and would not keep it otherwise. The
+  48 hours of `scanner-trivy` remove every older layer two days after it was stored, so the repository holds the database in use and the
+  few published since, not one layer per six hours for ever.
 - **In use exactly while the image scanning reads its database through it.** It has no switch and no state of its own, and Switch
   all on never touches it: it reaches its upstream only when the scanning's job asks, which happens only while the image scanning is
   on and its database setting names `upstream/scanner-trivy` (its default). One switch decides, the image scanning's. The admin page
   shows "In use by the image scanning" or "Not in use", from the configuration of the replica that answers (R-UI-187).
 - **What an administrator changes**: its address and an account, as on every well-known repository; its visibility is fixed (the
   owner, 2026-11-20, confirming the development agent's reading: "scanner-trivy, genau wie von dir beschrieben"). The address must
-  serve the image `aquasec/trivy-db`: the include rule and the name the scanning asks for are the product's.
+  serve the image `aquasec/trivy-db`: the include rule and the name the scanning asks for are the product's. What an administrator does
+  for a registry that publishes the database under another name is [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044's.
 - **No fallback.** When it cannot fetch, the scanning reads nothing from elsewhere; what the scanning then does is
   [vulnerability-scanning.md](vulnerability-scanning.md)'s.
 
@@ -2017,6 +2026,8 @@ Acceptance criteria (integration area `upstream`, about 2 s, a stub registry ser
   the stub records the request; a resolution of `aquasec/other:1` answers not found without an upstream request.
 - `setUpstreamRepositoryVisibility` of `scanner-trivy` answers 409 `managed_by_product`; `setUpstreamRepositoryAddress` with
   another URL answers 200 and the next in-process resolution goes there.
+- Two layers of `aquasec/trivy-db` stored three days ago, the older one replaced, the newer one the digest in use: a run of
+  `remote-cache-cleanup` removes the older one and keeps the one in use (integration area `upstream`, about 2 s, items of bytes).
 
 ### R-REPO-071 · Members of `upstream` in a virtual repository
 Priority: **MVP** · Covers: quader-only

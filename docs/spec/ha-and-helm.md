@@ -6,6 +6,7 @@ This page specifies how Quader stays available, scales out and is deployed. It c
 
 - The replica model: identical, interchangeable replicas per role, with `api`, `packages` and `worker` as
   separate Deployments (the task areas of ADR-153 and ADR-155, specified for phase 6a; built today: `web` and `worker`),
+  `scanner` as the Deployment of the image analysis without secrets (ADR-212, specified, not built),
   pools of a role by path prefix or queue, `backup` as a CronJob (INV-2), and how replicas
   coordinate through PostgreSQL and Valkey without talking to each other (INV-3, INV-12, INV-18).
 - The failure contract of every component: pod crash, node drain and node loss, PostgreSQL failover
@@ -89,7 +90,13 @@ behind the Service `<fullname>` that served every path; no Quader release has th
        OIDC and break-glass secrets      the fills of client misses
      ┌─────────────┐         ┌─────────────┐
      │ worker pod  │   ...   │ worker pod  │  Deployment <fullname>-worker: jobs, :8081 only;
-     └─────────────┘         └─────────────┘  optional pools by queue <fullname>-worker-<pool> (R-HA-062)
+     └──────┬──────┘         └─────────────┘  optional pools by queue <fullname>-worker-<pool> (R-HA-062)
+            │ HTTPS :8080, mutual TLS: one call per image (vulnerability-scanning.md R-VULN-041)
+     ┌──────▼──────┐         ┌─────────────┐
+     │ scanner pod │   ...   │ scanner pod │  Deployment <fullname>-scanner (R-HA-065): the analysis of images,
+     └──────┬──────┘         └─────────────┘  no secret of PostgreSQL, the object store or Valkey; :8080, :8081
+            │ HTTPS :8082, mutual TLS and a scan token: the pull of that image (R-VULN-042)
+            ▼ Service <fullname>-packages-scan ──▶ the scan listener of every packages pod of the main Deployment
      ┌─────────────┐
      │ backup pod  │  CronJob <fullname>-backup ──S3──▶ backup target bucket (R-HA-060)
      └─────────────┘
@@ -100,17 +107,22 @@ behind the Service `<fullname>` that served every path; no Quader release has th
   api, packages, worker ─RESP─▶ Valkey primary ──replication──▶ replica; ≥ 3 Sentinels name the primary
                       (backup, restore and migration pods never connect to Valkey)
   every pod ──S3────▶ blob bucket, versioning recommended (AWS S3, MinIO, Ceph RGW, SeaweedFS)
+  (the scanner pods connect to none of the three: R-HA-065)
 
   Helm hook before the Deployments: the migration Job. With restore.enabled: no migration Job,
   every role at zero, and the restore Job as an ordinary resource (R-HA-060, Q-HA-18)
 ```
 
-Replicas never open connections to each other. Every cross-replica signal goes through PostgreSQL
+Replicas of a role never open connections to each other. Every cross-replica signal goes through PostgreSQL
 (job claims, leases, the replica registry, the change log that carries invalidations) or Valkey
 (fetch collapse, the negative cache of remote repositories, rate-limit counters, change messages
 and signals); [architecture.md](architecture.md) R-ARCH-030 assigns each mechanism (INV-12). The
-pod network therefore needs no replica-to-replica rule and no peer discovery. Everything a pod
-keeps outside these three services is scratch space for one request or one job (INV-18).
+pod network therefore needs no replica-to-replica rule and no peer discovery. The one seam between
+roles is the image scanning's, at a trust boundary (ADR-153,
+[ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)): a `worker` calls a
+`scanner` through its Service, and the `scanner` pulls from the scan listener of `packages` through another; neither
+call carries state that a later call needs, and both are admitted by ingress rules on their ports (R-HA-042, R-HA-066).
+Everything a pod keeps outside these three services is scratch space for one request or one job (INV-18).
 
 ## Replica model and coordination
 
@@ -135,6 +147,9 @@ Priority: **MVP** · Covers: HA-001, HA-002, HA-010
   - `packages` serves the route families `packages` and `files` on the client listener and the operations listener, with
     tokens only, and never claims jobs or leases;
   - `worker` claims jobs and leases, and serves only the operations listener;
+  - `scanner` analyses container images for the worker's image scanning on its own listener and the operations listener, holds
+    no credential of PostgreSQL, the object store or Valkey and no key of the key ring, and never claims jobs or leases
+    ([architecture.md](architecture.md) R-ARCH-036, R-HA-065);
   - `web` is `api` and `packages` in one process without the job loops, and `all` combines every role. Both exist only
     for a binary started outside the chart: `all` for the local profile and during development, `web` as the replica of
     the integration tests (Q-HA-315). The chart renders neither.
@@ -183,13 +198,16 @@ from the list of Deployments in [_units.tpl](../../deploy/helm/quader/templates/
 
 - The chart MUST always render three Deployments: `<fullname>-api`, whose container runs `quader serve --role api`,
   `<fullname>-packages`, whose container runs `quader serve --role packages`, and `<fullname>-worker`, whose container runs
-  `quader serve --role worker`. Each has its own replica count, resources, autoscaler, disruption budget, termination grace
+  `quader serve --role worker`. While the image scanning is switched on (`config.vulnerabilities.enabled` and
+  `config.vulnerabilities.images.enabled`, both `true` by default) it renders a fourth, `<fullname>-scanner`, whose container runs
+  `quader serve --role scanner` (R-HA-065). Each has its own replica count, resources, autoscaler, disruption budget, termination grace
   period, spool size, scheduling settings and ingress policy (R-HA-031, R-HA-032, R-HA-042). There is no single-Deployment
   mode, and no value renders `--role all` or `--role web`.
 - **Services.** `<fullname>-api` (port `http` 8080) selects only the `api` pods of the main Deployment, and
   `<fullname>-packages` (port `http` 8080) only the `packages` pods of the main Deployment; the edge routes each host's paths
   to them by prefix (R-HA-037). `<fullname>-ops` selects every serving pod on 8081. `worker` pods are reached only on the
-  operations port (probes and metrics). There is no Service `<fullname>` (Q-HA-74, Q-HA-315).
+  operations port (probes and metrics). There is no Service `<fullname>` (Q-HA-74, Q-HA-315). The image scanning adds two Services
+  that no client and no edge uses, `<fullname>-scanner` and `<fullname>-packages-scan` (R-HA-066).
 - **In-cluster callers** that address Quader without the edge, such as a Bastion calling the main installation by its
   Service name ([bastion.md](bastion.md) R-BAS-008) or CI runners in the cluster, address the Service of the role whose
   families they call: `<fullname>-api` for the UI, the management API and the CI exchange, `<fullname>-packages` for the
@@ -200,8 +218,9 @@ from the list of Deployments in [_units.tpl](../../deploy/helm/quader/templates/
   backend for their families. The chart refuses to render (R-HA-029). With `highAvailability.enforce` the minimum is 2 for
   every role and every pool, so that GC and other singleton work survive a worker pod loss without waiting for a reschedule
   and no family loses its last replica in a drain.
-- The roles' pods run the same image and the same configuration file; only the `--role` argument and the per-Deployment
-  environment of R-HA-062 (`QUADER_POOL_NAME`, `QUADER_JOBS_QUEUES`, `QUADER_JOBS_EXCLUDE_QUEUES`) differ. No component runs in a
+- The roles' pods run the same image and the same configuration file; only the `--role` argument, the per-Deployment
+  environment of R-HA-062 (`QUADER_POOL_NAME`, `QUADER_JOBS_QUEUES`, `QUADER_JOBS_EXCLUDE_QUEUES`) and the scan listener of the main
+  `packages` Deployment (`QUADER_SERVER_SCAN_LISTEN`, R-HA-066) differ, and the scanner mounts less (R-HA-065). No component runs in a
   separate image or as a sidecar.
 - Why: background work (GC, retention runs, reindexing, the mirror's passes, the advisory sync, webhook delivery) never
   competes with request latency for CPU and memory; a surge of package traffic cannot starve the UI and the management API;
@@ -211,8 +230,10 @@ from the list of Deployments in [_units.tpl](../../deploy/helm/quader/templates/
 
 Acceptance criteria:
 
-- With default values, `kubectl get deploy -l app.kubernetes.io/instance=quader` lists `quader-api`, `quader-packages`
-  and `quader-worker`, and `GET /api/v1/system/replicas` shows roles `["api"]`, `["packages"]` and `["worker"]`.
+- With default values, `kubectl get deploy -l app.kubernetes.io/instance=quader` lists `quader-api`, `quader-packages`,
+  `quader-worker` and `quader-scanner`, and `GET /api/v1/system/replicas` shows roles `["api"]`, `["packages"]` and `["worker"]`
+  (a scanner has no row, [operations-and-observability.md](operations-and-observability.md) Q-OPS-215); with
+  `config.vulnerabilities.images.enabled: false` no `quader-scanner` is rendered.
 - A manual GC run (`POST /api/v1/system/tasks/gc/run`) sent to an `api` pod is executed on a
   `worker` pod (the worker's instance ID appears in `job.locked_by` of the gc job), and the
   instance ID of no `api` or `packages` pod ever appears in `job.locked_by`.
@@ -311,8 +332,14 @@ The chart wires TLS through Quader's listeners and the platform's connections. `
   naming it, as the encryption key and the backup target do (R-HA-029). `tls.enabled: false` renders no TLS wiring,
   and H-38 applies.
 - The Secret is mounted read-only at `/var/run/secrets/quader/tls/`, as a directory volume with items and without
-  `subPath`, mode `0440`, with only `tls.crt` and `tls.key` projected. `ca.crt` is not mounted into the process: the
-  listener never reads it, and the Secret still carries it for the edge and for monitoring. The chart sets
+  `subPath`, mode `0440`, with only `tls.crt` and `tls.key` projected. `ca.crt` is mounted only where a link between
+  Quader's pods verifies with it: while the image scanning is on, into the `worker`, `packages` and `scanner` pods, as a volume of its
+  own at `/var/run/secrets/quader/tls-internal/ca.crt`, which the chart sets as `server.internal_tls.ca_file`
+  ([architecture.md](architecture.md) R-ARCH-038, R-HA-066). The `api` pods never mount it, and the Secret still carries it for the
+  edge and for monitoring. The pair is also the identity those pods present on the links of R-HA-066, so the certificate must allow
+  client authentication: the usage `client auth`, or no extended key usage at all (cert-manager: `usages: [digital signature, key
+  encipherment, server auth, client auth]`, as the local profile's certificate has); a pod whose pair lacks it logs the reason
+  at start, and the scanner stays not ready (R-HA-065). The chart sets
   `server.tls.certificates` to that one pair and, when mutual TLS is configured, `server.tls.client_ca_file` with
   `client_auth` from `tls.clientCA.auth` (R-ARCH-035). A rotated Secret reaches the pod through the kubelet's swap and
   the reloader of R-ARCH-035 applies it. The checksum annotation follows the settings and the paths, not the Secret's
@@ -351,6 +378,113 @@ Acceptance criteria:
   uses `scheme: HTTPS`.
 - Every request through the dev profile's edge is served over TLS and verified against the dev CA (R-HA-051).
 - Prometheus scrapes the ops port over TLS with the chart's ServiceMonitor, and the target is up.
+
+### R-HA-065 · The scanner Deployment
+Priority: **P1** · Covers: HA-015
+
+The owner's decision of 2026-11-20 ([ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)):
+the analysis of container images runs in a role `scanner` of the same binary and image, as a Deployment of its own, with no secret of the
+database, the object store or Valkey. What it serves and holds is [architecture.md](architecture.md) R-ARCH-036; what it does is
+[vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-041 and R-VULN-042.
+
+- **When.** The chart renders `<fullname>-scanner` while `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled` are
+  `true` (the defaults), and nothing of it otherwise. Its container runs `quader serve --role scanner` and opens `:8080` (the scanner's
+  listener) and `:8081` (the operations listener).
+- **Pod.** The security context of R-HA-033: user and group 65532, `readOnlyRootFilesystem`, no privilege escalation, every capability
+  dropped, seccomp `RuntimeDefault`; `automountServiceAccountToken: false`; no RBAC. The scanner's process is the first process of its
+  container (no shell, no init), which Q-ARCH-530 relies on. `shareProcessNamespace` is never set.
+- **Volumes, and nothing else** (R-HA-061): the spool `emptyDir` at `/var/lib/quader/spool` with `scanner.spool.sizeLimit` (the one
+  writable volume besides `/tmp`; the analyses work below `scan_dir` in it), `/tmp`, the configuration file, the TLS pair of
+  `scanner.tls.secretName` (else `tls.secretName`) at `/var/run/secrets/quader/tls/`, and `ca.crt` of `tls.secretName` at
+  `/var/run/secrets/quader/tls-internal/ca.crt`. The chart mounts no key of the key ring, no database, Valkey or object-store credential
+  or CA, no login secret, no trusted CA bundle of R-HA-043 (the scanner opens no connection that it would verify), and none of the shared
+  `extraVolumes`, `extraVolumeMounts`, `extraEnv`, `extraEnvFrom`, `initContainers` and `sidecars` (Q-HA-321); `scanner.extraEnv` is its own.
+  A chart test lists the pod's volumes and environment and fails for any other.
+- **Resources** (Q-HA-316): requests 500m CPU, 1 GiB memory and 1 GiB ephemeral storage; memory limit 2 GiB; no CPU limit, `GOMAXPROCS`
+  from the request (R-HA-036). The analyser's `GOMEMLIMIT` (`config.vulnerabilities.images.memory_limit`) is its soft limit; the pod's limit
+  is the hard one, and an image that passes it ends that pod's analysis, which the worker records as `scanner_lost`.
+- **Replicas and placement**: 2 replicas (at least 2 with `highAvailability.enforce`), a PodDisruptionBudget with `maxUnavailable: 1`, the
+  two spread constraints and the tolerations of R-HA-032, an optional autoscaler on CPU (80 %). The capacity is replicas ×
+  `config.vulnerabilities.images.scanner.slots`; `config.vulnerabilities.images.concurrency` should not exceed it (R-VULN-041, Q-VULN-170).
+- **Probes** (R-HA-034): `/healthz` and `/readyz` on `:8081`. Readiness holds while the listener's pair and the internal CA have loaded, the
+  pair allows client authentication (R-HA-063), the analyser answers its version, the spool directory is writable, and the process is not
+  draining. It does not depend on `packages`: a scan listener that cannot be reached is the call's answer (`registry_unavailable`), not the
+  pod's state. Nor on Valkey: the scanner has no Valkey client and no wait for its first answer (Q-HA-330 does not apply,
+  [architecture.md](architecture.md) R-ARCH-036).
+- **Drain** (R-HA-011): `terminationGracePeriodSeconds: 60` and the shutdown timeout derived from it. At `SIGTERM` the readiness fails at
+  once and a new call is answered `503` `scanner_draining`; an analysis still running at the shutdown timeout is killed with its process
+  group and answered `503` `scanner_draining`; the worker puts either off without an attempt.
+- **No registry row** ([operations-and-observability.md](operations-and-observability.md) R-OPS-003, Q-OPS-215): the scanner has no
+  database connection. Its replicas show as the Deployment's, as the series of the ServiceMonitor (the Service `<fullname>-ops` selects its
+  pods on `8081`) and through the worker's codes and `QuaderVulnerabilityImageScannerUnavailable` (R-VULN-024).
+- **Chart checks** (R-HA-029): the scanner's spool budget (`scanner.spool.sizeLimit` minus `spool.headroom`) at least
+  `slots × (max_image_size + 64 MiB)`, the failure naming the three values (Q-HA-318); `scanner.replicaCount` at least 1, and at least 2 with
+  `highAvailability.enforce`; `scanner.tls.secretName` only with `tls.enabled`.
+
+Acceptance criteria:
+
+- Chart test (`test/chart`, about 1 s): with default values the Deployment `quader-scanner` runs `--role scanner`, mounts exactly the five
+  volumes above, carries no environment variable or volume that names a Secret other than the TLS pair and `ca.crt`, and has
+  `automountServiceAccountToken: false`; `--set config.vulnerabilities.images.enabled=false` renders no scanner object; `--set
+  scanner.spool.sizeLimit=4Gi` fails and names `scanner.spool.sizeLimit`, `spool.headroom` and `max_image_size`; a shared `extraEnvFrom`
+  does not reach the scanner's container.
+- End to end (set `vuln`, R-VULN-046): `kubectl exec` into a scanner pod lists no file below `/var/run/secrets/quader/` but `tls/tls.crt`,
+  `tls/tls.key` and `tls-internal/ca.crt`, and `/var/run/secrets/kubernetes.io/` does not exist.
+
+### R-HA-066 · The links of the image scanning inside the chart
+Priority: **P1** · Covers: HA-018
+
+- **Services.** `<fullname>-scanner`: `ClusterIP`, port `https` 8080 (`appProtocol: https`), selecting the scanner pods, `sessionAffinity:
+  None`. `<fullname>-packages-scan`: `ClusterIP`, port `scan` 8082 (`appProtocol: https`), selecting the pods of the main `packages`
+  Deployment (not its path pools or endpoint pools), `sessionAffinity: None`. Neither takes `service.type` or its annotations, and no Ingress
+  or HTTPRoute names either, so neither port is reachable from outside the cluster whatever the client Services are (Q-HA-319).
+- **The scan listener.** The main `packages` Deployment gets `QUADER_SERVER_SCAN_LISTEN=:8082` while the image scanning is on and opens the
+  listener of [architecture.md](architecture.md) R-ARCH-037; its path pools and endpoint pools do not.
+- **Chart-managed configuration** (R-HA-029: refused when set by hand): `vulnerabilities.images.scanner.url` =
+  `https://<fullname>-scanner.<namespace>.svc:8080`, `vulnerabilities.images.registry.url` =
+  `https://<fullname>-packages-scan.<namespace>.svc:8082`, both `server_name`s = `<fullname>.<namespace>.svc` (the name the chart's certificate
+  carries for the edge already, R-HA-037), and `server.internal_tls.ca_file` = `/var/run/secrets/quader/tls-internal/ca.crt`.
+- **TLS** (R-HA-063, R-ARCH-038). Both links are TLS with the chart's pair on both sides: the scanner's listener and the scan listener serve
+  it and require a client certificate that chains to `ca.crt`; the worker presents it to the scanner and the scanner presents its pair to the
+  scan listener. A rotated Secret reaches every side through the kubelet and the reloader, without a restart, for the next handshake; the
+  worker opens a connection per call (R-VULN-041), so no call outlives two rotations on one connection. With `scanner.tls.secretName`, the
+  scanner serves and presents its own pair, which must be issued by the CA of `tls.secretName`'s `ca.crt` and carry
+  `<fullname>.<namespace>.svc` (Q-HA-317).
+- **With `tls.enabled: false`** the chart renders both links in plain HTTP, like every other link of such an installation (H-38): no client
+  certificate is asked, and the scan token and the NetworkPolicy are what remain (Q-HA-322,
+  [H-1043](../security/image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)).
+- **Ingress rules** (R-HA-042, ADR-154): the scanner's `8080` from the pods of the worker Deployment that claims `vuln`; the scan
+  listener's `8082` from the scanner's pods. No egress rule.
+
+Acceptance criteria:
+
+- Chart test (`test/chart`, about 1 s): the two Services with their ports, selectors and `ClusterIP` also with `service.type: LoadBalancer`;
+  `QUADER_SERVER_SCAN_LISTEN` on the main `packages` Deployment only; the chart-managed keys in the rendered configuration; the `ca.crt`
+  volume on the `worker`, `packages` and `scanner` pods and on no `api` pod; with a worker pool `vuln`, the pool's pods in the scanner's
+  ingress rule.
+- End to end (set `vuln`, R-VULN-046): an image of a few kilobytes pushed to a local repository is analysed: a row of `vuln_image_sbom` holds
+  its digest within a minute of `POST /api/v1/system/tasks/vuln-image-scan/run`, which shows both links with the profile's certificate.
+
+### R-HA-067 · Where the scanner runs outside the chart
+Priority: **P1** · Covers: quader-only
+
+- **The local profile on kind** (R-HA-051) runs the chart, so it runs `<fullname>-scanner` with two replicas next to the pool `vuln`, and the
+  certificate of `deploy/dev/pki.yaml` carries `client auth` already. Its database is `upstream/scanner-trivy` through the profile's
+  network, or a local repository of the profile for a run without the internet.
+- **The UI development profile** (`make ui-dev-backend`, the role `all`, Q-ARCH-531): one process holds the worker, `packages` and the
+  scanner; the worker calls its own scanner listener over loopback, and the scanner pulls from its own scan listener, through the same
+  client, listener, token and checks as in the chart. The unset `scanner.url` and `registry.url` mean exactly that in `all`.
+- **The integration stack** (`test/integration/testenv`): the stack starts a replica of the role `scanner` in process beside `web` and
+  `worker`, with the stack's TLS pair and CA, and the `web` replica opens the scan listener; the scanning's tests replace the analyser at the
+  seam in the scanner replica and the worker replica, as they do today, so the stack needs no analyser binary and no database download
+  (R-VULN-046).
+- **CI**: no new leg. The unit, chart and integration legs run what R-VULN-046 lists; the leg `e2e (vuln)` adds one case.
+
+Acceptance criteria:
+
+- `make ui-dev-backend` with a pushed image of kilobytes shows the image's analysis stored without a scanner Deployment (a manual check of
+  the profile, recorded once).
+- The integration set `vulnimage` passes with the scanner replica in process (R-VULN-041).
 
 ### R-HA-003 · Replica registry as the coordination view
 Priority: **MVP** · Covers: HA-006, HA-009
@@ -948,7 +1082,7 @@ connections and waits for in-flight requests. This page fixes the time budget an
 background work.
 
 - The chart sets `terminationGracePeriodSeconds` per role (default 120 s for `web`, 300 s for
-  `worker`). The server shutdown timeout ([architecture.md](architecture.md)) MUST be derived
+  `worker`, 60 s for `scanner`). The server shutdown timeout ([architecture.md](architecture.md)) MUST be derived
   from it: `server.shutdown_timeout = terminationGracePeriodSeconds − health.shutdown_drain_delay − 5 s`.
   The chart passes the grace period to the process as `QUADER_RUNTIME_TERMINATION_GRACE_PERIOD`, so
   the two cannot drift apart. The process exits before the kubelet's `SIGKILL`.
@@ -957,7 +1091,9 @@ background work.
 - Responses completed during the drain carry `Connection: close`, so clients reconnect through the
   Service to a remaining replica.
 - Workers stop claiming jobs at `SIGTERM`. Running jobs get the shutdown timeout to finish or to
-  persist their cursor. A handler still running 11 s before the deadline is cancelled and its job
+  persist their cursor; a job's call to a scanner is cancelled with its handler (R-VULN-041). A scanner admits no new analysis at
+  `SIGTERM` (`503` `scanner_draining`) and kills an analysis still running at its shutdown timeout, answering it `503`
+  `scanner_draining`, which the worker puts off without an attempt (R-HA-065). A handler still running 11 s before the deadline is cancelled and its job
   lease released explicitly (`state = 'queued'`, `attempt` unchanged): the release write has the
   whole settle deadline of the worker, 15 s with its retries, before the process stops waiting for
   it ([architecture.md](architecture.md) R-ARCH-024 step 4, Q-ARCH-329), so a release during a
@@ -3791,7 +3927,7 @@ worker:
       maxUnavailable: 0
   terminationGracePeriodSeconds: 300    # jobs persist their cursor before exit
   spool:
-    sizeLimit: 8Gi                      # also the working space of the image scanning below this spool (vulnerability-scanning.md R-VULN-036, Q-VULN-145), admitted through the budget (sizeLimit minus spool.headroom), validated for the pool that claims the queue vuln: the unpacked database (2 GiB allowed), the largest image (3 GiB by default) and 512 MiB. Workers spool only cache fills of jobs and, from P1, the nuget-symbol-index job's one extracted PDB at a time (formats/nuget.md)
+    sizeLimit: 8Gi                      # also the working space of the image scanning below this spool (vulnerability-scanning.md R-VULN-036, Q-VULN-145), admitted through the budget (sizeLimit minus spool.headroom), validated for the pool that claims the queue vuln: the unpacked database (2 GiB allowed), the largest image (3 GiB by default) and 512 MiB. With the scanner of R-HA-065 the images leave this spool, the check becomes 2 GiB and 512 MiB and the default 5Gi, in the change that builds it (Q-HA-318). Workers spool only cache fills of jobs and, from P1, the nuget-symbol-index job's one extracted PDB at a time (formats/nuget.md)
   resources:
     requests:
       cpu: 500m
@@ -3832,6 +3968,63 @@ worker:
   podLabels: {}
   extraEnv: []
   pools: []                             # example: [{name: vuln, queues: [vuln], replicaCount: 2}]; the main worker claims every queue no pool lists
+
+# ── scanner Deployment: quader serve --role scanner (R-HA-065) ────
+# The analysis of container images for the worker's image scanning; rendered while config.vulnerabilities.enabled and
+# config.vulnerabilities.images.enabled are true. No secret of PostgreSQL, the object store or Valkey and no key ring mounts here.
+scanner:
+  replicaCount: 2                       # ignored when autoscaling.enabled; the capacity is replicas × config.vulnerabilities.images.scanner.slots
+  minReadySeconds: 10
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  terminationGracePeriodSeconds: 60     # an analysis still running at the shutdown timeout is killed and put off by the worker without an attempt
+  spool:
+    sizeLimit: 6Gi                      # the analyses, admitted through the budget (sizeLimit minus spool.headroom): per slot the largest image (config.vulnerabilities.images.max_image_size) plus 64 MiB, validated
+  tls:
+    secretName: ""                      # empty = tls.secretName; example: quader-scanner-tls, a pair of its own from the same CA, so that the pair the edge trusts stays out of this pod (H-1035)
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+      ephemeral-storage: 1Gi
+    limits:
+      memory: 2Gi                       # one analyser per slot (config.vulnerabilities.images.memory_limit is its soft limit); an image that needs more ends this pod's analysis, never a worker
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 0
+    metrics: []
+    behavior: {}                        # Kubernetes defaults
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 1
+    minAvailable: null
+    unhealthyPodEvictionPolicy: AlwaysAllow
+  topologySpread:
+    enabled: true
+    nodeTaintsPolicy: Honor
+    zone:
+      maxSkew: 1
+      whenUnsatisfiable: ScheduleAnyway
+    host:
+      maxSkew: 1
+      whenUnsatisfiable: DoNotSchedule
+  topologySpreadConstraints: []
+  nodeFailureTolerationSeconds: 60
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  priorityClassName: ""
+  schedulerName: ""
+  podAnnotations: {}
+  podLabels: {}
+  extraEnv: []
 
 # ── Quader configuration (rendered to /etc/quader/quader.yaml) ─────────────────
 # Chart-managed keys (secret file paths, storage.spool.dir, server.content_base_url) must not be set here (R-HA-029).
@@ -4396,8 +4589,8 @@ Acceptance criteria:
 ### R-HA-032 · Replicas, disruption budget, spreading and autoscaling
 Priority: **MVP** · Covers: HA-009, HA-032, HA-043, HA-044
 
-- **Replicas.** Defaults: 2 for `api`, 3 for `packages` and 2 for `worker` (Q-HA-16, Q-HA-75; before phase 6a 3 for
-  `web`); at least 2 per role and pool with `highAvailability.enforce` (INV-12). The drain rule of R-HA-059 sets the real minimum: the
+- **Replicas.** Defaults: 2 for `api`, 3 for `packages`, 2 for `worker` and 2 for `scanner` (Q-HA-16, Q-HA-75, Q-HA-316; before
+  phase 6a 3 for `web`); at least 2 per role and pool with `highAvailability.enforce` (INV-12). The drain rule of R-HA-059 sets the real minimum: the
   replicas that carry the peak plus the PDB's `maxUnavailable`. When autoscaling is enabled, the
   Deployment's `replicas` field is omitted, so `helm upgrade` does not reset the autoscaler's
   choice, and `minReplicas` follows the drain rule.
@@ -4524,7 +4717,12 @@ Priority: **MVP** · Covers: HA-005
 - A `worker` spool also holds one advisory archive while a sync runs ([vulnerability-scanning.md](vulnerability-scanning.md)
   R-VULN-025), and so does the spool of a worker pool that claims the queue `vuln`: the chart refuses such a spool budget (size minus `spool.headroom`) below
   `config.vulnerabilities.sources.osv.max_archive_size` while the scanning is enabled and the OSV source is `online` or
-  `repository`, and the failure names both values.
+  `repository`, and the failure names both values. The spool of the worker that claims `vuln` also holds the image scanning's
+  unpacked database and a detection's 64 MiB, and the chart refuses its budget below 2 GiB + 512 MiB while the image scanning is on
+  (Q-HA-318).
+- A `scanner` spool holds the analyses: per slot the compressed size of the image plus 64 MiB. The chart refuses a scanner spool
+  budget (`scanner.spool.sizeLimit` minus `spool.headroom`) below `slots × (max_image_size + 64 MiB)` of
+  `config.vulnerabilities.images` and names the three values (R-HA-065, Q-HA-318).
 - `resources.requests.ephemeral-storage` should cover the expected steady use, not the limit, so
   pods schedule on ordinary nodes. The `sizeLimit` caps the worst case.
 - `medium: Memory` is allowed but counts against the memory limit. It is meant for small,
@@ -4546,10 +4744,11 @@ Every volume the chart renders:
 
 | Pods | Mount | Volume | Access | Lifetime |
 |---|---|---|---|---|
-| `web`, `worker` | `/var/lib/quader/spool` | `emptyDir` (default) or a generic ephemeral volume (R-HA-035) | node-local, or one ReadWriteOnce (or ReadWriteOncePod) claim per pod | the pod |
+| `api`, `packages`, `worker`, `scanner` | `/var/lib/quader/spool` | `emptyDir` (default) or a generic ephemeral volume (R-HA-035) | node-local, or one ReadWriteOnce (or ReadWriteOncePod) claim per pod | the pod |
 | every Quader pod | `/tmp` | `emptyDir` with `tmp.sizeLimit` (backup and restore pods: `backup.tmpSizeLimit`, because they stream, R-BAK-012) | node-local | the pod |
 | every Quader pod | `/etc/quader/quader.yaml` | ConfigMap | read-only projection | — |
-| every Quader pod | `/var/run/secrets/quader/…`, `/etc/quader/ca/` | Secret or ConfigMap projections (R-HA-030) | read-only projection | — |
+| every Quader pod but `scanner` | `/var/run/secrets/quader/…`, `/etc/quader/ca/` | Secret or ConfigMap projections (R-HA-030) | read-only projection | — |
+| `scanner` | `/var/run/secrets/quader/tls/` (the pair of `scanner.tls.secretName`, else `tls.secretName`) and `/var/run/secrets/quader/tls-internal/ca.crt`, nothing else | Secret projections (R-HA-065) | read-only projection | — |
 
 - The chart renders no PersistentVolumeClaim, no StatefulSet and no `volumeClaimTemplates`. A
   generic ephemeral volume is a claim that Kubernetes creates for one pod and deletes with it
@@ -4579,7 +4778,8 @@ Acceptance criteria:
 Priority: **MVP** · Covers: HA-052
 
 - Defaults: requests 1 CPU and 1 GiB memory, memory limit 2 GiB, no CPU limit (`web`). `worker`
-  and backup pods: 500m and 512 MiB, memory limit 1 GiB. Requests are set, never left empty, so the
+  and backup pods: 500m and 512 MiB, memory limit 1 GiB. `scanner` pods: 500m and 1 GiB, memory limit 2 GiB, for one analyser
+  per slot (R-HA-065, Q-HA-316). Requests are set, never left empty, so the
   scheduler and the autoscaler have a basis.
 - **CPU.** Since Go 1.25 the runtime sets `GOMAXPROCS` from the cgroup CPU *limit* and ignores
   requests ([Go 1.25 release notes](https://go.dev/doc/go1.25#container-aware-gomaxprocs)).
@@ -4977,16 +5177,20 @@ selecting its pods by the selector labels of R-HA-028, with `policyTypes: [Ingre
 | `<fullname>-api`, `<fullname>-packages`, each of their path pools | from `networkPolicy.ingress.http.from` (empty means from anywhere, so the edge works wherever it runs) | from that endpoint's `networkPolicy.from`, for each further endpoint without a pool whose surface holds a family of the role | from `networkPolicy.ingress.ops.from` and `networkPolicy.probeCIDRs` |
 | each endpoint pool (`<fullname>-packages-ep-<name>`, `<fullname>-api-ep-<name>`) | none: an endpoint pool opens no 8080 (R-EP-002) | from the endpoint's `networkPolicy.from` | as above |
 | `<fullname>-worker`, each worker pool | none: a worker listens on no client port (R-HA-001) | none | as above |
+| `<fullname>-scanner` (R-HA-065) | from the pods of the worker Deployment that claims the queue `vuln` (the worker pool that lists it, else `<fullname>-worker`), by their selector labels | none | as above |
+| `<fullname>-packages` (the main Deployment), one rule more | beside its 8080 rule of the first row, port 8082 of the scan listener (R-HA-066) from the pods of `<fullname>-scanner` only | as the first row | as the first row |
 | `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore` | none | none | none: `ingress: []` |
 
 - Every rule names its port, and every rule with a port carries the `from` of its row. A row whose `from` list is empty
   for 8081 (neither an `ops.from` peer nor a `probeCIDRs` entry) leaves the 8081 rule out rather than rendering an empty
   `from`, which Kubernetes reads as "from anywhere". `networkPolicy.ingress.http.from` and an endpoint's
   `networkPolicy.from` keep their meaning: empty admits the port from anywhere, so the edge works without a value.
-- No rule admits one Quader pod from another: replicas never open connections to each other (Topology), and the cut adds no
-  seam between the roles ([ADR-153](../decisions.md#adr-153--quader-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries)).
-  A seam that a later decision adds is a rule of the receiving role's policy that admits the sending role on the seam's
-  port (ADR-154).
+- No rule admits one Quader pod from another but the two of the image scanning's seam: replicas of a role never open connections
+  to each other (Topology), and the cut added no seam between the roles
+  ([ADR-153](../decisions.md#adr-153--quader-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries)).
+  The seam that ADR-212 adds is two rules of the receiving roles' policies, each admitting the sending role on the seam's port (ADR-154):
+  the scanner's `8080` from the worker that claims `vuln`, the scan listener's `8082` from the scanner. Neither rule depends on
+  `networkPolicy.ingress.http.from`, and neither port is ever admitted from anywhere.
 - In-cluster callers that address a role's Service directly (R-HA-002), such as a Bastion in another namespace, reach
   port 8080 only when `networkPolicy.ingress.http.from` admits them; with a restricted list, their namespace or pods are
   added to it.
@@ -4997,9 +5201,11 @@ selecting its pods by the selector labels of R-HA-028, with `policyTypes: [Ingre
   An operator who restricts egress at the cluster lets each role reach what it uses: every serving role and the migration
   Job DNS and PostgreSQL (`database.host`, `session_host`, the pooler of R-HA-058); every serving role Valkey and its
   Sentinels and the object store; `packages` the upstreams of its remote repositories and the shadowing probes; `api` the
-  OIDC issuers and the upstreams it tests (R-REPO-024); `worker` the upstreams of mirrored remotes, the advisory sources of
-  [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-025 and the CI issuers' key endpoints; backup and restore
-  the backup target.
+  OIDC issuers and the upstreams it tests (R-REPO-024); `worker` the upstreams of mirrored remotes, the upstream of the image
+  scanning's database repository, the advisory sources of [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-025, the CI
+  issuers' key endpoints and the scanner's `8080`; `scanner` DNS and the scan listener `8082` of `packages`, and nothing else; backup
+  and restore the backup target. For the scanner that policy is the containment of an analyser an image took over
+  ([H-1036](../security/image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)).
 - **Valkey and the Sentinels admit only Quader's pods** ([architecture.md](architecture.md) H-49).
   Whoever can write under Quader's key prefix can deny service, so the Valkey data nodes and the
   Sentinels MUST be reachable only from Quader's serving pods (`api`, `packages`, `worker`, `web`), from each other and from
@@ -5038,13 +5244,18 @@ selecting its pods by the selector labels of R-HA-028, with `policyTypes: [Ingre
 
 Acceptance criteria:
 
-- The chart test renders, for the default values, exactly the policies `quader-api`, `quader-packages`, `quader-worker` and
-  `quader-migrate`; `quader-api` and `quader-packages` have one rule for TCP 8080 without `from` and one for TCP 8081 from the
+- The chart test renders, for the default values, exactly the policies `quader-api`, `quader-packages`, `quader-worker`,
+  `quader-scanner` and `quader-migrate`; `quader-api` and `quader-packages` have one rule for TCP 8080 without `from` and one for TCP 8081 from the
   namespace `monitoring`; `quader-worker` only the 8081 rule; `quader-migrate` `ingress: []`; no policy has
   `policyTypes: [Egress]` or an `egress` key, and every rule names a port. With the `customers` endpoint of R-EP-008
   (surface `[packages, files, api]`, no pool), `quader-packages` and `quader-api` each gain a rule for 8443 from
   `endpoints.customers.networkPolicy.from`; with its pool enabled, `quader-packages-ep-customers` and `quader-api-ep-customers`
   carry the 8443 and 8081 rules and no 8080 rule. With a worker pool `vuln`, `quader-worker-vuln` carries the 8081 rule only.
+  With the default values `quader-scanner` exists, with a rule for TCP 8080 from the pods of `quader-worker` and the 8081 rule, and
+  `quader-packages` has a third rule, TCP 8082 from the pods of `quader-scanner`; with a worker pool `vuln`, the scanner's 8080 rule
+  names the pods of `quader-worker-vuln` instead; with `config.vulnerabilities.images.enabled: false` neither exists.
+- From a `worker` pod of the pool that claims `vuln`, a TLS connection to `quader-scanner:8080` with the chart's pair succeeds; from a pod
+  in namespace `default` it times out, and so does a connection to `quader-packages-scan:8082` (e2e set `vuln`, R-VULN-046).
 - From a pod in namespace `default`, `curl https://quader-ops.quader:8081/metrics` times out, and
   `curl https://quader-api.quader:8080/api/v1/system/ping` succeeds; a connection to a `worker` pod's 8080 is refused or times
   out.
@@ -10597,6 +10808,123 @@ Code: [values.yaml](../../deploy/helm/quader/values.yaml), [values.schema.json](
 [deploy/dev/postgres.yaml](../../deploy/dev/postgres.yaml), the UI's download links (`package-version.html`,
 `repository-content.html`), [internal/config/process.go](../../internal/config/process.go) and the start-up warning of the role
 `web` in [internal/app/app.go](../../internal/app/app.go).
+
+### Q-HA-316 · The scanner runs as two replicas of one slot, with 2 GiB of memory and 60 seconds to drain
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The role and its
+Deployment are the owner's (2026-11-20, ADR-212); the figures are the development agent's estimates, not measured.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 2 replicas × 1 slot, requests 500m and 1 GiB, limit 2 GiB, grace 60 s (chosen) | One analysis per pod at a time | An image that ends its pod's analysis (memory, spool) costs no other image anything; two replicas survive a drain and a node loss | Throughput is two analyses at a time until an operator raises the replicas or turns the autoscaler on |
+| (b) 1 replica × 2 slots | Fewer pods | Less memory reserved | No replica during a drain; an image can end or read the other analysis of its pod (H-1037) |
+| (c) 2 replicas × 2 slots, limit 4 GiB | More throughput | Double capacity | The collateral of (b), and twice the memory reserved for an installation that scans little |
+
+**Choice:** (a). The 2 GiB limit leaves room above the analyser's soft limit of 512 MiB for its peaks and for the scanner's process; the
+grace period lets an analysis near its end finish and kills a long one, which the worker puts off without an attempt (Q-VULN-162).
+**Rationale:** a pod per analysis is the isolation the role exists for; scale by replicas. The development agent would revisit the figures
+after one measurement of the analyser's peak memory and duration on a large image (a measurement, not a test: run once, written down).
+
+**Applied in the spec:** R-HA-031, R-HA-032, R-HA-036, R-HA-065; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-025.
+
+### Q-HA-317 · The scanner serves the chart's pair by default; a pair of its own is a value
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's rule is that every link inside the chart speaks TLS and that certificates rotate without a restart. The chart's pair is
+the one the edge trusts for the backends (R-HA-037).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chart's pair by default; `scanner.tls.secretName` names a pair of its own (chosen) | Nothing to provision for the plain path | The scanning works with the Secret every installation has; an operator who wants the edge's key out of the scanner adds one Certificate | By default an analyser that an image took over can read the key the edge trusts for `api` and `packages` (H-1035) |
+| (b) A pair of its own, required | A second Secret in every installation | The edge's key never enters the scanner | One more prerequisite for an installation that wants the default scanning |
+| (c) The chart issues the scanner's pair itself | A self-made CA in the chart | No operator step | A CA the chart would have to keep and rotate, which the chart never does (`tls.secretName` is never created by it) |
+
+**Choice:** (a). **Rationale:** what the key enables is an impersonation of a backend toward the edge, which needs a position in the pod
+network that the scanner does not have (no service account, no Kubernetes API); the default stays simple and the option closes it. The
+development agent would revisit this if the chart ever renders a cert-manager Certificate itself, which would make (b) free.
+
+**Applied in the spec:** R-HA-031, R-HA-065, R-HA-066; H-1035.
+
+### Q-HA-318 · The working space moves with the analysis: the chart checks the scanner's spool, and the worker's returns to 5 Gi
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Supersedes the
+check of Q-VULN-148.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Scanner: budget ≥ `slots × (max_image_size + 64 MiB)`, default `sizeLimit` 6 Gi; worker of `vuln`: budget ≥ 2 GiB + 512 MiB, default `worker.spool.sizeLimit` 5 Gi (chosen) | Each spool is checked against what it holds | Every slot of a scanner fits its largest image, so the scanner never waits for room; the worker gives back the 3 GiB the images took | Two checks instead of one |
+| (b) Keep the worker at 8 Gi and add the scanner's | No change for the worker | — | 3 GiB per worker pod reserved for images it no longer holds |
+| (c) No check for the scanner | The runtime answers `spool_too_small` | Less chart code | The install passes and the largest images are never analysed |
+
+**Choice:** (a), with `spool.headroom` (2 GiB) as the margin of the analyser's own files (H-871): 6 Gi gives a budget of 4 GiB against the
+3 GiB and 64 MiB one slot needs. The worker's check and default change in the change that builds the scanner, because until then the images
+still pass through the worker's spool; the values reference of R-HA-031 shows 8Gi until that change, and `scanner.` is listed among the
+unbuilt values of its test until then. **Rationale:** the check belongs to the volume that holds the bytes. The development agent would revisit
+this when the analyser's own writing is bounded at the operating system (H-871), which would let the margin shrink.
+
+**Applied in the spec:** R-HA-031, R-HA-035, R-HA-065; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-036, Q-VULN-145, Q-VULN-148.
+
+### Q-HA-319 · The two links get ClusterIP Services of their own, never the client Services
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<fullname>-scanner` and `<fullname>-packages-scan`, always `ClusterIP` (chosen) | Two Services that no value exposes | `service.type: LoadBalancer` on the client Services cannot put the scan listener on the internet; the selectors are exact | Two more objects |
+| (b) A port `scan` on `<fullname>-packages` | One Service fewer | Less to render | Every port of a `LoadBalancer` Service is public, so the scan listener would be too |
+| (c) A headless Service | Addresses of pods | The worker could pick a pod | The worker would need to resolve and track pods; Q-VULN-170 balances through the Service |
+
+**Choice:** (a). **Rationale:** an internal link should not be one value away from the internet. The development agent would revisit this if
+a further role calls the scanner.
+
+**Applied in the spec:** R-HA-002, R-HA-066.
+
+### Q-HA-320 · The scanner admits only the worker Deployment that claims the queue `vuln`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The pods of the pool that lists `vuln`, else of `<fullname>-worker` (chosen) | The chart knows which Deployment claims the queue | Least privilege: the workers that never run the scan job cannot reach the scanner | A change of the pools changes the rule (in the same apply) |
+| (b) Every pod with the component `worker` | One selector | Simple | Workers of other queues reach a port they never use |
+
+**Choice:** (a). **Rationale:** the rule names the one sender of the seam (ADR-154). The development agent would revisit this if another queue's
+job needs the scanner.
+
+**Applied in the spec:** R-HA-042, R-HA-066.
+
+### Q-HA-321 · The shared extras of the chart do not reach the scanner
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `extraEnv`, `extraEnvFrom`, `extraVolumes`, `extraVolumeMounts`, `initContainers` and `sidecars` apply to every Deployment, and an
+operator puts credentials into them (a Secret as `extraEnvFrom`, a token file as a volume).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The scanner takes none of them; `scanner.extraEnv` is its own (chosen) | An operator adds to the scanner on purpose | No secret meant for the other roles reaches the pod that holds none | An operator who wants a proxy variable in every pod sets it twice |
+| (b) They apply as to every Deployment | One rule | Nothing to explain | A credential meant for the database's roles lands in the scanner without anyone deciding it |
+
+**Choice:** (a). **Rationale:** the property of the role is what it does not hold, so nothing should reach it by default. The development
+agent would revisit this if operators need a shared value in the scanner that `scanner.extraEnv` cannot carry.
+
+**Applied in the spec:** R-HA-065.
+
+### Q-HA-322 · With `tls.enabled: false` the scanner's links are plain, as every link of such an installation
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The links follow `tls.enabled` (chosen) | Plain HTTP without TLS, no client certificate | One switch for the installation, as H-38 accepts it | The worker is not authenticated to the scanner; the scan token and the ingress rules remain (H-1043) |
+| (b) The chart refuses the image scanning without TLS | A failed render | The links are never plain | An installation that runs without TLS for a reason of its own loses the scanning, or has to switch TLS on for it alone |
+
+**Choice:** (a). **Rationale:** the scan token is what decides what the scanner reads, and it is verified by `packages` whatever the
+transport; the installation that switched TLS off has accepted H-38 for every link. The development agent would revisit this if the owner
+removes `tls.enabled: false`.
+
+**Applied in the spec:** R-HA-066; H-1043.
 
 ### Q-HA-330 · Step 10 waits for Valkey's first answer, and the startup check names the wait
 

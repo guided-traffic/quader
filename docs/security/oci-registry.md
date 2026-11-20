@@ -197,6 +197,29 @@ without the repository's prefix; an entry for a cache view (`<key>~cache`) is gr
 
 The grant is a ceiling: `push` covers `overwrite`, and the decision point still requires `overwrite` for a moved tag (Q-OCI-6).
 
+## Scan tokens
+
+Specified, not built ([R-OCI-037](../spec/formats/oci.md#r-oci-037--scan-tokens-the-registry-token-of-the-image-scannings-pull),
+[ADR-213](../decisions.md#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener)). The
+image scanning's worker signs a registry token of a second kind for each manifest it has the scanner analyse, with the same key as the token
+service; the scanner, which holds no key, receives it with the call and pulls the image with it
+([image-scanning.md](image-scanning.md)).
+
+| Property | Rule | Why |
+|---|---|---|
+| Subject | the system subject `image-scanner`; no principal, no Quader token, not anonymous | no account or stored secret stands behind it, so there is nothing to steal but the token itself |
+| Grant | one repository, one image name, `pull`, and the manifest's digest | a stolen token reads one image: that manifest by its digest and the blobs of its name; no tag, no tags list, no referrers, no catalog, no write |
+| Endpoint | `scan`, the scan listener of `packages`, which accepts nothing else | the token is refused on every listener a client reaches, and no client credential works on the scan listener |
+| Lifetime | `vulnerabilities.images.pull_timeout`, 10 minutes by default, verified against that setting | the pull and the token end together |
+| Decision | one fixed rule: `read` of the named repository while it is not disabled; never `populate` | an administrator's binding can neither widen nor break it; a remote answers from what it holds and fetches nothing |
+| Verification | steps 1 to 4 of the table above; no token-cache step | a forged or foreign scan token costs one HMAC and no query |
+| Logs | never the value; the scan ID `sid` joins the worker's, the scanner's and the scan listener's log lines | a scan can be followed across the three pods without the credential in any of them |
+
+A scan token cannot be revoked one by one; it ends with its lifetime or with its key's removal from the ring
+([H-1041](#h-1041--a-scan-token-is-a-bearer-credential-for-one-image-until-it-runs-out)). Only a holder of the key ring can sign one, which is
+[H-579](../spec/formats/oci.md#h-579--a-holder-of-the-stored-secret-key-ring-can-mint-registry-tokens) for this kind as for the other; the
+scanner is not such a holder.
+
 ## Audit and metrics
 
 A token request the stage refuses with 401 writes `auth.registry_token.denied` (reason and how the credential was presented in the
@@ -297,3 +320,20 @@ Stage: the dev and CI clusters of the e2e sets `oci*` ([oci-clients.yaml](../../
 Live wherever those sets run. dockerd and Podman need a privileged container, so the pods `quader-e2e-oci-<i>` run privileged and as root in the namespace `quader-e2e-clients`, whose Pod Security level is `privileged` (Q-OCI-21); a container escape reaches the kind node, and with it every other pod of the cluster. The Kubernetes pull row also copies a forwarder and the dev CA with a `hosts.toml` into the control-plane node (`docker exec`, `docker cp`), so that node's containerd trusts the dev CA for `localhost:<edge port>`. The pods mount no ServiceAccount token and hold no credential of their own (the tests hand each command the token it needs), the namespace holds nothing else, and a dev cluster holds no data of value: the cluster is a throwaway of the runner or the laptop.
 
 What makes it real: running the sets on a cluster that is not a throwaway (nothing in the repository does), or a malicious image in the pinned digests. The pins are digests in [tools/versions.env](../../tools/versions.env) that Renovate moves, so a changed pin is a reviewed pull request.
+
+### H-1041 · A scan token is a bearer credential for one image until it runs out
+
+Stage: the scan token of [R-OCI-037](../spec/formats/oci.md#r-oci-037--scan-tokens-the-registry-token-of-the-image-scannings-pull), from the
+worker that signs it through the scanner that uses it to the scan listener that verifies it. Specified, not built.
+
+Subject: the one image a token names: its manifest by digest, the blobs of its name, in its repository whatever the repository's visibility,
+blocked or not.
+
+Live once R-OCI-037 is built. A scan token is accepted until its expiry (`vulnerabilities.images.pull_timeout`, 10 minutes by default) by
+anyone who presents it on the scan listener, and nothing revokes it sooner but the removal of its key from the ring. The scanner, which
+receives every token of the calls it serves, is the party that holds them: an analyser that an image took over can read the token of its own
+call and, with more than one slot, of the other calls of its pod ([H-1037](image-scanning.md#h-1037--analyses-that-share-a-scanner-share-its-user)),
+and use each from the scanner's pod, the one place that reaches the scan listener under the ingress rules.
+
+What makes it real: a parser flaw of the analyser reachable by an image. Such an analyser already holds the image of its call; what the token
+adds is the blobs of the same name that it can name by digest, for minutes.

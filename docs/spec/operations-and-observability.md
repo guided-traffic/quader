@@ -433,7 +433,8 @@ row that could not be deleted is logged with what it will be listed as (Q-HA-307
 replica whose heartbeat has not reached its row for longer than `system.heartbeat_stale_after` logs once that the others list it as
 lost, and again when a heartbeat reaches the row (Q-HA-309). A replica that reaches PostgreSQL at no point of its shutdown leaves its
 row in its last state, which is listed as lost; nothing in the process can remove it (Q-HA-310). Backup pods, the restore Job and the migration Job never register
-([ha-and-helm.md](ha-and-helm.md) R-HA-003).
+([ha-and-helm.md](ha-and-helm.md) R-HA-003), and neither does a `scanner` replica, which has no database connection
+([architecture.md](architecture.md) R-ARCH-036, [Q-OPS-215](#q-ops-215--the-scanner-has-no-row-in-the-replica-registry-and-shows-through-its-metrics-and-the-workers-codes)).
 
 A row whose heartbeat is older than `system.heartbeat_stale_after` is one of two things, by the state it last wrote
 ([Q-OPS-210](#q-ops-210--a-row-that-went-stale-while-draining-has-signed-off-the-list-leaves-it-out-and-the-prune-deletes-it)):
@@ -6313,6 +6314,26 @@ the rest to administrators, which a whole-object lock cannot express. The develo
 built and administrators want the state and the levels of the registries in a document; then a document kind `upstreamRegistries`.
 
 **Applied in the spec:** R-OPS-029 (the refusal); [repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-374, Q-REPO-386.
+
+### Q-OPS-215 · The scanner has no row in the replica registry, and shows through its metrics and the worker's codes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the registry of R-OPS-003 is a table in PostgreSQL, and the role `scanner` holds no database credential by the owner's decision
+(2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No row; the scanner is seen through its Deployment, its metrics (`quader_scanner_*`, scraped through `<fullname>-ops`) and the worker's codes and alert (chosen) | The status screen lists no scanner | The role keeps holding nothing; a missing fleet still shows: `scanner_unavailable` and `QuaderVulnerabilityImageScannerUnavailable` | An administrator who reads only the status screen does not see the scanners |
+| (b) The worker writes what it learns of the scanners into the registry | Rows by proxy | One screen | A row of a pod the worker only reached, keyed by an address, and stale as soon as the worker stops calling |
+| (c) The scanner writes its own row through an API of `api` | A second seam | Real rows | A credential in the scanner after all, and a call the owner's frame does not have |
+
+**Choice:** (a). **Rationale:** the registry coordinates replicas that share state, and the scanner shares none; what an operator needs to
+know, whether scans are put off for want of scanners, the worker already records. The development agent would revisit this if the status
+screen is to show every pod of the release, which would then read the Kubernetes API from outside the scanner.
+
+**Applied in the spec:** R-OPS-003; [architecture.md](architecture.md) R-ARCH-001, R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-065;
+[vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024; H-1042.
 
 ## What this does not cover
 

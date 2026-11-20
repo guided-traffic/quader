@@ -103,18 +103,21 @@ built in phase 6a). Roles:
   only and no session evaluation, and the cache fills of client misses;
 - `worker`: the job queue, the leases, the scheduler, the mirror's passes and the advisory sync, split into pools by
   queue where an installation wants it;
+- `scanner`: the analysis of container images for the worker's image scanning, without any secret of PostgreSQL, the
+  object store or Valkey (owner, 2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret));
+  the chart renders it while the image scanning is on;
 - `backup` (the backup and restore commands, run as Kubernetes Job or CronJob) and `bastion` (the internet-facing
   read-only cache instance of [bastion.md](bastion.md), deployed only by the chart `quader-bastion`, without
   PostgreSQL; Q-BAS-22), both unchanged by the cut.
 
 A variant of a role by path prefix or by queue is a pool of that role, rendered from chart values without code
 ([ha-and-helm.md](ha-and-helm.md) R-HA-062). The configuration key `process.role` selects the role of `quader serve`:
-`api`, `packages`, `worker`, `bastion`, `web` or `all`, with no default ([architecture.md](architecture.md)
+`api`, `packages`, `worker`, `scanner`, `bastion`, `web` or `all`, with no default ([architecture.md](architecture.md)
 R-ARCH-001). `web` is `api` and `packages` in one process, the role of the releases before the cut; the binary keeps it
 for development and as the replica of the integration tests ([ha-and-helm.md](ha-and-helm.md) Q-HA-315). `all` is every
 role but `bastion` in one process, for a binary started outside the chart during development; the chart renders
 neither, and `bastion` keeps a configuration schema of its own. The Helm chart
-deploys `api`, `packages` and `worker` as separate Deployments, each with its own replica count, autoscaler,
+deploys `api`, `packages`, `worker` and, while the image scanning is on, `scanner` as separate Deployments, each with its own replica count, autoscaler,
 disruption budget and ingress policy; the local development profile runs the chart the same way
 ([ha-and-helm.md](ha-and-helm.md) R-HA-001, R-HA-002, R-HA-051). Where a page says `web` without naming a family,
 the statement applies to the role that serves the family in question, and to both `api` and `packages` where it

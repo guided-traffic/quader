@@ -17,13 +17,13 @@ regenerated.
 <!-- coverage-gen:begin headline -->
 | Number | Value | Kind |
 |---|---|---|
-| **Implemented** | **22.9%** (512 of 2,239 catalog features) | measured from passing tests that name requirements (Q-ROAD-4) |
+| **Implemented** | **22.8%** (510 of 2,239 catalog features) | measured from passing tests that name requirements (Q-ROAD-4) |
 | **MVP features covered by spec requirements** | **100%** (395 of 395) | measured from `Covers:` lines |
 | P1 features covered by spec requirements | 66.7% (343 of 514) | measured from `Covers:` lines |
 | In-scope features covered (MVP, P1, P2, Later) | 36.4% (788 of 2,167) | measured from `Covers:` lines |
 | Catalog features | 2,239 on 60 pages | measured from catalog headings |
-| Spec requirements | 1,000 on 21 pages (701 MVP, 258 P1, 41 P2) | measured from spec headings |
-| Requirements covering no catalog feature | 300 (`quader-only`) | measured from `Covers:` lines |
+| Spec requirements | 1,013 on 21 pages (701 MVP, 271 P1, 41 P2) | measured from spec headings |
+| Requirements covering no catalog feature | 307 (`quader-only`) | measured from `Covers:` lines |
 <!-- coverage-gen:end headline -->
 
 **What the owner constraints of 2026-10-28 changed.** The tables were regenerated on 2026-10-29,
@@ -52,11 +52,11 @@ see [Honesty notes](#honesty-notes).
 | Priority | Features | Specified | Open | Specified share | Covered by an MVP requirement | Implemented |
 |---|---:|---:|---:|---:|---:|---:|
 | **MVP** | 395 | 395 | 0 | 100% | 395 | 356 |
-| **P1** | 514 | 343 | 171 | 66.7% | 68 | 120 |
-| **P2** | 884 | 48 | 836 | 5.4% | 12 | 35 |
+| **P1** | 514 | 343 | 171 | 66.7% | 68 | 119 |
+| **P2** | 884 | 48 | 836 | 5.4% | 12 | 34 |
 | **Later** | 374 | 2 | 372 | 0.5% | 0 | 1 |
 | **Out of scope** | 72 | 0 | 72 | 0% | 0 | 0 |
-| **Total** | 2,239 | 788 | 1,451 | 35.2% | 475 | 512 |
+| **Total** | 2,239 | 788 | 1,451 | 35.2% | 475 | 510 |
 <!-- coverage-gen:end priority -->
 
 The column *Covered by an MVP requirement* shows where the spec pulls work forward: 55 P1 features
@@ -189,7 +189,7 @@ table.
 |---|---|---|---:|---|
 | **npm-only team** | 211 of 211 specified, 0 open (100%) | 322 of 370 specified, 48 open (87.0%) | 236 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
 | **.NET team** | 209 of 209 specified, 0 open (100%) | 312 of 360 specified, 48 open (86.7%) | 230 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
-| **platform/ops team** | 269 of 269 specified, 0 open (100%) | 448 of 468 specified, 20 open (95.7%) | 296 | Repositories 9; Operations, monitoring and configuration 4; High availability and deployment 3 |
+| **platform/ops team** | 269 of 269 specified, 0 open (100%) | 448 of 468 specified, 20 open (95.7%) | 295 | Repositories 9; Operations, monitoring and configuration 4; High availability and deployment 3 |
 
 Pages counted per audience:
 

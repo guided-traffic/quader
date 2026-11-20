@@ -123,7 +123,9 @@ runtime, live in PostgreSQL (R-EP-012).
 
 - **Names** match `^[a-z][a-z0-9-]{0,19}$`. The name is a metric label value, a token binding, the
   key of exposure rules and part of chart object names (R-EP-008). `default` names the default
-  endpoint. At most 16 further endpoints may be configured, so the `endpoint` label stays bounded.
+  endpoint. `scan` is reserved for the scan listener of `packages` (R-EP-002,
+  [architecture.md](architecture.md) R-ARCH-037): an entry `server.endpoints.scan` stops startup with an error that names the
+  key. At most 16 further endpoints may be configured, so the `endpoint` label stays bounded.
 - **The default endpoint always exists.** Its listener is `server.listen`, its base URL
   `server.base_url` with `server.additional_base_urls` (R-OPS-005), its in-flight limit
   `server.max_in_flight` and its certificate pair `server.tls` (R-ARCH-035). The entry
@@ -238,6 +240,13 @@ Priority: **MVP** · Covers: quader-only
   `packages` alone, a `packages` process none whose surface is `api` and `ci_exchange` alone. On the endpoint `customers` with
   the surface `[packages, files, api]` both main Deployments open `:8443`, each with its own families only (`api` serves `api`,
   `packages` serves `packages` and `files`). The development roles `web` and `all`, which the chart never renders, serve every family.
+- **The scan listener** (specified, not built; [architecture.md](architecture.md) R-ARCH-037, ADR-212). A `packages` process, and `all`
+  and `web`, opens one more listener on `server.scan_listen` when it is set (the chart sets `:8082` on the main `packages` Deployment while
+  the image scanning is on, never on a pool). Its endpoint is the reserved `scan`: built in, never configured, with the surface
+  `[packages]`, no host check (no `421`), no rate-limit class of R-EP-015, its own in-flight bound of 64, no exposure rules, the cache-fill
+  policy `false`, and the credential rules of R-EP-010 below. It serves `server.tls.certificates` and requires a client certificate that
+  chains to `server.internal_tls.ca_file` (R-ARCH-038). It is bound before readiness and drained like every listener; the route-table test
+  runs over its ServeMux too. Its series carry `endpoint="scan"`.
 - **Lifecycle.** A client-serving process binds every listener it opens before it reports ready; a
   listener that cannot bind stops startup and names the endpoint. Shutdown drains every client
   listener with the same readiness flip, drain delay and in-flight completion
@@ -725,6 +734,11 @@ lookup that a rule makes unnecessary:
 - Defaults: the default endpoint accepts sessions, PATs, SATs and CI tokens, unbound, and admits requests without a credential
   for the levels to decide, so R-AUTH-001 is unchanged there. A further endpoint accepts only
   service-account tokens bound to it, and no anonymous request (Q-EP-10).
+- **The endpoint `scan`** (R-EP-002) accepts exactly one credential, a scan token ([formats/oci.md](formats/oci.md) R-OCI-037), whose
+  endpoint claim is `scan`. Every other credential, a session cookie, a Quader token of any type, a client's registry token and a request
+  without a credential, is refused with `401` `invalid_token` (`credentials_required` for none) and no challenge, before any lookup; it has
+  no `auth` settings an operator could change. A scan token is refused on every other endpoint by its endpoint claim, so it works nowhere
+  else. Refusals here do not count towards the failed-credential throttle of R-AUTH-038 (identity-and-authentication.md R-AUTH-038).
 
 Acceptance criteria:
 

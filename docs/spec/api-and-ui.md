@@ -1831,7 +1831,9 @@ format ([Q-API-340](#q-api-340--the-format-contract-declares-what-a-fetch-of-a-v
 
 - A download is what [storage.md](storage.md) R-STOR-015 counts: Quader answers the whole body with `200`, or `206` for a range from
   byte 0; a `HEAD`, a `304`, a later range and a request with `?stats=false` are none. It is counted on the item that answered, in
-  the repository that holds it; through a virtual repository on the item of the serving member.
+  the repository that holds it; through a virtual repository on the item of the serving member. The image scanning's pull with a scan
+  token is none: it moves neither **Downloads** nor **Last download** of a version, and lists no tag of a remote
+  ([formats/oci.md](formats/oci.md) R-OCI-037).
 - A fetch of a version is a download of one of the version's **fetch items**, which the format declares in its descriptor
   (`Descriptor.VersionFetch`, [architecture.md](architecture.md) R-ARCH-008, ADR-205); a format with package screens that declares
   none does not register:
@@ -8212,7 +8214,9 @@ Priority: **MVP** · Covers: quader-only
      line "Quader's address is https://registry-1.docker.io/." with **Reset to Quader's address**. **Save address** sends
      `setUpstreamRepositoryAddress` with `If-Match`. When the hosts that receive the account change and an account is stored, the save
      asks "The account goes to registry-1.docker.io only. Enter it again for the new address, or remove it." with the account fields
-     and **Remove account**, and sends both in one request.
+     and **Remove account**, and sends both in one request. For `scanner-trivy` a muted line under **Upstream URL** says "The registry
+     must serve the image aquasec/trivy-db. For a registry that names it otherwise, see the image scanning's database setting." with a
+     link to the manual's page of that setting ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044 says what to change).
   3. **Account**, open: **Authentication** (None, Username and password, Bearer token), **Username**, **Password or token**
      (write-only, Q-UI-123), the line that names where the credential goes (R-UI-082), **Test connection** (`upstream-test` of the
      saved repository after the save; the unsaved test of R-REPO-024 before it), **Save account** and **Remove account**. A muted
@@ -19964,6 +19968,25 @@ Status: **Decided by the development agent** — selected from the options below
 would revisit this if teams ignore the line and the duplicated remotes cost upstream allowance.
 
 **Applied in the spec:** R-UI-191.
+
+### Q-UI-850 · The sources screen names the database's repository, links it, and shows how to fill a local one
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner asked
+what an administrator sees when the database's repository is switched off or cannot be reached (2026-11-20, through the plan of the
+image scanning's database, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row of the image database on **Advisory sources** names the repository as a link and the reference under it; a failure shows in the failures column with a title per code; a local repository gets the commands that fill it (chosen) | The screen of every source, one row richer | One place for every source's health; the link leads to the repository's state (switched off, its upstream, its circuit); an air-gapped administrator sees the two commands with the installation's address filled in | The commands are a block of text on a table's page |
+| (b) A section on the repository's page | The well-known repository's page says it serves the scanning | Next to the repository's settings | An administrator who starts from the failing source has to know where to look; a local repository's page would need it too |
+| (c) A banner across the admin area while the database's run fails | Loud | Hard to miss | A banner for one source among several; the report's banner and the alert exist already |
+
+**Choice:** (a). The link is shown to a holder of `repositories:read-config` and the name alone to every other reader of the screen; the
+commands sit in a fold under the row, closed, like the commands of mode `repository` of the other sources. **Rationale:** the sources screen is
+where a failing source is read; the repository is what to fix. The development agent would revisit this if administrators of air-gapped
+installations ask for the commands on the repository's **Set up client** page as well.
+
+**Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022, R-VULN-045.
 
 ### Q-UI-860 · One severity scale for the bar, the trend and the badge: the bar's fills with a mark tone of the same hue
 

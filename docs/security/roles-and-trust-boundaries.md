@@ -17,6 +17,7 @@ value crosses a boundary. The code that implements each rule is linked. Open gap
 | `packages` | `quader serve --role packages` | the route families `packages`, `files`; tokens only, a session cookie counts as absent; the ops listener | none; builds no session store, login or CI exchange and reads no login secret | Deployment `<fullname>-packages`, its path pools and endpoint pools |
 | `web` | `quader serve --role web` | every family: `api` and `packages` in one process | none; holds what `api` and `packages` hold ([H-518](#h-518--the-development-roles-web-and-all-hold-both-halves-of-the-cut)) | not rendered by the chart; the replica of the integration tests ([Q-HA-315](../spec/ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests)) |
 | `worker` | `quader serve --role worker` | the ops listener only | the job claim loop, scheduler and reaper; the lease pool | Deployment `<fullname>-worker` |
+| `scanner` (specified, not built) | `quader serve --role scanner` | `POST /scan/v1/analyses` to the worker on `:8080`, mutual TLS; the ops listener | none: no job loop, no lease, no database, Valkey or object-store connection, no key ring; holds the TLS pair, the internal CA and, for one call, a scan token and an image ([R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)) | Deployment `<fullname>-scanner`, while the image scanning is on ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment)) |
 | `all` | `quader serve --role all` | both listeners | both sets | not rendered by the chart; for a local run outside the chart ([spec INV-2](../spec/README.md#design-invariants)) |
 | migration | `quader migrate up` | nothing: no listener | none; after the schema steps it applies the role bindings of `authz.role_bindings` under the migration lock ([permissions](permissions.md#role-bindings-from-the-configuration)) | Job `<fullname>-migrate` ([migrate.yaml](../../deploy/helm/quader/templates/migrate.yaml)) |
 | backup | `quader backup create --trigger schedule` | no client traffic; `/metrics` on the operations port while a run lasts ([backup_create.go](../../cmd/quader/backup_create.go), `serveBackupMetrics`) | one run at a time, decided by the `backup_run` row (R-BAK-010) | CronJob `<fullname>-backup` ([backup.yaml](../../deploy/helm/quader/templates/backup.yaml)), with `backup.enabled` |
@@ -60,6 +61,8 @@ What the backup, restore and post-restore Jobs hold, and what each of them never
 | Replicas to Valkey data | the value a Valkey read returns | grant access or supply served content (INV-3) | the key families of [valkey.go](../../internal/cluster/valkey_keys.go) | this page, below |
 | Replicas to the identity provider | the IdP's signed ID token and its claims, after the checks of a login | sign in a user whose token fails a check or a claim gate | `auth.oidc.providers` | [login-and-sessions.md](login-and-sessions.md#parties-and-what-each-is-trusted-with) |
 | Replicas to upstream registries | the bytes and documents an upstream answers, after the checks of the fill path | reach an address the egress policy refuses; grant access | the remote repository's settings, `proxy.outbound` | [remote-repositories.md](remote-repositories.md#who-is-trusted-with-what), [egress.md](egress.md) |
+| Worker to scanner (specified) | the scanner answers the package list of the manifest the call names; the worker trusts it as untrusted input: decodes it under limits and writes it anew | read anything but the image the call's token names; reach the worker, the database, Valkey or the object store; make an image read as clean | `vulnerabilities.images.scanner`, the internal CA, the ingress rule of the scanner | [image-scanning.md](image-scanning.md), [R-VULN-041](../spec/vulnerability-scanning.md#r-vuln-041--the-call-from-the-worker-to-the-scanner), [R-VULN-043](../spec/vulnerability-scanning.md#r-vuln-043--what-the-worker-keeps-of-an-analysis) |
+| Scanner to the scan listener of `packages` (specified) | a scan token signed by a worker, for one manifest by its digest and the blobs of its name | read another manifest, a tag, the catalog or another repository; write; fill a remote; be counted as a download | `vulnerabilities.images.registry`, the internal CA, the ingress rule of `:8082` | [oci-registry.md](oci-registry.md#scan-tokens), [R-ARCH-037](../spec/architecture.md#r-arch-037--the-scan-listener-of-packages) |
 
 ## The product, the administrators and the teams around the well-known repositories
 
@@ -100,6 +103,30 @@ their secrets; `packages` serves machine traffic with tokens. What the binary gu
 | a route of the other role's family answers like an unknown path, with or without a credential | the effective surface of the endpoint, and the stage's `Served` rule (Q-ARCH-302) | `TestR_ARCH_001_AFamilyOfTheOtherRoleIsAnUnknownPath` |
 
 The cut does not narrow the data credentials: [H-517](../spec/architecture.md#h-517--the-cut-into-roles-separates-the-login-secrets-not-the-data-credentials).
+
+## The scanner: the one role without data credentials
+
+Specified, not built (owner, 2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)).
+The analysis of container images moves out of the worker into a role that holds nothing of the database, the object store, Valkey or the
+key ring, because the analyser is the largest parser of hostile input in the installation. It is the first network seam between Quader's
+roles:
+
+```text
+   worker (job, database, detection)                      holds every data credential and the key ring
+      | HTTPS :8080, mutual TLS (internal CA)              signs one scan token per call
+      v
+   scanner (analysis)                                     holds the TLS pair, the internal CA, one call's token and image
+      | HTTPS :8082, mutual TLS, scan token                no connection to PostgreSQL, Valkey, the object store
+      v
+   packages: scan listener (endpoint "scan")              accepts scan tokens only; reads, never fills
+```
+
+| Property | How | Test |
+|---|---|---|
+| the scanner builds no area that reaches a data store | its role enables the area `scanner` alone; its configuration load resolves no secret file | `TestR_ARCH_036_*` (`internal/app`, `test/integration/roles`) |
+| the scanner's pod mounts no secret but the TLS pair and the internal CA | the chart's volume list for the role; the shared extras do not reach it | `TestR_HA_065_*` (`test/chart`) |
+| a scan token reads one image and works only on the scan listener | the claims' rule, the endpoint `scan`, the digest pin of the enforcement point | `TestR_OCI_037_*` (`internal/auth/registrytoken`, `internal/api/registry`) |
+| what the scanner answers cannot steer the worker's analyser | the worker decodes it under limits and writes it anew | `TestR_VULN_043_*` (`internal/vuln/imagescan`) |
 
 ## Client address
 
@@ -191,6 +218,11 @@ The gaps of these boundaries that the spec pages record:
 - [H-521](../spec/architecture.md#h-521--two-path-rules-outside-the-stages-of-authentication-and-rate-limits-do-not-ask-whether-the-family-is-served): two path rules outside the stages of authentication and rate limits do not ask whether the family is served.
 - [H-41](../spec/operations-and-observability.md#h-41--ingress-enforcement-is-verified-on-one-cni-only): the ops listener is fenced by the ingress NetworkPolicy alone, and its enforcement is verified on one CNI.
 - [H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service): write access to Valkey denies service.
+
+The gaps of the scanner's boundary are on [image-scanning.md](image-scanning.md#what-this-does-not-cover): its egress
+([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)), the chart's key in its pod
+([H-1035](image-scanning.md#h-1035--the-scanner-holds-the-charts-tls-key-by-default)) and its links without TLS
+([H-1043](image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)).
 
 ### H-62 · Client address follows the header the edge sends
 

@@ -69,6 +69,8 @@ func schemaAllows(node map[string]any, path []string) bool {
 // like every other value.
 var unbuiltPrefixes = []string{
 	"config.", "bootstrap.", "contentOrigin.", "gateway.create.",
+	// The scanner Deployment of the image scanning (R-HA-065), specified on 2026-11-20 and not rendered yet.
+	"scanner.",
 	"secrets.s3.sessionTokenKey",
 	"service.externalTrafficPolicy", "service.ipFamilyPolicy", "service.ipFamilies", "service.loadBalancerSourceRanges",
 	"sidecars", "initContainers", "lifecycle",

@@ -1,41 +1,115 @@
 # Scanning untrusted container images
 
-Status: built ([R-VULN-033 to R-VULN-037](../spec/vulnerability-scanning.md#images), [developer page](../developer/vulnerabilities.md)). The perspective of this page is what an attacker who can push an image, or influence a database, can do to the worker that analyses it.
+Status: R-VULN-033 to R-VULN-037 are built with the analysis in the worker job ([developer page](../developer/vulnerabilities.md)). The
+target this page describes, the analysis in the role `scanner` and the database in a repository of Quader
+([R-VULN-041 to R-VULN-046](../spec/vulnerability-scanning.md#r-vuln-041--the-call-from-the-worker-to-the-scanner),
+[ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret),
+[ADR-214](../decisions.md#adr-214--the-analysers-database-lies-in-a-repository-of-quader)), is specified and not built; until it is, the
+worker runs the analysis as before. The perspective of this page is what an attacker who can push an image, or influence the database, can
+do to the pods that analyse and detect it.
 
 ## The boundary
 
-An image is whatever its pusher made it, and the analyser is a large parser of formats it did not choose. A remote repository brings the images of anyone the upstream serves. So the design treats the analyser as code that can be made to misbehave, and puts the limits outside it.
+An image is whatever its pusher made it, and the analyser is a large parser of formats it did not choose. A remote repository brings the
+images of anyone the upstream serves. So the design treats the analyser as code that can be made to misbehave, puts the limits outside it,
+and runs it in a pod that holds nothing worth taking.
 
 ```
- object store ──bytes──▶ worker job ──checked layout──▶ analyser process ──report──▶ worker job ──▶ PostgreSQL
-                         digest, size, decompression,    its own directory,          bounded, decoded,
-                         entries, path traversal         empty environment, killable  text cleaned
+ worker job ──HTTPS, mutual TLS──▶ scanner pod ──HTTPS, mutual TLS, scan token──▶ packages: scan listener
+ holds the job, the database,      no secret of PostgreSQL, the object store,       one manifest by digest and
+ the detection                     Valkey; no key ring; checks every byte;          the blobs of its name; read,
+      ▲                            the analyser in a process group of its own       never fill; no block gate
+      │
+      └──── the package list (CycloneDX, at most 256 MiB) ────┘
+ worker: decodes it under limits, writes it anew, stores it, runs the detection on what it wrote ──▶ PostgreSQL
 ```
 
-What the worker enforces before the analyser sees a byte, and how, is the table of [R-VULN-036](../spec/vulnerability-scanning.md#r-vuln-036--scanning-untrusted-layers): the compressed size from the manifest, the digest and the size of every blob as it is copied, and one pass over every layer that decompresses it and walks its tar. That pass is what ends a decompression bomb, an image of many millions of entries and a `..` in a tar name: it runs inside the worker's own memory and time, in code this repository owns and tests, not in the analyser.
+What the scanner enforces before the analyser sees a byte is the table of
+[R-VULN-036](../spec/vulnerability-scanning.md#r-vuln-036--scanning-untrusted-layers): the compressed size from the manifest, the digest and
+the size of every blob as it is pulled, and one pass over every layer that decompresses it and walks its tar. That pass ends a
+decompression bomb, an image of many millions of entries and a `..` in a tar name, in code this repository owns and tests, not in the
+analyser. The analyser then runs as a process of its own with an empty environment, in a working directory of its own, its process group
+killed with the call; its output is bounded before it is answered.
 
-The analyser is not given access to the object store or a credential of the worker: it runs with an empty environment (no database address, no bucket key, no token), in a directory that the job created for this one scan, against an OCI layout the job wrote. It has no database connection, and its only output is a file the worker reads back under a size limit and decodes as untrusted input. The process group is killed with the job's context or its time limit, so a hung analyser cannot outlive its scan.
+## What the scanner holds, and what a taken-over analyser can do with it
+
+The scanner's pod mounts the TLS pair it serves and presents (the chart's, or its own with `scanner.tls.secretName`), the internal CA, the
+configuration file, a spool and `/tmp`, and nothing else: no database, object-store or Valkey credential or CA, no key of the key ring, no
+login secret, no trusted CA bundle, no service-account token, and none of the chart's shared extras
+([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)).
+Its process opens no connection but the one to the scan listener and keeps nothing between two calls.
+
+An analyser that a crafted image took over runs as the scanner's user in the scanner's container. What it reaches:
+
+| It can | Bounded by |
+|---|---|
+| read the image of its call, and its scan token | the call; the token reaches that one manifest and the blobs of its name, for `pull_timeout` ([H-1041](oci-registry.md#h-1041--a-scan-token-is-a-bearer-credential-for-one-image-until-it-runs-out)) |
+| write the package list of its own image | nothing: the image's own contents decide that list anyway, so a pusher gains nothing it did not have |
+| read the TLS pair and the internal CA | the pair is the chart's by default ([H-1035](#h-1035--the-scanner-holds-the-charts-tls-key-by-default)) |
+| open connections to any address the pod network reaches | the cluster operator's policy; the chart renders no egress rule ([H-1036](#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
+| end its own pod's analysis by memory or by writing | `max_attempts`: the call breaks, the worker records `scanner_lost` and spends an attempt ([H-1044](#h-1044--an-image-can-end-a-scanners-analysis-on-every-attempt)) |
+| reach a concurrent analysis of the same pod | only with `slots` above 1 ([H-1037](#h-1037--analyses-that-share-a-scanner-share-its-user)) |
+
+What it cannot: read another repository or push or delete anything (the token's grant and the decision rule of R-OCI-037); reach
+PostgreSQL, Valkey or the object store with a credential (there is none in the pod); call the worker (nothing listens for it, and the
+worker's pods admit no ingress on a client port); outlive its analysis (the scanner kills the process group with the call and, when no
+other analysis runs, every other process of its container, Q-ARCH-530); write the stored analysis of another image (the worker writes the
+store); or feed the worker's analyser bytes of its own choosing (the worker writes the document anew,
+[H-1038](#h-1038--the-detection-still-runs-the-analyser-in-the-worker)). Whether the analyser can read the scanner process's memory, which
+holds the same pair and the tokens of the calls in flight, is the node kernel's ptrace rule for processes of one user; that rule was not
+verified on any cluster.
+
+## Who may call the scanner, and how the pull is authorised
+
+The scanner's listener requires a client certificate of the internal CA, and the NetworkPolicy admits only the worker pods that claim the
+queue `vuln` on its port ([R-VULN-041](../spec/vulnerability-scanning.md#r-vuln-041--the-call-from-the-worker-to-the-scanner)). A pod that
+reaches the port without such a certificate gets a refused handshake and no HTTP answer. The scanner verifies no token itself: it has no key
+to verify with. The scan listener of `packages` does, and it accepts nothing but a scan token there, which only a holder of the key ring can
+sign ([R-ARCH-037](../spec/architecture.md#r-arch-037--the-scan-listener-of-packages), R-OCI-037). The token, not the caller, decides what
+is read.
+
+A scan reads what the repository holds, a private one included and a blocked image included, and starts no upstream request
+([R-VULN-042](../spec/vulnerability-scanning.md#r-vuln-042--the-scanners-pull-through-the-registry)); it counts no download and is limited
+by nothing (Q-LIM-66).
 
 ## What leaves the installation
 
-Nothing about an image, as long as the analyser behaves as configured. It runs with the flags that switch off its update check, its telemetry and every database update (`--skip-version-check`, `--disable-telemetry`, `--skip-db-update`, `--skip-java-db-update`, `--offline-scan`), and the only outbound requests of the feature are those of the database's sync: the published artifact, through the outbound client under the egress rules of [egress.md](egress.md), which carry no package name and no digest of an image. In `mode: repository` there are none at all. That the pinned binary makes no other request under these flags was read from its options and its log, not measured on the network.
+Nothing about an image, as long as the analyser behaves as configured. It runs with the flags that switch off its update check, its
+telemetry and every database update (`--skip-version-check`, `--disable-telemetry`, `--skip-db-update`, `--skip-java-db-update`,
+`--offline-scan`), in the scanner and in the worker. The only outbound request of the feature is the database repository's, made by the
+remote engine of the worker to the repository's upstream under its settings and the egress rules of [egress.md](egress.md), which carries no
+package name and no digest of an image; with a local repository there is none. That the pinned binary makes no other request under these
+flags was read from its options and its log, not measured on the network.
 
 ## The database as input
 
-The database decides what is reported about every image. In `mode: repository`, whoever holds `deploy` on the mirror repository decides that, as for the advisory files of R-VULN-005 (H-309). An archive is read as untrusted input: only `trivy.db` and `metadata.json` at the root are taken, each within a size bound, and no entry decides a path, so the class of bug behind GHSA-mcj4-mphf-j9ff (a crafted database writing outside the cache) has nothing to act on. A database that does not pass its checks is refused and the last good one stays.
+The database decides what is reported about every image. It comes from its repository
+([R-VULN-044](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository)), so whoever decides that repository's content decides
+it ([H-813](#h-813--the-integrity-of-the-database-is-that-of-its-repository)). An archive is read as untrusted input: only `trivy.db` and
+`metadata.json` at the root are taken, each within a size bound, and no entry decides a path, so the class of bug behind
+GHSA-mcj4-mphf-j9ff (a crafted database writing outside the cache) has nothing to act on. The worker hashes the layer while it unpacks it and
+keeps nothing whose hash is not the digest in use. A database that does not pass its checks is refused and the last good one stays.
 
 ## Why a failed scan is visible
 
-A scan that did not finish, for any reason, leaves the evaluation `scan_failed` or `pending_scan` and never `evaluated`, so an image cannot be made to look clean by being too large, malformed or slow to analyse. The price is an image that stays unevaluated until an operator acts; that is the right way round.
+A scan that did not finish, for any reason, leaves the evaluation `scan_failed` or `pending_scan` and never `evaluated`, so an image cannot be
+made to look clean by being too large, malformed or slow to analyse, or by ending its scanner. A scan put off for a reason of the installation
+(no scanner, a busy or draining one, a scan listener that cannot be reached, a refused token) stays `pending` and spends no attempt;
+`QuaderVulnerabilityImageScannerUnavailable` shows it when it lasts. The price is an image that stays unevaluated until an operator acts;
+that is the right way round.
 
-## The working space is the spool's
+## The working space
 
-An image scan writes a lot: the database unpacked (1.6 GiB on 2026-11-10) and the layers of the image copied into a layout (up to `max_image_size`, 3 GiB by default). Those files live below the worker's spool volume, the one volume a pod may write, and the volume is an `emptyDir` with a size limit: when it runs out, the kubelet evicts the pod, and with it the mirror pass, the sync and every other scan on it. So the scanning does not write what it has not been admitted for ([Q-VULN-145](../spec/vulnerability-scanning.md#q-vuln-145--the-working-space-of-the-scanning-is-admitted-through-the-spools-own-budget)).
+The analyses write in the scanner's spool, the one writable volume of its pod besides `/tmp`, an `emptyDir` with a size limit. An analysis
+holds the compressed size of its image plus 64 MiB of the spool's budget before it writes the first blob, and gives it back on every exit;
+one that does not fit is answered `scanner_busy`, one that cannot fit an empty spool `spool_too_small`, and the worker puts either off without
+an attempt. The chart refuses a scanner spool budget below `slots × (max_image_size + 64 MiB)`
+([Q-HA-318](../spec/ha-and-helm.md#q-ha-318--the-working-space-moves-with-the-analysis-the-chart-checks-the-scanners-spool-and-the-workers-returns-to-5-gi)).
 
-- The spool counts the scanning's files in the same budget as an upload, a mirror pass and an advisory archive. The unpacked database is held once, by the sizes in its archive's headers, before a byte is written; a scan holds the compressed size of its image from the manifest plus 64 MiB before it writes the first blob. A hold that does not fit is refused by the same two checks as an upload: the budget and the free space of the volume.
-- A scan that does not fit **waits** two minutes for the room, then is put off (`spool_busy`, due again after a minute); a scan that cannot fit next to the database in an empty spool is refused at once (`spool_too_small`, due again after an hour). The row stays `pending`, so the image reads `pending_scan`, never clean, and no attempt is spent.
-- The room is returned on every exit of the scan (finished, failed, cancelled, drained); a crash returns it with the process, and the files a crash left are removed at the next start, before any scan holds room again.
-- The chart refuses a worker spool budget (size minus `spool.headroom`) below `max_image_size` + 2 GiB + 512 MiB for the pool that claims the queue `vuln`, and the default `worker.spool.sizeLimit` is 8 Gi for that reason.
+The worker's spool holds the unpacked database once, by the sizes in its archive's headers before a byte is written, and 64 MiB per
+detection; a detection that does not fit waits two minutes and is then put off (`spool_busy`), and the chart refuses a worker spool budget
+below 2 GiB + 512 MiB for the pool that claims `vuln`
+([Q-VULN-145](../spec/vulnerability-scanning.md#q-vuln-145--the-working-space-of-the-scanning-is-admitted-through-the-spools-own-budget)).
 
 What this does not do is bound what the analyser itself writes ([H-871](#h-871--the-analysers-own-files-are-bounded-by-a-margin-not-enforced)).
 
@@ -43,52 +117,158 @@ What this does not do is bound what the analyser itself writes ([H-871](#h-871--
 
 ### H-810 · Java archives are not analysed
 
-Reading a JAR needs a second database, of Java artifacts, which Quader does not mirror, and without it the analyser refuses to work offline on an image that contains one. The analysis skips `*.jar`, `*.war`, `*.ear` and `*.par`, so vulnerabilities in Java libraries inside an image are not reported. An image that holds only Java libraries shows `evaluated` with no findings. Mirroring the Java database as well would close this.
+Reading a JAR needs a second database, of Java artifacts, which Quader does not keep, and without it the analyser refuses to work offline on
+an image that contains one. The analysis skips `*.jar`, `*.war`, `*.ear` and `*.par`, so vulnerabilities in Java libraries inside an image are
+not reported. An image that holds only Java libraries shows `evaluated` with no findings. Keeping the Java database in a repository as the
+main database is kept would close this.
 
 ### H-811 · The block of an image is the block of its manifest
 
-A pull is refused at the manifest. The layers of a blocked image are not refused, by their digest or through `/files/`, because a layer is shared between images and is not itself vulnerable or not. A client that already knows the digests can still fetch them. `/files/` of the manifest item itself is not gated by the pull's check either.
+A pull is refused at the manifest. The layers of a blocked image are not refused, by their digest or through `/files/`, because a layer is
+shared between images and is not itself vulnerable or not. A client that already knows the digests can still fetch them. `/files/` of the
+manifest item itself is not gated by the pull's check either.
 
-### H-812 · The analyser shares the file system and the network of the worker pod
+### H-813 · The integrity of the database is that of its repository
 
-The analyser runs as the same user in the same pod. If it were compromised through a crafted image, it could read anything the worker's user can read: the configuration and the mounted secrets, and through them the database and the object store. It could also open connections, because the chart renders no egress rule (ADR-154, [H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods)). The empty environment closes the easy route but not this one; closing it needs a filesystem sandbox or a separate pod per scan (Q-VULN-140). Until then, run the scanning on the dedicated pool of the queue `vuln` so that what is exposed is at least not the whole worker fleet.
-
-### H-813 · The integrity of the database is that of the registry's digest and TLS
-
-An archive is checked against the digest its manifest names, and the manifest comes over TLS from the configured registry. Nothing checks a signature by the publisher: a compromised publisher, or a compromised mirror reached by a redirect within the egress rules, decides what is reported. A digest-pinned database would give that up for manual updates.
+Component: the database's repository and the task of [R-VULN-044](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository).
+Subject: every finding of every image, and every block set on one. Live once R-VULN-044 is built. The layer is checked against the digest
+its manifest names, and the manifest comes over TLS from the repository's upstream, or from whoever pushed it into a local repository.
+Nothing checks a signature by the publisher. Who decides what is reported: the publisher; an instance administrator, who sets the upstream
+address and the account of `upstream/scanner-trivy` like those of every well-known repository; a holder of `deploy` on a local repository the
+setting names; whoever the setting itself names, which is file configuration. What makes it real: a compromised publisher, an upstream address
+changed to a registry of an attacker's choosing ([H-1023](egress.md#h-1023--an-address-override-of-a-well-known-repository-moves-every-projects-traffic-to-a-host-of-the-administrators-choice)
+for every well-known repository), or a mirror reached by a redirect within the egress rules.
 
 ### H-814 · The first pull of a remote image is served before it is scanned
 
-A scan is asynchronous, and a pull-through serves the manifest it fetched. Unless the repository sets `onMissingData: block`, the first client of a new image gets it before any finding exists. The setting refuses it instead, at the cost of a failed first pull.
+A scan is asynchronous, and a pull-through serves the manifest it fetched. Unless the repository sets `onMissingData: block`, the first client
+of a new image gets it before any finding exists. The setting refuses it instead, at the cost of a failed first pull.
 
 ### H-815 · The database has no malicious-package source
 
-`kind` is always `vulnerability`, so `blockMalicious` never blocks an image; a block is a triager's decision. An image built to carry malware is reported only where a CVE describes it.
+`kind` is always `vulnerability`, so `blockMalicious` never blocks an image; a block is a triager's decision. An image built to carry malware
+is reported only where a CVE describes it.
 
 ### H-816 · A narrowed read grant does not reach an image's findings
 
-A finding's version is a digest, and a grant narrowed to a tag is decided by the tag's path, so a caller whose read of a repository is narrowed by version sees no findings of its images (fail closed). The format has no such grants today (exposure rules are deferred, Q-OCI-23); the reader of a repository or of a package sees them.
+A finding's version is a digest, and a grant narrowed to a tag is decided by the tag's path, so a caller whose read of a repository is
+narrowed by version sees no findings of its images (fail closed). The format has no such grants today (exposure rules are deferred, Q-OCI-23);
+the reader of a repository or of a package sees them.
 
 ### H-817 · One job scans at a time
 
-One `vuln-image-scan` job runs across the installation, `concurrency` images at once on one worker. A backlog of many images after a database update is worked off at the pace of that one replica.
-
-### H-818 · Memory is bounded softly and by the pod
-
-`GOMEMLIMIT` asks the analyser to stay within `memory_limit` (512 MiB by default), and the pod's limit (1 GiB by default) is the hard stop: a scan that exceeds it kills the worker pod, not only the scan. The job then fails over, but a hostile image can repeat this.
+One `vuln-image-scan` job runs across the installation, with `concurrency` calls to the scanners at once (2 by default). A backlog of many
+images after a new analyser version is worked off at the pace of that one job and of the scanners' capacity; a new database costs no
+analysis, only detections in the worker.
 
 ### H-871 · The analyser's own files are bounded by a margin, not enforced
 
-The worker holds what it writes itself (the layout, from sizes it checked against the digests) and 64 MiB for what the analyser leaves below its working directory: its cache and temporary files, the analysis and the report. Nothing limits the analyser's writing at the operating system: `Limits.FileBytes` is declared but not applied (no `RLIMIT_FSIZE`), and the 512 MiB output limit is checked after the file exists. What makes it real: an image whose analysis writes more than 64 MiB beside the layout. It can then use room the budget gave to another user, and the volume's free-space check at the next reservation is the only guard before the kubelet's. That the pinned analyser keeps its files within the margin for an ordinary image was not measured.
+The scanner holds what it writes itself (the layout, from sizes it checked against the digests) and 64 MiB for what the analyser leaves below
+its working directory: its cache and temporary files, the analysis and the report. Nothing limits the analyser's writing at the operating
+system: `Limits.FileBytes` is declared but not applied (no `RLIMIT_FSIZE`), and the 512 MiB output limit is checked after the file exists.
+What makes it real: an image whose analysis writes more than 64 MiB beside the layout, beyond the 2 GiB of `spool.headroom`. It then uses room
+the budget gave to another slot of the scanner, and past the volume's limit the kubelet evicts the scanner pod: the call breaks and the worker
+spends an attempt (`scanner_lost`). The worker's spool is not touched. That the pinned analyser keeps its files within the margin for an
+ordinary image was not measured.
 
 ### H-872 · The database allowance of the chart is a constant
 
-The chart checks the spool budget against 2 GiB for the unpacked database; the database was 1.6 GiB on 2026-11-10 and changes with every update. At run time the exact size is held, so a database that outgrows the budget is refused when it is unpacked, not when the chart is installed: `vuln-image-scan` then ends with a `skipped` result naming the reason, every image stays `pending_scan`, and the signals are that result, the log and the counter `quader_vuln_image_scans_total{result="spool_busy"}`, which `QuaderVulnerabilityImageScansFailing` covers after an hour. What makes it real: an installation that sized `worker.spool.sizeLimit` exactly to the check and a database that grows past 2 GiB.
+The chart checks the worker's spool budget against 2 GiB for the unpacked database; the database was 1.6 GiB on 2026-11-10 and changes with
+every update. At run time the exact size is held, so a database that outgrows the budget is refused when it is unpacked, not when the chart is
+installed: `vuln-image-scan` then ends with a `skipped` result naming the reason, every image stays `pending_scan`, and the signals are that
+result, the log and the counter `quader_vuln_image_scans_total{result="spool_busy"}`, which `QuaderVulnerabilityImageScansFailing` covers
+after an hour. What makes it real: an installation that sized `worker.spool.sizeLimit` exactly to the check and a database that grows past
+2 GiB.
 
 ### H-873 · A refused scan waits an hour after the limit is raised
 
-A scan refused with `spool_too_small` is due again after an hour. An operator who raises the pool's `sizeLimit` or lowers `max_image_size` sees the images scanned within that hour, not at once; a rescan of the repository (R-VULN-011) brings them forward. What makes it real: the first install of a pool with a spool that is too small.
+A scan refused with `spool_too_small` is due again after an hour. An operator who raises `scanner.spool.sizeLimit` or the worker's, or lowers
+`max_image_size`, sees the images scanned within that hour, not at once; a rescan of the repository (R-VULN-011) brings them forward. What
+makes it real: the first install of a scanner or a pool with a spool that is too small.
 
 ### H-1003 · The analyser is an upstream build with the vulnerabilities of its day
 
-The analyser in the image is the upstream release archive at the pin of `tools/versions.env`, checked against its SHA-256; Quader does not build it. A vulnerability of the Go release or of a library it was built with stays in the image until upstream releases a new build and the pin is raised, whatever Quader's own toolchain is. The release's container scan reports such a finding, and a finding that does not apply to how Quader runs the analyser (as a command for one scan, with an empty environment, no listener and no network use of its own, see above) can be accepted for a time in [.trivyignore.yaml](../../.trivyignore.yaml), at the analyser's path only and with a day it ends ([releasing.md](../developer/releasing.md#accepted-findings-of-the-container-scan)). Accepted on 2026-11-19 until 2026-12-19: CVE-2026-97054, in the HTTP/1 server of `net/http`. What is not covered: a finding in the analyser's parsers, which read the image an attacker pushed, applies in full and is bounded only by the limits outside the analyser that this page describes; and nothing tells an installation that already runs an image which analyser build it carries, beyond the image's SBOM.
+The analyser in the image is the upstream release archive at the pin of `tools/versions.env`, checked against its SHA-256; Quader does not
+build it. A vulnerability of the Go release or of a library it was built with stays in the image until upstream releases a new build and the
+pin is raised, whatever Quader's own toolchain is. The release's container scan reports such a finding, and a finding that does not apply to
+how Quader runs the analyser (as a command for one analysis or one detection, with an empty environment, no listener and no network use of its
+own, see above) can be accepted for a time in [.trivyignore.yaml](../../.trivyignore.yaml), at the analyser's path only and with a day it ends
+([releasing.md](../developer/releasing.md#accepted-findings-of-the-container-scan)). Accepted on 2026-11-19 until 2026-12-19:
+CVE-2026-97054, in the HTTP/1 server of `net/http`. What is not covered: a finding in the analyser's parsers, which read the image an attacker
+pushed, applies in full and is bounded only by the limits outside the analyser that this page describes and by what the scanner's pod holds;
+and nothing tells an installation that already runs an image which analyser build it carries, beyond the image's SBOM.
+
+### H-1035 · The scanner holds the chart's TLS key by default
+
+Component: the scanner's pod and the chart's TLS wiring ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment),
+[Q-HA-317](../spec/ha-and-helm.md#q-ha-317--the-scanner-serves-the-charts-pair-by-default-a-pair-of-its-own-is-a-value)). Subject: the
+identity `<fullname>.<namespace>.svc` that the edge verifies for the backends of `api` and `packages`, and that every link of R-HA-066
+accepts. Live by default once R-HA-065 is built; dormant with `scanner.tls.secretName`. An analyser that an image took over reads the pair from
+its mount. With it, a party that can also put itself between the edge and a backend (a Service's endpoints, which need the Kubernetes API,
+or an address the CNI lets it claim) can pose as that backend, and it can present itself on the links of the image scanning as any role.
+What makes it real: a taken-over analyser together with a position in the pod network; the scanner itself has no service-account token.
+
+### H-1036 · The chart restricts no egress of the scanner
+
+Component: the scanner's pod under [ADR-154](../decisions.md#adr-154--network-policies-are-ingress-rules-between-the-charts-pods-each-with-its-port)
+and [H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods). Subject: the images being analysed, the scan tokens of the calls in
+flight, the TLS pair, and every service the pod network reaches. Live by default once R-HA-065 is built. An analyser that an image took over
+can open a connection to any address the cluster lets the pod reach: the internet, to send out the image of its call and of later calls on
+the same pod (H-1037) and the pair; services in the cluster that admit unauthenticated connections; and the node's or the cloud's metadata
+address, where a node identity may be served to any pod. It holds no credential of PostgreSQL, Valkey or the object store to use against them,
+and Valkey's ingress example of R-HA-042 does not admit the component `scanner`. The scanner itself needs DNS and the scan listener `8082` of
+`packages` and nothing else, so a cluster policy that admits only those two contains it completely. What makes it real: a parser flaw of the
+analyser reachable by an image, and a cluster without an egress policy.
+
+### H-1037 · Analyses that share a scanner share its user
+
+Component: a scanner with `config.vulnerabilities.images.scanner.slots` above 1 ([Q-HA-316](../spec/ha-and-helm.md#q-ha-316--the-scanner-runs-as-two-replicas-of-one-slot-with-2-gib-of-memory-and-60-seconds-to-drain)).
+Subject: the other analyses of the same pod: their images, their tokens, their results, their memory. Dormant with the default of one slot;
+live as soon as an operator raises it. Two analysers of one pod run as one user in one container: one that an image took over can read the
+other's layout and token, replace its package list before the scanner answers, and, because the pod is never idle while analyses overlap, keep
+a process alive across calls that the reaper of Q-ARCH-530 does not get to. An image that ends its pod's analysis ends the other's too, and
+both spend an attempt. What makes it real: more than one slot and a hostile image among the images analysed; raising the replicas instead of
+the slots avoids it.
+
+### H-1038 · The detection still runs the analyser in the worker
+
+Component: the detection in the worker ([R-VULN-043](../spec/vulnerability-scanning.md#r-vuln-043--what-the-worker-keeps-of-an-analysis),
+Q-VULN-164, Q-VULN-169). Subject: the worker pod and every credential it holds. Live by design. The worker runs `trivy sbom` on a document it
+wrote itself from the members it decoded under limits, so the bytes the analyser parses there are Quader's; their values (package names,
+versions, `purl`s, properties) are still the image's, up to 4 KiB each. A flaw of the analyser in matching such values against its database
+would run in the pod with secrets. What makes it real: a flaw in the analyser's detection path that a value of an image's package database can
+reach; the detection's parsing is far smaller than the analysis's, which is why the owner's split puts the analysis in the scanner.
+
+### H-1039 · A remote image whose layers no client brought is not scanned
+
+Component: the scanner's pull from a remote repository ([R-VULN-042](../spec/vulnerability-scanning.md#r-vuln-042--the-scanners-pull-through-the-registry),
+Q-VULN-165). Subject: the findings of remote images. Live, as before the role. A manifest that a client pulled while it already had the
+layers, or whose background download was not started or refused (R-REPO-065, H-1018), has its layers outside the repository; the scan ends
+`layer_missing` until `max_attempts` and then shows `scan_failed`. What makes it real: clients that pull a remote image by digest only, or a
+remote with `downloadOnProbe` off; the image is then served from Quader without a finding, which `onMissingData: block` refuses instead.
+
+### H-1042 · The status screen does not list the scanners
+
+Component: the replica registry ([operations-and-observability.md](../spec/operations-and-observability.md) Q-OPS-215). Subject: an operator
+who reads only the status screen. Live once R-HA-065 is built. A scanner has no database connection and so no registry row; a fleet that is
+down shows as scans put off with `scanner_unavailable`, as `QuaderVulnerabilityImageScannerUnavailable` after half an hour, as the
+Deployment's state and as missing `quader_scanner_*` series. What makes it real: an installation without the PrometheusRule.
+
+### H-1043 · With `tls.enabled: false` the scanner's links are not authenticated
+
+Component: the links of [R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart)
+([Q-HA-322](../spec/ha-and-helm.md#q-ha-322--with-tlsenabled-false-the-scanners-links-are-plain-as-every-link-of-such-an-installation)).
+Subject: the scanner's capacity, the scan tokens and the package lists in transit. Dormant with the chart's default `tls.enabled: true`.
+Without TLS the links are plain HTTP and no client certificate is asked: a pod that the NetworkPolicy does not stop (a CNI that does not
+enforce it, H-41) can hold the scanner's slots with requests that carry a forged token, until each pull is refused, and a party on the path
+reads the tokens and the package lists. A forged token gets nothing from the scan listener, which verifies its signature. What makes it real:
+an installation that switched TLS off, on a CNI without NetworkPolicy.
+
+### H-1044 · An image can end a scanner's analysis on every attempt
+
+Component: the scanner pod's limits ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), Q-VULN-162). Subject: the
+scanners' availability. Live once R-HA-065 is built. An image built to exceed the pod's memory or spool ends the analysis each time it is
+tried, and the kubelet restarts the container; the worker spends an attempt per break (`scanner_lost`) and stops after `max_attempts` (5), and
+again for each event that makes the manifest due (a rescan, a new analyser version). Other images wait meanwhile as `scanner_busy` or
+`scanner_unavailable`, without spending attempts. What makes it real: a pusher who repeats such images under new digests, which costs the
+scanning its capacity but never makes an image read as clean.

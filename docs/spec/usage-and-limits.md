@@ -156,6 +156,7 @@ place that counts.
 | A request a Bastion forwards to the main installation with the caller's credential | the subject of that credential | as above | The address is the forwarded client's ([bastion.md](bastion.md) R-BAS-017). What the Bastion serves from its own cache never reaches the main installation and is not counted here (Later). |
 | The Bastion's own interface requests (principal kind `bastion`) | none | — | They are not protocol paths; R-API-016 and R-BAS-016 bound them. |
 | System work: mirror passes, the Debian index parse, the Ansible documentation job, every background request of the engine (`proxy.PriorityBackground`) | `system` | `system` | Recorded per repository, limited by nothing of this page ([Q-LIM-19](#q-lim-19--mirror-passes-and-other-system-work-are-recorded-and-not-limited)). |
+| A scan token of the image scanning's pull on the scan listener (principal kind `system`, name `image-scanner`; [formats/oci.md](formats/oci.md) R-OCI-037) | `system` | `system` | Recorded under the repository with the credential `image-scanner`; checked against no figure, no ceiling and no block, and it takes no parallel lease ([Q-LIM-66](#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing)). |
 
 - A subject identifier never contains a token secret or a hash of one.
 - A request on a protocol path whose principal kind is none of the above (a future kind) is charged to the client address until
@@ -2768,6 +2769,27 @@ cost); one column gives both without a second write. The development agent would
 grows the hourly rows (one virtual repository per team and format adds none in the common case).
 
 **Applied in the spec:** R-LIM-027, R-LIM-029.
+
+### Q-LIM-66 · A scan token's request is system work: recorded under its repository and limited by nothing
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner named
+it as a point to settle first (2026-11-20): the scanner's pull is not charged to the download limits.
+
+Context: the scanner pulls each image it analyses through the scan listener of `packages` with a scan token
+([formats/oci.md](formats/oci.md) R-OCI-037), whose principal is of the kind `system`, a kind the table of R-LIM-001 did not name.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The subject `system`, recorded under the repository with the credential `image-scanner`, checked against nothing (chosen) | As Q-LIM-19 treats the mirror and the background requests | Scanning never refuses itself or a client; the overview shows what the scanner read per repository | A scan backlog after a database update reads a lot from the cache and is bounded by the scanner's capacity, not by a figure |
+| (b) Charge the scanner's reads to whoever pushed or pulled the image | A subject per image | Costs follow the cause | The pusher of an image would pay for every rescan the installation decides; a remote's image has no single cause |
+| (c) Not record them at all | Nothing in the usage store | Smaller store | The overview could not show where the cache's bytes went |
+
+**Choice:** (a). The scan listener's requests are counted as requests and cached bytes of `system` at the repository, take no parallel
+lease, and meet no request figure, byte figure, ceiling or block; they are never refused requests of anybody. **Rationale:** the scanning
+is the installation's own work, bounded by its own capacity (replicas × slots), as the mirror is by its own bounds. The development agent
+would revisit this if a rescan of a large registry shows up in the overview as a burden the operator wants to bound.
+
+**Applied in the spec:** R-LIM-001; [formats/oci.md](formats/oci.md) R-OCI-037; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-042.
 
 ## What this does not cover
 

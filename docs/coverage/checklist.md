@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 619 of 1,000 spec requirements are implemented: a passing test names them and no
+**Status.** 619 of 1,013 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 788 specified (512 of them implemented), 1,451 open.
-1,000 spec requirements: 700 cover catalog features, 300 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 788 specified (510 of them implemented), 1,451 open.
+1,013 spec requirements: 706 cover catalog features, 307 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -38,7 +38,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [OIDC federation for CI systems](#oidc-federation-for-ci-systems-cioidc) | `CIOIDC` | 40 | 20 of 20 | 31 | 9 | 18 |
 | [Storage and blob providers](#storage-and-blob-providers-stor) | `STOR` | 41 | 12 of 12 | 21 | 20 | 13 |
 | [Retention, cleanup and archiving](#retention-cleanup-and-archiving-ret) | `RET` | 42 | – | 26 | 16 | 0 |
-| [High availability and deployment](#high-availability-and-deployment-ha) | `HA` | 79 | 49 of 49 | 61 | 18 | 45 |
+| [High availability and deployment](#high-availability-and-deployment-ha) | `HA` | 79 | 49 of 49 | 61 | 18 | 43 |
 | [Operations, monitoring and configuration](#operations-monitoring-and-configuration-ops) | `OPS` | 100 | 17 of 17 | 43 | 57 | 27 |
 | [Events and extensibility](#events-and-extensibility-evt) | `EVT` | 82 | 1 of 1 | 26 | 56 | 3 |
 | [Distribution and release lifecycle](#distribution-and-release-lifecycle-dist) | `DIST` | 70 | 2 of 2 | 2 | 68 | 2 |
@@ -877,7 +877,7 @@ Catalog page: [retention-and-cleanup.md](../features/retention-and-cleanup.md) �
 Catalog page: [ha-and-deployment.md](../features/ha-and-deployment.md) · specified by priority: MVP 49 of 49 · P1 11 of 14 · P2 1 of 10 · Later 0 of 3 · Out of scope 0 of 3
 
 <details>
-<summary>79 features: 61 specified, 18 open, 45 implemented</summary>
+<summary>79 features: 61 specified, 18 open, 43 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -895,10 +895,10 @@ Catalog page: [ha-and-deployment.md](../features/ha-and-deployment.md) · specif
 | HA-012 | Single client entry point with path-based routing | MVP | implemented | [R-ARCH-005](../spec/architecture.md) (implemented), [R-HA-037](../spec/ha-and-helm.md) (implemented) |
 | HA-013 | Internal service registry and health-gated routing | Later | open | – |
 | HA-014 | Availability-zone affinity for internal routing | P2 | open | – |
-| HA-015 | Components deployed as separately scaled workloads | P1 | implemented | [R-ARCH-001](../spec/architecture.md) (implemented), [R-HA-002](../spec/ha-and-helm.md) (implemented), [R-HA-062](../spec/ha-and-helm.md) (implemented) |
+| HA-015 | Components deployed as separately scaled workloads | P1 | specified | [R-ARCH-001](../spec/architecture.md) (implemented), [R-ARCH-036](../spec/architecture.md), [R-HA-002](../spec/ha-and-helm.md) (implemented), [R-HA-062](../spec/ha-and-helm.md) (implemented), [R-HA-065](../spec/ha-and-helm.md) |
 | HA-016 | Cluster encryption key | MVP | implemented | [R-API-049](../spec/api-and-ui.md) (implemented), [R-ARCH-021](../spec/architecture.md) (implemented), [R-HA-027](../spec/ha-and-helm.md) (implemented) |
 | HA-017 | Service trust key provisioning and rotation | Out of scope | open | – |
-| HA-018 | Internal TLS with a built-in certificate authority | P2 | implemented | [R-ARCH-035](../spec/architecture.md) (implemented), [R-HA-063](../spec/ha-and-helm.md) (implemented) |
+| HA-018 | Internal TLS with a built-in certificate authority | P2 | specified | [R-ARCH-035](../spec/architecture.md) (implemented), [R-ARCH-038](../spec/architecture.md), [R-HA-063](../spec/ha-and-helm.md) (implemented), [R-HA-066](../spec/ha-and-helm.md) |
 | HA-019 | Trust store for outbound TLS connections | MVP | implemented | [R-ARCH-022](../spec/architecture.md) (implemented), [R-HA-043](../spec/ha-and-helm.md) (implemented) |
 | HA-020 | IPv6 and dual-stack networking | P1 | specified | [R-ARCH-005](../spec/architecture.md) (implemented), [R-HA-044](../spec/ha-and-helm.md) |
 | HA-021 | Network ports and listener layout | MVP | implemented | [R-ARCH-005](../spec/architecture.md) (implemented), [R-EP-001](../spec/endpoints.md) (implemented), [R-HA-028](../spec/ha-and-helm.md) (implemented) |
@@ -1260,9 +1260,9 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
-| SEC-001 | Package risk data source | MVP | specified | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented), [R-VULN-007](../spec/vulnerability-scanning.md) (implemented), [R-VULN-008](../spec/vulnerability-scanning.md) (implemented), [R-VULN-010](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-030](../spec/vulnerability-scanning.md) |
-| SEC-002 | Online synchronization of the vulnerability database | MVP | specified | [R-VULN-004](../spec/vulnerability-scanning.md) (implemented), [R-VULN-021](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md) |
-| SEC-003 | Offline synchronization of the vulnerability database | MVP | specified | [R-VULN-005](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md) |
+| SEC-001 | Package risk data source | MVP | specified | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented), [R-VULN-007](../spec/vulnerability-scanning.md) (implemented), [R-VULN-008](../spec/vulnerability-scanning.md) (implemented), [R-VULN-010](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md), [R-VULN-030](../spec/vulnerability-scanning.md) |
+| SEC-002 | Online synchronization of the vulnerability database | MVP | specified | [R-VULN-004](../spec/vulnerability-scanning.md) (implemented), [R-VULN-021](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-045](../spec/vulnerability-scanning.md) |
+| SEC-003 | Offline synchronization of the vulnerability database | MVP | specified | [R-VULN-005](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) |
 | SEC-004 | Malicious package intelligence | MVP | implemented | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-005 | Package labels | P2 | open | – |
 | SEC-006 | Custom licenses | P2 | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>300 requirements</summary>
+<summary>307 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3085,6 +3085,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-189 | A well-known repository as a member of a virtual repository | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-190 | The project `upstream` in the main area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-191 | A new remote repository names the central one | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-007 (implemented) | One origin for UI and package content | MVP | [architecture.md](../spec/architecture.md) |
@@ -3199,8 +3200,10 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-OCI-034 | Audit events and metrics | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-035 (implemented) | Test suites | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-036 | The tags of a remote repository on the package screens | P1 | [formats/oci.md](../spec/formats/oci.md) |
+| R-OCI-037 | Scan tokens: the registry token of the image scanning's pull | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-CI-029 (implemented) | CI state across replicas, Valkey outages and restores | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-CI-030 (implemented) | Background tasks of the CI exchange | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
+| R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-056 | Valkey with Sentinel: connection and supported topologies | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-057 | Valkey failover, outage and degraded mode | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-054 (implemented) | Revocation journal in object storage | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
@@ -3272,6 +3275,10 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-VULN-029 | Acceptance suite | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-034 | The state of a scan, and that no finding is not the same as clean | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-036 | Scanning untrusted layers | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-041 | The call from the worker to the scanner | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-042 | The scanner's pull through the registry | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-043 | What the worker keeps of an analysis | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-046 | The tests of the scanner and the database's repository, and what they cost | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-031 | Time-limited dismissals | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 
 </details>

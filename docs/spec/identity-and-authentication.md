@@ -3495,6 +3495,10 @@ The per-node counting weakness of the catalog's suspension mechanism does not ap
 - While Valkey is unavailable, only the replica's own cache exempts a credential, and the
   limiter's per-replica share applies (above).
 - Addresses in `exempt_cidrs` are never throttled.
+- The scan listener of `packages` ([architecture.md](architecture.md) R-ARCH-037) neither consults nor counts this throttle. Its one
+  credential is a scan token ([formats/oci.md](formats/oci.md) R-OCI-037), which is refused or accepted by its MAC with no query, so a
+  refused one costs an HMAC and nothing the throttle protects; and its one caller, the scanner, must not lock itself out after a clock
+  step or a key-ring change has made its tokens fail for a while. A refused scan token still counts in `quader_auth_attempts_total`.
 
 **Unauthenticated endpoints that create rows or run the password hash.** These are limited to
 `starts_per_address` per minute and address (an IPv6 address per `/64`), cluster-wide:

@@ -241,7 +241,8 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-DOCKER-012
 
 A registry token is a short-lived, self-contained credential that Quader issues and verifies itself (Q-OCI-5). It narrows a
-principal's access; it never widens it.
+principal's access; it never widens it. Its second kind, the scan token that a worker issues for the image scanning's pull, has
+claims and rules of its own (R-OCI-037); every rule of this requirement holds for it unless R-OCI-037 says otherwise.
 
 - **Content.** Version, the key ID of the key that signed it, the principal (kind and ID; the anonymous principal has no ID),
   the Quader token that authenticated the token request, named by its ID, its type and the SHA-256 of its secret (none for
@@ -1282,6 +1283,74 @@ Acceptance criteria:
 - A caller whose grant is narrowed to the package pattern `acme/*` lists `acme/a` and not `library/alpine`; a caller with no grant on the
   repository lists nothing and gets 404 for the package.
 - A tag whose cache entry is marked gone or deleted is not listed.
+
+### R-OCI-037 · Scan tokens: the registry token of the image scanning's pull
+Priority: **P1** · Covers: quader-only
+
+The owner's decision of 2026-11-20 ([ADR-212](../../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)):
+the worker calls the scanner with a registry token, pull only, for that one repository, valid for minutes, and the scanner pulls the
+image through Quader's own registry with it ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-041, R-VULN-042). The
+token is a scan token, a second kind of the registry token of R-OCI-005
+([ADR-213](../../decisions.md#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener)).
+
+- **Who issues it** (Q-OCI-226). The worker, in process, for each call, with the `Signer` of R-OCI-005 (the MAC key derived from the active
+  key of the key ring with the info `quader registry token v1`). There is no request to the token service, no Quader token behind it and no
+  principal row: the worker holds the key ring already, and the scanner, which receives the token, holds none.
+- **Claims.** The payload form of R-OCI-005 with these members, and no other:
+
+  | Member | Content |
+  |---|---|
+  | `s` | `image-scanner`: the system subject of the token; its presence makes the token a scan token |
+  | `sid` | the scan's ID, 128 random bits in base64url: what joins the worker's log line, the scanner's and the scan listener's request log; it is no secret |
+  | `e` | `scan`, the endpoint of the scan listener ([architecture.md](../architecture.md) R-ARCH-037) |
+  | `iat`, `exp` | the issue time and `iat + vulnerabilities.images.pull_timeout` (10 minutes by default, 1 minute to 1 hour) |
+  | `g` | exactly one entry: the qualified name of the repository that holds the manifest (local or remote, never a cache view and never a virtual repository), the image name, the action `pull` |
+  | `d` | the manifest's digest, `sha256:<64 hex>` |
+
+  Both sides check the rule: a token with `s` names no principal and no Quader token, is not anonymous, has exactly that one entry with `pull`
+  alone, a digest, no catalog, and the endpoint `scan`; a token without `s` carries neither `sid` nor `d`. Anything else is malformed.
+- **Verification** (the stage, steps 1 to 4 of R-OCI-005): the length, the form, the key, the MAC, the strict claims, the expiry, the issue
+  time at most one minute ahead, the span at most `vulnerabilities.images.pull_timeout` (Q-OCI-229; not `oci.token_lifetime`), and the endpoint.
+  There is no step through the token cache, because no Quader token stands behind it: a scan token costs no query. The result is the
+  principal of the kind `system` with the name `image-scanner` and no ID, and the grant with its digest pin and the scan ID.
+- **Where it is used.** Only on the scan listener, whose endpoint is `scan`; every other listener refuses it at the endpoint check with
+  `401` `invalid_token`, and the scan listener refuses every other credential (R-ARCH-037). The scan listener applies no failed-credential
+  throttle (R-AUTH-038): a refused scan token costs one HMAC and no query.
+- **What it reaches** (Q-OCI-227). The enforcement point admits exactly `GET` and `HEAD` of the route `oci.manifest.get.digest` for the pinned
+  digest under the entry's name, and `GET` and `HEAD` of `oci.blob.get` under the entry's name. A manifest by tag or by another digest, the
+  tags list, referrers, the catalog and every write answer `401` with `error="insufficient_scope"`. A blob under the name is reachable by its
+  digest, as the image's layers must be; its manifest is not.
+- **How the request is decided** (Q-OCI-228). The decision point decides a request of the subject `system:image-scanner` by one fixed rule,
+  without grants, policies, visibility levels or exposure rules: `read` on the repository the grant names, while that repository exists, is
+  of the format `oci`, is local or remote and is not disabled; never `populate`, so a remote answers from what it holds, a layer it lacks
+  with `403` `populate_not_permitted`, and starts no fetch and no background download; never a write and never a capability. A refusal is
+  the `404` of a repository the caller cannot see. The rule is stated once, with the subject, in [authorization.md](../authorization.md)
+  R-AUTHZ-002 and R-AUTHZ-015; why the level `internal` does not serve here is said there too.
+- **What it is not** (Q-OCI-230). A scan token's request is no delivery: the gate of the vulnerability block (`RefuseImage`,
+  [vulnerability-scanning.md](../vulnerability-scanning.md) Q-VULN-138) is not asked, it counts no download and moves no `lastDownloadedAt`
+  (R-STOR-015, Q-OCI-222), it is no probe (R-REPO-065), and stage 7 charges it to the subject `system`, recorded under the repository and
+  limited by nothing ([usage-and-limits.md](../usage-and-limits.md) R-LIM-001, Q-LIM-66).
+- **Lifetime and revocation.** A scan token is not revoked one by one: it runs out within `pull_timeout`, and it ends with the removal of
+  its key from the ring like every registry token. Whoever holds it can pull that one manifest and the blobs of its name until then
+  ([H-1041](../../security/oci-registry.md#h-1041--a-scan-token-is-a-bearer-credential-for-one-image-until-it-runs-out)).
+- **Where it is never written.** The worker holds the token in a type whose `String`, `GoString` and `LogValue` render nothing of it; it is
+  no member of a job's arguments or result, of a scan row, of an error text or of an audit event. The call carries it in its body
+  (R-VULN-041), which neither side logs; the scanner sends it as `Authorization: Bearer`, which every log redacts (R-AUTH-001); the request
+  log of the scan listener records the principal `system:image-scanner` and the scan ID.
+- **Audit.** No event per token or per request: a read is not audited per request, and the scan row and the job record the scan. A scan
+  token that is refused counts in `quader_auth_attempts_total` with its reason, as every refused registry token does.
+
+Acceptance criteria:
+
+- Unit (`internal/auth/registrytoken`, under a second): a scan token is issued and verified with its claims; one with two entries, `push`, the
+  catalog, a principal, a binding, no digest, a span above `pull_timeout`, or the endpoint `default` is refused at issue and at verification; a
+  client's registry token with `d` or `sid` is malformed.
+- Unit (`internal/api/registry`, under a second): the enforcement point admits a scan token on `oci.manifest.get.digest` of its digest and on
+  `oci.blob.get` of its name, and answers the manifest by tag, another digest, the tags list, referrers, the catalog, an upload start and a
+  delete with `insufficient_scope`.
+- Unit (`internal/authz`, under a second): the scan subject is allowed `read` on a private repository and on a remote, refused `populate` on
+  the remote, refused on a disabled repository and on a repository of another format.
+- Integration: the criteria of R-VULN-042 and R-ARCH-037.
 
 ## Mirror discovery
 
@@ -3675,6 +3744,91 @@ without a credential is certain to be, at every level. Revisit if a route of the
 
 **Applied in the spec:** [usage-and-limits.md](../usage-and-limits.md) R-LIM-005. Tests: `TestR_API_016_ChallengedByLevels` in
 [ratelimit_test.go](../../../internal/api/v1/ratelimit_test.go); on the cluster `TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget`.
+
+### Q-OCI-226 · The worker issues the scan token in process with the registry key
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the worker
+calls the scanner with a registry token, pull only, for that one repository, valid for minutes, is the owner's (2026-11-20).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The worker signs the claims of R-OCI-037 with the `Signer` of R-OCI-005 (chosen) | No token service, no Quader token, no principal row | No secret to provision; the claims say exactly what the scanner may read; verification costs no query | A second kind of claims in the token's grammar; no revocation one by one |
+| (b) A built-in service account with a technical token in a Secret of the worker; the worker asks the token service | The client path | The token service and its checks unchanged | A long-lived secret in the worker for a token that lives minutes; the account's grant would have to read every repository, and every registry token of it could |
+| (c) A key of its own for scan tokens | A second derivation | A scan token cannot pass as a client's | The same key ring signs both anyway; the endpoint `scan` and the member `s` already keep the kinds apart |
+
+**Choice:** (a). **Rationale:** the worker already holds the key ring and decides which manifest is due; the token is that decision made
+portable for one call. The development agent would revisit this if the scanner ever needs to ask for a token itself, which it must not hold
+a key for.
+
+**Applied in the spec:** R-OCI-005, R-OCI-037.
+
+### Q-OCI-227 · A scan token reaches one manifest by its digest and the blobs of its name
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Pull of the one manifest digest and of blobs under the name; nothing else (chosen) | `oci.manifest.get.digest` of the pin, `oci.blob.get` of the name | A stolen token reads one image: other manifests of the name, its tags and the catalog stay closed; a blob still needs its digest | A blob of another image of the same name is readable by a holder who knows its digest |
+| (b) Pull of the name | The grant of a client's token | No new rule in the enforcement point | Every tag and manifest of the name for the token's lifetime |
+| (c) The manifest and exactly the blobs it names | The enforcement point parses the pinned manifest for each blob request | The tightest | A manifest read and parsed for every layer request, or a cache of it per replica |
+
+**Choice:** (a). **Rationale:** the manifest is what makes an image; pinning it closes every image but the one being scanned at the cost of
+one comparison. The development agent would revisit this if the blobs of a name turn out to carry what the manifests do not.
+
+**Applied in the spec:** R-OCI-037; [security/oci-registry.md](../../security/oci-registry.md).
+
+### Q-OCI-228 · The scan subject is decided by one fixed rule: read, never fill
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: every request below `/v2/` is decided by the decision point after the grant (R-OCI-005); a scan token has no principal whose grants
+the decision point could read, and the scanner must read private repositories and blocked images (Q-VULN-166).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A subject kind `system` whose one name `image-scanner` the decision point allows `read` on the repository its grant names, not disabled, and nothing else (chosen) | A rule in the decision point, no data | Cannot be widened by a binding or narrowed by a mistake; `populate` refused makes a remote cache-only by the existing rule | A rule outside the policy model |
+| (b) A built-in service account with an instance-wide `read` binding | The decision point unchanged | One model | A principal and a binding an administrator can change or delete; the binding reads every repository for any credential of the account |
+| (c) The grant decides alone, the decision point is skipped | No decision | Shortest | A request below `/v2/` that the decision point never sees; a disabled repository would need a check of its own |
+
+**Choice:** (a). The subject and its rule are stated once, in [authorization.md](../authorization.md) R-AUTHZ-002 and R-AUTHZ-015, with
+the reason a level cannot serve: since 2026-11-20 `internal` admits technical subjects (R-AUTHZ-030), but no level opens a `private`
+repository and none lifts the block of a manifest, both of which the scanner must read. **Rationale:** the system reads what it scans by a rule of the system, which no administrator's
+change can widen. The development agent would revisit this if a second system subject appears, which would make a table of system subjects
+worth having.
+
+**Applied in the spec:** R-OCI-037; [vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-042.
+
+### Q-OCI-229 · A scan token lives as long as the pull may, checked against its own bound
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `vulnerabilities.images.pull_timeout`, 10 minutes by default, 1 minute to 1 hour, verified against that setting (chosen) | The token and the pull end together | A 3 GiB image over a slow object store has time; the scanner's pull deadline and the token's end are one number | A token that lives longer than a client's registry token of 5 minutes |
+| (b) `oci.token_lifetime` (5 minutes) | One lifetime for both kinds | Simple | A large pull is cut by its own token, and the worker cannot renew it into a running call |
+| (c) A token per blob request | The worker hands out tokens as the scanner asks | Short-lived tokens | The scanner would call the worker, which the owner's frame excludes |
+
+**Choice:** (a). **Rationale:** the lifetime is what the pull needs and no more. The development agent would revisit this if pulls of the
+largest admitted image do not fit 10 minutes on a measured installation.
+
+**Applied in the spec:** R-OCI-037; [vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-025, R-VULN-036.
+
+### Q-OCI-230 · A scan token's request is no delivery: no block gate, no download, no probe
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner named
+the two points to settle first: a blocked image must still be pulled by the scanner, and the scanner's pull is not charged to the download
+limits.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The pull reads like the system it is (chosen) | `RefuseImage` not asked; no download count, no `lastDownloadedAt`, no counted pull of a tag, no probe; charged to `system`, limited by nothing | A blocked image stays scannable; the screens show the clients' downloads only; no background download or upstream request starts from a scan | The handlers ask one more question of the request (is this the scan subject) in four places |
+| (b) The pull is a client's pull | No exception | One path | A blocked image is never analysed again; every scan counts as a download and moves the screens; a scan of a remote tag would start a background download |
+
+**Choice:** (a). **Rationale:** what counts as a download is what a consumer received; the scanner is the installation looking at its own
+content. The development agent would revisit this if a further system reader appears, which would get the same rule by its subject kind.
+
+**Applied in the spec:** R-OCI-037; [vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-037, R-VULN-042;
+[usage-and-limits.md](../usage-and-limits.md) Q-LIM-66.
 
 ## What this does not cover
 

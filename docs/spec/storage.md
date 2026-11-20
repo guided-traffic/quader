@@ -1405,6 +1405,10 @@ Priority: **P1** · Covers: ART-029
 - A download counts when Quader answers `200` with the full content, `206` for a range starting
   at byte 0, or issues a presigned redirect; `HEAD`, `304`, sidecars and requests with
   `?stats=false` do not count.
+- A request of the system subject `system:image-scanner` (a scan token on the scan listener, [formats/oci.md](formats/oci.md) R-OCI-037)
+  counts no download and moves no `last_download_at`: the image scanning reads the image for the installation's findings and delivers
+  nothing to a consumer ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-042). Neither do the worker's reads of the image
+  scanning's database through the item store (R-VULN-044), which are no requests.
 - Through a virtual repository the count goes to the item of the serving member.
 - The first answer of a remote miss, which the remote engine streams to the client while it fetches, counts on the item it stored
   ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-331). A document a format answers from a store of its own with the
@@ -3304,6 +3308,10 @@ Priority: **P1** · Covers: RET-036
   cached file items of remote repositories whose last use, `coalesce(last_download_at,
   created_at)`, is older than their repository's expiry. Removal is permanent (no trash can); the
   content is fetched again on the next request. Removed blobs are collected by R-STOR-024.
+- The task never removes the item of the layer that is the image scanning's database in use: the item
+  `<image>/_blobs/<digest>` of the repository `vulnerabilities.images.database.repository` names, by the digest the source `trivy`
+  records ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044, [repositories-and-proxy.md](repositories-and-proxy.md)
+  R-REPO-070). The workers read it through the item store, which is no download, so its last use would otherwise stay its creation.
 - The task processes repositories one after another in batches and checkpoints after each batch,
   so a drained run continues on another `worker` from its checkpoint. It honours the deletion
   pause of R-STOR-024 before every batch. Manual start:

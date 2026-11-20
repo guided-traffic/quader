@@ -104,7 +104,7 @@ Deployment per role (WP6a.3). What is left of phase 6a is its tests and the dev 
 
 | Invocation | Purpose |
 |---|---|
-| `quader serve --role api\|packages\|worker\|web\|all` | Runs one replica of a role. The flag overrides `process.role`. |
+| `quader serve --role api\|packages\|worker\|scanner\|web\|all` | Runs one replica of a role. The flag overrides `process.role`. |
 | `quader serve --role bastion` | Runs one replica of the Quader Bastion, deployed only by the chart `quader-bastion` ([bastion.md](bastion.md) R-BAS-001, phase 5b). |
 | `quader migrate [up\|status]` | Applies or lists the embedded migrations behind the compatibility gate (R-ARCH-026). |
 | `quader backup create\|list\|verify\|delete\|prune\|restore` | The `backup` role: creates a consistent backup into the configured S3 target, lists, verifies, deletes or prunes the backups there, or restores one into an empty installation, then exits (INV-19, [backup-and-restore.md](backup-and-restore.md) R-BAK-009, R-BAK-016, R-BAK-018 to R-BAK-021). It has no client listener and uses no Valkey. The chart runs `create` as a CronJob and `restore` as a Job. |
@@ -119,8 +119,9 @@ role runs the same ones and is interchangeable with any other replica of that ro
 | `api` | the route families `ui`, `api`, `ci_exchange` of every endpoint whose surface holds them ([endpoints.md](endpoints.md) R-EP-005) | the session store, the OIDC client secrets, the break-glass password | `<fullname>-api`, its pools and the `api` part of endpoint pools ([ha-and-helm.md](ha-and-helm.md) R-HA-002, R-HA-062) |
 | `packages` | the route families `packages`, `files`; tokens only, a session cookie is ignored as absent; the fills of client misses and the shadowing probes | no session store, no login secret | `<fullname>-packages`, its pools and the `packages` part of endpoint pools |
 | `worker` | the job queue, its leases and the scheduler, the mirror's passes, the advisory sync; the queues it claims are configurable (R-ARCH-016) | the lease pool | `<fullname>-worker` and its pools by queue |
+| `scanner` | the analysis of container images, called by the worker over its own listener (R-ARCH-036; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-041) | nothing of PostgreSQL, the object store, Valkey or the key ring: the TLS pair and the internal CA only | `<fullname>-scanner`, while the image scanning is on ([ha-and-helm.md](ha-and-helm.md) R-HA-065) |
 | `web` | `api` and `packages` in one process: every family | everything `api` and `packages` hold | never; a binary started outside the chart: the replica of the integration tests (Q-ARCH-295, [ha-and-helm.md](ha-and-helm.md) Q-HA-315) |
-| `all` | every role but `bastion` in one process | everything | never; a binary started outside the chart during development |
+| `all` | every role but `bastion` in one process, `scanner` included (Q-ARCH-531) | everything | never; a binary started outside the chart during development |
 | `backup`, `bastion` | unchanged: the `quader backup` subcommand (above), the Bastion's read flow ([bastion.md](bastion.md) R-BAS-001) | their own | the backup CronJob and restore Job; the chart `quader-bastion` |
 
 | Subsystem | `api` | `packages` | `worker` | `backup` | `web`, `all` |
@@ -135,9 +136,14 @@ role runs the same ones and is interchangeable with any other replica of that ro
 | Change-log poll and signal subscriber (R-ARCH-018) | yes | yes | yes | no | yes |
 | Replica registry row and heartbeat ([operations-and-observability.md](operations-and-observability.md) R-OPS-003) | yes | yes | yes | no | yes |
 
+The role `scanner` has none of the subsystems of this table but the ops listener: no pool, no Valkey client, no change log, no
+registry row, no job loop, no client listener of an endpoint. It has a listener of its own on `server.listen` and the one area `scanner`
+(R-ARCH-036). The scan listener that `packages` opens for it is R-ARCH-037.
+
 **Wiring areas** (R-ARCH-024 step 8, Q-ARCH-209, Q-ARCH-294). The areas are the steps of
 [internal/app/steps.go](../../internal/app/steps.go); a role enables them as data (`SubsystemsFor` in
-[internal/app/roles.go](../../internal/app/roles.go)), and `planSteps` refuses a role whose steps cannot be satisfied. Every
+[internal/app/roles.go](../../internal/app/roles.go)), and `planSteps` refuses a role whose steps cannot be satisfied. The role
+`scanner` builds none of the areas below, the infrastructure areas included (R-ARCH-036). Every other
 serving role (`api`, `packages`, `worker`, `web`, `all`) builds the infrastructure areas `keys`, `postgres`, `audit`, `blob`,
 `valkey`, `coordination`, `infra` and the domain areas `keyring`, `formatports`, `exposure`, `repository`, `virtual`,
 `invalidation`, `proxy`, `identity`, `authz`, `ownership`, `ci`, `vuln`, `formats` and `files`, because its jobs, its caches or its
@@ -192,7 +198,7 @@ routes read them. The areas of the client listener are split by route family:
   infrastructure areas, and it is only reachable through the test options, never through
   configuration.
 - `process.role` has no default. `quader serve` without a role exits non-zero with
-  `process.role must be api, packages, worker, web or all`. The chart deploys `api`, `packages` and `worker` as separate
+  `process.role must be api, packages, worker, scanner, web or all`. The chart deploys `api`, `packages` and `worker` as separate
   Deployments, each with its own replica count, autoscaler, disruption budget, ingress policy and topology spread
   ([ha-and-helm.md](ha-and-helm.md) R-HA-002).
 - **What "web" means elsewhere** (INV-2). The pages written before the cut name the client-serving role `web`. Such a
@@ -247,6 +253,9 @@ routes read them. The areas of the client listener are split by route family:
   family is the request to `/does-not-exist` with the same method and headers, in status, header and body, apart from
   `X-Request-Id`, `Date`, the problem's `requestId` and `instance` and the `Content-Length` that follows them (Q-ARCH-306).
 - A `worker` replica serves only the ops listener and is not selected by any client Service.
+- A `scanner` replica serves its own listener to the worker and the ops listener, is selected by no client Service, claims no job,
+  opens no connection to PostgreSQL, Valkey or the object store, and registers in no registry (R-ARCH-036,
+  [operations-and-observability.md](operations-and-observability.md) Q-OPS-215).
 - Load is shared by adding replicas of a role (INV-12). No code path depends on the number of
   replicas of a role, and each role scales and drains on its own. A role is split further by path prefix (`api`,
   `packages`) or by queue (`worker`) into pools through chart values without code changes (INV-2,
@@ -276,7 +285,7 @@ routes read them. The areas of the client listener are split by route family:
 
 ```yaml
 process:
-  role: ""            # no default: api | packages | worker | web | all; the chart sets it per Deployment (--role)
+  role: ""            # no default: api | packages | worker | scanner | web | all; the chart sets it per Deployment (--role)
   # role: packages    # example
 ```
 
@@ -546,6 +555,75 @@ Acceptance criteria:
   A package-level `*regexp.Regexp` is exempt; generated
   files, variables with a `//go:embed` directive and variables of interface type are not checked
   (Q-ARCH-19).
+
+### R-ARCH-036 · The role `scanner`: what it serves, builds, reads and holds
+Priority: **P1** · Covers: HA-015
+
+The owner's decision of 2026-11-20 ([ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)):
+a role `scanner` of the same binary and image analyses container images for the worker and holds no secret of the database, the object
+store or Valkey. It is the network seam ADR-153 allows, at a trust boundary: the pod that parses hostile images is the pod that holds
+nothing worth taking.
+
+- **Serves.** `POST /scan/v1/analyses` on its listener (`server.listen`, `:8080`), which requires a client certificate of the internal CA
+  (R-ARCH-038), and the ops listener (`/healthz`, `/readyz`, `/metrics`). Nothing else: no route family of an endpoint, no management API, no
+  package protocol. Its router is its own and its route table test is the one of R-ARCH-005.
+- **Builds** (Q-ARCH-527). None of the wiring areas of R-ARCH-001, the infrastructure areas `keys`, `postgres`, `audit`, `blob`, `valkey`,
+  `coordination` and `infra` included, and one area of its own, `scanner`: the analyser ([internal/vuln/imagescan](../../internal/vuln/imagescan)
+  `Trivy`), the registry client of R-VULN-042, the checks of R-VULN-036, the slots and the spool (`blob.Spool` without the object store), the
+  reaper of Q-ARCH-530 and the metrics of R-VULN-024. `planSteps` accepts the role with that one area.
+- **Starts** (R-ARCH-024) with the steps that need no infrastructure: the configuration of its keys, the TLS material and the internal CA,
+  its area, then its listener and the ops listener. It runs none of steps 3 to 8 (PostgreSQL, the audit partitions, the key-ring canary,
+  the object store, the Valkey client, the change log, the registry) and has no step 10: without a Valkey client there is no first answer
+  to wait for, so `valkey.startup_answer_timeout` does not apply to it and its `startup` check never reports `waiting_for_valkey`
+  ([ha-and-helm.md](ha-and-helm.md) Q-HA-330, Q-HA-333). Its `startup` check passes once its listener is bound and its area is built; its
+  readiness is [ha-and-helm.md](ha-and-helm.md) R-HA-065's.
+- **Reads.** Its configuration load reads and validates only the keys it uses: `process`, `server` (`listen`, `ops_listen`, `tls`, `ops_tls`,
+  `internal_tls`, the timeouts, `shutdown_timeout`), `health`, `log`, `metrics`, `runtime`, `storage.spool` and `vulnerabilities.images`. It
+  resolves no secret file: a `database`, `valkey`, `storage.s3`, `secrets`, `auth` or `proxy` key that names a file it does not have is not
+  read, and its absence is no error in this role.
+- **Holds.** The TLS pair it serves and presents, the internal CA, and, for the length of a call, the call's scan token and the image's
+  bytes. It never opens a connection to PostgreSQL, Valkey, the object store, an upstream or the Kubernetes API, and never calls a worker.
+- **Never** claims jobs, holds leases, writes the replica registry, enqueues, or keeps anything between two calls.
+- **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's
+  `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. In the role `all` both are empty and mean the
+  process's own listeners over loopback (Q-ARCH-531).
+
+Acceptance criteria:
+
+- Unit (`internal/app`, under a second): `SubsystemsFor("scanner")` is the area `scanner` alone, and `planSteps` accepts it; the role table
+  test of R-ARCH-001 holds the new row.
+- Integration (`test/integration/roles`, about 2 s): a replica started with `--role scanner` and a configuration whose database, Valkey and
+  object-store files do not exist becomes ready; the statement counter of the stack's PostgreSQL records no connection from it, and `ss`
+  shows only `:8080` and `:8081` bound by it.
+
+### R-ARCH-037 · The scan listener of `packages`
+Priority: **P1** · Covers: quader-only
+
+The scanner pulls an image through Quader's own registry API ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-042). It does
+so on a listener of its own on `packages` (Q-ARCH-528), not on the client listener, so that no setting meant for the edge's clients (the
+host allowlist, the endpoint's token types and anonymous rule, mutual TLS toward the edge, the rate class, the in-flight slots) decides the
+scanner's pull, and no client can use a scan token.
+
+- **Where.** A `packages` process (and `all`) opens it on `server.scan_listen` (default empty: no listener; the chart sets `:8082` on the main
+  `packages` Deployment while the image scanning is on). `web` opens it when the setting is set, for the integration stack.
+- **Its endpoint** ([endpoints.md](endpoints.md) R-EP-001, R-EP-002, R-EP-010). The listener's endpoint is named `scan` (a reserved name, never an entry of `server.endpoints`): its surface is the
+  family `packages`; it checks no host; it accepts one credential, a scan token of [formats/oci.md](formats/oci.md) R-OCI-037, and refuses
+  every other credential, the anonymous request included, with `401` and no challenge. A registry token is a credential only below `/v2/`
+  (R-OCI-005), so nothing outside the registry's routes answers anything but `401` there, and the token's grant narrows the registry's routes
+  to two. It has no rate class of R-EP-015 and its own in-flight bound of 64.
+- **TLS.** It serves `server.tls.certificates` and requires a client certificate that chains to `server.internal_tls.ca_file`
+  (R-ARCH-038), whatever `server.tls.client_auth` says about the client listener.
+- **The chain** is the client listener's (R-ARCH-005), with the endpoint bound: the stage verifies the scan token (R-OCI-037), stage 7 charges
+  the request to the subject `system` and checks it against nothing ([usage-and-limits.md](usage-and-limits.md) Q-LIM-66), the enforcement
+  point of the registry checks the token's digest pin, and the decision point decides by the scan subject's rule.
+- A scan token presented on any other listener is refused by the endpoint check of R-OCI-005, because its endpoint claim is `scan`; a Quader
+  token, a registry token of a client or no credential on the scan listener is refused there.
+
+Acceptance criteria:
+
+- Integration (`vulnimage`, about 3 s): on the `web` replica's scan listener a scan token pulls its manifest; the same token on the client
+  listener answers `401`; a valid personal access token and an anonymous request on the scan listener answer `401`; a connection without a
+  client certificate of the internal CA fails the handshake.
 
 ## Code layout
 
@@ -4168,6 +4246,42 @@ Acceptance criteria:
   before any HTTP request is read.
 - A rotated PostgreSQL or Valkey client certificate is used by the next new connection or handshake, with no
   restart and no failed request on the replica.
+
+### R-ARCH-038 · TLS between Quader's pods
+Priority: **P1** · Covers: HA-018
+
+The image scanning adds the first links between Quader's own pods (R-ARCH-036, R-ARCH-037). Each link authenticates both ends with the
+TLS material the installation has already (Q-ARCH-529), and every piece of it reloads without a restart (INV-20, R-ARCH-035).
+
+```yaml
+server:
+  scan_listen: ""                     # default (proposed): no scan listener; the chart sets ":8082" on the main packages Deployment (R-ARCH-037)
+  internal_tls:
+    ca_file: ""                       # the CA the links between Quader's pods verify against; the chart sets /var/run/secrets/quader/tls-internal/ca.crt; example: /etc/quader/internal-ca.crt
+```
+
+- **The identity is the listener's pair.** A process presents the first pair of `server.tls.certificates` as its client certificate on a link,
+  and serves it on the scanner's listener and the scan listener. The pair must allow client authentication (the extended key usage
+  `clientAuth`, or none); a process that needs it for a link and finds a pair without it logs the reason once per loaded pair, and a
+  `scanner` stays not ready ([ha-and-helm.md](ha-and-helm.md) R-HA-065).
+- **Both ends verify.** A client of a link verifies the server's certificate against `internal_tls.ca_file` under the link's `server_name`
+  (`vulnerabilities.images.scanner.server_name`, `vulnerabilities.images.registry.server_name`); the scanner's listener and the scan
+  listener require a client certificate that chains to the same file, so a peer without one is refused in the handshake before any HTTP is
+  read. No hostname is checked in the client certificate: the CA is what admits a peer.
+- **Reloading.** The pair and the CA are checked every `server.tls.reload_interval` by the reloader of R-ARCH-035, compared by content; a
+  new pair or CA serves and is presented from the next handshake on, and a broken one keeps the last good one, counted in
+  `quader_tls_reload_errors_total` with `listener="scan"` or `listener="scanner"` and `kind="client"` for the presented pair. The worker opens
+  a connection per call, so a rotation reaches every call within the interval.
+- **Without TLS** (`server.tls.certificates` empty, the chart's `tls.enabled: false`), the links are plain HTTP and no client certificate is
+  asked ([ha-and-helm.md](ha-and-helm.md) Q-HA-322); `internal_tls.ca_file` set without a pair is refused at start.
+- The links never use the outbound factory of R-ARCH-022: its egress address policy refuses cluster addresses by design, and these links go
+  only to the installation's own Services.
+
+Acceptance criteria:
+
+- Unit (`internal/httpserver`, under a second): a client certificate of another CA, none, and an expired one are refused in the handshake of
+  the scan listener; a pair with the extended key usage `serverAuth` alone is reported as unfit for a link; a rotated CA admits the new
+  client from the next handshake, with no restart.
 
 ### R-ARCH-020 · Configuration schema in code and the file/database split
 Priority: **MVP** · Covers: OPS-040
@@ -10903,6 +11017,88 @@ most. The development agent revisits an entry of this list when a run fails on i
 
 **Applied:** [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached).
 
+### Q-ARCH-527 · The scanner builds no infrastructure area and resolves no secret file
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The role and that it
+holds no secret of the database, the object store or Valkey are the owner's (2026-11-20, ADR-212).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One area `scanner` and a configuration load that reads only the keys the role uses (chosen) | No pool, no Valkey client, no blob store, no key ring | Nothing in the process could use a secret even if a file were mounted by mistake; the start needs nothing but the pair, the CA and the analyser | The role's configuration path differs from every other role's |
+| (b) The shell profile's areas plus `scanner` | Reuse of the shell profile | Less new wiring | The shell profile is a test profile; its token store and stage have no business in this role |
+| (c) Every area, with the secrets simply not mounted | The chart decides | No code | The process would fail its start on the missing files, or carry code paths that try to reach the database |
+
+**Choice:** (a). **Rationale:** the property of the role should hold in the binary, not only in the chart's mounts. The development agent
+would revisit this if the scanner needs a shared state, which ADR-212 rules out.
+
+**Applied in the spec:** R-ARCH-001, R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-065.
+
+### Q-ARCH-528 · The scanner's pull enters `packages` through a listener of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the scanner
+pulls through `/v2/` on `packages` is the owner's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A scan listener `:8082` with an endpoint `scan` that accepts scan tokens only (chosen) | A second listener on the main `packages` pods, behind a Service of its own | The edge's settings on `:8080` (host allowlist, token types, anonymous rule, mutual TLS toward the edge, rate class, slots) never decide the scanner's pull, and a scan token works nowhere else | A listener, a Service and a policy rule more; `endpoints.md` gains a reserved name |
+| (b) The client listener `:8080` of the default endpoint | Through `<fullname>-packages` | No new listener | With `tls.clientCA` required on `:8080` the scanner would need the edge's client certificate; a host allowlist needs the base URL's host; the endpoint's token types would have to name a system token; a scan token would be good on the internet's path to the same listener |
+| (c) Through the edge, at the public base URL | As any client | No cluster wiring | The scanner would need egress to the edge and DNS of the public name; the edge's limits apply; a scan token travels the edge |
+
+**Choice:** (a). **Rationale:** the scanner's pull is system work inside the installation; giving it a door of its own keeps the doors of the
+clients unchanged and makes the scan token useless anywhere else. The development agent would revisit this if a second system caller needs
+the registry, which would then use the same listener under its own token kind.
+
+**Applied in the spec:** R-ARCH-037; [ha-and-helm.md](ha-and-helm.md) R-HA-066; [formats/oci.md](formats/oci.md) R-OCI-037.
+
+### Q-ARCH-529 · The links between Quader's pods authenticate both ends with the listener's pair against the chart's CA
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner's rule:
+every listener and every link inside the chart speaks TLS, and certificates rotate without a restart.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The listener's pair as the identity, `ca.crt` of the chart's Secret as the one trust anchor `server.internal_tls.ca_file` (chosen) | Mutual TLS with what every installation has | No new secret; the reloader of R-ARCH-035 covers it; a peer without the CA's certificate is refused before HTTP | The certificate must allow client authentication; every holder of the pair is a valid peer |
+| (b) A pair per role, issued for the links | A Secret per role | A link knows which role called | A Certificate per role for the operator, or a CA in the chart |
+| (c) Server-verified TLS and a bearer secret | One-sided TLS | Independent of the certificate's usages | A shared secret to provision and rotate (Q-VULN-163) |
+
+**Choice:** (a). The local profile's certificate already carries `client auth` (`deploy/dev/pki.yaml`). **Rationale:** the trust anchor and
+the identity exist already, and which role may call is said by the ingress rule of each port (ADR-154). The development agent would revisit
+this if a link must tell the calling role from another holder of the pair, which would call for (b).
+
+**Applied in the spec:** R-ARCH-038; [ha-and-helm.md](ha-and-helm.md) R-HA-063, R-HA-066; [vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-163.
+
+### Q-ARCH-530 · The scanner ends every other process of its container when no analysis runs
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the analyser runs in a process group of its own that is killed with the call. A process that the analyser starts and that leaves
+the group (`setsid`) survives that kill, and could wait in the pod for the next image and its token, or change the next analysis's result.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) After an analysis, while no other one runs, the scanner sends `SIGKILL` to every other process of its container (`kill(-1)`: it is the container's first process, and every other process runs as its user), and it reaps orphans (chosen) | No process outlives the analysis that started it | Closes the persistence of a taken-over analyser across calls when `slots` is 1 | With more slots, an idle moment may never come under load (H-1037) |
+| (b) Restart the pod after every analysis | `exit` after each call | Total reset | A start per image, an image-pull-backoff risk, readiness churn |
+| (c) Nothing beyond the process-group kill | As today | No code | A process that called `setsid` stays until the pod ends |
+
+**Choice:** (a). **Rationale:** the scanner is the one process of its container that should exist between calls, and the container's PID
+namespace makes "everything else" exact. The development agent would revisit this if the scanner ever needs a helper process of its own.
+
+**Applied in the spec:** R-ARCH-036; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-036; [ha-and-helm.md](ha-and-helm.md) R-HA-065.
+
+### Q-ARCH-531 · In the role `all` the worker calls the scanner of its own process over loopback
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `all` opens the scanner's listener and the scan listener, and the worker calls itself over loopback through the same client (chosen) | Empty `scanner.url` and `registry.url` mean the own listeners | The UI profile runs the code path of the chart, token and checks included | Two listeners more in a development process |
+| (b) In `all` the worker reads the image from the object store, as before | A second path | No loopback | The path of the chart is never run outside the cluster, and the old path stays code to keep |
+
+**Choice:** (a). **Rationale:** one path, run everywhere. The development agent would revisit this if the loopback listeners collide with
+the ports a developer uses.
+
+**Applied in the spec:** R-ARCH-001, R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-067.
+
 ### Q-ARCH-540 · A format's e2e leg runs on a push only when that format's own code changed
 
 Status: **Decided by the owner** (2026-11-20): a format's e2e leg runs on a push only when that format's own code changed. A change of
@@ -11277,6 +11473,9 @@ guarantees in one database.
 
 What makes it real: an exploitable flaw in a code path of the `packages` or `files` family (request parsing, format code, H-1).
 The mitigation is the same as before the cut: the narrow runtime grants of R-HA-014 and the pod security context of R-HA-033.
+
+The role `scanner` is the one role this gap does not cover: it holds no data credential and no key of the key ring (R-ARCH-036), which is
+why the analysis of images, the parser of the most hostile input, runs there.
 
 ### H-521 · Two path rules outside the stages of authentication and rate limits do not ask whether the family is served
 

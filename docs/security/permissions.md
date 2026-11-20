@@ -462,6 +462,19 @@ Managing registrations needs `endpoints:read` and `endpoints:write`, and revokin
 `auditor` and `repository-admin` `endpoints:read` only. A token cut down to the system item `tokens:revoke` revokes a Bastion token and
 nothing else (`TestR_BAS_004_CapabilitiesGateTheOperations`).
 
+## The image scanner is a system subject with one fixed rule
+
+Specified, not built ([R-AUTHZ-002](../spec/authorization.md#r-authz-002--principals-and-the-principal-set-of-a-request),
+[R-AUTHZ-015](../spec/authorization.md#r-authz-015--evaluation-algorithm),
+[R-OCI-037](../spec/formats/oci.md#r-oci-037--scan-tokens-the-registry-token-of-the-image-scannings-pull)). The scanner's pull is decided
+for the subject `system:image-scanner`, which has no principal row and is decided before every other step of `Allowed`: `read` of the one
+repository its scan token names, while that repository exists, is of the format `oci`, is local or remote and is not disabled; nothing
+else. No grant, level, scope or exposure rule enters the decision, so no policy, binding or level change can widen it, and `MayPopulate`
+refuses every system subject, so it never fills a remote. It reads `private` repositories and, because the vulnerability block is not asked
+for it, blocked images: what bounds it is the token, one manifest by its digest and the blobs of its name for minutes, accepted only on the
+scan listener ([oci-registry.md](oci-registry.md#scan-tokens)). The level `internal`, which since 2026-11-20 admits technical subjects as
+well, could not do this: no level opens a `private` repository or lifts a block.
+
 ## Database footprint
 
 The engine's statements read `authz_policy*`, `authz_project_policy_entry`, `authz_role_binding`, `project`, `project_admin`,

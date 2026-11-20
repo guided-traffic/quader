@@ -300,7 +300,9 @@ What makes it real: a flaw that lets an attacker run code in a Quader process or
 clients of `internal/outbound`, in a cluster without an egress policy.
 
 The chart `quader-bastion` follows the same rule since the owner's decision of 2026-11-05; the gap of its pods, which are built
-to face the internet, is [H-522](bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods).
+to face the internet, is [H-522](bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The `scanner` pods, which hold
+no credential but run the analyser on hostile images, need DNS and the scan listener of `packages` only; their gap is
+[H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner).
 
 
 ### H-524 · A discovery host learns what a mirror asks it

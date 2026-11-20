@@ -122,6 +122,25 @@ The chart renders no `Role`, `RoleBinding` or `ClusterRole`. The service account
 Kubernetes API. The chart cannot set Pod Security Admission labels on a namespace; the local profile sets them in its scripts
 ([local-profile.md](../developer/local-profile.md)).
 
+## The scanner
+
+Specified, not built ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment),
+[R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)). The pod that analyses container
+images, the parser of the most hostile input Quader reads, has the smallest footprint of the release:
+
+| System | What the scanner may do |
+|---|---|
+| PostgreSQL | nothing: no credential, no CA, no connection; no row in the replica registry |
+| Valkey | nothing: no credential, no connection; Valkey's ingress example of R-HA-042 does not list the component `scanner` |
+| Object store | nothing: no credential, no connection |
+| Key ring | nothing: no key file; it cannot sign or verify a token or open a sealed secret |
+| Kubernetes | nothing: no service-account token, no RBAC |
+| The registry | pull, through the scan listener of `packages`, of the one manifest and the blobs of its name that the call's scan token names, for the token's minutes; never fill a remote, never write |
+| The pod | the security context of every pod; one writable spool and `/tmp`; the chart's TLS pair (or its own) and the internal CA |
+
+What an analyser that an image took over can do with this footprint is on [image-scanning.md](image-scanning.md). What it does not bound is
+the network: [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner).
+
 ## Network
 
 The chart renders one ingress `NetworkPolicy` per Deployment, named as the Deployment, and one per Job, when `networkPolicy.enabled`
@@ -132,11 +151,14 @@ another, because replicas never talk to each other:
 | Pods | Ingress admitted | Egress |
 |---|---|---|
 | `api`, `packages` and their path pools | `:8080` from `networkPolicy.ingress.http.from` (empty: from anywhere); the port of each further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty: from anywhere); `:8081` from `networkPolicy.ingress.ops.from` (default: the `monitoring` namespace) and `networkPolicy.ingress.probeCIDRs` | not rendered |
+| the main `packages` Deployment, in addition (specified, not built) | `:8082`, the scan listener, from the `scanner` pods only ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart)) | not rendered |
 | the endpoint pools of further endpoints | the endpoint's port, from its `networkPolicy.from`; `:8081` from the ops sources | not rendered |
 | `worker` and its pools | `:8081` only, from the ops sources | not rendered |
+| `scanner` (specified, not built) | `:8080` from the pods of the worker Deployment that claims the queue `vuln` only; `:8081` from the ops sources | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
 | migration Job, backup CronJob's pods, restore Job, post-restore Job | nothing (`ingress: []`) | not rendered |
 
-With no ops source at all the `:8081` rule is left out rather than rendered with an empty `from`, which would admit every peer.
+With no ops source at all the `:8081` rule is left out rather than rendered with an empty `from`, which would admit every peer. The two
+rules of the image scanning are the only ones that admit one Quader pod from another; neither follows `networkPolicy.ingress.http.from`.
 
 No egress policy is rendered, so a compromised replica can reach any address the pod network reaches
 ([H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods)). The well-known repositories of the project `upstream`
@@ -156,10 +178,12 @@ The gaps of the spec pages that bound or widen this footprint:
 
 - [H-49](../spec/architecture.md#h-49--write-access-to-valkey-denies-service): write access to Valkey denies service.
 - [H-56](../spec/architecture.md#h-56--the-object-store-endpoint-skips-the-egress-address-policy): the object-store endpoint skips the egress address policy.
-- [H-517](../spec/architecture.md#h-517--the-cut-into-roles-separates-the-login-secrets-not-the-data-credentials): every role connects with the same database login and the same object-store and Valkey credentials.
+- [H-517](../spec/architecture.md#h-517--the-cut-into-roles-separates-the-login-secrets-not-the-data-credentials): every role connects with the same database login and the same object-store and Valkey credentials, but the `scanner`, which holds none.
 - [H-57](../spec/endpoints.md#h-57--a-further-endpoint-runs-with-every-credential-of-a-web-replica): a further endpoint runs with every credential of its role.
 - [H-41](../spec/operations-and-observability.md#h-41--ingress-enforcement-is-verified-on-one-cni-only): the enforcement of the ingress NetworkPolicy is verified on one CNI only.
 - [H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods): the chart restricts no egress of its pods.
+- [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner): the same for the scanner, whose pod holds no credential but reads hostile images.
+- [H-1035](image-scanning.md#h-1035--the-scanner-holds-the-charts-tls-key-by-default): the scanner holds the chart's TLS key by default.
 
 ### H-71 · Single-role mode gives the runtime login DDL rights
 
