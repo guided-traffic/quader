@@ -188,13 +188,25 @@ type replica struct {
 	exited      chan error
 }
 
+// environ is the environment of a replica of the role r.role: the installation's settings, the replica's listeners and name, and
+// what the chart gives a pod of that role. A worker names the scanner it calls while the image scanning is on (R-VULN-041); nothing
+// answers on this port, and no test of this area runs an image scan, so the worker starts and is ready, and a scan would be put off
+// with scanner_unavailable. The role all leaves it empty: its worker calls its own scanner over loopback (Q-ARCH-531).
+func (in *install) environ(r *replica) []string {
+	env := append(append([]string{"PATH=" + os.Getenv("PATH")}, in.env...),
+		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME="+r.name)
+	if r.role == "worker" {
+		env = append(env, "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=http://127.0.0.1:1")
+	}
+	return env
+}
+
 // start launches a replica and waits until /readyz answers 200.
 func (in *install) start(t *testing.T, role, name string, extra ...string) *replica {
 	t.Helper()
 	r := &replica{name: name, role: role, client: freeAddr(t), ops: freeAddr(t), logs: &syncBuffer{}, exited: make(chan error, 1)}
 	r.cmd = exec.Command(binary, "serve", "--role", role)
-	r.cmd.Env = append(append(append([]string{"PATH=" + os.Getenv("PATH")}, in.env...),
-		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME="+name), extra...)
+	r.cmd.Env = append(in.environ(r), extra...)
 	r.cmd.Stdout, r.cmd.Stderr = r.logs, r.logs
 	if err := r.cmd.Start(); err != nil {
 		t.Fatal(err)
@@ -305,8 +317,7 @@ func valkeyAdmin(t *testing.T) valkey.Client {
 func startRaw(t *testing.T, in *install, r *replica) *exec.Cmd {
 	t.Helper()
 	r.cmd = exec.Command(binary, "serve", "--role", r.role)
-	r.cmd.Env = append(append([]string{"PATH=" + os.Getenv("PATH")}, in.env...),
-		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME="+r.name)
+	r.cmd.Env = in.environ(r)
 	r.cmd.Stdout, r.cmd.Stderr = r.logs, r.logs
 	if err := r.cmd.Start(); err != nil {
 		t.Fatal(err)

@@ -483,7 +483,9 @@ One new file and one line in the list.
 ## Integration test
 
 [test/integration/server](../../test/integration/server) builds the binary and runs `migrate up`, `serve --role all`, `web` and
-`worker` side by side against the integration stack, then SIGTERM under load. Run it with
+`worker` side by side against the integration stack, then SIGTERM under load. Its `worker` names a scanner at `http://127.0.0.1:1`,
+which a worker needs while the image scanning is on (R-VULN-041): nothing answers there and the area runs no image scan, so the worker
+starts and is ready. Run it with
 `set -a; . .dev/integration/env; set +a; go test -tags integration -race ./test/integration/server/...`.
 [test/integration/tls](../../test/integration/tls) builds the binary as well and runs `serve --role all` with TLS on both
 listeners and the listener's CA as `server.internal_tls.ca_file`, which a TLS start needs for its links, rotating the certificate under load (E0.15 at process level, [tls.md](tls.md#how-to-test)).

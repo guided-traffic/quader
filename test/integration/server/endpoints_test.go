@@ -294,8 +294,10 @@ func TestEndpoints(t *testing.T) {
 		if got := served(t, ca, custAddr, "packages.quader.localhost"); got != 5001 {
 			t.Errorf("the other pair changed: %d", got)
 		}
-		if web.cmd.ProcessState != nil {
-			t.Error("the process exited during the rotation")
+		select { // the goroutine of start owns cmd.Wait and its ProcessState; the exit reaches the test through exited
+		case err := <-web.exited:
+			t.Errorf("the process exited during the rotation: %v", err)
+		default:
 		}
 	})
 
