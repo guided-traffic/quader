@@ -15,7 +15,7 @@ Every request on a repository's address is charged to a caller: a user (all sess
 | From the upstream, GB per hour; upstream requests per hour | hour | what is cached is still served, what needs the upstream is refused |
 | Downloads in parallel | — | a further download waits up to 10 seconds, then 429; while waiting downloads hold a quarter of a replica's request slots, 429 at once |
 | GB per day | day | 429 before the next download starts |
-| Refused requests per hour | hour | the caller is blocked for the block time; a request refused by a request figure counts as one |
+| Refused requests per hour | hour | the caller is blocked for the block time. Counted are refusals of access (a name the caller may not read or write), failed credentials and unknown repositories; a 429 of any limit is not counted, so a caller that sends past its request limit is slowed to that limit and not blocked |
 
 A **profile** is a named set of these figures; an empty figure is unlimited. A **rule** gives a profile to a caller at a place (the instance, a project, a repository), optionally with single figures changed. Which rule applies: the repository's rules first, then the project's, then the instance's; at each place a rule for the single caller or address, else the caller's groups (per figure the most generous), else the rule of its kind. Without other rules a signed-in user gets **Standard**, a technical token and a CI job **Technical**, an anonymous caller **Anonymous**, and an administrator **Unlimited**. A remote repository also has **ceilings**: what all anonymous callers, and all signed-in callers, may fetch from its upstream together.
 

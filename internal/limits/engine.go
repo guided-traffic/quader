@@ -372,7 +372,7 @@ func addWindow(take *cluster.LimitOp, ctr, bucket string, w time.Duration, at ti
 // the budget key, reads its block marker and decides the class of R-API-016 that is in force, all in one take (Q-LIM-57): the
 // request is counted in its windows only when none of them, no block and no class refuses it, so a refused request fills no
 // window and the Retry-After of its refusal is the time after which the caller's next request fits. A request the request
-// figures refuse is a refused request of R-LIM-008 (Q-LIM-58). In enforce the block and the request figures refuse; in audit
+// figures refuse is not a refused request of R-LIM-008 (Q-LIM-58). In enforce the block and the request figures refuse; in audit
 // they are recorded as would_limit and nothing refuses (Q-LIM-4: no class is in force).
 func (e *Engine) Check(ctx context.Context, c *Charge, at time.Time, class ClassCheck) Stage {
 	if at.IsZero() {
@@ -416,24 +416,23 @@ func (e *Engine) Check(ctx context.Context, c *Charge, at time.Time, class Class
 			}
 		}
 	}
-	enforce := c.Mode == ModeEnforce
-	blocked := e.checkBlock(ctx, c, r.Value, &st, enforce)
+	e.checkBlock(ctx, c, r.Value, &st, c.Mode == ModeEnforce)
 	for _, w := range []window{rb, rh} {
 		if w.i >= 0 {
-			e.checkWindow(ctx, c, at, w, r.Windows[w.i], local, blocked, &st)
+			e.checkWindow(ctx, c, at, w, r.Windows[w.i], local, &st)
 		}
 	}
 	return st
 }
 
-// checkBlock decides the block of the budget key from the marker the take read (R-LIM-025), and reports whether one holds.
-func (e *Engine) checkBlock(ctx context.Context, c *Charge, mk string, st *Stage, enforce bool) bool {
+// checkBlock decides the block of the budget key from the marker the take read (R-LIM-025).
+func (e *Engine) checkBlock(ctx context.Context, c *Charge, mk string, st *Stage, enforce bool) {
 	if mk == "" {
-		return false
+		return
 	}
 	retry, ok := markerRemaining(mk, e.now())
 	if !ok {
-		return false
+		return
 	}
 	e.decided(c, "refusedPerHour", enforce)
 	if enforce && st.Err == nil {
@@ -446,13 +445,13 @@ func (e *Engine) checkBlock(ctx context.Context, c *Charge, mk string, st *Stage
 			place: c.Resolution.Place, retry: retry, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
 		}, f[RefusedPerHour])
 	}
-	return true
 }
 
 // checkWindow decides one request window from what the take found in it (R-LIM-020): the RateLimit policy in enforce, and a
-// window the request does not fit refuses it with the time after which the next request fits, counted as a refused request
-// unless a block refused it already (Q-LIM-58).
-func (e *Engine) checkWindow(ctx context.Context, c *Charge, at time.Time, w window, s cluster.WindowState, local, blocked bool, st *Stage) {
+// window the request does not fit refuses it with the time after which the next request fits. The refusal is not a refused
+// request of R-LIM-008, in enforce or in audit (Q-LIM-58): a caller that keeps sending is held to its figure's rate, and
+// refusedPerHour does not block it for that.
+func (e *Engine) checkWindow(ctx context.Context, c *Charge, at time.Time, w window, s cluster.WindowState, local bool, st *Stage) {
 	enforce := c.Mode == ModeEnforce
 	_, el := cluster.WindowIndex(at, w.w)
 	lim := e.scaled(w.limit, local)
@@ -471,9 +470,6 @@ func (e *Engine) checkWindow(ctx context.Context, c *Charge, at time.Time, w win
 		return
 	}
 	e.decided(c, w.fig.String(), enforce)
-	if !blocked {
-		c.MarkRefused()
-	}
 	if enforce && st.Err == nil {
 		st.Err = refusal{
 			code: errs.CodeRateLimited, figure: w.fig.String(), limit: w.limit, window: w.w, place: c.Resolution.Place,

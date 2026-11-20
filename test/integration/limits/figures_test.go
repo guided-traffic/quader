@@ -295,14 +295,16 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 	})
 }
 
-// R-LIM-017, R-LIM-020, R-LIM-008, R-LIM-025: a refused request is not counted in the request windows, so a caller at one request a
-// second that retries every second, as Retry-After tells it, is admitted again; a caller that hammers is refused beyond the figure, each
-// refusal is a refused request, and refusedPerHour blocks it. HEADs carry no body: the requests are the payload.
-func TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsBlocked(t *testing.T) {
-	var hammer string
+// R-LIM-017, R-LIM-020, R-LIM-008, R-LIM-025, Q-LIM-58: a refused request is not counted in the request windows, so a caller at one
+// request a second that retries every second, as Retry-After tells it, is admitted again; a caller that keeps sending is held to its
+// figure's rate, its refusals are no refused requests, and refusedPerHour does not block it. HEADs carry no body: the requests are the
+// payload.
+func TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsNotBlocked(t *testing.T) {
+	var hammer, technical string
 	e := newEnvWith(t, envOptions{valkey: true, seed: func(st *testenv.Stack) {
 		sa := st.ServiceAccount("hammer")
 		hammer = st.Token(sa, scope.Scope{Inherit: true})
+		technical = st.Text(`SELECT technical_token_id::text FROM api_token WHERE principal_id = $1::uuid`, sa.ID)
 		st.Policy("hammer-reads", []string{"read"}, []string{rFiles}, sa)
 	}})
 	e.rule(t, rFiles, every("user"), map[string]any{"requestsPerSecond": 1, "requestsBurst": 1})
@@ -342,19 +344,53 @@ func TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsBlock
 		}
 	})
 
-	t.Run("R-LIM-008 R-LIM-025 a hammering caller is refused beyond the figure, and blocked by its refusals", func(t *testing.T) {
-		codes := map[int]int{}
-		for range 12 {
-			codes[e.st.Do(e.r, "HEAD", e.filePath, hammer, nil).Status]++
+	t.Run("R-LIM-008 R-LIM-025 Q-LIM-58 a caller that keeps sending gets its figure's rate, counts no refused request and is not blocked", func(t *testing.T) {
+		// 3 s of 20 requests a second at a figure of one a second and refusedPerHour 5: under the taken-back rule the ~55 refusals
+		// would have blocked the token within the first second.
+		admitted, limited := 0, 0
+		for end := time.Now().Add(3 * time.Second); time.Now().Before(end); time.Sleep(50 * time.Millisecond) {
+			switch a := e.st.Do(e.r, "HEAD", e.filePath, hammer, nil); {
+			case a.Status == 200:
+				admitted++
+			case a.Status == 429 && a.Header.Get("Retry-After") != "":
+				limited++ // a HEAD has no body; caller_blocked would show in the GET below
+			default:
+				t.Fatalf("%d %v", a.Status, a.Header)
+			}
 		}
-		if codes[200] == 0 || codes[429] < 6 {
-			t.Fatalf("12 requests at once at one a second: %v", codes)
+		// one a second, and an admitted request weighs on the next window: about every second second, at most one per window
+		if admitted < 1 || admitted > 4 || limited < 20 {
+			t.Fatalf("3 s of hammering at one request a second: %d admitted, %d refused", admitted, limited)
 		}
-		time.Sleep(time.Second) // the flush passes refusedPerHour and sets the marker
-		refusal(t, e.st.Do(e.r, "GET", e.filePath, hammer, nil), "the hammering token after its refusals", "caller_blocked", "")
-		time.Sleep(2 * time.Second) // the reader's own window of the subtest above has room again
-		if a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil); a.Status != 200 {
-			t.Fatalf("another caller beside the blocked token: %d %s", a.Status, a.Body)
+		time.Sleep(1500 * time.Millisecond) // the charge flush (200 ms) and the usage flush (1 s) pass
+		a := e.st.Do(e.r, "GET", e.filePath, hammer, nil)
+		if a.Status == 429 {
+			if a.Code(t) == "caller_blocked" {
+				t.Fatalf("the token was blocked by %d refusals of its request figure: %s", limited, a.Body)
+			}
+			s, _ := strconv.Atoi(a.Header.Get("Retry-After"))
+			time.Sleep(time.Duration(s) * time.Second)
+			a = e.st.Do(e.r, "GET", e.filePath, hammer, nil)
+		}
+		if a.Status != 200 {
+			t.Fatalf("the token after waiting the Retry-After: %d %s", a.Status, a.Body)
+		}
+		d := e.st.Do(e.r, "GET", "/api/v1/usage/subjects/technicalToken/"+technical, e.admin, nil)
+		if d.Status != 200 {
+			t.Fatalf("the token's usage: %d %s", d.Status, d.Body)
+		}
+		budgets, _ := d.JSON(t)["budgets"].([]any)
+		if len(budgets) == 0 {
+			t.Fatalf("the token has no budget key: %s", d.Body)
+		}
+		for _, b := range budgets {
+			fig := b.(map[string]any)["figures"].(map[string]any)["refusedPerHour"].(map[string]any)
+			if fig["used"] != float64(0) || b.(map[string]any)["blockedUntil"] != nil {
+				t.Fatalf("refusedPerHour after %d refusals of the request figure: %v, blocked until %v", limited, fig, b.(map[string]any)["blockedUntil"])
+			}
+		}
+		if n := e.st.Number(`SELECT COALESCE(sum(refused), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'technical_token' AND subject_ref = $1`, technical); n != 0 {
+			t.Fatalf("%d refused requests recorded for the token, want 0", n)
 		}
 	})
 }

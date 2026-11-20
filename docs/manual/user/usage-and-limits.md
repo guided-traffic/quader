@@ -35,7 +35,7 @@ A client that meets a limit gets the answer `429 Too Many Requests` with the tim
 | Bytes per hour or per day | The next download is refused before it starts; a download that has started finishes. The time to wait is the rest of the hour or the day, and it is meant: there is no room before then |
 | From the upstream | What is in the cache is still served; only what Quader would have to fetch first is refused |
 | Downloads at once | A further download waits up to 10 seconds, then is refused. While a server already holds many waiting downloads, a further one is refused at once |
-| Refused requests | After too many refused requests in an hour (names you may not read, or requests sent past your request limit without waiting), every request is refused for the block time, 15 minutes by default |
+| Refused requests | After too many refused requests in an hour (names you may not read or write, a repository that does not exist), every request is refused for the block time, 15 minutes by default. A 429 of a limit is not one: a client that sends past its request limit is slowed to the limit, never blocked for it |
 
 ### What your client shows
 

@@ -74,7 +74,7 @@ die bereits gebaut sind und für zukünftige Registries." Every rule below is st
 Galaxy, Debian, generic, npm, NuGet and OCI; where a protocol cannot carry a rule, it is named in
 [Gaps of the protocols](#gaps-of-the-protocols) with options for the owner.
 
-The owner decided four more questions on 2026-11-20, each for every format:
+The owner decided five more questions on 2026-11-20, each for every format:
 
 | # | Decision of the owner, 2026-11-20 | Where |
 |---|---|---|
@@ -82,6 +82,7 @@ The owner decided four more questions on 2026-11-20, each for every format:
 | 19 | A refused request is not counted in the request windows; the brake against a client that hammers is `refusedPerHour` with its block, which stays as it is | R-LIM-017, R-LIM-025, [Q-LIM-57](#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7) |
 | 20 | podman's long wait at a byte figure stays: `Retry-After` there is honest, and the manual says so and names the CI job's timeout | R-LIM-020, the manual's [table of the clients](../manual/user/usage-and-limits.md#what-your-client-shows) |
 | 21 | The downloads that wait for a parallel slot hold at most a fixed share of a replica's request slots; a further one is refused at once (F-163) | R-LIM-024, [Q-LIM-60](#q-lim-60--waiting-downloads-hold-at-most-a-quarter-of-an-endpoints-request-slots) |
+| 22 | "Option B: Ein 429 zählt nicht zur Sperre": a `429` of a request figure is not a refused request and does not count toward `refusedPerHour`; a caller that keeps sending past its figure is held to the figure's rate, and the block of decision 19 stays what it was, a brake on the refusals R-LIM-008 names | R-LIM-008, R-LIM-025, [Q-LIM-58](#q-lim-58--a-429-of-a-request-figure-is-not-a-refused-request) |
 
 The request figures of the built-in profiles are set from a measurement (Q-LIM-59); every other number of them is the development
 agent's estimate, which the owner did not change.
@@ -358,12 +359,7 @@ A request is a **refused request** of its subject when its answer is one of thes
   for a caller with or without a credential; not the challenge (below);
 - `401` because a presented credential failed (R-LIM-003);
 - `404` `repository_not_found` or a project that does not exist, for a caller with a credential (the `401` R-AUTH-037 gives an
-  anonymous caller for an unknown key is the challenge and not refused, below);
-- `429` `rate_limited` by a request figure of its budget key (`requestsPerSecond`/`requestsBurst`, `requestsPerHour`) at stage 7, in
-  `enforce`, and in `audit` a request those figures would have refused: a refused request is counted in no request window
-  (R-LIM-017), so the figure of refused requests and its block are what stops a caller that keeps sending
-  ([Q-LIM-58](#q-lim-58--a-request-the-request-figures-refuse-is-a-refused-request)). A request a block refuses is none: the
-  block does not lengthen itself.
+  anonymous caller for an unknown key is the challenge and not refused, below).
 
 Not a refused request ([Q-LIM-7](#q-lim-7--a-refused-request-is-a-refusal-not-a-missing-package)):
 
@@ -371,17 +367,22 @@ Not a refused request ([Q-LIM-7](#q-lim-7--a-refused-request-is-a-refusal-not-a-
   key that does not exist;
 - a `404` of a package, a version or a file that does not exist in a repository the caller may read (a normal miss: NuGet asks
   every feed of a restore for every package, a client probes a tag);
-- every other status (`400`, `409`, `413`, `422`, a `429` of any other figure, of a block or of the class `package_write`, `5xx`).
+- a `429` of the limits, of any figure, of a block or of the class `package_write`; in `audit`, a request a figure would have
+  refused. A `429` `rate_limited` of a request figure is none either (the owner's decision,
+  [Q-LIM-58](#q-lim-58--a-429-of-a-request-figure-is-not-a-refused-request)): it counts in no request window (R-LIM-017), so a
+  caller that keeps sending is held to its figure's rate, and it does not count toward `refusedPerHour`, so the block of R-LIM-025
+  does not hold it either;
+- every other status (`400`, `409`, `413`, `422`, `5xx`).
 
-The decision point, the authentication stage, the dispatcher's repository lookup and stage 7 for its request figures mark the request
-as refused in its `limits.Charge`; the counting reads the mark, never the status code.
+The decision point, the authentication stage and the dispatcher's repository lookup mark the request as refused in its
+`limits.Charge`; the counting reads the mark, never the status code.
 
 Acceptance criteria:
 
 - `dotnet restore` of a solution with 300 packages over two feeds, one of which holds none of them, counts no refused request.
 - 61 requests with a valid token for a repository the token may not read count 61 refused requests of the token's subject.
-- 20 requests at once of a subject at `requestsPerSecond` 1 with a burst of 1 count 19 refused requests; with `refusedPerHour` 5 the
-  subject is blocked within two seconds, and the requests the block refuses count none.
+- 20 requests at once of a subject at `requestsPerSecond` 1 with a burst of 1 and `refusedPerHour` 5 are refused 19 times
+  `rate_limited`, count no refused request, and the subject is not blocked: its next request after the `Retry-After` is admitted.
 
 ### R-LIM-009 · The figures in every format
 Priority: **MVP** · Covers: BEYOND-030
@@ -1066,11 +1067,13 @@ Priority: **MVP** · Covers: BEYOND-030
   <block ID> NX EX <block seconds>`); the block time is the instance setting `blockSeconds` (900 s by default, an estimate;
   60 to 86,400). While the marker exists, stage 7 answers every request charged to that budget key with 429 `caller_blocked` and a
   `Retry-After` of the remaining time, before the handler.
-- **The brake against a caller that keeps sending** (the owner's decision 19): a request refused by a request figure counts in no
-  request window but is a refused request (R-LIM-008,
-  [Q-LIM-58](#q-lim-58--a-request-the-request-figures-refuse-is-a-refused-request)), so a caller that sends faster than its figure
-  gets its figure's rate, and once its refusals of an hour pass `refusedPerHour`, nothing for the block's time. A client that honours
-  `Retry-After` is refused about once per wait and stays below the figure.
+- **The brake against a caller that keeps sending** is its request figure, not the block (the owner's decision 22,
+  [Q-LIM-58](#q-lim-58--a-429-of-a-request-figure-is-not-a-refused-request)): a request refused by a request figure counts in no
+  request window (R-LIM-017) and is not a refused request (R-LIM-008), so a caller that sends faster than its figure gets its
+  figure's rate, never more and never less, for as long as it keeps sending, and a client that waits the `Retry-After` is
+  admitted again. A client with many connections that overflows its burst once collects many `429`s at once, and none of them
+  moves `refusedPerHour`. The block holds what R-LIM-008 names: refusals of the decision point, failed credentials and unknown
+  repositories.
 - **Who is blocked** ([Q-LIM-15](#q-lim-15--a-block-holds-one-budget-key-for-15-minutes-and-only-requests-charged-to-it)): the
   budget key only. A block of an address blocks the anonymous requests from that address (a failed credential is answered 401 before
   stage 7 anyway, R-LIM-003), never a request whose credential is valid, which is charged to its own subject. A block of a user at a repository does not reach
@@ -1084,10 +1087,7 @@ Priority: **MVP** · Covers: BEYOND-030
 - **In `audit`** no marker is set; the flush records `would_limit` for `refusedPerHour` once per budget key and window.
 - **What it cannot do**: an attacker who sends wrong tokens from a victim's NAT address blocks that address's anonymous requests
   (anonymous colleagues of a public repository) for the block time, repeatably; it cannot block a colleague who presents a valid
-  credential, whose requests are charged to the colleague's subject. Since a request figure's refusal is a refused request, one
-  anonymous client behind a NAT address that keeps sending past the address's request figure blocks the address's anonymous requests
-  the same way; the built-in Anonymous figures are set so that normal use from one address does not reach them (R-LIM-010). The
-  remaining gap is H-1010 on
+  credential, whose requests are charged to the colleague's subject. The remaining gap is H-1010 on
   [security/usage-and-limits.md](../security/usage-and-limits.md). The failed-credential throttle of R-AUTH-038 is a separate
   mechanism and stays as it is.
 
@@ -1701,7 +1701,7 @@ Priority: **MVP** · Covers: BEYOND-030
   each once ([Q-LIM-55](#q-lim-55--the-limits-are-tested-once-in-the-integration-set-a-format-adds-one-case-of-its-client)): every
   figure's refusal with its code and `Retry-After`, the download that crosses a byte figure and the next refused before its first
   byte, the slowed download and the refused parallel one, the waiting downloads' share of the request slots, a caller that retries
-  every second at a request figure of one a second and is admitted again, a hammering caller blocked by its refusals, the block of
+  every second at a request figure of one a second and is admitted again, a hammering caller held to its figure's rate and not blocked, the block of
   refused requests and its lift, a reader's misses that block
   nothing, the subjects of R-LIM-001 (a user's personal tokens, two technical tokens of one account at each level, an address and an
   IPv6 `/64`, an administrator), what is cached served with the upstream budget used up, the anonymous ceiling against a second
@@ -2529,29 +2529,38 @@ no round trip. The development agent would revisit this if an installation's Val
 **Applied in the spec:** R-LIM-017, R-LIM-018, R-LIM-019, R-LIM-020; [architecture.md](architecture.md) R-ARCH-031 (the command list),
 R-ARCH-034. Code: `OpTake` in [valkey_limits.go](../../internal/cluster/valkey_limits.go), [valkey_take.go](../../internal/cluster/valkey_take.go),
 `Engine.Check` in [engine.go](../../internal/limits/engine.go). Tests: `TestR_LIM_017_ARefusedRequestFillsNoRequestWindow` in
-[engine_test.go](../../internal/limits/engine_test.go), `TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsBlocked`
+[engine_test.go](../../internal/limits/engine_test.go), `TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsNotBlocked`
 in [figures_test.go](../../test/integration/limits/figures_test.go) (against the stack's Valkey with Sentinel).
 
-### Q-LIM-58 · A request the request figures refuse is a refused request
+### Q-LIM-58 · A 429 of a request figure is not a refused request
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the owner on 2026-11-20: (b)** (decision 22), "Option B: Ein 429 zählt nicht zur Sperre", over the
+development agent's (a), which had been built.
 
-Context: with decision 19 the owner named `refusedPerHour` with its block as the brake against a client that hammers. R-LIM-008
-counted no `429` as a refused request, so a client that kept sending past its request figure met no brake but its figure's rate:
-the block never saw it.
+Context: with Q-LIM-57 a refused request fills no request window. Built with it, a `429` `rate_limited` of a request figure was made
+a refused request of R-LIM-008, counting toward `refusedPerHour` and its block (R-LIM-025), on the development agent's wrong statement
+that it already counted. Before, R-LIM-008 named only the refusals of the decision point, failed credentials and unknown repositories.
+The owner was asked whether to keep it, to take it back, or to count at most one refusal a second.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A `429` `rate_limited` of a request figure is a refused request (in `audit`, a request the figures would have refused); a block's refusal is none (chosen) | The refusals beyond the figure count toward `refusedPerHour` | The owner's brake exists: a caller at twice its figure for an hour is blocked once its refusals pass the figure; a client that honours `Retry-After` is refused about once per wait | One anonymous client behind a NAT that keeps sending blocks the address's anonymous requests (R-LIM-025) |
-| (b) Leave R-LIM-008 | A hammering caller is held to its figure's rate, nothing more | No change | The brake the owner named does not act on the case he named it for |
-| (c) Every `429` of the limits is a refused request | Byte figures, parallel downloads and `package_write` too | One rule | A client that honours a byte figure's long `Retry-After` and retries (podman about 20 times in 16 minutes) would be blocked for retrying as told; a caller that hammers at a byte figure already meets the request figure |
+| (a) Keep it: every `429` `rate_limited` of a request figure is a refused request (in `audit`, a request the figures would have refused) | The refusals beyond the figure count toward `refusedPerHour`, and the block stops a caller that keeps sending | A caller that keeps sending past its figure for long is shut out for the block's time | A client with many connections (three `npm install` at once behind one NAT address) overflows its burst once, collects hundreds of `429`s in a second and sits in the block of 15 minutes at once (Anonymous: 60 refusals an hour), against the owner's decision that a client that waits is admitted again (Q-LIM-57); the block saves the server nothing, since a blocked request costs the same round trip as a `429` |
+| (b) Take it back: a `429` of a request figure does not count toward the block (chosen) | A caller that keeps sending past its figure is held to the figure's rate and nothing more; the block holds what R-LIM-008 named before | A client that waits is admitted again however many of its connections were refused; no NAT address is blocked by its own clients' burst; the block stays for what it was built for | A caller that keeps sending is never shut out; it costs one round trip per request for as long as it sends |
+| (c) Count at most one refusal a second of a budget key | A burst of refusals counts once; a caller that keeps sending for more than `refusedPerHour` seconds of an hour is blocked | A burst no longer blocks at once | A caller that keeps sending is still blocked after a minute (Anonymous); one more counter per budget key, and the block still saves no work, since a blocked request costs the round trip a `429` does |
 
-**Choice:** (a). A request the block refuses is not counted, so a block does not lengthen itself.
+**Choice:** (b). A request a block refuses is no refused request either, so a block does not lengthen itself.
 
-**Rationale:** the request windows are what a hammering caller runs into whatever else refuses it. The development agent would revisit
-this if a client that honours `Retry-After` at a tight figure of its own is blocked (its refusals then come close to its retries).
+**Rationale:** a refusal of a request figure costs the server one round trip at stage 7, the same as a refusal of the block, so the
+block buys nothing against a caller that keeps sending; it only punishes clients whose many connections overflow a burst at once. The
+request figure alone holds such a caller to its rate. **Revisit** if a caller is found to cost the installation by hammering at its
+figure's rate (the round trips of its refusals, the log lines, the work before stage 7).
 
-**Applied in the spec:** R-LIM-008, R-LIM-025. Code: `checkWindow` in [engine.go](../../internal/limits/engine.go).
+**Applied in the spec:** R-LIM-008, R-LIM-025; [security/usage-and-limits.md](../security/usage-and-limits.md) H-1010. Code:
+`checkWindow` in [engine.go](../../internal/limits/engine.go), which marks no refusal. Tests:
+`TestR_LIM_008_ARequestFiguresRefusalIsNoRefusedRequest` in [engine_test.go](../../internal/limits/engine_test.go) (enforce, audit,
+the replica's share, and the refusals R-LIM-008 names still counting),
+`TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsNotBlocked` in
+[figures_test.go](../../test/integration/limits/figures_test.go).
 
 ### Q-LIM-59 · The built-in profiles' request figures are set from a measurement of real clients
 

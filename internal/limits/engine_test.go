@@ -212,28 +212,6 @@ func TestR_LIM_017_ARefusedRequestFillsNoRequestWindow(t *testing.T) {
 			t.Fatalf("refused after the Retry-After of %s: %v", e.RetryAfter, err)
 		}
 	})
-	t.Run("R-LIM-008 R-LIM-025 a request the request figures refuse is a refused request: a hammering caller is blocked", func(t *testing.T) {
-		f := tight
-		f[RefusedPerHour] = 5
-		r := newRig(t, ModeEnforce, f)
-		for range 20 {
-			_ = call(r)
-		}
-		r.e.Flush(context.Background())
-		_, refused, _, _, _, _ := r.usage.sum()
-		if refused != 19 {
-			t.Fatalf("%d refused requests counted, want the 19 the request figure refused", refused)
-		}
-		r.e.Flush(context.Background()) // the marker the first flush found due
-		r.clk.add(5 * time.Second)
-		if err := call(r); codeOf(err) != CodeCallerBlocked {
-			t.Fatalf("after 19 refusals at a figure of 5 refused requests an hour: %v, want caller_blocked", err)
-		}
-		r.e.Flush(context.Background())
-		if _, refused2, _, _, _, _ := r.usage.sum(); refused2 != refused {
-			t.Fatalf("a request refused by the block counted as a refused request (%d, then %d)", refused, refused2)
-		}
-	})
 	t.Run("R-LIM-019 on the replica's share a refused request fills no window either", func(t *testing.T) {
 		r := newRig(t, ModeEnforce, Figures{RequestsPerSecond: 2, RequestsBurst: 2}) // a share of 1 on each of 2 replicas
 		r.store.down.Store(true)
@@ -247,6 +225,84 @@ func TestR_LIM_017_ARefusedRequestFillsNoRequestWindow(t *testing.T) {
 		}
 		if admitted < 5 {
 			t.Fatalf("%d of 10 admitted on the share of one a second with a refused request between, want every second one", admitted)
+		}
+	})
+}
+
+// R-LIM-008, R-LIM-025, Q-LIM-58 (the owner's decision of 2026-11-20): a 429 of a request figure is not a refused request, in
+// enforce, in audit and on the replica's share; the refusals R-LIM-008 names still count and block.
+func TestR_LIM_008_ARequestFiguresRefusalIsNoRefusedRequest(t *testing.T) {
+	f := Figures{RequestsPerSecond: 1, RequestsBurst: 1, RefusedPerHour: 5}
+	const addr = "198.51.100.9"
+	call := func(r *rig) error {
+		c := r.e.Begin(anonCaller(addr), qname.Repo{})
+		defer r.e.Finish(c)
+		return r.e.Check(context.Background(), c, time.Time{}, nil).Err
+	}
+	// hammer sends 20 requests at once and runs the two flushes that count the refusals and set a marker that came due.
+	hammer := func(r *rig) (refusedByFigure int) {
+		for range 20 {
+			if codeOf(call(r)) == errs.CodeRateLimited {
+				refusedByFigure++
+			}
+		}
+		r.e.Flush(context.Background())
+		r.e.Flush(context.Background())
+		return refusedByFigure
+	}
+	t.Run("in enforce a hammering caller is held to its figure, counts no refused request and is not blocked", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		if n := hammer(r); n != 19 {
+			t.Fatalf("%d of 20 requests at once refused rate_limited, want 19", n)
+		}
+		if _, refused, _, _, _, _ := r.usage.sum(); refused != 0 {
+			t.Fatalf("%d refused requests counted for the request figure's refusals, want 0", refused)
+		}
+		if len(r.blocks.b) != 0 {
+			t.Fatalf("19 refusals of the request figure at refusedPerHour 5 blocked the caller: %v", r.blocks.b)
+		}
+		r.clk.add(2 * time.Second)
+		if err := call(r); err != nil {
+			t.Fatalf("the caller after waiting: %v, want admitted", err)
+		}
+	})
+	t.Run("in audit the figure's would-be refusals count no refused request and record no would_limit of refusedPerHour", func(t *testing.T) {
+		r := newRig(t, ModeAudit, f)
+		hammer(r)
+		_, refused, _, _, _, ev := r.usage.sum()
+		if refused != 0 || ev["audit:refusedPerHour"] != 0 {
+			t.Fatalf("refused %d, events %v, want no refused request and no would_limit of refusedPerHour", refused, ev)
+		}
+		if ev["audit:requestsPerSecond"] == 0 {
+			t.Fatalf("the request figure's would_limit is missing: %v", ev)
+		}
+	})
+	t.Run("R-LIM-019 on the replica's share the figure's refusals count no refused request", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, Figures{RequestsPerSecond: 2, RequestsBurst: 2, RefusedPerHour: 5}) // a share of 1 on each of 2
+		r.store.down.Store(true)
+		if n := hammer(r); n != 19 {
+			t.Fatalf("%d of 20 requests at once refused on the share of one, want 19", n)
+		}
+		if _, refused, _, _, _, _ := r.usage.sum(); refused != 0 || len(r.blocks.b) != 0 {
+			t.Fatalf("on the share: %d refused requests, %d blocks, want none", refused, len(r.blocks.b))
+		}
+	})
+	t.Run("the refusals R-LIM-008 names still count, and block past refusedPerHour", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		hammer(r)
+		r.clk.add(2 * time.Second)
+		for range 6 { // a refusal of the decision point, as the dispatcher marks a 403
+			c := r.e.Begin(anonCaller(addr), qname.Repo{})
+			c.MarkRefused()
+			r.e.Finish(c)
+		}
+		r.e.Flush(context.Background())
+		r.e.Flush(context.Background())
+		if _, refused, _, _, _, _ := r.usage.sum(); refused != 6 {
+			t.Fatalf("%d refused requests counted, want the 6 of the decision point and none of the request figure", refused)
+		}
+		if err := call(r); codeOf(err) != CodeCallerBlocked {
+			t.Fatalf("after 6 refusals of the decision point at refusedPerHour 5: %v, want caller_blocked", err)
 		}
 	})
 }
