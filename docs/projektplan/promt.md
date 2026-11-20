@@ -570,15 +570,19 @@ list [With the owner](#with-the-owner); what is untested is in section 12. Open 
     with its copy button outside the box; four controls stand before step 1, and **Create a token** is a default button; nine
     closed sections follow the steps as a list of lines, and opened the page is 9,332 px high at 1,440 px; the right third of
     the page is empty at 1,440 px.
-  - **How, proposed by the development agent, not confirmed:** a designer (`voltagent-core-dev:ui-designer`) lands nothing; it
-    delivers three variants of the page as renders (npm and OCI, light and dark, 1,440 and 390 px) on one page to compare, the
-    owner chooses, and a builder builds the choice under rule 11. One design for every format: a format adds at most a constant
-    (a picture) and no screen of its own to the render set. Pictures are illustrations or diagrams of our own, because the logos
-    of npm, Ansible Galaxy and Docker need their owners' permission (Q-UI-225 to 227). The token rules stay (R-UI-043); the
-    order and the build of the page may change. The variants show where the explanation goes: on the page, where
-    [ADR-202](../decisions.md#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository) put it, or behind one link.
-  - Not started. It runs beside the measurement of [section 12 A](#a--the-shape-of-the-test-suite-refactor) and the walk's
-    other items.
+  - **Chosen by the owner** (2026-11-20, from three variants a designer drew as a mockup with renders, `.out/w27/`, not
+    committed): "Variante A ist am besten und gefällt mir." Variant A keeps today's order and column. A snippet is a window:
+    an editor for a file (a tab with the file's name, line numbers, **Download** and **Copy** in its bar), a terminal for a
+    command, light in the light scheme and dark in the dark one, with syntax colours and the placeholders marked. A small
+    picture of the flow (the machine, the token, the repository) stands in the header, and a rail joins the steps. The
+    credential is one framed row with **Create a token** as the page's one blue button. The sentences are cut (npm: 72 words
+    before the end of step 2 become 38; OCI: 157 become 45), a second way of a step (Kubernetes) is folded. The explanation
+    stays on the page, as
+    [ADR-202](../decisions.md#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository) has it, as closed rows
+    under **Guide**. One design for every format; a format adds at most an accent inside the pictures and a glyph, and no
+    screen to the render set. No logo of npm, Ansible Galaxy or Docker (Q-UI-225 to 227). Not chosen: B (a picture per step,
+    the explanation in a drawer), C (a workbench with live substitution).
+  - In work: a builder builds variant A under rule 11.
 
 ## 11 · Run record
 
@@ -587,8 +591,7 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20** (`main` at `38b1d1ec`).
 
-- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: the designer's three variants exist as a mockup with renders in `.out/w27/` (not committed), the development
-  agent has looked at them, and the owner chooses; a builder for W-14; a builder for W-20 and
+- **In work** (started 2026-11-20, 09:30, nothing landed yet): W-27: a builder builds variant A, the owner's choice; a builder for W-14; a builder for W-20 and
   the wiki's visibility behind a disclosure. W-12 is decided and not built now: the owner chose an invitation by e-mail, later
   ("Option c, aber erst später", 2026-11-20); it stands in [FULL.md](FULL.md#m9--automation-and-integration), M9.
 - **To check first:** F-165 in the next full nightly; then section 12.
