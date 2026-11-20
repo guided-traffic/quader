@@ -149,7 +149,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 19:20): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers, specified, and in work in the first of four packages ([With the owner](#with-the-owner)); the role `scanner`, built and waiting on its branch for a certificate for each kind of pod, which the owner decided that day, and after it the analyser's database in a repository (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-20, 19:20): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers, specified, and in work in the first of four packages ([With the owner](#with-the-owner)); the role `scanner`, landed that day with a certificate for each kind of pod, and after it the analyser's database in a repository, in work (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -580,7 +580,7 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 20:10, after the release of the project `upstream`, the landing of the malware scan's specification and a green pipeline on `main`.
+**State on 2026-11-20**, 20:19, after the landing of the role `scanner` with a certificate for each kind of pod.
 
 - **Landed and released on 2026-11-20** (the last release cut is the one of `252a0a2d0`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
@@ -717,13 +717,91 @@ runs are in `git log`; this section holds the current state.
   `repository-settings-deb-remote`, `repository-settings-deb` and `admin-upstream-registry` on a stack of its own,
   without a finding. No test added: the render's layout check is the test of record. **Its pipeline** (run 44792888153) ended green at
   20:09, the job `UI layout checks` among its jobs, and its release was cut at 19:42.
-- **In work** (20:10), two builders:
+- **In work** (20:19), two builders:
   - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
     two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
     start on its branch; then the gate in the two serve points, the fills of remote repositories, virtual
     repositories, the walk of an OCI virtual repository, the repository's stricter-only setting, the audit events, the
     Bastion feed and the backup. It has to be landable alone: before a scanner exists, an installation behaves by
     default as it does today.
+    **First stage reported at 20:19** (one commit on its branch, not landed yet): the migration 00088 with five
+    tables (the verdict of a blob keyed by its digest, the release, the settings with the switch off, the signature
+    database in use, what the job last saw of the scanners), all registered for backup; the store behind one
+    interface of 17 methods, the one writer of verdicts, releases and the switch (Q-MAL-40); the join of verdict and
+    release into the download statement, so every item carries its state without a second query; eight operations
+    under `/api/v1/malware/` and the `malware` member on files; the repository's stricter-only setting with its
+    weakening rule, pulled forward because the repository's page needs the API to take it; the audit events, the
+    replay at a restore and the Bastion feed's entries. **Its decisions:** Q-MAL-40 to Q-MAL-48, among them the gaps
+    of the screens closed before the screens are built (Q-MAL-45: an operation `getMalwareSwitch` for every signed-in
+    caller, because an Owner on a repository's settings has no `settings:read`; more members on a file's status; a
+    find lists at most 100 items and 100 repositories with counts) and that `malware_verdict` is a signal and not a
+    change area (Q-MAL-44). **Gates, each exit 0:** build, the full unit run, generate-check, lint, cyclo, gosec,
+    links and check, the white-label scan, and under the stack's lock the integration areas `postgres`, `repository`,
+    `files`, `packages`, the new `malware` and the Bastion feed. **Not run yet:** the areas `api`, `proxy`, `virtual`,
+    OCI and the other formats, though the download statement changed for all of them; the builder runs them, rebased
+    on `main`, before the stage lands. **What it cost:** about ten unit tests of milliseconds; a new integration area
+    `malware` of two tests, 5.1 s together with five files of 8 bytes, which falls into shard b; nothing end to end.
+    **Landable alone, shown by two tests:** with the scanning on, the switch off and no setting on a repository the
+    gate is strict nowhere, and without a verdict nothing is refused. **What an administrator gets who turns the
+    switch on with no scanner deployed, once the gate is in:** every download of content without a verdict waits 25 s
+    and is answered 503 with `Retry-After`, again at every retry; the way out is the switch (Q-MAL-36), and the
+    settings answer shows the number of unchecked blobs beforehand. No guard was built. **Seen beside it, for the
+    packages that follow:** package 2's planned check refuses a worker that claims the queue `malware` without a
+    scanner's address, which with the scanning on by default may refuse a default or local start unless the default
+    queues leave `malware` out; the count of unchecked blobs is computed over all items at every read of the
+    settings, costly on a large installation.
+  - **Package B of the scanner, the analyser's database in a repository** (since 20:19, on `main` with package A):
+    the task that fetches the database into `upstream/scanner-trivy`, the system's own reading through that
+    repository, the actor of its fills, the cleanup's exemption for the layer in use, the "in use" line of the admin
+    page and the sources screen; a migration with the next free number after the malware scan's 00088.
+- **The role `scanner` (package A), landed on 2026-11-20 at 20:19** in two commits: "container images are analysed in
+  scanner pods that hold no secret of the installation" and "every kind of pod has a TLS certificate of its own, which
+  the chart issues through cert-manager" (the owner's decision, [With the owner](#with-the-owner)). **The
+  certificates as built:** four kinds have a pair and a name, `api`, `packages`, `worker` and `scanner`
+  (`<fullname>-<kind>.<namespace>.svc`, and every pair also the ops name, so that one ServiceMonitor endpoint still
+  works; the cost is H-1071, any kind's certificate passes as any pod's ops listener toward Prometheus); `api` and
+  `packages` serve only, `worker` and `scanner` may also present theirs as a client. With `tls.certManager.issuerRef`
+  the chart renders one Certificate and Secret per kind (`<fullname>-tls-<kind>`), without it
+  `tls.existingSecrets.<kind>` names a Secret each; two kinds on one Secret, or both ways at once, fail the render. A
+  pod mounts only its own kind's Secret. The worker requires the scanner's name and the scanner admits only the
+  worker's; the scanner requires the name of `packages`, and the scan listener admits the names of
+  `server.scan_clients` (a list, so that the malware scanner is one more entry). A name must stand in the certificate
+  exactly, a wildcard does not count; the role `all` keeps one certificate and optional names. Each ingress controller
+  verifies a backend under its kind's name: HAProxy Ingress from the Service's annotations, Traefik with a
+  ServersTransport per kind, ingress-nginx with an Ingress per kind, the Gateway API with a BackendTLSPolicy per
+  Service. `tls.secretName`, `certKey`, `keyKey`, `tls.ops`, `scanner.tls` and `backendTLSPolicy.hostname` are gone.
+  **Its decisions:** Q-HA-345 (the owner's, with his two sentences; it supersedes Q-HA-317 and the one-certificate
+  part of Q-VULN-163), Q-HA-346 to 349, Q-ARCH-552 and 553, Q-VULN-185, ADR-215; H-1035 rewritten with a table of
+  what a stolen certificate of each kind still allows, the gaps H-1071 to H-1073 (H-1072: the name check is as strong
+  as the control of who may ask the issuer for a certificate). **How a fifth kind is added** stands in
+  [helm-chart.md](../developer/helm-chart.md): one entry in the chart's table of kinds, a key of `tls.existingSecrets`,
+  the mount in its Deployment. **Seen on a kind cluster of its own, before the rebase:** each Deployment mounts only
+  its kind's Secret; the scanner admits the worker's certificate and refuses those of `packages`, `scanner` and `api`;
+  the scan listener admits the scanner's and refuses the other three; the ingress answers 503 when the Service of
+  `api` is given the name of `packages` and 200 again with its own; `e2e (vuln)` passed (94 tests); the rotation
+  drill renewed three certificates, every pod served the new one within 1.7 s, 8,993 requests all answered 200.
+  **On the final commit:** `e2e (vuln)` once more (94 tests), and each gate once with exit 0 (lint, vet, gosec,
+  cyclo, generate-check, the architecture tests, unit, chart lint and tests, the coverage tool's tests, links and
+  check, the white-label scan) and the integration areas `vulnimage`, `authz`, `limits`, `oci` and `packages`; by
+  the development agent before the push: the full unit run, the chart tests, links and check. **What it cost:** two
+  unit tests of well under a second, chart tests of about 8 s together, five more handshakes in one case of the area
+  `vulnimage` (1.7 s); no new end-to-end case, nothing in a format's leg. **Not verified:** the Ingress per kind of
+  ingress-nginx and the ServersTransports of Traefik against a live controller (chart tests only); the Gateway API's
+  policies against a gateway (the set `edge` was not run); the restore drill with the changed values (the set
+  `backup` was not run); a change of the issuer's CA (H-1073); the looks at the two listeners on the final commit
+  (the builder's script had reused the first cluster's certificates; unit and `vulnimage` cover the refusals).
+  **The owner's installation and this release**, read and rendered on 2026-11-20: its values still name
+  `tls.secretName`, which the new chart's schema refuses, so its upgrade fails before anything is applied and the
+  installation keeps serving the release before; the other order fails the same way (the released chart's schema
+  refuses `tls.certManager`), so there is no order without one refused upgrade. The change of its values is prepared
+  as a patch and given to the owner, who commits there (the issuer in place of `tls.secretName`, no `caSecret`, his
+  hand-written `Certificate` removed; rendered with the new chart: 28 objects, four Certificates from his issuer).
+  Nothing else of his cluster waits on that release (no other Kustomization depends on it). Read on his cluster: the
+  issuer is of the CA type and its Secrets carry `ca.crt`; pods reach every endpoint of the cluster without a label,
+  which is all the scanner asks. **What the upgrade then does** (worked out from the chart, not run): from the moment
+  the Services carry the new names, the ingress verifies the old pods under names their old certificate does not
+  have, so requests to an old pod get 503 until the rollout has replaced it; named to the owner. The scanner adds two
+  pods that ask for 500 m CPU and 1 GiB each by the chart's default. **Its record from the first stage:**
   - **Package A of the scanner, first stage reported:** `0f23ad8ed` on `7fe52214` (143 files), the role `scanner`
     with its token, its listener on `packages`, the chart's objects and the tests up to the integration tier; no
     migration. Gates green but one: `make versions-check` fails on this machine's Docker buildx (F-17, the owner's
@@ -754,25 +832,12 @@ runs are in `git log`; this section holds the current state.
     Q-VULN-184), which would have stopped the UI development backend. The integration areas `authz`, `oci` and
     `packages` passed, `limits` after that fix. **Not verified:** a scanner pod killed in the middle of a call; the
     ServiceMonitor's scrape with the ops pair; the step in the job `container-scan`; the nightly's drain sets; the
-    other integration areas. **Not landed, on purpose:** see the order of landing below. **Resumed at 18:05 for the
-    owner's decision of a certificate for each kind of pod** ([With the owner](#with-the-owner)): a second commit on
-    top, with the specification, chart tests, unit tests of the name checks, the area `vulnimage`, and the
-    end-to-end case once more on a cluster of its own.
+    other integration areas. **Resumed at 18:05 for the owner's decision of a certificate for each kind of pod**, which
+    became the second commit (above).
   **Housekeeping at 17:20:** twelve local branches without a worktree and without a commit missing on `main` deleted.
-  **Waiting:** package B of the scanner, until package A is on `main` beside `upstream` (it needs `KindSystem` of
-  the one and `upstream/scanner-trivy` of the other, and the two change the same files: `internal/authz/index.go`,
-  `internal/limits/usage/buffer.go`, the request path, the specification). **Order of landing:** `upstream` is landed; package A follows, rebased by its own builder. **Why package A waits,
-  verified on 2026-11-20:** the owner's installation takes every release within a minute (its HelmRelease names the
-  chart version `*`), image scanning is on by the chart's default, and its certificate `quader-tls` allows server
-  authentication only (read from the Secret on the cluster). A scanner pod whose pair does not allow client
-  authentication stays not ready (R-HA-065), so the upgrade to the release with package A would wait ten minutes and
-  fail, and the installation's release would stand as failed; the registry itself would keep serving. The chart of
-  package A renders with the installation's values (24 objects, five of them new: the scanner's Deployment,
-  NetworkPolicy, PodDisruptionBudget and two Services). What is missing is one line in the installation's
-  `Certificate` (`client auth` among its usages), and the rules of that repository forbid a commit by the development
-  agent: put to the owner on 2026-11-20, who decided a certificate for each kind of pod in its place, which package A
-  now gets before it lands. The cluster's egress rules need nothing: a pod without a label reaches its
-  own namespace, which is all the scanner asks. **Housekeeping of 2026-11-20:** `.bin/trivy-v0.76.1` in the main checkout, the analyser of the pin before,
+  **Why package A waited until the evening:** the owner's installation takes every release within a minute, and its
+  one certificate allowed server authentication only, so the scanner pods as first built would have stayed not
+  ready; asked for one more usage, the owner decided a certificate for each kind of pod in its place. **Housekeeping of 2026-11-20:** `.bin/trivy-v0.76.1` in the main checkout, the analyser of the pin before,
   removed (the pin is v0.76.2, and the Makefile's path carries the version).
   **Cut between package 1 and package B**, set by the development agent where the two plans overlapped: package 1 declares
   `scanner-trivy` (its 48 hours, its include pattern, the 404 for every client) and leaves the "in use" function empty,
@@ -897,10 +962,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   through cert-manager from one issuer value, with a Secret's name per kind for an installation without it. Named to
   him with (c): cert-manager becomes the standard path, and over (b) it gains little security for the three kinds that
   hold the database's and the object store's credentials anyway; its gain is one rule and a chart that knows names and
-  usages. **Being built** by the builder of package A as a second commit on its branch, before the scanner role lands
-  (run record). **For his installation afterwards:** the values name the issuer in place of `tls.secretName`, and his
-  hand-written `Certificate` goes; the development agent prepares that change and does not commit it (the rules of that
-  repository). The one line `client auth` is not needed any more.
+  usages. **Built and landed on 2026-11-20 at 20:19** with the scanner role (run record). **For his installation:** the values
+  name the issuer in place of `tls.secretName`, and his hand-written `Certificate` goes; the development agent
+  prepared that change as a patch, gave it to him and does not commit it (the rules of that repository). Until he
+  commits it, his installation stays on the release before. The one line `client auth` is not needed any more.
 - **H-812** ([image-scanning.md](../security/image-scanning.md)), **decided by the owner on 2026-11-20** ("Perfekt, machen wir wie
   du analysiert hast", after he asked for a look at how Harbor's scanner adapter does it): the analysis of an image moves into
   a role `scanner` of the same binary with a Deployment of its own and no secret of the database, the object store or Valkey.
@@ -908,8 +973,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   one manifest; the scanner pulls the image through a listener of `packages`, checks the layers, runs the analyser and
   answers the package list. The detection stays in the worker, so the scanner needs neither the vulnerability database nor
   the internet; the scanner's pull counts as no download and against no limit. Specified on `main`
-  ([vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-041 to R-VULN-046, ADR-212 to ADR-214), being
-  built (run record).
+  ([vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-041 to R-VULN-046, ADR-212 to ADR-214), landed
+  on 2026-11-20 (run record); the database in a repository follows as package B.
 - **The built-in project `upstream` for the public registries**, **decided by the owner on 2026-11-20** in five answers; his
   words are in the decision blocks of the specification on `main`
   ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, ADR-209 and ADR-211), being built
