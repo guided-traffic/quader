@@ -789,16 +789,8 @@ runs are in `git log`; this section holds the current state.
   are being added by the builder of the System page's fix (below) and land with it; the stage is released by that
   push. The fix run before it (44803754281) was cancelled by the stage's push with integration shard a green and
   the shards b and c without a result.
-- **In work** (21:14), four builders, the most that run at once:
-  - **The Valkey policies of the development profile and the test's extra replicas** (since 21:12): the fix, the look
-    at every other pod of the suite and the profile for the same miss, `TestE12Valkey` on a kind cluster of its own, and
-    how tonight's failure relates to the older finding about the Valkey start cases.
-  - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
-    that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
-    at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
-    cases with seeded verdicts of every state. It changes files under `web/` and the screens' documentation only; a
-    shape the API does not give goes back to package 1's builder.
-  - **The state cell of a replica on Admin area › System** (since 21:14): the fix's run showed, with the backend
+- **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
+  on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
     shows "Ready" and a warning with the check's name in its state cell, and the cell's first line stands 20 px below
     the replica's name. Since the scanner landing the role `all` reports the check `scanner` that way wherever the
@@ -808,15 +800,62 @@ runs are in `git log`; this section holds the current state.
     has the state and beside it the failing checks one under the other, the first on the line of the replica's name,
     and in the stacked table the state starts on the line of its column's name; "Failing checks:database" got its
     space. Looked at by the development agent: 1440 px light and 390 px dark with rows of one, two and three failing
-    checks, an unready, a lost and a draining replica and two pools. One new component test of about 50 ms. **Resumed
-    at 21:30** for the names of the eight malware events in the audit log, in English and German, and for the pool
-    headings' missing space ("Poolbatch"), both on the same branch.
-  **Waiting for a free builder, both ready to start on `main`:** package 2 of the malware scan, the scanning side
-  (the job `malware-scan`, discovery and rescans, the call to the scanner, the blob token, the scan listener's routes
-  for a blob and for the database, the scanner kind `malware` with its unpacking and a `clamd` client behind an
-  in-process fake, the configuration and the metrics; a worker that claims the queue `malware` without a scanner's
-  address must not refuse a default or a local start, which package 1's builder saw the planned check would), and
-  package B of the scanner (the next entry).
+    checks, an unready, a lost and a draining replica and two pools. One new component test of about 50 ms. **The names of the eight
+    malware events** (English and German, by the terms the vulnerability scanning's German texts use: Befund, Prüfung,
+    gesperrt, Einstellung; a release is "zum Download zulassen", because the glossary keeps "freigeben" for exposure:
+    a word for the owner to confirm at the walkthrough) and **the pool headings' missing space** ("Poolbatch") came
+    with it in two commits. Gates: the component tests (1,780) and the UI lint by the builder and again by the
+    development agent on the rebased commits, the layout check's own tests, the render case `admin-system` on a stack
+    of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
+    has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
+    names wrap to two lines without breaking a word.
+- **In work** (21:39), four builders, the most that run at once:
+  - **The Valkey policies of the development profile and the test's extra replicas** (since 21:12): the fix, the look
+    at every other pod of the suite and the profile for the same miss, `TestE12Valkey` on a kind cluster of its own, and
+    how tonight's failure relates to the older finding about the Valkey start cases.
+  - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
+    that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
+    at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
+    cases with seeded verdicts of every state. It changes files under `web/` and the screens' documentation only; a
+    shape the API does not give goes back to package 1's builder. **Reported at 21:37** (one commit on its branch,
+    no API shape missing): the settings page (the switch as a check box with **Save changes**, as the other Settings
+    pages have it, and a question before it is switched on over a backlog; the backlog, the scanners, "Scan everything
+    again"; the signature database with its date, Current or Stale, the last failure and, for an installation that
+    fetches no database itself, the commands to fill the repository; no find and no release on it, and for the
+    auditor a read-only page with a link to the dashboard); the security dashboard with a tab strip **Vulnerabilities
+    | Malware**, one row per blob with its verdict, signature, database date, repositories and release, a row that
+    opens to every file that holds the bytes, search and filters in the address, the release dialog that lists every
+    repository and asks for a reason, the withdrawal; the status as a fact on a file's page and a column **Malware
+    scan** in a version's files, a banner on the version for each refused file, grey for "Checking" and green for
+    "No malware found" alone; the closed section **Malware scan** in a repository's settings, read-only while the
+    installation's switch is on and for an Owner who may not switch it off; the manual's sections for administrator,
+    auditor and a refused download; German texts. **Its decisions:** Q-UI-873 to Q-UI-881. **The row of
+    `upstream/scanner-clamav`** on the upstream registries page is not built: the API does not list that repository
+    until package 3 declares it, and the page's wording then needs the second system repository. **Looked at by the
+    development agent** (rule 11): the settings page as seeded in the light scheme and with a stale database, a
+    failure and no scanner in the dark one at 1440 px; the dashboard with an opened row at 1440 px light and the
+    release dialog with its missing-reason error at 390 px dark; a version with an infected file at 1440 px light;
+    an infected file's page at 390 px dark; the repository's section for an Owner at 1440 px light and with the
+    installation's switch on at 390 px dark. **One defect seen, sent back:** the page of a file whose download is
+    refused still offers **Download** above the fact that says downloads are refused, and so does the row of a
+    version's files. **Render cost:** seven new cases, about 46 s of the job's wall time; the builder also found that
+    the render configuration never ran the 11 existing cases of the auditor (the project was missing), which now run,
+    about 50 s more. Its last render run had no failure and no layout finding. **Resumed at 21:39** for that defect
+    and the rebase onto the audit names.
+  - **Package 2 of the malware scan, the scanning side** (since 21:36), in two stages: first the two routes of the
+    scan listener (a blob for the scanner, the signature database) with their admission, the blob token, the interface
+    the database route serves from and the configuration keys, which is what package 3 waits for; then the job
+    `malware-scan`, discovery and rescans, the call, the scanner kind `malware` with its unpacking, the `clamd` client
+    and an in-process fake of it, the metrics. Bound by this evening's lessons: no default or local start may be
+    refused for a missing scanner's address; anything under `web/` gets the UI tests; a check that fails without
+    gating gets a name and a sentence for the System page.
+  **Waiting for a free builder:** package B of the scanner (the next entry); package 3 of the malware scan (the
+  database and the chart), which also waits for package 2's first stage.
+  **How the malware scan lands from here** (the development agent's, 2026-11-20): its first stage is on `main`; what
+  follows (the gate, the screens, the scanning side, the database and the chart) is collected on a branch
+  `feat/malware` and lands together, as the project `upstream` did. Why: with the scanning on by default and no
+  scanner in the chart, a release in between would show "Checking" at every file for good and offer a switch that
+  answers every download with a 503; and this evening's three red pipelines came from landings in pieces.
   - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
     two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
     start on its branch; then the gate in the two serve points, the fills of remote repositories, virtual
