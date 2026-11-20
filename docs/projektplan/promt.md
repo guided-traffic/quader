@@ -597,9 +597,15 @@ runs are in `git log`; this section holds the current state.
   **Red: `UI layout checks`,** two of 379 screens, `repository-settings-service-accounts` as `power` and as `admin`: the
   walk selects the section by `hasText: 'Service accounts'` on a container, a match of a substring without regard to
   case, and `730ef6177` put "service accounts" into the sentence of the level Internal, which stands earlier on the
-  same page. The check's fault, not the page's; read from the log and the code, the element it now takes not yet
-  looked at. The builder of the screens of `upstream` fixes the walk on a branch of its own (a `test:` commit, no
-  release) and looks for the same kind of selector elsewhere.
+  same page. The check's fault, not the page's. **Measured on the page by the builder of the screens of `upstream`:** the filter
+  matched two folds, the inline fold **Wiki visibility** first (a closed fold keeps its body in the page, and the
+  wiki's level Internal carries the sentence), and an inline fold's button has no `.toggle`, so the click waited for
+  an element that never came. **Fixed and pushed at 17:15** (`cf983131`, a `test:` commit, no release): the walks to
+  the sections Service accounts, Visibility and Download limits find a section by its own head; the other selectors
+  of `web/e2e` that filter a container by a text were read and cannot take a level's sentence. Verified by the real
+  walks at three widths as both users against the page `main` serves (8 passed); the render run itself was not
+  started locally, because its setup seeds the stack: the job `UI layout checks` of Test and Release 44770761554
+  shows it.
 - **The level `internal`, the owner's definition of 2026-11-20, in work on `main`:** "internal sind alle angemeldeten User
   (auch technische) außer User und seine Tokens die das external-flag tragen. Internal ist einfach eine Sichtbarkeit für
   ein Projekt. Ist das Projekt privat, braucht man eine spezifische Einladung um das Projekt zu sehen. Ist es intern, kann
