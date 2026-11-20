@@ -542,6 +542,8 @@ records the recorder that tells such a stall apart).
   pods of `make dev-up` run; a builder with a cluster of its own has to tag its image `dev` inside its kind nodes
   (seen on 2026-11-20). The case of `TestE12Valkey` with every Sentinel unreachable relies since that day on the
   cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
+- `make lint` ends at once with "parallel golangci-lint is running" while another worktree lints (seen by two
+  builders on 2026-11-20); the linter's flag that makes a second run wait would let parallel builders queue.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -608,7 +610,7 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20**, 21:14, after the landing of the role `scanner` with a certificate for each kind of pod and of the malware scan's tables and API.
 
-- **Landed and released on 2026-11-20** (the last release cut is the one of `252a0a2d0`): the measurement of what a format
+- **Landed and released on 2026-11-20** (the last release cut is the one of `3eef34591`, at 22:26, with the malware scan's first stage and the evening's four fixes in it): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
   **Recently opened**); the wiki's visibility behind a fold; W-27 (**Set up client** in variant A) with the fix of the two
   jobs it turned red; the limits' package (the built-in profiles from a measurement, a refused request not counted, waiting
@@ -855,7 +857,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (22:10), three builders:
+- **In work** (22:29), two builders (package 2 of the malware scan and package B of the scanner); package 1's builder has finished:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -916,8 +918,35 @@ runs are in `git log`; this section holds the current state.
     Bastion feed and the backup. It has to be landable alone: before a scanner exists, an installation behaves by
     default as it does today.
     **First stage reported at 20:19 and landed at 21:14** (one commit, "an installation keeps a malware verdict for
-    every stored file and offers the switch, the finds and the release of a file over the API"); the second stage,
-    the gate itself, is in work since then. The first stage: the migration 00088 with five
+    every stored file and offers the switch, the finds and the release of a file over the API", released at 22:26).
+    **Second stage, the gate, reported at 22:20 and put on the branch `feat/malware` by the development agent** (one
+    commit on top of the screens'; four documentation conflicts with the screens' commit merged by hand, the coverage
+    checklist regenerated): the gate (`internal/malware/gate`) at both serve points, asked for routes of the kind
+    Download and for every request under `/files/`; an infected blob refused always while the scanning is on; "strict"
+    is the installation's switch or the setting of the repository addressed or of the one that holds the file; under
+    it a blob not checked yet waits until 25 s after the request's arrival and is then answered 503 with
+    `Retry-After: 30`; a replica holds at most 512 waits and a draining one answers its waits at once; a strict fill
+    of a remote repository is held and served from the stored file through the gate, and a body passed on unstored
+    during an outage of the object store is decided by its digest's row without a wait; the pending 503 ends the walk
+    of a virtual repository, and the OCI walk ends on any block, the vulnerability scanning's too (the finding of the
+    morning is closed by it); the format kit's check 17. **No change of the API contract, no configuration key, no
+    migration.** **Its decisions:** Q-MAL-49 to Q-MAL-54 (a refusal names the repository the client addressed, never
+    the member; only Download routes and `/files/` are gated, system reads are not), the gaps H-1120 (a reader can
+    fill a replica's 512 waits) and H-1121 (a reader's requests move what they ask for to the front of the scans).
+    **Landable alone, shown at the serve points:** with the defaults a file without a verdict is served at once
+    through `/files/`, the npm route and an npm virtual repository; with the switch on and no scanner a download gets
+    its 503 after the configured wait (2 s in the test), its row is asked and the job queued; the bound of 25 s is
+    shown by a unit test with an arrival in the past. **Gates on its own base, each exit 0:** build, the full unit
+    run, generate-check, lint, cyclo (after one function was split), gosec, chart tests, links and check, the
+    white-label scan, and 16 integration areas once each under the lock, all passing: `malware`, `files`, `packages`,
+    `proxy`, `virtual`, the four of OCI, `npm`, `nuget`, `deblocal`, `ansiblelocal`, `limits`, `vulnimage`, `bastion`.
+    On the branch after the merge: build, links and check by the development agent, the unit run and the UI tests
+    running at 22:29. **What it cost:** nine unit tests of under a second together, a kit case of milliseconds per
+    format, four integration tests in the area `malware` (about 20 s), one each in `ocivirtual` (2 s) and `bastion`
+    (4 s); nothing end to end. **Left open, passed to package 2:** the gate's refusal counter and wait metrics; the
+    commit hook's insert, without which R-MAL-001 is not done; the acceptance of R-MAL-017 (an infected OCI image
+    with the image scanning beside it). **Not shown:** the path of an unstored body against the stack (unit only);
+    range requests; the once-a-minute deduplication of the audit event is per replica. The first stage: the migration 00088 with five
     tables (the verdict of a blob keyed by its digest, the release, the settings with the switch off, the signature
     database in use, what the job last saw of the scanners), all registered for backup; the store behind one
     interface of 17 methods, the one writer of verdicts, releases and the switch (Q-MAL-40); the join of verdict and
