@@ -589,8 +589,17 @@ runs are in `git log`; this section holds the current state.
   `UI layout checks` and `e2e (access-long)`, red from W-27 at 12:15, are green again. Every leg ran, because that commit
   touched every leg's job: that a leg which does not apply takes no runner shows in the next push of shared code. Each
   shard has room for about three more formats: a fourth shard, or moving the formats' repeated integration tests into the
-  kit, comes next (section 12 A). `TestR_DEB_025` of section 12 D was green in this run. **In the window from 17:00:** the
-  runs of the afternoon's pushes.
+  kit, comes next (section 12 A). `TestR_DEB_025` of section 12 D was green in this run.
+- **The pipeline read at 17:00:** Test and Release 44742748588 of `984540a2` (the afternoon's push: the bounded wait
+  for Valkey, the level `internal`, the colour scale) released and is red in one job. **A leg that does not apply takes
+  no runner:** four legs of formats show as skipped jobs with no start and no runner, and the legs that ran were
+  `access-long`, `bastion`, `ci`, `npm`, `push` and `vuln`; the three integration shards ran 36, 37 and 38 minutes.
+  **Red: `UI layout checks`,** two of 379 screens, `repository-settings-service-accounts` as `power` and as `admin`: the
+  walk selects the section by `hasText: 'Service accounts'` on a container, a match of a substring without regard to
+  case, and `730ef6177` put "service accounts" into the sentence of the level Internal, which stands earlier on the
+  same page. The check's fault, not the page's; read from the log and the code, the element it now takes not yet
+  looked at. The builder of the screens of `upstream` fixes the walk on a branch of its own (a `test:` commit, no
+  release) and looks for the same kind of selector elsewhere.
 - **The level `internal`, the owner's definition of 2026-11-20, in work on `main`:** "internal sind alle angemeldeten User
   (auch technische) außer User und seine Tokens die das external-flag tragen. Internal ist einfach eine Sichtbarkeit für
   ein Projekt. Ist das Projekt privat, braucht man eine spezifische Einladung um das Projekt zu sehen. Ist es intern, kann
