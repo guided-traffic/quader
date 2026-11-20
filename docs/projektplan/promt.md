@@ -589,6 +589,15 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   vulnerability database nor the internet. To settle first by the builder: a blocked image must still be pulled by the scanner,
   and its pull is not charged to the download limits. Not built; after the limits' package. Open with it, to be worked out
   for him: Quader's own repository as the cache of the analyser's database.
+- **A well-known project for the public registries, under discussion, not decided** (owner, 2026-11-20): "ich … hätte irgendwie
+  gerne, dass wir in einem Well-Known 'Projekt' (vielleicht 'common', 'system' oder 'default') für Registry-Typen die wir
+  schon implementiert haben über die Admin-Konsole alle Well-Known Repos vorkonfiguriert … konfigurierbar machen. Vielleicht
+  nutzen wir für die Abbildung über die API auch einfach den Root unserer API, also /." He names what it reopens himself
+  (Q-AUTHZ-206, every repository in one project). Read for the discussion: the formats' catalog holds twelve upstream presets
+  with IDs (OCI four, npm one, NuGet one, Debian five, Ansible Galaxy one); a virtual repository lists only repositories of
+  its own project (Q-REPO-212); a host can be bound to one repository at its root (R-EP-006, R-OCI-029), by configuration at
+  start; quick setup (R-UI-023) is specified and not built. Parked with it, on his word ("Das stellen wir kurz zurück"): in
+  which repository the analyser's database lies when Quader's own repository is its cache.
 - **Format logos** (Q-UI-225 to 227): npm, Ansible Galaxy and the Docker whale may be shown only with their owners' permission, so
   npm and Ansible Galaxy keep the neutral glyph (and Guides show it on the tiles of Ansible Galaxy, Generic and npm). To show them,
   the owner asks npm, Inc. and Red Hat for permission. At the walkthrough: the logos in the running app, light and dark, in Firefox
