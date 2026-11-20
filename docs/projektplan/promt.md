@@ -580,9 +580,9 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 19:20, after the release of the project `upstream` and the landing of the malware scan's specification.
+**State on 2026-11-20**, 20:10, after the release of the project `upstream`, the landing of the malware scan's specification and a green pipeline on `main`.
 
-- **Landed and released on 2026-11-20** (the last release cut is the one of `c77c2bc17`): the measurement of what a format
+- **Landed and released on 2026-11-20** (the last release cut is the one of `252a0a2d0`): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
   **Recently opened**); the wiki's visibility behind a fold; W-27 (**Set up client** in variant A) with the fix of the two
   jobs it turned red; the limits' package (the built-in profiles from a measurement, a refused request not counted, waiting
@@ -706,7 +706,7 @@ runs are in `git log`; this section holds the current state.
   fingerprint's line, at all three widths. The component (`web/src/app/features/repositories/deb-upstream-keys.ts`) is
   old and never had data in the renders; since package 1 the Debian preset carries the archive's keys, so the seeded
   remote shows nine fingerprints for the first time. The run ended at 19:22 with that one job red; every other job is green, the three integration shards and
-  `e2e (vuln)` among them. **Fixed and landed at 19:40** by the builder of the `upstream` screens: the row is a flex
+  `e2e (vuln)` among them. **Fixed and landed at 19:27** by the builder of the `upstream` screens: the row is a flex
   row with the button on the fingerprint's first line by its margins (the convention the digest facts use), so a
   row is as high as its text and a fingerprint that wraps at 390 px keeps the button on its first line; the list
   had no style of its own before (the parent's `.plain` does not reach into the component). **The same defect in
@@ -715,9 +715,9 @@ runs are in `git log`; this section holds the current state.
   the development agent: the list in both schemes at 1440 and 390 px, the audit event's facts at 1440 px. Gates of
   the builder: the component tests (1,779 in 28 s), the UI lint, the layout check's own tests, and the render cases
   `repository-settings-deb-remote`, `repository-settings-deb` and `admin-upstream-registry` on a stack of its own,
-  without a finding. No test added: the render's layout check is the test of record. **Not verified until its
-  pipeline:** the job `UI layout checks` on every screen.
-- **In work** (19:40), two builders:
+  without a finding. No test added: the render's layout check is the test of record. **Its pipeline** (run 44792888153) ended green at
+  20:09, the job `UI layout checks` among its jobs, and its release was cut at 19:42.
+- **In work** (20:10), two builders:
   - **Package 1 of the malware scan, the gate and the verdicts** (since 19:20, [the entry below](#with-the-owner)), in
     two stages: first the migration (00088), the store and the whole API contract, so that the screens' builder can
     start on its branch; then the gate in the two serve points, the fills of remote repositories, virtual
