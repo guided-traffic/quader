@@ -74,7 +74,17 @@ die bereits gebaut sind und für zukünftige Registries." Every rule below is st
 Galaxy, Debian, generic, npm, NuGet and OCI; where a protocol cannot carry a rule, it is named in
 [Gaps of the protocols](#gaps-of-the-protocols) with options for the owner.
 
-Every number of the built-in profiles is the development agent's estimate, which the owner did not change; none is measured.
+The owner decided four more questions on 2026-11-20, each for every format:
+
+| # | Decision of the owner, 2026-11-20 | Where |
+|---|---|---|
+| 18 | Larger default bursts, set from a measurement: the built-in profiles' request figures are set so that normal use never reaches them, because `docker pull` and `docker push` do not retry a 429; a caller that stays above a limit is still refused at once | R-LIM-010, [Q-LIM-59](#q-lim-59--the-built-in-profiles-request-figures-are-set-from-a-measurement-of-real-clients) |
+| 19 | A refused request is not counted in the request windows; the brake against a client that hammers is `refusedPerHour` with its block, which stays as it is | R-LIM-017, R-LIM-025, [Q-LIM-57](#q-lim-57--the-request-windows-are-decided-and-counted-in-one-step-by-a-script-in-the-round-trip-of-stage-7) |
+| 20 | podman's long wait at a byte figure stays: `Retry-After` there is honest, and the manual says so and names the CI job's timeout | R-LIM-020, the manual's [table of the clients](../manual/user/usage-and-limits.md#what-your-client-shows) |
+| 21 | The downloads that wait for a parallel slot hold at most a fixed share of a replica's request slots; a further one is refused at once (F-163) | R-LIM-024, [Q-LIM-60](#q-lim-60--waiting-downloads-hold-at-most-a-quarter-of-an-endpoints-request-slots) |
+
+The request figures of the built-in profiles are set from a measurement (Q-LIM-59); every other number of them is the development
+agent's estimate, which the owner did not change.
 
 ## Terms
 
@@ -841,7 +851,11 @@ Acceptance criteria:
 - A cached download costs two round trips to Valkey and no PostgreSQL statement on its path, measured by
   `quader_valkey_command_duration_seconds_count` and the statement counter of the download budget (R-ARCH-027) in the integration set
   `limits`.
-- A replica with 1,000 downloads in progress sends one flush round trip per second.
+- A replica with 1,000 downloads in progress sends one flush round trip per second; a flush that drops the leases of 1,000 downloads
+  that ended in its interval is that one round trip (a batch has no bound on its operations).
+- At `requestsPerSecond` 1 with a burst of 1, a caller that sends a request every second, as the `Retry-After` of 1 tells it, is
+  admitted at least every second time; a caller that waits the `Retry-After` of a refusal is admitted, however many requests it sent
+  in between.
 
 ### R-LIM-018 · Windows and their precision across replicas
 Priority: **MVP** · Covers: BEYOND-030
@@ -1026,9 +1040,24 @@ Priority: **MVP** · Covers: BEYOND-030
 - **Waiting** ([Q-LIM-14](#q-lim-14--a-further-download-waits-up-to-10-seconds-then-429)): the download asks again once per second,
   up to `limits.parallel.wait` (10 s), holding its request slot of step 4; then 429 `too_many_parallel_downloads`. A client that
   leaves stops waiting.
+- **The share of waiting downloads** (the owner's decision 21, F-163;
+  [Q-LIM-60](#q-lim-60--waiting-downloads-hold-at-most-a-quarter-of-an-endpoints-request-slots)): on each replica, the downloads that
+  wait hold at most a quarter of the request slots of the endpoint they came through (`server.max_in_flight`, or the endpoint's own
+  `max_in_flight`, R-ARCH-005 step 4): 1,024 of the default 4,096, 256 of a further endpoint's 1,024. A download that would wait while
+  that share is held is refused at once with 429 `too_many_parallel_downloads` and a `Retry-After` of 1 s; its lease is given up. The
+  other three quarters stay for requests that are served, so a burst of callers at their figure cannot make the replica shed another
+  caller's requests. The share is a constant (`limits.WaitingShare`), not a setting: it follows the endpoint's `max_in_flight`.
 - The replica renews the leases of its downloads older than 20 s in the flush and removes ended ones there.
 - **A crashed replica** leaves its leases, which expire at their score: the subject has up to 60 s fewer slots.
 - In `audit` a lease above the limit is kept, recorded as `would_limit`, and the download goes on at once.
+
+Acceptance criteria:
+
+- An endpoint with 8 request slots, a subject at `parallelDownloads` 1 whose one download is paced: two further downloads of the
+  subject wait; the next is refused at once (well within a second) with `too_many_parallel_downloads`, and another caller's request is
+  served beside them.
+- The capacity test of R-ARCH-027 (`TestNPMPerf`, twenty technical tokens of the profile Technical in `enforce`, without a rule of
+  their own) answers every request with 200 or the replica's own 503 `server_busy`.
 
 ### R-LIM-025 · The block after refused requests
 Priority: **MVP** · Covers: BEYOND-030
@@ -1671,7 +1700,9 @@ Priority: **MVP** · Covers: BEYOND-030
 - **Integration set `limits`** (against the stack through `testenv`, without a format's client): what is the same for every format,
   each once ([Q-LIM-55](#q-lim-55--the-limits-are-tested-once-in-the-integration-set-a-format-adds-one-case-of-its-client)): every
   figure's refusal with its code and `Retry-After`, the download that crosses a byte figure and the next refused before its first
-  byte, the slowed download and the refused parallel one, the block of refused requests and its lift, a reader's misses that block
+  byte, the slowed download and the refused parallel one, the waiting downloads' share of the request slots, a caller that retries
+  every second at a request figure of one a second and is admitted again, a hammering caller blocked by its refusals, the block of
+  refused requests and its lift, a reader's misses that block
   nothing, the subjects of R-LIM-001 (a user's personal tokens, two technical tokens of one account at each level, an address and an
   IPv6 `/64`, an administrator), what is cached served with the upstream budget used up, the anonymous ceiling against a second
   address, Audit beside Enforce, the switch reaching a second replica; with Valkey stopped, the fallback of R-LIM-019; the cost of
@@ -2005,8 +2036,12 @@ Context: the owner wrote "further ones wait or 429". npm opens up to 15 connecti
 | (b) 429 at once | — | No held slot | npm's retry back-off (10 s and more) slows installs far more than waiting |
 | (c) Wait without bound | — | — | Clients time out in the queue |
 
-**Choice:** (a). **Rationale:** most downloads end within seconds; a short wait turns a burst of connections into a queue. Revisit if
-waiting requests fill `max_in_flight`. **Applied in the spec:** R-LIM-024.
+**Choice:** (a). **Rationale:** most downloads end within seconds; a short wait turns a burst of connections into a queue. The
+revisit condition this block named, waiting requests that fill `max_in_flight`, was met by the capacity test (F-163: under overload
+the waiting downloads kept their slots while the replica shed every new request); the owner decided on 2026-11-20 to cap them, and
+[Q-LIM-60](#q-lim-60--waiting-downloads-hold-at-most-a-quarter-of-an-endpoints-request-slots) sets the share. The wait itself stays.
+Revisit if the 10 s wait turns out to hold leases longer than the clients wait (a client's own timeout below 10 s).
+**Applied in the spec:** R-LIM-024.
 
 ### Q-LIM-15 · A block holds one budget key for 15 minutes, and only requests charged to it
 
@@ -2587,6 +2622,54 @@ burst, or when the installation's capacity per replica (R-ARCH-027) is below wha
 **Applied in the spec:** R-LIM-010, R-LIM-005's acceptance criteria; [api-and-ui.md](api-and-ui.md) R-API-016's acceptance criteria.
 Code: migration [00085_limits_request_bursts.sql](../../internal/meta/postgres/migrations/00085_limits_request_bursts.sql),
 `BuiltinProfiles` in [model.go](../../internal/limits/model.go).
+
+### Q-LIM-60 · Waiting downloads hold at most a quarter of an endpoint's request slots
+
+Status: **Decided by the owner on 2026-11-20: waiting downloads are capped** (decision 21; over leaving it and over refusing at once
+only while the replica already sheds). **The share is the development agent's** — selected from the options below; the owner reviews
+it at the walkthrough.
+
+Context: a download beyond the subject's `parallelDownloads` waits up to 10 s for a place (Q-LIM-14), holding its request slot of
+step 4 of the chain (R-ARCH-005). In the capacity test of R-ARCH-027 (`TestNPMPerf`, P-8: 1,000 requests a second of a 50 KiB tarball
+over 20 technical tokens, each with 50 parallel downloads) the waiting downloads held their slots while the replica shed every new
+request; the test passed only because its tokens were given the profile Unlimited (F-163; the nightly of 2026-11-19 answered 1,922
+requests 429 `too_many_parallel_downloads`). The slots are the endpoint's: `server.max_in_flight` (4,096) for the default endpoint, a
+further endpoint's own `max_in_flight` (1,024 by default).
+
+Found while the capacity test ran without the exemption on 2026-11-20: the 429s had a second cause. A batch of the limits was bounded
+to 255 operations, and the flush of a replica that ended more downloads than that in one second failed as a whole: the ended
+downloads' leases stayed in Valkey for their full minute (`limits.parallel.lease`), so after 50 downloads a token got no place for a
+minute, and its waiting downloads could never get one. P-8 answered 1,000 requests 200 and then 27,885 429 (3,072 of them after the
+10 s wait, the rest at once because the waiting share was full). The bound is gone (R-LIM-017: the flush of a thousand ended downloads
+is one round trip, `TestR_LIM_017_AFlushOfAThousandEndedDownloadsIsOneRoundTrip`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A quarter of each endpoint's slots on each replica, a constant (chosen) | 1,024 waiting downloads of 4,096 slots, 256 of 1,024 | Three quarters stay for requests that are served: P-8's 1,000 a second is served with up to 3 s per answer; 1,024 waiting places are about 90 installs at once that each open 15 connections at a figure of 4 (11 wait each); it follows a changed `max_in_flight` without a second setting | A burst of more than 90 such installs on one replica within the same seconds gets 429 at once instead of after a wait |
+| (b) Half | 2,048 of 4,096 | More installs queue | Half the replica is waiting; P-8's answers would have to stay under 2 s |
+| (c) An eighth | 512 of 4,096 | Most slots serve | About 45 installs at once; npm's retry after 10 s and more slows each further one far more than the wait would |
+| (d) A setting `limits.parallel.waiting_share` | Tunable | An administrator can tune it | A number nobody can choose without the measurement the default already rests on; the owner's "simple by default" |
+| (e) One bound per replica over all endpoints | | One counter | The slots are per endpoint: a further endpoint's 1,024 slots could all be held by waiters of a bound sized for 4,096 |
+
+**Choice:** (a), per endpoint and replica, the constant `limits.WaitingShare` (4). A download that would wait while the share is held
+gives up its lease and gets 429 `too_many_parallel_downloads` with a `Retry-After` of 1 s at once.
+
+**Result** (the capacity test once on the kind cluster, `linux/arm64`, 2026-11-20, its twenty tokens under the profile Technical in
+Enforce, without the exemption): P-8 offered 1,000 requests a second of the cached 50 KiB tarball and got 25,376 answers 200 and 3,399
+503 `server_busy` (the replica's own shedding, which the test allows), no 429; P-7 56,141 answers 200 and 1,368 shed. The test passed.
+The run shows the two fixes together (the share and the flush's batch without a bound); it does not tell how much each contributed.
+
+**Rationale:** what an install needs is a queue of a few seconds for its own surplus connections; what the replica needs is most of
+its slots for requests it serves. A quarter gives both on the default endpoint with an order of magnitude to spare. The development
+agent would revisit the share if installs on one replica are refused at once in normal use (`quader_limits_decisions_total{figure=
+"parallelDownloads",outcome="limited"}` without overload), or if an endpoint with few slots (below 40) makes the share smaller than
+one install's surplus.
+
+**Applied in the spec:** R-LIM-024, Q-LIM-14 (its revisit note). Code: [waitgate.go](../../internal/limits/waitgate.go),
+`Engine.parallel` in [engine.go](../../internal/limits/engine.go), `waitGates` in [ratelimit.go](../../internal/api/v1/ratelimit.go).
+Tests: `TestR_LIM_024_ParallelDownloads` in [engine_test.go](../../internal/limits/engine_test.go),
+`TestR_LIM_024_WaitingDownloadsHoldAtMostTheirShareOfTheRequestSlots` in [figures_test.go](../../test/integration/limits/figures_test.go);
+`TestNPMPerf` without its tokens' exemption ([npm_perf_test.go](../../test/e2e/npm_perf_test.go)).
 
 ### Q-LIM-61 · Every request window of the installation follows one rule: a refused request counts nothing
 

@@ -30,12 +30,12 @@ A client that meets a limit gets the answer `429 Too Many Requests` with the tim
 
 | Limit | What happens |
 |---|---|
-| Requests per second or per hour | The request is answered 429 with the time to wait |
+| Requests per second or per hour | The request is answered 429 with the time to wait. A refused request does not count against your limit: wait that long and your next request is admitted. The built-in limits are set so that normal use does not reach them: a pull of an image of 40 layers is about 50 requests, an install of 500 npm packages about 500, and even the limit for callers without a sign-in takes 1,000 at once |
 | Bytes per second | The download is slowed down; nothing fails |
-| Bytes per hour or per day | The next download is refused before it starts; a download that has started finishes |
+| Bytes per hour or per day | The next download is refused before it starts; a download that has started finishes. The time to wait is the rest of the hour or the day, and it is meant: there is no room before then |
 | From the upstream | What is in the cache is still served; only what Quader would have to fetch first is refused |
-| Downloads at once | A further download waits up to 10 seconds, then is refused |
-| Refused requests | After too many refused requests in an hour (for example names you may not read), every request is refused for the block time, 15 minutes by default |
+| Downloads at once | A further download waits up to 10 seconds, then is refused. While a server already holds many waiting downloads, a further one is refused at once |
+| Refused requests | After too many refused requests in an hour (names you may not read, or requests sent past your request limit without waiting), every request is refused for the block time, 15 minutes by default |
 
 ### What your client shows
 

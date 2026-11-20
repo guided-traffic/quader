@@ -157,6 +157,38 @@ func TestR_LIM_024_AFurtherDownloadIsRefusedWhileTheOnlyPlaceIsTakenAndTheFirstI
 	})
 }
 
+// R-LIM-024: downloads that wait for a parallel slot hold at most a quarter of the endpoint's request slots. With eight slots two
+// may wait; the next is refused at once, and another caller is served beside them. The first download is paced to the floor so it holds
+// the reader's one parallel place for about two seconds.
+func TestR_LIM_024_WaitingDownloadsHoldAtMostTheirShareOfTheRequestSlots(t *testing.T) {
+	var other string
+	e := newEnvWith(t, envOptions{valkey: true, seed: func(st *testenv.Stack) {
+		o := st.User("other")
+		st.Policy("other-reads", []string{"read"}, []string{rFiles}, o)
+		other = st.Token(o, scope.Default())
+	}, env: []string{"QUADER_LIMITS_PARALLEL_WAIT=10s", "QUADER_SERVER_MAX_IN_FLIGHT=8", "QUADER_LIMITS_PACING_MIN_BYTES_PER_SECOND=32768"}})
+	e.rule(t, rFiles, every("user"), map[string]any{"cachedBytesPerSecond": 1, "parallelDownloads": 1})
+	var wg sync.WaitGroup
+	statuses := make([]int, 3)
+	for i := range 3 { // the first holds the place, the next two wait for it
+		wg.Go(func() { statuses[i] = e.st.Do(e.r, "GET", e.filePath, e.reader, nil).Status })
+		time.Sleep(300 * time.Millisecond)
+	}
+	start := time.Now()
+	refusal(t, e.st.Do(e.r, "GET", e.filePath, e.reader, nil), "the download beyond the waiting share", "too_many_parallel_downloads", "parallelDownloads")
+	if took := time.Since(start); took > time.Second {
+		t.Fatalf("the download beyond the waiting share was refused after %s, want at once", took)
+	}
+	if a := e.st.Do(e.r, "HEAD", e.filePath, other, nil); a.Status != 200 {
+		t.Fatalf("another caller beside the waiting downloads: %d", a.Status)
+	}
+	wg.Wait()
+	if statuses[0] != 200 {
+		t.Fatalf("the download that held the place: %d", statuses[0])
+	}
+	t.Logf("the downloads that waited ended %v", statuses[1:])
+}
+
 // R-LIM-025, Q-LIM-7, Q-LIM-15: refused requests above refusedPerHour block the budget key, and only it: a caller who reads only what it
 // may read (a miss included) is never blocked; a valid credential from the blocked address is not; the block ends when it is lifted. In
 // audit no block is set.

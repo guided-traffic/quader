@@ -597,8 +597,9 @@ func (e *Engine) addLease(b *cluster.LimitBatch, c *Charge, now time.Time) int {
 }
 
 // parallel decides a lease that was taken with count leases in the key's set (R-LIM-024): admitted at most
-// parallelDownloads; otherwise the download waits, asking once per second up to limits.parallel.wait, then 429. In audit
-// the lease is kept and a would-limit recorded.
+// parallelDownloads; otherwise the download waits, asking once per second up to limits.parallel.wait, then 429. While the
+// downloads that wait on the endpoint hold its share of the request slots (WaitingShare), the download does not wait and is
+// refused at once (Q-LIM-60). In audit the lease is kept and a would-limit recorded.
 func (e *Engine) parallel(ctx context.Context, c *Charge, count int64, local bool) error {
 	f := c.Figures()
 	lim := e.scaledUp(f[ParallelDownloads], local)
@@ -609,6 +610,16 @@ func (e *Engine) parallel(ctx context.Context, c *Charge, count int64, local boo
 	if c.Mode != ModeEnforce {
 		e.decided(c, ParallelDownloads.String(), false)
 		return nil
+	}
+	c.mu.Lock()
+	gate := c.gate
+	c.mu.Unlock()
+	if e.o.ParallelWait > 0 {
+		if !gate.enter() {
+			e.dropLease(ctx, c)
+			return e.refuseParallel(ctx, c)
+		}
+		defer gate.leave()
 	}
 	deadline := e.now().Add(e.o.ParallelWait)
 	for {
@@ -635,6 +646,12 @@ func (e *Engine) parallel(ctx context.Context, c *Charge, count int64, local boo
 			return nil
 		}
 	}
+	return e.refuseParallel(ctx, c)
+}
+
+// refuseParallel is the 429 too_many_parallel_downloads with a Retry-After of one second (R-LIM-020).
+func (e *Engine) refuseParallel(ctx context.Context, c *Charge) error {
+	f := c.Figures()
 	e.decided(c, ParallelDownloads.String(), true)
 	return e.refuse(c, refusal{
 		code: CodeTooManyParallelDownloads, figure: ParallelDownloads.String(), limit: f[ParallelDownloads],

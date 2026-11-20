@@ -289,36 +289,6 @@ func pacedSATokens(t testing.TB, adm *api, sa string, n, ttl int) []string {
 	return out
 }
 
-// unlimitedTokens gives every active technical token of the account the profile Unlimited at the instance (R-LIM-011), the rule
-// an administrator sets for a load generator. A load that measures what a replica serves at saturation must not be measured
-// against its own caller's budget: in enforce the Technical profile holds a token to 50 parallel downloads, and a load of 1,000
-// requests a second over 20 tokens whose answers take seconds passes that, which answers 429 after the wait (the nightly of
-// 2026-11-19: P-8, 1,922 answers 429 by limits.parallelDownloads). The rule is in force on a replica once its index is
-// rebuilt, seconds after the write; the loads that need it start later than that.
-func unlimitedTokens(t testing.TB, adm *api, sa string) {
-	t.Helper()
-	var l struct {
-		Items []struct {
-			ID    string `json:"id"`
-			State string `json:"state"`
-		} `json:"items"`
-	}
-	adm.get("/api/v1/service-accounts/"+sa+"/technical-tokens").want(t, "list the technical tokens of "+sa, 200).JSON(t, &l)
-	for _, it := range l.Items {
-		if it.State != "active" {
-			continue
-		}
-		r, err := adm.send(http.MethodPost, "/api/v1/limits/assignments", map[string]any{
-			"who": map[string]any{"kind": "technicalToken", "technicalToken": it.ID}, "profile": "unlimited", "overrides": map[string]any{},
-			"note": "end-to-end load: measured against the replica, not against the caller's budget",
-		})
-		if err != nil {
-			t.Fatalf("the rule Unlimited for a technical token of %s: %v", sa, err)
-		}
-		r.want(t, "the rule Unlimited for a technical token of "+sa, 201, 409)
-	}
-}
-
 // ── the loops ────────────────────────────────────────────────────────────────
 
 // ciLoopScript is one npm ci loop: the lockfile install with an empty client cache, again and again until the file

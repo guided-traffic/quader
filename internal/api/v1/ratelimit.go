@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -141,7 +142,7 @@ func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 		if o.Limits == nil {
 			return func(next http.Handler) http.Handler { return next }, nil
 		}
-		st := protocolStage{o: o, classesOff: true}
+		st := protocolStage{o: o, classesOff: true, gates: &waitGates{}}
 		return func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if httplimit.ProtocolPath(r.URL.Path) && familyServed(r) {
@@ -176,7 +177,7 @@ func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 
 		LimiterPackageWrite: mk(LimiterPackageWrite, o.Config.PackageWrite.RequestsPerSecond, o.Config.PackageWrite.Burst),
 	}
-	st := protocolStage{o: o, classes: classes}
+	st := protocolStage{o: o, classes: classes, gates: &waitGates{}}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !limitedPath(r.URL.Path) || !familyServed(r) {
@@ -217,6 +218,23 @@ type protocolStage struct {
 	classes map[string]classLimiter
 	// classesOff: api.rate_limits.enabled is false, so no class of R-API-016 applies.
 	classesOff bool
+	gates      *waitGates
+}
+
+// waitGates are the gates of the downloads that wait for a parallel slot, one per endpoint of the replica, each a share of the
+// endpoint's request slots (R-LIM-024, Q-LIM-60).
+type waitGates struct{ m sync.Map }
+
+// of is the gate of an endpoint; nil outside a chain bound to one.
+func (g *waitGates) of(ep *httpserver.Endpoint) *limits.WaitGate {
+	if g == nil || ep == nil || ep.MaxInFlight() <= 0 {
+		return nil
+	}
+	if v, ok := g.m.Load(ep); ok {
+		return v.(*limits.WaitGate)
+	}
+	v, _ := g.m.LoadOrStore(ep, limits.NewWaitGate(ep.MaxInFlight()))
+	return v.(*limits.WaitGate)
 }
 
 func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.Handler) {
@@ -244,6 +262,7 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 		repo = s.o.Repo
 	}
 	charge := s.o.Limits.Begin(caller, repo(r))
+	charge.SetWaitGate(s.gates.of(httpserver.EndpointFrom(ctx)))
 	if r.URL.Path == httplimit.TokenPath {
 		charge.DeferRequestFigures() // the token service charges its subject after it authenticated (R-LIM-003)
 	}

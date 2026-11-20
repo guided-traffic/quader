@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -226,17 +225,16 @@ func (v *Valkey) runLimits(ctx context.Context, b *LimitBatch) ([]LimitResult, e
 		cmds := make(valkey.Commands, 0, 2+4*len(b.Ops))
 		roles := make([]limCommand, 0, 4*len(b.Ops))
 		cmds = append(cmds, c.B().Multi().Build())
-		queue := func(op, role uint8, cmd valkey.Completed) {
+		queue := func(op int, role uint8, cmd valkey.Completed) {
 			cmds = append(cmds, cmd)
-			roles = append(roles, limCommand{op: int(op), role: role})
+			roles = append(roles, limCommand{op: op, role: role})
 		}
+		// A batch is as large as the flush makes it: one drop per download that ended in the interval, so a replica that serves
+		// a thousand downloads a second sends a thousand drops in its one flush round trip (R-LIM-017).
 		for i, op := range b.Ops {
-			if err := v.queueLimitOp(c, uint8(i), op, queue); err != nil {
+			if err := v.queueLimitOp(c, i, op, queue); err != nil {
 				return err
 			}
-		}
-		if len(b.Ops) > 255 {
-			return errors.New("cluster: a batch of the limits holds at most 255 operations")
 		}
 		cmds = append(cmds, c.B().Exec().Build())
 		res := c.DoMulti(ctx, cmds...)
@@ -266,7 +264,7 @@ func (v *Valkey) runLimits(ctx context.Context, b *LimitBatch) ([]LimitResult, e
 }
 
 // queueLimitOp queues the commands of one operation.
-func (v *Valkey) queueLimitOp(c valkey.Client, i uint8, op LimitOp, queue func(op, role uint8, cmd valkey.Completed)) error {
+func (v *Valkey) queueLimitOp(c valkey.Client, i int, op LimitOp, queue func(op int, role uint8, cmd valkey.Completed)) error {
 	if op.Kind == OpTake {
 		keys, args, err := v.takeArgs(op)
 		if err != nil {

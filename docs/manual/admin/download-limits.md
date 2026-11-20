@@ -8,14 +8,14 @@ Every request on a repository's address is charged to a caller: a user (all sess
 
 | Figure | Window | At the limit |
 |---|---|---|
-| Requests per second (with a burst) and per hour | second, hour | 429 with the time to wait |
+| Requests per second (with a burst) and per hour | second, hour | 429 with the time to wait; a refused request does not count, so a caller that waits that long is admitted |
 | From the cache, MB per second | second | the download is slowed |
 | From the cache, GB per hour | hour | 429 before the next download starts |
 | From the upstream, MB per second | second | the fill is slowed |
 | From the upstream, GB per hour; upstream requests per hour | hour | what is cached is still served, what needs the upstream is refused |
-| Downloads in parallel | — | a further download waits up to 10 seconds, then 429 |
+| Downloads in parallel | — | a further download waits up to 10 seconds, then 429; while waiting downloads hold a quarter of a replica's request slots, 429 at once |
 | GB per day | day | 429 before the next download starts |
-| Refused requests per hour | hour | the caller is blocked for the block time |
+| Refused requests per hour | hour | the caller is blocked for the block time; a request refused by a request figure counts as one |
 
 A **profile** is a named set of these figures; an empty figure is unlimited. A **rule** gives a profile to a caller at a place (the instance, a project, a repository), optionally with single figures changed. Which rule applies: the repository's rules first, then the project's, then the instance's; at each place a rule for the single caller or address, else the caller's groups (per figure the most generous), else the rule of its kind. Without other rules a signed-in user gets **Standard**, a technical token and a CI job **Technical**, an anonymous caller **Anonymous**, and an administrator **Unlimited**. A remote repository also has **ceilings**: what all anonymous callers, and all signed-in callers, may fetch from its upstream together.
 

@@ -320,6 +320,43 @@ func TestR_LIM_024_ParallelDownloads(t *testing.T) {
 			}
 		}
 	})
+	t.Run("R-LIM-024 with the endpoint's share of waiting downloads held, the next is refused at once and another caller is served", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		r.e.o.ParallelWait = 10 * time.Second
+		gate := NewWaitGate(4) // four request slots: one may wait
+		begin := func(addr string) *Charge {
+			c := r.e.Begin(anonCaller(addr), qname.Repo{})
+			c.SetWaitGate(gate)
+			return c
+		}
+		for range 4 {
+			if err := r.e.Admit(ctx, begin("198.51.100.10")); err != nil {
+				t.Fatal(err)
+			}
+		}
+		waitCtx, stop := context.WithCancel(ctx)
+		waited := make(chan error, 1)
+		go func() { waited <- r.e.Admit(waitCtx, begin("198.51.100.10")) }()
+		for deadline := time.Now().Add(5 * time.Second); gate.Waiting() != 1; time.Sleep(5 * time.Millisecond) {
+			if time.Now().After(deadline) {
+				t.Fatal("the fifth download does not wait")
+			}
+		}
+		start := time.Now()
+		if err := r.e.Admit(ctx, begin("198.51.100.10")); codeOf(err) != CodeTooManyParallelDownloads || time.Since(start) > 500*time.Millisecond {
+			t.Fatalf("the sixth download with the share held: %v after %s, want too_many_parallel_downloads at once", err, time.Since(start))
+		}
+		if err := r.e.Admit(ctx, begin("198.51.100.11")); err != nil {
+			t.Fatalf("another caller's download beside the held share: %v", err)
+		}
+		stop()
+		if err := <-waited; !errors.Is(err, context.Canceled) {
+			t.Fatalf("the waiting download ended with %v", err)
+		}
+		if gate.Waiting() != 0 {
+			t.Fatalf("%d still wait after the wait ended", gate.Waiting())
+		}
+	})
 	t.Run("R-LIM-019 while Valkey is unreachable the replica's share is ceil(limit / n)", func(t *testing.T) {
 		r := newRig(t, ModeEnforce, f)
 		r.store.down.Store(true)

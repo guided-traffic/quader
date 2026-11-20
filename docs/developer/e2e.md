@@ -1442,7 +1442,13 @@ joins with M5.
 k6 container joins the network namespace of the control-plane node (`--network container:<cluster>-control-plane`), which routes the
 pod network, and resolves `localhost` to the pod's address, so the requests reach the pod's listener without the edge and the certificate
 is checked for `localhost`. Twenty tokens of the service account `e2e-npm-perf` carry the 2,000 requests/s of P-7 (the per-token budget
-again). The scenarios run one after the other for 30 s each:
+again). The tokens have no rule of their own: they run under the profile Technical in Enforce, as a CI system's tokens would. Until
+2026-11-20 they were given the profile Unlimited, because under overload the downloads that waited for a parallel slot held the
+replica's request slots and every further request was shed (F-163); since the waiting downloads hold at most a quarter of the slots
+([R-LIM-024](../spec/usage-and-limits.md#r-lim-024--parallel-downloads)), and since a flush drops any number of ended downloads' leases
+(a batch of the limits was bounded to 255 operations, and the flush of a busy replica failed and left the leases for a minute), the
+exemption is gone. Run once on 2026-11-20 on `linux/arm64`: P-8 25,376 answers 200 and 3,399 shed, no 429. The scenarios run one after
+the other for 30 s each:
 
 | Scenario | Target of R-ARCH-027 | Request | Rate |
 |---|---|---|---|

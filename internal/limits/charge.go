@@ -74,6 +74,18 @@ type Charge struct {
 	pacedWould [2]bool
 	// refusal is the RateLimit policy of the figure that refused the request in enforce, beside the request figures' (R-LIM-020).
 	refusal *Policy
+	// gate bounds the waiting downloads of the endpoint the request came through (R-LIM-024); nil lets the download wait.
+	gate *WaitGate
+}
+
+// SetWaitGate names the gate of the endpoint whose request slot the request holds: a download that would wait for a parallel
+// slot while the gate's share is held is refused at once (R-LIM-024, Q-LIM-60). Stage 7 sets it.
+func (c *Charge) SetWaitGate(g *WaitGate) {
+	if c != nil {
+		c.mu.Lock()
+		c.gate = g
+		c.mu.Unlock()
+	}
 }
 
 type event struct {
