@@ -6,6 +6,7 @@ package limits
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -192,6 +194,40 @@ func TestR_LIM_026_AuditRefusesNothingAndEnforceRefuses(t *testing.T) {
 			}
 		}
 	})
+}
+
+// R-LIM-010: the built-in profiles the migrations write are the figures of limits.BuiltinProfiles, the request figures of the
+// measurement included.
+func TestR_LIM_010_TheBuiltInProfilesHoldTheFiguresOfTheMigrations(t *testing.T) {
+	e := newEnv(t)
+	a := e.st.Do(e.r, "GET", "/api/v1/limits/profiles", e.admin, nil)
+	if a.Status != 200 {
+		t.Fatalf("profiles: %d %s", a.Status, a.Body)
+	}
+	var list struct {
+		Items []struct {
+			Key     string         `json:"key"`
+			Figures limits.Figures `json:"figures"`
+			Builtin bool           `json:"builtin"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(a.Body, &list); err != nil {
+		t.Fatal(err)
+	}
+	want := limits.BuiltinProfiles()
+	seen := 0
+	for _, p := range list.Items {
+		if !p.Builtin {
+			continue
+		}
+		seen++
+		if p.Figures != want[p.Key] {
+			t.Errorf("the built-in profile %s holds %v, want %v", p.Key, p.Figures, want[p.Key])
+		}
+	}
+	if seen != len(want) {
+		t.Fatalf("%d built-in profiles, want %d: %s", seen, len(want), a.Body)
+	}
 }
 
 func TestR_LIM_003_AFailedCredentialIsARefusedRequestOfTheAddress(t *testing.T) {

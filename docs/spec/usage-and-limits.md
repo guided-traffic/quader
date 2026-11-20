@@ -262,9 +262,9 @@ Priority: **MVP** · Covers: BEYOND-030
 
 Acceptance criteria:
 
-- In `enforce` with the profile Anonymous, 200 `GET /v2/` from one address within 2 s are admitted at most 140 times (burst 100
-  plus 20 per second); in `audit` all 200 are admitted, as on `/api/npm/…`, and the address is recorded as would-have-been-limited
-  for `requestsPerSecond`.
+- In `enforce` with the profile Anonymous, 2,200 `GET /v2/_catalog` from one address within 2 s are admitted at most 1,100 times
+  (burst 1,000 plus 50 per second); in `audit` all 2,200 are admitted, as on `/api/npm/…`, and the address is recorded as
+  would-have-been-limited for `requestsPerSecond`.
 - 300 `GET <feed>/v3/flatcontainer/<id>/index.json` without a credential on a NuGet repository whose artifacts are `internal` are
   all answered 401 and none is counted as a request or a refused request of the address.
 
@@ -470,17 +470,25 @@ Priority: **MVP** · Covers: BEYOND-030
 
 A profile is a named set of every figure of R-LIM-004. An empty figure is unlimited.
 
-- Five built-in profiles exist from the first migration with these values (the development agent's estimates; the owner changed
-  none). Built-ins cannot be deleted or renamed; their figures and description can be changed by an instance administrator,
-  except Unlimited, whose figures stay empty (409 `profile_immutable`).
+- Five built-in profiles exist with these values. The three request figures (Req/s, Burst, Req/h) are set from a measurement of
+  real clients so that normal use never reaches them (the owner's decision 18;
+  [Q-LIM-59](#q-lim-59--the-built-in-profiles-request-figures-are-set-from-a-measurement-of-real-clients), migration 00085); the
+  others are the development agent's estimates, which the owner did not change. Built-ins cannot be deleted or renamed; their
+  figures and description can be changed by an instance administrator, except Unlimited, whose figures stay empty (409
+  `profile_immutable`).
 
 | Profile (key) | Req/s | Burst | Req/h | Cached MB/s | Cached GB/h | Uncached MB/s | Uncached GB/h | Upstream req/h | Parallel | GB/day | Refused/h |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Unlimited (`unlimited`) | – | – | – | – | – | – | – | – | – | – | – |
-| Standard (`standard`) | 200 | 1000 | 50000 | 200 | 300 | 50 | 30 | 2000 | 20 | 1000 | 500 |
-| Technical (`technical`) | 400 | 2000 | 200000 | 500 | 1000 | 100 | 100 | 10000 | 50 | 5000 | 2000 |
-| Restricted (`restricted`) | 50 | 200 | 5000 | 50 | 50 | 10 | 5 | 200 | 6 | 100 | 100 |
-| Anonymous (`anonymous`) | 20 | 100 | 2000 | 20 | 10 | 5 | 2 | 20 | 4 | 30 | 60 |
+| Standard (`standard`) | 200 | 4000 | 100000 | 200 | 300 | 50 | 30 | 2000 | 20 | 1000 | 500 |
+| Technical (`technical`) | 1000 | 20000 | 1000000 | 500 | 1000 | 100 | 100 | 10000 | 50 | 5000 | 2000 |
+| Restricted (`restricted`) | 100 | 1000 | 25000 | 50 | 50 | 10 | 5 | 200 | 6 | 100 | 100 |
+| Anonymous (`anonymous`) | 50 | 1000 | 20000 | 20 | 10 | 5 | 2 | 20 | 4 | 30 | 60 |
+
+- The window of the burst is `burst ÷ rate`: 20 s for Anonymous, Standard and Technical, 10 s for Restricted. What the figures hold,
+  measured (Q-LIM-59): one `docker pull` of an image of 40 layers is 48 requests within 0.3 s, an `npm ci` of 475 packages 475
+  requests within 2.5 s; Anonymous holds ten such pulls or two such installs at once from one address, Standard an install of 4,000
+  packages, Technical twenty parallel CI jobs of one token installing 475 packages each.
 
 - An instance administrator creates own profiles (key `^[a-z][a-z0-9-]{1,31}$`, unique and immutable; name 1 to 64 characters,
   unique; description at most 1024) and deletes one that no assignment and no project maximum names (409 `profile_in_use`
@@ -2407,8 +2415,87 @@ holds the largest image keeps the class's purpose (a publish loop runs at 10 a s
 After the change the same push of 40 layers passes in Enforce (`TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass`).
 Revisit when the upload figures of Q-LIM-27 come, or if a client pushes several large images within seconds.
 
+Checked on 2026-11-20 against the measurement of
+[Q-LIM-59](#q-lim-59--the-built-in-profiles-request-figures-are-set-from-a-measurement-of-real-clients): `docker buildx build --push`
+of an image for two platforms with 40 layers sends 95 unsafe requests (two per blob, `POST` and `PUT`, no `PATCH`; the two platforms
+shared their 40 layers) and the manifests' `PUT`s, 92 in its busiest second; a pull sends one unsafe request, the `POST` of
+`/v2/_token`. The burst of 400 holds every single-platform push and a multi-platform push of up to about 190 distinct blobs with
+buildx (about 130 with `docker push`, three per blob); a push of two platforms with more than about 65 distinct layers each through
+`docker push`, or four platforms with more than 30, meets it, and docker exits 1. The class is not changed here: the owner's decision
+18 is about the profiles' request figures, and an image of that size per platform was not measured.
+
 **Applied in the spec:** [api-and-ui.md](api-and-ui.md) R-API-016's configuration. Code: `APIRateLimitPackageWrite` in
 [m1.go](../../internal/config/m1.go).
+
+### Q-LIM-59 · The built-in profiles' request figures are set from a measurement of real clients
+
+Status: **Decided by the owner on 2026-11-20: larger default bursts, set from a measurement** (decision 18). The numbers are the
+development agent's, from the measurement — selected from the options below; the owner reviews them at the walkthrough.
+
+Context: `docker pull` and `docker push` do not retry a 429 of the registry and exit 1; podman and npm wait what `Retry-After` says.
+The owner chose built-in request figures that normal use never reaches over holding a request on the server; a caller that stays
+above a figure is still refused at once. The figures of R-LIM-010 were estimates nobody had measured (Anonymous 20 requests a second
+with a burst of 100 and 2,000 an hour; Standard 200, 1,000, 50,000; Technical 400, 2,000, 200,000; Restricted 50, 200, 5,000).
+
+**The measurement**, run once on 2026-11-20 on the kind cluster (`linux/arm64`, the profile `scatter`, the release image of the day),
+with the real clients of the e2e harness and a temporary test that read the request log of the packages replicas; not a test of the
+suite. "Charged" are the requests the limits count; the challenge without a credential is not one (R-LIM-005).
+
+| Client, command | Charged requests | In | What they are |
+|---|---|---|---|
+| `docker login` | 2 (+1 challenge) | 10 ms | the version check with the credential, the token |
+| `docker pull`, an image of one layer (docker builds it as an index with an attestation) | 9 (+1) | 88 ms | 2 `HEAD` of the tag, the token's `POST`, 3 manifests by digest, 3 blobs |
+| `docker pull`, an image of 40 layers | 48 (+1) | 0.28 s | 2 `HEAD`, the token, 3 manifests, 42 blobs (39 in its busiest second) |
+| `docker pull`, an image of two platforms | 9 (+1) | 78 ms | as one layer: the index, one platform's manifest and blobs |
+| `docker pull` of an image already present | 3 (+1) | 20 ms | 2 `HEAD`, the token |
+| `docker pull` without a credential, a public image | 8 | 1.1 s | as above, charged to the address |
+| `podman pull`, one layer / 40 layers / two platforms / present | 5 / 44 / 5 / 4 (+1 each) | 40 ms / 0.48 s / 38 ms / 33 ms | the version check, the tag's manifest, manifests by digest, blobs |
+| `docker buildx build --push`, two platforms of 40 layers | 146 (95 unsafe) | 0.62 s | `HEAD` and `POST`, `PUT` of each blob, 5 manifests (Q-LIM-56) |
+| `npm ci` of a lockfile of 475 packages, warm cache | 475 | 2.5 s | one tarball each (npm ci reads no package document); recorded by the npm load of R-HA-059 on the same cluster ([e2e.md](../developer/e2e.md#drain-and-failover-under-npm-load)), not run again |
+
+From the protocol, not run (a run of each would cost minutes for a number the protocol gives):
+
+| Client, command | Requests | Over |
+|---|---|---|
+| `npm install` without a lockfile, N packages | 2N: a package document and a tarball each | seconds; npm opens up to 15 connections |
+| `dotnet restore`, N packages over F feeds | about F + N × (F + 1): the service index of each feed, the version list of each package on each feed, the package | seconds |
+| `apt-get update` and `apt-get install` of N packages, Debian's three suites | about 10 to 15 for the update (an `InRelease` and the indexes by hash per suite, component and architecture), then N | seconds; APT pipelines up to 10 requests on a connection |
+| `ansible-galaxy collection install`, C collections with their dependencies | about 4 C: the version list (paged), the version, the archive | one after the other, tens of seconds |
+
+**Normal use, as the figures take it:**
+
+- **Anonymous** (one address, often a NAT of several people or CI jobs): ten pulls of 40-layer images in a row (480) or two
+  installs of 475 packages at once (950) within the burst; about 40 such installs or 400 such pulls an hour.
+- **Standard** (a person): one install of up to 4,000 packages, or a compose file pulling a dozen images (about 600), at once; an
+  install of 475 packages every 2.5 s sustained (190 a second) stays below the rate.
+- **Technical** (a system with one token, a CI runner): twenty parallel jobs of one token, each installing 475 packages within
+  seconds (9,500), within the burst; a CI job that pulls a dozen images is far below.
+- **Restricted** (a caller an administrator narrows): one install of 475 packages and a few pulls at once.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each built-in burst holds the normal command of its kind of caller with room, the rate its sustained use, the hour 20 to 50 bursts (chosen) | Anonymous 50/s, 1,000, 20,000/h; Restricted 100/s, 1,000, 25,000/h; Standard 200/s, 4,000, 100,000/h; Technical 1,000/s, 20,000, 1,000,000/h | No client meets a figure in normal use; the order of the profiles stays; a caller far above is refused within its window | A caller may send a burst of 1,000 anonymous requests at once, 20,000 with a technical token |
+| (b) One burst for every profile that holds the largest single command (500) | | Simple | A NAT of several people, or twenty CI jobs of one token, meets it; docker then fails |
+| (c) No request figure for signed-in callers | | Nothing to tune | No bound on a token that loops; the hour figure protects the installation's capacity per caller |
+
+**Choice:** (a). The windows of the bursts are 20 s (10 s for Restricted). The hour is consistent with the burst: Anonymous 20 and
+Restricted 25 bursts, Standard 25, Technical 50 (a system runs all day); each is far below what the rate would allow in an hour, so a
+caller that stays at its rate meets the hour figure, not the burst. Only the request figures change: the byte, upstream, parallel and
+refused figures keep the estimates of the first migration.
+
+**`package_write`** (Q-LIM-56, a burst of 400 at 10 a second): a pull spends one unit (the `POST` of the token); it still holds every
+single-platform push and the measured multi-platform push (95 unsafe requests); it does not hold a push of two platforms with more
+than about 65 distinct layers each through `docker push` (three unsafe requests per blob), which was not measured and is noted in
+Q-LIM-56.
+
+**Rationale:** the owner's rule asks that normal use never reaches a figure; the measurement shows normal use is dense (a pull of
+48 requests in a third of a second, an install of 475 in 2.5 s), so a burst, not the rate, is what a client meets first. The
+development agent would revisit these numbers when a client or a format is found whose normal command needs more than its profile's
+burst, or when the installation's capacity per replica (R-ARCH-027) is below what twenty technical bursts ask at once.
+
+**Applied in the spec:** R-LIM-010, R-LIM-005's acceptance criteria; [api-and-ui.md](api-and-ui.md) R-API-016's acceptance criteria.
+Code: migration [00085_limits_request_bursts.sql](../../internal/meta/postgres/migrations/00085_limits_request_bursts.sql),
+`BuiltinProfiles` in [model.go](../../internal/limits/model.go).
 
 ## What this does not cover
 

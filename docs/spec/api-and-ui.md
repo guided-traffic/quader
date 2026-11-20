@@ -944,10 +944,10 @@ Acceptance criteria:
   profiles, and the third `PUT` of a token beyond the burst of `package_write` answers 429 with
   `RateLimit-Policy: "package_write";q=…`, as does a third token of the same user, because the tokens share the user's bucket;
   `POST /api/v1/…` with the same token is still admitted.
-- With the defaults, 300 `GET <feed>/v3/flatcontainer/<id>/index.json` without a credential from one address on a
+- With the defaults, 1,200 `GET <feed>/v3/flatcontainer/<id>/index.json` without a credential from one address on a
   NuGet repository whose artifacts are `internal` all answer 401 with the challenge and none 429; on a repository whose
-  artifacts are `public` the requests beyond the burst of 100 answer 429 by the profile Anonymous in mode `enforce`, and none in
-  mode `audit`.
+  artifacts are `public` the requests beyond the burst of 1,000 of the profile Anonymous answer 429 in mode `enforce`, and none
+  in mode `audit`.
 - Three `dotnet restore` of a solution with at least 100 packages in its restore graph, with the credentials in
   `nuget.config`, from three addresses at once through a repository that is not `public`, succeed (E3.2).
 

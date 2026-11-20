@@ -119,11 +119,11 @@ func codeOf(err error) string {
 }
 
 func TestR_LIM_017_RequestWindowsAndCost(t *testing.T) {
-	t.Run("R-LIM-005 R-LIM-020 in enforce a burst of 100 and 20 per second admits at most 140 of 200 in 2 s", func(t *testing.T) {
+	t.Run("R-LIM-005 R-LIM-020 in enforce a burst of 1,000 and 50 per second admits at most 1,100 of 2,200 in 2 s", func(t *testing.T) {
 		r := newRig(t, ModeEnforce, BuiltinProfiles()[ProfileAnonymous])
 		admitted := 0
-		for i := range 200 {
-			if i == 100 {
+		for i := range 2200 {
+			if i == 1100 {
 				r.clk.add(2 * time.Second)
 			}
 			c := r.e.Begin(anonCaller("198.51.100.7"), qname.Repo{})
@@ -134,8 +134,8 @@ func TestR_LIM_017_RequestWindowsAndCost(t *testing.T) {
 				t.Fatalf("refusal %v", st.Err)
 			}
 		}
-		if admitted > 140 || admitted < 100 {
-			t.Fatalf("admitted %d, want at most 140", admitted)
+		if admitted > 1100 || admitted < 1000 {
+			t.Fatalf("admitted %d, want at most 1,100", admitted)
 		}
 	})
 	t.Run("R-LIM-017 a request costs one round trip at stage 7", func(t *testing.T) {
@@ -159,7 +159,7 @@ func TestR_LIM_017_RequestWindowsAndCost(t *testing.T) {
 	})
 	t.Run("R-LIM-026 in audit nothing is refused, everything is recorded as would_limit", func(t *testing.T) {
 		r := newRig(t, ModeAudit, BuiltinProfiles()[ProfileAnonymous])
-		for range 300 {
+		for range 1200 { // beyond the burst of 1,000
 			c := r.e.Begin(anonCaller("198.51.100.7"), qname.Repo{})
 			st := r.e.Check(context.Background(), c, time.Time{}, nil)
 			if st.Err != nil || len(st.Policies) != 0 {
@@ -169,7 +169,7 @@ func TestR_LIM_017_RequestWindowsAndCost(t *testing.T) {
 		}
 		r.e.Flush(context.Background())
 		req, _, _, _, _, ev := r.usage.sum()
-		if req != 300 || ev["audit:requestsPerSecond"] == 0 {
+		if req != 1200 || ev["audit:requestsPerSecond"] == 0 {
 			t.Fatalf("requests %d events %v", req, ev)
 		}
 	})
