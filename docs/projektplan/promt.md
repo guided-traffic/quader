@@ -1345,8 +1345,17 @@ agent** is not decided until the owner has said so.
     queued or running per repository (Q-REPO-363); the include and exclude patterns hold for every background fill, a
     mirror pass included (Q-REPO-365). **A probe through a virtual repository** started nothing as first built
     (H-1016); that is the common setup, and the owner's Q-LIM-2 already says where such a request is charged, so the
-    development agent had it built as a second commit instead of leaving it for a decision (in work when this was
-    written).
+    development agent had it built as a second commit instead of leaving it for a decision. **Built the same night**
+    (Q-REPO-367): the probe is the probe of the member that serves the version, found along the virtual repository's
+    own tiers without asking an upstream (a local member that holds it starts nothing; else the first remote member
+    whose cache holds it; else the first whose stored documents name the version; else the first the caller may fill),
+    with the member's switch, patterns, platforms and bounds. The budget key is the caller's at the addressed
+    repository, the ceiling the member's, the usage row names the member: the seam of the limits expressed it without
+    a change. OCI needed nothing, its virtual walk already answers through the member's handler. Open with it: a NuGet
+    virtual repository with several remote members starts a version that is neither stored nor local at the first
+    fillable member, also when that upstream does not have it, because NuGet's gate reads no document (H-1019).
+    Integration tests of their own: OCI and npm; NuGet, Ansible and Debian through a virtual address have unit tests
+    only.
   - **What a protocol does not carry** (the builder's table, on the format pages): the clients of npm, NuGet and Debian
     read package or index documents and then fetch the content themselves, so the rule fires seldom there (`apt-get`
     never sends a `HEAD` of a pool file); a pull by digest is no probe; an OCI layer with foreign `urls` is skipped;
