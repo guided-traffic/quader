@@ -848,7 +848,14 @@ runs are in `git log`; this section holds the current state.
   by the change:** `e2e (npm)`, `TestNPMCollapse`, the case that 100 concurrent misses over two replicas cause one
   upstream request: "request 53 answered 503" (section 8). The leg had passed an hour earlier on the commit before,
   whose product code for that path is the same; the push changed UI files, the development profile's Valkey list and
-  two tests. Re-run once at 22:57 (the first of at most three).
+  two tests. Re-run once at 22:57 (the first of at most three): **green at 23:21**, so the run stands green and `main`
+  is green on every job for the first time since the scanner's landing; the 503 stays a finding without a cause.
+- **The nightly, dispatched at 23:22 on the quiet `main`** (run 44828435420, all legs, the commit `6e01d26ff`): the
+  scanner role with every format's client and in the long sets that only read against the Valkey list so far
+  (`drain`, `backup`, `bastion`, `alerts`, `upgrade`), F-165, the Valkey start cases, `TestR_DEB_025`. Its longest lane
+  takes about four hours. **No code push to `main` beside its kind legs** (the standing rule of the night): package B
+  of the scanner, if it reports before the nightly ends, is checked and held on its branch until then; the malware
+  scan lands from its branch after it in any case.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
