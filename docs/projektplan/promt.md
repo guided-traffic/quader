@@ -528,6 +528,16 @@ records the recorder that tells such a stall apart).
   deadlock check picks; not fixed.
 - The settings answer of the malware scanning counts the unchecked blobs over all items at every read
   (`backlog.unchecked`), costly on a large installation (its builder's note, 2026-11-20; not measured).
+- **The check `scanner` on the System page says only its name** (seen on 2026-11-20): Object store and Valkey have a
+  sentence that says what a failing check costs, `scanner` has none, so the header says "Degraded" and the row
+  "scanner", and a reader cannot tell an analyser that broke from one that was never installed, which is the state
+  of every local stack and every render since the scanner role. The specification still names two checks that can be
+  degraded; `scanner` is the third. Open: a sentence for it, or the server reporting "not installed" apart from
+  "failing".
+- On the System page at 1024 and 390 px the header's time wraps when two replicas are lost (the layout check's
+  "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
+  breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
+  Seen on 2026-11-20, not fixed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -769,7 +779,16 @@ runs are in `git log`; this section holds the current state.
   (below), who also goes through every other pod the suite and the profile create. **Not verified in CI of the
   scanner landing because of the cancelled run:** the legs `npm`, `oci`, `access-long`, `vuln` and `bastion` and the
   three integration shards on that commit; its builder ran `e2e (vuln)` twice on a cluster of its own and five
-  integration areas; the nightly of tonight runs every leg.
+  integration areas; the nightly of tonight runs every leg. **The run of the malware scan's first stage
+  (44809593635) has no release:** its job `web (Angular)`, which gates the release, went red at 21:20 on
+  `audit-labels.spec.ts`: the eight `malware.*` event types the stage registered have no name in the UI, and a
+  component test holds every event type of the audit registry to a name of its own. The stage's builder ran no UI
+  test and neither did the development agent before the push, though the commit touches `web/` (the generated API
+  types and the registry's fixture). **The rule taken from it:** a commit that touches anything under `web/`, a
+  generated file included, gets `make web-test` and `make web-lint` before the push, whoever built it. The names
+  are being added by the builder of the System page's fix (below) and land with it; the stage is released by that
+  push. The fix run before it (44803754281) was cancelled by the stage's push with integration shard a green and
+  the shards b and c without a result.
 - **In work** (21:14), four builders, the most that run at once:
   - **The Valkey policies of the development profile and the test's extra replicas** (since 21:12): the fix, the look
     at every other pod of the suite and the profile for the same miss, `TestE12Valkey` on a kind cluster of its own, and
@@ -784,7 +803,14 @@ runs are in `git log`; this section holds the current state.
     shows "Ready" and a warning with the check's name in its state cell, and the cell's first line stands 20 px below
     the replica's name. Since the scanner landing the role `all` reports the check `scanner` that way wherever the
     analyser is not installed (Q-ARCH-551), which is every render and the owner's UI stack; the cell never had a
-    warning in a render before.
+    warning in a render before. **Reported at 21:28, not landed yet:** the layout check measures a cell by its first
+    line of text outside a badge, "Ready" is a badge, so it measured the check's name on the line below; the cell now
+    has the state and beside it the failing checks one under the other, the first on the line of the replica's name,
+    and in the stacked table the state starts on the line of its column's name; "Failing checks:database" got its
+    space. Looked at by the development agent: 1440 px light and 390 px dark with rows of one, two and three failing
+    checks, an unready, a lost and a draining replica and two pools. One new component test of about 50 ms. **Resumed
+    at 21:30** for the names of the eight malware events in the audit log, in English and German, and for the pool
+    headings' missing space ("Poolbatch"), both on the same branch.
   **Waiting for a free builder, both ready to start on `main`:** package 2 of the malware scan, the scanning side
   (the job `malware-scan`, discovery and rescans, the call to the scanner, the blob token, the scan listener's routes
   for a blob and for the database, the scanner kind `malware` with its unpacking and a `clamd` client behind an
