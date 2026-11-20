@@ -857,7 +857,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (22:29), two builders (package 2 of the malware scan and package B of the scanner); package 1's builder has finished:
+- **In work** (22:34), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner on `main`); the builders of packages 1 and 4 have finished:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -903,9 +903,41 @@ runs are in `git log`; this section holds the current state.
     `malware-scan`, discovery and rescans, the call, the scanner kind `malware` with its unpacking, the `clamd` client
     and an in-process fake of it, the metrics. Bound by this evening's lessons: no default or local start may be
     refused for a missing scanner's address; anything under `web/` gets the UI tests; a check that fails without
-    gating gets a name and a sentence for the System page.
-  **Waiting for a free builder:** package 3 of the malware scan (the database and the chart), which also waits for
-  package 2's first stage.
+    gating gets a name and a sentence for the System page. **First stage reported at 22:29 and put on `feat/malware`
+    by the development agent** (five documentation conflicts with the gate's and the screens' commits merged by hand;
+    on the branch's tip build, the full unit run of 171 packages, generate-check, links and check are green): on the
+    scan listener `GET`/`HEAD /scan/v1/blobs/sha256:<hex>`, which serves one stored file to the malware scanner for a
+    blob token of exactly that digest and answers 404 without a reason for a repository that is gone, disabled,
+    virtual or a system repository, and `GET /scan/v1/malware-database` with `/<version>/<file>`, admitted by the
+    malware scanner's certificate without a token; neither fills a remote, asks a gate or counts a download, and the
+    blob read is a usage row of `system` under the token's repository. The blob token names the digest, the holding
+    repository and a scan's id and lives as long as `malware.read_timeout`. The interface `malware.DatabaseSource`
+    serves a version as soon as the row `malware_database` names files whose blobs are stored, so package 3 writes no
+    route. The configuration of R-MAL-027 with its defaults, `process.scanner_kind` and `jobs.workers.malware`.
+    **Its decisions:** Q-MAL-60 (no start is refused for a missing malware scanner: without an address the job makes
+    no call and a reported check `malware_scanner` that does not gate says why; it replaces the planned refusal of a
+    worker, and differs on purpose from the image scanner's rule that cost two red jobs this evening), Q-MAL-61 (the
+    planner's unsure Q-MAL-27 holds with one new key, `malware.scan_listener.client_name`, which tells the listener
+    which of its admitted names is the malware scanner, so the image scanner, which parses hostile images, reads
+    neither route), Q-MAL-62 (a database file is served by the digest its row lists). Gates with exit 0: build, the
+    full unit run, generate-check, lint, cyclo, gosec, chart tests, links and check, the white-label scan; the areas
+    `malware`, `vulnimage`, `limits`, `authz` and `registry`; the UI profile's configuration validates. **What it
+    cost:** about 25 unit cases of under a second, three integration tests of 7.4 s together with files of tens of
+    bytes. **Not verified:** the route's answer for a version that a vulnerability finding blocks (the route never
+    reaches a format's serve path). **Seen beside it:** the registry routes of the scan listener are not narrowed to
+    the image scanner's name as the malware routes are; a route outside the format host must charge the usage itself
+    or its row names no repository; the area `vulnimage` sleeps two seconds for a flush. **Second stage since 22:34**
+    on the branch's tip, with every integration area, the UI profile's configuration and the bare starts as gates.
+  - **Package 3 of the malware scan, the database and the chart** (since 22:34, on the branch's tip), in two
+    stages: first the task `malware-sync-db`, `freshclam` beside the worker and its seed, the declaration of
+    `upstream/scanner-clamav` with a class of its own, the chart (the malware scanner's Deployment with `clamd`, its
+    certificate as a fifth kind of pod, the `freshclam` container, the alerts, the values), the pinned ClamAV image
+    with the CI job on the same pin, the row on the upstream registries page; then, when package 2's scanner process
+    is on the branch, the scanner's loader of the database, a kind cluster with the real image, the measurements the
+    planner could not make (the image's user and file system, `clamd`'s memory, the time to ready) and the one
+    end-to-end case. No test downloads the real database: ClamAV's project allows only its own two tools to fetch
+    it, so the tests fill the repository with a database of a few signatures, as an installation without internet
+    does.
   **How the malware scan lands from here** (the development agent's, 2026-11-20): its first stage is on `main`; what
   follows (the gate, the screens, the scanning side, the database and the chart) is collected on a branch
   `feat/malware` and lands together, as the project `upstream` did. Why: with the scanning on by default and no
