@@ -10893,6 +10893,159 @@ the ClamAV signatures and the vulnerability databases, which change. **Rationale
 most. The development agent revisits an entry of this list when a run fails on its host.
 
 **Applied:** [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached).
+
+### Q-ARCH-540 · A format's e2e leg runs on a push only when that format's own code changed
+
+Status: **Decided by the owner** (2026-11-20): a format's e2e leg runs on a push only when that format's own code changed. A change of
+shared code runs the tiers below (unit with the format contract's kit for every format, integration) and the leg of one reference client,
+npm. Every format's client runs in the nightly.
+
+Context: measured on 2026-11-20 ([test-cost.md](../developer/test-cost.md#0-the-result-in-short)): a push that touches shared code costs
+396 runner minutes (Test and Release 44693590111); the five formats' own e2e legs are 90.6 of them (npm 23.8, NuGet 22.4, OCI 16.0, Ansible
+16.1, Debian 12.3), and with 25 formats such a push would cost about 939. A change of shared code started every format's leg: the scope steps
+of `e2e-oci`, `e2e-deb` and `e2e-ansible` held the format's own paths and shared ones (`deploy/dev/e2e.sh`, `internal/mirror/`,
+`internal/httpserver/`, `deploy/helm/quader/` and more), `e2e-npm` and `e2e-nuget` had no such step and ran on every push, and a leg that
+found nothing to do still took a runner (`e2e (bastion)`: 130 s, 117 of them freeing disk). The owner's rule of CLAUDE.md ("Tests stay
+runnable") asks that a format adds a constant and nothing to another format's leg.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every format's leg on every change of shared code, as it was | The scope steps as they stood | A defect of shared code that only one client shows is found on the push | Every format's leg grows every push: about 939 runner minutes per push at 25 formats |
+| (b) A format's leg only for its own code; shared code runs the tiers below and the reference leg npm; every format's client in the nightly (chosen) | One reference leg per push of shared code, the rest each night | The cost of a push of shared code no longer grows with the formats' legs | What only another format's client shows of a change of shared code is found in the nightly, up to a day later |
+| (c) Every client in one shared cluster | One leg that loads every format's client images | One cluster bring-up instead of five | The leg that loads every format's client images and grows with each; the owner's rule of CLAUDE.md excludes it |
+
+**Choice:** (b). **Price:** what only another format's client shows of a change of shared code is found in the nightly, or by that format's
+leg when its own paths next change. Until the first stable release no e2e leg gates the release anyway
+([Q-ARCH-457](#q-arch-457--until-the-first-stable-release-a-minimal-set-of-jobs-gates-semantic-release)). **Consequence,** from the job
+records (runner minutes; the decision job estimated at a quarter of a minute): run 44693590111, which changed each format's e2e test, about
+394 instead of 396.1; run 44646960056 about 370 instead of 384.9 (`e2e (oci)` and `e2e (bastion)` not started); a push of shared code alone
+about 308, and about 508 with 25 formats instead of 939. The nightly costs about 91 runner minutes more and is not longer
+([Q-ARCH-545](#q-arch-545--the-formats-sets-run-in-lane-3-of-the-nightly-and-nuget-outside-the-lanes)).
+
+**Applied:** [release.yml](../../.github/workflows/release.yml), [performance.yml](../../.github/workflows/performance.yml),
+[e2e-legs.sh](../../.github/scripts/e2e-legs.sh); [releasing.md](../developer/releasing.md#which-e2e-legs-a-change-runs),
+[e2e.md](../developer/e2e.md#what-a-new-format-adds-to-the-tests).
+
+### Q-ARCH-541 · npm is the reference leg of shared code
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-ARCH-540 names npm; the choice is recorded with its reasons so that it can be revisited when the formats change.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) npm (chosen) | `e2e (npm)` runs for a change of shared code | Its leg already holds the behaviour that is the same for every format: the mirror's clients-first test, replicas, collapse, upstream and endpoint (766 s of 1,428 in run 44693590111, [test-cost.md](../developer/test-cost.md#6-what-a-formats-own-leg-is-made-of-one-line-each-vi)); it runs on `large` without freeing disk | The longest of the five legs (23.8 minutes) |
+| (b) The cheapest leg, Debian (12.3 minutes) | | 11.5 minutes less per push of shared code | It holds almost nothing of the shared behaviour (22 s of repeated tests): a shared defect would pass it |
+| (c) The leg of the format the push touched most | | | No stable reference; a push of shared code alone touches none |
+
+**Choice:** (a). The development agent revisits it when the shared behaviour moves to a cheaper tier (test-cost.md, section 5, candidate 3),
+which would leave the reference leg with the client cases only.
+
+**Applied:** `REFERENCE=npm` in [e2e-legs.sh](../../.github/scripts/e2e-legs.sh).
+
+### Q-ARCH-542 · Shared code is every path that is no format's alone; a path on no list is shared
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the rule of Q-ARCH-540 needs a list one can check of what is a format's own and what is shared, and it must fail safe: a path
+that no list names must not start nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A list per format; a short list of paths that start no format leg, each with its reason; every other path is shared and starts npm (chosen) | Shared is the remainder | A new directory, a new top-level file or a path nobody thought of starts npm; the lists stay short | A path of a format that its list misses runs npm instead of the format until the list names it |
+| (b) A list of shared paths; every other path starts no leg | Shared is enumerated | Precise where the list is right | A path on no list starts nothing: not fail-safe |
+| (c) The Go import graph per format (`go list -deps`) | Derived | Exact for Go | Blind to scripts, manifests, `web/` and the workflows; the decision needs Go and a module download |
+
+**Choice:** (a), in [e2e-legs.sh](../../.github/scripts/e2e-legs.sh): a format's own paths are its package and data port, the files of
+shared packages under `internal/` and `cmd/` whose name carries the format's name as a word, its test upstream, its client manifests,
+images and e2e tests, and the few paths that are its alone (OCI's registry root and token service, Debian's OpenPGP, NuGet's vectors,
+Ansible's browser journey). Two shared files are judged per changed line: a line of release.yml belongs to its job (a leg's job starts
+the leg; the header, `image` and `e2e-scope` are shared; every other job starts no leg), a line of `tools/versions.env` to the pin it
+sets (a format's client pins are that format's). The paths that start no format leg are those no format leg builds, deploys or reads
+(the documentation but the manual, Go test files outside `test/e2e`, `test/integration`, the developer tools, the doubles of other sets,
+the Bastion's chart, the UI development profile, the other workflows, the configuration of jobs without a cluster). The legs `bastion`
+and `vuln` keep their own lists; two patterns of the vuln list never matched a file and stand as the paths they meant. A test runs the
+script against a repository of its own and checks that every pattern matches a file of the tree.
+
+**`web/` starts no format leg** (decided by the development agent with this block). The first cut made a change under `web/` shared code,
+so a change of the UI alone ran npm's leg (about 24 minutes of a large runner), which cannot see the UI: the format legs drive the clients.
+The UI is what `access-long` (every change), the UI layout checks and the web unit tests see, and the built UI embedded in the image is no
+reason, as no other format leg opens it. The one format leg that runs a browser journey is Ansible's (`TestAnsibleDocsJourney`), so what
+that journey runs on (its specs and config, the base Playwright config, its global setup and support, `web/e2e/tsconfig.json`, the web
+workspace's `package.json`, `package-lock.json` and `.nvmrc`, which the leg installs) and the screens it opens (the files of `web/src` named
+`ansible-*`, not their unit tests) are on Ansible's list; every other path under `web/` starts no format leg. The bastion and vuln legs keep
+their own `web/` paths. **Revisit** when a format's leg starts to exercise the UI beyond what its list names.
+
+**Applied:** [e2e-legs.sh](../../.github/scripts/e2e-legs.sh), [e2elegs_test.go](../../internal/tools/ciworkflows/e2elegs_test.go);
+[releasing.md](../developer/releasing.md#which-e2e-legs-a-change-runs).
+
+### Q-ARCH-543 · One job on the standard runners decides which e2e legs run
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A job `e2e-scope` on `self-hosted` reads the changed paths once and outputs `true` or `false` per leg; each leg `needs: [image, e2e-scope]` and runs `if: !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.<leg> != 'false'` (chosen) | One decision per run | A leg that does not apply is a skipped job and takes no runner; a failed or empty decision runs the leg | One job more per run (a quarter of a minute of a standard runner, estimated) |
+| (b) A scope step in each leg, as before | | No job more | Each skipped leg takes a runner of its class first (`e2e (bastion)`: 130 s); five copies of the path logic |
+| (c) `paths` filters of the workflow, or a workflow per format | | Built into GitHub | A filter starts or skips the whole run and cannot say "shared code runs npm only"; separate workflows are out of sight of the coverage evidence |
+| (d) A paths-filter action of another publisher | | Ready-made | A new publisher with the release secrets of the workflow in reach, and the rules of Q-ARCH-542 still to be written |
+
+**Choice:** (a). A pull request is decided like a push, by the same lists, from what its head changed since the merge base with its base
+(`git merge-base` of `github.event.pull_request.base.sha` and `head.sha`): running every leg on every pull request would make each of the
+dependency bot's pull requests take every format's leg on the shared runners, which has starved `main` before. A bump of `go.mod` then
+starts npm alone, a bump of one client pin that format's leg alone, a bump of an action every job of release.yml uses every leg. A dispatch
+and a push without a commit to compare with run every leg, and so do a pull request whose base or head is not in the clone and an error of
+the script, which fails open. The
+coverage evidence runs when none of its needs failed or was cancelled, so a skipped leg does not skip it, and it needs `image` so that a
+failed image does not read as a run of skipped legs; `coverage-report` needs no leg; Semantic Release's needs are unchanged and hold
+no e2e leg and not `e2e-scope`.
+
+**Applied:** [release.yml](../../.github/workflows/release.yml); [releasing.md](../developer/releasing.md#which-e2e-legs-a-change-runs).
+
+### Q-ARCH-544 · The integration shards are cut by a rule that spreads a format's areas over all three
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in Test and Release 44693590111 shard b ran 40.9 of its 45 minutes, a 34.8 and c 37.6 ([test-cost.md](../developer/test-cost.md#32-integration-shards-run-2-job-ids-package-level-the-1645-top-level-tests-are-in-dataintegration_tests_run2csv)),
+every new package landed in b, and an average format adds 6.0 minutes. A model from the package times (each job: about 205 s of stack and
+teardown, each package its time and about 6.5 s) gives 34.7, 41.5 and 37.9 minutes for that split, within 0.6 of the measured ones.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Lists that name all 65 areas, balanced | Explicit | Even today | Every new package needs an edit of a list |
+| (b) b stays the catch-all, made the lightest | As before | No new rule | All room in one shard: about two formats, then an edit |
+| (c) a: `ci`, `coordination`, `mirror`, `npm`, `nuget`, `proxy` and every `<format>local`; c: `api`, `backup`, `valkey`, `vuln*`, `bastion*` and every `<format>remote`; b: the rest, every `<format>virtual` and every new platform area (chosen) | A rule on the area's name | No edit for a new package; a format's local, remote and virtual areas land in three shards | A format that names its areas otherwise lands whole in b |
+| (d) A hash of the area's name | No list | No edit | The large areas fall unevenly: 44, 39 and 31 minutes by `cksum` |
+
+**Choice:** (c). Expected from the model: a 37.2, b 38.1 and c 38.8 minutes (c with the 35 s OCI conformance suite); an average format
+adds about 2 minutes to each, so each shard has room for about three more. No timeout was raised. Beyond that the tier needs a fourth
+shard or the repeated tests of the format packages move to the kit (test-cost.md, section 5, candidate 4): at 25 formats the three shards
+would hold about 114 + 19 × 6 = 228 minutes.
+
+**Applied:** [Makefile](../../Makefile) (`INTEGRATION_SHARD_A`, `INTEGRATION_SHARD_C`); [releasing.md](../developer/releasing.md#ci),
+[build-and-test.md](../developer/build-and-test.md).
+
+### Q-ARCH-545 · The formats' sets run in lane 3 of the nightly, and NuGet outside the lanes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-ARCH-540 moves every format's set into the nightly, about 90.6 runner minutes. The nightly runs at most three large legs at
+once in three lanes ([Q-ARCH-431](#q-arch-431--how-many-large-legs-of-the-nightly-run-start-at-once-and-in-what-order)); from the nightly
+44625277245 they hold about 244, 133 and 52 minutes of legs, and the night is lane 1 (299 minutes with the queue and the image).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Jobs `format-oci`, `format-deb`, `format-ansible`, `format-npm` in lane 3 after `oci-long`, `format-nuget` on a GitHub-hosted runner outside the lanes (chosen) | Lane 3 ends at about 121 minutes | No minute of wall time; the same runner class as in Test and Release | Lane 3 runs the sets one after the other |
+| (b) The sets as legs of the jobs `e2e-npm`, `e2e-nuget`, `e2e-oci` of the nightly | | Fewer jobs | `e2e-npm` and `e2e-nuget` are lane 1: the night grows by 24 minutes and more |
+| (c) Every set on GitHub-hosted runners | | No lane | Another environment than the leg of Test and Release proves, and the hosted runner's 4 CPUs for the large legs |
+
+**Choice:** (a). The jobs are the legs of Test and Release with select-leg in front and the same artifact names, so the coverage evidence
+of a push that did not start a format's leg carries the newest report of that set from either workflow; `latency` and `vuln-perf` wait
+for them (and for `e2e-oci`, which was missing from their needs). About 230 minutes of lanes 2 and 3 stay below lane 1: room for about 13
+more formats of the mean size before a night grows.
+
+**Applied:** [performance.yml](../../.github/workflows/performance.yml); [releasing.md](../developer/releasing.md#order-and-wall-time).
+
 ## What this does not cover
 
 

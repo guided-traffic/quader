@@ -175,7 +175,7 @@ make e2e SET=drain-roles     # the drain per role of R-HA-059 (E6a.6): api, pack
 make e2e SET='^TestE06'      # any go test -run expression
 make e2e SET=clients         # build the npm clients image, start the client pods, run the smoke test (the pods stay up)
 make e2e SET=clients-down    # remove the client pods
-make e2e SET=npm             # the npm acceptance matrix and E2.2 to E2.12 but E2.11, and TestNPMProjectPartner (CI job e2e-npm, every change); three client pods
+make e2e SET=npm             # the npm acceptance matrix and E2.2 to E2.12 but E2.11, and TestNPMProjectPartner (CI job e2e-npm: a push that changes npm's own paths or shared code, the reference set; nightly job format-npm); three client pods
 make e2e SET=npm-closing     # the additions of the closing run (below); fails unless QUADER_E2E_NPM_CLOSING=1, which the set exports
 make e2e SET=npm-ha          # E2.11: drain variant A and the failovers under the npm load, and the mirror's worker pool under failure (TestNPMHA_R_REPO_...; R-REPO-053, R-REPO-054, R-REPO-058); CI leg npm-ha: nightly and on dispatch, since 2026-11-01
 make e2e SET=npm-ha-crash    # E2.11: the pod crash under the npm load, three force-deletes (no CI leg since 2026-11-01; run by hand)
@@ -188,7 +188,7 @@ make e2e SET=ha-suite        # the failure scenarios of R-HA-052 that npm-ha lea
 make npm-clients-image       # only build the image into the local Docker
 make e2e SET=nuget-clients   # build the NuGet clients image, start the client pods, run the smoke test (the pods stay up)
 make e2e SET=nuget-clients-down  # remove the NuGet client pods
-make e2e SET=nuget           # every TestNuGet... but TestNuGetClosing... and TestNuGetHA...: local, remote and virtual repositories, a project's partner (TestNuGetProjectPartner), E3.2, E3.6 and E3.7 with the real clients; the test upstream and three client pods (Q-NUGET-34, Q-NUGET-70); CI job e2e-nuget on every change
+make e2e SET=nuget           # every TestNuGet... but TestNuGetClosing... and TestNuGetHA...: local, remote and virtual repositories, a project's partner (TestNuGetProjectPartner), E3.2, E3.6 and E3.7 with the real clients; the test upstream and three client pods (Q-NUGET-34, Q-NUGET-70); CI job e2e-nuget when the push changes NuGet's own paths, nightly job format-nuget
 make e2e SET=nuget-closing   # the additions of the closing run (TestNuGetClosing: R-NUGET-030 and R-NUGET-031 with Valkey stopped; TestNuGetClosingPublic: the read-only subset against nuget.org; exports QUADER_E2E_NUGET_CLOSING=1); CI leg of a closing dispatch
 make e2e SET=nuget-ha        # TestNuGetHA: drain variant A, the PostgreSQL switchover and the Valkey failover under the npm and NuGet load together (R-HA-059, R-ARCH-024), and the status of a NuGet mirror from every replica (R-REPO-058); CI job e2e-nuget in the nightly workflow; starts both client pods and both test upstreams
 make e2e SET=drain-load      # E5.9: TestDrainLoad, drain variants B, C and E under the full load, the long-transfer probes and R-STOR-046's gc-full; both client pods; profile `drain`; all three variants in one cluster, for local runs; CI runs the legs drain-load-b, -c and -e (one variant each; needs about 12 cores and 10 GiB)
@@ -197,11 +197,11 @@ make nuget-clients-image     # only build the NuGet clients image into the local
 make nuget-clients-smoke     # the image like a pod against the counting NuGet test upstream, without a cluster
 make nuget-reference-check   # perf/nuget/reference against a regeneration (no cluster, no Docker)
 make e2e SET=oci-clients     # build the OCI clients images, start the Docker Engine and Podman pods of the namespace quader-e2e-clients, run the smoke test (the pods stay up)
-make e2e SET=oci             # every TestOCI... but the closing and long names: login, push and pull through local, remote, mirror, virtual and bound-host repositories with docker and podman, Buildx, the Kubernetes pull, the setup snippets (CI job e2e-oci, when the change touches the registry); three client pods and the counting OCI test upstream
+make e2e SET=oci             # every TestOCI... but the closing and long names: login, push and pull through local, remote, mirror, virtual and bound-host repositories with docker and podman, Buildx, the Kubernetes pull, the setup snippets (CI job e2e-oci, when the push changes OCI's own paths; nightly job format-oci); three client pods and the counting OCI test upstream
 make e2e SET=oci-closing     # the additions of the closing run (TestOCIClosing: Valkey stopped; TestOCIClosingPublic: the read-only subset against Docker Hub; exports QUADER_E2E_OCI_CLOSING=1); CI leg of a closing dispatch
 make e2e SET=oci-long        # TestOCILong: the drain of the pod that receives a push of a 300 MiB layer (CI: job e2e-oci of the nightly workflow)
 make oci-clients-image       # only build the two OCI clients images into the local Docker
-make e2e SET=bastion         # the short scenarios of R-BAS-049 with npm, pnpm, Yarn 4 and dotnet restore (CI job e2e-bastion, when the change touches the Bastion; nightly)
+make e2e SET=bastion         # the short scenarios of R-BAS-049 with npm, pnpm, Yarn 4 and dotnet restore (CI job e2e-bastion, when the push changes the Bastion's paths; nightly)
 make e2e SET=bastion-long    # the drain, the failure suite under client load (replica lost, main installation failing over, rolling upgrade of either side) and the anonymous miss flood (CI: nightly and on dispatch; a red long leg is a finding, not a blocker)
 make e2e SET=upgrade         # the rolling upgrade of the commit from its second UI bundle to the image under test (R-HA-020), under npm, NuGet and browser loops; replaces the installation and puts the current dev release back (CI: nightly and on dispatch; a red long leg is a finding, not a blocker)
 make e2e SET=upgrade-release # the upgrade and rollback from the newest published release before the commit (R-HA-020, R-HA-052), under the same loops (CI: on dispatch until the first stable release)
@@ -310,6 +310,25 @@ new cases (`QUADER_E2E_RUN`), so the seconds include the fixture the full set bu
 | `oci` | `TestOCILimits_R_LIM_020_WhatDockerAndPodmanShowAtARefusal`, `TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget`, `TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass`, `TestOCIProbe_R_REPO_065_ManifestInspectThroughAVirtualRepositoryDownloadsTheImage` | docker, podman | 63 (37, 12, 13 and 1) | images of a few hundred bytes; the push 40 layers of a few bytes |
 | `deb` | `TestDebLimits_R_LIM_020_WhatAptShowsAtARefusal` | APT 3.0 (Debian 13) | 40 | one package of about a kilobyte |
 | `ansible` | `TestAnsibleLimits_R_LIM_020_WhatAnsibleGalaxyShowsAtARefusal` | ansible-galaxy 2.21 | 36 | one collection of a few KB |
+
+**Its leg and when it runs.** A push or a pull request runs a format's leg only when it changed that format's own paths; a change of shared code runs the
+reference leg npm and not the other formats' legs, and every format's set runs in the nightly (owner, 2026-11-20,
+[Q-ARCH-540](../spec/architecture.md#q-arch-540--a-formats-e2e-leg-runs-on-a-push-only-when-that-formats-own-code-changed);
+[releasing.md](releasing.md#which-e2e-legs-a-change-runs)). So a new format `<f>` brings, besides its set in
+[deploy/dev/e2e.sh](../../deploy/dev/e2e.sh):
+
+| Where | What |
+|---|---|
+| [.github/scripts/e2e-legs.sh](../../.github/scripts/e2e-legs.sh) | `<f>` in `FORMATS` and in `LEGS`, its list in `format_paths` (its package, its data port, its name as a word in shared packages, its test upstream and client manifests, `test/e2e/<f>_`, its client images' directory, and whatever else is its alone, each with the reason in the comment above the lists), its job `e2e-<f>` in `workflow_job_owner`, the prefix of its client pins in `pin_owner`; and `<f>` in `e2eFormats` of [e2elegs_test.go](../../internal/tools/ciworkflows/e2elegs_test.go) (which then checks its job in both workflows) with a case of its own |
+| [release.yml](../../.github/workflows/release.yml) | its job `e2e-<f>` (name `e2e (<f>)`), `needs: [image, e2e-scope]`, `if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.<f> != 'false' }}`, the output `<f>` of `e2e-scope`, and the job in the `needs` of `coverage-evidence`, not in those of `semantic-release` |
+| [performance.yml](../../.github/workflows/performance.yml) | its row in the nightly: a job `format-<f>` that is the leg of Test and Release with select-leg in front and the same artifact names, in the lane with the most room below lane 1 (lane 3 today), or outside the lanes on a GitHub-hosted runner where its clients image needs the disk; and the job in the `needs` of `latency` and `vuln-perf` |
+| `test/integration/<f>local`, `<f>remote`, `<f>virtual` | its integration areas, named so: the Makefile's rule puts them in shards a, c and b without a list being edited ([Q-ARCH-544](../spec/architecture.md#q-arch-544--the-integration-shards-are-cut-by-a-rule-that-spreads-a-formats-areas-over-all-three)) |
+
+What it costs: the leg adds its own minutes to a push that changes the format and nothing to any other push; the nightly adds the same
+minutes once a day (about 18 for a format of the mean size today), without lengthening the night while lanes 2 and 3 have room below lane 1.
+A path a new format adds that is on no list is shared code: it starts npm on every change of it until the format's list names it.
+`web/` starts no format leg; if the format's leg runs a browser journey, as Ansible's does, the journey, what it runs on and the screens it
+opens go on the format's list.
 
 ## Reading a stall
 
@@ -1249,7 +1268,7 @@ test/e2e/clients/
 
 ## The npm tests
 
-`make e2e SET=npm` (CI job `e2e-npm`, every change) runs the eight clients and the criteria E2.1 to E2.12 of the
+`make e2e SET=npm` (CI job `e2e-npm` on a push that changes npm's own paths or shared code, the reference leg; nightly job `format-npm`) runs the eight clients and the criteria E2.1 to E2.12 of the
 [roadmap](../coverage/roadmap.md) that need a cluster, but E2.11, which is the legs `npm-ha` and `npm-ha-crash` ([below](#drain-and-failover-under-npm-load)); `make e2e SET=npm-closing` adds what the run that closes a phase adds
 ([Q-NPM-46](../spec/formats/npm.md#q-npm-46--what-marks-the-run-that-closes-the-phase), [releasing.md](releasing.md#the-run-that-closes-a-phase)).
 `e2e.sh` builds the clients image, starts three client pods and the counting upstream, and the tests switch the cluster to the
@@ -2348,9 +2367,10 @@ test/e2e/nugetclients/
 - **A stale CA looks like a client bug.** `.dev/pki/ca.crt` is written by `up.sh` and is not refreshed when the cluster is
   recreated another way; compare with `kubectl -n quader get secret quader-dev-ca -o jsonpath='{.data.ca\.crt}' | base64 -d`, or set
   `QUADER_DEV_CA_FILE`.
-- **CI.** The job `e2e-nuget` of [releasing.md](releasing.md#ci) runs the set `nuget` on every change (edge port 8088, cluster
-  `quader-nuget-<run id>`), the set `nuget-closing` on a closing dispatch (port 8089) and the set `nuget-ha` nightly (port 8090, in
-  [performance.yml](../../.github/workflows/performance.yml)). The job takes the clients image from the cache or builds it when its
+- **CI.** The job `e2e-nuget` of [releasing.md](releasing.md#ci) runs the set `nuget` on a push or a pull request that changes NuGet's own
+  paths and on every dispatch (edge port 8088, cluster `quader-nuget-<run id>`), the set `nuget-closing` on a closing dispatch (port
+  8089); in [performance.yml](../../.github/workflows/performance.yml) the job `format-nuget` runs the set `nuget` nightly (port 8099) and
+  the job `e2e-nuget` the set `nuget-ha` (port 8090). The job takes the clients image from the cache or builds it when its
   inputs changed ([The images of a CI leg](#the-images-of-a-ci-leg)) and sets `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD=0`, so the set
   loads it instead of building it again. The fuzz targets of the closing run
   are in [releasing.md](releasing.md#ci) too.
@@ -2892,7 +2912,7 @@ deployment target; deleted with the test), so the cache a test starts with is em
 ```shell
 make image VERSION=dev && make dev-up            # a cluster created before deploy/dev/kind.yaml set config_path of containerd: deploy/dev/down.sh, then make dev-up
 make e2e SET=oci-clients     # build the clients images, start the three pods, run TestOCIClients (the pods stay up)
-make e2e SET=oci             # every TestOCI... but the closing and long names; the counting OCI test upstream and three client pods (CI: job e2e-oci of Test and Release, when the change touches the registry)
+make e2e SET=oci             # every TestOCI... but the closing and long names; the counting OCI test upstream and three client pods (CI: job e2e-oci of Test and Release, when the push changes OCI's own paths; nightly job format-oci)
 make e2e SET=oci-closing     # TestOCIClosing and TestOCIClosingPublic (CI: job e2e-oci of a closing=true dispatch)
 make e2e SET=oci-long        # TestOCILong... (CI: job e2e-oci of the nightly workflow)
 make e2e SET=oci-clients-down  # remove the pods and their namespace
@@ -2992,7 +3012,7 @@ The rotation table runs one client per cell in turn, not three pods: a cell repl
 ```shell
 make image VERSION=dev && make dev-up
 make e2e SET=apt-clients      # build the four client images, start the pods, run TestAPTClients (the pods stay up)
-make e2e SET=deb              # every TestDeb... and TestAPTClients; the counting Debian test upstream and four client pods (CI: job e2e-deb of Test and Release, when the change touches the format)
+make e2e SET=deb              # every TestDeb... and TestAPTClients; the counting Debian test upstream and four client pods (CI: job e2e-deb of Test and Release, when the push changes Debian's own paths; nightly job format-deb)
 make e2e SET=deb-closing      # TestDebClosing...: the additions of the closing run, Valkey stopped and the read-only check against deb.debian.org (CI: job e2e-deb of a closing=true dispatch; needs internet access)
 make e2e SET=apt-clients-down # remove the pods and their namespace
 make apt-clients-image        # only build the four images into the local Docker
@@ -3416,8 +3436,9 @@ deploy/dev/bastion.sh status | down
 ```
 
 The journey needs `npm ci` in `web/` and `npx playwright install --with-deps chromium`, like the journeys of E1.11. CI: job `e2e-bastion` of Test and Release runs the set `bastion` when
-the change touches `internal/bastion`, `internal/bastionmain`, `deploy/helm/quader-bastion`, `docs/spec/bastion.md` or the suite's own files (a scope step diffs against the base of the
-push or the pull request, and the job is green after it otherwise), and Semantic Release needs it; job `e2e-bastion` of HA and Performance (nightly) runs both sets.
+the push changes `internal/bastion`, `internal/bastionmain`, `deploy/helm/quader-bastion`, `docs/spec/bastion.md`, the suite's own files or its job, and on every
+dispatch; otherwise the job is skipped and takes no runner (job `e2e-scope`, [releasing.md](releasing.md#which-e2e-legs-a-change-runs)); it holds no
+release (Q-ARCH-457). Job `e2e-bastion` of HA and Performance (nightly) runs both sets.
 
 ### Findings of the Bastion tests
 
@@ -3575,8 +3596,8 @@ QUADER_E2E_REUSE_CLIENTS=1 make e2e SET=vuln QUADER_E2E_RUN='^TestVuln_R_VULN_01
 ```
 
 The journeys need `npm ci` in `web/` and `npx playwright install chromium` (CI: `.github/scripts/playwright-install.sh chromium`), like the journeys of E1.11; `QUADER_E2E_PLAYWRIGHT_ARGS` narrows them (`-g <title>`). The
-node of `vuln-long` that is drained must not host the PostgreSQL primary: the test moves it first. CI: job `e2e-vuln` of Test and Release runs the set `vuln` when the change touches
-the scanning ([releasing.md](releasing.md#ci)), job `e2e-vuln` of HA and Performance (nightly) runs both sets.
+node of `vuln-long` that is drained must not host the PostgreSQL primary: the test moves it first. CI: job `e2e-vuln` of Test and Release runs the set `vuln` when the push changes
+the scanning's paths ([releasing.md](releasing.md#which-e2e-legs-a-change-runs)), job `e2e-vuln` of HA and Performance (nightly) runs both sets.
 
 ### Findings of the vulnerability tests
 

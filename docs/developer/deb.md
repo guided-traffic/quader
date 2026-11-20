@@ -467,8 +467,8 @@ local part of the port ([twin_test.go](../../internal/formats/deb/twin_test.go))
 [deb_index_test.go](../../internal/api/v1/deb_index_test.go)) and the repository rules
 ([validate_deb_test.go](../../internal/repository/validate_deb_test.go)).
 
-**Integration** (run each area through the slot wrapper, `go test -tags integration ./test/integration/<area>/`; the areas run in shard `c` of
-`make test-integration`, [build-and-test.md](build-and-test.md#the-in-process-harness)):
+**Integration** (run each area through the slot wrapper, `go test -tags integration ./test/integration/<area>/`; `deblocal` runs in shard `a`, `debremote` in
+shard `c`, `debkeys` and `debvirtual` in shard `b` of `make test-integration`, [build-and-test.md](build-and-test.md#the-in-process-harness)):
 
 | Area | What it proves |
 |---|---|

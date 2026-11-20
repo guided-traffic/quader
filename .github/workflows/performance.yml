@@ -1,5 +1,8 @@
 # HA and Performance (nightly): the long tests, which run nightly and on dispatch and not on every change (owner,
-# 2026-11-01). Per change, Test and Release runs the e2e legs push and access-long, the npm leg and the NuGet leg; the long legs of the
+# 2026-11-01), and every format's own set (owner, 2026-11-20). Per change, Test and Release runs the e2e legs push, access-long and
+# ci, the set of each format whose own paths changed and the reference set npm for a change of shared code; jobs format-oci, format-deb,
+# format-ansible, format-npm and format-nuget run the five formats' sets oci, deb, ansible, npm and nuget here every night, so that what
+# only another format's client shows of a change of shared code is found within a day (Q-ARCH-540, Q-ARCH-545). The long legs of the
 # failure suite (failover, npm-ha) run here instead; npm-ha-crash, the three-force-delete form of the pod crash, runs by hand
 # (make e2e SET=npm-ha-crash), and job npm-ha-soak runs the same test with ten. On kind clusters: job e2e runs the failover set (E0.13,
 # E1.8) and the drain per role (set drain-roles, E6a.6, under the npm load of npm-ha too, Q-HA-94); job e2e-npm runs the sets npm-ha
@@ -39,7 +42,7 @@
 # nightly gets a trigger of its own: docs/developer/releasing.md#a-scheduled-run-after-a-full-run.
 #
 # Runners (owner, 2026-11-05; the assignment and its measured basis, Q-ARCH-326): the jobs run on the organisation's large runners (runs-on:
-# large), the class for kind, e2e and load tests, except e2e-ci, e2e-bastion, both legs of e2e-upgrade and the legs vuln and vuln-long of e2e-vuln, which run on
+# large), the class for kind, e2e and load tests, except e2e-ci, e2e-bastion, format-nuget, both legs of e2e-upgrade and the legs vuln and vuln-long of e2e-vuln, which run on
 # GitHub-hosted runners (runs-on: ubuntu-24.04); the leg vuln-pooler of e2e-vuln runs on large, as it loads no clients image.
 # The leg with a CPU-bound condition that loads the NuGet clients image moved to large once that image went into the
 # control-plane node only: nuget-ha (Q-HA-102). The mirror's install-time ratio (Q-REPO-211) is enforced in npm-ha-soak, a large leg without that image.
@@ -47,7 +50,9 @@
 # Q-ARCH-431: the kind legs on the large class run in three lanes, so at most three large legs of this run are active at once
 # (one per worker node of the class: three nodes of 16 CPUs, a kind leg about 12 cores). Lane 1: e2e-npm (npm-ha, then ha-suite, ha-faults and ha-pooler; Q-HA-250),
 # then e2e-nuget (nuget-ha, drain-load-b, -c, -e, cold-crash). Lane 2: e2e (drain-roles, then failover), then npm-ha-soak, then e2e-edge, then e2e-drain-pooler. Lane 3: e2e-vuln (its large leg vuln-pooler, the
-# GitHub-hosted legs are not in the lanes), then e2e-backup, e2e-oci. Each lane job
+# GitHub-hosted legs are not in the lanes), then e2e-backup, e2e-oci, then the formats' sets format-oci, format-deb, format-ansible and
+# format-npm (Q-ARCH-545: about 68 minutes of legs that end lane 3 at about 121 minutes, below lane 1's 244, so the night is not longer;
+# format-nuget is GitHub-hosted and outside the lanes). Each lane job
 # needs its predecessor with `!cancelled()`, so a leg the dispatch does not select, or a failed one, does not stop the lane.
 # Every kind leg also needs the job image, whose Quader image it loads instead of building one (Q-ARCH-522).
 name: HA and Performance (nightly)
@@ -267,7 +272,7 @@ jobs:
   # after latency, so that no perf job shares the large VM with another job of this workflow or with the other perf job.
   latency:
     name: Latency
-    needs: [e2e, e2e-npm, npm-ha-soak, e2e-nuget, e2e-drain-pooler, e2e-ci, e2e-bastion, e2e-vuln, e2e-backup, e2e-edge, e2e-alerts, e2e-upgrade]
+    needs: [e2e, e2e-npm, npm-ha-soak, e2e-nuget, e2e-drain-pooler, e2e-ci, e2e-bastion, e2e-vuln, e2e-backup, e2e-oci, e2e-edge, e2e-alerts, e2e-upgrade, format-oci, format-deb, format-ansible, format-npm, format-nuget]
     if: ${{ !cancelled() && (!inputs.sets || contains(format(',{0},', inputs.sets), ',latency,')) }}
     runs-on: large
     timeout-minutes: 45
@@ -357,7 +362,7 @@ jobs:
   # QUADER_PERF_GATE=1 makes a value above its target fail the job; a failed job opens an issue that lists the misses.
   vuln-perf:
     name: Vulnerability scanning performance
-    needs: [e2e, e2e-npm, npm-ha-soak, e2e-nuget, e2e-drain-pooler, e2e-ci, e2e-bastion, e2e-vuln, e2e-edge, e2e-alerts, e2e-upgrade, latency]
+    needs: [e2e, e2e-npm, npm-ha-soak, e2e-nuget, e2e-drain-pooler, e2e-ci, e2e-bastion, e2e-vuln, e2e-backup, e2e-oci, e2e-edge, e2e-alerts, e2e-upgrade, format-oci, format-deb, format-ansible, format-npm, format-nuget, latency]
     if: ${{ !cancelled() && (!inputs.sets || contains(format(',{0},', inputs.sets), ',vuln-perf,')) }}
     runs-on: large
     timeout-minutes: 150
@@ -1756,6 +1761,993 @@ jobs:
         if: always() && steps.leg.outputs.run == 'true'
         run: make dev-down
   # <<< T16 e2e-oci
+
+  # The formats' own sets in the nightly (owner, 2026-11-20; Q-ARCH-540, Q-ARCH-545): a push runs a format's set only when the format's
+  # own paths changed, and a change of shared code only the reference set npm, so every format's set runs here each night: what only
+  # another format's client shows of a change of shared code is found here. Each job is the leg of Test and Release (job e2e-<format>
+  # there) with select-leg in front, under the same set, budgets and artifact names, so that the coverage evidence of a push that
+  # skipped a format's leg carries the newest report of that set from either workflow (tools/fetch-e2e-reports.sh). The four legs
+  # on the large class run in lane 3 (Q-ARCH-431) after oci-long, one after the other, about 68 minutes of legs (oci 16, deb 12,
+  # ansible 16, npm 24 in Test and Release 44693590111), which ends lane 3 at about 121 minutes, still below lane 1's 244: they
+  # add no wall time to the night. The NuGet set runs on a GitHub-hosted runner, as in Test and Release (the 2.3 GB clients image),
+  # outside the lanes. A dispatch names them by set (-f sets=npm,oci) or by job key (format-npm).
+  # Lane 3 (Q-ARCH-431): after e2e-oci, whatever its result.
+  format-oci:
+    name: e2e (${{ matrix.set }})
+    needs: [image, e2e-oci]
+    if: ${{ !cancelled() }}
+    runs-on: large
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - set: oci
+            port: "8109"
+    env:
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: ${{ matrix.set }}
+          job: format-oci
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
+      - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
+
+      - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/build-tools
+        with:
+          commands: jq
+
+      - name: Install the pinned helm
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install the pinned kubectl
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-kubectl@v5
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Install the pinned kind
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
+
+      - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        uses: ./.github/actions/install-buildx
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+
+      - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/setup-buildx-action@v4
+        with:
+          cache-binary: false
+
+      - name: Log in to Docker Hub (the dev profile's images)
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Load or build the OCI clients images
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: oci
+
+      - name: The dev profile's dependency pins and the runner architecture
+        if: steps.leg.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
+          echo "kind $KIND_VERSION, kubectl $KUBECTL_VERSION, helm $HELM_VERSION, Docker $E2E_OCICLIENTS_DOCKER_IMAGE, Podman $E2E_OCICLIENTS_PODMAN_IMAGE"
+          kind version
+          kubectl version --client
+          helm version --short
+          for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+          done
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
+
+      - name: Fetch the dev charts that are GitHub release assets
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        env:
+          # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
+          GITHUB_TOKEN: ${{ github.token }}
+        run: make dev-charts
+
+      - name: make dev-up
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 25
+        run: make dev-up
+
+      - name: make e2e SET=${{ matrix.set }}
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 60
+        run: make e2e SET=${{ matrix.set }}
+
+      - name: Upload the go test -json report
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-oci-report-${{ matrix.set }}
+          path: .out/test-e2e.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload the report, the clients image log, the test upstream's counters and the client logs
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-oci-artifacts-${{ matrix.set }}
+          path: .out/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        run: |
+          set -u
+          ctx="kind-${QUADER_DEV_CLUSTER}"
+          mkdir -p .out/cluster-state
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+            kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
+          done
+          deploy/dev/cluster-logs.sh .out/cluster-state
+          kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
+          docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
+          cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
+
+      - name: Upload the cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-oci-cluster-state-${{ matrix.set }}
+          path: .out/cluster-state/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: make dev-down
+        if: always() && steps.leg.outputs.run == 'true'
+        run: make dev-down
+
+  # The Debian set of Test and Release in the nightly (above). Lane 3 (Q-ARCH-431): after format-oci, whatever its result.
+  format-deb:
+    name: e2e (${{ matrix.set }})
+    needs: [image, format-oci]
+    if: ${{ !cancelled() }}
+    runs-on: large
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - set: deb
+            port: "8119"
+    env:
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_APT_CLIENTS_IMAGE_BUILD: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: ${{ matrix.set }}
+          job: format-deb
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
+      - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
+
+      - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/build-tools
+        with:
+          commands: jq
+
+      - name: Install the pinned helm
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install the pinned kubectl
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-kubectl@v5
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Install the pinned kind
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
+
+      - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        uses: ./.github/actions/install-buildx
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+
+      - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/setup-buildx-action@v4
+        with:
+          cache-binary: false
+
+      - name: Log in to Docker Hub (the dev profile's images)
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Load or build the APT clients images
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: apt
+
+      - name: The dev profile's dependency pins and the runner architecture
+        if: steps.leg.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
+          echo "kind $KIND_VERSION, kubectl $KUBECTL_VERSION, helm $HELM_VERSION, clients $E2E_APTCLIENTS_DEBIAN13_IMAGE $E2E_APTCLIENTS_DEBIAN12_IMAGE $E2E_APTCLIENTS_UBUNTU2404_IMAGE $E2E_APTCLIENTS_UBUNTU2204_IMAGE"
+          kind version
+          kubectl version --client
+          helm version --short
+          for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+          done
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
+
+      - name: Fetch the dev charts that are GitHub release assets
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        env:
+          # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
+          GITHUB_TOKEN: ${{ github.token }}
+        run: make dev-charts
+
+      - name: make dev-up
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 25
+        run: make dev-up
+
+      - name: make e2e SET=${{ matrix.set }}
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 60
+        run: make e2e SET=${{ matrix.set }}
+
+      - name: Upload the go test -json report
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-deb-report-${{ matrix.set }}
+          path: .out/test-e2e.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload the report, the clients image log and the artifacts
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-deb-artifacts-${{ matrix.set }}
+          path: .out/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        run: |
+          set -u
+          ctx="kind-${QUADER_DEV_CLUSTER}"
+          mkdir -p .out/cluster-state
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+            kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
+          done
+          deploy/dev/cluster-logs.sh .out/cluster-state
+          kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
+          docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
+          cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
+
+      - name: Upload the cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-deb-cluster-state-${{ matrix.set }}
+          path: .out/cluster-state/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: make dev-down
+        if: always() && steps.leg.outputs.run == 'true'
+        run: make dev-down
+
+  # The Ansible set of Test and Release in the nightly (above). Lane 3 (Q-ARCH-431): after format-deb, whatever its result.
+  format-ansible:
+    name: e2e (${{ matrix.set }})
+    needs: [image, format-deb]
+    if: ${{ !cancelled() }}
+    runs-on: large
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - set: ansible
+            port: "8120"
+    env:
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: ${{ matrix.set }}
+          job: format-ansible
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
+      - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
+
+      - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/build-tools
+        with:
+          commands: jq
+
+      - name: Install the pinned helm
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install the pinned kubectl
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-kubectl@v5
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Install the pinned kind
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
+
+      - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        uses: ./.github/actions/install-buildx
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+
+      - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/setup-buildx-action@v4
+        with:
+          cache-binary: false
+
+      - name: Log in to Docker Hub (the dev profile's images)
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      # The set runs the browser journey of the documentation of collections (TestAnsibleDocsJourney, web/e2e/ansible-docs).
+      - name: Set up Node.js for the browser journeys
+        if: steps.leg.outputs.run == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the Playwright journeys and their browser
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 25
+        working-directory: web
+        run: |
+          set -euo pipefail
+          npm ci
+          ../.github/scripts/playwright-install.sh chromium
+
+      - name: Load or build the Ansible clients images
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: ansible
+
+      - name: The dev profile's dependency pins and the runner architecture
+        if: steps.leg.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
+          echo "kind $KIND_VERSION, kubectl $KUBECTL_VERSION, helm $HELM_VERSION, clients $E2E_ANSIBLECLIENTS_CORE217_IMAGE $E2E_ANSIBLECLIENTS_CORE221_IMAGE"
+          kind version
+          kubectl version --client
+          helm version --short
+          for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+          done
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
+
+      - name: Fetch the dev charts that are GitHub release assets
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        env:
+          # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
+          GITHUB_TOKEN: ${{ github.token }}
+        run: make dev-charts
+
+      - name: make dev-up
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 25
+        run: make dev-up
+
+      - name: make e2e SET=${{ matrix.set }}
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 60
+        run: make e2e SET=${{ matrix.set }}
+
+      - name: Upload the go test -json report
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-ansible-report-${{ matrix.set }}
+          path: .out/test-e2e.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload the report, the clients image log and the artifacts
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-ansible-artifacts-${{ matrix.set }}
+          path: .out/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        run: |
+          set -u
+          ctx="kind-${QUADER_DEV_CLUSTER}"
+          mkdir -p .out/cluster-state
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+            kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
+          done
+          deploy/dev/cluster-logs.sh .out/cluster-state
+          kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
+          docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
+          cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
+
+      - name: Upload the cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-ansible-cluster-state-${{ matrix.set }}
+          path: .out/cluster-state/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: make dev-down
+        if: always() && steps.leg.outputs.run == 'true'
+        run: make dev-down
+
+  # The npm set of Test and Release in the nightly (above). Lane 3 (Q-ARCH-431): after format-ansible, whatever its result.
+  format-npm:
+    name: e2e (${{ matrix.set }})
+    needs: [image, format-ansible]
+    if: ${{ !cancelled() }}
+    runs-on: large
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - set: npm
+            port: "8098"
+    env:
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: ${{ matrix.set }}
+          job: format-npm
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
+      - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
+
+      - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/build-tools
+        with:
+          commands: jq
+
+      - name: Install the pinned helm
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install the pinned kubectl
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-kubectl@v5
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Install the pinned kind
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
+
+      # The clients run inside the clients image (its own Node.js, test/e2e/clients/Dockerfile), so this job needs no
+      # Node.js on the runner and none of the libraries the pinned Node.js loads (Q-ARCH-218).
+
+      - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        uses: ./.github/actions/install-buildx
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+
+      - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/setup-buildx-action@v4
+        with:
+          cache-binary: false
+
+      - name: Log in to Docker Hub (the dev profile's images)
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: The dev profile's dependency pins and the runner architecture
+        if: steps.leg.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
+          echo "kind $KIND_VERSION, kubectl $KUBECTL_VERSION, helm $HELM_VERSION, clients Node image $E2E_CLIENTS_NODE_IMAGE"
+          kind version
+          kubectl version --client
+          helm version --short
+          for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+          done
+
+      - name: Load or build the npm clients image
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
+
+      - name: Fetch the dev charts that are GitHub release assets
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        env:
+          # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
+          GITHUB_TOKEN: ${{ github.token }}
+        run: make dev-charts
+
+      - name: make dev-up
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 25
+        run: make dev-up
+
+      - name: make e2e SET=${{ matrix.set }}
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 60
+        run: make e2e SET=${{ matrix.set }}
+
+      - name: Upload the go test -json report
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-npm-report-${{ matrix.set }}
+          path: .out/test-e2e.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload the matrix report, the client logs, the test upstream's counters, the load records and k6 logs
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-npm-artifacts-${{ matrix.set }}
+          path: .out/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        run: |
+          set -u
+          ctx="kind-${QUADER_DEV_CLUSTER}"
+          mkdir -p .out/cluster-state
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+            kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
+          done
+          deploy/dev/cluster-logs.sh .out/cluster-state
+          kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
+          docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
+          cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
+
+      - name: Upload the cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-npm-cluster-state-${{ matrix.set }}
+          path: .out/cluster-state/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: make dev-down
+        if: always() && steps.leg.outputs.run == 'true'
+        run: make dev-down
+
+  # The NuGet set of Test and Release in the nightly (above), on a GitHub-hosted runner outside the lanes.
+  format-nuget:
+    name: e2e (${{ matrix.set }})
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - set: nuget
+            port: "8099"
+    env:
+      QUADER_IMAGE: guidedtraffic/quader:dev
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: ${{ matrix.set }}
+          job: format-nuget
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
+      # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
+      # nodes, the images and the build caches need; no job here uses them.
+      - name: Free disk space (GitHub-hosted runner)
+        if: steps.leg.outputs.run == 'true'
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
+
+      - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/build-tools
+        with:
+          commands: jq
+
+      - name: Install the pinned helm
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install the pinned kubectl
+        if: steps.leg.outputs.run == 'true'
+        uses: azure/setup-kubectl@v5
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Install the pinned kind
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
+
+      - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        uses: ./.github/actions/install-buildx
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+
+      - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/setup-buildx-action@v4
+        with:
+          cache-binary: false
+
+      - name: Log in to Docker Hub (the dev profile's images)
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Load or build the NuGet clients image
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
+
+      - name: The dev profile's dependency pins and the runner architecture
+        if: steps.leg.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
+          echo "kind $KIND_VERSION, kubectl $KUBECTL_VERSION, helm $HELM_VERSION, NuGet SDK $E2E_NUGETCLIENTS_SDK_IMAGE"
+          kind version
+          kubectl version --client
+          helm version --short
+          for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+          done
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
+
+      - name: Fetch the dev charts that are GitHub release assets
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        env:
+          # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
+          GITHUB_TOKEN: ${{ github.token }}
+        run: make dev-charts
+
+      - name: make dev-up
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 25
+        run: make dev-up
+
+      - name: make e2e SET=${{ matrix.set }}
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 60
+        run: make e2e SET=${{ matrix.set }}
+
+      - name: Upload the go test -json report
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-nuget-report-${{ matrix.set }}
+          path: .out/test-e2e.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload the matrix report, the clients image log, the test upstream's counters, the client logs and the k6 logs
+        if: always() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-nuget-artifacts-${{ matrix.set }}
+          path: .out/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        run: |
+          set -u
+          ctx="kind-${QUADER_DEV_CLUSTER}"
+          mkdir -p .out/cluster-state
+          for ns in quader ingress-controller cert-manager valkey-operator-system internal-secrets-operator-system cnpg-system kube-system; do
+            kubectl --context "$ctx" -n "$ns" get pods -o wide > ".out/cluster-state/pods-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" describe pods > ".out/cluster-state/describe-$ns.txt" 2>&1 || true
+            kubectl --context "$ctx" -n "$ns" get events --sort-by=.lastTimestamp > ".out/cluster-state/events-$ns.txt" 2>&1 || true
+          done
+          deploy/dev/cluster-logs.sh .out/cluster-state
+          kubectl --context "$ctx" get nodes -o wide > .out/cluster-state/nodes.txt 2>&1 || true
+          helm --kube-context "$ctx" -n quader status quader > .out/cluster-state/helm-status.txt 2>&1 || true
+          docker ps -a > .out/cluster-state/docker-ps.txt 2>&1 || true
+          cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
+
+      - name: Upload the cluster state (failure only)
+        if: failure() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-nuget-cluster-state-${{ matrix.set }}
+          path: .out/cluster-state/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: make dev-down
+        if: always() && steps.leg.outputs.run == 'true'
+        run: make dev-down
 
   e2e-ci:
     name: e2e (${{ matrix.set }})

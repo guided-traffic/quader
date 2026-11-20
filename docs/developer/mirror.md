@@ -306,7 +306,7 @@ bound within a pass. The R-REPO-050 and the first R-REPO-052 criterion (the 422 
 real-time 60 s of the long wait are not waited for (Q-REPO-172). Where the kind cluster is needed (three client-serving replicas, the drain) is the e2e
 set.
 
-**Run it.** `make integration-up`, then `make test-integration` (the package is in shard `b`) or alone, with the stack's environment sourced
+**Run it.** `make integration-up`, then `make test-integration` (`mirror` is in shard `a`, `mirrorapi` in shard `b`) or alone, with the stack's environment sourced
 (`.dev/integration/env`): `go test -count=1 -p 1 -tags integration ./test/integration/mirror/... ./test/integration/mirrorapi/...`. The
 suite takes about three minutes; the throttling tests wait for the real seconds of the upstream's answers.
 

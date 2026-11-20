@@ -42,7 +42,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `versions-check` | the E0.2 checks listed above |
 | `test` | `go test -race ./...` with a coverage profile of the unit tier (`.out/coverage/unit.out`); the `go test -json` stream goes to `.out/test-unit.json`, which the coverage generator reads. It runs without the host's AWS configuration (`UNIT_ENV` in the Makefile: no `AWS_*` region, profile or keys, no `~/.aws` files), as on the CI runner; a bare `go test` reads them and can pass where CI fails |
 | `integration-up`, `integration-down` | start and stop the integration stack, see below |
-| `test-integration` | `go test -tags integration ./test/integration/...` with the environment of `.dev/integration/env`; the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c` runs one third of the packages (the three CI legs: `a` seven of the slowest areas, `c` the OCI, Debian, registry, publication, vulnerability and Bastion areas, `b` everything else) and adds `-<shard>` to both names |
+| `test-integration` | `go test -tags integration ./test/integration/...` with the environment of `.dev/integration/env`; the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c` runs one third of the packages (the three CI legs, by a rule that places a new package without a list being edited, Q-ARCH-544: `a` the areas `ci`, `coordination`, `mirror`, `npm`, `nuget` and `proxy` and every `<format>local`, `c` the areas `api`, `backup` and `valkey`, the vulnerability and Bastion areas and every `<format>remote`, `b` everything else, every `<format>virtual` and every new platform area among them) and adds `-<shard>` to both names |
 | `test-performance` | the P-13 and P-14 latency tests of the integration tier, the Debian delay bound `TestR_DEB_010_DelayBound` (R-DEB-010, Q-DEB-59) and `TestR_EP_013_CeilingPerformance` of `internal/authz` and the takeover bound of `TestFlightLockWait` (R-ARCH-033) of `internal/cluster` and the decode time of the slowest accepted avatars (`TestR_API_055_TheWorstCaseInputsAreAccepted` and `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` of `internal/avatar`, Q-UI-173; both skip under `-race`, so only this target runs them) with `QUADER_PERF_GATE=1`, which enforces their p99 bounds (for the avatar tests only the least CPU time of seven decodes: the wall time of a decode on a shared runner is the runner's load, so it is logged and not judged) (with Valkey for the first; `test-integration` and `make test` log them only); the JSON stream goes to `.out/test-performance.json`. Run by the nightly workflow "HA and Performance (nightly)" ([releasing.md](releasing.md#ha-and-performance-nightly)) |
 | `silo-up`, `silo-down`, `s3-conformance` | Silo at `SILO_IMAGE`, served over TLS, and the conformance tests against it ([test/integration/silo.sh](../../test/integration/silo.sh)) |
 | `coverage-report` | merges `.out/coverage` into `coverage.txt`, `summary.md` and the badge `coverage.json` ([test/coverage/report.sh](../../test/coverage/report.sh)) |
@@ -309,15 +309,16 @@ sweep, the replay and the reinstate), [ociremote](../../test/integration/ociremo
 (against the counting stub registry [test/ocistub](../../test/ocistub) in the test process), [registry](../../test/integration/registry)
 (the walk through the endpoint's handler, the version check, the catalog, the bound host), [uploads](../../test/integration/uploads) (the
 upload sessions against PostgreSQL and S3 on three replicas), and the OCI files of [mirror](../../test/integration/mirror) (`oci_test.go`)
-and [identity](../../test/integration/identity) (`registrytoken_test.go`). The `oci*` and `registry` areas run in shard `c`, `uploads` and `identity` in shard `b`, `mirror` in shard
-`a`; `make oci-conformance` builds and runs the distribution conformance suite after `make test-integration` in shard `c`
+and [identity](../../test/integration/identity) (`registrytoken_test.go`). `ocilocal` and `mirror` run in shard `a`, `ociremote` in shard `c`, `oci`, `ocivirtual`, `registry`, `uploads` and `identity` in shard
+`b`; `make oci-conformance` builds and runs the distribution conformance suite after `make test-integration` in shard `c`
 ([oci.md](oci.md#the-protocol-tests-and-the-conformance-suite)).
 
 The Debian format's suites use the harness too: [deblocal](../../test/integration/deblocal) (upload, coordinates, deletion and replay, the index
 builder on the real publication port, three replicas, the time rules, the action map of R-AUTHZ-007, the crafted inputs over HTTP, real `apt-get`
 clients in docker, and the delay bound that `make test-performance` enforces), [debkeys](../../test/integration/debkeys) (the signing keys and the
 reindex), [debremote](../../test/integration/debremote) (the remote class against the counting stub archive [test/debstub](../../test/debstub) in the test
-process) and [itempublish](../../test/integration/itempublish) (the publication port), all in shard `c`, and the Debian files of
+process) and [itempublish](../../test/integration/itempublish) (the publication port), in shards `a` (`deblocal`), `b` (`debkeys`, `debvirtual`,
+`itempublish`) and `c` (`debremote`), and the Debian files of
 [mirror](../../test/integration/mirror) (`deb_test.go`, shard `a`), [querybudget](../../test/integration/querybudget) (`deb_test.go`) and
 [postgres](../../test/integration/postgres) (`deb_test.go`, `deb_reseal_test.go`) ([deb.md](deb.md#tests)).
 

@@ -15,6 +15,7 @@ import (
 )
 
 type step struct {
+	ID             string            `yaml:"id"`
 	Name           string            `yaml:"name"`
 	If             string            `yaml:"if"`
 	Uses           string            `yaml:"uses"`
@@ -25,6 +26,8 @@ type step struct {
 
 type job struct {
 	If             string            `yaml:"if"`
+	RunsOn         string            `yaml:"runs-on"`
+	Outputs        map[string]string `yaml:"outputs"`
 	Needs          yaml.Node         `yaml:"needs"`
 	Env            map[string]string `yaml:"env"`
 	Strategy       yaml.Node         `yaml:"strategy"`

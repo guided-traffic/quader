@@ -312,12 +312,18 @@ integration-up: ## Start PostgreSQL, PgBouncer, Valkey with Sentinel (TLS) and S
 integration-down: ## Stop the integration stack and remove its volumes
 	test/integration/down.sh
 
-# SHARD=a|b|c splits the packages over the three CI jobs, each with its own stack: a holds seven of the slowest packages
-# (1,477 s in CI on 2026-11-09), c the registry formats that came with the OCI and Debian registries and the areas of the Bastion
-# and the vulnerability scanning, b everything else, so a new package lands in b. Shard b alone passed the job's 45 minutes on
-# 2026-11-09 (Test and Release 42545856458) once the OCI and Debian areas had joined it. Unset runs all.
-INTEGRATION_SHARD_A := $(addprefix $(MODULE)/test/integration/,ci coordination mirror npm nuget repository proxy)
-INTEGRATION_SHARD_C := $(filter $(addprefix $(MODULE)/test/integration/,oci% deb% registry itempublish vuln% bastion%),$(shell go list -tags integration ./test/integration/...))
+# SHARD=a|b|c splits the packages over the three CI jobs, each with its own stack, by a rule that places a new package without
+# anyone editing it (Q-ARCH-544): a holds the slow platform areas ci, coordination, mirror and proxy, the single packages of npm and
+# NuGet, and every area named <format>local; c holds the platform areas api, backup and valkey, the areas of the vulnerability
+# scanning and of the Bastion, and every area named <format>remote; b everything else, among them every <format>virtual and every
+# new platform area. A format's areas are <format>local, <format>remote and <format>virtual (as Ansible's, Debian's and OCI's), so a
+# new format spreads over the three shards instead of filling one. From the package times of Test and Release 44693590111
+# (docs/developer/test-cost.md, section 3.2) the shards take about 37, 38 and 39 minutes of their 45 (a, b, c; c runs the OCI
+# conformance suite as well), and an average format adds about 2 minutes to each, so each has room for about three more. Before,
+# b took 41 of 45 and every new package landed in it. Unset runs all.
+INTEGRATION_ALL := $(shell go list -tags integration ./test/integration/...)
+INTEGRATION_SHARD_A := $(filter $(addprefix $(MODULE)/test/integration/,ci coordination mirror npm nuget proxy %local),$(INTEGRATION_ALL))
+INTEGRATION_SHARD_C := $(filter-out $(INTEGRATION_SHARD_A),$(filter $(addprefix $(MODULE)/test/integration/,api backup valkey vuln% bastion% %remote),$(INTEGRATION_ALL)))
 # The time one integration package may take. The default of 10 minutes is the sum of the area `backup` alone: about 235 tests that run one
 # after the other in one process (8 minutes on an idle host, none of them longer than 45 s and none waiting on a fixed sleep a load could
 # stretch), and coverage instrumentation and a loaded host add to it. A package that hangs is still ended, by this bound.
@@ -330,7 +336,7 @@ INTEGRATION_PKGS = $(INTEGRATION_SHARD_A)
 else ifeq ($(SHARD),c)
 INTEGRATION_PKGS = $(INTEGRATION_SHARD_C)
 else ifeq ($(SHARD),b)
-INTEGRATION_PKGS = $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C),$(shell go list -tags integration ./test/integration/...))
+INTEGRATION_PKGS = $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C),$(INTEGRATION_ALL))
 else
 $(error SHARD must be a, b, c or unset, not $(SHARD))
 endif

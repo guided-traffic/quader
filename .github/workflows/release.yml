@@ -5,13 +5,16 @@
 # release's "published" event starts build.yml (Release Docker & Helm). What each job runs and how to
 # reproduce it: docs/developer/releasing.md#ci.
 #
-# What runs per change: every check above, the e2e legs push and access-long, the npm acceptance leg
-# (e2e-npm, set npm), the NuGet acceptance leg (e2e-nuget, set nuget), the OCI acceptance leg (e2e-oci, set oci, when the change touches the registry), the GitLab CI OIDC leg (e2e-ci, set ci) and the layout checks of every screen of the UI (ui-layout). The long legs failover and npm-ha are not here: they run nightly and on dispatch in
-# performance.yml ("HA and Performance (nightly)"), outside the release path (owner, 2026-11-01); npm-ha-crash runs by
-# hand (make e2e SET=npm-ha-crash).
+# What runs per change: every check above, the e2e legs push and access-long, the GitLab CI OIDC leg (e2e-ci, set ci) and the
+# layout checks of every screen of the UI (ui-layout). Of the formats' acceptance legs (e2e-npm, e2e-nuget, e2e-oci, e2e-deb,
+# e2e-ansible) a push runs the leg of each format whose own paths it changed, and the reference leg npm when it changed shared code;
+# every other format's set runs in the nightly (owner, 2026-11-20). The Bastion and vulnerability legs run when their paths
+# changed. Job e2e-scope decides once per run, for a push and a pull request alike; a dispatch runs every leg. The long legs failover and npm-ha are
+# not here: they run nightly and on dispatch in performance.yml ("HA and Performance (nightly)"), outside the release path (owner,
+# 2026-11-01); npm-ha-crash runs by hand (make e2e SET=npm-ha-crash).
 # A red long leg is recorded as an open finding and does not hold the release.
 #
-# Runners (owner, 2026-11-05): the kind legs push, access-long, npm, oci and deb run on the organisation's large runners
+# Runners (owner, 2026-11-05): the kind legs push, access-long, npm, oci, deb and ansible run on the organisation's large runners
 # (runs-on: large); the kind legs that load the NuGet clients image (e2e-nuget, e2e-ci, e2e-bastion, e2e-vuln) need
 # more than the 30 GiB of Docker storage a large pod has and run on GitHub-hosted runners (runs-on: ubuntu-24.04);
 # every other job runs on the standard runners (runs-on: self-hosted). Sizes: docs/developer/releasing.md#ci.
@@ -1011,7 +1014,7 @@ jobs:
 
   integration:
     # Valkey 9.1 only: quader is in development and guarantees no older line (owner, 2026-10-29). The packages run in three
-    # shards with a stack each (make test-integration SHARD=a|b|c, the lists in the Makefile).
+    # shards with a stack each (make test-integration SHARD=a|b|c, the rule in the Makefile, Q-ARCH-544).
     name: integration (shard ${{ matrix.shard }})
     runs-on: self-hosted
     timeout-minutes: 45
@@ -1056,8 +1059,8 @@ jobs:
       - name: make test-integration SHARD=${{ matrix.shard }}
         run: make test-integration SHARD=${{ matrix.shard }}
 
-      # The OCI distribution conformance suite (R-OCI-035) on the stack of shard c, which holds the oci area: built from the pinned
-      # tag by the job's Go, run against one replica through a local and a virtual repository.
+      # The OCI distribution conformance suite (R-OCI-035) on the stack of shard c: built from the pinned tag by the job's Go, run
+      # against one replica through a local and a virtual repository.
       - name: make oci-conformance
         if: matrix.shard == 'c'
         run: make oci-conformance
@@ -1161,6 +1164,61 @@ jobs:
           path: .out/silo.log
           if-no-files-found: warn
           retention-days: 14
+
+  # Which e2e legs the change runs (owner, 2026-11-20; Q-ARCH-540 to Q-ARCH-543): read once from the changed paths of the push, or of
+  # the pull request against the merge base with its base, on the standard runners, and handed to the legs as outputs, so a leg that does not apply is a skipped job and takes no runner. The
+  # rules and their lists are .github/scripts/e2e-legs.sh; docs/developer/releasing.md#which-e2e-legs-a-change-runs has them as a table.
+  # - A format's leg (e2e-npm, e2e-nuget, e2e-oci, e2e-deb, e2e-ansible) runs when the push changed that format's own paths: its
+  #   package under internal/formats, its data port under internal/formatdata, the files of shared packages named after it (API,
+  #   wiring, configuration, audit events, importer, admin command, queries, migrations), its test upstream and client manifests under
+  #   test/ and deploy/dev, its e2e tests (test/e2e/<format>_*) and client images, its pins of client images in tools/versions.env and
+  #   its job here.
+  # - Shared code runs the reference leg, npm, and no other format's leg: every path that is no format's alone and not in the list
+  #   below, among them internal/ (the server's core: httpserver, formathost, mirror, proxy, virtual, uploads, items, jobs, auth,
+  #   authz, app, meta, ...), cmd/, api/, deploy/helm/quader, deploy/dev (up.sh, e2e.sh, lib.sh, the profile's values and
+  #   manifests), test/e2e's harness (env_test.go, m1_env_test.go, mirror_env_test.go, limits_clients_env_test.go, cmd/driver, k6/,
+  #   clients/fwd), .github/actions, .github/scripts, the Makefile, the Containerfile, go.mod, the other pins and the header and the jobs
+  #   image and e2e-scope of this file. A path on no list is shared code by this rule: it starts npm, never nothing.
+  # - No format leg: web/ (the UI is what access-long, the UI layout checks and the web unit tests see; the paths of web/ that
+  #   Ansible's documentation journey runs on and opens are on Ansible's list), the documentation (but docs/manual, which is in the
+  #   binary), the Markdown files at the root, test/integration,
+  #   Go test files outside test/e2e, internal/tools, internal/archtest, test/chart, test/compat, test/coverage, the root package.json,
+  #   hack/, the test advisory source and the CI issuer double (test/osvstub, test/oidcstub and their manifests), the Bastion's chart,
+  #   deploy/ui-dev and test/devidp, the other workflows, the nightly's select-leg, the configuration of golangci-lint, Trivy,
+  #   Renovate, semantic-release and actionlint, and every other job of this file.
+  # - bastion and vuln keep their own lists; their own job here starts them too.
+  # - A pull request is decided like a push, from what its head changed since the merge base with its base, so that a dependency
+  #   bot's pull request takes only the legs its change concerns. A dispatch and the first push of a branch (no commit before it to
+  #   compare with) run every leg, and so does an error of the script. A leg runs unless the output says false, so a failed decision
+  #   runs it as well.
+  # What only another format's client shows of a change of shared code is found in the nightly, which runs every format's set
+  # (performance.yml); until the first stable release no e2e leg gates the release anyway (Q-ARCH-457).
+  e2e-scope:
+    name: which e2e legs the change runs
+    runs-on: self-hosted
+    timeout-minutes: 10
+    outputs:
+      npm: ${{ steps.decide.outputs.npm }}
+      nuget: ${{ steps.decide.outputs.nuget }}
+      oci: ${{ steps.decide.outputs.oci }}
+      deb: ${{ steps.decide.outputs.deb }}
+      ansible: ${{ steps.decide.outputs.ansible }}
+      bastion: ${{ steps.decide.outputs.bastion }}
+      vuln: ${{ steps.decide.outputs.vuln }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Decide from the changed paths
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: .github/scripts/e2e-legs.sh
 
   # The failure suite on a kind cluster, two legs: the push set (the M0 checks, the drain with a transfer loop and
   # the exposure of E1.14) and access-long (the E1.1 sign-in, the E1.11 replica scatter and the E1.13 500 MB transfers;
@@ -1380,7 +1438,8 @@ jobs:
         run: make dev-down
 
   # The npm acceptance matrix (R-NPM-045, roadmap M2 E2.1 to E2.12) with the npm side of the remote full mirror (R-REPO-055, R-REPO-059, Q-REPO-306): eight real clients against the scatter profile and the
-  # counting test upstream, docs/developer/e2e.md#the-npm-client-matrix. Per change it runs the one leg npm. The legs
+  # counting test upstream, docs/developer/e2e.md#the-npm-client-matrix. The leg npm is the reference leg (Q-ARCH-541): it runs when
+  # the push changed npm's own paths or shared code (job e2e-scope), and on every dispatch. The legs
   # npm-ha and npm-ha-crash are E2.11 (Q-HA-67: drain variant A, the PostgreSQL-switchover and Valkey-failover scenarios
   # under the npm load, and the pod crash with three force-deletes). They left this job for performance.yml, which runs
   # npm-ha nightly and on dispatch (owner, 2026-11-01). The three-force-delete crash has no CI leg after that and is run
@@ -1391,7 +1450,8 @@ jobs:
   # The ports differ from the e2e job's (8080, 8086) so that the jobs can share a runner host.
   e2e-npm:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, e2e-scope]
+    if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.npm != 'false' }}
     runs-on: large
     timeout-minutes: ${{ startsWith(matrix.set, 'npm-ha') && 120 || 90 }}
     strategy:
@@ -1555,12 +1615,14 @@ jobs:
 
   # The NuGet acceptance suite (R-NUGET-027, roadmap M3 E3.1 to E3.8) on a kind cluster: the .NET 10 SDK and nuget.exe on
   # Mono in the client pods, against the scatter profile and the counting NuGet test upstream (docs/developer/e2e.md#the-nuget-clients).
-  # Per change it runs the leg nuget: every TestNuGet... except the closing and HA names (Q-NUGET-34), the NuGet mirror (TestNuGetMirror...) among them. A dispatch with
+  # The leg nuget runs every TestNuGet... except the closing and HA names (Q-NUGET-34), the NuGet mirror (TestNuGetMirror...) among them, when the push changed
+  # NuGet's own paths (job e2e-scope), and on every dispatch; the nightly runs it too (job format-nuget of performance.yml). A dispatch with
   # closing=true adds the leg nuget-closing (TestNuGetClosing...). The nightly leg nuget-ha is job e2e-nuget in performance.yml.
   # The ports 8088 to 8090 are the first free ones of both workflows (Q-ARCH-277); the legs differ from the others in cluster name and port.
   e2e-nuget:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, e2e-scope]
+    if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.nuget != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -1729,13 +1791,14 @@ jobs:
   # >>> T16 e2e-oci
   # The OCI acceptance suite (R-OCI-035, T-16 WP11) on a kind cluster: the Docker Engine with Buildx and Podman in privileged client pods of the
   # namespace quader-e2e-clients (Q-OCI-21), against the scatter profile and the counting OCI test upstream (docs/developer/e2e.md#the-oci-tests).
-  # Per change that touches the registry it runs the leg oci: every TestOCI... except the closing and long names. A dispatch with closing=true adds
+  # The leg oci runs every TestOCI... except the closing and long names, when the push changed OCI's own paths (job e2e-scope), and on every dispatch; the nightly runs it too (job format-oci of performance.yml). A dispatch with closing=true adds
   # the leg oci-closing (TestOCIClosing...: Valkey stopped, the read-only subset against Docker Hub). The nightly leg oci-long is job e2e-oci in
   # performance.yml. The clients images are small (the Docker and Podman images, not the 2.3 GB of the NuGet clients), so the job runs on the large
   # class like the npm leg. The ports 8104 and 8105 are the first free ones of both workflows.
   e2e-oci:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, e2e-scope]
+    if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.oci != 'false' }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -1754,73 +1817,36 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 0   # the scope step diffs against the base of the push or the pull request
-
-      # Whether the change touches the OCI registry (R-OCI-035: every change that touches the format, the registry root or the token service): for any
-      # other change the job is green after this step, so that Semantic Release, which needs the job, is not held back by a change that cannot
-      # affect the registry. A dispatch with closing=true runs the legs whatever the change is.
-      - name: Does the change touch the OCI registry?
-        id: scope
-        env:
-          EVENT: ${{ github.event_name }}
-          CLOSING: ${{ inputs.closing }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-        run: |
-          set -euo pipefail
-          base=""
-          case "$EVENT" in
-            pull_request) base="$PR_BASE" ;;
-            push) base="$PUSH_BEFORE" ;;
-          esac
-          paths='^(internal/formats/oci/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/oci/|internal/api/(registry|dispatch)/|internal/auth/registrytoken/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/jobs/|internal/app/wire_mirror|internal/api/v1/mirror|internal/meta/postgres/(queries/mirror|migrations/[0-9]+_mirror)|internal/httpserver/|test/ocistub/|test/e2e/(oci|ociclients|mirror_)|test/e2e/clients/fwd/|deploy/dev/(ocistub|oci-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/quader/|tools/versions\.env$|docs/spec/formats/oci\.md$)'
-          if [ "$CLOSING" = "true" ] || [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-            echo "no base to compare with ($EVENT), or a closing run: the OCI suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "$paths"; then
-            echo "the change touches the OCI registry: the suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "the change does not touch the OCI registry: nothing to run"
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Load the tool pins
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
 
       - name: Download the Go modules of go.sum
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-modules
 
       - name: Install build tools
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Install the pinned helm
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install the pinned kubectl
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-kubectl@v5
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
       - name: Install the pinned kind
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-tool
         with:
@@ -1830,34 +1856,29 @@ jobs:
           bin: 'true'
 
       - name: Install the pinned Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx
         with:
           version: ${{ env.BUILDX_VERSION }}
 
       - name: Set up Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         uses: docker/setup-buildx-action@v4
         with:
           cache-binary: false
 
       - name: Log in to Docker Hub (the dev profile's images)
-        if: steps.scope.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: Load or build the OCI clients images
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 30
         uses: ./.github/actions/client-images
         with:
           set: oci
 
       - name: The dev profile's dependency pins and the runner architecture
-        if: steps.scope.outputs.run == 'true'
         run: |
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
@@ -1870,12 +1891,10 @@ jobs:
           done
 
       - name: Load the Quader image of this run
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 16
         env:
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
@@ -1883,17 +1902,15 @@ jobs:
         run: make dev-charts
 
       - name: make dev-up
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 25
         run: make dev-up
 
       - name: make e2e SET=${{ matrix.set }}
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
       - name: Upload the go test -json report
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-oci-report-${{ matrix.set }}
@@ -1902,7 +1919,7 @@ jobs:
           retention-days: 30
 
       - name: Upload the report, the clients image log, the test upstream's counters and the client logs
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-oci-artifacts-${{ matrix.set }}
@@ -1911,7 +1928,7 @@ jobs:
           retention-days: 14
 
       - name: Cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         run: |
           set -u
           ctx="kind-${QUADER_DEV_CLUSTER}"
@@ -1928,7 +1945,7 @@ jobs:
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
       - name: Upload the cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-oci-cluster-state-${{ matrix.set }}
@@ -1937,20 +1954,22 @@ jobs:
           retention-days: 14
 
       - name: make dev-down
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         run: make dev-down
   # <<< T16 e2e-oci
 
   # >>> T17 e2e-deb
   # The Debian (APT) acceptance suite (R-DEB-035, T-17 WP10) on a kind cluster: a real APT of Debian 13, Debian 12, Ubuntu 24.04 and Ubuntu 22.04 in
   # client pods of the namespace quader-e2e-apt (Q-DEB-27), against the scatter profile and the counting Debian archive test upstream
-  # (docs/developer/e2e.md#the-debian-tests). Per change that touches the format it runs the leg deb: every TestDeb... and TestAPTClients (local,
-  # remote, mirror and virtual repositories, an anonymous read, a wrong keyring, the rotation table, the flat root). The client images are the four
+  # (docs/developer/e2e.md#the-debian-tests). The leg deb runs every TestDeb... and TestAPTClients (local, remote, mirror and virtual repositories,
+  # an anonymous read, a wrong keyring, the rotation table, the flat root) when the push changed Debian's own paths (job e2e-scope), and on every
+  # dispatch; the nightly runs it too (job format-deb of performance.yml). The client images are the four
   # official images with curl and a forwarder, so the job runs on the large class like the other kind legs. A dispatch with closing=true adds the leg
   # deb-closing (TestDebClosing...: Valkey stopped, the read-only check against deb.debian.org). The ports 8107 and 8108 are the first free ones of both workflows.
   e2e-deb:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, e2e-scope]
+    if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.deb != 'false' }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -1969,72 +1988,36 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 0   # the scope step diffs against the base of the push or the pull request
-
-      # Whether the change touches the Debian format (R-DEB-035: every change that touches the format or the registry root): for any other change the
-      # job is green after this step, so that Semantic Release, which needs the job, is not held back by a change that cannot affect it.
-      - name: Does the change touch the Debian format?
-        id: scope
-        env:
-          EVENT: ${{ github.event_name }}
-          CLOSING: ${{ inputs.closing }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-        run: |
-          set -euo pipefail
-          base=""
-          case "$EVENT" in
-            pull_request) base="$PR_BASE" ;;
-            push) base="$PUSH_BEFORE" ;;
-          esac
-          paths='^(internal/formats/deb/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/deb/|internal/openpgp/|internal/api/dispatch/|internal/items/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/httpserver/|test/debstub/|test/e2e/(deb_|aptclients)|test/e2e/clients/fwd/|deploy/dev/(debstub|apt-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/quader/|tools/versions\.env$|docs/spec/formats/debian\.md$)'
-          if [ "$CLOSING" = "true" ] || [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-            echo "no base to compare with ($EVENT), or a closing run: the Debian suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "$paths"; then
-            echo "the change touches the Debian format: the suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "the change does not touch the Debian format: nothing to run"
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Load the tool pins
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
 
       - name: Download the Go modules of go.sum
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-modules
 
       - name: Install build tools
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Install the pinned helm
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install the pinned kubectl
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-kubectl@v5
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
       - name: Install the pinned kind
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-tool
         with:
@@ -2044,34 +2027,29 @@ jobs:
           bin: 'true'
 
       - name: Install the pinned Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx
         with:
           version: ${{ env.BUILDX_VERSION }}
 
       - name: Set up Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         uses: docker/setup-buildx-action@v4
         with:
           cache-binary: false
 
       - name: Log in to Docker Hub (the dev profile's images)
-        if: steps.scope.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: Load or build the APT clients images
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 30
         uses: ./.github/actions/client-images
         with:
           set: apt
 
       - name: The dev profile's dependency pins and the runner architecture
-        if: steps.scope.outputs.run == 'true'
         run: |
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
@@ -2084,12 +2062,10 @@ jobs:
           done
 
       - name: Load the Quader image of this run
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 16
         env:
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
@@ -2097,17 +2073,15 @@ jobs:
         run: make dev-charts
 
       - name: make dev-up
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 25
         run: make dev-up
 
       - name: make e2e SET=${{ matrix.set }}
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
       - name: Upload the go test -json report
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-deb-report-${{ matrix.set }}
@@ -2116,7 +2090,7 @@ jobs:
           retention-days: 30
 
       - name: Upload the report, the clients image log and the artifacts
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-deb-artifacts-${{ matrix.set }}
@@ -2125,7 +2099,7 @@ jobs:
           retention-days: 14
 
       - name: Cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         run: |
           set -u
           ctx="kind-${QUADER_DEV_CLUSTER}"
@@ -2142,7 +2116,7 @@ jobs:
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
       - name: Upload the cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-deb-cluster-state-${{ matrix.set }}
@@ -2151,20 +2125,22 @@ jobs:
           retention-days: 14
 
       - name: make dev-down
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         run: make dev-down
   # <<< T17 e2e-deb
 
   # >>> F0 e2e-ansible
   # The Ansible Galaxy acceptance suite (R-ANS-032) on a kind cluster: a real ansible-galaxy of ansible-core 2.17 and 2.21 in client pods of the
   # namespace quader-e2e-ansible (Q-ANS-49, Q-ANS-50), against the scatter profile and the counting Galaxy test upstream
-  # (docs/developer/e2e.md#the-ansible-tests). Per change that touches the format it runs the leg ansible: every TestAnsible... (local, remote
-  # and the credentials, a changed digest, the pasted setup snippets; the virtual and mirror rows are listed and wait for their classes). A
-  # dispatch with closing=true adds the leg ansible-closing (TestAnsibleClosing: Valkey stopped). The job does not hold Semantic Release back
-  # (CLAUDE.md, CI until the first stable release). The ports 8117 and 8118 are the first free ones of both workflows.
+  # (docs/developer/e2e.md#the-ansible-tests). The leg ansible runs every TestAnsible... (local, remote and the credentials, a changed digest, the
+  # pasted setup snippets, the browser journey of the collection documentation; the virtual and mirror rows are listed and wait for their classes)
+  # when the push changed Ansible's own paths (job e2e-scope), and on every dispatch; the nightly runs it too (job format-ansible of
+  # performance.yml). A dispatch with closing=true adds the leg ansible-closing (TestAnsibleClosing: Valkey stopped). The job does not hold Semantic
+  # Release back (CLAUDE.md, CI until the first stable release). The ports 8117 and 8118 are the first free ones of both workflows.
   e2e-ansible:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, e2e-scope]
+    if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.ansible != 'false' }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -2183,72 +2159,36 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 0   # the scope step diffs against the base of the push or the pull request
-
-      # Whether the change touches the Ansible Galaxy format (R-ANS-032: every change that touches the format or the registry root): for any other change the
-      # job is green after this step, so that Semantic Release, which needs the job, is not held back by a change that cannot affect it.
-      - name: Does the change touch the Ansible Galaxy format?
-        id: scope
-        env:
-          EVENT: ${{ github.event_name }}
-          CLOSING: ${{ inputs.closing }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-        run: |
-          set -euo pipefail
-          base=""
-          case "$EVENT" in
-            pull_request) base="$PR_BASE" ;;
-            push) base="$PUSH_BEFORE" ;;
-          esac
-          paths='^(internal/formats/ansible/|internal/formats/(setup|serve|remote|virtual)\.go$|internal/formathost/|internal/formatdata/ansible/|internal/importer/ansible|internal/api/dispatch/|internal/items/|internal/uploads/|internal/proxy/|internal/virtual/|internal/mirror/|internal/httpserver/|test/ansiblestub/|test/e2e/(ansible_|ansibleclients)|web/e2e/(ansible-docs/|playwright\.ansible-docs)|test/e2e/clients/fwd/|deploy/dev/(ansiblestub|ansible-clients|values-dev|values-scatter|pki|kind)\.yaml$|deploy/dev/(up|e2e|lib)\.sh$|deploy/helm/quader/|tools/versions\.env$|docs/spec/formats/ansible\.md$)'
-          if [ "$CLOSING" = "true" ] || [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-            echo "no base to compare with ($EVENT), or a closing run: the Ansible suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "$paths"; then
-            echo "the change touches the Ansible Galaxy format: the suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "the change does not touch the Ansible Galaxy format: nothing to run"
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Load the tool pins
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
 
       - name: Download the Go modules of go.sum
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-modules
 
       - name: Install build tools
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Install the pinned helm
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install the pinned kubectl
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-kubectl@v5
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
       - name: Install the pinned kind
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-tool
         with:
@@ -2258,20 +2198,17 @@ jobs:
           bin: 'true'
 
       - name: Install the pinned Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx
         with:
           version: ${{ env.BUILDX_VERSION }}
 
       - name: Set up Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         uses: docker/setup-buildx-action@v4
         with:
           cache-binary: false
 
       - name: Log in to Docker Hub (the dev profile's images)
-        if: steps.scope.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
@@ -2279,7 +2216,6 @@ jobs:
 
       # The set runs the browser journey of the documentation of collections (TestAnsibleDocsJourney, web/e2e/ansible-docs).
       - name: Set up Node.js for the browser journeys
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
@@ -2288,7 +2224,6 @@ jobs:
 
       - name: Install the Playwright journeys and their browser
         timeout-minutes: 25
-        if: steps.scope.outputs.run == 'true'
         working-directory: web
         run: |
           set -euo pipefail
@@ -2296,14 +2231,12 @@ jobs:
           ../.github/scripts/playwright-install.sh chromium
 
       - name: Load or build the Ansible clients images
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 30
         uses: ./.github/actions/client-images
         with:
           set: ansible
 
       - name: The dev profile's dependency pins and the runner architecture
-        if: steps.scope.outputs.run == 'true'
         run: |
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
@@ -2316,12 +2249,10 @@ jobs:
           done
 
       - name: Load the Quader image of this run
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 16
         env:
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
@@ -2329,17 +2260,15 @@ jobs:
         run: make dev-charts
 
       - name: make dev-up
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 25
         run: make dev-up
 
       - name: make e2e SET=${{ matrix.set }}
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
       - name: Upload the go test -json report
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-ansible-report-${{ matrix.set }}
@@ -2348,7 +2277,7 @@ jobs:
           retention-days: 30
 
       - name: Upload the report, the clients image log and the artifacts
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-ansible-artifacts-${{ matrix.set }}
@@ -2357,7 +2286,7 @@ jobs:
           retention-days: 14
 
       - name: Cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         run: |
           set -u
           ctx="kind-${QUADER_DEV_CLUSTER}"
@@ -2374,7 +2303,7 @@ jobs:
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
       - name: Upload the cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-ansible-cluster-state-${{ matrix.set }}
@@ -2383,7 +2312,7 @@ jobs:
           retention-days: 14
 
       - name: make dev-down
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         run: make dev-down
   # <<< F0 e2e-ansible
 
@@ -2572,12 +2501,14 @@ jobs:
   # profile and the chart quader-bastion twice (volume backend; SeaweedFS bucket with Valkey) behind the local profile's HAProxy
   # Ingress, with the real npm, pnpm, Yarn 4 and .NET clients of the client pods and the browser journey of the Bastions screen. The
   # short set `bastion` runs when the change touches internal/bastion, internal/bastionmain, deploy/helm/quader-bastion or
-  # docs/spec/bastion.md (and the suite's own files); for any other change the job is green after its scope step. The long legs (the
+  # docs/spec/bastion.md (and the suite's own files, and this job), and on every dispatch; for any other change the
+  # job is skipped and takes no runner (job e2e-scope). The long legs (the
   # drain, the flood and the anonymous flood) are the set bastion-long of job e2e-bastion in performance.yml, outside the release path
   # (owner, 2026-11-01). Edge port 8093 is the first free one of both workflows.
   e2e-bastion:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, e2e-scope]
+    if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.bastion != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -2599,7 +2530,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 0   # the scope step diffs against the base of the push or the pull request
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
@@ -2608,57 +2538,25 @@ jobs:
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h /
 
-      # Whether the change touches the Bastion (R-BAS-049): for any other change the job is green after this step, so that
-      # Semantic Release, which needs the job, is not held back by a change that cannot affect the Bastion.
-      - name: Does the change touch the Bastion?
-        id: scope
-        env:
-          EVENT: ${{ github.event_name }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-        run: |
-          set -euo pipefail
-          base=""
-          case "$EVENT" in
-            pull_request) base="$PR_BASE" ;;
-            push) base="$PUSH_BEFORE" ;;
-          esac
-          paths='^(internal/bastion/|internal/bastionmain/|deploy/helm/quader-bastion/|docs/spec/bastion\.md$|deploy/dev/bastion|deploy/dev/values-bastion|test/e2e/bastion|web/e2e/bastion|web/e2e/playwright\.bastion)'
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-            echo "no base to compare with ($EVENT): the Bastion suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "$paths"; then
-            echo "the change touches the Bastion: the suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "the change does not touch the Bastion: nothing to run"
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Load the tool pins
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
 
       - name: Download the Go modules of go.sum
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-modules
 
       - name: Install build tools
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Set up Node.js (the Playwright journey)
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
@@ -2667,7 +2565,6 @@ jobs:
 
       - name: Install the Playwright journey and its browser
         timeout-minutes: 25
-        if: steps.scope.outputs.run == 'true'
         working-directory: web
         run: |
           set -euo pipefail
@@ -2675,19 +2572,16 @@ jobs:
           ../.github/scripts/playwright-install.sh chromium
 
       - name: Install the pinned helm
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install the pinned kubectl
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-kubectl@v5
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
       - name: Install the pinned kind
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-tool
         with:
@@ -2698,40 +2592,34 @@ jobs:
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/install-buildx
         with:
           version: ${{ env.BUILDX_VERSION }}
 
       - name: Set up Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         uses: docker/setup-buildx-action@v4
         with:
           cache-binary: false
 
       - name: Log in to Docker Hub (the dev profile's images)
-        if: steps.scope.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: Load or build the npm clients image
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 30
         uses: ./.github/actions/client-images
         with:
           set: npm
 
       - name: Load or build the NuGet clients image
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 30
         uses: ./.github/actions/client-images
         with:
           set: nuget
 
       - name: The dev profile's dependency pins and the runner architecture
-        if: steps.scope.outputs.run == 'true'
         run: |
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
@@ -2744,30 +2632,26 @@ jobs:
           done
 
       - name: Load the Quader image of this run
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
-        if: steps.scope.outputs.run == 'true'
         env:
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
           GITHUB_TOKEN: ${{ github.token }}
         run: make dev-charts
 
       - name: make dev-up
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 25
         run: make dev-up
 
       - name: make e2e SET=${{ matrix.set }}
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
       - name: Upload the go test -json report
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-bastion-report-${{ matrix.set }}
@@ -2776,7 +2660,7 @@ jobs:
           retention-days: 30
 
       - name: Upload the job logs (ci-job-*.log), the clients image logs and the test output
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-bastion-artifacts-${{ matrix.set }}
@@ -2785,7 +2669,7 @@ jobs:
           retention-days: 14
 
       - name: Upload the Playwright report, traces and screenshots
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-bastion-playwright-${{ matrix.set }}
@@ -2794,7 +2678,7 @@ jobs:
           retention-days: 14
 
       - name: Cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         run: |
           set -u
           ctx="kind-${QUADER_DEV_CLUSTER}"
@@ -2811,7 +2695,7 @@ jobs:
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
       - name: Upload the cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-bastion-cluster-state-${{ matrix.set }}
@@ -2820,19 +2704,20 @@ jobs:
           retention-days: 14
 
       - name: make dev-down
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         run: make dev-down
 
-  # The Bastion suite (R-BAS-049, docs/developer/e2e.md#the-bastion-tests) on a kind cluster: the main installation in the `bastion`
-  # profile and the chart quader-bastion twice (volume backend; SeaweedFS bucket with Valkey) behind the local profile's HAProxy
-  # Ingress, with the real npm, pnpm, Yarn 4 and .NET clients of the client pods and the browser journey of the Bastions screen. The
-  # short set `bastion` runs when the change touches internal/bastion, internal/bastionmain, deploy/helm/quader-bastion or
-  # docs/spec/bastion.md (and the suite's own files); for any other change the job is green after its scope step. The long legs (the
-  # drain, the flood and the anonymous flood) are the set bastion-long of job e2e-vuln in performance.yml, outside the release path
-  # (owner, 2026-11-01). Edge port 8093 is the first free one of both workflows.
+  # The vulnerability scanning on a kind cluster (R-VULN-029, docs/developer/e2e.md#the-vulnerability-tests): the `vuln` profile with the
+  # test advisory source, npm audit, pnpm audit, yarn npm audit and the blocked installs of every gate row, dotnet restore of three SDKs,
+  # the replica criteria with Valkey stopped and the browser journeys. The set `vuln` runs when the change touches the scanning, the
+  # core paths a blocked download goes through or the e2e harness (the list of job e2e-scope, as this job had it), or this job, and on
+  # every dispatch; for any other change the job is skipped and takes no runner. The long legs (the drain, the
+  # failures, the restore drill) are the sets vuln-long and vuln-pooler of job e2e-vuln in performance.yml, outside the release path
+  # (owner, 2026-11-01). Edge port 8095 is the first free one of both workflows.
   e2e-vuln:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, e2e-scope]
+    if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.vuln != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -2854,7 +2739,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 0   # the scope step diffs against the base of the push or the pull request
 
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
@@ -2863,57 +2747,25 @@ jobs:
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h /
 
-      # Whether the change touches the scanning (R-VULN-029): for any other change the job is green after this step, so that
-      # Semantic Release, which needs the job, is not held back by a change that cannot affect the scanning.
-      - name: Does the change touch the vulnerability scanning?
-        id: scope
-        env:
-          EVENT: ${{ github.event_name }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-        run: |
-          set -euo pipefail
-          base=""
-          case "$EVENT" in
-            pull_request) base="$PR_BASE" ;;
-            push) base="$PUSH_BEFORE" ;;
-          esac
-          paths='^(internal/vuln/|internal/formats/(npm|nuget)/(vuln|handlers_audit|errors)|internal/formathost/|internal/items/|internal/files/|internal/proxy/|queries/vuln_|internal/api/v1/vuln_api|test/osvstub/|deploy/dev/osvstub|deploy/dev/values-vuln|deploy/dev/e2e\.sh$|test/e2e/vuln|test/e2e/nugetclients/|web/src/app/features/vulnerabilities/|web/e2e/vuln/|web/e2e/playwright\.vuln|web/e2e/npm-publish|docs/spec/vulnerability-scanning\.md$)'
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-            echo "no base to compare with ($EVENT): the vulnerability suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "$paths"; then
-            echo "the change touches the scanning: the suite runs"
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "the change does not touch the scanning: nothing to run"
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Load the tool pins
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
 
       - name: Download the Go modules of go.sum
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-modules
 
       - name: Install build tools
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Set up Node.js (the Playwright journeys)
-        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
@@ -2922,7 +2774,6 @@ jobs:
 
       - name: Install the Playwright journeys and their browser
         timeout-minutes: 25
-        if: steps.scope.outputs.run == 'true'
         working-directory: web
         run: |
           set -euo pipefail
@@ -2930,19 +2781,16 @@ jobs:
           ../.github/scripts/playwright-install.sh chromium
 
       - name: Install the pinned helm
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install the pinned kubectl
-        if: steps.scope.outputs.run == 'true'
         uses: azure/setup-kubectl@v5
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
       - name: Install the pinned kind
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/go-tool
         with:
@@ -2953,40 +2801,34 @@ jobs:
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
-        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/install-buildx
         with:
           version: ${{ env.BUILDX_VERSION }}
 
       - name: Set up Docker Buildx
-        if: steps.scope.outputs.run == 'true'
         uses: docker/setup-buildx-action@v4
         with:
           cache-binary: false
 
       - name: Log in to Docker Hub (the dev profile's images)
-        if: steps.scope.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: Load or build the npm clients image
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 30
         uses: ./.github/actions/client-images
         with:
           set: npm
 
       - name: Load or build the NuGet clients image
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 30
         uses: ./.github/actions/client-images
         with:
           set: nuget
 
       - name: The dev profile's dependency pins and the runner architecture
-        if: steps.scope.outputs.run == 'true'
         run: |
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
@@ -2999,30 +2841,26 @@ jobs:
           done
 
       - name: Load the Quader image of this run
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 10
         uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
-        if: steps.scope.outputs.run == 'true'
         env:
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
           GITHUB_TOKEN: ${{ github.token }}
         run: make dev-charts
 
       - name: make dev-up
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 25
         run: make dev-up
 
       - name: make e2e SET=${{ matrix.set }}
-        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 70
         run: make e2e SET=${{ matrix.set }}
 
       - name: Upload the go test -json report
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-vuln-report-${{ matrix.set }}
@@ -3031,7 +2869,7 @@ jobs:
           retention-days: 30
 
       - name: Upload the job logs (ci-job-*.log), the clients image logs and the test output
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-vuln-artifacts-${{ matrix.set }}
@@ -3040,7 +2878,7 @@ jobs:
           retention-days: 14
 
       - name: Upload the Playwright report, traces and screenshots
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-vuln-playwright-${{ matrix.set }}
@@ -3049,7 +2887,7 @@ jobs:
           retention-days: 14
 
       - name: Cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         run: |
           set -u
           ctx="kind-${QUADER_DEV_CLUSTER}"
@@ -3066,7 +2904,7 @@ jobs:
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
       - name: Upload the cluster state (failure only)
-        if: failure() && steps.scope.outputs.run == 'true'
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-vuln-cluster-state-${{ matrix.set }}
@@ -3075,7 +2913,7 @@ jobs:
           retention-days: 14
 
       - name: make dev-down
-        if: always() && steps.scope.outputs.run == 'true'
+        if: always()
         run: make dev-down
 
   # The 30-minute fuzz run of npm's Match and Inspect (roadmap M2, E2.6), in the full run on the commit that closes the
@@ -3283,10 +3121,13 @@ jobs:
   # Semantic Release, which commits them with the release, so nobody refreshes them by hand. The reports are those of every
   # tier: unit, Angular, chart, integration and the kind legs of this run, and for each kind leg without a report here the newest
   # one of that leg on main, from this workflow or from the nightly (Q-ROAD-11). The job waits for the kind legs, so it ends
-  # when they do; Semantic Release waits for them as well.
+  # when they do. A leg the change does not start (job e2e-scope) is a skipped job; the condition lets the job run past it, as it
+  # ran past the green, empty legs before, and keeps it from running when a job it needs failed or was cancelled. It needs the job
+  # image as well, so that a failed image, which skips every kind leg, does not read as a run of skipped legs.
   coverage-evidence:
     name: coverage evidence (implemented.txt)
-    needs: [unit, web, integration, chart, e2e, e2e-npm, e2e-nuget, e2e-oci, e2e-deb, e2e-ansible, e2e-ci, e2e-bastion, e2e-vuln]
+    needs: [unit, web, integration, chart, image, e2e, e2e-npm, e2e-nuget, e2e-oci, e2e-deb, e2e-ansible, e2e-ci, e2e-bastion, e2e-vuln]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     runs-on: self-hosted
     timeout-minutes: 15
     permissions:
@@ -3318,7 +3159,7 @@ jobs:
           pattern: test-*
           path: .out/reports
 
-      # The kind legs of this run that wrote a report. A leg whose steps were skipped (the path filter of the scoped legs) wrote none.
+      # The kind legs of this run that wrote a report. A leg the change did not start (job e2e-scope) wrote none.
       - name: Download the end-to-end reports of this run
         uses: actions/download-artifact@v8
         with:

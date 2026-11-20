@@ -495,7 +495,7 @@ through the first two tiers into memory), parsed, and linked after its own blobs
 
 **Tests.** Unit: [virtual_test.go](../../internal/formats/oci/virtual_test.go) (the walk, the merge, the refusals of a write and a delete) and the merge cases of the conformance kit
 ([conformance_test.go](../../internal/formats/oci/conformance_test.go)). Application: [test/integration/ocivirtual](../../test/integration/ocivirtual) (the area is in shard b of
-`make test-integration`): a virtual repository over `docker-local` and a remote repository on the stub, with registry tokens from the token service; the push is a chunked upload of every blob
+`make test-integration`, as every `<format>virtual`): a virtual repository over `docker-local` and a remote repository on the stub, with registry tokens from the token service; the push is a chunked upload of every blob
 and the manifest, as a client sends it. [env_test.go](../../test/integration/ocivirtual/env_test.go) builds the installation (two stubs whose `app:1` differ, claims, a virtual repository without
 a deployment target); a writer holds `manage` unless the test says `plain`, because a first push of `app` is a shadowing decision (R-REPO-048), and `docker-local` does not auto-claim unless
 the test asks (`autoClaim`). The security view is [oci-virtual.md](../security/oci-virtual.md).
