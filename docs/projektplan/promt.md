@@ -1341,7 +1341,18 @@ runs are in `git log`; this section holds the current state.
   released chart's schema refuses a values key it does not know, so the label is committed under `apps/quader`
   when the new chart is published, not before. The owner's UI backend started with the four commits from the
   main checkout before the push and answers ready (both schema steps applied). The worktrees and branches of
-  the four builders and the landing branch are removed. **Its release was cut at 15:02**; the image and the chart are being published, the label under `apps/quader` follows them, and the upgrade of the owner's installation is watched (the old repository of the definitions is retired by it and the first set is fetched whole). **Not verified:** the German
+  the four builders and the landing branch are removed. **Its release was cut at 15:02, image and chart were published at 15:08, and the owner's installation
+  runs it since 15:10.** Flux began the upgrade within a minute of the chart; the label for the updater's pods
+  was committed and pushed under `apps/quader` of his repository at 15:08:51 (after the upgrade had begun,
+  because the chart before refuses the key), and a second upgrade brought it to the pod. **Read on the cluster
+  at 15:11:** the release is ready on the new chart; two ready pods each of `api`, `packages`, the worker and
+  both scanners, one of the updater with its two containers and the label; the schema job complete; no error
+  line of any of them. The malware scanners loaded the set in use (`main-63.daily-28190.bytecode-339`, carried
+  over from the old repository) eleven seconds after their start, so the scanning had no gap. The updater
+  seeded its directory from that set (four files, 0.7 s) and was ready five seconds after its start; its
+  `freshclam` then reached ClamAV's network, found `main` and `bytecode` up to date and fetched `daily` 28190
+  whole. **Not seen yet:** the worker's import asking this updater (its next run is on the half hour) and
+  storing the whole `daily` it fetched; it is looked at after that run. **Not verified:** the German
   screens in a browser; the updater's rows on the screens against a running updater (the renders used rows
   written by hand); the 503 at a request limit and an external user's 404 in an integration case; a token in
   the client's URL and the plain download with a real client; a new `daily` arriving while the updater runs.
