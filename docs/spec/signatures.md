@@ -911,8 +911,10 @@ type SignatureAdapter interface {
 }
 
 type SignatureDeclaration struct {
-    None   string           // non-empty: the format has no signatures, and why
-    Kinds  []SignatureKind
+    None         string           // non-empty: the format has no signatures, and why
+    Kinds        []SignatureKind
+    ReadToSign   bool             // the signing tools read the artifact from the repository first (OCI, Q-SIG-211)
+    ArtifactName func(path string, info PathInfo) string // the artifact in its client's words for the gate's answers (Q-SIG-213)
 }
 
 type SignatureKind struct {
@@ -2776,6 +2778,13 @@ Priority: **P1** · Covers: BEYOND-019
   scanning today (`refuseBlockedImage` in [handlers_manifest.go](../../internal/formats/oci/handlers_manifest.go),
   [remote_handlers.go](../../internal/formats/oci/remote_handlers.go) and [virtual_read.go](../../internal/formats/oci/virtual_read.go)).
   Each request is judged once.
+- **A writer reads to sign** ([Q-SIG-211](#q-sig-211--a-writer-of-the-repository-reads-through-the-gate-where-the-formats-signing-tools-read-the-artifact)):
+  where a format's signing tools read the artifact from the repository before they push its signature, which is OCI (`cosign sign`
+  `GET`s, `notation sign` `HEAD`s the manifest, by tag and by digest), a principal that may write (`deploy`) to the repository reads it
+  through the repository's signature gate. The right is asked only where the gate would refuse or hold the download, never on the pass path,
+  and only for a request that addresses the repository holding the item. The malware gate and the vulnerability block still decide. A token
+  with the write right therefore pulls an unsigned image of a gated repository
+  ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
 - **Not asked:** while no gate that applies to the request is on (R-SIG-065), which the replica reads from its snapshot of the repositories'
   settings without a statement, so the download is unchanged; for the reads of system subjects (the image scanner's pull, the malware
   scanner's read, the worker's reads); for an item of a system repository of `upstream`
@@ -2793,7 +2802,11 @@ Built (package 1): the format host's `itemStore.Serve` (`serveChecks`, [signatur
 download reads no row: `Gate.Applies` reads the snapshot alone. Where one applies the gate reads its rows in a statement of its own after
 the item lookup, not joined into it ([Q-SIG-131](#q-sig-131--the-gate-reads-its-rows-in-a-statement-of-its-own-where-a-gate-applies)).
 Measured on 2026-11-21 (R-SIG-078): while the gate is on, `cosign sign` (`GET`) and `notation sign` (`HEAD`) read the image's manifest
-before they sign it and are refused, so an image pushed into a gated repository cannot be signed there.
+before they sign it and are refused, so an image pushed into a gated repository cannot be signed there. Repaired the same day (Q-SIG-211):
+the format declares it (`SignatureDeclaration.ReadToSign`, OCI alone), the format host gives the gate the caller's write right as a question
+(`Download.MayWrite`, decided as the listing form of the decision without an audit event), and the gate asks it only after a decision that
+is no pass (`Gate.writerRead`); `Verdict.Writer` says so. Not measured again with the real tools after the repair: the integration test
+reads the manifest with the writer's token by `HEAD` and `GET`.
 
 Acceptance criteria:
 
@@ -2801,6 +2814,10 @@ Acceptance criteria:
   installation): with the gate on `files-internal`, an unsigned file answers 403 through `/files/` (`GET`, `HEAD`, and `If-None-Match` with
   its `ETag`); a file with a valid `.asc` of the release key is served, and its `.asc` too; with the gate off both are served, and a
   download's statements are as many as without stage 3.
+- Unit (`internal/signatures/gate`, milliseconds): a writer's read passes a refused download and is asked only then; a reader's is refused
+  (`TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient`).
+- Integration (area `signatures`, in `TestR_SIG_070_…`, under a second): an image pushed into a gated OCI repository is read by the pusher
+  by digest with `HEAD` and `GET` (200) and refused to a reader with the text that names `app:1.0`.
 
 ### R-SIG-065 · The gate's view and scope, and virtual repositories
 Priority: **P1** · Covers: BEYOND-019
@@ -2977,17 +2994,22 @@ R-MAL-016, Q-MAL-3, read in the clients' sources on 2026-11-20); this stage adds
 `Retry-After`, and `ansible-galaxy` does not retry. Debian answers none of them: its repositories have no gate (R-SIG-061).
 
 - **The texts** name the addressed repository by its qualified name, never another repository, and no signer (a signer's name is text an
-  uploader chose; the screens show it as text):
+  uploader chose; the screens show it as text). They name the artifact in its client's words
+  ([Q-SIG-213](#q-sig-213--the-gates-answers-name-the-artifact-in-its-clients-words)): `<name>:<tag>` or `<name>@<digest>` for an image,
+  `<name>@<version>` for npm, `<id> <version>` for NuGet, `<namespace>.<name>:<version>` for Ansible Galaxy, the path for a generic file
+  (`<artifact>` below); and they speak of the signature of its publisher or its build, the only one that counts (R-SIG-062), so that an
+  artifact with a registry's signature is not told it has none
+  ([Q-SIG-212](#q-sig-212--a-refusal-says-what-is-missing-a-signature-of-the-publisher-or-the-build)):
 
   | `reason` | Text |
   |---|---|
-  | `missing` | "Quader refused `<path>` of `<project>/<repo>`: it has no signature, and this repository serves only artifacts with a verified signature." |
-  | `untrusted` | "Quader refused `<path>` of `<project>/<repo>`: no trust anchor this repository accepts knows its signer." |
-  | `not_chosen` | "Quader refused `<path>` of `<project>/<repo>`: its signature is verified by a trust anchor this repository does not accept." |
-  | `invalid` | "Quader refused `<path>` of `<project>/<repo>`: its signature does not match its content." |
-  | `blocked` | "Quader refused `<path>` of `<project>/<repo>`: an administrator blocked its signer." |
-  | `not_checked` | "Quader refused `<path>` of `<project>/<repo>`: its signature could not be checked." |
-  | (pending) | "Quader is checking the signatures of `<path>`. Try again in a minute." |
+  | `missing` | "Quader refused `<artifact>` of `<project>/<repo>`: it has no signature of its publisher or its build, and this repository serves only artifacts with a verified signature." |
+  | `untrusted` | "Quader refused `<artifact>` of `<project>/<repo>`: no trust anchor this repository accepts knows the signer of its publisher's or its build's signature." |
+  | `not_chosen` | "Quader refused `<artifact>` of `<project>/<repo>`: its publisher's or its build's signature is verified only by trust anchors this repository does not accept." |
+  | `invalid` | "Quader refused `<artifact>` of `<project>/<repo>`: its publisher's or its build's signature does not match its content." |
+  | `blocked` | "Quader refused `<artifact>` of `<project>/<repo>`: an administrator blocked the signer of its publisher's or its build's signature." |
+  | `not_checked` | "Quader refused `<artifact>` of `<project>/<repo>`: its publisher's or its build's signature could not be checked: Quader cannot read it, or its check failed." |
+  | (pending) | "Quader is checking the signatures of `<artifact>`. Try again in a minute." |
 
   Every refusal adds "Details: <the address of the version's or the file's page>".
 - **Kit check 17** ([malware-scanning.md](malware-scanning.md) R-MAL-029) holds the two answers for every format as it holds the malware
@@ -2995,11 +3017,17 @@ R-MAL-016, Q-MAL-3, read in the clients' sources on 2026-11-20); this stage adds
 
 Built (package 1): `errs.CodeSignatureNotVerified` and `errs.CodeSignatureCheckPending`; the answers of `gate.Gate.refusal` and
 `pendingError`; kit check 17 renders both for every format. The details link is `<server.base_url>/ui/projects/<project>/repositories/<key>/files/<path>`.
+Repaired after the measurement of 2026-11-21: the texts of Q-SIG-212, and the artifact's name of Q-SIG-213 from the format's
+`SignatureDeclaration.ArtifactName` (OCI, npm, NuGet, Ansible Galaxy; a generic file and `/files/` keep the path), which the format host
+hands to the gate as `Download.Name`. NuGet's client shows no body of a `403` or `503`; the header `X-NuGet-Warning`, which might carry the
+text, was not tried ([Q-SIG-214](#q-sig-214--nugets-client-gets-no-text-in-a-header-for-now)).
 
 Acceptance criteria:
 
 - Unit (the format contract's kit, milliseconds per format): check 17 renders `403` for `signature_not_verified` and `503` with
   `Retry-After` for `signature_check_pending`, both with `Cache-Control: no-store`, for every registered format and the test format.
+- Unit (`internal/formats/<id>`, microseconds): each declaration's `ArtifactName` (`TestR_SIG_068_TheGatesAnswersNameTheArtifactAsTheClientDoes`);
+  the texts in `internal/signatures/gate`.
 - Integration (area `signatures`, in the tests of R-SIG-064, R-SIG-065 and R-SIG-067): the `/files/` and the npm answers carry the code and
   the reason; the OCI answer is `DENIED` with the text.
 
@@ -3416,7 +3444,9 @@ Measured for package 2 (2026-11-21, on the shared development machine at a load 
 package `internal/signatures/gate` stays under a second), the API's two pure tests milliseconds; the integration area `signatures` gains one
 test, `TestR_SIG_070_ReleasesPreviewImpactAndTheAPI` (R-SIG-070 to R-SIG-073 as subtests, one web replica and a worker, two OpenPGP keys of
 the test), 5.6 s with files of a kilobyte, inside the planned 8 s; the area `backup` gains a row and an entry within an existing test,
-nothing measurable.
+nothing measurable. The repair after the measurement with real clients (Q-SIG-211 to Q-SIG-214) adds one unit test of the gate and one per
+format that names its artifacts (microseconds each), and one subtest of `TestR_SIG_070_…` that pushes an image of a few bytes and reads it as
+the pusher and as a reader (under a second).
 
 What only a real client shows and is not tested: `docker pull` of a multi-platform image signed at its index through a gated repository, a
 refused image's `denied:` line in Docker and Kubernetes, and `cosign verify` of a refused image, whose signatures stay fetchable.
@@ -5719,6 +5749,61 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Joined into the rows' statement | | One statement for every download | Every gated download pays for the exceptions |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-062, R-SIG-070.
+
+### Q-SIG-211 · A writer of the repository reads through the gate where the format's signing tools read the artifact
+
+Status: **Decided by the development agent** in the owner's absence, after the measurement with real clients of 2026-11-21 (defect 2 of
+[signatures.md](../developer/signatures.md#defects-found)); put to the owner afterwards.
+
+Context: R-SIG-064 says OCI's signatures arrive after the push; `cosign sign` `GET`s and `notation sign` `HEAD`s the manifest before they
+sign, the gate refused that read, and an image pushed while the gate is on could never be signed in its repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A principal that may write to the repository reads through the signature gate where the format's signing tools read the artifact from the repository, which is OCI: manifest `GET` and `HEAD`, by tag and by digest (chosen) | | Who may put content there may read it back to sign it; a consumer with the read right alone stays gated | A token with the write right pulls unverified images ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)) |
+| (b) Every `HEAD` and every read by digest passes | | No right to look up | A kubelet pulls by digest: the commonest pull would bypass the gate |
+| (c) Nothing passes; an image is signed in an ungated repository and copied over with its signatures | | The gate means what it says | Quader has no promotion; the flow would have to be built and documented first |
+| (d) An unsigned artifact stays readable to its uploader for some minutes | | Narrow | A hole that depends on time |
+
+**Choice:** (a). The write right is asked only where the gate would refuse or hold, never on the pass path, and only for the repository that
+holds the item (not through a virtual repository). The malware gate and the vulnerability block are not opened by it. The other formats need
+no such read: npm signs the tarball and makes its provenance before the publish, and a publish carries both; NuGet signs the `.nupkg` on the
+author's machine before the push; Ansible Galaxy's signature is made over the local `MANIFEST.json` and posted beside the version; a generic
+file's signature is made on the local file and uploaded beside it; Debian has no gate. **Applied in the spec:** R-SIG-064; [ADR-237](../decisions.md#adr-237--the-signature-declaration-says-whether-a-writer-reads-to-sign-and-how-the-gate-names-an-artifact);
+`formats.SignatureDeclaration.ReadToSign`.
+
+### Q-SIG-212 · A refusal says what is missing: a signature of the publisher or the build
+
+Status: **Decided by the development agent** after the measurement of 2026-11-21 (defect 6).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every reason's text speaks of the signature of the publisher or the build (chosen) | | Only those count (R-SIG-062); an npm package with npm's registry signature, or a nuget.org package with its repository countersignature, is not told it has none | Longer texts |
+| (b) The texts as first planned | | Short | "it has no signature" is false where Quader itself shows a registry's signature verified |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-068.
+
+### Q-SIG-213 · The gate's answers name the artifact in its client's words
+
+Status: **Decided by the development agent** after the measurement of 2026-11-21 (defect 7).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The format names the artifact (`SignatureDeclaration.ArtifactName`): an image `<name>:<tag>` or `<name>@<digest>`, npm `<name>@<version>`, NuGet `<id> <version>`, Ansible Galaxy `<namespace>.<name>:<version>`; a generic file and `/files/` its path (chosen) | An addition to the contract, which keeps version 9 | The client's own words; the core names no format | A NuGet id as stored, in lower case |
+| (b) The stored path | | One rule | `unsigned/_tags/1.0` and `_manifests` are words of Quader's file view, not of the client |
+
+**Choice:** (a). The details link keeps the stored path, which the file's page needs. **Applied in the spec:** R-SIG-068.
+
+### Q-SIG-214 · NuGet's client gets no text in a header, for now
+
+Status: **Decided by the development agent** after the measurement of 2026-11-21 (defect 5).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No header now; the measured behaviour stays written down (chosen) | | Nothing claimed that was not seen | `dotnet restore` still shows only the status |
+| (b) Send the gate's text in `X-NuGet-Warning` on NuGet's routes | | NuGet's client prints the header for nuget.org's notices | Whether it prints it on an error answer was not measured; showing it needs a run of the pinned .NET SDK against a gated repository, which this change did not make |
+
+**Choice:** (a), revisited when the header is measured with the pinned SDK. **Applied in the spec:** R-SIG-068.
 
 ## What this does not cover
 

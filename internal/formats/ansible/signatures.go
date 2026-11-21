@@ -43,7 +43,7 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 			Name: "uploaded signature", Schemes: []string{formats.SignatureSchemeOpenPGP}, Role: formats.SignatureRolePublisher,
 			Location: "an entry of signatures[] without a signing_service", Covers: covers, Client: client,
 		},
-	}}
+	}, ArtifactName: artifactName}
 }
 
 // signatureEntry is one entry of signatures[] of a version document.
@@ -112,4 +112,12 @@ func (a signatureAdapter) Detect(_ context.Context, ev formats.SignatureEvent) (
 		}
 	}
 	return out, nil
+}
+
+// artifactName names a collection or a role as ansible-galaxy does (Q-SIG-213): "<namespace>.<name>:<version>".
+func artifactName(_ string, info formats.PathInfo) string {
+	if info.Package == "" || info.Version == "" {
+		return ""
+	}
+	return info.Package + ":" + info.Version
 }

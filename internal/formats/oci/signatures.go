@@ -71,7 +71,7 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 			Role: formats.SignatureRoleAttestation, Location: "a referrer of another artifact type, the tag sha256-<hex>.sbom, BuildKit's attestation entries of an index",
 			Covers: "the manifest or index digest", Client: client,
 		},
-	}}
+	}, ReadToSign: true, ArtifactName: artifactName} // cosign and notation read the manifest before they push its signature (Q-SIG-211)
 }
 
 // sigManifest is what the detector reads of a manifest or an index: more than manifest.Parse keeps (the descriptors' annotations).
@@ -318,4 +318,18 @@ func digest32(b []byte) [32]byte {
 	var d [32]byte
 	copy(d[:], b)
 	return d
+}
+
+// artifactName names a manifest as a client does (Q-SIG-213): "<name>:<tag>" for a tag, "<name>@<digest>" for a manifest by digest.
+func artifactName(path string, _ formats.PathInfo) string {
+	name, kind, tail, ok := splitLayout(path)
+	switch {
+	case !ok:
+		return ""
+	case kind == dirTags:
+		return name + ":" + tail
+	case kind == dirManifests:
+		return name + "@" + tail
+	}
+	return ""
 }

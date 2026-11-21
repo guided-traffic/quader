@@ -53,7 +53,7 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 			Location: "the attestations of a remote's version", Covers: "the tarball",
 			Client: "-/npm/v1/attestations/<name>@<version>",
 		},
-	}}
+	}, ArtifactName: artifactName}
 }
 
 // Gate implements formats.SignatureAdapter (R-SIG-063): a version's tarball is the artifact, its provenance bundle a signature file the
@@ -221,4 +221,12 @@ func sum32(b []byte) [32]byte {
 	var d [32]byte
 	copy(d[:], b)
 	return d
+}
+
+// artifactName names a tarball as npm does (Q-SIG-213): "<name>@<version>".
+func artifactName(_ string, info formats.PathInfo) string {
+	if info.Package == "" || info.Version == "" {
+		return ""
+	}
+	return info.Package + "@" + info.Version
 }

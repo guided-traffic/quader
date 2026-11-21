@@ -169,7 +169,9 @@ signature of any identity of the public Sigstore
 ([H-1194](#h-1194--a-gate-that-accepts-any-anchor-passes-what-any-identity-of-the-public-sigstore-signed)) and of a project Owner's own anchor
 ([H-1195](#h-1195--under-any-anchor-a-project-owners-own-anchor-passes-the-gate-of-its-projects-repositories)); an image's blob fetched by
 its digest ([H-1196](#h-1196--an-images-gate-guards-its-manifests-a-blob-fetched-by-its-digest-passes)); a file that reads as a signature
-([H-1197](#h-1197--a-file-read-as-a-signature-passes-the-gate-as-an-attachment)).
+([H-1197](#h-1197--a-file-read-as-a-signature-passes-the-gate-as-an-attachment)); a pull of an image by a holder of the repository's write
+right, which reads unsigned images so that it can sign them
+([H-1229](#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
 
 **Who can open or close it:**
 
@@ -418,6 +420,16 @@ many keyless signatures. Live since package 2 of stage 3. A block of a key reads
 identity has no index to read through and reads at most `signatures.gate.preview_limit` signatures that carry an identity, in no order, and
 matches the pattern itself. Beyond the bound the answer says `complete: false` and its counts are lower bounds; the block itself refuses
 every match at once. What makes it real: more than 100,000 keyless signatures of publishers and builds attached in gated repositories.
+
+### H-1229 · A holder of the write right pulls unverified images of a gated OCI repository
+
+Component: the writer's read of R-SIG-064 ([Q-SIG-211](../spec/signatures.md#q-sig-211--a-writer-of-the-repository-reads-through-the-gate-where-the-formats-signing-tools-read-the-artifact)).
+Subject: gated OCI repositories and every credential with `deploy` on them, a CI token included. Live since the repair of 2026-11-21. So
+that `cosign sign` and `notation sign` can read an image pushed while the gate is on, a principal that may write to the repository reads its
+manifests through the signature gate, by tag and by digest; the same credential therefore pulls and runs an unsigned image, where a
+consumer with the read right alone is refused. The malware gate and the vulnerability block still decide; other formats are not affected,
+because their signatures are made before the upload. What makes it real: a deploy token used also to pull into a cluster, or a CI job
+that pushes and runs images with one credential.
 
 ### H-1201 · An npm version's fetch state outlives its tarball
 

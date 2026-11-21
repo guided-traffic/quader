@@ -510,8 +510,10 @@ formats.SignatureContent: method Bytes(int64) ([]byte, error)
 formats.SignatureContent: method ReaderAt() (io.ReaderAt, error)
 formats.SignatureContent: method Size() int64
 formats.SignatureCoverage: method Covering(context.Context, any, RepoRef, string, [32]byte) ([]CoveringDocument, error)
+formats.SignatureDeclaration: field ArtifactName func(string, PathInfo) string
 formats.SignatureDeclaration: field Kinds []SignatureKind
 formats.SignatureDeclaration: field None string
+formats.SignatureDeclaration: field ReadToSign bool
 formats.SignatureEvent: field Content SignatureContent
 formats.SignatureEvent: field Digests Digests
 formats.SignatureEvent: field Item ItemRef

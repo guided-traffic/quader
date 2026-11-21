@@ -124,7 +124,41 @@ func (h *Host) gateDownload(ctx context.Context, rq *formats.Request, holder for
 	if addressed.Class == repository.Virtual && ar.Setting.OnlyVerified {
 		d.Members = h.readableMembers(ctx, rq, addressed, path)
 	}
+	decl, f, known := h.signatureDeclaration(held.Format)
+	if known && decl.ArtifactName != nil {
+		d.Name = decl.ArtifactName(path, f.Classify(formats.Path{Path: path}))
+	}
+	if addressed.ID == held.ID && known && decl.ReadToSign {
+		d.MayWrite = func(ctx context.Context) (bool, error) { return h.mayWrite(ctx, rq, path) }
+	}
 	return d, true, nil
+}
+
+// signatureDeclaration is the format's declaration of its signatures: ReadToSign (a writer reads through the gate, Q-SIG-211) and
+// ArtifactName (the answers name the artifact in its client's words, Q-SIG-213). known is false for a format without signatures.
+func (h *Host) signatureDeclaration(format string) (formats.SignatureDeclaration, formats.Format, bool) {
+	f, ok := h.o.Formats(format)
+	if !ok {
+		return formats.SignatureDeclaration{}, nil, false
+	}
+	sa := f.Signatures()
+	if sa == nil {
+		return formats.SignatureDeclaration{}, nil, false
+	}
+	return sa.Declaration(), f, true
+}
+
+// mayWrite answers whether the request's subject may deploy the path in the repository it addressed: the write right, decided as the
+// listing form of the decision without an audit event (PathsAllowed).
+func (h *Host) mayWrite(ctx context.Context, rq *formats.Request, path string) (bool, error) {
+	if rq.Index == nil {
+		return false, nil
+	}
+	ok, err := h.PathsAllowed(ctx, rq, formats.ActionDeploy, []string{path})
+	if err != nil || len(ok) != 1 {
+		return false, err
+	}
+	return ok[0], nil
 }
 
 // readableMembers are the members of a virtual repository the request's subject may read the path in (the badge's rule, R-SIG-027):

@@ -3,8 +3,11 @@
 package signatures
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
@@ -16,9 +19,9 @@ import (
 // and a worker; signatures are made in the test with two OpenPGP keys of its own (R-SIG-042's third way).
 
 // gateUsers are the callers of the stage-3 operations beside the trust environment's: an auditor whose token carries the triage right,
-// and a security-admin without read on web's repositories.
+// a security-admin without read on web's repositories, and a reader of web who may not push.
 type gateUsers struct {
-	tokAuditor, tokSam string
+	tokAuditor, tokSam, tokRex string
 }
 
 // newReleasesEnv is the trust environment with files-second (a second generic repository of web) and the two callers of gateUsers, all
@@ -27,12 +30,14 @@ func newReleasesEnv(t *testing.T) (*trustEnv, gateUsers) {
 	t.Helper()
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "signatures"})
 	rita, owen, mia, dave := st.User("rita"), st.User("owen"), st.User("mia"), st.User("dave")
-	olga, sam := st.User("olga"), st.User("sam")
+	olga, sam, rex := st.User("olga"), st.User("sam"), st.User("rex")
 	st.Bind("admin", rita)
 	st.Bind("auditor", olga)
 	st.Bind("security-admin", sam)
 	st.Repository("web/files-internal", "local", "generic", `{}`)
 	st.Repository("web/files-second", "local", "generic", `{}`)
+	st.Repository("web/docker-local", "local", "oci", `{"signatures":{"onlyVerified":true}}`)
+	st.Member("web", rex, "reader")
 	st.Member("web", owen, "owner")
 	st.Member("web", mia, "developer")
 	e := &trustEnv{t: t, st: st}
@@ -43,6 +48,7 @@ func newReleasesEnv(t *testing.T) (*trustEnv, gateUsers) {
 	u := gateUsers{
 		tokAuditor: st.Token(olga, scope.Scope{Inherit: true, System: []string{"settings:read", "content:metadata-read", "vulnerabilities:triage"}}),
 		tokSam:     st.Token(sam, scope.Scope{Inherit: true, System: []string{"vulnerabilities:triage"}}),
+		tokRex:     st.Token(rex, scope.Default()),
 	}
 	env := []string{"QUADER_API_RATE_LIMITS_ENABLED=false", "QUADER_JOBS_POLL_INTERVAL=200ms", "QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms"}
 	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web1", Env: env})
@@ -63,7 +69,8 @@ const signedTrust = `SELECT count(*)::text FROM signature_trust t JOIN signature
 // and 2 passing, 1 not_chosen and 1 missing with only the second key's anchor (R-SIG-072; the specification's company CA is a second
 // OpenPGP key here). The refused downloads list one row per artifact with its count for an administrator and an auditor, none for a
 // caller without a grant, 401 anonymously; the items answer and the file's signatures answer carry refused and gate; the releases list
-// answers the auditor (R-SIG-073). Integration, about 8 s, files of a kilobyte.
+// answers the auditor (R-SIG-073). The pusher of an image reads it in a gated OCI repository to sign it, a reader is refused with the
+// image's name (R-SIG-064, Q-SIG-211, Q-SIG-213). Integration, about 6 s, files and an image of a few bytes to a kilobyte.
 func TestR_SIG_070_ReleasesPreviewImpactAndTheAPI(t *testing.T) {
 	e, u := newReleasesEnv(t)
 	k1, k2 := newReleaseKey(t), newReleaseKey(t)
@@ -216,4 +223,34 @@ func TestR_SIG_070_ReleasesPreviewImpactAndTheAPI(t *testing.T) {
 		}
 		e.call("GET", releases, e.tokDave, nil, http.StatusNotFound)
 	})
+	t.Run("R-SIG-064 a writer reads an image of a gated repository to sign it; a reader is refused in the client's words", func(t *testing.T) {
+		cfg, layer := []byte(`{"architecture":"amd64","os":"linux"}`), []byte("a layer of a few bytes")
+		digest := func(b []byte) string { return "sha256:" + hex.EncodeToString(sha256Of(b)) }
+		v2 := "/v2/web/docker-local/app"
+		for _, b := range [][]byte{cfg, layer} {
+			if a := e.st.Do(e.r, "POST", v2+"/blobs/uploads/?digest="+digest(b), e.tokRita, b, "Content-Type", "application/octet-stream"); a.Status != http.StatusCreated {
+				t.Fatalf("blob: %d %s", a.Status, a.Body)
+			}
+		}
+		manifest, _ := json.Marshal(map[string]any{
+			"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"config": map[string]any{"mediaType": "application/vnd.oci.image.config.v1+json", "digest": digest(cfg), "size": len(cfg)},
+			"layers": []any{map[string]any{"mediaType": "application/vnd.oci.image.layer.v1.tar", "digest": digest(layer), "size": len(layer)}},
+		})
+		if a := e.st.Do(e.r, "PUT", v2+"/manifests/1.0", e.tokRita, manifest, "Content-Type", "application/vnd.oci.image.manifest.v1+json"); a.Status != http.StatusCreated {
+			t.Fatalf("manifest: %d %s", a.Status, a.Body)
+		}
+		byDigest := v2 + "/manifests/" + digest(manifest)
+		for _, method := range []string{"HEAD", "GET"} {
+			if a := e.st.Do(e.r, method, byDigest, e.tokRita, nil); a.Status != http.StatusOK {
+				t.Fatalf("the writer's %s to sign: %d %s", method, a.Status, a.Body)
+			}
+		}
+		a := e.st.Do(e.r, "GET", v2+"/manifests/1.0", u.tokRex, nil)
+		if a.Status != http.StatusForbidden || !strings.Contains(string(a.Body), "Quader refused app:1.0 of web/docker-local: it has no signature of its publisher or its build") {
+			t.Fatalf("the reader: %d %s", a.Status, a.Body)
+		}
+	})
 }
+
+func sha256Of(b []byte) []byte { d := sha256.Sum256(b); return d[:] }

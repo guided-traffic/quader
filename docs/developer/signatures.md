@@ -661,6 +661,11 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
    manifest read alike, whoever asks ([formathost/signature_gate.go](../../internal/formathost/signature_gate.go) `serveChecks`, OCI's
    [handlers_manifest.go](../../internal/formats/oci/handlers_manifest.go)); what should pass (a writer's read of a manifest by digest, any
    `HEAD`, or a writer's read at all) is a decision of the specification.
+   **Repaired** (Q-SIG-211): a principal that may write (`deploy`) to the repository reads through its signature gate where the format's
+   signing tools read the artifact, which OCI declares (`SignatureDeclaration.ReadToSign`); the format host passes the right as
+   `Download.MayWrite` and the gate asks it only after a decision that is no pass (`Gate.writerRead`); the malware gate and the vulnerability
+   block are not opened. Shown by a unit test and by an integration assertion (`HEAD` and `GET` by digest with the pusher's token in
+   `TestR_SIG_070_…`), not by the real tools again ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
 3. **A signature posted for a new Ansible version disappears from the signature store.** Reproduce: publish a collection, post its
    `MANIFEST.json.asc` at once (the manual's CI flow), wait for the worker. Expected: the posted signature is checked and stays attached.
    Actual: the post answers `201` and the version document keeps serving it to `ansible-galaxy`, but its attachment, signature row and
@@ -686,12 +691,19 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
    text. A way for NuGet that was not tried: the header `X-NuGet-Warning`, which NuGet's client prints for nuget.org's notices (whether it
    prints it on an error answer is not verified). Docker 29.9.3 also retries the pending `HEAD` once, so its pull waits twice the bound
    (50 s) before it fails without the text.
+   `X-NuGet-Warning` was not tried with the pinned SDK: not cheap enough for the repair of 2026-11-21, so nothing is sent (Q-SIG-214).
 6. **The text of `missing` is wrong where a registry signature exists.** `color-name` 1.1.4 through `npm-remote` is refused with "it has
    no signature" while Quader's own view of it shows npm's registry signature verified (and `npm audit signatures` counts it verified). The
    same holds for a nuget.org package without an author's signature. Expected: the text says what is missing, "no signature of its
    publisher or its build". The place: the texts of `gate.Gate.refusal` ([gate/gate.go](../../internal/signatures/gate/gate.go)).
+   **Repaired** (Q-SIG-212): every reason's text speaks of the signature of the publisher or the build (`missing`: "it has no signature of its
+   publisher or its build"; the others likewise), in `reasonText`.
 7. **The texts name Quader's storage paths**, not what the client asked for: `unsigned/_tags/1.0` for `unsigned:1.0`,
    `chain/_manifests/sha256:…` for a digest. Readable, but `_tags` and `_manifests` are words of Quader's file view, not of the client.
+   **Repaired** (Q-SIG-213): the format names the artifact (`SignatureDeclaration.ArtifactName`), the format host hands it to the gate as
+   `Download.Name`: OCI `unsigned:1.0` or `chain@sha256:…`, npm `color-name@1.1.4`, NuGet `sigm.unsigned 1.0.2` (the id as stored, in lower
+   case), Ansible Galaxy `sigm.unsigned:1.0.0`; a generic file and `/files/` keep the path, which is the client's own. The details link keeps
+   the stored path.
 
 ### Not measured, and why
 

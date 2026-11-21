@@ -230,8 +230,10 @@ type Download struct {
 	Holder    Repo
 	// Members are, for a virtual Addressed, its members the caller may read: the attachments its own gate reads (R-SIG-065).
 	Members []Repo
-	// Path is the item's canonical path, Blob its SHA-256.
+	// Path is the item's canonical path, Blob its SHA-256. Name is the artifact in its client's words (`unsigned:1.0`,
+	// `left-pad@1.3.0`), which the answers name (Q-SIG-213); "" names it by Path.
 	Path      string
+	Name      string
 	Blob      [32]byte
 	Generated bool
 	// Arrived is when the request arrived; the zero time is now.
@@ -239,6 +241,10 @@ type Download struct {
 	Actor    audit.Actor
 	Source   audit.Source
 	Endpoint string
+	// MayWrite, where the serve point sets it, answers whether the caller may write to the repository: a writer reads an artifact of a
+	// format whose signing tools read it before they push its signature (OCI) through the gate (Q-SIG-211). It is asked only where the
+	// gate would refuse or hold the download, never on the pass path.
+	MayWrite func(context.Context) (bool, error)
 }
 
 // view is one gate that applies: its repository, the repositories whose attachments it reads, and the anchors it accepts.
@@ -257,10 +263,12 @@ type Verdict struct {
 	Reason    Reason
 	Released  bool
 	Signature int64
-	d         Download
-	digests   [][32]byte
-	views     []view
-	fetches   []Fetch
+	// Writer says the download passed because the caller may write to the repository and reads to sign (Q-SIG-211).
+	Writer  bool
+	d       Download
+	digests [][32]byte
+	views   []view
+	fetches []Fetch
 }
 
 // Decide decides a download (R-SIG-062 to R-SIG-066): nil Verdict.Outcome Pass serves it. It classifies the item by its format, passes
@@ -277,7 +285,25 @@ func (g *Gate) Decide(ctx context.Context, d Download) (*Verdict, error) {
 	}
 	v.digests = digests
 	v.views = views(d)
-	return v, g.judge(ctx, v)
+	if err := g.judge(ctx, v); err != nil {
+		return v, err
+	}
+	return v, g.writerRead(ctx, v)
+}
+
+// writerRead passes a download the gate would refuse or hold when the caller may write to the repository (Q-SIG-211): the signing tools
+// of the format read the artifact before they push its signature, and an image pushed while the gate is on could never be signed
+// otherwise. Only the signature gate is passed; the malware gate and the vulnerability block decide on their own.
+func (g *Gate) writerRead(ctx context.Context, v *Verdict) error {
+	if v.Outcome == Pass || v.d.MayWrite == nil {
+		return nil
+	}
+	ok, err := v.d.MayWrite(ctx)
+	if err != nil || !ok {
+		return err
+	}
+	v.Outcome, v.Reason, v.Writer = Pass, "", true
+	return nil
 }
 
 // subject classifies the item: judge is false for an item the gate passes as it is.
@@ -495,29 +521,39 @@ func (g *Gate) first(key string) bool {
 // The answers (R-SIG-068). Each carries Cache-Control: no-store, so no cache keeps a refusal past a signature that arrives or a change of
 // anchors, and the digest; the texts name the addressed repository and no signer.
 
+// Every text speaks of the signature of the artifact's publisher or its build, the only one that counts (R-SIG-062): a registry's
+// signature beside it does not pass, so "no signature" would be wrong where one exists (Q-SIG-212).
 func reasonText(r Reason) string {
 	switch r {
 	case ReasonUntrusted:
-		return "no trust anchor this repository accepts knows its signer."
+		return "no trust anchor this repository accepts knows the signer of its publisher's or its build's signature."
 	case ReasonNotChosen:
-		return "its signature is verified by a trust anchor this repository does not accept."
+		return "its publisher's or its build's signature is verified only by trust anchors this repository does not accept."
 	case ReasonInvalid:
-		return "its signature does not match its content."
+		return "its publisher's or its build's signature does not match its content."
 	case ReasonBlocked:
-		return "an administrator blocked its signer."
+		return "an administrator blocked the signer of its publisher's or its build's signature."
 	case ReasonNotChecked:
-		return "its signature could not be checked."
+		return "its publisher's or its build's signature could not be checked: Quader cannot read it, or its check failed."
 	}
-	return "it has no signature, and this repository serves only artifacts with a verified signature."
+	return "it has no signature of its publisher or its build, and this repository serves only artifacts with a verified signature."
 }
 
-// RefusalText is the text of a refusal of R-SIG-068 without its link.
-func RefusalText(path string, addressed qname.Repo, r Reason) string {
-	return oneLine(fmt.Sprintf("Quader refused %s of %s: %s", path, addressed, reasonText(r)))
+// nameOf is the artifact as the answers name it: the client's words, else the stored path.
+func nameOf(d Download) string {
+	if d.Name != "" {
+		return d.Name
+	}
+	return d.Path
+}
+
+// RefusalText is the text of a refusal of R-SIG-068 without its link; artifact is the artifact in its client's words.
+func RefusalText(artifact string, addressed qname.Repo, r Reason) string {
+	return oneLine(fmt.Sprintf("Quader refused %s of %s: %s", artifact, addressed, reasonText(r)))
 }
 
 func (g *Gate) refusal(d Download, r Reason) error {
-	text := RefusalText(d.Path, d.Addressed.Name, r) + " Details: " + g.pageOf(d)
+	text := RefusalText(nameOf(d), d.Addressed.Name, r) + " Details: " + g.pageOf(d)
 	return errs.E(errs.Forbidden, errs.CodeSignatureNotVerified, oneLine(text),
 		errs.WithHeader("Cache-Control", "no-store"), errs.WithExtension("reason", string(r)),
 		errs.WithExtension("sha256", hex.EncodeToString(d.Blob[:])))
@@ -533,13 +569,13 @@ func (g *Gate) pageOf(d Download) string {
 		url.PathEscape(d.Addressed.Name.Key) + "/files/" + strings.Join(segs, "/")
 }
 
-// PendingText is the text of the pending answer of R-SIG-068.
-func PendingText(path string) string {
-	return oneLine(fmt.Sprintf("Quader is checking the signatures of %s. Try again in a minute.", path))
+// PendingText is the text of the pending answer of R-SIG-068; artifact is the artifact in its client's words.
+func PendingText(artifact string) string {
+	return oneLine(fmt.Sprintf("Quader is checking the signatures of %s. Try again in a minute.", artifact))
 }
 
 func (g *Gate) pendingError(d Download) error {
-	return errs.E(errs.Unavailable, errs.CodeSignatureCheckPending, PendingText(d.Path),
+	return errs.E(errs.Unavailable, errs.CodeSignatureCheckPending, PendingText(nameOf(d)),
 		errs.WithHeader("Cache-Control", "no-store"), errs.WithExtension("sha256", hex.EncodeToString(d.Blob[:])),
 		errs.WithRetryAfter(g.o.RetryAfter))
 }

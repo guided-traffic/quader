@@ -220,7 +220,7 @@ func TestR_SIG_068_TheAnswers(t *testing.T) {
 		t.Fatalf("%s %s", e.Kind, e.Code)
 	case e.Headers["Cache-Control"] != "no-store" || e.Extensions["reason"] != "missing" || e.Extensions["sha256"] == nil:
 		t.Fatalf("headers %v extensions %v", e.Headers, e.Extensions)
-	case !strings.Contains(e.Detail, "of web/files-internal: it has no signature") || strings.Contains(e.Detail, "\n") ||
+	case !strings.Contains(e.Detail, "of web/files-internal: it has no signature of its publisher or its build") || strings.Contains(e.Detail, "\n") ||
 		!strings.Contains(e.Detail, "Details: https://quader.example/ui/projects/web/repositories/files-internal/files/tools/tool%0A.tar.gz"):
 		t.Fatalf("detail %q", e.Detail)
 	}
@@ -231,7 +231,7 @@ func TestR_SIG_068_TheAnswers(t *testing.T) {
 		t.Errorf("event %+v", ev)
 	}
 	st.set(valid(fileBlob, TrustUntrusted))
-	if e := problem(t, g.Check(context.Background(), d)); e.Extensions["reason"] != "untrusted" || !strings.Contains(e.Detail, "no trust anchor this repository accepts knows its signer") {
+	if e := problem(t, g.Check(context.Background(), d)); e.Extensions["reason"] != "untrusted" || !strings.Contains(e.Detail, "no trust anchor this repository accepts knows the signer of its publisher's or its build's signature") {
 		t.Errorf("untrusted: %v %q", e.Extensions, e.Detail)
 	}
 	st.set()

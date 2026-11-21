@@ -2147,6 +2147,11 @@ func GateNoneFor(items []GateItem) []GateSubject
 type SignatureDeclaration struct {
 	None  string // non-empty: the format has no signatures, and why
 	Kinds []SignatureKind
+	// ReadToSign: the format's signing tools read the artifact from the repository before they push its signature (OCI); a writer then
+	// reads it through the signature gate (signatures.md Q-SIG-211). ArtifactName names an artifact in its client's words for the gate's
+	// answers (Q-SIG-213); nil names it by its path. Both are additions of version 9 (ADR-237).
+	ReadToSign   bool
+	ArtifactName func(path string, info PathInfo) string
 }
 
 type SignatureKind struct {

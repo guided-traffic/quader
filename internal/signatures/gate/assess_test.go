@@ -2,6 +2,7 @@ package gate
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/qname"
@@ -200,5 +201,40 @@ func TestR_SIG_071_TheImpactCountsWhatStopsPassing(t *testing.T) {
 	}
 	if imp, _ := g.Impact(ctx, Change{Anchor: 3, AnchorChange: AnchorRemove}, gated, 2); imp.Complete {
 		t.Errorf("beyond the limit: %+v", imp)
+	}
+}
+
+// TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient: where the serve point says the caller may write (OCI, whose
+// signing tools read the manifest first), a download the gate would refuse or hold passes, and the right is asked only then, never on the
+// pass path; a caller without the right is refused (Q-SIG-211). The answers name the artifact in its client's words, else its path, and say
+// what is missing: a signature of its publisher or its build (Q-SIG-212, Q-SIG-213). Unit, milliseconds.
+func TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient(t *testing.T) {
+	st := &fakeStore{}
+	g := newGate(st, &recorder{}, Options{})
+	ctx := context.Background()
+	asked := 0
+	may := func(answer bool) func(context.Context) (bool, error) {
+		return func(context.Context) (bool, error) { asked++; return answer, nil }
+	}
+	d := dl(filesInternal)
+	d.Path, d.Name, d.MayWrite = "unsigned/_tags/1.0", "unsigned:1.0", may(true)
+	v, err := g.Decide(ctx, d)
+	if err != nil || v.Outcome != Pass || !v.Writer || asked != 1 {
+		t.Fatalf("a writer's read: %+v %v, asked %d", v, err, asked)
+	}
+	d.MayWrite = may(false)
+	err = g.Check(ctx, d)
+	if e := problem(t, err); !strings.Contains(e.Detail, "Quader refused unsigned:1.0 of web/files-internal: it has no signature of its publisher or its build") {
+		t.Fatalf("a reader's refusal: %q", e.Detail)
+	}
+	signed := valid(fileBlob, TrustInternal, 3)
+	st.set(signed)
+	asked = 0
+	d.Blob, d.MayWrite = fileBlob, may(true)
+	if v, err := g.Decide(ctx, d); err != nil || v.Outcome != Pass || v.Writer || asked != 0 {
+		t.Fatalf("a signed artifact asked the right: %+v %v, asked %d", v, err, asked)
+	}
+	if got := PendingText(nameOf(Download{Path: "a/b.bin"})); got != "Quader is checking the signatures of a/b.bin. Try again in a minute." {
+		t.Errorf("the path when no name is known: %q", got)
 	}
 }

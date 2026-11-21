@@ -54,7 +54,7 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 			Location: where + ", the primary signature with proof of receipt or a repository countersignature",
 			Covers:   "the package (a hash of its unsigned bytes)", Client: ".signature.p7s inside the .nupkg",
 		},
-	}}
+	}, ArtifactName: artifactName}
 }
 
 // Gate implements formats.SignatureAdapter (R-SIG-063): a version's .nupkg is the artifact; its .snupkg is one too and passes on the
@@ -268,4 +268,12 @@ func sum32(b []byte) [32]byte {
 	var d [32]byte
 	copy(d[:], b)
 	return d
+}
+
+// artifactName names a package as NuGet's client does (Q-SIG-213): "<id> <version>".
+func artifactName(_ string, info formats.PathInfo) string {
+	if info.Package == "" || info.Version == "" {
+		return ""
+	}
+	return info.Package + " " + info.Version
 }

@@ -133,6 +133,21 @@ The Docker CLI has no command for it; use a tool that speaks the registry API (`
 
 All three answer `202`. A manifest that an index of the image name lists, and a layer a manifest still references, are refused with `409 DENIED`: delete the index or the manifest first. A layer that no manifest references any more is removed by an hourly job once it is older than the grace period (24 hours unless an administrator set another), and an image that was untagged by a moved tag stays until somebody deletes it. A remote repository is a cache, so its images are not deleted through the registry API (`405 UNSUPPORTED`). After a restore of Quader from a backup, an image that was deleted after the backup answers `404` until an administrator reinstates it.
 
+## Sign an image
+
+Sign an image after the push with `cosign sign` or `notation sign`, by its digest, with the credential you pushed with:
+
+```bash
+cosign sign --key cosign.key quader.example.com/web/docker-local/app@sha256:<hex>
+notation sign quader.example.com/web/docker-local/app@sha256:<hex>
+```
+
+Both tools read the image's manifest before they sign it, and push the signature as a referrer of the image. In a repository that serves
+only artifacts with a verified signature, an unsigned image is refused to every client until it is signed, with one exception: whoever may
+push to the repository can read it, so that the tools can sign it there. Sign it with a token that has the deploy permission on the
+repository; a token that may only read gets `403` with the reason. Once the signature is pushed and checked, everybody who reads the
+repository can pull the image.
+
 ## Signatures of images from a remote repository
 
 When an image comes through a remote repository, Quader asks the upstream for its signatures itself, in the background, so that it knows

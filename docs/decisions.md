@@ -224,6 +224,7 @@ checked every earlier decision against them:
 | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) | A repository can serve only artifacts with a verified signature: a gate at download for every format, judged from stored verdicts and failing closed | Accepted (owner decision of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-232](#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository) | The guide data names the addresses on which a client certificate reads the repository | Decided by the development agent — owner review at the walkthrough |
 | [ADR-233](#adr-233--the-background-fetch-hands-its-bounds-to-a-formats-fetch-in-the-context-of-a-run) | The background fetch hands its bounds to a format's fetch in the context of a run | Decided by the development agent — owner review at the walkthrough |
+| [ADR-237](#adr-237--the-signature-declaration-says-whether-a-writer-reads-to-sign-and-how-the-gate-names-an-artifact) | The signature declaration says whether a writer reads to sign and how the gate names an artifact | Decided by the development agent in the owner's absence — put to the owner afterwards |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -2041,6 +2042,32 @@ of the upstream (the upstream is the engine's, not the fetch's); constants of th
 **Revisit condition:** a bound a format needs that is no context value of a run.
 
 **Spec:** [signatures.md](spec/signatures.md) R-SIG-026, R-SIG-040; [architecture.md](spec/architecture.md) R-ARCH-008.
+
+### ADR-237 · The signature declaration says whether a writer reads to sign and how the gate names an artifact
+
+**Status:** Decided by the development agent in the owner's absence, after the measurement with real clients of 2026-11-21; put to the
+owner afterwards. An addition to the format contract at version 9.
+
+**Context.** The measurement found that `cosign sign` and `notation sign` read an image's manifest before they push its signature, so the
+signature gate refused them and an image pushed into a gated repository could never be signed there; and that the gate's answers named
+Quader's storage paths (`unsigned/_tags/1.0`) instead of what the client asked for (`unsigned:1.0`). Which formats sign by reading the
+repository, and how a client names an artifact, is each format's knowledge; the core names no format.
+
+**Decision.** `formats.SignatureDeclaration` gains `ReadToSign` (OCI sets it: a principal that may write to the repository reads through
+its signature gate, asked only where the gate would refuse or hold, Q-SIG-211) and `ArtifactName` (the artifact in its client's words for the
+gate's answers: OCI, npm, NuGet and Ansible Galaxy set it; nil keeps the path, Q-SIG-213). The format host reads both from the declaration it
+already asks; the contract keeps its version.
+
+**Consequences.** A format added later declares both with its signatures; the gate stays free of format names. A holder of the write right
+pulls unsigned images of a gated OCI repository (H-1229).
+
+**Alternatives considered.** A method of the signature adapter (raises the version and moves every format for two facts); the format's
+identifier tested in the core (the core would name formats); any `HEAD` or read by digest passing the gate (a kubelet pulls by digest).
+
+**Revisit condition:** a format whose signing tools read the artifact other than by a download a writer makes, or Quader's own promotion of
+signed content between repositories (Q-SIG-211 (c)).
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-064, R-SIG-068, Q-SIG-211, Q-SIG-213; [architecture.md](spec/architecture.md) R-ARCH-008.
 
 ## Design invariants
 

@@ -78,6 +78,13 @@ func GateNoneFor(items []GateItem) []GateSubject { return make([]GateSubject, le
 type SignatureDeclaration struct {
 	None  string // non-empty: the format has no signatures, and why
 	Kinds []SignatureKind
+	// ReadToSign says the format's signing tools read the artifact from the repository before they push its signature (OCI: cosign GETs
+	// and notation HEADs the manifest). A principal that may write to the repository then reads the artifact through the repository's
+	// signature gate, so that an image pushed while the gate is on can be signed (signatures.md R-SIG-064, Q-SIG-211).
+	ReadToSign bool
+	// ArtifactName names a stored artifact in its client's words for the signature gate's answers (`unsigned:1.0`, `left-pad@1.3.0`,
+	// signatures.md R-SIG-068, Q-SIG-213), from its path and what Classify said of it; nil, or an empty answer, names it by its path.
+	ArtifactName func(path string, info PathInfo) string
 }
 
 // SignatureKind is one kind of signature a format knows.
