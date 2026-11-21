@@ -5586,7 +5586,9 @@ content hashes still detect the change on their side.
 Quader keeps author and repository signatures inside packages untouched. Today it does not verify them; once
 [signatures.md](../signatures.md) R-SIG-029 is built it verifies and shows them, and still refuses nothing: a local repository
 accepts an unsigned or wrongly signed package from anyone who passes `deploy` and ownership for the ID, and a remote serves what its
-upstream sends, until the gate per repository of stage 3. Quader offers no repository signing and no repository signatures resource
+upstream sends, unless the repository's gate of stage 3 is on (specified, not built: [signatures.md](../signatures.md) R-SIG-061 to
+R-SIG-068), which serves a `.nupkg` only on an author's signature an accepted anchor knows, never on nuget.org's countersignature alone,
+and a `.snupkg` on its own signature or on that of the `.nupkg` of the same id and version. Quader offers no repository signing and no repository signatures resource
 (PKG-NUGET-052, Q-SIG-36); a client's own trust decisions about signers stay its configuration.
 
 ### H-50 · A restore revives NuGet versions deleted after the backup's snapshot and can free lost version numbers

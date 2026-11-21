@@ -544,7 +544,9 @@ Priority: **P1** · Covers: PKG-ANSIBLE-005
   exactly as against the upstream ([H-839](#h-839--a-remotes-signatures-are-verified-and-shown-and-refuse-nothing)). A **virtual** version
   document carries the signatures of the member whose document it serves. **Superseded in part by [signatures.md](../signatures.md)
   R-SIG-031 (specified, not built):** Quader verifies and shows a remote's signatures once the archive is stored, and a local version
-  takes detached signatures through the management API, served in `signatures[]`.
+  takes detached signatures through the management API, served in `signatures[]`. A repository's signature gate (stage 3, R-SIG-061 to
+  R-SIG-068, specified, not built) serves a collection archive only on a publisher's signature an accepted anchor knows; an entry of a
+  signing service is a registry's and does not pass alone, and a role archive, which carries no signature, is refused.
 - **Vulnerabilities.** The vulnerability pipeline (vulnerability-scanning.md) matches stored versions to OSV advisories by ecosystem
   and name. OSV has no Ansible ecosystem (verified 2026-11-10), so the format has no `VulnerabilityAdapter` and no `ImageScanned`
   interface, the evaluation state of its repositories is `not_covered`, and no download is blocked by it

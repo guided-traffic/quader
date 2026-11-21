@@ -6332,8 +6332,10 @@ The settings page follows the style guide's settings pages: one column of at mos
 3. **Upstream** (remote), open: R-UI-082 with its **Upstream details** region, which holds **Offline** here.
 4. **Members** (virtual), open: the editor of R-UI-022 with its own save.
 5. Closed: **Mirror** (status above the settings, R-UI-021, and the format's `mirror` member), **<Display name> settings**, **Access
-   details** (include and exclude patterns, Hide existence), **Administrator notes**, **Signing keys** and **Indexes** (Debian local
-   and virtual), **Import tasks** and **Tombstones** (Ansible), **Details** (class, format, layout, project,
+   details** (include and exclude patterns, Hide existence), **Administrator notes**, **Signatures** (the background fetch of a remote and
+   the gate **Only artifacts with a verified signature can be downloaded from this repository**, specified in [signatures.md](signatures.md)
+   R-SIG-040 and R-SIG-074 and not built), **Signing keys** and **Indexes** (Debian local and virtual), **Import tasks** and **Tombstones**
+   (Ansible), **Details** (class, format, layout, project,
    client address, created, last changed, last activity), **API** (the stored document; each section's unsaved change as a request),
    **Advanced** ([Q-UI-352](#q-ui-352--disable-move-and-delete-are-in-advanced)): **Disable repository** or **Enable repository**,
    **Move to another project**, **Delete repository**.
@@ -7429,7 +7431,8 @@ Instanz-Administratoren."
   `security-admin` holds `vulnerabilities:triage` without `content:metadata-read` and has no dashboard: it triages on the screens of
   the projects whose repositories it may read.
 - **Two views** ([Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware); a third, **Signatures**
-  (`/security/signatures`), is specified in [signatures.md](signatures.md) R-SIG-038 and not built): **Vulnerabilities**
+  (`/security/signatures`), is specified in [signatures.md](signatures.md) R-SIG-038, with the refused downloads of gated repositories and
+  their releases of R-SIG-074, and not built): **Vulnerabilities**
   (`/security`) and **Malware** (`/security/malware`, [malware-scanning.md](malware-scanning.md) R-MAL-025), as two links under the page's
   title, which each view places under its own header ([Q-UI-873](#q-ui-873--the-dashboards-two-views-are-a-strip-of-links-that-each-view-places-under-its-own-header));
   the side bar keeps its one entry.

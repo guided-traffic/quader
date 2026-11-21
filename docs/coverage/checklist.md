@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,131 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,149 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 794 specified (509 of them implemented), 1,445 open.
-1,131 spec requirements: 729 cover catalog features, 402 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 795 specified (509 of them implemented), 1,444 open.
+1,149 spec requirements: 734 cover catalog features, 415 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -85,7 +85,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [VCS archive format](#vcs-archive-format-pkg-vcs) | `PKG-VCS` | 13 | – | 0 | 13 | 0 |
 | [Machine-learning models and model-serving containers](#machine-learning-models-and-model-serving-containers-pkg-ml) | `PKG-ML` | 19 | – | 0 | 19 | 0 |
 | [AI agent assets and IDE extension formats](#ai-agent-assets-and-ide-extension-formats-pkg-ai) | `PKG-AI` | 37 | – | 0 | 37 | 0 |
-| [Beyond the baseline: further formats and capabilities](#beyond-the-baseline-further-formats-and-capabilities-beyond) | `BEYOND` | 34 | 1 of 1 | 6 | 28 | 1 |
+| [Beyond the baseline: further formats and capabilities](#beyond-the-baseline-further-formats-and-capabilities-beyond) | `BEYOND` | 34 | 1 of 1 | 7 | 27 | 1 |
 
 </details>
 
@@ -2919,10 +2919,10 @@ Catalog page: [formats/ai-and-ide.md](../features/formats/ai-and-ide.md) · spec
 
 ## Beyond the baseline: further formats and capabilities (BEYOND)
 
-Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified by priority: MVP 1 of 1 · P1 3 of 5 · P2 2 of 25 · Later 0 of 3
+Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified by priority: MVP 1 of 1 · P1 3 of 5 · P2 3 of 25 · Later 0 of 3
 
 <details>
-<summary>34 features: 6 specified, 28 open, 1 implemented</summary>
+<summary>34 features: 7 specified, 27 open, 1 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -2944,7 +2944,7 @@ Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified 
 | BEYOND-016 | Referrer-aware lifecycle operations | P2 | specified | [R-SIG-025](../spec/signatures.md) |
 | BEYOND-017 | Artifact-type recognition | P2 | open | – |
 | BEYOND-018 | Upstream selection by source namespace | P2 | open | – |
-| BEYOND-019 | Signature verification gate for Sigstore-signed content | P2 | open | – |
+| BEYOND-019 | Signature verification gate for Sigstore-signed content | P2 | specified | [R-SIG-061](../spec/signatures.md), [R-SIG-062](../spec/signatures.md), [R-SIG-064](../spec/signatures.md), [R-SIG-065](../spec/signatures.md), [R-SIG-067](../spec/signatures.md) |
 | BEYOND-020 | SLSA provenance verification policy | P2 | open | – |
 | BEYOND-021 | npm provenance for locally published packages | P1 | specified | [R-SIG-028](../spec/signatures.md) |
 | BEYOND-022 | PyPI digital attestations (PEP 740) | P2 | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>402 requirements</summary>
+<summary>415 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3351,6 +3351,19 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-SIG-058 | Configuration, defaults and what stage 2 costs | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-059 | Backups, restores and replicas of stage 2 | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-060 | The tests of stage 2 and what they cost | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-063 | What the gate judges: the format names it | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-066 | A trust row older than a narrowing: the gate subtracts | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-068 | The answer each client gets | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-069 | One decision, one wait: the malware gate, the vulnerability block and the signature gate | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-070 | Releasing an artifact for one repository | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-071 | A change of anchors, blocks or the switch, and what an administrator sees before saving it | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-072 | The repository's preview before the gate is switched on | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-073 | The API of stage 3 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-074 | The screens of stage 3 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-075 | Audit events, metrics, alerts and the Bastion's feed of stage 3 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-076 | Configuration, backups, restores and replicas of stage 3 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-077 | Mirrors, the Bastion, stage 2, metadata documents, and what stage 3 does not do | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-078 | The tests of stage 3 and what they cost | P1 | [signatures.md](../spec/signatures.md) |
 | R-STOR-011 (implemented) | Multi-request upload sessions | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-013 (implemented) | Download integrity verification | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-048 | Client-side encryption of stored content | P2 | [storage.md](../spec/storage.md) |

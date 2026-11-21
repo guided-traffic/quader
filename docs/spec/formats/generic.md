@@ -98,7 +98,9 @@ implicitly from the paths of deployed files or explicitly (R-STOR-007).
   enforced by the items store, [storage.md](../storage.md) R-STOR-007).
 - Nothing in the path is interpreted: `.md5`, `.sha1` or `maven-metadata.xml` are ordinary names. A file named like a signature of
   the file beside it (`<file>.asc`, `.sig`, `.sigstore.json`, `.jws.sig`, `.cose.sig`) stays an ordinary file too, and is in addition
-  read as that file's signature ([signatures.md](../signatures.md) R-SIG-032, specified, not built).
+  read as that file's signature ([signatures.md](../signatures.md) R-SIG-032, specified, not built). Where the repository's signature
+  gate is on (stage 3, R-SIG-061 to R-SIG-068, specified, not built), every other file is served only on a verified signature beside it,
+  and such a signature file passes while it was read as a signature of a known scheme.
   Digest sidecar files are the repository's checksum policy ([storage.md](../storage.md)
   R-STOR-010, P1), not a property of the format.
 

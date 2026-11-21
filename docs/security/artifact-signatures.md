@@ -5,11 +5,14 @@ and the trust step are not ([developer/signatures.md](../developer/signatures.md
 [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) to
 [ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version)) and stage 2,
 Quader signs (R-SIG-044 to R-SIG-060,
-[ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker)).
+[ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker)),
+and stage 3, the gate per repository (R-SIG-061 to R-SIG-078,
+[ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed)),
+both specified and not built.
 The perspective of this page is what a verdict about a signature can be made to say, by whom, and what reading a hostile signature container
-can do to the process that reads it; and, for stage 2, what Quader's own signature makes others believe, who holds the key that makes it,
-and what a holder of that key can do. Neither stage refuses a download; every gap below is about what a reader or a client is shown, what
-the worker is made to do, and what an operator relies on.
+can do to the process that reads it; for stage 2, what Quader's own signature makes others believe, who holds the key that makes it, and
+what a holder of that key can do; and for stage 3, what a repository's gate keeps out, who can open it, and what it does when it cannot
+decide. Stages 1 and 2 refuse no download; stage 3 refuses downloads from the repositories whose gate is on.
 
 ## The boundary
 
@@ -116,6 +119,52 @@ switch is refused by a lock (R-SIG-048), so no client run aborts on Quader's key
 publisher's older cosign signature (R-SIG-054); every change of the identity is an audit event, and a removal and a retirement carry the
 journal flag (R-SIG-057).
 
+## The gate per repository (stage 3)
+
+A repository whose gate is on (`signatures.onlyVerified`, R-SIG-061) serves an artifact only when a signature of the roles `publisher` or
+`provenance` is attached where the repository sees it, matches the content and is known to an anchor the repository accepts (R-SIG-062). It
+acts at every download of every format but Debian, at the two serve points the malware gate uses and at OCI's manifest handlers (R-SIG-064).
+
+```
+ client GET/HEAD ─▶ authorization ─▶ format's serve check ─▶ malware · vulnerability · signature: all three decide (R-SIG-069)
+                                                                     │ the item's signatures, attachments, trust rows: one statement
+                                                                     │ anchors and blocks: the replica's snapshot, narrowings subtracted
+                      403, no-store ◀── one refuses ─────────────────┤
+                      served ◀───────── every gate passes ───────────┤
+                      503, Retry-After ◀── still pending after the wait (25 s from arrival) ◀── priority check, asked fetch
+```
+
+**What it keeps out:** an artifact no accepted signer signed: an upload of an account that was taken over but holds no signing key, content
+an upstream changed after it was signed (the integrity check fails) or never signed, a name in a public registry that a remote would fetch
+in place of a private one; unless the attacker also holds a key an accepted anchor knows.
+
+**What it does not keep out:** what a trusted signer signed ([H-1171](#h-1171--a-verified-signature-says-who-signed-not-that-the-content-is-safe));
+a signature of a stolen key until an administrator blocks the signer, after which the gate refuses at once
+([H-1168](#h-1168--a-revoked-certificate-stays-verified-until-an-administrator-blocks-its-signer), R-SIG-066); under "any anchor", a
+signature of any identity of the public Sigstore
+([H-1194](#h-1194--a-gate-that-accepts-any-anchor-passes-what-any-identity-of-the-public-sigstore-signed)) and of a project Owner's own anchor
+([H-1195](#h-1195--under-any-anchor-a-project-owners-own-anchor-passes-the-gate-of-its-projects-repositories)); an image's blob fetched by
+its digest ([H-1196](#h-1196--an-images-gate-guards-its-manifests-a-blob-fetched-by-its-digest-passes)); a file that reads as a signature
+([H-1197](#h-1197--a-file-read-as-a-signature-passes-the-gate-as-an-attachment)).
+
+**Who can open or close it:**
+
+| Party | What it can do to a gate | What stops it |
+|---|---|---|
+| A writer of the repository's settings, an Owner of the project included | switch it on, accept fewer anchors | a weakening (off, any anchor, an anchor added) needs `repositories:write-config` or `vulnerabilities:triage`; an Owner gets 403 (R-SIG-061) |
+| A holder of `repositories:write-config` or `vulnerabilities:triage` | switch it off, accept more anchors | `repository.updated` with `block: lifted`; a narrowing is journaled, so a restore keeps the gate closed |
+| A holder of `vulnerabilities:triage` with `read` on the repository or `content:metadata-read` | release one artifact in one repository (R-SIG-070) | the release names its reason; its withdrawal is journaled and reaches the Bastions |
+| A project's Owner, while project anchors are allowed | add an anchor that passes the project's gates that accept any anchor | a gate with chosen anchors does not take it, and adding it to the list is a weakening (H-1195) |
+| An administrator (`security-settings:write`) | remove, switch off or narrow an anchor, block a signer: the gate refuses at once; add an anchor: it passes after the recomputation | the impact is shown before the change is saved (R-SIG-071) |
+| The operator | `signatures.enabled: false` switches every gate off ([H-1198](#h-1198--switching-the-signature-checks-off-lifts-every-repositorys-gate)) | the repository's section says so |
+
+**What it does when it cannot decide: it refuses.** A signature not checked yet, a trust row not written yet, a remote whose signatures were
+not fetched yet make the request wait up to 25 s from its arrival while that work goes first, then answer `503` with `Retry-After`; nothing is
+served without a decision (R-SIG-067). A trust row older than a narrowing is narrowed at the gate by subtraction from the replica's snapshot,
+so the minutes of the recomputation never serve what a removed anchor or a block refuses (R-SIG-066,
+[H-1175](#h-1175--the-shown-trust-lags-a-change-of-anchors-by-the-recomputation)); a widening waits for the recomputation and refuses until
+then. A remote's fill is held until its stored item is judged. PostgreSQL down fails the download; the object store takes no part.
+
 ## What this does not cover
 
 - [H-1176](../spec/signatures.md#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature):
@@ -129,6 +178,10 @@ journal flag (R-SIG-057).
   with an older cosign signature gets Quader's attestation only through the API.
 - [H-1186](../spec/signatures.md#h-1186--a-policy-engine-that-demands-a-log-or-a-timestamp-cannot-verify-quaders-attestations): a policy
   engine that demands a log or a timestamp cannot verify Quader's attestations.
+- [H-1199](../spec/signatures.md#h-1199--a-client-that-resolves-a-range-picks-a-version-the-gate-refuses): a client that resolves a range
+  picks a version the gate refuses.
+- [H-1200](../spec/signatures.md#h-1200--docker-and-ansible-galaxy-fail-a-first-pull-through-a-gated-remote-when-the-checks-outlast-the-wait):
+  Docker and `ansible-galaxy` fail a first pull through a gated remote when the checks outlast the wait.
 
 ### H-1166 · The worker reads hostile signature containers in a process that holds secrets
 
@@ -264,3 +317,46 @@ Component: the OCI attestation referrer (R-SIG-054). Subject: whoever runs `cosi
 DSSE bundle whose statement names the image (read in its source on 2026-11-21), so Quader's receipt passes as "signed by Quader". It says
 received, not made; a policy that reads it as the publisher's signature trusts the wrong fact. What makes it real: a policy written with
 Quader's identity in `cosign verify` instead of `cosign verify-attestation` with the receipt's type.
+
+### H-1194 · A gate that accepts any anchor passes what any identity of the public Sigstore signed
+
+Component: the gate with `anchors: []` (R-SIG-061, R-SIG-062, Q-SIG-76) and the shipped anchor `sigstore-public`, whose identity pattern takes
+every issuer and identity (R-SIG-017). Subject: repositories whose gate accepts any anchor. Specified for stage 3, not built; dormant where
+the administrator switched `sigstore-public` off or the repository chose anchors. Anyone can sign keyless with the public Sigstore with an
+e-mail account or a CI job of a public forge, and an npm package published from such a job carries a provenance that verifies against it, so
+a writer of a gated local repository, or an upstream of a gated remote, passes the gate with a signature of an identity of its own. The
+setting says so beside the choice, and the details name the identity. What makes it real: a gate switched on with the default choice in the
+belief that it accepts only the company's signers.
+
+### H-1195 · Under any anchor, a project Owner's own anchor passes the gate of its project's repositories
+
+Component: project anchors in the gate's scope (R-SIG-019, R-SIG-061, Q-SIG-93). Subject: gated repositories of a project whose gate accepts
+any anchor. Dormant until the administrator allows project anchors. An Owner, or whoever takes over an Owner's account, adds a key of its
+choice as a project anchor and signs what it publishes, and the project's gates that accept any anchor pass it: the Owner cannot switch a gate
+off, but this has the same effect for the Owner's own uploads. A gate whose anchors were chosen does not take the new anchor, and adding it
+to the list is a weakening the Owner may not make. What makes it real: an administrator's gate on a project's repository with the default
+choice while project anchors are allowed.
+
+### H-1196 · An image's gate guards its manifests: a blob fetched by its digest passes
+
+Component: OCI's classification (R-SIG-063, Q-SIG-82). Subject: gated OCI repositories. Specified for stage 3, not built. The gate judges
+manifests by tag and by digest; layers, configs and the content of an attachment are blobs and pass, as at the vulnerability block
+([image-scanning.md](image-scanning.md#h-811--the-block-of-an-image-is-the-block-of-its-manifest)). A client that knows the digest of a layer
+of an unsigned image, or pulls the layer of an SBOM or signature artifact with a tool such as `oras`, gets the bytes; no image runtime runs an
+image without its manifest. What makes it real: a consumer that fetches blobs by digest from a list it got elsewhere.
+
+### H-1197 · A file read as a signature passes the gate as an attachment
+
+Component: `GateSignatureFile` (R-SIG-063). Subject: gated generic and npm repositories. Specified for stage 3, not built. A file named like a
+signature of the file beside it (`.asc`, `.sig`, `.sigstore.json`, `.jws.sig`, `.cose.sig`) and npm's provenance bundle pass while they were
+read as a signature of a known scheme, so that a client can verify what it downloads; within the bound of 256 KiB such a file can carry
+other bytes, in an OpenPGP notation or a bundle's fields. What makes it real: a writer who hides a payload in a signature file and a consumer
+that fetches and runs it.
+
+### H-1198 · Switching the signature checks off lifts every repository's gate
+
+Component: `signatures.enabled` (R-SIG-040, R-SIG-064). Subject: every gated repository. Specified for stage 3, not built. The operator's
+configuration switches detection and checks off, and with them every gate, as `malware.enabled: false` lifts the malware gate; the
+repositories' settings stay stored and apply again when the checks are switched on. No repository writer is asked; the repository's section
+says that the setting does not apply. What makes it real: an operator who switches the checks off to spare the worker while teams rely on
+their gates.

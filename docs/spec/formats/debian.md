@@ -958,6 +958,10 @@ Priority: **P2** · Covers: PKG-DEB-021
   signature's, with a signature creation time no more than 10 minutes after the PostgreSQL time, and a hash of SHA-256 or
   stronger (Q-DEB-35); signatures by other keys are ignored while one verifies. A key the operator left in the set after it
   expired can therefore not sign a backdated release. The verifying key's fingerprint is recorded with the release (R-DEB-023).
+- **No signature gate.** A repository's gate "only artifacts with a verified signature" (stage 3 of [signatures.md](../signatures.md),
+  R-SIG-061, specified, not built) is not offered for Debian: apt checks the index's signature and no package's, so no `.deb` carries a
+  publisher's signature that could pass; `deb.upstreamKeys` stays the remote's condition on its upstream's index
+  ([Q-SIG-80](../signatures.md#q-sig-80--debian-the-gate-is-not-offered)).
 - **A change of the keys re-verifies** (Q-DEB-32, Q-DEB-42). An update that removes fingerprints clears `verified_by` of every
   stored release that a removed key verified, in its transaction, and enqueues the remote's `deb-index` job, which re-verifies
   those releases from their stored bytes against the new set (no upstream request: the cache view of the engine, Q-DEB-82, Q-DEB-83)

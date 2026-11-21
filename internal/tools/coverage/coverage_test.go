@@ -60,11 +60,12 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 	// its P2 entries and the Later entry PKG-DEB-003, and after formats/ansible.md (R-ANS-001 to R-ANS-032, unit F0) listed the 13 P1 entries of PKG-ANSIBLE-*,
 	// and after the visibility levels of R-AUTHZ-033 (T-18) covered the P2 entry IAM-062, and after signatures.md (R-SIG-001 to
 	// R-SIG-043, stage 1 of the signatures on artifacts) listed the P1 entries BEYOND-015 and BEYOND-021 and the P2 entries BEYOND-016,
-	// BEYOND-034 and PKG-NPM-024, and after its stage 2 (R-SIG-044 to R-SIG-060, Quader signs) listed the P2 entry PKG-NPM-037.
+	// BEYOND-034 and PKG-NPM-024, and after its stage 2 (R-SIG-044 to R-SIG-060, Quader signs) listed the P2 entry PKG-NPM-037, and its
+	// stage 3 (R-SIG-061 to R-SIG-078, the gate per repository) the P2 entry BEYOND-019.
 	want := map[string][2]int{
 		prioMVP:   {395, 395},
 		prioP1:    {514, 345},
-		prioP2:    {884, 52},
+		prioP2:    {884, 53},
 		prioLater: {374, 2},
 		prioOut:   {72, 0},
 	}
@@ -86,11 +87,11 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		if got := len(m.Features); got != 2239 {
 			t.Errorf("catalog entries: got %d, want 2239", got)
 		}
-		if got := m.countSpecified(m.Features); got != 794 {
-			t.Errorf("listed entries: got %d, want 794", got)
+		if got := m.countSpecified(m.Features); got != 795 {
+			t.Errorf("listed entries: got %d, want 795", got)
 		}
-		if got := m.countOpen(m.Features); got != 1445 {
-			t.Errorf("not listed entries: got %d, want 1445", got)
+		if got := m.countOpen(m.Features); got != 1444 {
+			t.Errorf("not listed entries: got %d, want 1444", got)
 		}
 	})
 	t.Run("E0.8 requirement counts", func(t *testing.T) {
@@ -98,8 +99,8 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		for _, r := range m.Reqs {
 			count[r.Priority]++
 		}
-		if len(m.Reqs) != 1131 || count[prioMVP] != 707 || count[prioP1] != 383 || count[prioP2] != 41 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1131 (707, 383, 41)",
+		if len(m.Reqs) != 1149 || count[prioMVP] != 707 || count[prioP1] != 401 || count[prioP2] != 41 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1149 (707, 401, 41)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

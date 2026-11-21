@@ -221,6 +221,7 @@ checked every earlier decision against them:
 | [ADR-225](#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format) | The ClamAV updater is a Deployment of its own, and ClamAV's definitions are a repository format | Accepted (owner decision of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough; the level of the endpoint put to the owner |
 | [ADR-229](#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image) | The scanner unit detects as well, and the analyser comes from its own image | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-230](#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker) | Quader signs with one identity per installation: npm's registry signatures and a receipt attestation of every artifact, signed in the worker | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) | A repository can serve only artifacts with a verified signature: a gate at download for every format, judged from stored verdicts and failing closed | Accepted (owner decision of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1928,6 +1929,60 @@ that issues RSA only; stage 3, where a passing gate may issue a verification sum
 [formats/oci.md](spec/formats/oci.md) R-OCI-016; [api-and-ui.md](spec/api-and-ui.md) R-UI-002, R-API-030;
 [operations-and-observability.md](spec/operations-and-observability.md) R-OPS-016; [README.md](spec/README.md) INV-4;
 [security/artifact-signatures.md](security/artifact-signatures.md) H-1187 to H-1193.
+
+### ADR-231 · A repository can serve only artifacts with a verified signature: a gate at download for every format, judged from stored verdicts and failing closed
+
+**Status:** Accepted (owner decision of 2026-11-21, Q-SIG-9 (b), against the development agent's recommendation: "besides display and alarm,
+per repository a detail setting 'only artifacts with a verified signature', optionally of chosen anchors"; with Q-SIG-14 the third stage);
+the mechanisms decided by the development agent — owner review at the walkthrough. Stage 3 of three; stage 1 is ADR-226 to ADR-228, stage 2
+ADR-230.
+
+**Context.** Stage 1 stores per signature an integrity verdict and per scope a trust row with every anchor that knows the signer, recomputed
+alone when anchors change; it refuses nothing. The malware gate decides at the two serve points every download passes, waits a bounded time
+for a scan and answers in each client's shape; the vulnerability block refuses an image at its manifest. Three facts bound the design: half
+the formats carry their signature in a request of its own after the artifact (OCI, generic, Ansible); a signature over an image index commits
+to its platform manifests, and `cosign sign` of a tag signs only the index (read in cosign's source on 2026-11-21); the trust rows lag a
+change of anchors by minutes, while a narrowing is only a subtraction.
+
+**Decision.**
+- A repository's setting `signatures.onlyVerified`, with `signatures.anchors` naming accepted anchors by scope and key, or any anchor of the
+  repository's scope; on every class of every format but Debian; not in a creation flow; no installation switch, no project default, no
+  report mode; switching it off and accepting more anchors are weakenings an Owner may not make ([signatures.md](spec/signatures.md)
+  R-SIG-061).
+- What passes is what shows a verified badge: a `publisher` or `provenance` signature whose trust row knows an accepted anchor; a registry's
+  signature alone never, Quader's own never; one passing signature is enough (R-SIG-062).
+- The format names what the gate judges (an artifact with what covers it, an attachment, a signature file, nothing) through a method of the
+  signature adapter, and the contract rises by one; OCI is gated at its manifests, an index covers its platform manifests, an attachment is
+  known by its content (R-SIG-063).
+- The gate acts at download, at the malware gate's serve points and at OCI's manifest handlers; each gate that applies (the addressed
+  repository's, the holding member's) judges in its own scope; a refusal ends a virtual walk (R-SIG-064, R-SIG-065).
+- A narrowing reaches the gate at once: it subtracts removed or narrowed anchors and newer blocks from a stale trust row, from the replica's
+  snapshot; a widening waits for the recomputation (R-SIG-066).
+- A pending artifact gets priority work and a bounded wait shared with the malware gate's, then `503` with `Retry-After`; a remote's fill is
+  held; nothing is served without a decision (R-SIG-067, R-SIG-069).
+- `403 signature_not_verified` and `503 signature_check_pending` in the shapes the formats render for the malware gate; a release per
+  repository and artifact by whoever triages in the security dashboard; a preview before switching on and an impact before a narrowing
+  (R-SIG-068, R-SIG-070 to R-SIG-072).
+
+**Consequences.** A curated repository refuses what no accepted signer signed, in every format but Debian; a team cannot be locked out
+without seeing it; under "any anchor" any identity of the public Sigstore passes (H-1194), and a project Owner's own anchor while project
+anchors are allowed (H-1195); an image's blobs and files that read as signatures pass (H-1196, H-1197); metadata documents still list refused
+versions (H-1199); Docker and `ansible-galaxy` may fail a first pull through a gated remote once (H-1200); every format implements one more
+method.
+
+**Alternatives considered.** An installation switch; a gate at upload; a registry's signature as passing; anchor IDs or a per-repository
+identity pattern; gating by route kind; every OCI blob gated; trusting stale trust rows or treating them as pending; a code per reason;
+releases per digest for the installation or by the Owner; curated metadata documents; a report mode; a verification summary of the decision;
+an end-to-end case.
+
+**Revisit condition:** a project that wants every repository gated (a project default); a Debian gate on a remote's covering release (asked
+of the owner); a client that verifies Quader's decision itself (a verification summary).
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-061 to R-SIG-078, Q-SIG-75 to Q-SIG-95, H-1199, H-1200;
+[security/artifact-signatures.md](security/artifact-signatures.md) H-1194 to H-1198; [repositories-and-proxy.md](spec/repositories-and-proxy.md)
+R-REPO-004, R-REPO-061; [malware-scanning.md](spec/malware-scanning.md) R-MAL-013; [bastion.md](spec/bastion.md) R-BAS-015;
+[formats/oci.md](spec/formats/oci.md) R-OCI-007, R-OCI-009; [api-and-ui.md](spec/api-and-ui.md) R-UI-087;
+[operations-and-observability.md](spec/operations-and-observability.md) R-OPS-016.
 
 ## Design invariants
 
@@ -10199,6 +10254,27 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-SIG-50](spec/signatures.md#q-sig-50--npms-registry-signature-has-its-message-as-its-subject) | The subject of npm's registry signature? | (a) the SHA-256 of its message | — |
 | [Q-SIG-51](spec/signatures.md#q-sig-51--a-remotes-npm-attestations-are-stored-at-the-path-of-their-endpoint) | Where does a remote keep npm's attestations? | (a) at the endpoint's path | — |
 | [Q-SIG-52](spec/signatures.md#q-sig-52--the-origin-is-recorded-at-every-file-a-client-sent) | Which files record the origin? | (a) every file a client sent | — |
+| [Q-SIG-75](spec/signatures.md#q-sig-75--the-gate-is-a-setting-of-the-repository-alone) | Who sets the gate? | (a) the repository alone; no installation switch, no project default | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) |
+| [Q-SIG-76](spec/signatures.md#q-sig-76--verified-is-the-badges-verified-states-and-any-anchor-includes-the-shipped-public-ones) | What does "verified" mean for the gate? | (a) the badge's verified states; any anchor includes the shipped public ones | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) |
+| [Q-SIG-77](spec/signatures.md#q-sig-77--chosen-anchors-are-named-by-scope-and-key-and-the-anchors-own-restrictions-narrow) | What do chosen anchors store? | (a) references by scope and key; narrower signers through the anchors' own restrictions | — |
+| [Q-SIG-78](spec/signatures.md#q-sig-78--only-a-publishers-signature-or-a-provenance-passes) | Which signatures pass? | (a) publisher and provenance; never a registry's alone, never Quader's own | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) |
+| [Q-SIG-79](spec/signatures.md#q-sig-79--the-gate-acts-at-download-for-every-format-not-at-upload) | Where does the gate act? | (a) at download, for every format | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) |
+| [Q-SIG-80](spec/signatures.md#q-sig-80--debian-the-gate-is-not-offered) | A gate for Debian? | (a) not offered | — |
+| [Q-SIG-81](spec/signatures.md#q-sig-81--the-format-names-what-the-gate-judges-and-the-contract-rises-by-one) | Who knows what is an artifact? | (a) the format, through `Gate`; the contract rises by one | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) |
+| [Q-SIG-82](spec/signatures.md#q-sig-82--oci-the-gate-is-on-manifests-an-index-covers-its-children-and-an-attachment-is-known-by-its-content) | OCI's gate? | (a) manifests; an index covers its children; attachments by content; blobs pass | — |
+| [Q-SIG-83](spec/signatures.md#q-sig-83--a-virtual-repository-its-own-gate-and-the-holding-members-each-in-its-own-scope) | A virtual repository's gate? | (a) its own and the holding member's, each in its own scope | — |
+| [Q-SIG-84](spec/signatures.md#q-sig-84--a-narrowing-reaches-the-gate-at-once-by-subtraction-a-widening-after-the-recomputation) | Stale trust rows at the gate? | (a) a narrowing subtracted at once, a widening after the recomputation | — |
+| [Q-SIG-85](spec/signatures.md#q-sig-85--pending-priority-work-and-a-bounded-wait-then-503) | A pending artifact? | (a) priority work and a bounded wait, then `503` | — |
+| [Q-SIG-86](spec/signatures.md#q-sig-86--one-code-for-a-refusal-one-for-pending-in-the-shapes-that-exist) | The answers? | (a) one code for a refusal with a reason, one for pending, in the existing shapes | — |
+| [Q-SIG-87](spec/signatures.md#q-sig-87--one-decision-one-wait-in-the-order-of-what-was-found-before-what-is-missing) | Order with the malware gate and the vulnerability block? | (a) decide all three before one wait; what was found before what is missing | — |
+| [Q-SIG-88](spec/signatures.md#q-sig-88--a-release-per-repository-and-artifact-by-whoever-triages-in-the-security-dashboard) | A release? | (a) per repository and artifact, by whoever triages, in the security dashboard | — |
+| [Q-SIG-89](spec/signatures.md#q-sig-89--metadata-documents-list-what-the-gate-refuses) | Metadata documents? | (a) unchanged; they list refused versions | — |
+| [Q-SIG-90](spec/signatures.md#q-sig-90--a-preview-before-switching-on-and-an-impact-before-a-narrowing-both-bounded) | What is seen before a change? | (a) a preview and an impact, both bounded | — |
+| [Q-SIG-91](spec/signatures.md#q-sig-91--no-report-mode-the-preview-shows-what-the-gate-would-refuse) | A report mode? | (a) none; the preview | — |
+| [Q-SIG-92](spec/signatures.md#q-sig-92--no-verification-summary-of-the-gates-decision) | A verification summary? | (a) none | — |
+| [Q-SIG-93](spec/signatures.md#q-sig-93--a-project-anchor-counts-for-the-gate-of-its-projects-repositories) | Project anchors and the gate? | (a) they count while allowed | — |
+| [Q-SIG-94](spec/signatures.md#q-sig-94--the-bastion-learns-a-narrowing-as-content-entries-for-the-gated-repositories) | The Bastion and a narrowing? | (a) content entries for the gated repositories | — |
+| [Q-SIG-95](spec/signatures.md#q-sig-95--no-end-to-end-case-one-measurement-by-hand) | An end-to-end case? | (a) none; one measurement by hand | — |
 | [Q-BAS-1](spec/bastion.md#q-bas-1--the-bastion-asks-the-main-installation-and-keeps-no-copy-of-users-tokens-or-policies) | How does the Bastion know what a caller may read? | (a) it asks the main installation and keeps the answers briefly; no copy of users, tokens or policies (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-2](spec/bastion.md#q-bas-2--the-bastion-is-read-only-for-package-content) | May the Bastion take writes? | (a) read-only for package content; writes refused in the protocol's shape, pointing at the main installation (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-3](spec/bastion.md#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation) | What is the Bastion's credential towards the main installation? | (a) a token issued by an administrator of the main installation, not a client certificate (owner, 2026-11-02) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |

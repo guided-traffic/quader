@@ -1571,6 +1571,11 @@ Priority: **MVP** · Covers: PKG-NPM-038
   every version of a local repository carries Quader's `dist.signatures` and the local keys endpoint lists Quader's keys; a remote's and a
   virtual's versions keep their upstream's and their winning member's signatures. Quader's receipt attestation of a tarball is served by
   the management API, never in `dist.attestations` (R-SIG-054).
+- **A repository's signature gate** (stage 3, specified, not built: [signatures.md](../signatures.md) R-SIG-061 to R-SIG-068) passes a
+  tarball on its provenance, never on the registry's signature alone, which npmjs puts on every package: in a gated remote of npmjs only
+  versions published with a provenance pass. The provenance bundle of a local version passes as a signature file. The package document
+  keeps listing the versions the gate refuses, as for the vulnerability block (Q-SIG-89), and a refused tarball answers `E403` with the
+  gate's text.
 
 Acceptance criteria:
 

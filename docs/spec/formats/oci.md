@@ -418,6 +418,12 @@ ALTER TABLE remote_cache_entries ADD COLUMN media_type text CHECK (length(media_
   entries and own no row; the package screens list the tags of a remote from the entries (R-OCI-036).
 - Layer deduplication across names and repositories is the blob store's: a blob item references the one object of its
   SHA-256 (R-STOR-005).
+- **The column `attachment`** (stage 3 of the signatures, specified, not built: [signatures.md](../signatures.md) R-SIG-063,
+  [Q-SIG-82](../signatures.md#q-sig-82--oci-the-gate-is-on-manifests-an-index-covers-its-children-and-an-attachment-is-known-by-its-content)):
+  `oci_manifests.attachment boolean NOT NULL DEFAULT false`, set by the hook that records a manifest when its content is a signature, an
+  attestation or an SBOM by R-SIG-023's rules and no layer has an image layer's media type, or for an index whose every descriptor carries
+  such an `artifactType`. A repository's signature gate passes such a manifest and judges every other manifest as an artifact, by its
+  own signatures and those of the indexes of the name that list it; a tag's name decides nothing.
 
 Acceptance criteria:
 
@@ -471,6 +477,10 @@ Priority: **P1** · Covers: PKG-DOCKER-017, PKG-OCI-007
 - A tag is resolved at request time; a client that pulls by digest (Kubernetes does, PKG-DOCKER-015) gets the manifest as long
   as it is stored, whether a tag still points at it or not (untagged manifests stay, R-OCI-018).
 - Read-your-writes (R-ARCH-012): a push answered `201` on one replica is served by the next pull on any replica.
+- **A repository's signature gate** (specified, not built: [signatures.md](../signatures.md) R-SIG-063, R-SIG-064) judges every `GET` and
+  `HEAD` of a manifest by tag and by digest, in every class, where the image block of the vulnerability scanning is asked: a manifest that
+  is no attachment passes on its own verified signature or on that of an index of the name that lists it, and is refused `403 DENIED` with
+  the gate's text otherwise, or answered `503 UNAVAILABLE` with `Retry-After` while its signatures are being checked. Blobs are not judged.
 
 Acceptance criteria:
 
@@ -1020,7 +1030,8 @@ Virtual resolution follows R-REPO-019 with these format rules (Q-OCI-18):
   member that refuses the item by a block (`403` with `vulnerability_blocked`, `vulnerability_data_missing`, `malware_found` or `malware_not_checked`) or holds it
   pending a malware verdict (`503 malware_check_pending`) ends the walk with that answer, because the member that holds the item decides
   ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-015, [malware-scanning.md](../malware-scanning.md) R-MAL-018,
-  [Q-OCI-240](#q-oci-240--a-block-of-a-member-ends-the-walk)); a
+  [Q-OCI-240](#q-oci-240--a-block-of-a-member-ends-the-walk)); the signature gate's `403 signature_not_verified` and `503
+  signature_check_pending` end it the same way (specified, not built: [signatures.md](../signatures.md) R-SIG-065); a
   member that cannot be asked or whose stored object is lost is remembered, and its failure is the answer only when no member serves the item (`404` would be a
   false statement about an item that may exist). A digest is taken in three passes: the local members, the caches of the remote members, then the upstreams of
   the remote members the caller may fill.
