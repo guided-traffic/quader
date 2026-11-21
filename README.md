@@ -1315,6 +1315,7 @@ server:
         token_types: [sat]              # default for a further endpoint: pat | sat | cit
         bound_tokens_only: true         # default for a further endpoint
         anonymous: false                # default for a further endpoint
+        client_certificates: false      # default: true makes the certificate the listener verified against tls.client_ca_file the credential of a request without a token (a further endpoint with client_ca_file only, anonymous false); it reads only upstream/clamav while ClamAV definition updates is on, at internal and public
       exposure: rules                   # default for a further endpoint: all | rules
       cache_fill: false                 # default for a further endpoint
       rate_limit_class: external        # default for a further endpoint; names an entry of endpoint_rate_limits
@@ -2322,7 +2323,7 @@ malware:                                # repository document member, every clas
 | `authz.role_bindings` | `[]` | Each entry binds a system role in `quader migrate`; whoever controls the membership of a declared IdP group holds the role, and the API cannot remove the binding (409). A removal that would leave no active administrator while break-glass is off stops the run. | [permissions](docs/security/permissions.md#role-bindings-from-the-configuration), [Q-AUTHZ-170](docs/spec/authorization.md#q-authz-170--system-role-bindings-declared-in-the-configuration) |
 | `authz.hide_existence` | `true` | A refused read answers 404, indistinguishable from a missing resource. `false` answers 403 for a resource that exists, for troubleshooting only. A repository's `hideExistence` overrides it. | [permissions](docs/security/permissions.md) |
 | `api.rate_limits.exempt_admins` | `false` | Callers who hold the admin capability bypass the rate limits. | [API edge](docs/security/api-edge.md) |
-| `server.endpoints.<name>.auth`, `…exposure` | further endpoints: `token_types: [sat]`, `bound_tokens_only: true`, `anonymous: false`; `exposure: rules` | Which credentials an endpoint accepts, and the ceiling on what it serves (exposure rules are a ceiling, never a grant). | [endpoints and exposure](docs/security/endpoints-and-exposure.md), [ADR-128](docs/decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
+| `server.endpoints.<name>.auth`, `…exposure` | further endpoints: `token_types: [sat]`, `bound_tokens_only: true`, `anonymous: false`, `client_certificates: false`; `exposure: rules` | Which credentials an endpoint accepts, and the ceiling on what it serves (exposure rules are a ceiling, never a grant). With `client_certificates`, every certificate of the CAs of `tls.client_ca_file` reads `upstream/clamav` while its clients are on, at `internal` and `public`, and nothing else; a revoked certificate stays admitted until it expires ([H-1177, H-1178](docs/security/clamav-definitions.md#what-a-client-certificate-admits)). | [endpoints and exposure](docs/security/endpoints-and-exposure.md), [ADR-128](docs/decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
 | `vulnerabilities.enforcement` | `enforce` | `enforce` refuses the downloads the findings block (`403`, `Cache-Control: no-store`). `report` refuses nothing anywhere, malicious versions included; each would-be refusal is counted with `mode="report"` and recorded with `enforced: false`. | [download block](docs/security/vulnerability-scanning.md#download-block), [R-VULN-015](docs/spec/vulnerability-scanning.md#r-vuln-015--download-blocking) |
 | `vulnerabilities.enabled` | `true` | `false` stops sync, evaluation and every block, and an npm repository without an explicit audit setting falls back to the forward of its remote and virtual class, which sends the audited names to the upstream. | [client audits](docs/security/vulnerability-scanning.md#client-audits) |
 | `vulnerabilities.sources.osv.mode`, `…kev.mode`, `….repository` | `online`, empty | `online`: the `worker` fetches over the outbound client (`vuln_source`). `repository`: the files come from a generic local repository, and whoever holds `deploy` on it decides the installation's advisory data, so what is reported and which malicious versions are blocked; each import is audited with its digest and deployer. `off`: the stored data stays and ages. | [who decides the data](docs/security/vulnerability-scanning.md#who-decides-the-data-in-mode-repository), [H-309](docs/spec/vulnerability-scanning.md#h-309--advisory-data-is-not-signed) |
@@ -3187,7 +3188,7 @@ endpoints: {}                           # default: only the default endpoint; th
 #    wildcardHost: ""                   # default; example: "*.packages.example.com"
 #    hostRoots: {}                      # default; host -> qualified repository name <projectKey>/<repoKey>; binds the host's /v2/ to an OCI repository
 #    surface: [packages]                # default: ui is refused on a further endpoint
-#    auth: {tokenTypes: [sat], boundTokensOnly: true, anonymous: false}   # default
+#    auth: {tokenTypes: [sat], boundTokensOnly: true, anonymous: false, clientCertificates: false}   # default; clientCertificates: true needs tls.clientCaSecret (the ClamAV installations' client certificates)
 #    exposure: rules                    # default: rules | all
 #    cacheFill: false                   # default
 #    rateLimitClass: external           # default
@@ -3209,6 +3210,7 @@ endpoints: {}                           # default: only the default endpoint; th
 #      className: ""                    # default
 #      tls: []                          # default
 #      backendTLS: {}                   # default; any key given here wins for this endpoint
+#      tlsPassthrough: false            # default: the controller ends TLS; true passes the client's TLS through to quader (haproxy and ingress-nginx by an annotation, traefik refused), needs tls.existingSecret, no tls entries, a surface within one role
 #    networkPolicy:
 #      from: []                         # default: empty = from anywhere
 networkPolicy:

@@ -28,6 +28,8 @@ func endpointRules(rt *endpointRuntime) auth.EndpointRules {
 		TokenTypes:      types,
 		BoundTokensOnly: rt.cfg.BoundTokensOnly,
 		Anonymous:       rt.cfg.Anonymous,
+		// A verified client certificate is the certificate subject's credential (R-EP-010 item 5, formats/clamav.md R-CLAMAV-010).
+		ClientCertificates: rt.cfg.ClientCertificates,
 		// The scan listener's endpoint accepts scan tokens only (R-ARCH-037, wire_scan_listener.go).
 		ScanOnly: rt.cfg.Name == config.ScanEndpoint,
 	}
@@ -67,6 +69,10 @@ func principalFromResult(r auth.Result) httpserver.Principal {
 			// The scan's ID of a scan token, for the request log of the scan listener (R-OCI-037).
 			ScanID: r.Credential.ScanID,
 		},
+	}
+	if c := r.Credential.Certificate; c != nil {
+		// The leaf of the certificate subject (R-CLAMAV-010): its subject stands where a user stands, its serial where a token stands.
+		p.Credential.ClientCert = &httpserver.ClientCert{Subject: c.Subject, Issuer: c.Issuer, Serial: c.Serial}
 	}
 	if b := r.Credential.Blob; b != nil {
 		// The reach of a blob token, the malware scanner's read (R-MAL-006).

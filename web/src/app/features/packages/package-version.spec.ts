@@ -403,7 +403,7 @@ describe('The page of a version (R-UI-111)', () => {
             inputs: { format: 'clamav', name: 'daily', version: '28190', tab },
             setup: (get) => {
               clamavFixture(get(PackagesApi) as FakePackagesApi);
-              if (on) (get(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' });
+              if (on) (get(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'public' });
             },
           },
           '/projects/upstream/packages',

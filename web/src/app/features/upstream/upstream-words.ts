@@ -155,14 +155,18 @@ export function clientsSentence(): string {
 }
 
 /**
- * What a ClamAV needs at each level, one muted line under each choice of the fold **Visibility** (R-UI-188, Q-REPO-415). The lines of
- * the client certificates (R-CLAMAV-010) join these once an endpoint can admit them.
+ * What a ClamAV needs at each level, one muted line under each choice of the fold **Visibility** (R-UI-188, Q-REPO-415, Q-UI-905): a
+ * token or a client certificate at Internal (R-CLAMAV-010), and no certificate at Private. While no endpoint admits client
+ * certificates, Internal's line says that one needs an endpoint the operator sets up.
  */
-export function clientsLevelNotes(): Readonly<Record<VisibilityLevel, string>> {
+export function clientsLevelNotes(certificates: boolean): Readonly<Record<VisibilityLevel, string>> {
+  const internal = $localize`:@@clamav.level.internal:A ClamAV authenticates with a token in its address, which freshclam writes into its log, or with a client certificate.`;
   return {
     public: $localize`:@@clamav.level.public:Every ClamAV that reaches this address updates, without credentials.`,
-    internal: $localize`:@@clamav.level.internal:A ClamAV authenticates with a token in its address, which freshclam writes into its log.`,
-    private: $localize`:@@clamav.level.private:Only tokens of members.`,
+    internal: certificates
+      ? internal
+      : `${internal} ${$localize`:@@clamav.level.internal-no-endpoint:Client certificates need an endpoint your operator sets up.`}`,
+    private: $localize`:@@clamav.level.private:Only tokens of members. Client certificates are not admitted.`,
   };
 }
 

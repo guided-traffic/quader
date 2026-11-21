@@ -39,6 +39,8 @@ func actorOf(sub Subject) audit.Actor {
 
 func credentialKind(sub Subject) string {
 	switch {
+	case isCertificate(sub):
+		return "client_certificate"
 	case sub.SessionID != "":
 		return "session"
 	case sub.TokenID != "":
@@ -108,6 +110,10 @@ func (e *Engine) decisionEvent(name string, sub Subject, c Coordinate, d Decisio
 	}
 	if sub.Endpoint != "" {
 		details["endpoint"] = sub.Endpoint
+	}
+	if sub.CertSerial != "" {
+		// The certificate subject's serial stands where a token stands (Q-CLAMAV-12); the audit's token column holds token IDs only.
+		details["client_cert_serial"] = sub.CertSerial
 	}
 	if len(d.Sources) > 0 {
 		details["sources"] = d.Sources

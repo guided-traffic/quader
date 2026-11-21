@@ -146,6 +146,9 @@ type Subject struct {
 	// SystemRepo is the repository the credential of a system subject names (Kind system, system.go): the one entry of a
 	// scan token's grant (R-OCI-037). Set by edge.SubjectOf only; zero for every other subject.
 	SystemRepo qname.Repo
+	// CertSerial is the serial of the certificate subject's client certificate (Kind certificate, formats/clamav.md R-CLAMAV-010), which
+	// its audit events name (Q-CLAMAV-12). Set by edge.SubjectOf only; empty for every other subject.
+	CertSerial string
 }
 
 // Coordinate is the authorization view of the request descriptor (R-REPO-003).

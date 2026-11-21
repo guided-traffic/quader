@@ -44,6 +44,7 @@ endpoints:
       tokenTypes: [sat]                 # default: pat | sat | cit
       boundTokensOnly: true             # default
       anonymous: false                  # default
+      clientCertificates: false         # default: see "Client certificates for ClamAV installations" below
     exposure: rules                     # default: rules | all
     cacheFill: false                    # default
     rateLimitClass: external            # default
@@ -62,6 +63,7 @@ endpoints:
       tls:
         - secretName: packages-edge-tls # example
           hosts: [packages.example.com] # example
+      tlsPassthrough: false             # default: the controller ends TLS
     networkPolicy:
       from: []                          # default: empty = from anywhere
 tls:
@@ -89,6 +91,55 @@ A pool keeps external load off the internal pods, but its pods hold the same dat
 ### The default endpoint
 
 The entry `endpoints.default` tunes the default endpoint and may set only `hosts`, `wildcardHost`, `hostRoots`, `surface`, `auth`, `exposure`, `cacheFill`, `rateLimitClass` and `replicaHeader`. Its own defaults are all five route families, token types `pat`, `sat` and `cit`, unbound tokens, anonymous access allowed, exposure `all` and cache fill on. Its port, certificate and concurrency come from `server.listen`, `tls.*` and `server.max_in_flight`.
+
+
+## Client certificates for ClamAV installations
+
+The ClamAV installations of your company can update their signatures from Quader with a client certificate instead of a token in their
+address, when an administrator has switched **ClamAV definition updates** on at the level Internal or Public (the page of `clamav` among
+the upstream registries). The certificate is checked by Quader itself, so the endpoint needs TLS that ends at Quader: a host of its own
+whose Ingress passes the connection through, or a Service of its own. Quader never reads a certificate from a header.
+
+```yaml
+endpoints:
+  clamav:
+    port: 8444                                   # example
+    baseUrl: https://clamav.quader.example.com   # example: the host the ClamAV installations name
+    exposure: all                                # example; with rules, a rule that names upstream/clamav
+    auth:
+      clientCertificates: true                   # default false
+    tls:
+      existingSecret: quader-clamav-tls          # example: the pair the clients see, for clamav.quader.example.com, of a CA they trust
+      clientCaSecret: company-device-ca          # example: key ca.crt, the CAs whose certificates are admitted
+    ingress:
+      enabled: true
+      className: haproxy                         # example
+      tlsPassthrough: true                       # default false
+    networkPolicy:
+      from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-haproxy}}}]   # example
+```
+
+- **HAProxy Ingress** gets `haproxy-ingress.github.io/ssl-passthrough: "true"`; **ingress-nginx** gets
+  `nginx.ingress.kubernetes.io/ssl-passthrough: "true"`, which works only where the controller runs with `--enable-ssl-passthrough`;
+  **Traefik** is refused (it passes TLS through only with a TCP route of its own: write one, or use `service.type: LoadBalancer`);
+  with the controller `manual` you set the controller's key in `ingress.annotations`. Without an Ingress, `service.type: LoadBalancer`
+  gives the endpoint an address of its own, which also keeps the clients' addresses in the request log.
+- The render fails, naming the value, for `clientCertificates` without `clientCaSecret` or on the entry `default`, and for
+  `tlsPassthrough` without `tls.enabled`, without `existingSecret`, with `ingress.tls` entries, with a surface of both roles, or with
+  Traefik.
+- **Who is admitted:** every certificate that chains to a CA of `clientCaSecret` and is valid at the handshake; a connection without
+  one, with an expired one or with one of another CA is closed before a request is read, and `freshclam` tries again at its next
+  check. Put only a CA there that issues to the hosts that run ClamAV: every certificate it issued is admitted, and a revoked one until
+  it expires. A CA added to or removed from the Secret takes effect at the next handshake, without a restart.
+- **What a certificate reads:** `upstream/clamav` while ClamAV definition updates is on, at Internal and Public; at Private and while
+  the switch is off it gets `404`. It reads no other repository and writes nothing. A token on the same request is decided as a token.
+- **What is recorded:** the certificate's subject as the request log's `principal` and the usage store's caller (kind **Client
+  certificate**, with the technical tokens' kind default of the download limits), its serial in `client_cert_serial` and as the
+  credential, its issuer in `client_cert_issuer`. A refused handshake leaves only a `TLS handshake error` line in the process log.
+  Behind a passthrough the request log names the Ingress controller's address, not the ClamAV host's.
+
+The page of `clamav` lists the endpoint's address in its fold **Visibility** under "With a client certificate:", and the client setup
+shows the certificate's way ([Connecting a package client](../user/client-setup.md#update-clamav-from-quader)).
 
 ## Accepted credentials
 

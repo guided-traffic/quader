@@ -66,7 +66,7 @@ server:
         certificates: []               # default: the pair(s) of server.tls
         client_ca_file: ""             # default: no client certificates; set = require and verify (never inherited)
       surface: [packages]              # default for a further endpoint; ui is refused
-      auth: {token_types: [sat], bound_tokens_only: true, anonymous: false}   # default for a further endpoint (R-EP-010)
+      auth: {token_types: [sat], bound_tokens_only: true, anonymous: false, client_certificates: false}   # default for a further endpoint (R-EP-010); client_certificates needs tls.client_ca_file
       exposure: rules                  # default for a further endpoint: rules | all (R-EP-012)
       cache_fill: false                # default for a further endpoint; the remote and virtual engines contact no upstream (R-EP-019)
       rate_limit_class: external       # default for a further endpoint; "" = no class (R-EP-015)
@@ -86,8 +86,9 @@ another endpoint's wildcard matches, one wildcard host on two endpoints, a host 
 `rate_limit_class` without an entry, a malformed wildcard host (`*.<domain>` with at least two labels), a
 `host_roots` key that is not an exact host of the endpoint or a value that is not a qualified name `<projectKey>/<repoKey>`
 (`qname.ParseRepo`; a bare key or a pattern is refused), a `pool` outside the name syntax, an empty `auth.token_types` list (the
-authentication stage reads an empty list as no restriction, so it is refused rather than accepted, Q-EP-23), and the
-TLS block rules of `server.tls` applied to the effective block.
+authentication stage reads an empty list as no restriction, so it is refused rather than accepted, Q-EP-23),
+`auth.client_certificates: true` on the default endpoint, without `tls.client_ca_file` or beside `auth.anonymous: true`
+(`validateClientCertificates`), and the TLS block rules of `server.tls` applied to the effective block.
 
 The effective TLS block of a further endpoint is `server.tls` with the endpoint's `certificates` (if any) and, when
 `client_ca_file` is set, `client_auth: require`; `min_version` and `reload_interval` are `server.tls`'s.
@@ -163,6 +164,11 @@ missing credential:
 | a type outside `token_types` (a PAT on `customers`) | `token.Check` gives the type from the prefix | none |
 | a token whose scope names other endpoints, or an unbound one with `bound_tokens_only` | after the validation | one, or the cache |
 | no credential and `anonymous: false` (a session cookie without `ui` counts as none) | `noCredential` | none |
+
+With `auth.client_certificates` (`EndpointRules.ClientCertificates`), a request with no token and no session whose connection carries a
+chain the listener verified is the certificate subject (`byClientCertificate`, R-EP-010 item 5), before `noCredential`; a token on the same
+request is decided as a token and a refused one never falls through. The subject, its rule and its records are
+[clamav.md](clamav.md#the-client-certificates)'s.
 
 Each refusal calls `EndpointRules.Refused`; `credentialRefused` counts it in
 `quader_endpoint_credentials_refused_total{endpoint,reason}` (`token_type`, `token_binding`, `anonymous`) and records a
@@ -366,6 +372,7 @@ See [helm-chart.md](helm-chart.md#endpoints).
 | unit | [exposure_test.go](../../internal/authz/exposure_test.go) | rule matching (paths, exclude inside a rule, rules add up, disabled, repository level, the R-EP-012 version fixture on a test versioning), the reasons of the dry run, the fingerprint, the ceiling in `Decide` for every subject (administrator, break-glass, anonymous, missing and `requireAuthentication` repositories, virtual and addressed members, writes, an unconfigured endpoint), the context endpoint, mode `all` equal to default, `Readable`, the metrics, a rule change through the index, validation codes and journal entries, the cost of 1,000 rules (`TestR_EP_013_CeilingPerformance`: allocations and median per change, the p99 in the CPU time of the deciding thread with `QUADER_PERF_GATE=1` in `make test-performance`; `BenchmarkCeilingDecide` reports `-benchmem`; [Q-ARCH-250](../spec/architecture.md#q-arch-250--a-p99-bound-in-microseconds-is-a-nightly-gate-and-the-per-change-test-asserts-allocations-and-the-median), [Q-EP-65](../spec/endpoints.md#q-ep-65--the-tail-of-r-ep-013-is-measured-in-the-cpu-time-of-the-deciding-thread)) |
 | unit | [endpoint_rules_test.go](../../internal/auth/endpoint_rules_test.go), [exposure_test.go](../../internal/app/exposure_test.go), [endpoints_auth_test.go](../../internal/config/endpoints_auth_test.go) | type refusal without a lookup, binding refusals after one, the refusal hook, the cookie without `ui`; the rules from the configuration; stage 7 keeps the request path and leaves the endpoint to the subject; an empty `token_types` stops start-up |
 | unit | [endpoint_ratelimit_test.go](../../internal/api/v1/endpoint_ratelimit_test.go) | the limiter name, 429 with the class fields, separate budgets per token and endpoint, key `address`, the fallback share |
+| unit, chart, integration | the client certificates of R-EP-010 item 5 and the passthrough of R-EP-008 | [clamav.md](clamav.md#tests) lists them (`TestR_CLAMAV_010_*`, the chart's `R-EP-008 Q-EP-96` case, the area `malware`) |
 | integration | [test/integration/endpoints](../../test/integration/endpoints) | E1.14 with three in-process replicas behind a dispatcher, Valkey running and unreachable: a PAT refused while `api_token` is locked (no query), a bound SAT on `customers` and 401 on default, R-EP-005 with a credential, a rule created, narrowed and deleted through the API on every replica within the bound and at once with `Quader-Authz-Min-Epoch`, hidden equal to missing, the bound administrator, the audit events with their journal rows, 1,000 requests of one token; the convention suite (`RunContract`) on the rules, the endpoint list with an inert name, filters, validation, the dry run with a draft, an auditor, every answer validated against the document |
 | unit | [exposure_test.go](../../internal/authz/exposure_test.go), [dispatcher_test.go](../../internal/api/dispatch/dispatcher_test.go), [exposure_test.go](../../internal/virtual/exposure_test.go), [fillrefused_test.go](../../internal/proxy/fillrefused_test.go) | the view on the R-EP-012 fixture against the ceiling's decisions and its fail-closed cases (`TestR_EP_018_ExposureView`); the facts carry the view and the fingerprint of one ceiling (`TestR_EP_018_TheEndpointFactsCarryTheView`); a member's failure names only the addressed repository (`TestR_EP_018_AFailureNamesOnlyTheAddressedRepository`); the members the virtual engine does not ask are counted for the endpoint and not for a subject's missing right (`TestR_EP_019_TheVirtualEngineCountsTheMembersItDoesNotAsk`, `TestR_EP_019_FillRefusedCountsTheEndpoint`) |
 | integration | [formats_test.go](../../test/integration/endpoints/formats_test.go), [cachefill_test.go](../../test/integration/endpoints/cachefill_test.go) | R-EP-018 with a test format without the adapter (`opaque`): 404 on `customers` byte-identical to a missing repository for a bound SAT and a bound administrator, 403 on a write, 422 `format_not_exposable` for a rule; npm's rules accepted, its strict range check, the dry run on npm versions. R-EP-019 through the dispatcher, the Host's populate check and the remote engine with a counting upstream and a test format with a remote class (`relay`): no upstream request and `403 populate_not_permitted` on `customers`, counted; the fill through default; `customers` served from the cache; a fill on an endpoint with `cache_fill: true` |

@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // Label identifies the state of the database an index was built from: the epoch
@@ -87,6 +88,10 @@ type repoInfo struct {
 	cacheFill string
 	// disabled is the repository's switch; the fixed rule of a system subject reads it (system.go).
 	disabled bool
+	// certificateReaders: the repository admits certificate readers (formats/clamav.md R-CLAMAV-010, Q-CLAMAV-13), which the fixed
+	// rule of the certificate subject reads (certificate.go): a system repository of the project upstream whose declaration lets
+	// clients in, while its switch (upstream_repository.clients_enabled) is on. Nothing new is stored.
+	certificateReaders bool
 	// ownership is the packageOwnership of a local repository, "" when the
 	// document has none (R-AUTHZ-018).
 	ownership string
@@ -376,6 +381,7 @@ func (b *builder) addRepositories(rows []q.AuthzBuildRepositoriesRow, members []
 	for _, t := range targets {
 		targetKey[t.VirtualID] = t.TargetKey
 	}
+	clients := b.clientsKeys()
 	for _, r := range rows {
 		cfg, ok := parseRepoConfig(r.Config)
 		project := r.ProjectKey
@@ -392,6 +398,7 @@ func (b *builder) addRepositories(rows []q.AuthzBuildRepositoriesRow, members []
 			artifacts: artifacts, wiki: wiki,
 			hide: cfg.HideExistence, members: members, deployTarget: target,
 			cacheFill: cfg.Remote.CacheFillAction, ownership: cfg.Local.PackageOwnership, disabled: cfg.Disabled,
+			certificateReaders: r.ClientsEnabled && project == wellknown.ProjectKey && clients[r.Key],
 		}
 		if artifacts == LevelPublic {
 			b.x.publicContent = true

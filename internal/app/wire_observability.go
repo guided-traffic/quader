@@ -131,6 +131,10 @@ func recordPrincipal(r *http.Request, p httpserver.Principal) {
 		method = "nuget_apikey"
 	}
 	ri.SetToken(p.Credential.TokenID, method)
+	if c := p.Credential.ClientCert; c != nil {
+		// The certificate subject: its subject is the principal, its serial and issuer the fields of R-OPS-010 (Q-CLAMAV-12).
+		ri.SetClientCert(c.Serial, c.Issuer)
+	}
 	if p.Credential.ScanID != "" {
 		// The scan listener's line of a scan token: the principal system:vuln-scanner-trivy and the scan's ID, which the worker's and
 		// the scanner's lines of the call carry too (R-OCI-037).

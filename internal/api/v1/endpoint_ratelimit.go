@@ -73,6 +73,9 @@ func endpointBucket(r *http.Request, key string) string {
 		return "addr:" + httpserver.InfoFrom(r.Context()).Client.String()
 	}
 	switch {
+	case p.Kind == httpserver.KindCertificate:
+		// The certificate subject is keyed on its certificate's subject (R-EP-015, formats/clamav.md R-CLAMAV-010).
+		return "certificate:" + p.Name
 	case p.Credential.TokenID != "":
 		return "token:" + p.Credential.TokenID
 	case p.ID != "":

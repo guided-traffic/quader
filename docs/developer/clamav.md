@@ -138,6 +138,38 @@ run's `206` and not `304` is the rule of R-CLAMAV-004: the item changed after th
 Not measured here: a token in the client's URL, the plain download into a `clamd`, the owner's installation, and a newer daily arriving
 while the updater runs (the cluster lived about 15 minutes).
 
+### The client certificates
+
+A second measurement, not a test (R-CLAMAV-010), made once on 2026-11-21 by the development agent before the change landed: the dev
+profile on a cluster of its own (`QUADER_DEV_CLUSTER=quader-clamcert`, the image of the change under a tag of its own), with
+`config.malware.enabled: true` and a further endpoint `clamav` (`port: 8445`, `exposure: all`, `auth.clientCertificates: true`, its pair
+from the dev CA's Issuer, `clientCaSecret` holding a CA made for the measurement with `openssl`), reached through its own Service
+`quader-ep-clamav` (no Ingress). `system.bootstrap_anonymous_read` had to be `false`: the configuration refuses it beside an `https` endpoint
+outside `localhost`. The updater fetched ClamAV's real set (`main` 63, `daily` 28190, `bytecode` 339) before the first step. **ClamAV
+definition updates** switched on at Internal through the API (`clients.certificateAddresses` named the endpoint). The client: a stock
+`freshclam` 1.5.5 of the pinned image in a pod of the namespace, `PrivateMirror` with `MaxAttempts 1`; the plain downloads with `curl` 8 of a
+kind node, because the ClamAV image ships no `curl`. The host's load rose to about 85 during the run (other work), every pod of the
+release restarted once in the middle, and the steps after it were run again; the cluster was deleted afterwards.
+
+| Case | What `freshclam` or `curl` did | Exit, numbers |
+|---|---|---|
+| (a) a certificate of the admitted CA, `FRESHCLAM_CLIENT_CERT`, `FRESHCLAM_CLIENT_KEY`, `CURL_CA_BUNDLE` (the dev CA) | empty directory: per database `<db>.cld` "file not found", `<db>.cvd` header `OK`, the whole file, "Database test passed", "daily.cvd updated (version: 28190, …)"; a second run "database is up-to-date" for all three | 0 and 0; the first run 20 s with the test loads |
+| (b) no certificate | "remote_cvdhead: Download failed (56) … Failure when receiving data from the peer" for `.cld` and `.cvd`, "Update failed" | 11, no cool-down written |
+| (c) a certificate of another CA | the same as (b) | 11 |
+| (d) the default endpoint at Internal, a technical token as the password in the URL | the three databases fetched and tested; every line that names the address shows the token (here replaced by `<token>`), as H-1164 says | 0, 10 s |
+| (d) the same without a token | "Unexpected response (401)" | — |
+| (e) the plain download with the token as a header on standard input (`--config -`), default endpoint | `main` 89,072,577 bytes, `daily` 23,446,798, `bytecode` 281,702, each `200` | under 0.4 s each; without the token `401` |
+| (e) the plain download with `--cert`, `--key`, `--cacert` on the endpoint of the certificates | the same three files, `200` | under 0.4 s each; without a certificate curl's `(56) … tlsv13 alert certificate required` |
+| the level Private | the certificate's `daily.cvd` answered `404`; Internal again afterwards | — |
+
+The records: the request log's line of a certificate subject `{"endpoint":"clamav","status":200,"principal":"CN=scan-01.example.com,O=Example",
+"principal_type":"certificate","principal_id":null,"token_id":null,"auth_method":"client_certificate","client_cert_serial":"65fef6…0f1b",
+"client_cert_issuer":"CN=Example Device CA","limits_subject":"certificate:CN=scan-01.example.com,O=Example","limits_rule":"builtin:technical_token",
+"remote_addr":"10.244.1.1"}`; the usage store's row `certificate | CN=scan-01.example.com,O=Example | 65fef6…0f1b | 18 requests | 112,832,785
+bytes`; each refused handshake one `WARN` line `http: TLS handshake error from <address>: EOF` with `"listener":"client:clamav"` and
+nothing else (H-1180). Not measured: a passthrough through HAProxy Ingress (the chart's rendering is the chart test's), an expired
+certificate with a real client (the integration case covers it), the owner's installation.
+
 ## The switch of the clients
 
 `upstream/clamav` is declared with `wellknown.Declaration.Clients` ([wellknown.go](../../internal/wellknown/wellknown.go)). The switch is
@@ -149,6 +181,31 @@ both levels back at `private`. Every write records `repository.updated` with `cl
 `UpstreamFacts.Closed()` is what the dispatcher, `/files/` and the lists read: a system repository answers no client unless its clients are
 on. `Repository.RefusesHandDelete()` refuses every hand delete of a local system repository in `files.Service.Delete` (Q-REPO-416). The
 malware gate passes every item of a system repository (`gate.Download.System`, Q-MAL-100).
+
+## The client certificates
+
+A ClamAV installation admitted by its client certificate ([formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-010, Q-CLAMAV-8 to
+Q-CLAMAV-13, Q-CLAMAV-18; [endpoints.md](endpoints.md#credentials-per-endpoint-r-ep-010-r-ep-011)). Nothing of it is ClamAV's code: the
+endpoint key, the subject and its records are general, and only the repository fact names `upstream/clamav`.
+
+| Step | Where | What |
+|---|---|---|
+| The key | [endpoints.go](../../internal/config/endpoints.go) `EndpointAuth.ClientCertificates`, `validateClientCertificates` | `auth.client_certificates` of a further endpoint; refused on the default endpoint, without `tls.client_ca_file`, and with `auth.anonymous: true` |
+| The handshake | `httpserver.NewListenerTLS` (unchanged) | `tls.client_ca_file` makes the listener `RequireAndVerifyClientCert` against the bundle, read again by the reloader; a missing, expired or foreign certificate fails before a request is read |
+| The subject | [certificate.go](../../internal/auth/certificate.go) `byClientCertificate`, after the API key, the `Authorization` header and the session in `Stage.Authenticate` | the leaf of `r.TLS.VerifiedChains[0]`: the principal kind `certificate` without an ID, its name the subject (RFC 4514 by `pkix.Name.String`, cut at 255 bytes with `…[truncated]`), the credential `client_certificate` with the subject, the issuer and the serial in lower-case hexadecimal; never a header |
+| The edge | [m1_convert.go](../../internal/app/m1_convert.go) `principalFromResult` | `httpserver.KindCertificate`, `Credential.ClientCert` |
+| The rule | [certificate.go](../../internal/authz/certificate.go) `decideCertificate` in `evaluateWith`, `readShape` | the exposure first, then `read` of a repository whose `repoInfo.certificateReaders` is set while the part read is `internal` or `public`; every other action, populate and capability refused (`DenyHidden`); no role (`rolesOf`), never internal (`Subject.Internal`) |
+| The fact | [index.go](../../internal/authz/index.go) `addRepositories`, the query `AuthzBuildRepositories` | `certificateReaders` = `upstream_repository.clients_enabled` of a repository of `upstream` whose declaration has `Clients` (`wellknown.Declared`); nothing new is stored |
+| The budget | [subject.go](../../internal/limits/subject.go) `CallerCertificate`, `KindCertificate`; [model.go](../../internal/limits/model.go) `everyOf`; [buffer.go](../../internal/limits/usage/buffer.go) | the subject is the certificate's subject, the serial the credential column; the technical tokens' kind default (Q-LIM-96); the CHECK of `usage_bucket.subject_kind` admits `certificate` (migration 00097) |
+| The records | [requestlog.go](../../internal/observability/requestlog.go), [wire_observability.go](../../internal/app/wire_observability.go) `recordPrincipal`; [audit.go](../../internal/authz/audit.go) | `principal_type` `certificate`, `client_cert_serial`, `client_cert_issuer` (null for every other request); `authz.denied` names the actor of the kind `certificate` and `client_cert_serial` in its details; an endpoint class keyed `principal` keys on the subject ([endpoint_ratelimit.go](../../internal/api/v1/endpoint_ratelimit.go)) |
+| The item | [upstream_repositories_api.go](../../internal/api/v1/upstream_repositories_api.go) `certificateAddresses` | `clients.certificateAddresses`: the protocol base on every endpoint with the key, by name |
+| The guide | [guide_api.go](../../internal/api/v1/guide_api.go) `certificateURLs`, `GuideData.CertificateURLs` ([ADR-232](../decisions.md#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository)); [guide/](../../internal/formats/clamav/guide/) | the addresses on which a certificate subject reads the repository now (`Access.ReadableByCertificate`); the sections `authenticate.md` (token and certificate) and `configure.md` (the plain download, with a token on standard input or with `--cert`) |
+| The chart | [_endpoints.tpl](../../deploy/helm/quader/templates/_endpoints.tpl) `quader.passthroughAnnotations`, [endpoint-ingress.yaml](../../deploy/helm/quader/templates/endpoint-ingress.yaml), [_validate.tpl](../../deploy/helm/quader/templates/_validate.tpl) | `auth.clientCertificates` rendered as `auth.client_certificates`; `ingress.tlsPassthrough` per controller (Q-EP-96) |
+| The page | [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html), [clamav-setup.ts](../../web/src/app/features/upstream/clamav-setup.ts) `freshclamCertificate`, `plainDownload` | the lines of the fold **Visibility** (Q-UI-905), the certificate's variant behind **Authenticate**, **Without freshclam** (Q-UI-914) |
+
+The integration harness takes such an endpoint without a change: `testenv.ReplicaOptions.Endpoints` is `server.endpoints` as JSON, and a
+further endpoint with its own `tls.certificates` and `tls.client_ca_file` serves TLS on a stack without TLS
+([clamav_cert_test.go](../../test/integration/malware/clamav_cert_test.go)).
 
 ## The screens
 
@@ -184,3 +241,6 @@ state in the answers of the list and the item.
 | [task_test.go](../../internal/malware/database/task_test.go): the import from the updater's real handler, the verification and its refusals, the states before a first set, the checks, the put-back, the legacy signature | unit | 0.4 s | containers of hundreds of bytes, one RSA key of 1024 bits made per process |
 | `TestR_MAL_010_TheTaskImportsFromTheUpdater` ([database_test.go](../../test/integration/malware/database_test.go)) | integration, area `malware` | about 4.5 s | a TLS stack with the updater's process, a worker and a web replica; containers of a few hundred bytes |
 | `TestR_MAL_012_AnInstallationWithoutInternet` (the same file) | integration, area `malware` | about 2 s | two unsigned containers |
+| `TestR_CLAMAV_010_ClientCertificatesNeedAFurtherEndpointThatVerifiesThem` ([endpoints_auth_test.go](../../internal/config/endpoints_auth_test.go)), `TestR_CLAMAV_010_TheCertificateSubject` ([certificate_test.go](../../internal/auth/certificate_test.go)), `TestR_CLAMAV_010_TheCertificateSubjectsRule` ([certificate_test.go](../../internal/authz/certificate_test.go)), `TestR_CLAMAV_010_TheCertificateSubjectsBudget` ([index_test.go](../../internal/limits/index_test.go)), `TestR_CLAMAV_010_ACertificateSubjectsRowNamesTheSerial` ([buffer_test.go](../../internal/limits/usage/buffer_test.go)), the request log's case in [requestlog_test.go](../../internal/observability/requestlog_test.go) | unit | milliseconds each | certificates as values, no key |
+| `TestEndpoints/R-EP-008_Q-EP-96_R-CLAMAV-010_…` ([endpoints_test.go](../../test/chart/endpoints_test.go)) | chart | about 0.6 s (eight `helm template` runs) | none |
+| The client certificates in `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint` (`clientCertificates`, [clamav_cert_test.go](../../test/integration/malware/clamav_cert_test.go)) | integration, area `malware` | about 1.1 s more (0.9 s of it the usage flush of a second) | two CAs and four ECDSA certificates made by the test (the endpoint's pair and three clients), the case's containers |

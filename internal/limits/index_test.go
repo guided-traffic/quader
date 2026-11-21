@@ -303,6 +303,26 @@ func TestR_LIM_001_TheSubjectOfEveryCaller(t *testing.T) {
 	}
 }
 
+// TestR_CLAMAV_010_TheCertificateSubjectsBudget: a certificate subject is charged to the certificate's subject with its serial as the
+// credential, and a certificate without a subject to the address (Q-CLAMAV-12); no rule names it, so the kind default of the technical
+// tokens applies (Q-LIM-96).
+func TestR_CLAMAV_010_TheCertificateSubjectsBudget(t *testing.T) {
+	client := netip.MustParseAddr("198.51.100.7")
+	s, ok := SubjectOf(Caller{Kind: CallerCertificate, CertSubject: "CN=scan-01.example.com", CertSerial: "a1b2c", Client: client})
+	if !ok || s.Kind != KindCertificate || s.String() != "certificate:CN=scan-01.example.com" || s.Credential != "a1b2c" || s.Kind.APIName() != "certificate" {
+		t.Fatalf("subject %+v", s)
+	}
+	if s, ok := SubjectOf(Caller{Kind: CallerCertificate, Client: client}); ok || s.Kind != KindAnonymous {
+		t.Fatalf("a certificate without a subject: %+v", s)
+	}
+	if k, ok := ParseSubjectKind("certificate"); !ok || k != KindCertificate {
+		t.Fatalf("parse: %v %v", k, ok)
+	}
+	if res := workedIndex().Resolve(s, qname.Repo{Project: "upstream", Key: "clamav"}, false); res.Rule.WhoRef != EveryTechnicalToken {
+		t.Fatalf("rule %+v", res.Rule)
+	}
+}
+
 func TestR_LIM_004_Figures(t *testing.T) {
 	var f Figures
 	f[RequestsBurst] = 10

@@ -428,9 +428,10 @@ func (q *Queries) AuthzBuildProjects(ctx context.Context) ([]AuthzBuildProjectsR
 
 const authzBuildRepositories = `-- name: AuthzBuildRepositories :many
 SELECT r.id, r.key, r.class, r.format, r.config, r.project_id::text AS project_id, p.key AS project_key,
-       r.visibility_artifacts, r.visibility_wiki
+       r.visibility_artifacts, r.visibility_wiki, COALESCE(u.clients_enabled, false)::boolean AS clients_enabled
   FROM repositories r
   JOIN project p ON p.id = r.project_id
+  LEFT JOIN upstream_repository u ON u.repository_id = r.id
  WHERE r.lifecycle = 'active' ORDER BY r.id
 `
 
@@ -444,9 +445,12 @@ type AuthzBuildRepositoriesRow struct {
 	ProjectKey          string
 	VisibilityArtifacts string
 	VisibilityWiki      string
+	ClientsEnabled      bool
 }
 
-// Every repository belongs to a project (Q-AUTHZ-206): the row names it by id and key.
+// Every repository belongs to a project (Q-AUTHZ-206): the row names it by id and key. clients_enabled is the switch of a system
+// repository of the project upstream that lets clients in (R-REPO-075), from which the index derives the certificate readers
+// (formats/clamav.md R-CLAMAV-010).
 func (q *Queries) AuthzBuildRepositories(ctx context.Context) ([]AuthzBuildRepositoriesRow, error) {
 	rows, err := q.db.Query(ctx, authzBuildRepositories)
 	if err != nil {
@@ -466,6 +470,7 @@ func (q *Queries) AuthzBuildRepositories(ctx context.Context) ([]AuthzBuildRepos
 			&i.ProjectKey,
 			&i.VisibilityArtifacts,
 			&i.VisibilityWiki,
+			&i.ClientsEnabled,
 		); err != nil {
 			return nil, err
 		}

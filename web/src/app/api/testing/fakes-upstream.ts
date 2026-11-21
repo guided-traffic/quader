@@ -98,7 +98,7 @@ export function clamavRepository(over: Partial<UpstreamRepository> = {}): Upstre
     displayName: 'ClamAV definitions',
     state: null,
     inUse: true,
-    clients: { enabled: false, address: CLAMAV_ENDPOINT },
+    clients: { enabled: false, address: CLAMAV_ENDPOINT, certificateAddresses: [] },
     visibility: 'private',
     fixed: ['state', 'visibility', 'address', 'account'],
     address: { ...product, overridden: false, product },

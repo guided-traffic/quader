@@ -8,6 +8,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/qname"
 
+	"github.com/guided-traffic/quader/internal/api/edge"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -76,7 +77,28 @@ func (s *Server) repositoryGuide(ctx context.Context, ps PackageServices, repoKe
 	if target != nil {
 		in.PublishTarget = *target
 	}
+	in.CertificateURLs = s.certificateURLs(ctx, acc, f, repoKey)
 	return renderGuide(ps.Guides, in)
+}
+
+// certificateURLs are the registry URLs of a repository, without their trailing slash, on every endpoint that admits client
+// certificates and on which a certificate subject reads the repository now (formats/clamav.md R-CLAMAV-006, R-CLAMAV-010): the guide's
+// way with a client certificate. Empty while no endpoint admits certificates or none reads the repository.
+func (s *Server) certificateURLs(ctx context.Context, acc *edge.Access, f formats.Format, repoKey qname.Repo) []string {
+	var out []string
+	if acc == nil {
+		return out
+	}
+	for _, e := range s.o.Endpoints.Endpoints {
+		if !e.ClientCertificates {
+			continue
+		}
+		if keys, err := acc.ReadableByCertificate(ctx, e.Name, []qname.Repo{repoKey}); err != nil || len(keys) == 0 {
+			continue
+		}
+		out = append(out, strings.TrimSuffix(e.BaseURL, "/")+strings.TrimSuffix(qname.ProtocolBase(f.Descriptor().ProtocolBasePath, repoKey), "/"))
+	}
+	return out
 }
 
 // GetFormatGuide implements GET /api/v1/formats/{format}/guide: the guide of a class
@@ -176,6 +198,9 @@ type guideInput struct {
 	Anonymous     bool
 	ExposureRules bool
 	TokenEnvVar   string
+	// CertificateURLs are the repository's registry URLs on the endpoints that admit client certificates and where a certificate
+	// holder reads it now (GuideData.CertificateURLs).
+	CertificateURLs []string
 }
 
 // renderGuide renders the setup snippets of the client and runs the sections that
@@ -197,7 +222,7 @@ func renderGuide(rd *readme.Renderer, in guideInput) (gen.Guide, error) {
 	}
 	data := formats.GuideData{
 		SetupData: in.Data, Class: in.Class, Client: in.Client, Anonymous: in.Anonymous,
-		ExposureRules: in.ExposureRules, TokenEnvVar: in.TokenEnvVar,
+		ExposureRules: in.ExposureRules, TokenEnvVar: in.TokenEnvVar, CertificateURLs: in.CertificateURLs,
 	}
 	if in.MayPublish {
 		data.PublishTarget = in.PublishTarget

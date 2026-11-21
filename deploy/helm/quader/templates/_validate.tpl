@@ -302,6 +302,9 @@ Endpoints (R-EP-008, R-HA-029): every failure names the value. Argument: the roo
 {{- range $h := (dig "default" "hosts" (list) $v.endpoints) -}}
 {{- $_ := set $hostOwner (lower $h) "endpoints.default.hosts" -}}
 {{- end -}}
+{{- if dig "default" "auth" "clientCertificates" false $v.endpoints -}}
+{{- fail "quader: endpoints.default.auth.clientCertificates: client certificates are a credential on a further endpoint only, whose listener verifies them (tls.clientCaSecret) (R-EP-010)" -}}
+{{- end -}}
 {{- $names := include "quader.endpointNames" . | fromYamlArray -}}
 {{- range $name := $names -}}
 {{- $raw := index $v.endpoints $name -}}
@@ -354,8 +357,34 @@ Endpoints (R-EP-008, R-HA-029): every failure names the value. Argument: the roo
 {{- if and (not $v.tls.enabled) (or $e.tlsSecret $e.tlsExtraSecrets $e.tlsClientCaSecret) -}}
 {{- fail (printf "quader: %s.tls.existingSecret, extraSecrets and clientCaSecret need tls.enabled: true" $key) -}}
 {{- end -}}
+{{- /* Client certificates as a credential (R-EP-010, formats/clamav.md R-CLAMAV-010): the endpoint verifies them against its client CA and admits no anonymous request. */ -}}
+{{- if and $e.clientCertificates (not $e.tlsClientCaSecret) -}}
+{{- fail (printf "quader: %s.auth.clientCertificates requires %s.tls.clientCaSecret: the CAs whose certificates are admitted (key ca.crt)" $key $key) -}}
+{{- end -}}
+{{- if and $e.clientCertificates $e.anonymous -}}
+{{- fail (printf "quader: %s.auth.clientCertificates and %s.auth.anonymous: the endpoint requires a certificate, so no request is anonymous; set auth.anonymous to false" $key $key) -}}
+{{- end -}}
+{{- /* TLS passthrough (R-EP-008, Q-EP-96): quader ends the client's TLS with the endpoint's own pair, and the controller inspects no path. */ -}}
+{{- if $e.tlsPassthrough -}}
+{{- $bt := include "quader.endpointBackendTLS" (dict "root" $ "name" $name) | fromYaml -}}
+{{- if not $v.tls.enabled -}}
+{{- fail (printf "quader: %s.ingress.tlsPassthrough needs tls.enabled: true: quader ends the client's TLS" $key) -}}
+{{- end -}}
+{{- if not $e.tlsSecret -}}
+{{- fail (printf "quader: %s.ingress.tlsPassthrough requires %s.tls.existingSecret: the pair the clients see, for the endpoint's public hosts and of a CA they trust" $key $key) -}}
+{{- end -}}
+{{- if $e.ingressTLS -}}
+{{- fail (printf "quader: %s.ingress.tlsPassthrough and %s.ingress.tls: the controller ends no TLS for a passed-through host, so it takes no tls entries" $key $key) -}}
+{{- end -}}
+{{- if eq (len (include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray)) 2 -}}
+{{- fail (printf "quader: %s.ingress.tlsPassthrough with a surface of both roles (%s.surface): a passed-through host has one backend and no path rules" $key $key) -}}
+{{- end -}}
+{{- if eq $bt.controller "traefik" -}}
+{{- fail (printf "quader: %s.ingress.tlsPassthrough with controller traefik: Traefik passes TLS through only with a TCP route of its own; write one, or set %s.service.type: LoadBalancer" $key $key) -}}
+{{- end -}}
+{{- end -}}
 {{- /* The endpoint's Ingress follows the rules of the default one: a merged backendTLS block that verifies with traefik needs a transport per kind it routes to (R-HA-063). */ -}}
-{{- if and $v.tls.enabled $e.ingressEnabled -}}
+{{- if and $v.tls.enabled $e.ingressEnabled (not $e.tlsPassthrough) -}}
 {{- $bt := include "quader.endpointBackendTLS" (dict "root" $ "name" $name) | fromYaml -}}
 {{- if and $bt.verify (eq $bt.controller "traefik") -}}
 {{- range $role := include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray -}}

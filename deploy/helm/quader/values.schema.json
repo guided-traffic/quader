@@ -3670,6 +3670,9 @@
                 },
                 "anonymous": {
                   "type": "boolean"
+                },
+                "clientCertificates": {
+                  "type": "boolean"
                 }
               }
             },
@@ -3749,6 +3752,9 @@
                 "type": "boolean"
               },
               "anonymous": {
+                "type": "boolean"
+              },
+              "clientCertificates": {
                 "type": "boolean"
               }
             }
@@ -3906,6 +3912,9 @@
                     "type": "boolean"
                   }
                 }
+              },
+              "tlsPassthrough": {
+                "type": "boolean"
               }
             }
           },

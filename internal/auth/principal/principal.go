@@ -33,6 +33,11 @@ const (
 	// token on the scan listener (R-OCI-037), which the decision point decides by a fixed rule (internal/authz system.go), and
 	// malware-scanner-clamav, the subject of a blob token, which its route decides (R-MAL-006).
 	KindSystem Kind = "system"
+	// KindCertificate is the certificate subject (R-AUTHZ-002, formats/clamav.md R-CLAMAV-010): a request without a token on an
+	// endpoint that takes the client certificate its listener verified as a credential. Never a row of the principal table, a grant,
+	// a role, a membership or an owner record; its name is the certificate's subject, and the decision point decides it by a fixed
+	// rule (internal/authz certificate.go).
+	KindCertificate Kind = "certificate"
 )
 
 // Status is the lifecycle state of a principal. Authentication refuses the

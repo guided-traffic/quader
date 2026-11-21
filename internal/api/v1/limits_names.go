@@ -85,6 +85,8 @@ func (s *Server) subjectRep(ctx context.Context, l LimitsServices, n store.Names
 	case limits.KindCI:
 		issuer, project, path := s.ciNames(ctx, l, n, ref)
 		out["id"], out["issuer"], out["projectId"], out["projectPath"] = issuer+":"+project, issuer, project, path
+	case limits.KindCertificate:
+		out["name"] = ref // the certificate's subject (formats/clamav.md R-CLAMAV-010)
 	case limits.KindAnonymous:
 		out["address"] = ref
 	case limits.KindSystem:

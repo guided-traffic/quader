@@ -16812,7 +16812,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [user, technicalToken, ci, anonymous, system]
+              enum: [user, technicalToken, ci, certificate, anonymous, system]
         - name: state
           in: query
           description: "Only subjects in this state."
@@ -16887,7 +16887,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [user, technicalToken, ci, anonymous, system]
+              enum: [user, technicalToken, ci, certificate, anonymous, system]
         - name: state
           in: query
           description: "Only subjects in this state."
@@ -16933,7 +16933,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [user, technicalToken, ci, anonymous, system]
+            enum: [user, technicalToken, ci, certificate, anonymous, system]
         - name: id
           in: path
           required: true
@@ -17007,7 +17007,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [user, technicalToken, ci, anonymous, system]
+              enum: [user, technicalToken, ci, certificate, anonymous, system]
         - name: state
           in: query
           description: "Only subjects in this state."
@@ -17086,7 +17086,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [user, technicalToken, ci, anonymous, system]
+              enum: [user, technicalToken, ci, certificate, anonymous, system]
         - name: state
           in: query
           description: "Only subjects in this state."
@@ -17133,7 +17133,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [user, technicalToken, ci, anonymous, system]
+            enum: [user, technicalToken, ci, certificate, anonymous, system]
         - name: id
           in: path
           required: true
@@ -21578,14 +21578,21 @@ components:
       additionalProperties: false
       description: |
         The switch **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382): whether the endpoint serves the company's ClamAV
-        installations, and its address, the protocol base of the repository on the base URL of the request.
-      required: [enabled, address]
+        installations, and its address, the protocol base of the repository on the base URL of the request; and the addresses on the
+        endpoints that admit client certificates (`auth.client_certificates`, formats/clamav.md R-CLAMAV-010), by endpoint name, empty
+        while none does.
+      required: [enabled, address, certificateAddresses]
       properties:
         enabled:
           type: boolean
         address:
           type: string
           example: https://quader.example.com/api/clamav/upstream/clamav
+        certificateAddresses:
+          type: array
+          items:
+            type: string
+          example: [https://clamav.quader.example.com/api/clamav/upstream/clamav]
     UpstreamRepositoryClientsRequest:
       type: object
       additionalProperties: false
@@ -26759,7 +26766,7 @@ components:
         to: {type: string, format: date-time}
     UsageSubjectKind:
       type: string
-      enum: [user, technicalToken, ci, anonymous, system]
+      enum: [user, technicalToken, ci, certificate, anonymous, system]
     LimitModePreview:
       type: object
       required: [period, subjects, refusedRequests, slowedDownloads, blockedSubjects, byFigure, byKind]
@@ -26859,6 +26866,16 @@ components:
       properties:
         kind: {type: string, enum: [system]}
         id: {type: string}
+    UsageSubjectCertificate:
+      type: object
+      description: >-
+        The certificate subject of an endpoint that takes a client certificate as a credential (formats/clamav.md R-CLAMAV-010): `id` and
+        `name` are the certificate's subject, an RFC 4514 string of at most 255 bytes.
+      required: [kind, id, name]
+      properties:
+        kind: {type: string, enum: [certificate]}
+        id: {type: string}
+        name: {type: string}
     UsageSubject:
       description: A subject of the usage store as the API names it (R-LIM-034).
       oneOf:
@@ -26867,6 +26884,7 @@ components:
         - $ref: "#/components/schemas/UsageSubjectCI"
         - $ref: "#/components/schemas/UsageSubjectAnonymous"
         - $ref: "#/components/schemas/UsageSubjectSystem"
+        - $ref: "#/components/schemas/UsageSubjectCertificate"
     LimitBlock:
       type: object
       required: [id, subject, place, startedAt, until, refused, limit, liftedAt, liftedBy]

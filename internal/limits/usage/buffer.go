@@ -125,9 +125,9 @@ func (b *Buffer) Add(d limits.UsageDelta) {
 	}
 	start := bucket5m(d.At)
 	k := key{start: start, kind: d.Subject.Kind, ref: d.Subject.Ref, credential: d.Subject.Credential, place: d.Place.Key(), repo: d.RepoID, via: d.ViaRepoID}
-	if d.Subject.Kind != limits.KindUser && d.Subject.Kind != limits.KindSystem {
+	if d.Subject.Kind != limits.KindUser && d.Subject.Kind != limits.KindSystem && d.Subject.Kind != limits.KindCertificate {
 		// A user's row names the session or the token; the system's names the unit that did the work (vuln-scanner-trivy, Q-LIM-66);
-		// no other kind has one.
+		// a certificate subject's the certificate's serial (Q-CLAMAV-12); no other kind has one.
 		k.credential = ""
 	}
 	b.mu.Lock()

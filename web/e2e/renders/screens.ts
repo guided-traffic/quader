@@ -403,6 +403,12 @@ async function openExplanation(page: Page): Promise<boolean> {
   return true;
 }
 
+/** Set up client of `upstream/clamav` (R-CLAMAV-006): as it opens, then with every section of the guide open. */
+async function* clamavSetupWalk(page: Page): AsyncGenerator<string> {
+  yield '';
+  if (await openExplanation(page)) yield 'guide';
+}
+
 /**
  * Set up client of the npm virtual repository: as it opens; with another client chosen in the one control (Q-UI-482); with More
  * options open and a token to be written into the snippets (R-UI-122); with the explanation opened. No token is created: the render
@@ -1557,8 +1563,9 @@ export const screens: readonly Screen[] = [
   { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
   // The system repository of the image scanning's database: in use while the scanning reads through it (R-REPO-070, R-VULN-044).
   { id: 'admin-upstream-scanner-trivy', path: '/ui/admin/upstream/scanner-trivy', kinds: admins },
-  // ClamAV definition updates on the page of clamav (R-UI-188, Q-UI-903): off, the question, on at Public with its fold and the token's
-  // disclosure open, and on at Internal where the installation allows no public level.
+  // ClamAV definition updates on the page of clamav (R-UI-188, Q-UI-903, Q-UI-905): off, the question, on at Public with its fold and the
+  // token's disclosure open, on at Internal with an endpoint of the client certificates (R-CLAMAV-010), and on at Internal where the
+  // installation allows no public level.
   { id: 'admin-upstream-clamav', path: '/ui/admin/upstream/clamav', kinds: admins, walk: clamavRegistry },
   // The ClamAV definitions as their reader sees them while the switch is on (R-UI-194, R-CLAMAV-006): the databases with the version in
   // use, a database's versions with their states, a version's files with its members and its details, and the client setup.
@@ -1566,7 +1573,9 @@ export const screens: readonly Screen[] = [
   { id: 'clamav-database', path: '/ui/projects/upstream/packages/clamav/daily', kinds: ['plain', 'admin'], walk: definitionsWith('on'), expected: definitionsExpected },
   { id: 'clamav-version-files', path: '/ui/projects/upstream/packages/clamav/daily@28190?tab=files', kinds: ['plain', 'admin'], walk: definitionsWith('on'), expected: definitionsExpected },
   { id: 'clamav-version-details', path: '/ui/projects/upstream/packages/clamav/daily@28190?tab=details', kinds: ['plain', 'admin'], walk: definitionsWith('on', openChecksums), expected: definitionsExpected },
-  { id: 'clamav-setup', path: '/ui/projects/upstream/repositories/clamav/setup', kinds: ['plain', 'admin'] },
+  // Its client setup as it opens, and with the guide's sections open: the four ways of R-CLAMAV-006 (public, a token, a client
+  // certificate on the profile's endpoint that admits one, without freshclam).
+  { id: 'clamav-setup', path: '/ui/projects/upstream/repositories/clamav/setup', kinds: ['plain', 'admin'], walk: clamavSetupWalk },
   { id: 'admin-repository-new', path: '/ui/admin/repositories/new', kinds: admins, walk: chooser },
   { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen(userChips) },
   { id: 'admin-user', path: '/ui/admin/users/sam', kinds: admins },

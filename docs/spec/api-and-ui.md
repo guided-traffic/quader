@@ -8318,7 +8318,8 @@ Priority: **MVP** · Covers: quader-only
      into its log, or with a client certificate."; Private "Only tokens of members. Client certificates are not admitted." While an endpoint
      admits client certificates (the item's `clients.certificateAddresses`, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010), the fold
      also shows "With a client certificate:" and each of those addresses as a name with a copy button; while none does, Internal's line
-     ends with "Client certificates need an endpoint your operator sets up." and a link to the manual's page of R-CLAMAV-010. Nothing of
+     ends with "Client certificates need an endpoint your operator sets up." and the link to the manual's page of R-CLAMAV-010 stands
+     under the levels ([Q-UI-914](#q-ui-914--the-certificates-setup-is-a-variant-of-authenticate-and-the-plain-download-a-fold-of-its-own)). Nothing of
      the certificates is a step of switching on or a field of the section ([Q-UI-905](#q-ui-905--the-client-certificates-are-a-line-of-the-visibility-fold-not-a-field)). Its second section, **Updater**, open, holds the replicas of `malware-updater-freshclam` in the
      shared table of the scanner replicas (Q-UI-897), each with its state, freshclam's version and the newest daily it holds with its age;
      without a row the sentence says why: "No updater runs: this installation takes its definitions from ops/clamav-db." for the source
@@ -21298,6 +21299,21 @@ CLAUDE.md "simple by default, details on demand" to the client certificates of t
 | (c) Nothing on the page; the manual only | — | Least | An administrator who chooses Internal does not learn that a certificate would do |
 
 **Choice:** (a). **Applied in the spec:** R-UI-188; [formats/clamav.md](formats/clamav.md) R-CLAMAV-006.
+
+### Q-UI-914 · The certificate's setup is a variant of Authenticate, and the plain download a fold of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It applies Q-UI-905 to the section of the
+client setup on the page of `clamav` (R-UI-188, [formats/clamav.md](formats/clamav.md) R-CLAMAV-006).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The one line stays the plain path; **Authenticate** holds the token's form (at Public) and, while an endpoint admits certificates, the certificate's line and the systemd drop-in; **Without freshclam** holds the `curl` script (with a token below Public, and with a certificate while an endpoint admits one); the manual's link of the certificates is a line under the levels of the fold, since a level's note is text (chosen) | Two folds, closed | The plain path is one line; each other way is one click away; the note under Internal stays one sentence | The link stands apart from the sentence it belongs to |
+| (b) Four tabs, one per way | — | Equal weight | A plain user faces four ways where one line is all at Public |
+| (c) Only the guide on **Set up client** | — | Least | An administrator who chooses Internal does not see what a ClamAV then needs |
+
+**Choice:** (a). **Applied in the spec:** R-UI-188. Code: [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html),
+[clamav-setup.ts](../../web/src/app/features/upstream/clamav-setup.ts) `freshclamCertificate`, `plainDownload`,
+[upstream-words.ts](../../web/src/app/features/upstream/upstream-words.ts) `clientsLevelNotes`.
 
 ### Q-API-383 · The registry presets are one document, read and replaced whole under `If-Match`
 

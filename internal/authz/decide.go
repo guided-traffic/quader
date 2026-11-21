@@ -231,7 +231,7 @@ func (x *Index) rolesOf(sub Subject) roleSet {
 	if isBreakGlass(sub) {
 		rs |= RoleAdmin.bit()
 	}
-	if k := kindOf(sub); k == kindCI || k == kindBastion || isSystem(sub) {
+	if k := kindOf(sub); k == kindCI || k == kindBastion || isSystem(sub) || isCertificate(sub) {
 		return rs
 	}
 	if sub.ID != "" {
@@ -495,6 +495,10 @@ func (e *Engine) evaluateWith(idx *Index, sub Subject, st *evalState, c Coordina
 	if isSystem(sub) {
 		// A system subject is decided by its fixed rule and nothing else: no exposure, level, scope or grant (system.go).
 		return e.decideSystem(idx, sub, c, actions, epoch)
+	}
+	if isCertificate(sub) {
+		// The certificate subject is decided by its fixed rule within the endpoint's exposure: no grant, role or scope (certificate.go).
+		return e.decideCertificate(idx, sub, c, actions, epoch)
 	}
 	if d, refused := e.ceilingRefuses(idx, sub, c, actions, epoch); refused {
 		return d

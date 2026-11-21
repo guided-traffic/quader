@@ -36,6 +36,7 @@ false.
 {{- $_ := set $out "tokenTypes" (dig "auth" "tokenTypes" (list "sat") $e) -}}
 {{- $_ := set $out "boundTokensOnly" (dig "auth" "boundTokensOnly" true $e) -}}
 {{- $_ := set $out "anonymous" (dig "auth" "anonymous" false $e) -}}
+{{- $_ := set $out "clientCertificates" (dig "auth" "clientCertificates" false $e) -}}
 {{- $_ := set $out "exposure" (dig "exposure" "rules" $e) -}}
 {{- $_ := set $out "cacheFill" (dig "cacheFill" false $e) -}}
 {{- $_ := set $out "rateLimitClass" (dig "rateLimitClass" "external" $e) -}}
@@ -56,6 +57,7 @@ false.
 {{- $_ := set $out "ingressClassName" (dig "ingress" "className" "" $e) -}}
 {{- $_ := set $out "ingressAnnotations" (dig "ingress" "annotations" (dict) $e) -}}
 {{- $_ := set $out "ingressTLS" (dig "ingress" "tls" (list) $e) -}}
+{{- $_ := set $out "tlsPassthrough" (dig "ingress" "tlsPassthrough" false $e) -}}
 {{- $_ := set $out "networkPolicyFrom" (dig "networkPolicy" "from" (list) $e) -}}
 {{- toYaml $out -}}
 {{- end -}}
@@ -139,6 +141,7 @@ Argument: the root context. Returns YAML, "{}" without endpoints.
 {{- if hasKey $dflt.auth "tokenTypes" -}}{{- $_ := set $a "token_types" $dflt.auth.tokenTypes -}}{{- end -}}
 {{- if hasKey $dflt.auth "boundTokensOnly" -}}{{- $_ := set $a "bound_tokens_only" $dflt.auth.boundTokensOnly -}}{{- end -}}
 {{- if hasKey $dflt.auth "anonymous" -}}{{- $_ := set $a "anonymous" $dflt.auth.anonymous -}}{{- end -}}
+{{- if hasKey $dflt.auth "clientCertificates" -}}{{- $_ := set $a "client_certificates" $dflt.auth.clientCertificates -}}{{- end -}}
 {{- $_ := set $d "auth" $a -}}
 {{- end -}}
 {{- with $dflt.exposure -}}{{- $_ := set $d "exposure" . -}}{{- end -}}
@@ -157,7 +160,7 @@ Argument: the root context. Returns YAML, "{}" without endpoints.
 {{- if $e.pool -}}{{- $_ := set $c "pool" $e.pool -}}{{- end -}}
 {{- $_ := set $c "max_in_flight" (int $e.maxInFlight) -}}
 {{- $_ := set $c "surface" $e.surface -}}
-{{- $_ := set $c "auth" (dict "token_types" $e.tokenTypes "bound_tokens_only" $e.boundTokensOnly "anonymous" $e.anonymous) -}}
+{{- $_ := set $c "auth" (dict "token_types" $e.tokenTypes "bound_tokens_only" $e.boundTokensOnly "anonymous" $e.anonymous "client_certificates" $e.clientCertificates) -}}
 {{- $_ := set $c "exposure" $e.exposure -}}
 {{- $_ := set $c "cache_fill" $e.cacheFill -}}
 {{- $_ := set $c "rate_limit_class" $e.rateLimitClass -}}
@@ -209,6 +212,21 @@ mount its Secrets (quader.unitEndpoints).
 {{- $out = append $out (dict "name" (printf "ep-%s-client-ca" $name) "secret" $e.tlsClientCaSecret "path" (printf "%s/client-ca" $base) "items" (list (dict "key" "ca.crt" "path" "ca.crt"))) -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+{{- toYaml $out -}}
+{{- end -}}
+
+{{/*
+The annotation that makes an endpoint's Ingress pass the client's TLS through to quader (R-EP-008, Q-EP-96): HAProxy Ingress's key of a
+host, ingress-nginx's (which needs the controller's --enable-ssl-passthrough); none for manual, whose operator sets the controller's key
+in ingress.annotations. traefik is refused by the validation. Argument: the controller. Returns a YAML map.
+*/}}
+{{- define "quader.passthroughAnnotations" -}}
+{{- $out := dict -}}
+{{- if eq . "haproxy" -}}
+{{- $_ := set $out "haproxy-ingress.github.io/ssl-passthrough" "true" -}}
+{{- else if eq . "ingress-nginx" -}}
+{{- $_ := set $out "nginx.ingress.kubernetes.io/ssl-passthrough" "true" -}}
 {{- end -}}
 {{- toYaml $out -}}
 {{- end -}}

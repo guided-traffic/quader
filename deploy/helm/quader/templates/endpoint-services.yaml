@@ -26,7 +26,7 @@ metadata:
   {{- $svcAnn := merge (dict) $e.serviceAnnotations $.Values.commonAnnotations }}
   {{- /* HAProxy Ingress and Traefik read the backend's name, CA, scheme and transport from the Service (R-HA-063, Q-HA-348): the kind's,
   or the Service's own name with the endpoint's own pair. */}}
-  {{- if $e.ingressEnabled }}
+  {{- if and $e.ingressEnabled (not $e.tlsPassthrough) }}
   {{- $svcAnn = merge (include "quader.backendServiceAnnotations" (dict "root" $ "bt" $bt "kind" $role "own" ($e.tlsSecret | default "") "service" (printf "%s-%sep-%s" (include "quader.fullname" $) $t.prefix $name)) | fromYaml) $svcAnn }}
   {{- end }}
   {{- if $svcAnn }}

@@ -5,6 +5,7 @@ package chart_test
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -263,6 +264,53 @@ func TestEndpoints(t *testing.T) {
 			if str(sa, "haproxy-ingress.github.io/secure-sni") != svc+".default.svc" || str(sa, "haproxy-ingress.github.io/secure-verify-ca-secret") != "c-tls" {
 				t.Errorf("Service %s annotations = %v", svc, sa)
 			}
+		}
+	})
+
+	t.Run("R-EP-008 Q-EP-96 R-CLAMAV-010 the endpoint of the client certificates passes TLS through per controller and is refused where that cannot work", func(t *testing.T) {
+		clamav := []string{
+			"endpoints.clamav.port=8444", "endpoints.clamav.baseUrl=https://clamav.quader.example.com", "endpoints.clamav.exposure=all",
+			"endpoints.clamav.auth.clientCertificates=true", "endpoints.clamav.tls.existingSecret=quader-clamav-tls",
+			"endpoints.clamav.tls.clientCaSecret=company-device-ca", "endpoints.clamav.ingress.enabled=true",
+			"endpoints.clamav.ingress.className=haproxy", "endpoints.clamav.ingress.tlsPassthrough=true",
+		}
+		with := func(extra ...string) []string { return append(append([]string{}, clamav...), extra...) }
+		_, docs := render(t, required(), clamav...)
+		ing := find(docs, "Ingress", "quader-ep-clamav")
+		ann, _ := at(ing, "metadata", "annotations").(map[string]any)
+		if ann["haproxy-ingress.github.io/ssl-passthrough"] != "true" || at(ing, "spec", "tls") != nil ||
+			!slices.Equal(ingressHosts(ing), []string{"clamav.quader.example.com"}) || str(ing, "spec", "rules", "0", "http", "paths", "0", "path") != "/" ||
+			str(ing, "spec", "rules", "0", "http", "paths", "0", "backend", "service", "name") != "quader-ep-clamav" ||
+			at(ing, "spec", "rules", "0", "http", "paths", "0", "backend", "service", "port", "number") != 8444 {
+			t.Errorf("Ingress = %v", ing)
+		}
+		for _, a := range []any{ann, at(find(docs, "Service", "quader-ep-clamav"), "metadata", "annotations")} {
+			if strings.Contains(toStr(a), "secure-") {
+				t.Errorf("a backend-TLS key beside the passthrough: %v", a)
+			}
+		}
+		c := at(configOf(t, docs), "server", "endpoints", "clamav")
+		if at(c, "auth", "client_certificates") != true || str(c, "tls", "client_ca_file") != "/var/run/secrets/quader/endpoints/clamav/client-ca/ca.crt" {
+			t.Errorf("quader.yaml clamav = %v", c)
+		}
+		_, docs = render(t, required(), with("endpoints.clamav.ingress.backendTLS.controller=ingress-nginx")...)
+		if a := at(find(docs, "Ingress", "quader-ep-clamav"), "metadata", "annotations"); str(a, "nginx.ingress.kubernetes.io/ssl-passthrough") != "true" ||
+			strings.Contains(toStr(a), "backend-protocol") {
+			t.Errorf("ingress-nginx annotations = %v", a)
+		}
+		for _, tc := range []struct {
+			name string
+			sets []string
+			want []string
+		}{
+			{"traefik", with("endpoints.clamav.ingress.backendTLS.controller=traefik"), []string{"endpoints.clamav.ingress.tlsPassthrough", "traefik"}},
+			{"no pair of its own", with("endpoints.clamav.tls.existingSecret="), []string{"endpoints.clamav.tls.existingSecret"}},
+			{"tls entries", with("endpoints.clamav.ingress.tls[0].secretName=x"), []string{"endpoints.clamav.ingress.tls"}},
+			{"a surface of both roles", with("endpoints.clamav.surface={packages,api}"), []string{"endpoints.clamav.surface"}},
+			{"client certificates without a client CA", with("endpoints.clamav.tls.clientCaSecret="), []string{"endpoints.clamav.tls.clientCaSecret"}},
+			{"client certificates on the default endpoint", []string{"endpoints.default.auth.clientCertificates=true"}, []string{"endpoints.default.auth.clientCertificates"}},
+		} {
+			t.Run(tc.name, func(t *testing.T) { renderFails(t, required(), tc.sets, tc.want...) })
 		}
 	})
 

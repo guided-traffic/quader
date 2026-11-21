@@ -59,7 +59,7 @@ func (e *Engine) populate(idx *Index, sub Subject, c Coordinate) (d Decision, re
 	if r == nil || r.Class != repository.Remote {
 		return deny, false // only a remote repository has an upstream to fill from
 	}
-	if sessionCredential(sub) || !endpointFills(sub) || isSystem(sub) {
+	if sessionCredential(sub) || !endpointFills(sub) || isSystem(sub) || isCertificate(sub) {
 		// A system subject never populates (R-AUTHZ-008): the scanner's pull reads what a remote holds, and a layer it lacks
 		// is populate_not_permitted (Q-VULN-165).
 		return deny, false

@@ -220,12 +220,22 @@ export const definitionsExpected = [
   },
 ] as const;
 
-/** The switch's states the walks render: off as a fresh installation has it, on at Public, on at Internal where Public is not allowed. */
-export type SwitchState = 'off' | 'on' | 'lowered';
+/**
+ * The switch's states the walks render: off as a fresh installation has it, on at Public, on at Internal where Public is not allowed,
+ * and on at Internal with an endpoint that admits client certificates (R-CLAMAV-010).
+ */
+export type SwitchState = 'off' | 'on' | 'lowered' | 'certificates';
+
+/** The address of `upstream/clamav` on the endpoint of the client certificates the walk `certificates` names (example). */
+export const CERTIFICATE_ADDRESS = 'https://clamav.quader.example.com/api/clamav/upstream/clamav';
 
 function patched(item: Record<string, unknown>, state: SwitchState): Record<string, unknown> {
   if (item['key'] !== 'clamav') return item;
-  const clients = { ...(item['clients'] as Record<string, unknown>), enabled: state !== 'off' };
+  const clients = {
+    ...(item['clients'] as Record<string, unknown>),
+    enabled: state !== 'off',
+    certificateAddresses: state === 'certificates' ? [CERTIFICATE_ADDRESS] : [],
+  };
   return {
     ...item,
     clients,
@@ -283,8 +293,9 @@ export async function* clamavRow(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The page of `clamav` among the upstream registries (R-UI-188, Q-UI-903): off; on at Public with the fold **Visibility** and the
- * token's disclosure open; on at Internal where Public is not allowed, with the warning.
+ * The page of `clamav` among the upstream registries (R-UI-188, Q-UI-903, Q-UI-905): off; on at Public with the fold **Visibility**, the
+ * token's disclosure and **Without freshclam** open, no endpoint admitting client certificates; on at Internal with an endpoint of the
+ * client certificates, every fold open; on at Internal where Public is not allowed, with the warning.
  */
 export async function* clamavRegistry(page: Page): AsyncGenerator<string> {
   await switchState(page, 'off');
@@ -299,7 +310,15 @@ export async function* clamavRegistry(page: Page): AsyncGenerator<string> {
   yield 'on';
   await page.locator('main .level-fold').getByRole('button', { name: /^Visibility/ }).click();
   await page.locator('main .clamav-setup quader-disclosure').getByRole('button', { name: /^Authenticate/ }).click();
+  await page.locator('main .clamav-setup quader-disclosure').getByRole('button', { name: /^Without freshclam/ }).click();
+  await expect(page.locator('main [data-testid="cert-none"]')).toBeVisible();
   yield 'on-details';
+  await switchState(page, 'certificates');
+  await page.locator('main .level-fold').getByRole('button', { name: /^Visibility/ }).click();
+  await page.locator('main .clamav-setup quader-disclosure').getByRole('button', { name: /^Authenticate/ }).click();
+  await page.locator('main .clamav-setup quader-disclosure').getByRole('button', { name: /^Without freshclam/ }).click();
+  await expect(page.locator('main [data-testid="cert-addresses"]')).toBeVisible();
+  yield 'certificates';
   await switchState(page, 'lowered');
   await expect(page.locator('main .clients-section .banner-warning')).toBeVisible();
   yield 'lowered';

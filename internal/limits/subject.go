@@ -13,8 +13,11 @@ const (
 	KindUser           SubjectKind = "user"
 	KindTechnicalToken SubjectKind = "technical_token"
 	KindCI             SubjectKind = "ci"
-	KindAnonymous      SubjectKind = "anonymous"
-	KindSystem         SubjectKind = "system"
+	// KindCertificate is the certificate subject of an endpoint that takes a client certificate as a credential (formats/clamav.md
+	// R-CLAMAV-010, Q-CLAMAV-12): Ref is the certificate's subject, Credential its serial.
+	KindCertificate SubjectKind = "certificate"
+	KindAnonymous   SubjectKind = "anonymous"
+	KindSystem      SubjectKind = "system"
 )
 
 // APIName is the kind as the API spells it (technicalToken).
@@ -28,7 +31,7 @@ func (k SubjectKind) APIName() string {
 // ParseSubjectKind reads a kind in the API's or the store's spelling.
 func ParseSubjectKind(s string) (SubjectKind, bool) {
 	switch s {
-	case "user", "ci", "anonymous", "system":
+	case "user", "ci", "certificate", "anonymous", "system":
 		return SubjectKind(s), true
 	case "technicalToken", "technical_token":
 		return KindTechnicalToken, true
@@ -49,8 +52,8 @@ type Subject struct {
 	// Ref is the principal ID of a user, the technical token's ID, "<issuer ID>:<project ID>" of a CI project, the address
 	// prefix of an anonymous caller, or "system".
 	Ref string
-	// Credential is "session" or the personal token's ID for a user, ScanCredential for the image scanning's pull of the
-	// subject system, empty for every other kind.
+	// Credential is "session" or the personal token's ID for a user, the certificate's serial for a certificate subject,
+	// ScanCredential for the image scanning's pull of the subject system, empty for every other kind.
 	Credential string
 	// Groups are the group IDs the authentication stage resolved for a user, or the groups of a technical token's account;
 	// a group rule matches through them (R-LIM-013 step 3.2).
@@ -60,7 +63,7 @@ type Subject struct {
 }
 
 // String is the subject as the request log names it (R-LIM-030): user:<id>, technical_token:<id>, ci:<issuer>:<project>,
-// anonymous:<prefix>, system.
+// certificate:<subject>, anonymous:<prefix>, system.
 func (s Subject) String() string {
 	if s.Kind == KindSystem {
 		return string(KindSystem)
@@ -86,12 +89,14 @@ const (
 	// CallerSystem is a system subject on a request: system:vuln-scanner-trivy, a scan token on the scan listener (R-OCI-037), or
 	// system:malware-scanner-clamav, a blob token there (R-MAL-006).
 	CallerSystem CallerKind = "system"
+	// CallerCertificate is the certificate subject (formats/clamav.md R-CLAMAV-010): no principal, charged to the certificate's subject.
+	CallerCertificate CallerKind = "certificate"
 )
 
 // KnownCallerKinds lists the kinds the table of R-LIM-001 names: a test compares it with the principal kinds of
 // internal/httpserver, so a new kind fails until it is named here.
 func KnownCallerKinds() []CallerKind {
-	return []CallerKind{CallerAnonymous, CallerUser, CallerServiceAccount, CallerCI, CallerBreakGlass, CallerBastion, CallerSystem}
+	return []CallerKind{CallerAnonymous, CallerUser, CallerServiceAccount, CallerCI, CallerBreakGlass, CallerBastion, CallerSystem, CallerCertificate}
 }
 
 // ScanCredential is the credential column of the requests of the image scanning's pull, charged to the subject system
@@ -126,6 +131,10 @@ type Caller struct {
 	// System is the name of a system subject (CallerSystem): vuln-scanner-trivy or malware-scanner-clamav, the credential column its reads
 	// are recorded with (Q-LIM-66, Q-LIM-80). Empty is the image scanner's.
 	System string
+	// CertSubject and CertSerial are the subject and the serial of a certificate subject's client certificate (CallerCertificate,
+	// Q-CLAMAV-12).
+	CertSubject string
+	CertSerial  string
 }
 
 // SubjectOf derives the subject of a request from what authentication decided (R-LIM-001). It reads nothing else.
@@ -157,6 +166,13 @@ func SubjectOf(c Caller) (Subject, bool) {
 		return Subject{Kind: KindCI, Ref: c.CIIssuerID + ":" + c.CIProjectID}, true
 	case CallerAnonymous:
 		return anon, true
+	case CallerCertificate:
+		// The certificate's subject is the budget, its serial the credential: a renewed certificate of the same subject keeps the
+		// subject's budget and shows as a second credential (Q-CLAMAV-12).
+		if c.CertSubject == "" {
+			return anon, false
+		}
+		return Subject{Kind: KindCertificate, Ref: c.CertSubject, Credential: c.CertSerial}, true
 	case CallerSystem:
 		// The image scanning's pull and the malware scanner's read are the installation's own work: recorded under the repository,
 		// with the scanner's name as the credential, limited by nothing, and they take no parallel lease (Q-LIM-66, Q-LIM-80).

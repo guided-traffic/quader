@@ -6,6 +6,8 @@ rows of R-HA-037's table whose families it holds to the Service of their role ot
 pathType Prefix, over TLS as R-HA-063 wires it for the default Ingress, and the endpoint's own tls
 entries (one Secret per certificate set, chosen by SNI at the edge). With ingress-nginx and a surface
 of both roles, the rules of each role get an Ingress of their own, named as its Service (Q-HA-348).
+With ingress.tlsPassthrough the controller leaves TLS to quader (Q-EP-96): one Ingress, one rule per host with the path / to the
+endpoint's Service, the controller's passthrough annotation, no tls entries and no backend-TLS settings.
 */ -}}
 {{- range $name := include "quader.endpointNames" . | fromYamlArray }}
 {{- $e := include "quader.endpoint" (dict "root" $ "name" $name) | fromYaml }}
@@ -14,7 +16,11 @@ of both roles, the rules of each role get an Ingress of their own, named as its 
 {{- $bt := include "quader.endpointBackendTLS" (dict "root" $ "name" $name) | fromYaml }}
 {{- $hosts := include "quader.endpointHosts" $e | fromYamlArray }}
 {{- $rules := include "quader.edgeRules" (dict "root" $ "endpoint" $name) | fromYamlArray }}
-{{- range $g := include "quader.ingressGroups" (dict "root" $ "rules" $rules "name" $svc "endpoint" $name "controller" $bt.controller) | fromYamlArray }}
+{{- $groups := include "quader.ingressGroups" (dict "root" $ "rules" $rules "name" $svc "endpoint" $name "controller" $bt.controller) | fromYamlArray }}
+{{- if $e.tlsPassthrough }}
+{{- $groups = list (dict "name" $svc "kind" (first $rules).role "service" (first $rules).service "tls" false "rules" $rules) }}
+{{- end }}
+{{- range $g := $groups }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -24,7 +30,11 @@ metadata:
     {{- include "quader.labels" (dict "root" $ "component" "ingress") | nindent 4 }}
     quader/endpoint: {{ $name | quote }}
   {{- $ann := merge (dict) $e.ingressAnnotations $.Values.commonAnnotations }}
+  {{- if $e.tlsPassthrough }}
+  {{- $ann = merge (include "quader.passthroughAnnotations" $bt.controller | fromYaml) $ann }}
+  {{- else }}
   {{- $ann = merge (include "quader.backendIngressAnnotations" (dict "root" $ "bt" $bt "kind" $g.kind "own" ($e.tlsSecret | default "") "service" $g.service) | fromYaml) $ann }}
+  {{- end }}
   {{- if $ann }}
   annotations:
     {{- toYaml $ann | nindent 4 }}

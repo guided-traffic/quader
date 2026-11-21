@@ -46,6 +46,8 @@ export function subjectKindLabel(kind: UsageSubjectKind): string {
       return $localize`:@@usage.kind.technical-token:Technical token`;
     case 'ci':
       return $localize`:@@usage.kind.ci:CI project`;
+    case 'certificate':
+      return $localize`:@@usage.kind.certificate:Client certificate`;
     case 'anonymous':
       return $localize`:@@usage.kind.anonymous:Anonymous address`;
     case 'system':
@@ -62,6 +64,8 @@ export function subjectKindFilterLabel(kind: UsageSubjectKind): string {
       return $localize`:@@usage.filter.kind.technical-token:Technical tokens`;
     case 'ci':
       return $localize`:@@usage.filter.kind.ci:CI`;
+    case 'certificate':
+      return $localize`:@@usage.filter.kind.certificate:Client certificates`;
     case 'anonymous':
       return $localize`:@@usage.filter.kind.anonymous:Anonymous addresses`;
     case 'system':
@@ -166,6 +170,9 @@ export function subjectView(subject: UsageSubject): CallerView {
       };
     case 'anonymous':
       return { ...base, icon: 'public', primary: subject.address, secondary: $localize`:@@usage.kind.anonymous:Anonymous address`, mono: true };
+    case 'certificate':
+      // A ClamAV installation admitted by its client certificate (R-CLAMAV-010): the certificate's subject, not translated.
+      return { ...base, icon: 'badge', primary: subject.name, secondary: $localize`:@@usage.kind.certificate:Client certificate`, mono: true };
     case 'system':
       return {
         ...base,
@@ -198,6 +205,8 @@ export function subjectReference(subject: UsageSubject): string | null {
       return subjectView(subject).secondary;
     case 'technicalToken':
       return subject.deleted ? deletedSuffix() : null;
+    case 'certificate':
+      return subjectView(subject).secondary;
     case 'anonymous':
       return null;
   }

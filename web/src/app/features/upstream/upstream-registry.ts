@@ -26,7 +26,7 @@ import { Switch } from '../../shared/ui/switch';
 import { VisibilityIcon, VisibilityLevel, VisibilityLevelControl, installationReasons, levelName } from '../../shared/ui/visibility-level';
 import { AddressField } from '../../shared/address-field';
 import { CodeWindow } from '../../shared/code/code-window';
-import { freshclamLines } from './clamav-setup';
+import { DOWNLOAD_SCRIPT, FRESHCLAM_CONF, FRESHCLAM_DROP_IN, freshclamCertificate, freshclamLines, plainDownload } from './clamav-setup';
 import { MalwareApi } from '../../api/malware-api';
 import { ScannerList, SystemApi } from '../../api/system-api';
 import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
@@ -142,7 +142,12 @@ export class UpstreamRegistry {
   protected readonly clientsLabel = clientsSwitchLabel();
   protected readonly clientsText = clientsSentence();
   protected readonly clientsWord = clientsWord;
-  protected readonly clientsNotes = clientsLevelNotes();
+  /**
+   * The addresses of `upstream/clamav` on the endpoints that admit client certificates (`clients.certificateAddresses`, R-CLAMAV-010):
+   * read-only lines of the fold **Visibility** and the certificate's variant of the setup (Q-UI-905); empty while none does.
+   */
+  protected readonly certificateAddresses = computed(() => this.item()?.clients?.certificateAddresses ?? []);
+  protected readonly clientsNotes = computed(() => clientsLevelNotes(this.certificateAddresses().length > 0));
   protected readonly loweredText = clientsLoweredWarning();
   /** The installation allows the level Public (R-API-076); unknown counts as allowed, the server decides. */
   protected readonly publicAllowed = computed(() => valueOf(this.choices)?.publicAvailable !== false);
@@ -153,6 +158,28 @@ export class UpstreamRegistry {
   protected readonly levelFoldOpen = signal(false);
   /** The one line of freshclam.conf, without and with a token (R-CLAMAV-006), from the address the item names. */
   protected readonly freshclam = computed(() => freshclamLines(this.item()?.clients?.address ?? ''));
+  /** The way with a client certificate, on the first endpoint that admits one (R-CLAMAV-006); empty while none does. */
+  protected readonly freshclamCert = computed(() => {
+    const first = this.certificateAddresses()[0];
+    return first ? freshclamCertificate(first) : null;
+  });
+  protected readonly freshclamConf = FRESHCLAM_CONF;
+  protected readonly freshclamDropIn = FRESHCLAM_DROP_IN;
+  protected readonly downloadScript = DOWNLOAD_SCRIPT;
+  /** The plain download for an installation without freshclam (Q-CLAMAV-14): without a credential at Public, with a token below it. */
+  protected readonly download = computed(() =>
+    plainDownload(this.item()?.clients?.address ?? '', this.item()?.visibility === 'public' ? 'public' : 'token'),
+  );
+  /** The plain download with a client certificate, on the first endpoint that admits one; empty while none does. */
+  protected readonly downloadCert = computed(() => {
+    const first = this.certificateAddresses()[0];
+    return first ? plainDownload(first, 'certificate') : '';
+  });
+  protected readonly withoutHeading = $localize`:@@clamav.setup.without:Without freshclam`;
+  protected readonly certAddressLabel = $localize`:@@clamav.cert.address:Address of the endpoint for client certificates`;
+  protected readonly copyCertAddressLabel = $localize`:@@clamav.cert.address.copy:Copy the address of the endpoint for client certificates`;
+  protected readonly copyScriptLabel = $localize`:@@clamav.setup.copy-script:Copy the script`;
+  protected readonly copySetupLabel = $localize`:@@clamav.setup.copy-certificate:Copy the setup`;
   protected readonly addressLabel = $localize`:@@clamav.address:Address of the endpoint`;
   protected readonly copyAddressLabel = $localize`:@@clamav.address.copy:Copy the address of the endpoint`;
   protected readonly copyLineLabel = $localize`:@@clamav.setup.copy:Copy the line`;

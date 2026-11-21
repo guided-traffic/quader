@@ -223,6 +223,16 @@ func (e *Engine) readShape(st *evalState, sub Subject, r *repoInfo, allEndpoint 
 	if r == nil || r.Class == repository.Virtual {
 		return ReadNone
 	}
+	if isCertificate(sub) {
+		// The certificate subject reads by its fixed rule only (certificate.go): every package of a repository it may read, or none.
+		switch {
+		case !certificateReads(r, Read, PartArtifacts):
+			return ReadNone
+		case allEndpoint:
+			return ReadAll
+		}
+		return ReadRows
+	}
 	scoped := sub.Scope != nil && !sub.Scope.Inherit
 	// A level reads every package of the repository (R-AUTHZ-035 rule 4, rule 7): public for every subject and without a scope,
 	// internal for an internal subject within a scope that does not narrow.

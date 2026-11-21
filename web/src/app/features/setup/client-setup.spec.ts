@@ -524,7 +524,7 @@ describe('Set up client of a system repository (R-UI-190)', () => {
             format: 'generic',
             description: 'ClamAV definitions',
           } as never);
-          (get(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' });
+          (get(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'public' });
         },
       },
     );

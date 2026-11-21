@@ -92,7 +92,10 @@ func (s *Server) toUpstream(r *http.Request, it repository.UpstreamItem) gen.Ups
 		out.Fixed = append(out.Fixed, gen.UpstreamRepositoryFixed(f))
 	}
 	if it.Clients != nil {
-		out.Clients = &gen.UpstreamRepositoryClients{Enabled: it.Clients.Enabled, Address: clientsAddress(r, it.Format, it.Key)}
+		out.Clients = &gen.UpstreamRepositoryClients{
+			Enabled: it.Clients.Enabled, Address: clientsAddress(r, it.Format, it.Key),
+			CertificateAddresses: s.certificateAddresses(it.Format, it.Key),
+		}
 	}
 	if it.ListedByNames != nil {
 		names := it.ListedByNames
@@ -155,12 +158,29 @@ func genSecret(f *repository.SecretField) *gen.SecretField {
 // clientsAddress is the address a ClamAV installation names in PrivateMirror: the format's protocol base of the repository on the
 // base URL of the request, without its trailing slash (R-CLAMAV-006).
 func clientsAddress(r *http.Request, format, key string) string {
-	base := strings.TrimSuffix(httpserver.InfoFrom(r.Context()).BaseURL, "/")
+	return upstreamProtocolBase(httpserver.InfoFrom(r.Context()).BaseURL, format, key)
+}
+
+// certificateAddresses are the protocol base of a repository of the project upstream on the base URL of every endpoint that admits
+// client certificates (auth.client_certificates, formats/clamav.md R-CLAMAV-010), in the order of the endpoints' names; empty while
+// none does. The page shows them in the fold Visibility (R-UI-188, Q-UI-905).
+func (s *Server) certificateAddresses(format, key string) []string {
+	out := []string{}
+	for _, e := range s.o.Endpoints.Endpoints {
+		if e.ClientCertificates {
+			out = append(out, upstreamProtocolBase(e.BaseURL, format, key))
+		}
+	}
+	return out
+}
+
+// upstreamProtocolBase is the protocol base of upstream/<key> of the format on a base URL, without its trailing slash (Q-CLAMAV-16).
+func upstreamProtocolBase(baseURL, format, key string) string {
 	tmpl := "/api/" + format + "/{project}/{key}/"
 	if f, ok := formats.Lookup(format); ok {
 		tmpl = f.Descriptor().ProtocolBasePath
 	}
-	return base + strings.TrimSuffix(qname.ProtocolBase(tmpl, qname.Repo{Project: wellknown.ProjectKey, Key: key}), "/")
+	return strings.TrimSuffix(baseURL, "/") + strings.TrimSuffix(qname.ProtocolBase(tmpl, qname.Repo{Project: wellknown.ProjectKey, Key: key}), "/")
 }
 
 // writeUpstream answers an item with its ETag.

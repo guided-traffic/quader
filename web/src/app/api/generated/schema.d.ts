@@ -6246,7 +6246,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                kind: "user" | "technicalToken" | "ci" | "anonymous" | "system";
+                kind: "user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system";
                 id: string;
             };
             cookie?: never;
@@ -6317,7 +6317,7 @@ export interface paths {
             path: {
                 /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
                 projectKey: components["parameters"]["ProjectKey"];
-                kind: "user" | "technicalToken" | "ci" | "anonymous" | "system";
+                kind: "user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system";
                 id: string;
             };
             cookie?: never;
@@ -9212,12 +9212,20 @@ export interface components {
         };
         /**
          * @description The switch **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382): whether the endpoint serves the company's ClamAV
-         *     installations, and its address, the protocol base of the repository on the base URL of the request.
+         *     installations, and its address, the protocol base of the repository on the base URL of the request; and the addresses on the
+         *     endpoints that admit client certificates (`auth.client_certificates`, formats/clamav.md R-CLAMAV-010), by endpoint name, empty
+         *     while none does.
          */
         UpstreamRepositoryClients: {
             enabled: boolean;
             /** @example https://quader.example.com/api/clamav/upstream/clamav */
             address: string;
+            /**
+             * @example [
+             *       "https://clamav.quader.example.com/api/clamav/upstream/clamav"
+             *     ]
+             */
+            certificateAddresses: string[];
         };
         /** @description Switches the clients of `clamav` on or off (R-REPO-075). `level` is read only with `enabled: true`; omitted, it is `public`. */
         UpstreamRepositoryClientsRequest: {
@@ -12652,7 +12660,7 @@ export interface components {
             to: string;
         };
         /** @enum {string} */
-        UsageSubjectKind: "user" | "technicalToken" | "ci" | "anonymous" | "system";
+        UsageSubjectKind: "user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system";
         LimitModePreview: {
             period: components["schemas"]["UsagePeriod"];
             subjects: number;
@@ -12741,8 +12749,15 @@ export interface components {
             kind: "system";
             id: string;
         };
+        /** @description The certificate subject of an endpoint that takes a client certificate as a credential (formats/clamav.md R-CLAMAV-010): `id` and `name` are the certificate's subject, an RFC 4514 string of at most 255 bytes. */
+        UsageSubjectCertificate: {
+            /** @enum {string} */
+            kind: "certificate";
+            id: string;
+            name: string;
+        };
         /** @description A subject of the usage store as the API names it (R-LIM-034). */
-        UsageSubject: components["schemas"]["UsageSubjectUser"] | components["schemas"]["UsageSubjectTechnicalToken"] | components["schemas"]["UsageSubjectCI"] | components["schemas"]["UsageSubjectAnonymous"] | components["schemas"]["UsageSubjectSystem"];
+        UsageSubject: components["schemas"]["UsageSubjectUser"] | components["schemas"]["UsageSubjectTechnicalToken"] | components["schemas"]["UsageSubjectCI"] | components["schemas"]["UsageSubjectAnonymous"] | components["schemas"]["UsageSubjectSystem"] | components["schemas"]["UsageSubjectCertificate"];
         LimitBlock: {
             id: string;
             subject: components["schemas"]["UsageSubject"];
@@ -26546,7 +26561,7 @@ export interface operations {
                 /** @description hour, day (default) or 30d. */
                 period?: "hour" | "day" | "30d";
                 /** @description Subject kinds. */
-                kind?: ("user" | "technicalToken" | "ci" | "anonymous" | "system")[];
+                kind?: ("user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system")[];
                 /** @description Only subjects in this state. */
                 state?: "close" | "limitReached" | "wouldBeLimited" | "blocked";
                 /** @description A search on the subject's name or address. */
@@ -26592,7 +26607,7 @@ export interface operations {
                 /** @description hour, day (default) or 30d. */
                 period?: "hour" | "day" | "30d";
                 /** @description Subject kinds. */
-                kind?: ("user" | "technicalToken" | "ci" | "anonymous" | "system")[];
+                kind?: ("user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system")[];
                 /** @description Only subjects in this state. */
                 state?: "close" | "limitReached" | "wouldBeLimited" | "blocked";
                 /** @description A search on the subject's name or address. */
@@ -26632,7 +26647,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                kind: "user" | "technicalToken" | "ci" | "anonymous" | "system";
+                kind: "user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system";
                 id: string;
             };
             cookie?: never;
@@ -26665,7 +26680,7 @@ export interface operations {
                 /** @description hour, day (default) or 30d. */
                 period?: "hour" | "day" | "30d";
                 /** @description Subject kinds. */
-                kind?: ("user" | "technicalToken" | "ci" | "anonymous" | "system")[];
+                kind?: ("user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system")[];
                 /** @description Only subjects in this state. */
                 state?: "close" | "limitReached" | "wouldBeLimited" | "blocked";
                 /** @description A search on the subject's name or address. */
@@ -26714,7 +26729,7 @@ export interface operations {
                 /** @description hour, day (default) or 30d. */
                 period?: "hour" | "day" | "30d";
                 /** @description Subject kinds. */
-                kind?: ("user" | "technicalToken" | "ci" | "anonymous" | "system")[];
+                kind?: ("user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system")[];
                 /** @description Only subjects in this state. */
                 state?: "close" | "limitReached" | "wouldBeLimited" | "blocked";
                 /** @description A search on the subject's name or address. */
@@ -26759,7 +26774,7 @@ export interface operations {
             path: {
                 /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
                 projectKey: components["parameters"]["ProjectKey"];
-                kind: "user" | "technicalToken" | "ci" | "anonymous" | "system";
+                kind: "user" | "technicalToken" | "ci" | "certificate" | "anonymous" | "system";
                 id: string;
             };
             cookie?: never;

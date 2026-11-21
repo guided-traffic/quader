@@ -157,9 +157,15 @@ section of its page. While it is off, the repository answers no client, administ
 which asks for a recent sign-in), it serves the set of definitions Quader's own scanners use to every ClamAV of the company at
 `https://<your installation>/api/clamav/upstream/clamav`, at the level Public unless you name a lower one, or Internal where the
 installation allows no Public level, which the section then says in a warning. While it is on, the section shows the address of the
-endpoint with its copy button, the level and, in the fold **Visibility**, what a ClamAV needs at each level, and the one line a ClamAV
-installation puts into `freshclam.conf` (`PrivateMirror`): the plain one at Public, the one with a token below it, and the token's form
-behind **Authenticate**; **The full guide on Set up client** leads to the repository's setup page. The section **Updater** below it
+endpoint with its copy button, the level and, in the fold **Visibility**, what a ClamAV needs at each level (a token or a client
+certificate at Internal, no certificate at Private) and, while an endpoint admits client certificates, "With a client certificate:" with
+that endpoint's address; while none does, the line says that client certificates need an endpoint your operator sets up and links to
+[Client certificates for ClamAV installations](endpoints.md#client-certificates-for-clamav-installations). Then the one line a ClamAV
+installation puts into `freshclam.conf` (`PrivateMirror`): the plain one at Public, the one with a token below it; behind
+**Authenticate** the token's form and, while an endpoint admits certificates, the certificate's (the line with that endpoint's address and
+the systemd drop-in with `FRESHCLAM_CLIENT_CERT`, `FRESHCLAM_CLIENT_KEY` and `CURL_CA_BUNDLE`); behind **Without freshclam** the script
+that downloads the three databases with `curl` for an installation that runs no `freshclam`. **The full guide on Set up client** leads to
+the repository's setup page. The section **Updater** below it
 lists the pods of `malware-updater-freshclam` with their state, freshclam's version and the definitions each holds with the age of its
 newest `daily`, or says why there is none; **Versions** leads to the repository's databases. Switched
 off again, the level is Private and every request answers `404`.

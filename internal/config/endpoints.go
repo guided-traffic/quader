@@ -83,13 +83,16 @@ type EndpointTLS struct {
 	ClientCAFile string           `yaml:"client_ca_file" json:"client_ca_file,omitempty"`
 }
 
-// EndpointAuth is the credential policy of an endpoint (R-EP-010). The MVP
-// carries it in the endpoint snapshot; the authentication stage that enforces it
-// arrives with the identity milestone.
+// EndpointAuth is the credential policy of an endpoint (R-EP-010), which the
+// authentication stage applies after it selected the credential.
 type EndpointAuth struct {
 	TokenTypes      []string `yaml:"token_types" json:"token_types,omitempty"`
 	BoundTokensOnly *bool    `yaml:"bound_tokens_only" json:"bound_tokens_only,omitempty"`
 	Anonymous       *bool    `yaml:"anonymous" json:"anonymous,omitempty"`
+	// ClientCertificates makes the certificate the listener verified against tls.client_ca_file a credential: a request
+	// without a token is the certificate subject (R-EP-010 item 5, formats/clamav.md R-CLAMAV-010). A further endpoint
+	// with tls.client_ca_file only; false by default.
+	ClientCertificates *bool `yaml:"client_certificates" json:"client_certificates,omitempty"`
 }
 
 // EndpointRateLimit is a rate-limit class (R-EP-015).
@@ -124,10 +127,13 @@ type ResolvedEndpoint struct {
 	TokenTypes      []string
 	BoundTokensOnly bool
 	Anonymous       bool
-	Exposure        string
-	CacheFill       bool
-	RateLimitClass  string
-	ReplicaHeader   string
+	// ClientCertificates is auth.client_certificates: a verified client certificate of a request without a token is the
+	// certificate subject (R-EP-010 item 5). Never true on the default endpoint (validation refuses it).
+	ClientCertificates bool
+	Exposure           string
+	CacheFill          bool
+	RateLimitClass     string
+	ReplicaHeader      string
 }
 
 // Serves reports whether the surface holds the family.
@@ -174,6 +180,7 @@ func (s *Server) resolveEndpoint(name string) ResolvedEndpoint {
 		r.Surface = orList(ep.Surface, Surfaces())
 		r.TokenTypes = orList(ep.Auth.TokenTypes, defaultTokenTypes())
 		r.BoundTokensOnly, r.Anonymous = orBool(ep.Auth.BoundTokensOnly, false), orBool(ep.Auth.Anonymous, true)
+		r.ClientCertificates = orBool(ep.Auth.ClientCertificates, false)
 		r.Exposure = orStr(ep.Exposure, ExposureAll)
 		r.CacheFill = orBool(ep.CacheFill, true)
 		r.RateLimitClass = orStrp(ep.RateLimitClass, "")
@@ -201,6 +208,7 @@ func (s *Server) resolveEndpoint(name string) ResolvedEndpoint {
 		r.Surface = orList(ep.Surface, []string{SurfacePackages})
 		r.TokenTypes = orList(ep.Auth.TokenTypes, []string{"sat"})
 		r.BoundTokensOnly, r.Anonymous = orBool(ep.Auth.BoundTokensOnly, true), orBool(ep.Auth.Anonymous, false)
+		r.ClientCertificates = orBool(ep.Auth.ClientCertificates, false)
 		r.Exposure = orStr(ep.Exposure, ExposureRules)
 		r.CacheFill = orBool(ep.CacheFill, false)
 		r.RateLimitClass = orStrp(ep.RateLimitClass, DefaultFurtherRateLimitClass)
@@ -517,6 +525,7 @@ func (s *Server) validateEndpointPolicy(r *Report, base string, ep Endpoint, e R
 			r.Add(base+".auth.token_types", "%q is not a token type (pat, sat, cit)", t)
 		}
 	}
+	validateClientCertificates(r, base, e)
 	if e.Exposure != ExposureAll && e.Exposure != ExposureRules {
 		r.Add(base+".exposure", "%q is neither all nor rules", e.Exposure)
 	}
@@ -529,6 +538,25 @@ func (s *Server) validateEndpointPolicy(r *Report, base string, ep Endpoint, e R
 		if _, ok := s.EndpointRateLimits[e.RateLimitClass]; !ok {
 			r.Add(base+".rate_limit_class", "%q names no entry of server.endpoint_rate_limits", e.RateLimitClass)
 		}
+	}
+}
+
+// validateClientCertificates checks auth.client_certificates (R-EP-001, R-EP-010, formats/clamav.md R-CLAMAV-010): the key needs a
+// further endpoint whose listener verifies a client certificate (tls.client_ca_file), and an endpoint that takes the certificate as
+// the credential admits no request without one, so auth.anonymous cannot be true beside it.
+func validateClientCertificates(r *Report, base string, e ResolvedEndpoint) {
+	if !e.ClientCertificates {
+		return
+	}
+	key := base + ".auth.client_certificates"
+	switch {
+	case e.Default:
+		r.Add(key, "is true on the default endpoint: client certificates are a credential on a further endpoint only, whose listener verifies them (tls.client_ca_file)")
+	case e.TLS.ClientCAFile == "":
+		r.Add(key, "is true without %s.tls.client_ca_file: no certificate is verified on the listener, so none could be a credential", base)
+	}
+	if e.Anonymous {
+		r.Add(key, "is true while %s.auth.anonymous is true: the listener requires a certificate, so no request is anonymous; set auth.anonymous to false", base)
 	}
 }
 
@@ -604,7 +632,10 @@ func (s *Server) fillEndpointDefaults() {
 			}
 		}
 		ep.Surface = r.Surface
-		ep.Auth = EndpointAuth{TokenTypes: r.TokenTypes, BoundTokensOnly: boolp(r.BoundTokensOnly), Anonymous: boolp(r.Anonymous)}
+		ep.Auth = EndpointAuth{
+			TokenTypes: r.TokenTypes, BoundTokensOnly: boolp(r.BoundTokensOnly), Anonymous: boolp(r.Anonymous),
+			ClientCertificates: boolp(r.ClientCertificates),
+		}
 		ep.Exposure = r.Exposure
 		ep.CacheFill = boolp(r.CacheFill)
 		ep.RateLimitClass = strp(r.RateLimitClass)

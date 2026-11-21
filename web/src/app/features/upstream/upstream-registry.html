@@ -71,10 +71,23 @@
                 subject="artifacts"
                 [(value)]="clientsLevel"
                 [reasons]="reasons()"
-                [notes]="clientsNotes"
+                [notes]="clientsNotes()"
                 [error]="levelError()"
                 [disabled]="!canWrite()"
               />
+              <!-- The client certificates (R-CLAMAV-010, Q-UI-905): read-only lines, the CA is the operator's. -->
+              @if (certificateAddresses().length > 0) {
+                <div class="field cert-addresses" data-testid="cert-addresses">
+                  <span class="field-label" i18n="@@clamav.cert.addresses">With a client certificate:</span>
+                  @for (a of certificateAddresses(); track a) {
+                    <quader-address-field [value]="a" [label]="certAddressLabel" [copyLabel]="copyCertAddressLabel" />
+                  }
+                </div>
+              } @else {
+                <p class="hint links" data-testid="cert-none">
+                  <a routerLink="/help/admin/endpoints" fragment="client-certificates-for-clamav-installations" i18n="@@clamav.cert.manual">How an endpoint admits client certificates</a>
+                </p>
+              }
               @if (canWrite()) {
                 <div class="actions">
                   <button
@@ -100,14 +113,33 @@
               <quader-code-window [content]="freshclam().token" language="ini" fileName="/etc/clamav/freshclam.conf" [copyLabel]="copyLineLabel" [downloadable]="false" />
             }
             <p class="hint" i18n="@@clamav.setup.ca">Where Quader's certificate is issued by an internal certificate authority, freshclam must trust it: set CURL_CA_BUNDLE to the authority's file in freshclam's environment, or add the authority to the system store.</p>
-            @if (r.visibility === 'public') {
-              <quader-disclosure [inline]="true" [heading]="authHeading">
-                <p class="hint" i18n="@@clamav.setup.token">Only where you lower the level below Public: a token of a service account made for this purpose, with no grant beyond reading this repository, as the password of the address. freshclam writes the whole address, the token with it, into its log, and ClamAV does not document this way.</p>
-                <quader-code-window [content]="freshclam().token" language="ini" fileName="/etc/clamav/freshclam.conf" [copyLabel]="copyLineLabel" [downloadable]="false" />
-              </quader-disclosure>
-            } @else {
+            @if (r.visibility !== 'public') {
               <p class="hint" i18n="@@clamav.setup.token-below">QUADER_TOKEN is a token of a service account made for this purpose, with no grant beyond reading this repository. freshclam writes the whole address, the token with it, into its log, and ClamAV does not document this way.</p>
             }
+            <!-- The ways below Public (R-CLAMAV-006): the token at Public, where the line above has none, and the client certificate while an
+                 endpoint admits one. -->
+            @if (r.visibility === 'public' || freshclamCert()) {
+              <quader-disclosure [inline]="true" [heading]="authHeading" data-testid="clamav-authenticate">
+                @if (r.visibility === 'public') {
+                  <p class="hint" i18n="@@clamav.setup.token">Only where you lower the level below Public: a token of a service account made for this purpose, with no grant beyond reading this repository, as the password of the address. freshclam writes the whole address, the token with it, into its log, and ClamAV does not document this way.</p>
+                  <quader-code-window [content]="freshclam().token" language="ini" fileName="/etc/clamav/freshclam.conf" [copyLabel]="copyLineLabel" [downloadable]="false" />
+                }
+                @if (freshclamCert(); as cert) {
+                  <p class="hint" i18n="@@clamav.setup.certificate">With a client certificate, at Internal and Public: freshclam 1.2 or later names the endpoint that admits certificates and finds the certificate, its key and the authority of the endpoint in its environment, for the systemd unit in a drop-in such as /etc/systemd/system/clamav-freshclam.service.d/quader.conf (the unit's name is the distribution's). The certificate must be issued by an authority the endpoint admits; the key is readable by freshclam's user only.</p>
+                  <quader-code-window [content]="cert.conf" language="ini" [fileName]="freshclamConf" [copyLabel]="copyLineLabel" [downloadable]="false" />
+                  <quader-code-window [content]="cert.dropIn" language="ini" [fileName]="freshclamDropIn" [copyLabel]="copySetupLabel" [downloadable]="false" />
+                }
+              </quader-disclosure>
+            }
+            <!-- An installation without freshclam downloads the three files from fixed addresses (Q-CLAMAV-14). -->
+            <quader-disclosure [inline]="true" [heading]="withoutHeading" data-testid="clamav-without">
+              <p class="hint" i18n="@@clamav.setup.without-text">An installation without freshclam downloads the three databases from fixed addresses, which always serve the version in use, and reloads clamd. Each run fetches the whole files, about 110 MiB.</p>
+              <quader-code-window [content]="download()" language="shell" [fileName]="downloadScript" [copyLabel]="copyScriptLabel" [downloadable]="false" />
+              @if (downloadCert(); as script) {
+                <p class="hint" i18n="@@clamav.setup.without-certificate">With a client certificate, on the endpoint that admits it:</p>
+                <quader-code-window [content]="script" language="shell" [fileName]="downloadScript" [copyLabel]="copyScriptLabel" [downloadable]="false" />
+              }
+            </quader-disclosure>
             <p class="links">
               <a [routerLink]="setupLink()" i18n="@@clamav.setup.guide">The full guide on Set up client</a>
             </p>

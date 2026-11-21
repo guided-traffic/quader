@@ -6,8 +6,7 @@ R-MAL-034; [formats/clamav.md](../spec/formats/clamav.md); [repositories-and-pro
 R-CLAMAV-010 and [endpoints.md](../spec/endpoints.md) R-EP-008, R-EP-010;
 [ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format)). Built:
 the endpoint, its switch, its answers and the refused hand delete, the updater with its listener and its seed, and the worker's
-verification (the rows of the table below that name their tests by name). Not built yet: the client certificates; for those every
-statement says what the specification requires, and the test column names the tests the specification asks for.
+verification, and the client certificates with the chart's passthrough (the rows of the table below name their tests by name).
 
 The perspective of this page is the path of ClamAV's signature databases: what each hop trusts of the one before it, what a hop that is
 taken over can do to the ones after it (Quader's scanners and every ClamAV of the company that updates from Quader), and what the endpoint
@@ -123,9 +122,10 @@ of it ([formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-010, Q-CLAMAV-8 t
 | the endpoint answers as for a missing repository for every caller while the switch is off, and no route of the format writes | `UpstreamFacts.Closed` in the dispatcher and `/files/`, and the format's routes (R-REPO-075, R-CLAMAV-008) | `TestR_REPO_070_ASystemRepositoryOfUpstreamAnswersNoClient`, `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint`, `TestR_ARCH_010_Conformance` (`internal/formats/clamav`) |
 | no answer of the endpoint is a `403` or a `429` | the format's `WriteError` and the chain's error shape (R-CLAMAV-005) | `TestR_CLAMAV_005_NoAnswerIsA403OrA429` |
 | no caller deletes a definition file | `Repository.RefusesHandDelete` in `files.Service.Delete` (R-REPO-075, Q-REPO-416) | `TestQ_REPO_416_NoOneDeletesADefinitionFileByHand`, `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint` |
-| a client certificate is a credential only on an endpoint with `auth.client_certificates` and `tls.client_ca_file`, never on the default endpoint, and only one that verifies against the endpoint's CAs reaches a request | the configuration's validation and the listener's TLS (R-EP-001, R-EP-004, R-EP-010) | `TestR_CLAMAV_010_*` (`internal/config`, area `malware`) |
-| the certificate subject reads only repositories that admit certificate readers, at `internal` or `public`, never writes or fills, and is refused at `private` and while the switch is off | the fixed rule of the decision point (R-AUTHZ-002) | `TestR_CLAMAV_010_*` (`internal/authz`) |
-| a token on a request of that endpoint is decided as the token, and a refused one does not fall through to the certificate | the authentication stage's order (R-AUTH-001) | `TestR_CLAMAV_010_*` (`internal/auth`) |
+| a client certificate is a credential only on an endpoint with `auth.client_certificates` and `tls.client_ca_file`, never on the default endpoint, and only one that verifies against the endpoint's CAs reaches a request | the configuration's validation (`validateClientCertificates`), the chart's validation, and the listener's TLS (R-EP-001, R-EP-004, R-EP-008, R-EP-010) | `TestR_CLAMAV_010_ClientCertificatesNeedAFurtherEndpointThatVerifiesThem` (`internal/config`), `TestEndpoints/R-EP-008_Q-EP-96_…` (`test/chart`), `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint` (area `malware`: no certificate, an expired one and one of another CA fail the handshake) |
+| the certificate subject reads only repositories that admit certificate readers, at `internal` or `public`, never writes or fills, and is refused at `private` and while the switch is off; the exposure bounds it | the fixed rule of the decision point (R-AUTHZ-002, `decideCertificate` in `internal/authz/certificate.go`) | `TestR_CLAMAV_010_TheCertificateSubjectsRule` (`internal/authz`), `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint` (area `malware`: `200` at internal, `404` at private and while off) |
+| a token on a request of that endpoint is decided as the token, and a refused one does not fall through to the certificate | the authentication stage's order (R-AUTH-001, `byClientCertificate` after the token and the session) | `TestR_CLAMAV_010_TheCertificateSubject` (`internal/auth`) |
+| the certificate is read from the handshake's verified chain, never from a header | `byClientCertificate` reads `tls.ConnectionState.VerifiedChains` only (Q-CLAMAV-8) | `TestR_CLAMAV_010_TheCertificateSubject` (`internal/auth`) |
 
 ## What this does not cover
 

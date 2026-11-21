@@ -222,6 +222,7 @@ checked every earlier decision against them:
 | [ADR-229](#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image) | The scanner unit detects as well, and the analyser comes from its own image | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-230](#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker) | Quader signs with one identity per installation: npm's registry signatures and a receipt attestation of every artifact, signed in the worker | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) | A repository can serve only artifacts with a verified signature: a gate at download for every format, judged from stored verdicts and failing closed | Accepted (owner decision of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-232](#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository) | The guide data names the addresses on which a client certificate reads the repository | Decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1983,6 +1984,32 @@ of the owner); a client that verifies Quader's decision itself (a verification s
 R-REPO-004, R-REPO-061; [malware-scanning.md](spec/malware-scanning.md) R-MAL-013; [bastion.md](spec/bastion.md) R-BAS-015;
 [formats/oci.md](spec/formats/oci.md) R-OCI-007, R-OCI-009; [api-and-ui.md](spec/api-and-ui.md) R-UI-087;
 [operations-and-observability.md](spec/operations-and-observability.md) R-OPS-016.
+
+### ADR-232 · The guide data names the addresses on which a client certificate reads the repository
+
+**Status:** Decided by the development agent — owner review at the walkthrough. An addition to the format contract frozen by
+[ADR-141](#adr-141--the-format-contract-is-frozen-at-version-1); the contract's version does not change.
+
+**Context.** The owner decided on 2026-11-21 that a ClamAV installation is admitted by its client certificate as well
+([formats/clamav.md](spec/formats/clamav.md) R-CLAMAV-010). The guide of `freshclam` shows the certificate's way only while an endpoint
+admits certificates, with that endpoint's address (R-CLAMAV-006). A guide's template sees `formats.GuideData` alone, which named the
+request's endpoint and no other.
+
+**Decision.** `GuideData` gains `CertificateURLs`: the registry URL of the repository, without its trailing slash, on every endpoint with
+`auth.client_certificates` on which a certificate subject reads the repository now, which the API asks of the decision point
+(`Access.ReadableByCertificate`). It is empty for every other repository and in the guide of a format. The conformance kit runs every
+guide section over one more variant, a signed-in reader with an address, so that no format's guide breaks on the field.
+
+**Consequences.** One field more in `internal/formats/testdata/contract.txt`; every format's guide sections run over one more variant in
+the kit (milliseconds). Another format that admits certificate readers later uses the field as it is.
+
+**Alternatives considered.** A placeholder host in the guide; every endpoint with the key, whatever the level and the exposure
+([Q-CLAMAV-18](spec/formats/clamav.md#q-clamav-18--the-guide-names-the-endpoints-on-which-a-certificate-reads-the-repository-now)).
+
+**Revisit condition:** a format whose guide needs the address of another kind of endpoint.
+
+**Spec:** [formats/clamav.md](spec/formats/clamav.md) R-CLAMAV-006, R-CLAMAV-010, Q-CLAMAV-18; [architecture.md](spec/architecture.md)
+R-ARCH-025.
 
 ## Design invariants
 
@@ -9489,6 +9516,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-CLAMAV-12](spec/formats/clamav.md#q-clamav-12--the-certificates-subject-stands-where-a-user-stands-and-its-serial-where-a-token-stands) | How is a certificate recorded? | (a) its subject as the subject, its serial as the credential | [ADR-225](#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format) |
 | [Q-CLAMAV-13](spec/formats/clamav.md#q-clamav-13--the-admission-is-a-key-of-the-endpoint-and-a-fact-of-the-repository-built-for-upstreamclamav-only) | How general is the admission? | (a) a key of the endpoint, a fact only `upstream/clamav` has | [ADR-225](#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format) |
 | [Q-CLAMAV-14](spec/formats/clamav.md#q-clamav-14--an-installation-without-an-updater-downloads-the-three-files-from-fixed-addresses) | How does an installation without `freshclam` update? | (a) a plain download of the three files from fixed addresses | [ADR-225](#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format) |
+| [Q-CLAMAV-18](spec/formats/clamav.md#q-clamav-18--the-guide-names-the-endpoints-on-which-a-certificate-reads-the-repository-now) | Which certificate addresses does the guide name? | (a) those on which a certificate reads the repository now, through `GuideData.CertificateURLs` | [ADR-232](#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository) |
 | [Q-BAK-1](spec/backup-and-restore.md#q-bak-1--form-of-the-database-part-of-a-backup) | Form of the database part of a backup? | (b) a Quader-native `COPY` export of every table from one `REPEATABLE READ READ ONLY` snapshot, restored through Quader's own migrations | [ADR-106](#adr-106--backup-format-a-quader-native-snapshot-export-a-shared-blob-pool-and-a-garbage-collection-hold) |
 | [Q-BAK-2](spec/backup-and-restore.md#q-bak-2--keeping-a-running-backups-blobs-away-from-garbage-collection) | Keeping a running backup's blobs away from garbage collection? | (c) a global hold until the to-copy set is pinned, then per-blob pins, both under the run's lease | [ADR-106](#adr-106--backup-format-a-quader-native-snapshot-export-a-shared-blob-pool-and-a-garbage-collection-hold), [ADR-042](#adr-042--race-free-garbage-collection-with-a-grace-period) |
 | [Q-BAK-3](spec/backup-and-restore.md#q-bak-3--blob-layout-in-the-target-and-incremental-backups) | Blob layout in the target and incremental backups? | (b) a shared content-addressed pool, one sorted blob list per backup, incremental by digest, mark-and-sweep retention | [ADR-106](#adr-106--backup-format-a-quader-native-snapshot-export-a-shared-blob-pool-and-a-garbage-collection-hold) |

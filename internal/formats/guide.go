@@ -98,6 +98,11 @@ type GuideData struct {
 	// TokenEnvVar is ui.client_setup.token_env_var: the name of the variable, not a
 	// credential.
 	TokenEnvVar string
+	// CertificateURLs are the registry URLs of the repository, without their trailing slash, on every endpoint that admits client
+	// certificates (auth.client_certificates, endpoints.md R-EP-010 item 5) and on which a certificate holder reads the repository now:
+	// the variant "With a client certificate" of a guide (formats/clamav.md R-CLAMAV-006, R-CLAMAV-010). Empty for every other
+	// repository and for the guide of a format.
+	CertificateURLs []string
 }
 
 // ExecuteGuide runs the Markdown template of a section over d. A reference to a

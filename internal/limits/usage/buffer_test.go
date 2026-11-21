@@ -31,3 +31,24 @@ func TestR_LIM_027_AWellKnownMemberThroughTwoVirtualRepositoriesIsTwoRows(t *tes
 		t.Fatalf("requests by via = %v", got)
 	}
 }
+
+// TestR_CLAMAV_010_ACertificateSubjectsRowNamesTheSerial: the usage row of a certificate subject keeps the certificate's serial as its
+// credential, so a renewed certificate of the same subject is a second credential of one budget (Q-CLAMAV-12); an anonymous row keeps none.
+func TestR_CLAMAV_010_ACertificateSubjectsRowNamesTheSerial(t *testing.T) {
+	b := NewBuffer(Options{})
+	at := time.Unix(1_800_000_000, 0)
+	for _, s := range []limits.Subject{
+		{Kind: limits.KindCertificate, Ref: "CN=scan-01.example.com", Credential: "a1b2c"},
+		{Kind: limits.KindCertificate, Ref: "CN=scan-01.example.com", Credential: "a1b2d"},
+		{Kind: limits.KindAnonymous, Ref: "198.51.100.7", Credential: "x"},
+	} {
+		b.Add(limits.UsageDelta{At: at, Subject: s, Place: limits.InstancePlace(), RepoID: 6, Requests: 1})
+	}
+	creds := map[string]bool{}
+	for k := range b.rows {
+		creds[string(k.kind)+"/"+k.credential] = true
+	}
+	if len(creds) != 3 || !creds["certificate/a1b2c"] || !creds["certificate/a1b2d"] || !creds["anonymous/"] {
+		t.Fatalf("rows %v", creds)
+	}
+}

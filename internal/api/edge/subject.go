@@ -63,6 +63,9 @@ func SubjectOf(ctx context.Context) authz.Subject {
 		// The one repository a scan token names, which the fixed rule of system:vuln-scanner-trivy reads (R-OCI-037, Q-OCI-228).
 		s.SystemRepo = p.Credential.Registry.Entries[0].Repo
 	}
+	if c := p.Credential.ClientCert; p.Kind == httpserver.KindCertificate && c != nil {
+		s.CertSerial = c.Serial // the certificate subject's serial, which its audit events name (Q-CLAMAV-12)
+	}
 	if ep := httpserver.EndpointFrom(ctx); ep != nil {
 		// The endpoint's cache-fill policy travels with its name, so the populate
 		// check reads one source (R-EP-019, Q-AUTHZ-153).

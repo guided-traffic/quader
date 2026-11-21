@@ -102,7 +102,9 @@ func everyOf(s Subject) string {
 		return EveryAdministrator
 	}
 	switch s.Kind {
-	case KindTechnicalToken:
+	case KindTechnicalToken, KindCertificate:
+		// A certificate subject is a machine client with no rule of its own to name it: the kind default of the technical tokens
+		// applies (Q-LIM-96).
 		return EveryTechnicalToken
 	case KindCI:
 		return EveryCI

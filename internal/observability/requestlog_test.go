@@ -107,6 +107,34 @@ func TestRequestLog(t *testing.T) {
 		}
 	})
 
+	t.Run("R-CLAMAV-010 a certificate subject names its subject, serial and issuer; every other request leaves them null", func(t *testing.T) {
+		var buf bytes.Buffer
+		long := "CN=" + strings.Repeat("h", 300)
+		h, _ := newStack(t, &buf, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ri := RequestInfoFrom(r.Context())
+			if r.URL.Path == "/cert" {
+				ri.SetPrincipal(long, "certificate", "")
+				ri.SetToken("", "client_certificate")
+				ri.SetClientCert("a1b2c", "CN=Example Device CA")
+			}
+		}))
+		serve(t, h, httptest.NewRequest(http.MethodGet, "/cert", nil))
+		serve(t, h, httptest.NewRequest(http.MethodGet, "/other", nil))
+		ls := lines(&buf)
+		cert, other := decode(t, ls[0]), decode(t, ls[1])
+		p, _ := cert["principal"].(string)
+		if cert["principal_type"] != "certificate" || cert["auth_method"] != "client_certificate" || cert["principal_id"] != nil ||
+			cert["token_id"] != nil || cert["client_cert_serial"] != "a1b2c" || cert["client_cert_issuer"] != "CN=Example Device CA" ||
+			len(p) != MaxCertName+len(TruncatedMarker) || !strings.HasSuffix(p, TruncatedMarker) {
+			t.Errorf("certificate subject: %v", cert)
+		}
+		for _, k := range []string{"client_cert_serial", "client_cert_issuer"} {
+			if v, ok := other[k]; !ok || v != nil {
+				t.Errorf("%s of another request = %#v, present %v; want null", k, v, ok)
+			}
+		}
+	})
+
 	t.Run("R-OPS-010 request body bytes are counted when the handler reads them", func(t *testing.T) {
 		var buf bytes.Buffer
 		h, _ := newStack(t, &buf, http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {

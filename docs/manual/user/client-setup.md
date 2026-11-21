@@ -226,6 +226,25 @@ quader_curl --fail --upload-file app-1.2.0.tar.gz "https://quader.example.com/fi
 
 Downloading needs read, uploading to a free path deploy, replacing a file with other bytes overwrite as well, deleting delete. Add `--header "If-None-Match: *"` to an upload that must never replace a file: it then answers `412` when the path exists. [Browsing and transferring files](files.md) describes paths, digests and folders; the curl guide shows resuming, conditional downloads and uploads with a digest.
 
+
+## Update ClamAV from Quader
+
+While an administrator has switched **ClamAV definition updates** on, `upstream/clamav` serves the signature databases Quader's own
+malware scan uses, and its **Set up client** page shows the guide of `freshclam`. Four ways, depending on the repository's level:
+
+- **Public:** one line in `freshclam.conf`, `PrivateMirror https://quader.example.com/api/clamav/upstream/clamav` *(example)*.
+- **A token:** below Public, a token of a service account as the password of the address,
+  `PrivateMirror https://clamav:${QUADER_TOKEN}@quader.example.com/api/clamav/upstream/clamav`. `freshclam` writes the whole address,
+  the token with it, into its log.
+- **A client certificate** (`freshclam` 1.2 or later), at Internal and Public, on an endpoint your operator set up for it: the line names
+  that endpoint, and the certificate, its key and the authority of the endpoint go into the environment of `freshclam`, for the systemd
+  unit in a drop-in with `FRESHCLAM_CLIENT_CERT`, `FRESHCLAM_CLIENT_KEY` and `CURL_CA_BUNDLE`. The guide shows this way only while such an
+  endpoint reads the repository. A missing, expired or foreign certificate ends in a curl error such as `SSL certificate problem` or
+  `alert certificate required`.
+- **Without freshclam:** a script downloads `main.cvd`, `daily.cvd` and `bytecode.cvd` with `curl` from fixed addresses, which always
+  serve the version in use, and reloads `clamd`; with a token, curl reads the header from standard input; with a certificate, it names
+  `--cert`, `--key` and `--cacert`.
+
 ## Install through a Bastion
 
 An administrator may run a Bastion for you: a read-only cache of this installation at its own address, for clients outside the network ([The Quader Bastion](../admin/bastion.md) explains what it is). You sign in to it with the same personal, service-account or CI token, and you install the same packages from the same repositories, named by the same project and repository keys; only the address differs.

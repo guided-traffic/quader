@@ -31,6 +31,9 @@ type requestFacts struct {
 	limitMode     string
 	remoteAddr    string
 	host          string
+	// certSerial and certIssuer are the serial and the issuer of a certificate subject's client certificate (R-OPS-010,
+	// formats/clamav.md R-CLAMAV-010); empty for every other request.
+	certSerial, certIssuer string
 	// limits are the download limits' fields of a request on a protocol path (SetLimits); nil off them.
 	limits *LimitsFields
 	// extra are the fields a protocol layer adds to the record (SetField), in the
@@ -92,6 +95,12 @@ func (ri *RequestInfo) SetPrincipal(name, typ, id string) {
 // SetToken records the ID of the token used (never the token) and the method.
 func (ri *RequestInfo) SetToken(tokenID, authMethod string) {
 	ri.set(func(v *requestFacts) { v.tokenID, v.authMethod = tokenID, authMethod })
+}
+
+// SetClientCert records the serial and the issuer of the client certificate of a certificate subject (R-OPS-010, Q-CLAMAV-12): the
+// fields client_cert_serial and client_cert_issuer, which every other request leaves null.
+func (ri *RequestInfo) SetClientCert(serial, issuer string) {
+	ri.set(func(v *requestFacts) { v.certSerial, v.certIssuer = serial, issuer })
 }
 
 // SetAuthMethod records how the request authenticated.

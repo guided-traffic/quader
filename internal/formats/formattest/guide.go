@@ -171,12 +171,20 @@ func (r *run) guideVariants(class formats.Class, client string) []formats.GuideD
 				}
 			}
 		}
+		if key != "" {
+			// A signed-in reader of a repository that a client certificate reads on an endpoint of its own (R-EP-010 item 5): the guide's
+			// variant with a client certificate (formats/clamav.md R-CLAMAV-006).
+			cert := out[len(out)-1]
+			cert.Anonymous, cert.ExposureRules, cert.PublishTarget, cert.RequiresAuth = false, false, "", true
+			cert.CertificateURLs = []string{"https://certificates.quader.test" + strings.TrimSuffix(strings.TrimPrefix(registry, DefaultBaseURL), "/")}
+			out = append(out, cert)
+		}
 	}
 	return out
 }
 
 func variantName(d formats.GuideData) string {
-	return fmt.Sprintf("repository %q, publish target %q, anonymous %v, exposure rules %v", d.Repository, d.PublishTarget, d.Anonymous, d.ExposureRules)
+	return fmt.Sprintf("repository %q, publish target %q, anonymous %v, exposure rules %v, certificate addresses %d", d.Repository, d.PublishTarget, d.Anonymous, d.ExposureRules, len(d.CertificateURLs))
 }
 
 var fence = regexp.MustCompile("^\\s*(```|~~~)")

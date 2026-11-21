@@ -150,7 +150,7 @@ place that counts.
 | Technical token (`qdr_sat_`) of a service account of the instance, a project or a repository | `technicalToken` | the technical token's ID (`technical_token.id`, R-AUTH-045) | Not the account and not the secret: rotation and a new secret keep the subject, its budget and its consumption (owner, decisions 6 and 13). |
 | CI token (`qdr_cit_`) | `ci` | `<issuer ID>:<project ID>`: the CI issuer's immutable ID and the `ProjectID` of the token's frozen bundle (the verified pin claim, `project_id` for GitLab) | Every job of a pipeline's project shares one budget, whatever job, pipeline or mapping issued it ([Q-LIM-1](#q-lim-1--a-ci-token-is-charged-to-its-issuer-and-the-project-of-its-bundle)). |
 | Registry token of the OCI token service (`qdr_rgt_`) | the subject of the Quader token it was issued for | as that token's row above | `Credential.TokenID` is the underlying token ([formats/oci.md](formats/oci.md) R-OCI-005); a registry token issued without a Quader token is anonymous and charged to the address. |
-| A client certificate on an endpoint that takes it as a credential (the certificate subject, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010) | `certificate` | the certificate's subject, an RFC 4514 string of at most 255 bytes | The usage store records the certificate's serial as the credential, so a renewed certificate of the same subject keeps the subject's budget; certificates of the same subject from two CAs share it ([Q-CLAMAV-12](formats/clamav.md#q-clamav-12--the-certificates-subject-stands-where-a-user-stands-and-its-serial-where-a-token-stands)). |
+| A client certificate on an endpoint that takes it as a credential (the certificate subject, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010) | `certificate` | the certificate's subject, an RFC 4514 string of at most 255 bytes | The usage store records the certificate's serial as the credential, so a renewed certificate of the same subject keeps the subject's budget; certificates of the same subject from two CAs share it ([Q-CLAMAV-12](formats/clamav.md#q-clamav-12--the-certificates-subject-stands-where-a-user-stands-and-its-serial-where-a-token-stands)). No rule names a single certificate subject; the kind default of the technical tokens applies ([Q-LIM-96](#q-lim-96--a-certificate-subject-takes-the-kind-default-of-the-technical-tokens-and-the-overview-lists-its-kind)). |
 | No credential | `anonymous` | the client address prefix of R-LIM-002 | |
 | A credential that failed (unknown, revoked, expired, wrong checksum, refused by an endpoint's credential rules) | `anonymous` | the client address prefix | R-LIM-003. |
 | Break-glass administrator | `user` | its principal ID | An administrator (R-LIM-012). |
@@ -2883,6 +2883,27 @@ of a slow Valkey, `quader_limits_decisions_total{figure="parallelDownloads",outc
 running the batch: a lease taken on the share and ended by a flush that reached Valkey, one taken in Valkey and ended by a flush on the
 share, a take Valkey ran after the timeout, a lease given up at once as a waiting download does, and an unsent drop forgotten at the
 lease's end.
+
+### Q-LIM-96 · A certificate subject takes the kind default of the technical tokens, and the overview lists its kind
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the certificate subject of [formats/clamav.md](formats/clamav.md) R-CLAMAV-010 is a kind of its own (R-LIM-001), but a rule's
+"who" names a user, a technical token, a CI project, an address, a group or every caller of a kind among `user`, `technicalToken`, `ci`,
+`anonymous` and `administrator` (R-LIM-011); none of them is a certificate.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The kind default of the technical tokens (profile Technical), and `certificate` as a kind of the usage overview's lists, filters and subjects (chosen) | Step 3.3 of R-LIM-013 reads `every technicalToken` for it | A machine client, like a technical token or a CI job, under the same budget; nothing new to administer; the overview shows each installation by its certificate's subject | An administrator cannot give one certificate subject a rule of its own, nor every certificate a kind default of its own |
+| (b) A "who" kind `certificate` (single and every) | Rules per certificate | Each installation limited on its own | A kind and a built-in rule for a client of one repository; the rule screens, the API and the migration of the rule table grow for it |
+| (c) The users' kind default (Standard) | As a person | — | A ClamAV installation is no person; its budget would follow the people's |
+
+**Choice:** (a). **Rationale:** a ClamAV installation fetches what a machine fetches; the technical tokens' profile is the one written for
+that. The development agent would revisit (b) when an installation needs to limit one host apart from the others. **Applied in the
+spec:** R-LIM-001. Code: `everyOf` in [model.go](../../internal/limits/model.go); the usage store keeps the serial
+([buffer.go](../../internal/limits/usage/buffer.go)); `UsageSubjectCertificate` in [openapi.yaml](../../api/openapi.yaml);
+[callers.ts](../../web/src/app/features/limits/callers.ts). The detail page of a caller lists the credentials of a user only; a certificate
+subject's serials are in the store and not on that page.
 
 ## What this does not cover
 

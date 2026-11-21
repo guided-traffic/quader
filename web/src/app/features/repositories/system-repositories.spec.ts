@@ -60,7 +60,7 @@ async function open(url: string, options: { system?: boolean; capabilities?: str
     sampleProject({ key: 'upstream', displayName: 'Upstream', description: 'Stored by the product', owners: [], members: 0 }),
   ];
   if (options.clamavOn) {
-    (TestBed.inject(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' });
+    (TestBed.inject(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'public' });
   }
   if (options.capabilities) (TestBed.inject(SessionApi) as FakeSessionApi).meResult = { capabilities: options.capabilities };
   await TestBed.inject(SessionStore).load();

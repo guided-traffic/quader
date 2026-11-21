@@ -6,6 +6,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/qname"
 
+	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/meta"
 )
@@ -124,6 +125,13 @@ func (a *Access) Readable(ctx context.Context, keys []qname.Repo) ([]qname.Repo,
 // anonymous access apply as for any anonymous request.
 func (a *Access) ReadableAnonymously(ctx context.Context, keys []qname.Repo) ([]qname.Repo, error) {
 	return a.D.ReadableOn(ctx, a.Index(), authz.Subject{Anonymous: true, Endpoint: a.Subject.Endpoint}, keys)
+}
+
+// ReadableByCertificate filters repository keys to those a certificate subject on the named endpoint may read, on the request's index:
+// whether the guide shows the way with a client certificate on that endpoint (formats/clamav.md R-CLAMAV-006, R-CLAMAV-010). The
+// endpoint's exposure applies as for any request on it.
+func (a *Access) ReadableByCertificate(ctx context.Context, endpoint string, keys []qname.Repo) ([]qname.Repo, error) {
+	return a.D.ReadableOn(ctx, a.Index(), authz.Subject{Kind: principal.KindCertificate, Endpoint: endpoint}, keys)
 }
 
 // Exposed filters repository keys to those the subject's endpoint exposes.

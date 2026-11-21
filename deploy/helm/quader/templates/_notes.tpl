@@ -53,6 +53,10 @@ Endpoints
 
 Warning: endpoint {{ $name }} has exposure: rules and shares the pods of the default endpoint. Give it a pool (endpoints.{{ $name }}.pool.enabled) so load and a defect on one cannot reach the other.
 {{- end }}
+{{- if and $e.ingressEnabled $e.tlsPassthrough (eq (include "quader.endpointBackendTLS" (dict "root" $ "name" $name) | fromYaml).controller "ingress-nginx") }}
+
+Note: endpoint {{ $name }} passes TLS through ingress-nginx, which works only where the controller runs with --enable-ssl-passthrough.
+{{- end }}
 {{- if and (eq $e.exposure "rules") (not $e.networkPolicyFrom) $.Values.networkPolicy.enabled }}
 
 Warning: endpoint {{ $name }} has exposure: rules and an empty networkPolicy.from, so its port {{ $e.port }} accepts connections from every pod. List the peers of its ingress controller in endpoints.{{ $name }}.networkPolicy.from.

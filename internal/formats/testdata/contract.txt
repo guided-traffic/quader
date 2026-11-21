@@ -156,6 +156,7 @@ formats.Format: method Virtual() VirtualAdapter
 formats.Format: method WriteError(http.ResponseWriter, *http.Request, error)
 formats.GuideData: embedded SetupData
 formats.GuideData: field Anonymous bool
+formats.GuideData: field CertificateURLs []string
 formats.GuideData: field Class Class
 formats.GuideData: field Client string
 formats.GuideData: field ExposureRules bool

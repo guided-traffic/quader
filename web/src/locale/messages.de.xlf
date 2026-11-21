@@ -42029,20 +42029,20 @@
     </unit>
     <unit id="clamav.level.internal">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:164</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:163</note>
       </notes>
       <segment>
-        <source>A ClamAV authenticates with a token in its address, which freshclam writes into its log.</source>
-        <target>Ein ClamAV authentifiziert sich mit einem Token in seiner Adresse, das freshclam in sein Protokoll schreibt.</target>
+        <source>A ClamAV authenticates with a token in its address, which freshclam writes into its log, or with a client certificate.</source>
+        <target>Ein ClamAV authentifiziert sich mit einem Token in seiner Adresse, das freshclam in sein Protokoll schreibt, oder mit einem Client-Zertifikat.</target>
       </segment>
     </unit>
     <unit id="clamav.level.private">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:165</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:169</note>
       </notes>
       <segment>
-        <source>Only tokens of members.</source>
-        <target>Nur Token von Mitgliedern.</target>
+        <source>Only tokens of members. Client certificates are not admitted.</source>
+        <target>Nur Token von Mitgliedern. Client-Zertifikate werden nicht zugelassen.</target>
       </segment>
     </unit>
     <unit id="clamav.level.lowered">
@@ -42764,6 +42764,124 @@
       <segment>
         <source>Actions for <ph id="0" equiv="name" disp="p.displayName"/></source>
         <target>Aktionen für <ph id="0" equiv="name" disp="p.displayName"/></target>
+      </segment>
+    </unit>
+    <unit id="usage.kind.certificate">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:50</note>
+        <note category="location">src/app/features/limits/callers.ts:175</note>
+      </notes>
+      <segment>
+        <source>Client certificate</source>
+        <target>Client-Zertifikat</target>
+      </segment>
+    </unit>
+    <unit id="usage.filter.kind.certificate">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:68</note>
+      </notes>
+      <segment>
+        <source>Client certificates</source>
+        <target>Client-Zertifikate</target>
+      </segment>
+    </unit>
+    <unit id="clamav.cert.addresses">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:81,82</note>
+      </notes>
+      <segment>
+        <source>With a client certificate:</source>
+        <target>Mit einem Client-Zertifikat:</target>
+      </segment>
+    </unit>
+    <unit id="clamav.cert.manual">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:88,90</note>
+      </notes>
+      <segment>
+        <source>How an endpoint admits client certificates</source>
+        <target>Wie ein Endpunkt Client-Zertifikate zulässt</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.certificate">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:128,129</note>
+      </notes>
+      <segment>
+        <source>With a client certificate, at Internal and Public: freshclam 1.2 or later names the endpoint that admits certificates and finds the certificate, its key and the authority of the endpoint in its environment, for the systemd unit in a drop-in such as /etc/systemd/system/clamav-freshclam.service.d/quader.conf (the unit&apos;s name is the distribution&apos;s). The certificate must be issued by an authority the endpoint admits; the key is readable by freshclam&apos;s user only.</source>
+        <target>Mit einem Client-Zertifikat, bei Intern und Öffentlich: freshclam ab 1.2 nennt den Endpunkt, der Zertifikate zulässt, und findet das Zertifikat, seinen Schlüssel und die Zertifizierungsstelle des Endpunkts in seiner Umgebung, für die systemd-Unit in einem Drop-in wie /etc/systemd/system/clamav-freshclam.service.d/quader.conf (der Name der Unit ist der der Distribution). Das Zertifikat muss von einer Stelle ausgestellt sein, die der Endpunkt zulässt; den Schlüssel liest nur der Benutzer von freshclam.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.without-text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:135,136</note>
+      </notes>
+      <segment>
+        <source>An installation without freshclam downloads the three databases from fixed addresses, which always serve the version in use, and reloads clamd. Each run fetches the whole files, about 110 MiB.</source>
+        <target>Eine Installation ohne freshclam lädt die drei Datenbanken von festen Adressen, die immer die verwendete Version liefern, und lädt clamd neu. Jeder Lauf holt die ganzen Dateien, etwa 110 MiB.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.without-certificate">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:138,139</note>
+      </notes>
+      <segment>
+        <source>With a client certificate, on the endpoint that admits it:</source>
+        <target>Mit einem Client-Zertifikat, am Endpunkt, der es zulässt:</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.without">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:175</note>
+      </notes>
+      <segment>
+        <source>Without freshclam</source>
+        <target>Ohne freshclam</target>
+      </segment>
+    </unit>
+    <unit id="clamav.cert.address">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:176</note>
+      </notes>
+      <segment>
+        <source>Address of the endpoint for client certificates</source>
+        <target>Adresse des Endpunkts für Client-Zertifikate</target>
+      </segment>
+    </unit>
+    <unit id="clamav.cert.address.copy">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:177</note>
+      </notes>
+      <segment>
+        <source>Copy the address of the endpoint for client certificates</source>
+        <target>Adresse des Endpunkts für Client-Zertifikate kopieren</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.copy-script">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:178</note>
+      </notes>
+      <segment>
+        <source>Copy the script</source>
+        <target>Skript kopieren</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.copy-certificate">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:179</note>
+      </notes>
+      <segment>
+        <source>Copy the setup</source>
+        <target>Einrichtung kopieren</target>
+      </segment>
+    </unit>
+    <unit id="clamav.level.internal-no-endpoint">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:168</note>
+      </notes>
+      <segment>
+        <source>Client certificates need an endpoint your operator sets up.</source>
+        <target>Client-Zertifikate brauchen einen Endpunkt, den Ihr Betreiber einrichtet.</target>
       </segment>
     </unit>
   </file>

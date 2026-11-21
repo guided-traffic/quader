@@ -19,6 +19,9 @@ const (
 	MaxPath      = 2 << 10
 	// MaxHost bounds the host field (R-EP-009).
 	MaxHost = 255
+	// MaxCertName bounds the principal, the subject of a client certificate, and the issuer of a client certificate
+	// (formats/clamav.md R-CLAMAV-010).
+	MaxCertName = 255
 	// MaxExtraField bounds a field a protocol adds with RequestInfo.SetField.
 	MaxExtraField = 128
 	maxMethod     = 32
@@ -184,11 +187,13 @@ func RequestLog(log *slog.Logger, m *Metrics, opts ...RequestOption) func(http.H
 				slog.Int64("response_bytes", rec.bytes),
 				slog.Float64("duration_ms", float64(dur.Microseconds())/1000),
 				slog.String("user_agent", clipField(r.UserAgent(), MaxUserAgent, o.scrub)),
-				slog.String("principal", principal),
+				slog.String("principal", clipField(principal, MaxCertName, nil)),
 				slog.String("principal_type", ptype),
 				nullable("principal_id", facts.principalID),
 				nullable("token_id", facts.tokenID),
 				slog.String("auth_method", auth),
+				nullable("client_cert_serial", clipField(facts.certSerial, MaxCertName, nil)),
+				nullable("client_cert_issuer", clipField(facts.certIssuer, MaxCertName, nil)),
 				nullable("project", projectOf(facts.repo)),
 				nullable("repo", facts.repo),
 				nullable("format", facts.format),

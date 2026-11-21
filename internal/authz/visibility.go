@@ -68,8 +68,8 @@ func (p Part) String() string {
 // registration, which reads nothing on its own credential (Q-AUTHZ-320). The channel plays no part: a request through a
 // Bastion is decided as any other.
 func (s Subject) Internal() bool {
-	if s.Anonymous || s.Kind == principal.KindAnonymous || s.External || isSystem(s) {
-		return false // a system subject is never internal or external (R-AUTHZ-002)
+	if s.Anonymous || s.Kind == principal.KindAnonymous || s.External || isSystem(s) || isCertificate(s) {
+		return false // a system subject and the certificate subject are never internal or external (R-AUTHZ-002)
 	}
 	return kindOf(s) != kindBastion
 }

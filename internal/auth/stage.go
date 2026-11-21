@@ -149,6 +149,14 @@ func (s *Stage) Authenticate(r *http.Request, ep EndpointRules) (Result, error) 
 			return s.bySession(r, p, c.Value)
 		}
 	}
+	if ep.ClientCertificates {
+		// R-AUTH-001 item 4: a request without a token on an endpoint that takes the certificate its listener verified as a credential
+		// (R-EP-010 item 5). The listener requires a verified chain, so a request here without one is no certificate subject.
+		if res, ok := byClientCertificate(r); ok {
+			s.o.Metrics.Attempt(string(MethodClientCertificate), "success", "")
+			return res, nil
+		}
+	}
 	return s.noCredential(r, p, raw, ep)
 }
 

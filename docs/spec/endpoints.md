@@ -4,7 +4,9 @@ Status: specification; the M0 parts are implemented: listeners and identificatio
 surface per listener, TLS per endpoint, the chart rendering, and the metrics, logs and spans that carry the endpoint. The M1
 parts are implemented: the credential rules per endpoint, endpoint-bound tokens, exposure rules as the ceiling of the
 decision point, the rate-limit class and the management API of R-EP-016 (the screen of R-EP-017 is the UI wave's).
-Metadata filtering and the cache-fill policy (R-EP-018, R-EP-019) arrive with npm. The journal replay of R-EP-020 is
+Metadata filtering and the cache-fill policy (R-EP-018, R-EP-019) arrive with npm. The client certificate as a credential (R-EP-010
+item 5, `auth.client_certificates`) and the chart's `ingress.tlsPassthrough` (R-EP-008, Q-EP-96) are implemented for the ClamAV
+installations ([formats/clamav.md](formats/clamav.md) R-CLAMAV-010). The journal replay of R-EP-020 is
 implemented: the handler and the comparator in `internal/authz/journal_replay_exposure.go`, run by the replayer of the revocation
 journal.
 

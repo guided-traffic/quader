@@ -42,6 +42,10 @@ const (
 	// KindSystem is work of the product itself (R-AUTHZ-002): the subject vuln-scanner-trivy of a scan token on the scan
 	// listener (R-OCI-037). It has no ID; the decision point decides it by a fixed rule.
 	KindSystem PrincipalKind = "system"
+	// KindCertificate is the certificate subject (R-AUTHZ-002, formats/clamav.md R-CLAMAV-010): a request without a token on an endpoint
+	// with auth.client_certificates. It has no ID; its Name is the certificate's subject, Credential.ClientCert the leaf's names and
+	// serial, and the decision point decides it by a fixed rule.
+	KindCertificate PrincipalKind = "certificate"
 )
 
 // AuthMethod is the credential source that proved the principal (R-AUTH-001).
@@ -64,8 +68,9 @@ const (
 	MethodBasic AuthMethod = "basic"
 	// MethodSession is the session cookie (R-AUTH-001 item 3).
 	MethodSession AuthMethod = "session"
-	// MethodClientCertificate is the client certificate of a link between Quader's pods: the one credential of the scan listener's
-	// database routes, which admit the malware scanner by its name (malware-scanning.md Q-MAL-27).
+	// MethodClientCertificate is a client certificate: of a link between Quader's pods, the one credential of the scan listener's
+	// database routes, which admit the malware scanner by its name (malware-scanning.md Q-MAL-27); and of the certificate subject on an
+	// endpoint with auth.client_certificates (R-EP-010 item 5).
 	MethodClientCertificate AuthMethod = "client_certificate"
 )
 
@@ -124,6 +129,17 @@ type Credential struct {
 	// ScanBlob is what a blob token reaches (malware-scanning.md R-MAL-006): the one repository
 	// and the one blob of the malware scanner's read. Nil for every other credential.
 	ScanBlob *ScanBlob
+	// ClientCert is the leaf of the certificate subject's client certificate (formats/clamav.md R-CLAMAV-010, Q-CLAMAV-12): what the
+	// request log, the usage store and an audit event name. Nil for every other credential.
+	ClientCert *ClientCert
+}
+
+// ClientCert is the leaf of a certificate subject's client certificate as the edge carries it: the subject and the issuer as RFC 4514
+// strings of at most 255 bytes (a longer one cut, with its marker), and the serial in lower-case hexadecimal.
+type ClientCert struct {
+	Subject string
+	Issuer  string
+	Serial  string
 }
 
 // ScanBlob is the reach of a blob token as the edge carries it: the repository that holds the

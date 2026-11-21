@@ -777,7 +777,7 @@ endpoints: {}                           # only the default endpoint; example:
 #    wildcardHost: ""                   # example "*.packages.example.com" (one label, at least two labels in the domain)
 #    hostRoots: {}                      # host -> qualified repository name <projectKey>/<repoKey>; binds the host's /v2/ to an OCI repository (Docker Engine mirror)
 #    surface: [packages]                # ui is not allowed on a further endpoint; api, ci_exchange, files are off by default
-#    auth: {tokenTypes: [sat], boundTokensOnly: true, anonymous: false}   # enforced from the identity milestone
+#    auth: {tokenTypes: [sat], boundTokensOnly: true, anonymous: false, clientCertificates: false}   # clientCertificates: a client certificate the endpoint verifies against tls.clientCaSecret is a credential (a further endpoint only, needs clientCaSecret and anonymous: false); it reads only upstream/clamav while ClamAV definition updates is on
 #    exposure: rules                    # rules | all; enforced from the exposure milestone
 #    cacheFill: false
 #    rateLimitClass: external
@@ -801,6 +801,7 @@ endpoints: {}                           # only the default endpoint; example:
 #      annotations: {}
 #      tls: []                          # example [{secretName: packages-tls, hosts: [packages.example.com, "*.packages.example.com"]}]
 #      backendTLS: {}                   # ingress.backendTLS; any key given here wins for this endpoint (controller, verify, caSecret, ...)
+#      tlsPassthrough: false            # true: the controller passes the client's TLS through to quader, so a client certificate reaches the endpoint; haproxy and ingress-nginx (with --enable-ssl-passthrough) by an annotation, traefik refused, manual through annotations; needs tls.existingSecret, no tls entries and a surface within one role
 #    networkPolicy:
 #      from: []                         # empty = from anywhere
 

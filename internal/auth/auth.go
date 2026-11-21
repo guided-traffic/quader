@@ -31,8 +31,9 @@ const (
 	MethodBearer      Method = "bearer"
 	MethodBasic       Method = "basic"
 	MethodSession     Method = "session"
-	// MethodClientCertificate is the client certificate of a link between Quader's pods, the one credential of the scan listener's
-	// database routes, which admit the malware scanner by its name (malware-scanning.md R-MAL-006, Q-MAL-27).
+	// MethodClientCertificate is a client certificate: of a link between Quader's pods, the one credential of the scan listener's
+	// database routes, which admit the malware scanner by its name (malware-scanning.md R-MAL-006, Q-MAL-27); and of a request on an
+	// endpoint with auth.client_certificates, the certificate subject (R-EP-010 item 5, formats/clamav.md R-CLAMAV-010).
 	MethodClientCertificate Method = "client_certificate"
 )
 
@@ -63,6 +64,17 @@ type Credential struct {
 	ScanID string
 	// Blob is what a blob token reaches (malware-scanning.md R-MAL-006): one repository and one blob. Nil for every other credential.
 	Blob *registrytoken.BlobRef
+	// Certificate is the leaf of the client certificate of the certificate subject (R-EP-010 item 5, formats/clamav.md R-CLAMAV-010);
+	// nil for every other credential.
+	Certificate *ClientCertificate
+}
+
+// ClientCertificate is what the record of a certificate subject names of the leaf its listener verified (Q-CLAMAV-12): the subject and
+// the issuer as RFC 4514 strings, each cut at MaxCertificateName bytes, and the serial in lower-case hexadecimal.
+type ClientCertificate struct {
+	Subject string
+	Issuer  string
+	Serial  string
 }
 
 // Result is what the stage yields for an authenticated or anonymous request. A
@@ -94,6 +106,9 @@ type EndpointRules struct {
 	// Anonymous is true when the endpoint allows anonymous requests
 	// (auth.anonymous), subject to R-AUTH-037.
 	Anonymous bool
+	// ClientCertificates is auth.client_certificates (R-EP-010 item 5): a request without a token whose connection carries a chain
+	// the listener verified is the certificate subject. Configuration allows it on a further endpoint with tls.client_ca_file only.
+	ClientCertificates bool
 	// Served reports whether the process serves the route family of the request on this
 	// endpoint (R-EP-005, Q-ARCH-298, Q-ARCH-302). A request of a family it does not serve
 	// is never "always open" and never public: without a credential it is decided like an

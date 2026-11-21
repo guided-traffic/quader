@@ -150,11 +150,11 @@ describe("A well-known repository's page (R-UI-188)", () => {
 
   it('R-UI-188 Q-REPO-415 the fold Visibility says what a ClamAV needs at each level and sets the level; below Public the line carries the token', async () => {
     const { fixture, root, api } = await render('clamav', {
-      setup: (a) => a.set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public', fixed: ['state', 'address', 'account'] }),
+      setup: (a) => a.set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'public', fixed: ['state', 'address', 'account'] }),
     });
     const fold = root.querySelector('.level-fold')!;
     expect(text(fold)).toContain('Every ClamAV that reaches this address updates, without credentials.');
-    expect(text(fold)).toContain('A ClamAV authenticates with a token in its address, which freshclam writes into its log.');
+    expect(text(fold)).toContain('A ClamAV authenticates with a token in its address, which freshclam writes into its log, or with a client certificate.');
     expect(text(fold)).toContain('Only tokens of members.');
     root.querySelector<HTMLInputElement>('.level-fold input[type="radio"][value="internal"]')!.click();
     await settle(fixture);
@@ -162,6 +162,34 @@ describe("A well-known repository's page (R-UI-188)", () => {
     await settle(fixture);
     expect(api.calls).toContainEqual({ op: 'visibility', key: 'clamav', body: { level: 'internal' } });
     expect(text(root.querySelector('.clamav-setup')!)).toContain('PrivateMirror https://clamav:${QUADER_TOKEN}@quader.example.com/api/clamav/upstream/clamav');
+  });
+
+  it('R-UI-188 Q-UI-905 R-CLAMAV-010 the certificate lines and the certificate variant show only while an endpoint admits client certificates', async () => {
+    const certAddress = 'https://clamav.quader.example.com/api/clamav/upstream/clamav';
+    const none = await render('clamav', {
+      setup: (a) => a.set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'internal', fixed: ['state', 'address', 'account'] }),
+    });
+    const fold = none.root.querySelector('.level-fold')!;
+    expect(text(fold)).toContain('or with a client certificate. Client certificates need an endpoint your operator sets up.');
+    expect(text(fold)).toContain('Only tokens of members. Client certificates are not admitted.');
+    expect(none.root.querySelector('[data-testid="cert-none"] a')!.getAttribute('href')).toBe('/help/admin/endpoints#client-certificates-for-clamav-installations');
+    expect(none.root.querySelector('[data-testid="cert-addresses"]')).toBeNull();
+    expect(text(none.root.querySelector('.clamav-setup')!)).not.toContain('FRESHCLAM_CLIENT_CERT');
+    expect(text(none.root.querySelector('[data-testid="clamav-without"]')!)).toContain('curl -fsS --config -');
+
+    const some = await render('clamav', {
+      setup: (a) =>
+        a.set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [certAddress] }, visibility: 'internal', fixed: ['state', 'address', 'account'] }),
+    });
+    const lines = some.root.querySelector('[data-testid="cert-addresses"]')!;
+    expect(text(lines)).toContain('With a client certificate:');
+    expect([...lines.querySelectorAll<HTMLInputElement>('quader-address-field input')].map((i) => i.value)).toEqual([certAddress]);
+    expect(text(some.root.querySelector('.level-fold')!)).not.toContain('Client certificates need an endpoint');
+    const setup = text(some.root.querySelector('.clamav-setup')!);
+    expect(setup).toContain(`PrivateMirror ${certAddress}`);
+    expect(setup).toContain('Environment=FRESHCLAM_CLIENT_CERT=/etc/clamav/tls/client.crt');
+    expect(setup).toContain(`--cacert /etc/pki/quader-ca.pem`);
+    await expectAccessible(some.root);
   });
 
   it('R-REPO-075 Q-UI-903 where the installation allows no public level, switching on says Internal, and the section warns', async () => {
@@ -180,7 +208,7 @@ describe("A well-known repository's page (R-UI-188)", () => {
   });
 
   it('R-UI-188 switching ClamAV definition updates off asks first, and a reader sees the word and no switch', async () => {
-    const on = { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' as const, fixed: ['state' as const, 'address' as const, 'account' as const] };
+    const on = { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'public' as const, fixed: ['state' as const, 'address' as const, 'account' as const] };
     const { fixture, root, api } = await render('clamav', { setup: (a) => a.set('clamav', on) });
     root.querySelector<HTMLButtonElement>('[role="switch"]')!.click();
     await settle(fixture);

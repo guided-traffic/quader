@@ -32,7 +32,7 @@ import { figureName, formatBytes, formatCount } from '../limits/figures';
 import { UsageMeter } from './usage-meter';
 import { PERIODS, periodLabel, periodPhrase, reachedFilter, stateFilterLabel } from './usage-words';
 
-const KINDS: readonly UsageSubjectKind[] = ['user', 'technicalToken', 'ci', 'anonymous', 'system'];
+const KINDS: readonly UsageSubjectKind[] = ['user', 'technicalToken', 'ci', 'certificate', 'anonymous', 'system'];
 const SORTS: readonly UsageSort[] = ['requests', 'cachedBytes', 'uncachedBytes', 'upstreamRequests', 'refused', 'utilisation', 'name'];
 
 /** The column a sort is shown on; the caller's column sorts by name, **Now** by the utilisation. */

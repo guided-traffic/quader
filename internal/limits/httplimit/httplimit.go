@@ -57,6 +57,9 @@ func CallerOf(r *http.Request, p httpserver.Principal, admin bool) limits.Caller
 	if p.Anonymous {
 		c.Kind = limits.CallerAnonymous
 	}
+	if cc := p.Credential.ClientCert; c.Kind == limits.CallerCertificate && cc != nil {
+		c.CertSubject, c.CertSerial = cc.Subject, cc.Serial // the certificate subject's budget and credential (Q-CLAMAV-12)
+	}
 	if c.Kind == limits.CallerSystem {
 		c.System = p.Name // vuln-scanner-trivy or malware-scanner-clamav: the credential its reads are recorded with (Q-LIM-80)
 	}

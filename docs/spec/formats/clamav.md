@@ -3,9 +3,11 @@
 Status: the format, its data port, the endpoint, the switch and the API are built (2026-11-21, [developer/clamav.md](../../developer/clamav.md)),
 and so are the updater and the database task that fills the repository with verified containers, marks the set in use and cleans up
 (R-MAL-010, R-MAL-032 to R-MAL-034), and the screens: the switch in the admin area, the registry's section with the one line of the public
-and the token variant and its section **Updater**, the databases, their versions and what each holds (R-UI-187, R-UI-188, R-UI-194). The
-client certificates (R-CLAMAV-010) and the setup of the certificate and of the plain download (R-CLAMAV-006) are not built yet. The
-measurement of R-CLAMAV-009 against the owner's installation is not made yet; one on a kind cluster of the development agent is recorded in
+and the token variant and its section **Updater**, the databases, their versions and what each holds (R-UI-187, R-UI-188, R-UI-194). Built
+since as well: the client certificates of R-CLAMAV-010 (the endpoint key `auth.client_certificates`, the certificate subject and its rule,
+its records, the chart's `ingress.tlsPassthrough`, the read-only lines of the fold **Visibility**) and the setup of the certificate and of
+the plain download of R-CLAMAV-006 ([developer/clamav.md](../../developer/clamav.md#the-client-certificates)). The measurement of
+R-CLAMAV-009 against the owner's installation is not made yet; those on kind clusters of the development agent are recorded in
 [developer/clamav.md](../../developer/clamav.md#measured-on-a-kind-cluster). The owner's words of 2026-11-21: "Außerdem möchte ich, dass wir das freshclam artefakt als
 spezifisches ClamAV-Repo in Upstream einbindbar machen. ClamAV wird also ein eigenständiges Artefakt-Repo, wir ziehen alle verfügbaren
 Metadaten aus dem ClamAV-Definitionen. Ein Admin kann in den Upstream-Repos ClamAV-Definition-Updates einschalten, wodurch ein
@@ -251,7 +253,9 @@ PrivateMirror https://quader.example.com/api/clamav/upstream/clamav
     The guide says that the certificate must be issued by a CA the endpoint admits (the operator names it), that the key file is
     readable by the user `freshclam` runs as and nobody else, that an encrypted key needs `FRESHCLAM_CLIENT_KEY_PASSWD` in the same
     environment (where it is as readable as the unit), that the certificate works at Internal and Public and not at Private, and that
-    nothing of the certificate is written into `freshclam`'s log.
+    nothing of the certificate is written into `freshclam`'s log. The guide names the address of every endpoint on which a certificate
+    reads the repository now, and says without one that the operator sets one up
+    ([Q-CLAMAV-18](#q-clamav-18--the-guide-names-the-endpoints-on-which-a-certificate-reads-the-repository-now)).
 - **Without an updater** ([Q-CLAMAV-14](#q-clamav-14--an-installation-without-an-updater-downloads-the-three-files-from-fixed-addresses)):
   an installation that runs no `freshclam` (a `clamd` fed by a script, a host that takes a copy) downloads the three databases from
   fixed addresses, which always serve the version in use (R-CLAMAV-004), into its database directory and reloads `clamd`:
@@ -694,6 +698,25 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) The hook writes what the path gives and leaves the metadata empty | Lenient | Any commit succeeds | Versions without build time, level or verification |
 
 **Choice:** (a). **Applied in the spec:** R-CLAMAV-002.
+
+### Q-CLAMAV-18 · The guide names the endpoints on which a certificate reads the repository now
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the guide of R-CLAMAV-006 shows the certificate's way "only while an endpoint admits client certificates", and the line names
+that endpoint's address. The guide's templates see `GuideData` only, which held no endpoint but the request's, and the format contract
+is frozen (R-ARCH-025).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A field `GuideData.CertificateURLs`: the registry URL on every endpoint with `auth.client_certificates` on which a certificate subject reads the repository now, asked of the decision point (chosen) | An addition to the contract, the version unchanged ([ADR-232](../../decisions.md#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository)) | The guide shows the way exactly where it works: the switch on, the level internal or public, the endpoint's exposure admitting it; the decision point answers it, not a second rule | One more field of a frozen contract |
+| (b) A placeholder host in the guide, the admin page lists the real addresses | No contract change | Nothing new | The reader of **Set up client** copies a line that names no real host, and sees the way where no endpoint admits certificates |
+| (c) Every endpoint with the key, whatever the repository's level and the exposure | A list of the configuration | Simplest | A way that answers `404` at Private or under an exposure that hides the repository |
+
+**Choice:** (a). **Applied in the spec:** R-CLAMAV-006. Code: `GuideData.CertificateURLs` in
+[guide.go](../../../internal/formats/guide.go), `certificateURLs` in [guide_api.go](../../../internal/api/v1/guide_api.go),
+`Access.ReadableByCertificate` in [access.go](../../../internal/api/edge/access.go); the kit runs every guide over a variant with an address
+([formattest/guide.go](../../../internal/formats/formattest/guide.go)).
 
 ## What this does not cover
 

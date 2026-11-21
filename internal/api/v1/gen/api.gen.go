@@ -3985,9 +3985,25 @@ func (e UsageSubjectCIKind) Valid() bool {
 	}
 }
 
+// Defines values for UsageSubjectCertificateKind.
+const (
+	UsageSubjectCertificateKindCertificate UsageSubjectCertificateKind = "certificate"
+)
+
+// Valid indicates whether the value is a known member of the UsageSubjectCertificateKind enum.
+func (e UsageSubjectCertificateKind) Valid() bool {
+	switch e {
+	case UsageSubjectCertificateKindCertificate:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UsageSubjectKind.
 const (
 	UsageSubjectKindAnonymous      UsageSubjectKind = "anonymous"
+	UsageSubjectKindCertificate    UsageSubjectKind = "certificate"
 	UsageSubjectKindCi             UsageSubjectKind = "ci"
 	UsageSubjectKindSystem         UsageSubjectKind = "system"
 	UsageSubjectKindTechnicalToken UsageSubjectKind = "technicalToken"
@@ -3998,6 +4014,8 @@ const (
 func (e UsageSubjectKind) Valid() bool {
 	switch e {
 	case UsageSubjectKindAnonymous:
+		return true
+	case UsageSubjectKindCertificate:
 		return true
 	case UsageSubjectKindCi:
 		return true
@@ -5419,6 +5437,7 @@ func (e ListProjectUsageParamsPeriod) Valid() bool {
 // Defines values for ListProjectUsageParamsKind.
 const (
 	ListProjectUsageParamsKindAnonymous      ListProjectUsageParamsKind = "anonymous"
+	ListProjectUsageParamsKindCertificate    ListProjectUsageParamsKind = "certificate"
 	ListProjectUsageParamsKindCi             ListProjectUsageParamsKind = "ci"
 	ListProjectUsageParamsKindSystem         ListProjectUsageParamsKind = "system"
 	ListProjectUsageParamsKindTechnicalToken ListProjectUsageParamsKind = "technicalToken"
@@ -5429,6 +5448,8 @@ const (
 func (e ListProjectUsageParamsKind) Valid() bool {
 	switch e {
 	case ListProjectUsageParamsKindAnonymous:
+		return true
+	case ListProjectUsageParamsKindCertificate:
 		return true
 	case ListProjectUsageParamsKindCi:
 		return true
@@ -5542,6 +5563,7 @@ func (e ExportProjectUsageParamsPeriod) Valid() bool {
 // Defines values for ExportProjectUsageParamsKind.
 const (
 	ExportProjectUsageParamsKindAnonymous      ExportProjectUsageParamsKind = "anonymous"
+	ExportProjectUsageParamsKindCertificate    ExportProjectUsageParamsKind = "certificate"
 	ExportProjectUsageParamsKindCi             ExportProjectUsageParamsKind = "ci"
 	ExportProjectUsageParamsKindSystem         ExportProjectUsageParamsKind = "system"
 	ExportProjectUsageParamsKindTechnicalToken ExportProjectUsageParamsKind = "technicalToken"
@@ -5552,6 +5574,8 @@ const (
 func (e ExportProjectUsageParamsKind) Valid() bool {
 	switch e {
 	case ExportProjectUsageParamsKindAnonymous:
+		return true
+	case ExportProjectUsageParamsKindCertificate:
 		return true
 	case ExportProjectUsageParamsKindCi:
 		return true
@@ -5830,6 +5854,7 @@ func (e ListUsageParamsPeriod) Valid() bool {
 // Defines values for ListUsageParamsKind.
 const (
 	ListUsageParamsKindAnonymous      ListUsageParamsKind = "anonymous"
+	ListUsageParamsKindCertificate    ListUsageParamsKind = "certificate"
 	ListUsageParamsKindCi             ListUsageParamsKind = "ci"
 	ListUsageParamsKindSystem         ListUsageParamsKind = "system"
 	ListUsageParamsKindTechnicalToken ListUsageParamsKind = "technicalToken"
@@ -5840,6 +5865,8 @@ const (
 func (e ListUsageParamsKind) Valid() bool {
 	switch e {
 	case ListUsageParamsKindAnonymous:
+		return true
+	case ListUsageParamsKindCertificate:
 		return true
 	case ListUsageParamsKindCi:
 		return true
@@ -5953,6 +5980,7 @@ func (e ExportUsageParamsPeriod) Valid() bool {
 // Defines values for ExportUsageParamsKind.
 const (
 	ExportUsageParamsKindAnonymous      ExportUsageParamsKind = "anonymous"
+	ExportUsageParamsKindCertificate    ExportUsageParamsKind = "certificate"
 	ExportUsageParamsKindCi             ExportUsageParamsKind = "ci"
 	ExportUsageParamsKindSystem         ExportUsageParamsKind = "system"
 	ExportUsageParamsKindTechnicalToken ExportUsageParamsKind = "technicalToken"
@@ -5963,6 +5991,8 @@ const (
 func (e ExportUsageParamsKind) Valid() bool {
 	switch e {
 	case ExportUsageParamsKindAnonymous:
+		return true
+	case ExportUsageParamsKindCertificate:
 		return true
 	case ExportUsageParamsKindCi:
 		return true
@@ -12238,10 +12268,13 @@ type UpstreamRepositoryBulkResult struct {
 }
 
 // UpstreamRepositoryClients The switch **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382): whether the endpoint serves the company's ClamAV
-// installations, and its address, the protocol base of the repository on the base URL of the request.
+// installations, and its address, the protocol base of the repository on the base URL of the request; and the addresses on the
+// endpoints that admit client certificates (`auth.client_certificates`, formats/clamav.md R-CLAMAV-010), by endpoint name, empty
+// while none does.
 type UpstreamRepositoryClients struct {
-	Address string `json:"address"`
-	Enabled bool   `json:"enabled"`
+	Address              string   `json:"address"`
+	CertificateAddresses []string `json:"certificateAddresses"`
+	Enabled              bool     `json:"enabled"`
 }
 
 // UpstreamRepositoryClientsRequest Switches the clients of `clamav` on or off (R-REPO-075). `level` is read only with `enabled: true`; omitted, it is `public`.
@@ -12557,6 +12590,16 @@ type UsageSubjectCI struct {
 
 // UsageSubjectCIKind defines model for UsageSubjectCI.Kind.
 type UsageSubjectCIKind string
+
+// UsageSubjectCertificate The certificate subject of an endpoint that takes a client certificate as a credential (formats/clamav.md R-CLAMAV-010): `id` and `name` are the certificate's subject, an RFC 4514 string of at most 255 bytes.
+type UsageSubjectCertificate struct {
+	Id   string                      `json:"id"`
+	Kind UsageSubjectCertificateKind `json:"kind"`
+	Name string                      `json:"name"`
+}
+
+// UsageSubjectCertificateKind defines model for UsageSubjectCertificate.Kind.
+type UsageSubjectCertificateKind string
 
 // UsageSubjectKind defines model for UsageSubjectKind.
 type UsageSubjectKind string
@@ -16504,6 +16547,32 @@ func (t *UsageSubject) FromUsageSubjectSystem(v UsageSubjectSystem) error {
 
 // MergeUsageSubjectSystem performs a merge with any union data inside the UsageSubject, using the provided UsageSubjectSystem
 func (t *UsageSubject) MergeUsageSubjectSystem(v UsageSubjectSystem) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageSubjectCertificate returns the union data inside the UsageSubject as a UsageSubjectCertificate
+func (t UsageSubject) AsUsageSubjectCertificate() (UsageSubjectCertificate, error) {
+	var body UsageSubjectCertificate
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageSubjectCertificate overwrites any union data inside the UsageSubject as the provided UsageSubjectCertificate
+func (t *UsageSubject) FromUsageSubjectCertificate(v UsageSubjectCertificate) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageSubjectCertificate performs a merge with any union data inside the UsageSubject, using the provided UsageSubjectCertificate
+func (t *UsageSubject) MergeUsageSubjectCertificate(v UsageSubjectCertificate) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
