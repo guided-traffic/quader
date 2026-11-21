@@ -310,11 +310,19 @@ versions-check: ## One version per tool (E0.2): go, Node, sqlc, oapi-codegen, th
 # ~/.aws or the shell made TestBackupCommands pass locally and fail in Test and Release run 42387599073.
 UNIT_ENV := env -u AWS_REGION -u AWS_DEFAULT_REGION -u AWS_PROFILE -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY \
   -u AWS_SESSION_TOKEN AWS_CONFIG_FILE=/nonexistent AWS_SHARED_CREDENTIALS_FILE=/nonexistent AWS_EC2_METADATA_DISABLED=true
+# The time one unit test binary may take under the race detector and coverage. Go's default of 10 minutes ended
+# internal/api/v1, the slowest package by far: 476 to 487 s in the unit job in the morning of 2026-11-21, 585 s after the
+# signatures' second package, over 600 s with the image analyser's move (Test and Release 44930739304); the next slowest
+# (formattest, archtest, app) take 100 to 160 s. 20 minutes is twice what that package took in the morning and stays below
+# the job's own limit of 30, whose whole run took 11.9 to 14.1 minutes that day: setup and the build take about 3 minutes
+# before the first package ends and the kit's plain run and the uploads about 1 minute after the last, so a package that
+# hangs is ended by this bound with its goroutines printed, not by the runner without them.
+UNIT_TIMEOUT ?= 20m
 
 .PHONY: test
 test: ## Unit tests with the race detector, without the host's AWS configuration; .out/test-unit.json for the coverage generator, .out/coverage/unit.out for the report
 	@mkdir -p .out $(COVERAGE_DIR)
-	@set -o pipefail; $(UNIT_ENV) go test -race -count=1 -covermode=atomic -coverpkg=./... \
+	@set -o pipefail; $(UNIT_ENV) go test -race -count=1 -timeout $(UNIT_TIMEOUT) -covermode=atomic -coverpkg=./... \
 	  -coverprofile=$(COVERAGE_DIR)/unit.out -json $(PKGS) | tee .out/test-unit.json | $(TESTLOG)
 	@# The time bounds of the conformance kit (R-ARCH-028: a crafted input is rejected within 5 s) hold for the code as it
 	@# ships: the race run above stretches them, this plain run of the kit holds them as specified.
