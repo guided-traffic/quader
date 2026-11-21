@@ -1056,7 +1056,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (03:30), three builders (package B of the scanner, sent back once; the fix of the download's second statement on the malware scan's branch; the stack's lock and the coordination tests' queries); collected on the branch `fixes/nightly` with its gates green and held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165):
+- **In work** (03:36), two builders (the fix of the download's second statement on the malware scan's branch; the stack's lock and the coordination tests' queries); collected on the branch `fixes/nightly`, its gates running, and held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case), two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165) and package B of the scanner:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1338,7 +1338,29 @@ runs are in `git log`; this section holds the current state.
     now. It also rebases onto the evening's fixes, runs every integration area and the bare starts (its change
     removes configuration keys and adds a rule), and answers with what it ran: whether any CI leg or local profile
     now pulls the real database of 142 MB, where the removed keys are still written, and what the owner's
-    installation does at the upgrade. **It lands after the nightly.**
+    installation does at the upgrade. **It lands after the nightly.** **Second report at 03:36, accepted** (one
+    commit, rebased onto the evening's fixes). **The removal:** after a run that succeeds, every layer and manifest of
+    the database's image older than the repository's own cache period goes, in batches, through the items' own delete
+    path as the system subject, so blobs and audit follow; the layer in use and the manifest the run read stay; a
+    failed run removes nothing. In practice that is `upstream/scanner-trivy` with its 48 hours, at most the layer in
+    use and two days of builds, about 1.3 GB; a repository of the installation's own keeps every layer and is the
+    operator's (Q-VULN-194). H-1160 shrinks to builds that fail the archive's checks, which pile up until a run
+    succeeds. **Its three answers:** (a) before this commit every kind cluster and the local UI profile fetched the
+    real database of 142 MB from the public mirror whenever they were up at minute 23 of 00, 06, 12 or 18 UTC (the
+    old source was on by default and no profile switched it off); with this commit the scheduled run is off in the
+    development profile, the restore profile and the UI profile (Q-VULN-195), a run by hand still fetches, and a
+    fresh cluster does not fetch at its first scan; (b) no profile, chart value, fixture or example sets a removed key
+    or an image the new rule refuses, and the UI profile's configuration validates; (c) the owner's installation
+    needs no change of its values: after the migration the first image scan finds the layer missing from the
+    repository, wakes the task, and a worker fetches the tag and one blob of 142 MB through the system repository;
+    if the tag still names the old digest nothing is detected again. A sync failure of a registered conflict
+    answers 409 now. **Its run of every integration area** (67): 66 passing at once, started before the lock was
+    known not to hold; `vulnrestore` failed on this commit's own change (the system information lists the image
+    database as a source now, as the sources API does), its test follows and it passed alone. The bare starts of a
+    worker, `packages` and the role `all` pass. Gates with exit 0: the full unit run, lint, cyclo, gosec,
+    generate-check, chart tests, the UI tests, lint and layout tests, links and check. What the retention cost: one
+    unit test, one database-only integration test of 1.2 s, about 3 s more in the area `vulnimage`. **Collected with
+    the five fixes of the nightly on the branch `fixes/nightly`, whose gates run.**
 - **The role `scanner` (package A), landed on 2026-11-20 at 20:19** in two commits: "container images are analysed in
   scanner pods that hold no secret of the installation" and "every kind of pod has a TLS certificate of its own, which
   the chart issues through cert-manager" (the owner's decision, [With the owner](#with-the-owner)). **The
