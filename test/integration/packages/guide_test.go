@@ -89,14 +89,25 @@ func TestR_API_053_TheGuideThroughTheStack(t *testing.T) {
 			t.Fatalf("anonymous with anonymous access off: %d", a.Status)
 		}
 	})
+	// Every format of the build is listed with its clients, a system-only one too (formats/clamav.md R-CLAMAV-001: the list
+	// names it with systemOnly, and its guide serves the company's ClamAV installations). A new format joins this table.
 	t.Run("the formats list names the clients", func(t *testing.T) {
+		clients := map[string][]string{
+			"npm":     {"npm", "pnpm", "yarn", "yarn-classic"},
+			"nuget":   {"dotnet", "nuget", "visual-studio"},
+			"generic": {"curl"},
+			"oci":     {"docker", "podman"},
+			"deb":     {"apt"},
+			"ansible": {"ansible-galaxy"},
+			"clamav":  {"freshclam"},
+		}
 		for _, f := range e.get(e.tokA, "/api/v1/formats").JSON(t)["formats"].([]any) {
 			m := f.(map[string]any)
 			var ids []string
 			for _, c := range m["clients"].([]any) {
 				ids = append(ids, c.(map[string]any)["id"].(string))
 			}
-			want := map[string][]string{"npm": {"npm", "pnpm", "yarn", "yarn-classic"}, "nuget": {"dotnet", "nuget", "visual-studio"}, "generic": {"curl"}, "oci": {"docker", "podman"}, "deb": {"apt"}, "ansible": {"ansible-galaxy"}}[m["name"].(string)]
+			want := clients[m["name"].(string)]
 			if !slices.Equal(ids, want) {
 				t.Errorf("%s: clients %v", m["name"], ids)
 			}
