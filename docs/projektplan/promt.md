@@ -927,7 +927,16 @@ runs are in `git log`; this section holds the current state.
   `test`, held for the end of the nightly:** the profile's PostgreSQL may use 3 GiB, sized for the connection budget
   the server admits (323 connections at about 7.75 MiB and the shared buffers, 2.6 GiB); a limit reserves nothing.
   No limit of the product was touched. **Not proven until a run uses it.** No local reproduction: the machine's
-  load was 30 on 20 CPUs and the evidence settled the cause.
+  load was 30 on 20 CPUs and the evidence settled the cause. **The third red leg, at 01:18, cause not known yet:**
+  `e2e (ansible)`, the case of `TestAnsibleLimits` for `cachedBytesPerHour`: the install that should cross the hour's
+  limit and be served was itself refused with 429 ("Failed to download collection tar … HTTP Error 429"), where the
+  case expects the refusal at the next install. The set runs only on a change of Ansible's own code and in the
+  nightly, so it had not met the landings of 2026-11-20. Suspected, not verified: the background download that a
+  probe now starts in a remote repository charges the fill against the caller's `cachedBytesPerHour` before the
+  client asks for the archive, or the second usage dimension of `upstream` counts a row twice. A builder reads the
+  leg's artifacts and the two specifications for it (since 01:19). If the two features meet in a case neither page
+  decides (who pays for the bytes of a background download a probe started), that goes to the owner as a decision
+  with what every format does today, and is not picked in code.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -948,7 +957,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (00:08), three builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once); held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
+- **In work** (01:19), four builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's Ansible leg); held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
