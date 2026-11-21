@@ -1376,8 +1376,14 @@ runs are in `git log`; this section holds the current state.
   over from the old repository) eleven seconds after their start, so the scanning had no gap. The updater
   seeded its directory from that set (four files, 0.7 s) and was ready five seconds after its start; its
   `freshclam` then reached ClamAV's network, found `main` and `bytecode` up to date and fetched `daily` 28190
-  whole. **Not seen yet:** the worker's import asking this updater (its next run is on the half hour) and
-  storing the whole `daily` it fetched; it is looked at after that run. **Not verified:** the German
+  whole. **The import's first run against this updater was scheduled at 15:30:08 and logged nothing**, neither
+  a new set in use nor a failure nor the waiting for a first set: the set's name is the one in use, so by the
+  log it took nothing. **Not verified, and looked at when ClamAV's next `daily` arrives:** which file the
+  repository holds for `daily` 28190 after the upgrade (the one carried over from the old repository, which
+  the updater's `freshclam` did not accept as current, or the whole container fetched since), and with it
+  whether the endpoint could serve `daily` to a company's ClamAV before the next set; the first real take of
+  a new set on his installation (the line "a new signature database is in use" in the worker's log). The
+  scanning itself is not touched by it: both scanners run with the set in use. **Not verified:** the German
   screens in a browser; the updater's rows on the screens against a running updater (the renders used rows
   written by hand); the 503 at a request limit and an external user's 404 in an integration case; a token in
   the client's URL and the plain download with a real client; a new `daily` arriving while the updater runs.
