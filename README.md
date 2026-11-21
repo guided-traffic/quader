@@ -422,8 +422,8 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Job of a backup run | `QUADER_JOB_NAME`, set by the chart on the backup CronJob's pods from the label `job-name` and recorded in `backup_run`: the retry pod of the same Job waits for its predecessor's lease instead of exiting `3` ([R-BAK-010](docs/spec/backup-and-restore.md#r-bak-010--one-target-writing-operation-at-a-time)). Empty outside a Job | yes (`_backup.tpl`, `cmd/quader/backup_create.go`) |
 | Scratch of the backup, restore and post-restore pods | `TMPDIR=/tmp`, an `emptyDir` of `backup.tmpSizeLimit` (the commands use at most 64 MiB of it) | yes (`_backup.tpl`) |
 | Worker queues | `QUADER_JOBS_QUEUES='["vuln"]'` on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES='["index","vuln"]'` on the main worker beside pools (JSON lists) | yes (`_deployment.tpl`) |
-| Scan listener | `QUADER_SERVER_SCAN_LISTEN=:8082`, set by the chart on the main `packages` Deployment while the image scanning or the malware scanning is on | yes (`_scanner.tpl`) |
-| Kind of scanner | `QUADER_PROCESS_SCANNER_KIND=malware`, set by the chart on the malware scanner | yes (`malware-scanner.yaml`) |
+| Scan listener | `QUADER_SERVER_SCAN_LISTEN=:8082`, set by the chart on the main `packages` Deployment while the image scanning or the malware scanning is on | yes (`_vuln.tpl`) |
+| Kind of scanner | `QUADER_PROCESS_SCANNER_KIND=clamav`, set by the chart on `<fullname>-malware-scanner-clamav`; `<fullname>-vuln-scanner-trivy` runs the default, `trivy` | yes (`malware-scanner-clamav.yaml`) |
 | Object-store settings from a Secret | `QUADER_STORAGE_S3_BUCKET`, `QUADER_STORAGE_S3_ENDPOINT`, `QUADER_STORAGE_S3_REGION`, each read from a key of `secrets.s3` when that key is set | yes (`deploy/helm/quader/templates/_endpoints.tpl`) |
 | Dev profile | `QUADER_DEV_HTTP_PORT` (edge port, default `8080`), `QUADER_PROFILE` (`default` or `scatter`) | yes (`deploy/dev/`) |
 | M1 settings | `QUADER_<SECTION>_<KEY>` for `auth`, `authz`, `api`, `repositories`, with nested keys joined by `_`: `QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE`, `QUADER_API_RATE_LIMITS_EXEMPT_ADMINS` (the rule of the configuration override above) | yes |
@@ -432,11 +432,11 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 
 | Name | Value | Built |
 |---|---|---|
-| Kinds of pod with a pair | `api`, `packages`, `worker`, `scanner`, `malware-scanner` (pools and endpoint pools carry their role's) | yes (`_tls.tpl`) |
+| Kinds of pod with a pair | `api`, `packages`, `worker`, `vuln-scanner-trivy`, `malware-scanner-clamav` (pools and endpoint pools carry their role's); a kind that runs one third-party tool is `<purpose>-scanner-<tool>` | yes (`_tls.tpl`) |
 | Name of a kind | `<fullname>-<kind>.<namespace>.svc`, and `<fullname>-ops.<namespace>.svc` in every pair for the scrape; the edge and the links check the kind's name | yes (`_tls.tpl`) |
 | Certificate and Secret of a kind | `<fullname>-tls-<kind>` with `tls.certManager.issuerRef`; else `tls.existingSecrets.<kind>` | yes (`certificates.yaml`) |
 | Listener certificate mount | `/var/run/secrets/quader/tls/` (`tls.crt`, `tls.key` of the pod's own kind; every pod with TLS) | yes (`_secrets.tpl`) |
-| Internal CA mount | `/var/run/secrets/quader/tls/ca.crt` (`ca.crt` of the pod's own Secret; renders `server.internal_tls.ca_file`): the trust anchor of the links of the image scanning and the malware scanning, in the `worker`, main `packages`, `scanner` and `malware-scanner` pods, never in `api` pods | yes (`_scanner.tpl`) |
+| Internal CA mount | `/var/run/secrets/quader/tls/ca.crt` (`ca.crt` of the pod's own Secret; renders `server.internal_tls.ca_file`): the trust anchor of the links of the image scanning and the malware scanning, in the `worker`, main `packages`, `vuln-scanner-trivy` and `malware-scanner-clamav` pods, never in `api` pods | yes (`_vuln.tpl`) |
 | Listener client CA mount | `/var/run/secrets/quader/tls-client-ca/ca.crt` (the pods that open :8080: `api`, `packages` and their path pools) | yes |
 | Endpoint certificate mount | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`tls.crt`, `tls.key`; `n` is the position in `tls.certificates`), client CA at `…/<name>/client-ca/ca.crt` | yes (`_endpoints.tpl`) |
 | PostgreSQL CA and client pair | `/var/run/secrets/quader/database-ca/ca.crt`, `/var/run/secrets/quader/database-client/tls.{crt,key}` | yes |
@@ -592,7 +592,7 @@ The families of the vulnerability scanning (M4b), defined once in [internal/vuln
 | `quader_vuln_audit_requests_total` | `format`, `mode` (`local`, `forward`, `disabled`), `outcome` (`ok`, `refused`, `unavailable`, `error`): the npm bulk audits of every mode ([handlers_audit.go](internal/formats/npm/handlers_audit.go)); the NuGet vulnerability documents are not counted |
 | `quader_vuln_claimed_name_matches` | `ecosystem`, `kind` (`vulnerability`, `malicious`); gauge: public advisories that name a claimed internal name |
 | `quader_vuln_image_scans_total`, `quader_vuln_image_scan_duration_seconds` | `result` (`scanned`, or the code that ended or put off the scan: `scanner_busy`, `scanner_unavailable`, `registry_unavailable`, `pull_refused`, `scanner_lost`, `layer_missing`, …) on the worker |
-| `quader_scanner_analyses_total` | `result` (`analysed`, `cancelled`, or the code the call answered); on the `scanner` pods ([internal/vuln/scanner/metrics.go](internal/vuln/scanner/metrics.go)) |
+| `quader_scanner_analyses_total` | `result` (`analysed`, `cancelled`, or the code the call answered); on the `vuln-scanner-trivy` pods ([internal/vuln/scanner/metrics.go](internal/vuln/scanner/metrics.go)) |
 | `quader_scanner_analysis_duration_seconds` | `step` (`pull`, `analyse`) |
 | `quader_scanner_slots_busy` | none; gauge: the slots that hold an analysis |
 
@@ -644,16 +644,16 @@ The label sets of the M1 families are not restated per family in this pass; read
 |---|---|---|
 | Chart | `deploy/helm/quader` | yes |
 | Sizing profiles | `deploy/helm/quader/profiles/small.yaml`, `medium.yaml`, `large.yaml` (R-HA-050), layered before your own values file | yes |
-| Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`), `<fullname>-scanner` (`--role scanner`, while the image scanning is on), `<fullname>-malware-scanner` (`--role scanner` of the kind `malware`, containers `quader` and `clamd`, while the malware scanning is on) | yes |
-| ClamAV containers and files | `clamd` beside the malware scanner (socket `/run/clamd/clamd.sock`, database `/var/lib/clamav`, which the scanner loads before it writes the marker `.quader-loaded`), `freshclam` beside every worker that claims the queue `malware` (its directory `/var/lib/clamav`, the worker's `/var/lib/quader/freshclam`, marker `.quader-seeded`); ConfigMaps `<fullname>-clamd` (`clamd.conf`) and `<fullname>-freshclam` (`freshclam.conf`); the image `clamav.image` = `CLAMAV_IMAGE` of `tools/versions.env` | yes (`_malware.tpl`, `malware-scanner.yaml`) |
+| Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`), `<fullname>-vuln-scanner-trivy` (`--role scanner` of the kind `trivy`, while the image scanning is on), `<fullname>-malware-scanner-clamav` (`--role scanner` of the kind `clamav`, containers `quader` and `clamd`, while the malware scanning is on); a Deployment that runs one third-party tool is named `<fullname>-<purpose>-scanner-<tool>` | yes |
+| ClamAV containers and files | `clamd` beside the malware scanner (socket `/run/clamd/clamd.sock`, database `/var/lib/clamav`, which the scanner loads before it writes the marker `.quader-loaded`), `freshclam` beside every worker that claims the queue `malware` (its directory `/var/lib/clamav`, the worker's `/var/lib/quader/freshclam`, marker `.quader-seeded`); ConfigMaps `<fullname>-clamd` (`clamd.conf`) and `<fullname>-freshclam` (`freshclam.conf`); the image `clamav.image` = `CLAMAV_IMAGE` of `tools/versions.env` | yes (`_malware.tpl`, `malware-scanner-clamav.yaml`) |
 | Pools | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>` (path pools, with a Service of the same name), `<fullname>-worker-<pool>` (label `quader/pool: <pool>`) | yes (`_units.tpl`) |
 | Endpoint pools | `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>`, label `quader/pool: ep-<name>`, for an endpoint with `endpoints.<name>.pool.enabled` (one per role its surface holds) | yes (`_units.tpl`) |
 | Endpoint objects | `<fullname>-ep-<name>` (and `<fullname>-api-ep-<name>` for a surface over both roles) for the Services and the Ingress of a further endpoint | yes |
 | Disruption budgets, autoscalers | one per Deployment, named as the Deployment | yes |
 | Migration hook Job | `<fullname>-migrate`; not rendered while `restore.enabled`, because the restore applies the migrations itself | yes |
 | ConfigMap | `<fullname>-config`, holding `quader.yaml` | yes |
-| Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port); `<fullname>-scanner` (8080, while the image scanning is on), `<fullname>-malware-scanner` (8080, while the malware scanning is on) and `<fullname>-packages-scan` (8082, while either is on), always `ClusterIP` | yes |
-| Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing); `<fullname>-scanner` admits 8080 from the worker that claims `vuln`, `<fullname>-malware-scanner` 8080 from the worker that claims `malware`, and `<fullname>-packages` 8082 from the pods of both scanners | yes |
+| Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port); `<fullname>-vuln-scanner-trivy` (8080, while the image scanning is on), `<fullname>-malware-scanner-clamav` (8080, while the malware scanning is on) and `<fullname>-packages-scan` (8082, while either is on), always `ClusterIP` | yes |
+| Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing); `<fullname>-vuln-scanner-trivy` admits 8080 from the worker that claims `vuln`, `<fullname>-malware-scanner-clamav` 8080 from the worker that claims `malware`, and `<fullname>-packages` 8082 from the pods of both scanners | yes |
 | Edge | per host: `/` and `/api/v1` to `<fullname>-api`; `/api`, `/files`, `/v2`, `/.well-known` to `<fullname>-packages`; the paths of path pools to their Services | yes |
 | PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 36 alerts: 30 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
 | Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `quader backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so the render fails when `<fullname>-backup` exceeds 52 characters; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/quader/templates/backup.yaml)) |
@@ -912,7 +912,7 @@ helm repo add quader https://guided-traffic.github.io/quader/
 helm repo update quader
 helm install quader quader/quader -n quader -f values.yaml --version <v>   # example: <v> from helm search repo quader --versions
 helm status quader -n quader                                             # example: STATUS: deployed
-kubectl -n quader get certificate                                        # example: quader-tls-api, -packages, -worker, -scanner READY True
+kubectl -n quader get certificate                                        # example: quader-tls-api, -packages, -worker, -vuln-scanner-trivy, -malware-scanner-clamav READY True
 ```
 
 **1. Start the local profile** (a kind cluster, CloudNativePG PostgreSQL with a standby, Valkey with a replica and three
@@ -1240,12 +1240,12 @@ struct tags (for example `database.password_file`) takes a file path only, read 
 ```yaml
 process:
   role: ""                              # no default: api, packages, worker, scanner, web or all; required by serve
-  scanner_kind: image                   # default; malware: a malware scanner, which reads the section malware instead of vulnerabilities.images (the role scanner only)
+  scanner_kind: trivy                   # default: the tool the role scanner wraps; clamav: a malware scanner, which reads the section malware instead of vulnerabilities.images (the role scanner only)
 server:
   listen: ":8080"                       # default: the default endpoint's listener; in the role scanner the scanner's listener
   ops_listen: ":8081"                   # default
   scan_listen: ""                       # default: none; example ":8082": the scan listener of packages, web and all, which accepts scan tokens only (the chart sets it on the main packages Deployment)
-  scan_clients: []                      # default: empty = the CA alone admits (the role all); required with scan_listen and TLS: the names of the kinds of scanner it admits; the chart sets [<fullname>-scanner.<namespace>.svc]
+  scan_clients: []                      # default: empty = the CA alone admits (the role all); required with scan_listen and TLS: the names of the kinds of scanner it admits; the chart sets [<fullname>-vuln-scanner-trivy.<namespace>.svc, <fullname>-malware-scanner-clamav.<namespace>.svc]
   internal_tls:
     ca_file: ""                         # default; example /var/run/secrets/quader/tls/ca.crt (the chart's, the ca.crt of the pod's own Secret): the CA the links of the image scanning verify both sides against; required with server.tls on the scanner, the scan listener and a worker while the image scanning is on (the chart sets it)
   read_header_timeout: 10s              # default; at least 1s
@@ -1996,8 +1996,8 @@ vulnerabilities:
     max_entries: 5000000                # default
     pull_timeout: 10m                   # default; 1m to 1h: the scanner's pull, and the lifetime of a scan token
     scanner:
-      url: ""                           # default; example https://quader-scanner.quader.svc:8080; required in a worker; empty in all = its own scanner over loopback (the chart sets it)
-      server_name: ""                   # default: the host of url; listed exactly in the scanner's certificate; the chart sets <fullname>-scanner.<namespace>.svc
+      url: ""                           # default; example https://quader-vuln-scanner-trivy.quader.svc:8080; required in a worker; empty in all = its own scanner over loopback (the chart sets it)
+      server_name: ""                   # default: the host of url; listed exactly in the scanner's certificate; the chart sets <fullname>-vuln-scanner-trivy.<namespace>.svc
       client_name: ""                   # default: empty = the CA alone admits (the role all); required in a scanner with TLS: the worker's name its listener admits; the chart sets <fullname>-worker.<namespace>.svc
       slots: 1                          # default; 1 to 16: analyses one scanner runs at once (H-1037 above 1)
     registry:
@@ -2249,8 +2249,8 @@ malware:
     cycle: 720h                         # default; every verdict at least this often (H-1111)
     cycle_batch: 10000                  # default
   scanner:                              # the worker's call (R-MAL-005) and the malware scanner's own bounds (R-MAL-007, R-MAL-008)
-    url: ""                             # example: https://quader-malware-scanner.quader.svc:8080 (the chart sets it); empty: the job makes no call
-    server_name: ""                     # the chart sets <fullname>-malware-scanner.<namespace>.svc
+    url: ""                             # example: https://quader-malware-scanner-clamav.quader.svc:8080 (the chart sets it); empty: the job makes no call
+    server_name: ""                     # the chart sets <fullname>-malware-scanner-clamav.<namespace>.svc
     client_name: ""                     # the worker's name the malware scanner admits; required in a malware scanner with TLS; the chart sets it
     slots: 2                            # default; calls one malware scanner runs at a time, clamd's MaxThreads; more than 1 lets one pod's scans reach each other through clamd (H-1105)
     socket: /run/clamd/clamd.sock       # default
@@ -2830,7 +2830,7 @@ worker:
     sizeLimit: 5Gi                      # default
   autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
   pools: []                             # default; example: [{name: vuln, queues: [vuln], replicaCount: 2}]; the main worker claims every queue no pool lists (queues: default, maintenance, index, delivery, mirror, vuln)
-scanner:                                # the analysis of container images, rendered while config.vulnerabilities.enabled and .images.enabled (both default true)
+vulnScannerTrivy:                       # <fullname>-vuln-scanner-trivy, the analysis of container images with Trivy, rendered while config.vulnerabilities.enabled and .images.enabled (both default true)
   replicaCount: 2                       # default; at least 1, 2 with highAvailability.enforce; the capacity is replicas × config.vulnerabilities.images.scanner.slots
   terminationGracePeriodSeconds: 60     # default; an analysis still running at the shutdown timeout is ended and put off without an attempt
   spool:
@@ -2840,6 +2840,29 @@ scanner:                                # the analysis of container images, rend
   podDisruptionBudget: {enabled: true, maxUnavailable: 1}   # default
   topologySpread: {enabled: true, nodeTaintsPolicy: Honor}     # default; as api
   extraEnv: []                          # default; the scanner's own: the shared extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts never reach it
+clamav:
+  image: docker.io/clamav/clamav-debian:1.5.5_base@sha256:739c5ec70212e2d3e0c7719af2fba8776fb435f9932d7d3a3de2a95fcd6adde7   # default: CLAMAV_IMAGE of tools/versions.env; the clamd and freshclam containers
+  pullPolicy: IfNotPresent              # default
+malwareScannerClamav:                   # <fullname>-malware-scanner-clamav, the malware scanner with clamd beside it, rendered while config.malware.enabled (default true)
+  replicaCount: 2                       # default; at least 1, 2 with highAvailability.enforce; the capacity is replicas × config.malware.scanner.slots
+  terminationGracePeriodSeconds: 60     # default
+  spool:
+    sizeLimit: 3Gi                      # default; the quader container's spool
+  resources: {requests: {cpu: 250m, memory: 256Mi, ephemeral-storage: 256Mi}, limits: {memory: 512Mi}}   # default; the quader container
+  clamd:
+    resources: {requests: {cpu: 500m, memory: 1280Mi, ephemeral-storage: 1Gi}, limits: {memory: 2Gi}}   # default; the limit at least 1.5Gi, validated
+  database:
+    sizeLimit: 1Gi                      # default; clamd-db, the loaded database and the next one
+  clamdTmp:
+    sizeLimit: 8Gi                      # default; clamd's temporary files, at least slots × (max_file_size + max_scan_size), validated
+  autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
+  podDisruptionBudget: {enabled: true, maxUnavailable: 1}   # default
+  topologySpread: {enabled: true, nodeTaintsPolicy: Honor}     # default; as api
+  extraEnv: []                          # default; the quader container's own; the shared extras never reach the pod
+freshclam:                              # the freshclam container of every worker that claims the queue malware, while config.malware.database.freshclam
+  resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {memory: 512Mi}}   # default
+  database:
+    sizeLimit: 1Gi                      # default
 spool:
   type: emptyDir                        # default: emptyDir | ephemeral
   sizeLimit: 20Gi                       # default; the spool of a role or pool overrides it
@@ -2890,7 +2913,8 @@ tls:
     api: ""                             # example: quader-tls-api, for <fullname>-api.<namespace>.svc and <fullname>-ops.<namespace>.svc, server auth
     packages: ""                        # example: quader-tls-packages, for <fullname>-packages.<namespace>.svc and the ops name, server auth
     worker: ""                          # example: quader-tls-worker, for <fullname>-worker.<namespace>.svc and the ops name, server auth and client auth
-    scanner: ""                         # example: quader-tls-scanner, for <fullname>-scanner.<namespace>.svc and the ops name, server auth and client auth
+    vuln-scanner-trivy: ""              # example: quader-tls-vuln-scanner-trivy, for <fullname>-vuln-scanner-trivy.<namespace>.svc and the ops name, server auth and client auth; while the image scanning is on
+    malware-scanner-clamav: ""          # example: quader-tls-malware-scanner-clamav, for <fullname>-malware-scanner-clamav.<namespace>.svc and the ops name, server auth and client auth; while the malware scanning is on
   certManager:                          # the chart renders a Certificate <fullname>-tls-<kind> per kind of pod
     issuerRef:
       kind: ClusterIssuer               # default: ClusterIssuer | Issuer (of the release namespace)

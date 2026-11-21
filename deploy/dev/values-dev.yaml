@@ -12,7 +12,7 @@ highAvailability:
   enforce: true
 
 # TLS on quader's listeners (R-ARCH-035, R-HA-063): the chart issues a pair per kind of pod (Secrets quader-tls-api,
-# -packages, -worker, -scanner) from the dev CA's Issuer (pki.yaml). The extra names let the tests that reach one pod
+# -packages, -worker, -vuln-scanner-trivy, and -malware-scanner-clamav in the `vuln` profile) from the dev CA's Issuer (pki.yaml). The extra names let the tests that reach one pod
 # through a port-forward verify it as localhost; no check of the chart relies on them. The short reload interval makes
 # the rotation drill (E0.15) fast; the chart default is 10s.
 tls:

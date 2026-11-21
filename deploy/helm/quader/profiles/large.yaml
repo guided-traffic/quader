@@ -41,7 +41,7 @@ spool:
   type: ephemeral                       # one ReadWriteOnce claim per pod from the default StorageClass (R-HA-061); set spool.ephemeral.storageClassName for another
   ephemeral:
     size: 50Gi
-malwareScanner:
+malwareScannerClamav:
   replicaCount: 3
   autoscaling:
     enabled: true

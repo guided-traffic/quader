@@ -380,7 +380,7 @@ else
     "${values[@]}" "${wait[@]}" --timeout 10m ${QUADER_HELM_EXTRA:-}
   if [ "$PROFILE" = "vuln" ]; then
     for d in $(kn get deploy -l app.kubernetes.io/instance=quader -o name); do
-      [ "$d" = "deployment.apps/quader-malware-scanner" ] && continue
+      [ "$d" = "deployment.apps/quader-malware-scanner-clamav" ] && continue
       kn rollout status "$d" --timeout=10m >/dev/null || die "$d did not roll out"
     done
   fi

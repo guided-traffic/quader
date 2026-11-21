@@ -1675,7 +1675,7 @@
       },
       "additionalProperties": false
     },
-    "scanner": {
+    "vulnScannerTrivy": {
       "type": "object",
       "properties": {
         "replicaCount": {
@@ -1929,7 +1929,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "The Deployment of the role scanner (R-HA-065): rendered while config.vulnerabilities.enabled and config.vulnerabilities.images.enabled are true"
+      "description": "The Deployment <fullname>-vuln-scanner-trivy, the image scanning's scanner of the role scanner (R-HA-065, Q-HA-372): rendered while config.vulnerabilities.enabled and config.vulnerabilities.images.enabled are true"
     },
     "clamav": {
       "type": "object",
@@ -1950,7 +1950,7 @@
       },
       "additionalProperties": false
     },
-    "malwareScanner": {
+    "malwareScannerClamav": {
       "type": "object",
       "properties": {
         "replicaCount": {
@@ -2262,7 +2262,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "The Deployment of the role scanner (R-HA-065): rendered while config.vulnerabilities.enabled and config.vulnerabilities.images.enabled are true"
+      "description": "The Deployment <fullname>-malware-scanner-clamav, the malware scanner of the role scanner with clamd beside it (R-HA-068, Q-HA-372): rendered while config.malware.enabled is true"
     },
     "freshclam": {
       "type": "object",
@@ -3395,10 +3395,10 @@
             "worker": {
               "type": "string"
             },
-            "scanner": {
+            "vuln-scanner-trivy": {
               "type": "string"
             },
-            "malware-scanner": {
+            "malware-scanner-clamav": {
               "type": "string"
             }
           }

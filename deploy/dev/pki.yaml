@@ -3,7 +3,7 @@
 #
 #   quader-dev-ca        the root (Secret quader-dev-ca; ca.crt is what a client trusts, see local-profile.md)
 #   (quader-tls-<kind>)  quader's own listeners are not issued here: the chart issues a pair per kind of pod (api,
-#                        packages, worker, scanner) from the Issuer quader-dev-ca (values-dev.yaml tls.certManager), each
+#                        packages, worker, vuln-scanner-trivy, malware-scanner-clamav) from the Issuer quader-dev-ca (values-dev.yaml tls.certManager), each
 #                        for quader-<kind>.<ns>.svc and quader-ops.<ns>.svc, and HAProxy Ingress verifies each backend
 #                        under its kind's name.
 #   quader-edge-tls      the edge's certificate for clients on the host (https://localhost:<port>)

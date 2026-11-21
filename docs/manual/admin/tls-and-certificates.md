@@ -42,7 +42,7 @@ If a replica starts while its certificate is missing or broken, the ops listener
 
 ## Certificates in the Helm chart
 
-Every kind of pod has a certificate and a name of its own: `api`, `packages`, `worker` and, while the image scanning is on, `scanner`. A pool or an endpoint pool carries its role's. The pair of a kind names `<fullname>-<kind>.<namespace>.svc` and `<fullname>-ops.<namespace>.svc`; the pairs of `worker` and `scanner` also allow client authentication, because they present themselves on the links of the image scanning. No pod holds the pair of another kind, so a pod that is taken over cannot pose as one.
+Every kind of pod has a certificate and a name of its own: `api`, `packages`, `worker`, `vuln-scanner-trivy` while the image scanning is on, and `malware-scanner-clamav` while the malware scanning is on. A kind that runs one third-party tool carries the tool's name. A pool or an endpoint pool carries its role's. The pair of a kind names `<fullname>-<kind>.<namespace>.svc` and `<fullname>-ops.<namespace>.svc`; the pairs of `worker`, `vuln-scanner-trivy` and `malware-scanner-clamav` also allow client authentication, because they present themselves on the links of the scannings. No pod holds the pair of another kind, so a pod that is taken over cannot pose as one.
 
 The plain path is one value: the cert-manager issuer. The chart then renders a `Certificate` per kind, `<fullname>-tls-<kind>`, with the names and the usages above, and cert-manager writes the Secret of the same name and renews it.
 
@@ -87,10 +87,11 @@ tls:
     api: quader-tls-api                 # example
     packages: quader-tls-packages       # example
     worker: quader-tls-worker           # example
-    scanner: quader-tls-scanner         # example; only while the image scanning is on
+    vuln-scanner-trivy: quader-tls-vuln-scanner-trivy           # example; only while the image scanning is on
+    malware-scanner-clamav: quader-tls-malware-scanner-clamav   # example; only while the malware scanning is on
 ```
 
-Each Secret holds `tls.crt`, `tls.key` and `ca.crt`, issued by one CA, with the names and usages below. With cert-manager and an issuer you choose to manage yourself, these are the four Certificates (release `quader`, namespace `quader`):
+Each Secret holds `tls.crt`, `tls.key` and `ca.crt`, issued by one CA, with the names and usages below. With cert-manager and an issuer you choose to manage yourself, these are the Certificates of the kinds that present themselves on a link (release `quader`, namespace `quader`); those of `api` and `packages` have `server auth` only:
 
 ```yaml
 apiVersion: cert-manager.io/v1          # example
@@ -100,7 +101,7 @@ metadata:
   namespace: quader
 spec:
   secretName: quader-tls-worker
-  usages: [digital signature, server auth, client auth]   # client auth for the worker and the scanner only
+  usages: [digital signature, server auth, client auth]   # client auth for the worker and the scanners only
   dnsNames:
     - quader-worker.quader.svc
     - quader-ops.quader.svc
@@ -111,13 +112,28 @@ spec:
 apiVersion: cert-manager.io/v1          # example
 kind: Certificate
 metadata:
-  name: quader-tls-scanner
+  name: quader-tls-vuln-scanner-trivy
   namespace: quader
 spec:
-  secretName: quader-tls-scanner
+  secretName: quader-tls-vuln-scanner-trivy
   usages: [digital signature, server auth, client auth]
   dnsNames:
-    - quader-scanner.quader.svc
+    - quader-vuln-scanner-trivy.quader.svc
+    - quader-ops.quader.svc
+  issuerRef:
+    name: internal-ca                   # example
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1          # example
+kind: Certificate
+metadata:
+  name: quader-tls-malware-scanner-clamav
+  namespace: quader
+spec:
+  secretName: quader-tls-malware-scanner-clamav
+  usages: [digital signature, server auth, client auth]
+  dnsNames:
+    - quader-malware-scanner-clamav.quader.svc
     - quader-ops.quader.svc
   issuerRef:
     name: internal-ca                   # example
@@ -141,7 +157,7 @@ A further endpoint without a pair of its own is verified the same way. With `end
 
 ### The links of the image scanning
 
-While the image scanning is on (`config.vulnerabilities.images.enabled`, the default), the worker calls the scanner and the scanner pulls the image from the scan listener of `packages`. Both links run over mutual TLS: each side presents its own kind's pair, verifies the other against the `ca.crt` of its own Secret, and checks the other's name. The scanner admits only a certificate that lists `<fullname>-worker.<namespace>.svc`, the scan listener only one that lists `<fullname>-scanner.<namespace>.svc`; a wildcard name does not count. The chart sets these names; with the issuer the pairs carry them.
+While the image scanning is on (`config.vulnerabilities.images.enabled`, the default), the worker calls the scanner and the scanner pulls the image from the scan listener of `packages`. Both links run over mutual TLS: each side presents its own kind's pair, verifies the other against the `ca.crt` of its own Secret, and checks the other's name. The scanner admits only a certificate that lists `<fullname>-worker.<namespace>.svc`, the scan listener only one that lists `<fullname>-vuln-scanner-trivy.<namespace>.svc` or `<fullname>-malware-scanner-clamav.<namespace>.svc`; a wildcard name does not count. The chart sets these names; with the issuer the pairs carry them.
 
 A worker or scanner whose pair lacks `client auth` logs the reason at start; the scanner stays not ready, and scans are put off with `scanner_unavailable` (alert `QuaderVulnerabilityImageScannerUnavailable`). With `tls.enabled: false` both links run in plain HTTP; the scan token and the NetworkPolicies are then what protects them.
 
@@ -153,7 +169,7 @@ Each kind's Secret rotates on its own and reaches its pods without a restart: th
 | Chart value | Keys read | Mounted at | Used for |
 |---|---|---|---|
 | `tls.certManager` (Secret `<fullname>-tls-<kind>`) or `tls.existingSecrets.<kind>` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` in the pods of that kind only | client listener, ops listener, scanner's listener, scan listener, and the identity the worker and the scanner present on the links |
-| the same Secret | `ca.crt` | `/var/run/secrets/quader/tls/ca.crt` in the `worker`, main `packages` and `scanner` pods | `server.internal_tls.ca_file`: the CA the links of the image scanning verify with |
+| the same Secret | `ca.crt` | `/var/run/secrets/quader/tls/ca.crt` in the `worker`, main `packages`, `vuln-scanner-trivy` and `malware-scanner-clamav` pods | `server.internal_tls.ca_file`: the CA the links of the image scanning verify with |
 | `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/ca.crt` | client certificates on `:8080` (main `api` and `packages` pods only) |
 | `endpoints.<name>.tls.existingSecret`, `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`n` = position) | endpoint listener |
 | `endpoints.<name>.tls.clientCaSecret` | `ca.crt` | `/var/run/secrets/quader/endpoints/<name>/client-ca/ca.crt` | client certificates on the endpoint |
@@ -267,5 +283,5 @@ of its own, `<fullname>-ep-<name>.<namespace>.svc` for the ingress controller.
 | Connections to PostgreSQL or Valkey fail with a certificate error | `verify-full` against the system roots for a server with a private CA, or a host name the certificate does not hold | Set `secrets.databaseCA` or `secrets.valkeyCA`; connect by a name in the certificate |
 | The object store fails after `secrets.s3CA` was set | That file replaces every other trusted root for the object store | Put the full CA chain of the object store into it |
 | The render fails with `tls.clientCA` and HAProxy Ingress | The controller needs a certificate to present | Set `ingress.backendTLS.clientCertSecret` |
-| The scanner pods stay unready and image scans show `scanner_unavailable` | A named Secret of `worker` or `scanner` lacks `client auth`, or its pair does not list its kind's name, which the other side checks | Issue it with the usages and the name of [the example above](#without-cert-manager); the scanner logs the names it found |
-| The `worker`, `packages` or `scanner` pods hang in `ContainerCreating` with a mount error naming `ca.crt` | The Secret of that kind has no `ca.crt` | Let the issuer write `ca.crt` into the Secret, or add it |
+| The scanner pods stay unready and image scans show `scanner_unavailable` | A named Secret of `worker` or `vuln-scanner-trivy` lacks `client auth`, or its pair does not list its kind's name, which the other side checks | Issue it with the usages and the name of [the example above](#without-cert-manager); the scanner logs the names it found |
+| The `worker`, `packages`, `vuln-scanner-trivy` or `malware-scanner-clamav` pods hang in `ContainerCreating` with a mount error naming `ca.crt` | The Secret of that kind has no `ca.crt` | Let the issuer write `ca.crt` into the Secret, or add it |

@@ -371,7 +371,7 @@ func TestChart(t *testing.T) {
 			for _, d := range ofKind(docs, "Deployment") {
 				name := strings.TrimPrefix(str(d, "metadata", "name"), "quader-")
 				role, _, _ := strings.Cut(name, "-")
-				if name == "malware-scanner" { // the role scanner of the kind malware (R-HA-068)
+				if name == "vuln-scanner-trivy" || name == "malware-scanner-clamav" { // the two kinds of the role scanner (R-HA-065, R-HA-068)
 					role = "scanner"
 				}
 				if role != "api" && role != "packages" && role != "worker" && role != "scanner" {
@@ -517,11 +517,11 @@ func TestChart(t *testing.T) {
 			}
 			want := map[string]bool{"/tmp": true}
 			if strings.HasSuffix(name, "-api") || strings.HasSuffix(name, "-packages") || strings.HasSuffix(name, "-worker") ||
-				strings.HasSuffix(name, "-scanner") {
+				strings.HasSuffix(name, "-vuln-scanner-trivy") || strings.HasSuffix(name, "-malware-scanner-clamav") {
 				want["/var/lib/quader/spool"] = true
 			}
 			switch {
-			case strings.HasSuffix(name, "-malware-scanner"): // clamd's socket and the database it loads (R-HA-068)
+			case strings.HasSuffix(name, "-malware-scanner-clamav"): // clamd's socket and the database it loads (R-HA-068)
 				want["/run/clamd"], want["/var/lib/clamav"] = true, true
 			case strings.HasSuffix(name, "-worker"): // freshclam's directory, which the worker seeds and reads (R-HA-069)
 				want["/var/lib/quader/freshclam"] = true
@@ -855,7 +855,7 @@ func TestChart(t *testing.T) {
 								t.Errorf("%s sets QUADER_SERVER_SCAN_LISTEN, which only the main packages Deployment does", name)
 							}
 						case "QUADER_PROCESS_SCANNER_KIND": // the malware scanner's kind (R-HA-068)
-							if name != "quader-malware-scanner" {
+							if name != "quader-malware-scanner-clamav" {
 								t.Errorf("%s sets QUADER_PROCESS_SCANNER_KIND, which only the malware scanner does", name)
 							}
 						default:
@@ -986,7 +986,7 @@ func TestChart(t *testing.T) {
 			// The scan listener of R-HA-066 opens on the main packages Deployment while the image
 			// scanning is on, which a scanner Deployment shows.
 			wantPorts := "http=8080,ops=8081"
-			if find(docs, "Deployment", "quader-scanner") != nil {
+			if find(docs, "Deployment", "quader-vuln-scanner-trivy") != nil {
 				wantPorts = "http=8080,scan=8082,ops=8081"
 			}
 			if strings.Join(ports, ",") != wantPorts {
@@ -1008,7 +1008,7 @@ func TestChart(t *testing.T) {
 		for role, want := range map[string]struct {
 			seconds int
 			env     string
-		}{"api": {120, "120s"}, "packages": {120, "120s"}, "worker": {300, "300s"}, "scanner": {60, "60s"}} {
+		}{"api": {120, "120s"}, "packages": {120, "120s"}, "worker": {300, "300s"}, "vuln-scanner-trivy": {60, "60s"}} {
 			spec := at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")
 			if at(spec, "terminationGracePeriodSeconds") != want.seconds {
 				t.Errorf("quader-%s terminationGracePeriodSeconds = %v, want %d", role, at(spec, "terminationGracePeriodSeconds"), want.seconds)

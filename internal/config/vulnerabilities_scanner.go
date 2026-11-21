@@ -20,8 +20,8 @@ func (i *VulnerabilityImages) finalizeScanDir(spoolDir string, sources map[strin
 // VulnerabilityScannerLink is the worker's side of the call to the scanner (R-VULN-041). The chart sets both addresses; outside
 // it the role all leaves them empty and calls its own scanner listener over loopback (Q-ARCH-531).
 type VulnerabilityScannerLink struct {
-	URL        string `yaml:"url" default:"" doc:"The scanner's listener, an origin: https://<fullname>-scanner.<namespace>.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531)."`
-	ServerName string `yaml:"server_name" default:"" doc:"The name the worker requires in the scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets <fullname>-scanner.<namespace>.svc, the scanner's name (R-HA-063)."`
+	URL        string `yaml:"url" default:"" doc:"The scanner's listener, an origin: https://<fullname>-vuln-scanner-trivy.<namespace>.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531)."`
+	ServerName string `yaml:"server_name" default:"" doc:"The name the worker requires in the scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets <fullname>-vuln-scanner-trivy.<namespace>.svc, the scanner's name (R-HA-063)."`
 	ClientName string `yaml:"client_name" default:"" doc:"The name the scanner's listener requires in a client certificate, listed exactly among its DNS names (Q-ARCH-552): the worker's. Required in a scanner while server.tls serves TLS; empty in the role all, where the CA alone admits (Q-ARCH-553). The chart sets <fullname>-worker.<namespace>.svc."`
 	Slots      int    `yaml:"slots" default:"1" validate:"min=1,max=16" doc:"Analyses one scanner process runs at a time; a call while every slot holds one is answered 503 scanner_busy. The chart checks the scanner's spool against it (Q-HA-318); more than one slot lets the analyses of one pod reach each other (H-1037), so scale by replicas."`
 }
@@ -49,7 +49,7 @@ func (c *Config) validateLinkNames(r *Report) {
 	if !c.Server.TLS.Enabled() {
 		return
 	}
-	if r.Role() == RoleScanner && c.Process.ScannerKind != ScannerKindMalware && images.Scanner.ClientName == "" {
+	if r.Role() == RoleScanner && c.Process.ScannerKind != ScannerKindClamav && images.Scanner.ClientName == "" {
 		r.Add("vulnerabilities.images.scanner.client_name", "is required in a scanner while server.tls serves TLS: it names the worker, the one kind of pod its listener admits (R-ARCH-038); the chart sets it")
 	}
 }

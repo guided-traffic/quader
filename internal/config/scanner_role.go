@@ -4,12 +4,12 @@ import "strings"
 
 // scannerSections are the parts of the tree the role scanner reads (R-ARCH-036, Q-ARCH-527): the process, its listeners and their
 // TLS, the probes, the log, the metrics, the runtime, its spool, and its kind's section: the image scanning for a scanner of the kind
-// image, the malware section for one of the kind malware (Q-ARCH-560). Every other key keeps its value but is neither validated nor
+// trivy, the malware section for one of the kind clamav (Q-ARCH-560, Q-ARCH-561). Every other key keeps its value but is neither validated nor
 // resolved in that role, so a file the chart does not mount into the scanner (the database's, Valkey's, the object store's, the key
 // ring's) is no error there; the role builds nothing that would read one (internal/app).
 func scannerSections(kind string) []string {
 	own := "vulnerabilities.images"
-	if kind == ScannerKindMalware {
+	if kind == ScannerKindClamav {
 		own = "malware"
 	}
 	return []string{"process", "server", "health", "log", "metrics", "runtime", "storage.spool", own}
@@ -17,7 +17,7 @@ func scannerSections(kind string) []string {
 
 // scannerReads reports whether the role scanner of the kind reads the key or the section at path.
 func scannerReads(path, kind string) bool {
-	if path == "vulnerabilities.enabled" && kind != ScannerKindMalware {
+	if path == "vulnerabilities.enabled" && kind != ScannerKindClamav {
 		return true
 	}
 	for _, p := range scannerSections(kind) {

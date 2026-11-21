@@ -75,3 +75,14 @@ repository type, but allow detailed settings."
   suggestion that is marked as a page of the admin area, and shown only to an instance administrator, may lead there.
 - **Every UI change is rendered and looked at before it lands** (rule 11 of [promt.md](docs/projektplan/promt.md)): both schemes, wide and
   narrow, realistic data. The renders are never committed.
+
+## Naming: a unit that runs a tool carries the tool's name
+
+By the owner's decision of 2026-11-21: "Also immer so benennen, dass man sieht um welches Tool es sich handelt und das man später
+evtl mal mehrere Tools nebeneinander laufen lassen kann."
+
+- A kind of pod that exists to run one third-party tool, and everything named after it (Deployment, Service, certificate, Secret,
+  the block of the chart's values), is named `<purpose>-scanner-<tool>`: `vuln-scanner-trivy`, `malware-scanner-clamav`. A second
+  tool for the same purpose gets a name of its own beside it and replaces nothing.
+- What is the same whichever tool does the work (the job, the queue, the gate, a verdict, a setting) is named by its purpose
+  alone.

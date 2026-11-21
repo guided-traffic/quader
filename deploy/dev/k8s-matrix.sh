@@ -109,7 +109,7 @@ expect "topologySpreadConstraints nodeTaintsPolicy" '{.spec.template.spec.topolo
 expect "CronJob timeZone" '{.spec.timeZone}' Etc/UTC cronjob "$RELEASE-backup"
 expect "HorizontalPodAutoscaler minReplicas of the medium profile" '{.spec.minReplicas}' 4 hpa "$RELEASE-packages"
 expect "autoscaling/v2 metric" '{.spec.metrics[*].type}' Resource hpa "$RELEASE-packages"
-for kind in api packages worker scanner; do
+for kind in api packages worker vuln-scanner-trivy; do
   expect "the issuer of the Certificate of $kind" '{.spec.issuerRef.name}' cluster-ca certificate "$RELEASE-tls-$kind"
 done
 

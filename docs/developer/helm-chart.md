@@ -108,6 +108,11 @@ deploy/helm/quader/
     ├── _deployment.tpl     one Deployment of a unit
     ├── _endpoints.tpl      endpoint defaults, quader.yaml block, mounts, S3 settings from a Secret
     ├── _notes.tpl          the text of NOTES.txt
+    ├── _tls.tpl            the kinds of pod with a pair (quader.tlsKindTable), their names and Secrets, the edge's backend settings
+    ├── _vuln.tpl           the image scanning's links and checks, the scan listener both scannings read through
+    ├── _malware.tpl        the malware scanning's links and checks, clamd.conf, freshclam.conf, the freshclam container of the worker
+    ├── vuln-scanner-trivy.yaml      the image scanning's scanner (Trivy): Deployment, budget, autoscaler, Service, policy
+    ├── malware-scanner-clamav.yaml  the malware scanner with clamd beside it: Deployment, budget, autoscaler, Service, policy, ConfigMaps
     ├── validate.yaml       renders nothing; includes the validation
     ├── deployments.yaml    one Deployment per unit
     ├── services.yaml       the role and pool Services, <fullname>-ops
@@ -126,7 +131,7 @@ deploy/helm/quader/
 
 | File | Responsibility |
 |---|---|
-| `_helpers.tpl` | `quader.fullname` (release name, or `<release>-quader`, cut at 50 characters so derived names stay DNS labels), `quader.labels` / `quader.selectorLabels`, `quader.image` (digest wins over tag), `quader.bytes` and `quader.seconds` (parse sizes and durations; they fail on anything else, so a typo never becomes a wrong budget), `quader.spoolBudget`, `quader.config` |
+| `_helpers.tpl` | `quader.fullname` (release name, or `<release>-quader`, cut at 50 characters; the longest derived Service name, `<fullname>-malware-scanner-clamav`, stays a DNS label only up to 40, which nothing checks), `quader.labels` / `quader.selectorLabels`, `quader.image` (digest wins over tag), `quader.bytes` and `quader.seconds` (parse sizes and durations; they fail on anything else, so a typo never becomes a wrong budget), `quader.spoolBudget`, `quader.config` |
 | `_secrets.tpl` | `quader.secretMounts` builds one list per scope (`runtime` for the Deployments, `migrate` for the Job); `quader.secretVolumes` and `quader.secretVolumeMounts` render it |
 | `_units.tpl` | `quader.units`, the one list of Deployments; `quader.unitEndpoints` (which endpoint ports a pod opens, R-EP-002); `quader.poolValues`; `quader.connectionCounts` |
 | `_validate.tpl`, `_validate_roles.tpl` | every `fail` of R-HA-029, each message naming the offending value |
@@ -142,13 +147,13 @@ deploy/helm/quader/
 |---|---|---|
 | Deployment | `<fullname>-api`, `<fullname>-packages` | `quader serve --role api` / `--role packages`; ports `http` 8080 and `ops` 8081 (and the ports of the further endpoints they serve) |
 | Deployment | `<fullname>-worker` | `quader serve --role worker`; port `ops` 8081 only |
-| Deployment, PodDisruptionBudget, autoscaler (optional), NetworkPolicy | `<fullname>-scanner` | `quader serve --role scanner`, while `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled` (the defaults); ports `https` 8080 (the scanner's listener) and `ops` 8081; [The scanner](#the-scanner) below (R-HA-065) |
-| Service | `<fullname>-scanner`, `<fullname>-packages-scan` | the links of the image scanning, always `ClusterIP`: 8080 of the scanner pods, 8082 (the scan listener) of the main `packages` pods (R-HA-066, Q-HA-319); `<fullname>-packages-scan` while either scanning is on |
-| Deployment, PodDisruptionBudget, autoscaler (optional), NetworkPolicy, Service, ConfigMap | `<fullname>-malware-scanner`, `<fullname>-clamd` | the role `scanner` of the kind `malware` with `clamd` beside it, while `config.malware.enabled` (the default); ports `https` 8080 and `ops` 8081; [The malware scanner](#the-malware-scanner) below (R-HA-068) |
+| Deployment, PodDisruptionBudget, autoscaler (optional), NetworkPolicy | `<fullname>-vuln-scanner-trivy` | `quader serve --role scanner` (the kind `trivy`), while `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled` (the defaults); ports `https` 8080 (the scanner's listener) and `ops` 8081; [The scanner](#the-scanner) below (R-HA-065) |
+| Service | `<fullname>-vuln-scanner-trivy`, `<fullname>-packages-scan` | the links of the image scanning, always `ClusterIP`: 8080 of the scanner pods, 8082 (the scan listener) of the main `packages` pods (R-HA-066, Q-HA-319); `<fullname>-packages-scan` while either scanning is on |
+| Deployment, PodDisruptionBudget, autoscaler (optional), NetworkPolicy, Service, ConfigMap | `<fullname>-malware-scanner-clamav`, `<fullname>-clamd` | the role `scanner` of the kind `clamav` with `clamd` beside it, while `config.malware.enabled` (the default); ports `https` 8080 and `ops` 8081; [The malware scanner](#the-malware-scanner) below (R-HA-068) |
 | ConfigMap | `<fullname>-freshclam` | `freshclam.conf` of the `freshclam` container of the worker that claims `malware`, while `config.malware.database.freshclam` (R-HA-069) |
 | Deployment, Service (path pools only) | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>`, `<fullname>-worker-<pool>` | per entry of `api.pools`, `packages.pools`, `worker.pools` |
 | Service | `<fullname>-api`, `<fullname>-packages` | port `http` 8080, select the main pods of their role only, `sessionAffinity: None` |
-| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `quader/serve: "true"` (`api`, `packages`, `worker`, `scanner`, `malware-scanner`) |
+| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `quader/serve: "true"` (`api`, `packages`, `worker`, `vuln-scanner-trivy`, `malware-scanner-clamav`) |
 | ConfigMap | `<fullname>-config` | `quader.yaml`, mounted at `/etc/quader/quader.yaml` |
 | ServiceAccount | `<fullname>` | `automountServiceAccountToken: false` |
 | PodDisruptionBudget | one per Deployment, named as it | `maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow` |
@@ -253,7 +258,7 @@ file name equals Secret key, because the file name without `.key` is the key ID 
 ## TLS
 
 Requirement: R-HA-063 (Q-HA-32, the owner's Q-HA-345, ADR-215); the binary's side is R-ARCH-035 and R-ARCH-038. Every kind of pod
-(`api`, `packages`, `worker`, `scanner`, `malware-scanner`) has a pair and a name of its own, `<fullname>-<kind>.<namespace>.svc`, plus
+(`api`, `packages`, `worker`, `vuln-scanner-trivy`, `malware-scanner-clamav`) has a pair and a name of its own, `<fullname>-<kind>.<namespace>.svc`, plus
 `<fullname>-ops.<namespace>.svc` for the scrape ([_tls.tpl](../../deploy/helm/quader/templates/_tls.tpl)). With
 `tls.certManager.issuerRef.name` the chart renders a cert-manager `Certificate` per kind ([certificates.yaml](../../deploy/helm/quader/templates/certificates.yaml));
 without it, `tls.existingSecrets.<kind>` names an existing Secret per kind. The value names follow the Bastion's chart. `tls.enabled`
@@ -270,7 +275,7 @@ carries its own `tls` block.
 | `tls.certManager.duration`, `.renewBefore` | `2160h`, `720h` | the Certificates' lifetime |
 | `tls.certManager.privateKey.algorithm`, `.size` | `ECDSA`, `256` | the key; `rotationPolicy: Always`; RSA adds the usage `key encipherment` |
 | `tls.certManager.extraDnsNames`, `.extraIpAddresses` | `[]`, `[]` | names every pair carries besides its own (the local profile: `localhost`, `127.0.0.1` for port-forwarded tests); no check relies on them |
-| `tls.existingSecrets.api`, `.packages`, `.worker`, `.scanner`, `.malware-scanner` | `""` | a Secret per kind with `tls.crt`, `tls.key`, `ca.crt`; refused together with the issuer, when a rendered kind has none, and when two kinds name one Secret |
+| `tls.existingSecrets.api`, `.packages`, `.worker`, `.vuln-scanner-trivy`, `.malware-scanner-clamav` | `""` | a Secret per kind with `tls.crt`, `tls.key`, `ca.crt`; refused together with the issuer, when a rendered kind has none, and when two kinds name one Secret |
 | `tls.minVersion` | `"1.2"` | `server.tls.min_version` (and `ops_tls` when rendered) |
 | `tls.reloadInterval` | `10s` | `server.tls.reload_interval` |
 | `tls.clientCA.secretName`, `.key`, `.auth` | `""`, `ca.crt`, `require` | mutual TLS on `:8080`: `server.tls.client_ca_file` and `client_auth` (`require` or `verify_if_given`) |
@@ -285,9 +290,9 @@ carries its own `tls` block.
 
 What the chart does with them:
 
-- **Certificates.** One per kind the release renders (`quader.tlsKinds`: the scanner only while the image scanning is on, the malware
-  scanner only while the malware scanning is on), named and written into `<fullname>-tls-<kind>`, with `server auth`, and `client auth` for
-  `worker`, `scanner` and `malware-scanner`. They are ordinary objects of
+- **Certificates.** One per kind the release renders (`quader.tlsKinds`: `vuln-scanner-trivy` only while the image scanning is on,
+  `malware-scanner-clamav` only while the malware scanning is on), named and written into `<fullname>-tls-<kind>`, with `server auth`, and
+  `client auth` for `worker`, `vuln-scanner-trivy` and `malware-scanner-clamav`. They are ordinary objects of
   the release, applied after the Deployments by Helm's order for custom resources: on a first install the pods wait in
   `ContainerCreating` until cert-manager has written their Secret.
 - **Mount.** One directory volume of the pod's own kind's Secret, `items` for the keys the process reads (`tls.crt`, `tls.key`, and
@@ -296,7 +301,7 @@ What the chart does with them:
   swaps the certificate without a restart. The migration Job and the backup and restore pods serve no listener and mount none (R-HA-030).
 - <a id="mounts-follow-the-kinds"></a>**Mounts follow the kinds.** A pod mounts the Secret of its own kind and no other
   (`quader.secretMounts`, `_secrets.tpl`): the main Deployment, the path pools and the endpoint pools of `api` the `api` pair, those of
-  `packages` the `packages` pair, the worker and its pools the `worker` pair, the scanner its own (`scanner.yaml`). A pod that serves a
+  `packages` the `packages` pair, the worker and its pools the `worker` pair, each scanner its own (`vuln-scanner-trivy.yaml`, `malware-scanner-clamav.yaml`). A pod that serves a
   further endpoint with a pair of its own mounts that pair beside its kind's (the residual credentials of a pool are H-57 in
   [endpoints.md](../spec/endpoints.md)). The client CA (`tls.clientCA`) mounts into the main `api` and `packages` pods and their path
   pools only, because the operations listener never carries it and a further endpoint has its own `clientCaSecret`.
@@ -314,18 +319,23 @@ What the chart does with them:
 
 <a id="adding-a-kind-of-pod"></a>**Adding a kind of pod with a pair of its own** (the malware scanner of R-HA-068 was added this way):
 
-1. One entry in `quader.tlsKindTable` ([_tls.tpl](../../deploy/helm/quader/templates/_tls.tpl)): `kind` (its name
+1. Its name: a kind that exists to run one third-party tool is `<purpose>-scanner-<tool>` (`vuln-scanner-trivy`,
+   `malware-scanner-clamav`; the owner's rule, [Q-HA-372](../spec/ha-and-helm.md#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name)
+   and [CLAUDE.md](../../CLAUDE.md)); its value block is the name in camel case (`vulnScannerTrivy`), its template file the name
+   (`vuln-scanner-trivy.yaml`). A second tool for a purpose is a kind beside the first, and what both share (the job, the queue, the
+   configuration key of the worker's link, the gate) keeps the purpose's name.
+2. One entry in `quader.tlsKindTable` ([_tls.tpl](../../deploy/helm/quader/templates/_tls.tpl)): `kind` (its name
    `<fullname>-<kind>.<namespace>.svc`, its Secret `<fullname>-tls-<kind>`), `client` (true when it calls a link, so its pair gets
    `client auth`), `scanClient` (true for a kind of scanner: its name joins `server.scan_clients`, which the scan listener admits) and `on`
    (when the release renders it). The Certificate, the Secrets' validation and the scan listener's list follow.
-2. A key `tls.existingSecrets.<kind>` in [values.yaml](../../deploy/helm/quader/values.yaml), `values.schema.json`, the values block of
+3. A key `tls.existingSecrets.<kind>` in [values.yaml](../../deploy/helm/quader/values.yaml), `values.schema.json`, the values block of
    [ha-and-helm.md](../spec/ha-and-helm.md) and the README.
-3. Its Deployment mounts `quader.tlsSecret (dict "root" $ "kind" "<kind>")` at `/var/run/secrets/quader/tls/` with `tls.crt`, `tls.key` and,
-   when it verifies a link, `ca.crt`, as [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml) does.
-4. A listener it serves to one caller names that caller's kind (`quader.tlsName`) in its configuration; a route of the scan listener that
+4. Its Deployment mounts `quader.tlsSecret (dict "root" $ "kind" "<kind>")` at `/var/run/secrets/quader/tls/` with `tls.crt`, `tls.key` and,
+   when it verifies a link, `ca.crt`, as [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml) does.
+5. A listener it serves to one caller names that caller's kind (`quader.tlsName`) in its configuration; a route of the scan listener that
    serves this kind alone narrows the listener's names with `httpserver.PeerName`
    ([link_tls.go](../../internal/httpserver/link_tls.go)).
-5. The chart test counts its Certificate and checks that its pods mount its Secret and no other.
+6. The chart test counts its Certificate and checks that its pods mount its Secret and no other.
 
 ### Ingress and Gateway
 
@@ -401,46 +411,47 @@ read these variables (it uses no object store).
 
 ## The scanner
 
-[scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml) renders the role `scanner` beside the units of `_units.tpl`, from the
-helpers of [_scanner.tpl](../../deploy/helm/quader/templates/_scanner.tpl) (R-HA-065, R-HA-066). It shares the pod pieces (probes, topology
+[vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml) renders `<fullname>-vuln-scanner-trivy`, the role
+`scanner` of the kind `trivy`, beside the units of `_units.tpl`, from the helpers of [_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl)
+(R-HA-065, R-HA-066). It shares the pod pieces (probes, topology
 spread, the security context) and none of the secrets, the shared extras (`extraEnv`, `extraEnvFrom`, `extraVolumes`, `extraVolumeMounts`,
 `initContainers`, `sidecars`, Q-HA-321) or the service account (Q-HA-343) of the other Deployments.
 
 | Piece | Where | What |
 |---|---|---|
-| when | `quader.scannerOn` | `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled`, both default `true`; off renders no object of the scanner, no scan listener, no internal CA |
-| volumes | `scanner.yaml` | `config`, `spool` (an `emptyDir` of `scanner.spool.sizeLimit`, 6Gi, or with `spool.type: ephemeral` a claim of `spool.ephemeral.size`, as every role's), `tmp`, `secret-tls` (`tls.crt`, `tls.key` and `ca.crt` of the scanner's own Secret, `quader.tlsSecret`) |
-| environment | `scanner.yaml` | the downward API, the runtime and spool variables, `scanner.extraEnv`; nothing from a Secret |
-| managed keys | `quader.scannerManagedConfig`, `quader.scannerManagedPaths` | `vulnerabilities.images.scanner.url` = `https://<fullname>-scanner.<namespace>.svc:8080`, `vulnerabilities.images.registry.url` = `https://<fullname>-packages-scan.<namespace>.svc:8082`, the names of the kinds (`quader.tlsName`: the worker requires the scanner, the scanner admits the worker, the scanner requires `packages`), `server.scan_clients` (`quader.scanClients`: every kind of scanner of `quader.tlsKindTable`), `server.internal_tls.ca_file` = `/var/run/secrets/quader/tls/ca.crt`; set by hand they fail the render |
+| when | `quader.imageScanOn` | `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled`, both default `true`; off renders no object of the scanner, no scan listener, no internal CA |
+| volumes | `vuln-scanner-trivy.yaml` | `config`, `spool` (an `emptyDir` of `vulnScannerTrivy.spool.sizeLimit`, 6Gi, or with `spool.type: ephemeral` a claim of `spool.ephemeral.size`, as every role's), `tmp`, `secret-tls` (`tls.crt`, `tls.key` and `ca.crt` of the scanner's own Secret, `quader.tlsSecret`) |
+| environment | `vuln-scanner-trivy.yaml` | the downward API, the runtime and spool variables, `vulnScannerTrivy.extraEnv`; nothing from a Secret |
+| managed keys | `quader.scannerManagedConfig`, `quader.scannerManagedPaths` | `vulnerabilities.images.scanner.url` = `https://<fullname>-vuln-scanner-trivy.<namespace>.svc:8080`, `vulnerabilities.images.registry.url` = `https://<fullname>-packages-scan.<namespace>.svc:8082`, the names of the kinds (`quader.tlsName`: the worker requires the scanner, the scanner admits the worker, the scanner requires `packages`), `server.scan_clients` (`quader.scanClients`: every kind of scanner of `quader.tlsKindTable`), `server.internal_tls.ca_file` = `/var/run/secrets/quader/tls/ca.crt`; set by hand they fail the render |
 | the other pods | `quader.linkNeedsCA`, `quader.scanListenEnv`, `quader.scanListenPort` | the item `ca.crt` of the pod's own Secret in every `worker` pod and the main `packages` pods; `QUADER_SERVER_SCAN_LISTEN=:8082` and the port `scan` on the main `packages` Deployment only |
-| checks | `quader.validateScanner`, `quader.validateRoles`, `quader.validate` | the spools of Q-HA-318, the replicas; the scanner's Secret with `tls.existingSecrets` |
-| alert | [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) | `QuaderVulnerabilityImageScannerUnavailable`; `QuaderReplicasNotReady` covers `<fullname>-scanner` (Q-HA-341) |
+| checks | `quader.validateVulnScannerTrivy`, `quader.validateRoles`, `quader.validate` | the spools of Q-HA-318, the replicas; the scanner's Secret with `tls.existingSecrets` |
+| alert | [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) | `QuaderVulnerabilityImageScannerUnavailable`; `QuaderReplicasNotReady` covers `<fullname>-vuln-scanner-trivy` (Q-HA-341) |
 
-The tests are [scanner_test.go](../../test/chart/scanner_test.go) (about 2 s together on a quiet machine, measured on 2026-11-20) and the scanner's rows of
+The tests are [vuln_scanner_trivy_test.go](../../test/chart/vuln_scanner_trivy_test.go) (about 2 s together on a quiet machine, measured on 2026-11-20) and the scanner's rows of
 `roles_test.go`, `chart_test.go`, `tls_test.go`, `trustedca_test.go` and `prometheusrule_test.go`; the rule tests of the alert are in
 `tests/rules_test.yaml`.
 
 ## The malware scanner
 
-[malware-scanner.yaml](../../deploy/helm/quader/templates/malware-scanner.yaml) renders the role `scanner` of the kind `malware` with
-`clamd` beside it, from the helpers of [_malware.tpl](../../deploy/helm/quader/templates/_malware.tpl) (R-HA-068, R-HA-069). Like the
+[malware-scanner-clamav.yaml](../../deploy/helm/quader/templates/malware-scanner-clamav.yaml) renders `<fullname>-malware-scanner-clamav`,
+the role `scanner` of the kind `clamav` with `clamd` beside it, from the helpers of [_malware.tpl](../../deploy/helm/quader/templates/_malware.tpl) (R-HA-068, R-HA-069). Like the
 scanner it shares the pod pieces and none of the secrets, the shared extras or the service account of the other Deployments.
 
 | Piece | Where | What |
 |---|---|---|
 | when | `quader.malwareOn`, `quader.freshclamOn` | `config.malware.enabled` (default `true`); the `freshclam` containers also need `config.malware.database.freshclam` (default `true`) |
 | the image | `clamav.image`, `clamav.pullPolicy` | one value for `clamd` and `freshclam`, ClamAV's `clamav-debian` `_base` image by digest; `TestR_HA_068_*` holds it to `CLAMAV_IMAGE` of `tools/versions.env`, and Renovate moves both lines in one pull request (Q-MAL-80, Q-HA-363) |
-| containers | `malware-scanner.yaml` | `quader` (`serve --role scanner`, `QUADER_PROCESS_SCANNER_KIND=malware`) and `clamd`, which waits for `/var/lib/clamav/.quader-loaded` and then runs `clamd --foreground`; its probes run `clamdscan --ping` once the marker exists |
-| volumes | `malware-scanner.yaml` | `config`, `spool`, `tmp`, `secret-tls` (the malware scanner's own Secret with the CA) in `quader`; shared: `clamd-run` (`/run/clamd`, memory, 1 MiB), `clamd-db` (`/var/lib/clamav`, `malwareScanner.database.sizeLimit`, read-only in `clamd`); `clamd-tmp` (`malwareScanner.clamdTmp.sizeLimit`) and `clamd-config` (`<fullname>-clamd`) in `clamd` only |
+| containers | `malware-scanner-clamav.yaml` | `quader` (`serve --role scanner`, `QUADER_PROCESS_SCANNER_KIND=clamav`) and `clamd`, which waits for `/var/lib/clamav/.quader-loaded` and then runs `clamd --foreground`; its probes run `clamdscan --ping` once the marker exists |
+| volumes | `malware-scanner-clamav.yaml` | `config`, `spool`, `tmp`, `secret-tls` (the malware scanner's own Secret with the CA) in `quader`; shared: `clamd-run` (`/run/clamd`, memory, 1 MiB), `clamd-db` (`/var/lib/clamav`, `malwareScannerClamav.database.sizeLimit`, read-only in `clamd`); `clamd-tmp` (`malwareScannerClamav.clamdTmp.sizeLimit`) and `clamd-config` (`<fullname>-clamd`) in `clamd` only |
 | `clamd.conf` | `quader.clamdConf` | from `config.malware.scanner` (`slots`, `max_file_size`, `max_scan_size`, `scan_timeout`, `socket`): the socket of the pod and no TCP socket, the alerts on content clamd could not read, no PUA, no concurrent reload |
 | managed keys | `quader.malwareManagedConfig`, `quader.malwareManagedPaths` | `malware.scanner.url`, `.server_name`, `.client_name`, `malware.scan_listener.url`, `.server_name`, `.client_name` (Q-MAL-61), and the malware scanner's name in `server.scan_clients`; set by hand they fail the render |
 | the worker | `quader.freshclamContainer`, `quader.freshclamMount`, `quader.freshclamVolumes` | every worker Deployment that claims `malware` (`quader.unitClaimsMalware`: the pool that lists it, else the main worker) gets `freshclam` with `freshclam-db` (`/var/lib/clamav` in `freshclam`, `config.malware.database.freshclam_dir` in the worker) and `<fullname>-freshclam`; it waits for `.quader-seeded` |
 | the scan listener | `quader.scanListenOn` | the scan listener of the main `packages` pods, its Service, its internal CA and its rule open while either scanning is on |
 | checks | `quader.validateMalware` | `clamd-tmp` at least `slots × (max_file_size + max_scan_size)`, `clamd`'s memory limit at least 1.5 GiB, the replicas, the budget's two keys; the malware scanner's Secret with `tls.existingSecrets` |
-| alerts | [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) | `QuaderReplicasNotReady` covers `<fullname>-malware-scanner`; `QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable` and `QuaderMalwareBacklog` (R-MAL-026) while the malware scanning is on, their `promtool` tests in `tests/rules_test.yaml` |
+| alerts | [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) | `QuaderReplicasNotReady` covers `<fullname>-malware-scanner-clamav`; `QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable` and `QuaderMalwareBacklog` (R-MAL-026) while the malware scanning is on, their `promtool` tests in `tests/rules_test.yaml` |
 
 The tests are [malware_test.go](../../test/chart/malware_test.go) (about 1.2 s together, measured on 2026-11-20) and the malware scanner's
-rows of `roles_test.go`, `chart_test.go`, `tls_test.go`, `scanner_test.go`, `trustedca_test.go` and `prometheusrule_test.go`.
+rows of `roles_test.go`, `chart_test.go`, `tls_test.go`, `vuln_scanner_trivy_test.go`, `trustedca_test.go` and `prometheusrule_test.go`.
 
 **An operator's network policies.** `freshclam` resolves and fetches `database.clamav.net` from the worker pods that claim `malware`; the
 chart restricts no egress (ADR-154), so a policy of the cluster that does must admit those pods, by the labels of `worker.podLabels` (or a
@@ -459,9 +470,9 @@ exactly one port.
 | `<fullname>-api`, `<fullname>-packages`, each path pool | TCP 8080 from `networkPolicy.ingress.http.from` (empty = from anywhere, so any ingress controller works wherever it runs); the port of every further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty = from anywhere); TCP 8081 only from `networkPolicy.ingress.ops.from` (default: namespace `monitoring`) and `networkPolicy.probeCIDRs` |
 | each endpoint pool (`<fullname>-packages-ep-<name>`, `<fullname>-api-ep-<name>`) | the endpoint's port as above and 8081; no 8080 |
 | `<fullname>-worker`, each worker pool | TCP 8081 as above; a worker listens on no client port |
-| `<fullname>-packages` (the main Deployment), one rule more while either scanning is on | TCP 8082, the scan listener, from the pods of the scanners the release renders (`quader.scanListenRule` of [_scanner.tpl](../../deploy/helm/quader/templates/_scanner.tpl)) |
-| `<fullname>-scanner` | TCP 8080 from the pods of the worker Deployment that claims the queue `vuln` (the pool that lists it, else the main worker; `quader.vulnWorkerPool`); TCP 8081 as above |
-| `<fullname>-malware-scanner` | TCP 8080 from the pods of the worker Deployment that claims the queue `malware` (`quader.malwareWorkerPool`); TCP 8081 as above |
+| `<fullname>-packages` (the main Deployment), one rule more while either scanning is on | TCP 8082, the scan listener, from the pods of the scanners the release renders (`quader.scanListenRule` of [_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl)) |
+| `<fullname>-vuln-scanner-trivy` | TCP 8080 from the pods of the worker Deployment that claims the queue `vuln` (the pool that lists it, else the main worker; `quader.vulnWorkerPool`); TCP 8081 as above |
+| `<fullname>-malware-scanner-clamav` | TCP 8080 from the pods of the worker Deployment that claims the queue `malware` (`quader.malwareWorkerPool`); TCP 8081 as above |
 | `<fullname>-migrate` | nothing; `ingress: []` |
 
 No rule admits one Quader pod from another but those of the scanning's seams (ADR-212, ADR-221): replicas never talk to each other, and
@@ -512,8 +523,8 @@ tests in `chart_test.go` assert both, row by row.
 | `spool.headroom` not smaller than the spool; sizes that are not quantities | implemented |
 | the spool budget of a worker Deployment that claims the queue `vuln` (the main worker unless a pool lists it, or that pool) below `config.vulnerabilities.sources.osv.max_archive_size` while `config.vulnerabilities.enabled` (default true) and the OSV mode (default `online`) is not `off` (R-VULN-025) | implemented, naming the archive limit and `worker.spool.sizeLimit` |
 | the spool budget of a worker Deployment that claims the queue `vuln` below 2 GiB (the unpacked database) + 512 MiB while `config.vulnerabilities.enabled` and `config.vulnerabilities.images.enabled` (both default true) (Q-HA-318) | implemented, naming the Deployment, `worker.spool.sizeLimit` and `spool.headroom` |
-| the scanner's spool budget (`scanner.spool.sizeLimit` minus `spool.headroom`) below `config.vulnerabilities.images.scanner.slots` × (`max_image_size` + 64 MiB) while the image scanning is on (Q-HA-318) | implemented, naming the three values |
-| `scanner.replicaCount` below 1, or below 2 with `highAvailability.enforce` (R-HA-065) | implemented |
+| the spool budget of `vuln-scanner-trivy` (`vulnScannerTrivy.spool.sizeLimit` minus `spool.headroom`) below `config.vulnerabilities.images.scanner.slots` × (`max_image_size` + 64 MiB) while the image scanning is on (Q-HA-318) | implemented, naming the three values |
+| `vulnScannerTrivy.replicaCount` below 1, or below 2 with `highAvailability.enforce` (R-HA-065); `malwareScannerClamav.replicaCount` likewise (R-HA-068) | implemented |
 | a chart-managed key of the links set under `config`: `vulnerabilities.images.scanner.url`, `.server_name`, `.client_name`, `vulnerabilities.images.registry.url`, `.server_name`, `server.internal_tls`, `server.scan_listen`, `server.scan_clients` (R-HA-066) | implemented, naming the key |
 | a name in `metrics.prometheusRule.disabledAlerts` that is no alert of the chart | implemented, listing the names |
 | `tls.enabled` with neither `tls.certManager.issuerRef.name` nor `tls.existingSecrets` (names both and the opt-out), with both, with a rendered kind without its Secret, or with one Secret for two kinds (R-HA-063, Q-HA-347); `ingress.enabled` with TLS, verification and Traefik but no `serversTransports.api` and `.packages`; `tls.clientCA` with haproxy and no `clientCertSecret`; the same rules for the merged `ingress.backendTLS` of each further endpoint with `ingress.enabled` (`endpoints.<name>.ingress.backendTLS.serversTransports.<kind>` of the kinds its surface holds, `.clientCertSecret` with the endpoint's `tls.clientCaSecret`); `tls.clientCA`, `tls.backendTLSPolicy` without `tls.enabled`; `tls.backendTLSPolicy.enabled` without `caConfigMapName` | implemented |

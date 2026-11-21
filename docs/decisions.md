@@ -216,6 +216,7 @@ checked every earlier decision against them:
 | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) | Every downloaded artifact is scanned for malware, and one switch lets only checked artifacts through | Accepted (owner decisions of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) | The malware scanner is a kind of the role `scanner`, with `clamd` beside it, and reads one blob by its digest | Accepted (owner decisions of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-222](#adr-222--freshclam-fetches-the-clamav-database-and-quader-keeps-it-in-upstreamscanner-clamav) | `freshclam` fetches the ClamAV database, and Quader keeps it in `upstream/scanner-clamav` | Accepted (owner decision of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) | A unit that runs a tool carries the tool's name | Accepted (owner decision of 2026-11-21); the boundary decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1455,7 +1456,9 @@ R-UI-188, Q-UI-850.
 ### ADR-215 · Every kind of pod has a TLS pair and a name of its own, which the chart issues
 
 **Status:** Accepted (owner decision of 2026-11-20: "Option c", on his question "Option A, macht es vielleicht Sinn das jeder Pod-kind sein
-eigenes Cert erhält?"); the mechanisms decided by the development agent — owner review at the walkthrough
+eigenes Cert erhält?"); the mechanisms decided by the development agent — owner review at the walkthrough. The kind `scanner` is named
+`vuln-scanner-trivy` since [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) (2026-11-21); the text below keeps the
+name of its day.
 
 **Context.** Every pod of the chart served and presented the one pair of `tls.secretName`, which the operator issued with every Service name
 of the installation. The scanner role of ADR-212 brought the first links between Quader's pods and showed what the one pair costs: the
@@ -1531,7 +1534,8 @@ R-OCI-027, Q-OCI-240; [repositories-and-proxy.md](spec/repositories-and-proxy.md
 ### ADR-221 · The malware scanner is a kind of the role `scanner`, with `clamd` beside it, and reads one blob by its digest
 
 **Status:** Accepted (owner decisions of 2026-11-20, Q-MAL-6, Q-MAL-7, Q-MAL-10); the mechanisms decided by the development agent — owner
-review at the walkthrough
+review at the walkthrough. The kind `malware` is named `clamav`, and the Deployment `<fullname>-malware-scanner-clamav`, since
+[ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) (2026-11-21); the text below keeps the names of its day.
 
 **Context.** ADR-212 named "a second caller of the scanner" and ADR-213 "a second system reader of the registry" as their revisit
 conditions; the malware scanning is both. Quader's image is static and distroless; `clamd` is a dynamically linked GPL program that holds
@@ -1587,6 +1591,42 @@ database through an OCI repository.
 
 **Spec:** [malware-scanning.md](spec/malware-scanning.md) R-MAL-010 to R-MAL-012, Q-MAL-8, Q-MAL-28; [repositories-and-proxy.md](spec/repositories-and-proxy.md)
 R-REPO-066, R-REPO-075, Q-REPO-410, Q-REPO-411; [ha-and-helm.md](spec/ha-and-helm.md) R-HA-069, Q-HA-362.
+
+### ADR-223 · A unit that runs a tool carries the tool's name
+
+**Status:** Accepted (owner decision of 2026-11-21: "Also immer so benennen, dass man sieht um welches Tool es sich handelt und das man
+später evtl mal mehrere Tools nebeneinander laufen lassen kann."); the boundary decided by the development agent — owner review at the
+walkthrough. Supersedes the names of the kinds `scanner` and `malware-scanner` in [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues)
+and [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest), and the
+values `image` and `malware` of `process.scanner_kind`.
+
+**Context.** The owner looked at his cluster: "Die Deployments quader-scanner und quader-malware-scanner sind mir nicht differenziert genug.
+quader-scanner ist trivy? Dann quader-vuln-scanner-trivy. quader-malware-scanner hätte ich auch lieber quader-malware-scanner-calmav
+genannt." ("calmav" is a typo of his; the tool is ClamAV.) Both Deployments run the role `scanner`; the name of neither said which tool it
+wraps, and neither left room for a second tool of the same purpose.
+
+**Decision.**
+- A kind of pod that exists to run one third-party tool, and everything named after it, is named `<purpose>-scanner-<tool>`:
+  `vuln-scanner-trivy` and `malware-scanner-clamav`, with their Deployments, Services, disruption budgets, autoscalers, policies,
+  Certificates and Secrets, component labels, certificate names and keys of `tls.existingSecrets`
+  ([ha-and-helm.md](spec/ha-and-helm.md) Q-HA-372).
+- The chart's value blocks are `vulnScannerTrivy` and `malwareScannerClamav`, one per unit; `process.scanner_kind` takes `trivy` or
+  `clamav`, default `trivy` ([architecture.md](spec/architecture.md) Q-ARCH-561).
+- What is the same whichever tool does the work keeps its purpose's name: the role `scanner`, the jobs and queues, the configuration keys
+  `vulnerabilities.images.scanner.*` and `malware.scanner.*`, the system subjects, the readiness checks, the metrics and the link labels.
+
+**Consequences.** A second tool for a purpose is a unit beside the first. An installation upgraded from the old names loses the old
+objects and gets new ones; the Secrets cert-manager wrote for the old kinds stay behind. The Service `<fullname>-malware-scanner-clamav`
+is a DNS label only for a `<fullname>` of at most 40 characters, which the chart does not check. The rule stands in the repository's
+`CLAUDE.md`.
+
+**Alternatives considered.** The tool's name on everything a scanner touches; the tool's name on the Deployment only; the values of
+`process.scanner_kind` kept as purposes, or without a default.
+
+**Revisit condition:** a second tool for one purpose, which needs the worker's link per purpose to become a list.
+
+**Spec:** [ha-and-helm.md](spec/ha-and-helm.md) R-HA-002, R-HA-063, R-HA-065 to R-HA-068, Q-HA-372; [architecture.md](spec/architecture.md)
+R-ARCH-001, R-ARCH-036, Q-ARCH-561.
 
 ## Design invariants
 
@@ -9011,7 +9051,8 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-ARCH-531](spec/architecture.md#q-arch-531--in-the-role-all-the-worker-calls-the-scanner-of-its-own-process-over-loopback) | The scanner in the role `all`? | (a) the same process over loopback, the same path | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-ARCH-552](spec/architecture.md#q-arch-552--each-end-of-a-link-requires-one-name-listed-exactly-in-the-other-ends-certificate) | How does a link check the other side's kind? | (a) one name per side, listed exactly, no wildcard, both ends | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
 | [Q-ARCH-553](spec/architecture.md#q-arch-553--the-role-all-keeps-one-pair-the-integration-harness-issues-one-per-role) | What of the pairs per kind holds in the role all and the integration harness? | (a) all keeps one pair, names optional; the harness issues a pair per role | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
-| [Q-ARCH-560](spec/architecture.md#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration) | How is the malware scanner told apart? | (a) `process.scanner_kind` | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
+| [Q-ARCH-560](spec/architecture.md#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration) | How is the malware scanner told apart? | (a) `process.scanner_kind`; its values replaced by Q-ARCH-561 | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
+| [Q-ARCH-561](spec/architecture.md#q-arch-561--processscanner_kind-names-the-tool-trivy-or-clamav) | What do the values of `process.scanner_kind` name? | (a) the tool: `trivy` (default) or `clamav` | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
 | [Q-REPO-273](spec/repositories-and-proxy.md#q-repo-273--a-formats-data-port-adds-rows-in-the-transaction-that-creates-its-repository) | How does a format add rows when its repository is created? | (a) A creation hook the composition root registers per format, run inside the creating transaction | [ADR-171](#adr-171--every-debian-local-and-virtual-repository-has-its-own-eddsalegacy-signing-key-generated-by-quader-and-sealed-with-the-stored-secret-key-ring-rotation-by-a-co-signing-next-key-the-journal-withholds-keys-and-never-erases-them) |
 | [Q-REPO-280](spec/repositories-and-proxy.md#q-repo-280--the-upstream-test-reads-a-bearer-challenge-of-a-handshake-format-as-reachable) | How does the upstream test read a registry's `401` with a Bearer challenge? | (a) Reachable, `authenticated` null | [ADR-176](#adr-176--the-oci-remote-adapter-works-inside-the-contract-and-adds-a-catalog-fact-and-an-optional-interface) |
 | [Q-OCI-125](spec/formats/oci.md#q-oci-125--extrahosts-do-not-gate-redirects-so-the-docker-hub-defaults-list-the-realm-only) | Does the CDN host belong to the Docker Hub defaults? | (a) No: `extraHosts` do not gate redirects | [ADR-176](#adr-176--the-oci-remote-adapter-works-inside-the-contract-and-adds-a-catalog-fact-and-an-optional-interface) |
@@ -9250,13 +9291,14 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-HA-321](spec/ha-and-helm.md#q-ha-321--the-shared-extras-of-the-chart-do-not-reach-the-scanner) | Do the chart's shared extras reach the scanner? | (a) no; `scanner.extraEnv` is its own | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-HA-322](spec/ha-and-helm.md#q-ha-322--with-tlsenabled-false-the-scanners-links-are-plain-as-every-link-of-such-an-installation) | The links with `tls.enabled: false`? | (a) plain, like every link of such an installation | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-HA-345](spec/ha-and-helm.md#q-ha-345--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-and-the-chart-issues-the-pairs) | Does every kind of pod get a TLS pair of its own? | (c) every kind its pair and name, issued by the chart (owner, 2026-11-20) | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
-| [Q-HA-346](spec/ha-and-helm.md#q-ha-346--four-kinds-hold-a-pair-each-names-its-kind-and-the-operations-service) | Which pods hold a pair, with which names and usages? | (a) api, packages, worker, scanner; the kind's and the ops name; client auth for worker and scanner | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
+| [Q-HA-346](spec/ha-and-helm.md#q-ha-346--four-kinds-hold-a-pair-each-names-its-kind-and-the-operations-service) | Which pods hold a pair, with which names and usages? | (a) api, packages, worker, scanner; the kind's and the ops name; client auth for worker and scanner; the scanners' names superseded by Q-HA-372 | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
 | [Q-HA-347](spec/ha-and-helm.md#q-ha-347--tlscertmanager-issues-a-certificate-per-kind-tlsexistingsecrets-names-a-secret-per-kind-instead) | How does an installation give the pairs? | (a) `tls.certManager.issuerRef`, or a Secret per kind, never one for two | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
 | [Q-HA-348](spec/ha-and-helm.md#q-ha-348--the-edge-verifies-each-backend-under-its-kinds-name-the-setting-goes-where-each-controller-reads-it) | How does the edge verify two kinds behind one host? | (a) the name per Service; an Ingress per kind for ingress-nginx | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
 | [Q-HA-349](spec/ha-and-helm.md#q-ha-349--every-pair-also-carries-the-operations-name-and-the-scrape-verifies-that-name) | Under which name does the scrape verify the pods? | (a) the ops name every pair carries | [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues) |
 | [Q-HA-360](spec/ha-and-helm.md#q-ha-360--clamd-runs-in-a-container-of-the-official-image-beside-the-scanner) | How does `clamd` run in the chart? | (a) a second container of the official `_base` image, a Unix socket | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-HA-361](spec/ha-and-helm.md#q-ha-361--the-malware-scanners-default-size) | How large is the malware scanner by default? | (a) 2 replicas of 2 slots, `clamd` 2 GiB, no concurrent reload | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-HA-362](spec/ha-and-helm.md#q-ha-362--freshclam-runs-beside-the-worker-without-a-credential) | Where does `freshclam` run? | (a) a container of each worker pod that claims `malware` | [ADR-222](#adr-222--freshclam-fetches-the-clamav-database-and-quader-keeps-it-in-upstreamscanner-clamav) |
+| [Q-HA-372](spec/ha-and-helm.md#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name) | What are the scanner units named? Decided by the owner, the boundary by the development agent | (a) `<purpose>-scanner-<tool>` on what runs the tool, the purpose's name on what a second tool would share | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
 | [Q-OPS-1](spec/operations-and-observability.md#q-ops-1--couple-liveness-to-prolonged-unreadiness) | Couple liveness to prolonged unreadiness? | (d) never; liveness is a watchdog over Quader's own loops | [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
 | [Q-OPS-2](spec/operations-and-observability.md#q-ops-2--should-object-storage-reachability-gate-readiness) | Should object-storage reachability gate readiness? | (d) gate only the first readiness, then report and degrade; continuous gating as an opt-in; changes INV-12; same choice as Q-STOR-1 and Q-HA-1 | [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
 | [Q-OPS-3](spec/operations-and-observability.md#q-ops-3--anonymous-access-to-the-version-endpoint) | Anonymous access to the version endpoint? | (b) authenticated by default; `system.public_version: true` opens it | — |

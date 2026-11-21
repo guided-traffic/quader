@@ -92,8 +92,8 @@ tls:
     api: quader-tls-api
     packages: quader-tls-packages
     worker: quader-tls-worker
-    scanner: quader-tls-scanner
-    malware-scanner: quader-tls-malware-scanner
+    vuln-scanner-trivy: quader-tls-vuln-scanner-trivy
+    malware-scanner-clamav: quader-tls-malware-scanner-clamav
   minVersion: "1.3"
   clientCA:
     secretName: quader-edge-ca                     # example: mutual TLS from the edge

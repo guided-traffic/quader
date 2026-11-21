@@ -6,19 +6,20 @@ through tls.certManager.issuerRef (templates/certificates.yaml) or named per kin
 {{/*
 The kinds of pod that hold a pair (Q-HA-346), one entry each: "kind" (its name, <fullname>-<kind>.<namespace>.svc, its Secret
 <fullname>-tls-<kind> and its key of tls.existingSecrets), "client" (its pair also allows client authentication, because it calls a
-link), "scanClient" (the scan listener admits it: a kind of scanner, server.scan_clients) and "on" (the release renders it). A further
+link), "scanClient" (the scan listener admits it: a kind of scanner, server.scan_clients) and "on" (the release renders it). A kind
+that runs one third-party tool is named <purpose>-scanner-<tool> (Q-HA-372): vuln-scanner-trivy, malware-scanner-clamav. A further
 kind of pod is one entry here, one key of tls.existingSecrets in values.yaml and values.schema.json, and its Deployment's mount of
 quader.tlsSecret; the Certificates, the checks, the Secrets' validation and the scan listener's names follow from this list. Argument:
 the root context. Returns a YAML list.
 */}}
 {{- define "quader.tlsKindTable" -}}
-{{- $scanner := include "quader.scannerOn" . | eq "true" -}}
+{{- $vuln := include "quader.imageScanOn" . | eq "true" -}}
 {{- $malware := include "quader.malwareOn" . | eq "true" -}}
 {{- $t := list (dict "kind" "api" "client" false "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "packages" "client" false "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "worker" "client" true "scanClient" false "on" true) -}}
-{{- $t = append $t (dict "kind" "scanner" "client" true "scanClient" true "on" $scanner) -}}
-{{- $t = append $t (dict "kind" "malware-scanner" "client" true "scanClient" true "on" $malware) -}}
+{{- $t = append $t (dict "kind" "vuln-scanner-trivy" "client" true "scanClient" true "on" $vuln) -}}
+{{- $t = append $t (dict "kind" "malware-scanner-clamav" "client" true "scanClient" true "on" $malware) -}}
 {{- toYaml $t -}}
 {{- end -}}
 

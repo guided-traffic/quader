@@ -119,7 +119,7 @@ role runs the same ones and is interchangeable with any other replica of that ro
 | `api` | the route families `ui`, `api`, `ci_exchange` of every endpoint whose surface holds them ([endpoints.md](endpoints.md) R-EP-005) | the session store, the OIDC client secrets, the break-glass password | `<fullname>-api`, its pools and the `api` part of endpoint pools ([ha-and-helm.md](ha-and-helm.md) R-HA-002, R-HA-062) |
 | `packages` | the route families `packages`, `files`; tokens only, a session cookie is ignored as absent; the fills of client misses and the shadowing probes | no session store, no login secret | `<fullname>-packages`, its pools and the `packages` part of endpoint pools |
 | `worker` | the job queue, its leases and the scheduler, the mirror's passes, the advisory sync; the queues it claims are configurable (R-ARCH-016) | the lease pool | `<fullname>-worker` and its pools by queue |
-| `scanner` | the analysis of container images, called by the worker over its own listener (R-ARCH-036; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-041) | nothing of PostgreSQL, the object store, Valkey or the key ring: the TLS pair and the internal CA only | `<fullname>-scanner`, while the image scanning is on ([ha-and-helm.md](ha-and-helm.md) R-HA-065) |
+| `scanner` | a scanning tool's wrapper, called by the worker over its own listener: the analysis of container images or the malware scan, by `process.scanner_kind` (R-ARCH-036; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-041; [malware-scanning.md](malware-scanning.md) R-MAL-005) | nothing of PostgreSQL, the object store, Valkey or the key ring: the TLS pair and the internal CA only | `<fullname>-vuln-scanner-trivy` while the image scanning is on, `<fullname>-malware-scanner-clamav` while the malware scanning is on ([ha-and-helm.md](ha-and-helm.md) R-HA-065, R-HA-068, Q-HA-372) |
 | `web` | `api` and `packages` in one process: every family | everything `api` and `packages` hold | never; a binary started outside the chart: the replica of the integration tests (Q-ARCH-295, [ha-and-helm.md](ha-and-helm.md) Q-HA-315) |
 | `all` | every role but `bastion` in one process, `scanner` included (Q-ARCH-531) | everything | never; a binary started outside the chart during development |
 | `backup`, `bastion` | unchanged: the `quader backup` subcommand (above), the Bastion's read flow ([bastion.md](bastion.md) R-BAS-001) | their own | the backup CronJob and restore Job; the chart `quader-bastion` |
@@ -584,8 +584,9 @@ nothing worth taking.
 - **Holds.** The TLS pair it serves and presents, the internal CA, and, for the length of a call, the call's scan token and the image's
   bytes. It never opens a connection to PostgreSQL, Valkey, the object store, an upstream or the Kubernetes API, and never calls a worker.
 - **Never** claims jobs, holds leases, writes the replica registry, enqueues, or keeps anything between two calls.
-- **Kinds** ([Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration)). `process.scanner_kind` chooses what a
-  scanner process does: `image` (the default, everything above) or `malware`, the malware scanning's scanner
+- **Kinds** ([Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration),
+  [Q-ARCH-561](#q-arch-561--processscanner_kind-names-the-tool-trivy-or-clamav)). `process.scanner_kind` names the tool a scanner process
+  wraps: `trivy` (the default, everything above) or `clamav`, the malware scanning's scanner
   ([malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-007). A malware scanner builds the same area with
   its malware parts instead of the analyser ([wire_malware_scanner.go](../../internal/app/wire_malware_scanner.go)): the handler of
   `POST /scan/v1/malware`, the reader of the scan listener's blob route, the unpacking of `ar` and zstd, the client of `clamd` on the Unix
@@ -4281,13 +4282,13 @@ reloads without a restart (INV-20, R-ARCH-035).
 ```yaml
 server:
   scan_listen: ""                     # default (proposed): no scan listener; the chart sets ":8082" on the main packages Deployment (R-ARCH-037)
-  scan_clients: []                    # the names of the kinds of pod the scan listener admits, one per kind of scanner; the chart sets [<fullname>-scanner.<namespace>.svc]
+  scan_clients: []                    # the names of the kinds of pod the scan listener admits, one per kind of scanner; the chart sets [<fullname>-vuln-scanner-trivy.<namespace>.svc, <fullname>-malware-scanner-clamav.<namespace>.svc]
   internal_tls:
     ca_file: ""                       # the CA the links between Quader's pods verify against; the chart sets /var/run/secrets/quader/tls/ca.crt, the ca.crt of the pod's own Secret; example: /etc/quader/internal-ca.crt
 vulnerabilities:
   images:
     scanner:
-      server_name: ""                 # empty = the host of scanner.url; the chart sets <fullname>-scanner.<namespace>.svc
+      server_name: ""                 # empty = the host of scanner.url; the chart sets <fullname>-vuln-scanner-trivy.<namespace>.svc
       client_name: ""                 # the name the scanner's listener requires in a client certificate; the chart sets <fullname>-worker.<namespace>.svc
     registry:
       server_name: ""                 # empty = the host of registry.url; the chart sets <fullname>-packages.<namespace>.svc
@@ -11398,7 +11399,9 @@ than one replica that call each other.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
 owner's (2026-11-20, [malware-scanning.md](malware-scanning.md) Q-MAL-6): a Deployment of its own of the role `scanner`, with a container
-`clamd` beside it.
+`clamd` beside it. Its values `image` and `malware` are replaced by `trivy` and `clamav`
+([Q-ARCH-561](#q-arch-561--processscanner_kind-names-the-tool-trivy-or-clamav), in the frame of the owner's
+[ha-and-helm.md](ha-and-helm.md#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name) Q-HA-372); the key and the one role stand.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -11409,6 +11412,27 @@ owner's (2026-11-20, [malware-scanning.md](malware-scanning.md) Q-MAL-6): a Depl
 **Choice:** (a). The role `all` runs neither kind's malware part unless `process.scanner_kind` is set; development runs the malware scanner
 as a second process of the role `scanner` with `clamd` beside it. **Applied in the spec:** R-ARCH-036;
 [ha-and-helm.md](ha-and-helm.md) R-HA-068.
+
+### Q-ARCH-561 · `process.scanner_kind` names the tool: `trivy` or `clamav`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
+owner's decision of 2026-11-21 ([ha-and-helm.md](ha-and-helm.md#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name) Q-HA-372): a
+unit that runs a third-party tool carries the tool's name, so that a second tool can run beside the first. It replaces the values of
+[Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration); the key and the one role `scanner` stand.
+
+Context: `process.scanner_kind` chooses which part of the area `scanner` a process builds, the analyser of container images (Trivy) or the
+malware scanner with `clamd` beside it (ClamAV). After Q-HA-372 the Deployments are `<fullname>-vuln-scanner-trivy` and
+`<fullname>-malware-scanner-clamav`; the values `image` and `malware` named the purpose, while the Deployment that sets them names the tool.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `trivy` and `clamav`, default `trivy` (chosen) | The value names the tool the process wraps; the chart sets `clamav` on `<fullname>-malware-scanner-clamav` and leaves the default on `<fullname>-vuln-scanner-trivy` | One vocabulary with the kind of pod; a second tool for a purpose is one value more, not a second meaning of `image` | The default names the first tool |
+| (b) Keep `image` and `malware` | The value names the purpose | No change | A second tool for images needs a second key, or a value that names the tool after all |
+| (c) `trivy` and `clamav` without a default; the chart sets it on both Deployments | Every scanner process states its tool | Nothing implied | Every start outside the chart (the integration stack's scanners, a development process) must set it, for no gain while there is one tool per purpose |
+
+**Choice:** (a). An unknown value is refused at the configuration load, as before (`oneof=trivy|clamav`). The development agent would revisit
+the default when a second tool for images is built. **Applied in the spec:** R-ARCH-036 (Kinds); [ha-and-helm.md](ha-and-helm.md) R-HA-030,
+R-HA-068; [malware-scanning.md](malware-scanning.md)'s configuration. Code: [process.go](../../internal/config/process.go).
 
 ## What this does not cover
 

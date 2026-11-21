@@ -191,7 +191,7 @@ after an hour. What makes it real: an installation that sized `worker.spool.size
 
 ### H-873 · A refused scan waits an hour after the limit is raised
 
-A scan refused with `spool_too_small` is due again after an hour. An operator who raises `scanner.spool.sizeLimit` or the worker's, or lowers
+A scan refused with `spool_too_small` is due again after an hour. An operator who raises `vulnScannerTrivy.spool.sizeLimit` or the worker's, or lowers
 `max_image_size`, sees the images scanned within that hour, not at once; a rescan of the repository (R-VULN-011) brings them forward. What
 makes it real: the first install of a scanner or a pool with a spool that is too small.
 
@@ -211,11 +211,11 @@ and nothing tells an installation that already runs an image which analyser buil
 
 Component: the scanner's pod and the pairs per kind of pod ([R-HA-063](../spec/ha-and-helm.md#r-ha-063--chart-tls-wiring),
 [Q-HA-345](../spec/ha-and-helm.md#q-ha-345--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-and-the-chart-issues-the-pairs)). Subject:
-the scanner's pair, `<fullname>-scanner.<namespace>.svc` and `<fullname>-ops.<namespace>.svc`. Live by design: the analyser runs in the pod
+the scanner's pair, `<fullname>-vuln-scanner-trivy.<namespace>.svc` and `<fullname>-ops.<namespace>.svc`. Live by design: the analyser runs in the pod
 that mounts it. With it, a taken-over analyser passes the scan listener's check, which the scanner passes already, and still needs a scan
 token for each manifest (ADR-213); it does not pass the scanner's listener (the worker's name only), the edge (the names of `api` and
 `packages`) or any link as another kind. As a server it could pose as a scanner toward a worker, which needs a position between the worker
-and the Service `<fullname>-scanner` (its endpoints, which need the Kubernetes API, or an address the CNI lets it claim), and as an
+and the Service `<fullname>-vuln-scanner-trivy` (its endpoints, which need the Kubernetes API, or an address the CNI lets it claim), and as an
 operations listener toward the scrape ([H-1071](transport-encryption.md#h-1071--every-pair-also-carries-the-operations-name)). What makes it real: a taken-over analyser together with such a position; the scanner has no
 service-account token.
 

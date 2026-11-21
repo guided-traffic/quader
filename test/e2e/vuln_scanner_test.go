@@ -59,7 +59,7 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 
 	// R-HA-065: a scanner pod holds the TLS pair and the internal CA, and nothing else of the installation. The image has no shell
 	// and no ls (distroless), so the running pod's own spec says what the kubelet put below /var/run/secrets (Q-HA-342).
-	pods := livePods(t, "app.kubernetes.io/component=scanner")
+	pods := livePods(t, "app.kubernetes.io/component=vuln-scanner-trivy")
 	if len(pods) < 2 {
 		t.Fatalf("%d scanner pods are running, the profile runs two", len(pods))
 	}
@@ -99,7 +99,7 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 		}
 		if vol.Secret != nil {
 			// The scanner holds its own kind's pair and no other kind's (R-HA-063, Q-HA-345).
-			if vol.Secret.SecretName != "quader-tls-scanner" {
+			if vol.Secret.SecretName != "quader-tls-vuln-scanner-trivy" {
 				t.Errorf("the scanner pod mounts the Secret %s", vol.Secret.SecretName)
 			}
 			for _, it := range vol.Secret.Items {

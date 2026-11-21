@@ -54,8 +54,8 @@ spec:
 # The operator's NetworkPolicy admits only its own components (ingress only). quader's pods are admitted
 # here, to the data pods and the Sentinels alike, on the TLS ports only: the chart's api, packages and worker pods, the
 # e2e driver pod and the extra replicas of the Valkey start cases (e12_valkey_test.go), which carry the same labels with
-# a component of their own; not the scanner, which serves too but is no client of Valkey. Deleting this policy cuts quader
-# off from Valkey (valkey-outage.sh does exactly that).
+# a component of their own; not the scanners (vuln-scanner-trivy, malware-scanner-clamav), which serve too but are no clients of
+# Valkey. Deleting this policy cuts quader off from Valkey (valkey-outage.sh does exactly that).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -74,9 +74,9 @@ spec:
             matchLabels:
               app.kubernetes.io/name: quader
               quader/serve: "true"
-            # Valkey's clients by name: the scanner carries the serve label too (the ops Service selects it) and holds no Valkey
-            # credential; it is not admitted (R-HA-065, Q-HA-344). The E0.12 case with every Sentinel unreachable starts a replica
-            # with the scanner's component label and shows that this policy drops it.
+            # Valkey's clients by name: the scanners carry the serve label too (the ops Service selects them) and hold no Valkey
+            # credential; they are not admitted (R-HA-065, Q-HA-344). The E0.12 case with every Sentinel unreachable starts a replica
+            # with the component label vuln-scanner-trivy and shows that this policy drops it.
             matchExpressions:
               - {key: app.kubernetes.io/component, operator: In, values: [api, packages, worker, e2e-driver, e2e-replica]}
       ports:

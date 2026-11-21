@@ -54,7 +54,7 @@ worker:
 clamav:
   image: quader-e2e-clamav:dev
   pullPolicy: IfNotPresent
-malwareScanner:
+malwareScannerClamav:
   resources:
     requests:
       cpu: 50m

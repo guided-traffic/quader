@@ -31,7 +31,7 @@ worker:
   replicaCount: 2
   autoscaling:
     enabled: false
-malwareScanner:
+malwareScannerClamav:
   replicaCount: 2
   autoscaling:
     enabled: false

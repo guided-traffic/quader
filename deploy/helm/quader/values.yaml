@@ -212,11 +212,11 @@ worker:
   extraEnv: []
   pools: []                             # example: [{name: vuln, queues: [vuln], replicaCount: 2}]; the main worker claims every queue no pool lists
 
-# ── scanner Deployment: quader serve --role scanner (R-HA-065) ────
-# The analysis of container images for the worker's image scanning; rendered while config.vulnerabilities.enabled and
-# config.vulnerabilities.images.enabled are true. No secret of PostgreSQL, the object store or Valkey and no key ring mounts here,
-# and none of the shared extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts reaches it (Q-HA-321).
-scanner:
+# ── vuln-scanner-trivy Deployment: quader serve --role scanner, Trivy (R-HA-065, Q-HA-372) ────
+# The analysis of container images for the worker's image scanning, <fullname>-vuln-scanner-trivy; rendered while
+# config.vulnerabilities.enabled and config.vulnerabilities.images.enabled are true. No secret of PostgreSQL, the object store or Valkey
+# and no key ring mounts here, and none of the shared extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts reaches it (Q-HA-321).
+vulnScannerTrivy:
   replicaCount: 2                       # ignored when autoscaling.enabled; the capacity is replicas × config.vulnerabilities.images.scanner.slots
   minReadySeconds: 10
   revisionHistoryLimit: 5
@@ -268,16 +268,16 @@ scanner:
   podLabels: {}
   extraEnv: []                          # the scanner's own; the shared extraEnv does not reach it (Q-HA-321)
 
-# ── ClamAV: the clamd container of the malware scanner and the freshclam container of the worker ────
+# ── ClamAV: the clamd container of malware-scanner-clamav and the freshclam container of the worker ────
 clamav:
   image: docker.io/clamav/clamav-debian:1.5.5_base@sha256:739c5ec70212e2d3e0c7719af2fba8776fb435f9932d7d3a3de2a95fcd6adde7  # the CLAMAV_IMAGE of tools/versions.env, which a chart test holds it to: ClamAV's own multi-arch image without a database
   pullPolicy: IfNotPresent
 
-# ── malware scanner Deployment: quader serve --role scanner of the kind malware, clamd beside it (R-HA-068) ────
-# Rendered while config.malware.enabled is true. The quader container reads one blob through the scan listener of packages and
+# ── malware-scanner-clamav Deployment: quader serve --role scanner of the kind clamav, clamd beside it (R-HA-068, Q-HA-372) ────
+# <fullname>-malware-scanner-clamav, rendered while config.malware.enabled is true. The quader container reads one blob through the scan listener of packages and
 # hands it to clamd over a Unix socket of the pod; clamd holds the signature database the quader container loaded. No secret of
 # PostgreSQL, the object store or Valkey and no key ring mounts here, and none of the shared extras reaches it (Q-HA-321).
-malwareScanner:
+malwareScannerClamav:
   replicaCount: 2                       # ignored when autoscaling.enabled; the capacity is replicas × config.malware.scanner.slots
   minReadySeconds: 10
   revisionHistoryLimit: 5
@@ -481,20 +481,20 @@ config:
   #       ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt  # example: an instance behind a private CA
 
 # ── TLS on Quader's own listeners ────────────────────
-# Every kind of pod (api, packages, worker, scanner) has a pair and a name of its own: <fullname>-<kind>.<namespace>.svc, and
-# <fullname>-ops.<namespace>.svc for the scrape (R-HA-063). With tls.certManager the chart renders a cert-manager Certificate per
-# kind into the Secret <fullname>-tls-<kind>; tls.existingSecrets names an existing Secret per kind instead. A pod mounts its
-# kind's Secret only, as a directory volume without subPath, so a rotated Secret reaches its pods through the kubelet's atomic
-# swap and the process reloads the files (tls.reloadInterval). tls.* configures the default client listener :8080 and the
-# operations listener :8081; each entry of endpoints carries its own tls block.
+# Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav) has a pair and a name of its own:
+# <fullname>-<kind>.<namespace>.svc, and <fullname>-ops.<namespace>.svc for the scrape (R-HA-063). With tls.certManager the chart
+# renders a cert-manager Certificate per kind into the Secret <fullname>-tls-<kind>; tls.existingSecrets names an existing Secret per
+# kind instead. A pod mounts its kind's Secret only, as a directory volume without subPath, so a rotated Secret reaches its pods
+# through the kubelet's atomic swap and the process reloads the files (tls.reloadInterval). tls.* configures the default client
+# listener :8080 and the operations listener :8081; each entry of endpoints carries its own tls block.
 tls:
   enabled: true                         # false = plain HTTP inside the cluster
   existingSecrets:                      # empty = the cert-manager Certificates below; else an existing Secret per kind with tls.crt, tls.key and ca.crt, one CA for all, a different Secret for each kind; the chart never creates them
     api: ""                             # example: quader-tls-api (names <fullname>-api.<namespace>.svc and <fullname>-ops.<namespace>.svc, usage server auth)
     packages: ""                        # example: quader-tls-packages (<fullname>-packages.<namespace>.svc and the ops name, server auth)
     worker: ""                          # example: quader-tls-worker (<fullname>-worker.<namespace>.svc and the ops name, server auth and client auth)
-    scanner: ""                         # example: quader-tls-scanner (<fullname>-scanner.<namespace>.svc and the ops name, server auth and client auth); needed while the scanner is rendered
-    malware-scanner: ""                 # example: quader-tls-malware-scanner (<fullname>-malware-scanner.<namespace>.svc and the ops name, server auth and client auth); needed while the malware scanner is rendered
+    vuln-scanner-trivy: ""              # example: quader-tls-vuln-scanner-trivy (<fullname>-vuln-scanner-trivy.<namespace>.svc and the ops name, server auth and client auth); needed while the image scanning is on
+    malware-scanner-clamav: ""          # example: quader-tls-malware-scanner-clamav (<fullname>-malware-scanner-clamav.<namespace>.svc and the ops name, server auth and client auth); needed while the malware scanning is on
   certManager:                          # the Certificate per kind the chart renders while existingSecrets is empty: <fullname>-tls-<kind>
     issuerRef:
       kind: ClusterIssuer               # ClusterIssuer | Issuer (an Issuer of the release namespace)

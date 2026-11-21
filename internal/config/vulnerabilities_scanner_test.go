@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	testScannerURL  = "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://quader-scanner.quader.svc:8080"
+	testScannerURL  = "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://quader-vuln-scanner-trivy.quader.svc:8080"
 	testRegistryURL = "QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=https://quader-packages-scan.quader.svc:8082"
 )
 
@@ -80,12 +80,12 @@ func TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile(t *t
 	// What the role reads is still validated.
 	containsAll(t, issuesOf(t, loadRole(t, "scanner", testRegistryURL, "QUADER_SERVER_LISTEN=nonsense")), "server.listen")
 	for _, path := range []string{"server.listen", "server.internal_tls.ca_file", "vulnerabilities.images.registry.url", "storage.spool.max_bytes", "health.check_interval"} {
-		if !ScannerReads(path, ScannerKindImage) {
+		if !ScannerReads(path, ScannerKindTrivy) {
 			t.Errorf("the scanner does not read %s", path)
 		}
 	}
 	for _, path := range []string{"database.password_file", "valkey.password_file", "storage.s3.bucket", "secrets.encryption_key_files", "auth.oidc.issuer", "proxy.outbound.proxy_from_environment", "vulnerabilities.sources.osv.mode"} {
-		if ScannerReads(path, ScannerKindImage) {
+		if ScannerReads(path, ScannerKindTrivy) {
 			t.Errorf("the scanner reads %s", path)
 		}
 	}
@@ -128,7 +128,7 @@ func TestR_ARCH_038_TheListenersOfTheLinksNameTheKindTheyAdmit(t *testing.T) {
 		for _, role := range []string{"packages", "web"} {
 			containsAll(t, issuesOf(t, loadRole(t, role, with("QUADER_SERVER_SCAN_LISTEN=:8082")...)), "server.scan_clients is required while scan_listen is open")
 			// Every kind of scanner the scan listener admits is one entry: a second kind adds its name (Q-ARCH-552).
-			if err := loadRole(t, role, with("QUADER_SERVER_SCAN_LISTEN=:8082", `QUADER_SERVER_SCAN_CLIENTS=["quader-scanner.quader.svc","quader-other-scanner.quader.svc"]`)...); err != nil {
+			if err := loadRole(t, role, with("QUADER_SERVER_SCAN_LISTEN=:8082", `QUADER_SERVER_SCAN_CLIENTS=["quader-vuln-scanner-trivy.quader.svc","quader-malware-scanner-clamav.quader.svc"]`)...); err != nil {
 				t.Errorf("%s: %v", role, err)
 			}
 		}

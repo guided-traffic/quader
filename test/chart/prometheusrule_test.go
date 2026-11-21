@@ -160,7 +160,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 				continue
 			}
 			found = true
-			want := `deployment=~"acme-quader-(api|packages|worker|scanner|malware-scanner)(-.*)?"`
+			want := `deployment=~"acme-quader-(api|packages|worker|vuln-scanner-trivy|malware-scanner-clamav)(-.*)?"`
 			if !strings.Contains(str(r, "expr"), want) {
 				t.Errorf("expr = %q, want it to contain %s", str(r, "expr"), want)
 			}

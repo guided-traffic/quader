@@ -56,8 +56,8 @@ type ReplicaOptions struct {
 	Vuln *app.VulnOverride
 	// Malware replaces the signature database of a malware scanner (app.Options.Malware).
 	Malware *app.MalwareOverride
-	// Pair is the role whose pair the replica serves and presents on a stack with TLS; empty is Role. A malware scanner is a process of
-	// the role scanner with the pair of the kind malware-scanner (R-HA-068).
+	// Pair is the role or kind whose pair the replica serves and presents on a stack with TLS; empty is Role. A scanner names its kind:
+	// vuln-scanner-trivy or malware-scanner-clamav, each a process of the role scanner (R-HA-065, R-HA-068, Q-HA-372).
 	Pair string
 	// Mirror replaces the host, the clock and the jitter of the mirror engine (app.Options.Mirror).
 	Mirror *app.MirrorOverride

@@ -124,7 +124,7 @@ Kubernetes API. The chart cannot set Pod Security Admission labels on a namespac
 
 ## The scanner
 
-Built ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml),
+Built ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml),
 [R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)). The pod that analyses container
 images, the parser of the most hostile input Quader reads, has the smallest footprint of the release:
 
@@ -158,11 +158,11 @@ another, because replicas never talk to each other:
 | Pods | Ingress admitted | Egress |
 |---|---|---|
 | `api`, `packages` and their path pools | `:8080` from `networkPolicy.ingress.http.from` (empty: from anywhere); the port of each further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty: from anywhere); `:8081` from `networkPolicy.ingress.ops.from` (default: the `monitoring` namespace) and `networkPolicy.ingress.probeCIDRs` | not rendered |
-| the main `packages` Deployment, in addition, while the image scanning is on | `:8082`, the scan listener, from the `scanner` pods only ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart)) | not rendered |
+| the main `packages` Deployment, in addition, while either scanning is on | `:8082`, the scan listener, from the `vuln-scanner-trivy` and `malware-scanner-clamav` pods only ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart)) | not rendered |
 | the endpoint pools of further endpoints | the endpoint's port, from its `networkPolicy.from`; `:8081` from the ops sources | not rendered |
 | `worker` and its pools | `:8081` only, from the ops sources | not rendered |
-| `scanner` ([scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml)) | `:8080` from the pods of the worker Deployment that claims the queue `vuln` only; `:8081` from the ops sources | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
-| malware scanner (specified, not built) | `:8080` from the pods of the worker Deployments that claim the queue `malware` only; `:8081` from the ops sources; the scan listener `:8082` of `packages` also admits it ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
+| `vuln-scanner-trivy` ([vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml)) | `:8080` from the pods of the worker Deployment that claims the queue `vuln` only; `:8081` from the ops sources | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
+| `malware-scanner-clamav` ([malware-scanner-clamav.yaml](../../deploy/helm/quader/templates/malware-scanner-clamav.yaml)) | `:8080` from the pods of the worker Deployments that claim the queue `malware` only; `:8081` from the ops sources; the scan listener `:8082` of `packages` also admits it ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) | not rendered ([H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner)) |
 | migration Job, backup CronJob's pods, restore Job, post-restore Job | nothing (`ingress: []`) | not rendered |
 
 With no ops source at all the `:8081` rule is left out rather than rendered with an empty `from`, which would admit every peer. The two
@@ -260,7 +260,7 @@ What makes it real: the audit tables created without the check, or a later `GRAN
 
 ### H-1070 · The scanner runs under the namespace's `default` service account
 
-Stage: the pod of [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml), which names no service account
+Stage: the pod of [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml), which names no service account
 ([Q-HA-343](../spec/ha-and-helm.md#q-ha-343--the-scanner-pod-names-no-service-account-of-the-chart)).
 
 Dormant with the chart's defaults: `automountServiceAccountToken: false`, and the chart gives `default` no RBAC and no annotation. Subject:

@@ -112,7 +112,7 @@ func TestR_VULN_041_TheLinksRefuseAClientWithoutTheCertificateOfTheirKind(t *tes
 		pair       tls.Certificate
 	}{
 		{"the scanner's listener with the pair of packages", f.scanner.ScannerAddr(), f.st.RolePair(t, "web")},
-		{"the scanner's listener with the scanner's own pair", f.scanner.ScannerAddr(), f.st.RolePair(t, "scanner")},
+		{"the scanner's listener with the scanner's own pair", f.scanner.ScannerAddr(), f.st.RolePair(t, "vuln-scanner-trivy")},
 		{"the scanner's listener with a certificate of the CA for another name", f.scanner.ScannerAddr(), shared},
 		{"the scan listener with the worker's pair", f.api.Addr("scan"), f.st.RolePair(t, "worker")},
 		{"the scan listener with a certificate of the CA for another name", f.api.Addr("scan"), shared},
@@ -123,7 +123,7 @@ func TestR_VULN_041_TheLinksRefuseAClientWithoutTheCertificateOfTheirKind(t *tes
 			t.Errorf("%s answered %d", c.name, res.StatusCode)
 		}
 	}
-	withPair := with(f.st.RolePair(t, "scanner"))
+	withPair := with(f.st.RolePair(t, "vuln-scanner-trivy"))
 	for what, token := range map[string]string{"no token": "", "a user's token": f.adm} {
 		res, err := get(withPair, f.api.Addr("scan"), manifest, token)
 		if err != nil {

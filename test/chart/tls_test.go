@@ -130,9 +130,9 @@ func TestTLS(t *testing.T) {
 		_, docs := render(t, required())
 		certs := ofKind(docs, "Certificate")
 		if len(certs) != 5 {
-			t.Fatalf("%d Certificates, want one per kind (api, packages, worker, scanner, malware-scanner)", len(certs))
+			t.Fatalf("%d Certificates, want one per kind (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav)", len(certs))
 		}
-		for i, kind := range []string{"api", "packages", "worker", "scanner", "malware-scanner"} {
+		for i, kind := range []string{"api", "packages", "worker", "vuln-scanner-trivy", "malware-scanner-clamav"} {
 			c := certs[i]
 			name := "quader-tls-" + kind
 			if str(c, "metadata", "name") != name || str(c, "spec", "secretName") != name {
@@ -150,7 +150,7 @@ func TestTLS(t *testing.T) {
 				usages = append(usages, u.(string))
 			}
 			want := "digital signature,server auth"
-			if kind == "worker" || kind == "scanner" || kind == "malware-scanner" {
+			if kind == "worker" || kind == "vuln-scanner-trivy" || kind == "malware-scanner-clamav" {
 				want += ",client auth"
 			}
 			if strings.Join(usages, ",") != want {
@@ -183,8 +183,8 @@ func TestTLS(t *testing.T) {
 	t.Run("R-HA-063 Q-HA-347 without an issuer every kind names a Secret of its own; neither, both or one Secret for two kinds fail", func(t *testing.T) {
 		renderFails(t, required(), []string{noIssuer}, "tls.certManager.issuerRef.name", "tls.existingSecrets", "tls.enabled: false")
 		named := []string{
-			noIssuer, "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s",
-			"tls.existingSecrets.malware-scanner=m",
+			noIssuer, "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s",
+			"tls.existingSecrets.malware-scanner-clamav=m",
 		}
 		_, docs := render(t, required(), named...)
 		if n := len(ofKind(docs, "Certificate")); n != 0 {
@@ -195,8 +195,8 @@ func TestTLS(t *testing.T) {
 				t.Errorf("quader-%s does not mount %s", role, secret)
 			}
 		}
-		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner=", "tls.existingSecrets.malware-scanner=m"), "tls.existingSecrets.scanner")
-		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner=w", "tls.existingSecrets.malware-scanner=m"), "tls.existingSecrets.worker", "tls.existingSecrets.scanner", "the same Secret w")
+		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.vuln-scanner-trivy=", "tls.existingSecrets.malware-scanner-clamav=m"), "tls.existingSecrets.vuln-scanner-trivy")
+		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.vuln-scanner-trivy=w", "tls.existingSecrets.malware-scanner-clamav=m"), "tls.existingSecrets.worker", "tls.existingSecrets.vuln-scanner-trivy", "the same Secret w")
 		renderFails(t, required(), []string{"tls.existingSecrets.api=a"}, "tls.certManager.issuerRef.name", "tls.existingSecrets.api")
 		// Without the scanners, three Secrets are enough.
 		render(t, required(), append(named[:4:4], "config.vulnerabilities.images.enabled=false", "config.malware.enabled=false")...)
@@ -304,7 +304,7 @@ func TestTLS(t *testing.T) {
 	t.Run("R-HA-063 the values of the one pair are gone", func(t *testing.T) {
 		for set, key := range map[string]string{
 			"tls.secretName=quader-tls": "'secretName'", "tls.ops.secretName=quader-ops-tls": "'ops'", "tls.certKey=tls.crt": "'certKey'",
-			"scanner.tls.secretName=s": "'tls'", "tls.backendTLSPolicy.hostname=quader.default.svc": "'hostname'", "ingress.backendTLS.serversTransport=t": "'serversTransport'",
+			"vulnScannerTrivy.tls.secretName=s": "'tls'", "tls.backendTLSPolicy.hostname=quader.default.svc": "'hostname'", "ingress.backendTLS.serversTransport=t": "'serversTransport'",
 		} {
 			renderFails(t, required(), []string{set}, key)
 		}

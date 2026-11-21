@@ -12,14 +12,14 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// The role scanner and the links of the image scanning in the chart (R-HA-065, R-HA-066, ADR-212): what only the rendered
-// manifests can show - the scanner pod's volumes and environment, its Services and the ingress rules of the links.
+// The image scanning's scanner vuln-scanner-trivy and the links of the image scanning in the chart (R-HA-065, R-HA-066, ADR-212, Q-HA-372):
+// what only the rendered manifests can show - the scanner pod's volumes and environment, its Services and the ingress rules of the links.
 
 func scannerPod(t *testing.T, docs []doc) any {
 	t.Helper()
-	d := find(docs, "Deployment", "quader-scanner")
+	d := find(docs, "Deployment", "quader-vuln-scanner-trivy")
 	if d == nil {
-		t.Fatal("no Deployment quader-scanner")
+		t.Fatal("no Deployment quader-vuln-scanner-trivy")
 	}
 	return at(d, "spec", "template", "spec")
 }
@@ -60,7 +60,7 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 		t.Fatal("the scanner is not the first process of its one container")
 	}
 	secrets := secretVolumes(pod)
-	if secrets["secret-tls"] != "quader-tls-scanner" || len(secrets) != 1 {
+	if secrets["secret-tls"] != "quader-tls-vuln-scanner-trivy" || len(secrets) != 1 {
 		t.Fatalf("secret volumes %v, want the scanner's own Secret only", secrets)
 	}
 	items := func(name string) []string {
@@ -98,15 +98,15 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 	if str(c, "resources", "limits", "memory") != "2Gi" || str(c, "resources", "requests", "cpu") != "500m" || at(c, "resources", "limits", "cpu") != nil {
 		t.Fatalf("resources %v", at(c, "resources"))
 	}
-	if d := find(docs, "Deployment", "quader-scanner"); at(d, "spec", "replicas") != 2 || at(pod, "terminationGracePeriodSeconds") != 60 {
+	if d := find(docs, "Deployment", "quader-vuln-scanner-trivy"); at(d, "spec", "replicas") != 2 || at(pod, "terminationGracePeriodSeconds") != 60 {
 		t.Fatalf("replicas %v, grace %v", at(d, "spec", "replicas"), at(pod, "terminationGracePeriodSeconds"))
 	}
-	if find(docs, "PodDisruptionBudget", "quader-scanner") == nil {
+	if find(docs, "PodDisruptionBudget", "quader-vuln-scanner-trivy") == nil {
 		t.Fatal("no PodDisruptionBudget of the scanner")
 	}
 	// With named Secrets the scanner mounts its own and no other kind's (Q-HA-347).
 	_, docs = render(t, required(), "tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p",
-		"tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s", "tls.existingSecrets.malware-scanner=m")
+		"tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s", "tls.existingSecrets.malware-scanner-clamav=m")
 	if got := secretVolumes(scannerPod(t, docs)); got["secret-tls"] != "s" || len(got) != 1 {
 		t.Fatalf("with tls.existingSecrets the scanner's secret volumes are %v", got)
 	}
@@ -139,12 +139,12 @@ func TestR_HA_065_TheImageScanningOffRendersNoScanner(t *testing.T) {
 
 func TestQ_HA_318_TheSpoolsAreCheckedAgainstWhatTheyHold(t *testing.T) {
 	t.Run("the scanner's budget holds every slot's largest image plus 64 MiB", func(t *testing.T) {
-		renderFails(t, required(), []string{"scanner.spool.sizeLimit=4Gi"}, "scanner.spool.sizeLimit", "spool.headroom", "max_image_size")
-		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.slots=2"}, "scanner.spool.sizeLimit", "slots")
-		render(t, required(), "config.vulnerabilities.images.scanner.slots=2", "scanner.spool.sizeLimit=9Gi")
+		renderFails(t, required(), []string{"vulnScannerTrivy.spool.sizeLimit=4Gi"}, "vulnScannerTrivy.spool.sizeLimit", "spool.headroom", "max_image_size")
+		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.slots=2"}, "vulnScannerTrivy.spool.sizeLimit", "slots")
+		render(t, required(), "config.vulnerabilities.images.scanner.slots=2", "vulnScannerTrivy.spool.sizeLimit=9Gi")
 		// The sum is exact: 3 GiB + 64 MiB + the 2 GiB of headroom is 5184 MiB; a MiB less does not hold it.
-		render(t, required(), "scanner.spool.sizeLimit=5184Mi")
-		renderFails(t, required(), []string{"scanner.spool.sizeLimit=5183Mi"}, "scanner.spool.sizeLimit")
+		render(t, required(), "vulnScannerTrivy.spool.sizeLimit=5184Mi")
+		renderFails(t, required(), []string{"vulnScannerTrivy.spool.sizeLimit=5183Mi"}, "vulnScannerTrivy.spool.sizeLimit")
 		renderFails(t, required(), []string{"config.vulnerabilities.images.max_image_size=6GiB"}, "max_image_size (6GiB)")
 	})
 	t.Run("the worker of the queue vuln holds the database and 512 MiB, by default in 5 Gi", func(t *testing.T) {
@@ -159,7 +159,7 @@ func TestQ_HA_318_TheSpoolsAreCheckedAgainstWhatTheyHold(t *testing.T) {
 		render(t, required(), "worker.spool.sizeLimit=4608Mi")
 		renderFails(t, required(), []string{"worker.spool.sizeLimit=4607Mi"}, "queue vuln")
 		// The image limit is the scanner's now: a larger one raises the scanner's spool, not the worker's.
-		render(t, required(), "config.vulnerabilities.images.max_image_size=6GiB", "scanner.spool.sizeLimit=9Gi")
+		render(t, required(), "config.vulnerabilities.images.max_image_size=6GiB", "vulnScannerTrivy.spool.sizeLimit=9Gi")
 	})
 	t.Run("the pool that claims the queue vuln is the one checked", func(t *testing.T) {
 		pool := []string{"worker.pools[0].name=v", "worker.pools[0].queues={vuln}", "worker.pools[0].replicaCount=2"}
@@ -167,15 +167,15 @@ func TestQ_HA_318_TheSpoolsAreCheckedAgainstWhatTheyHold(t *testing.T) {
 		render(t, required(), append(pool, "worker.pools[0].spool.sizeLimit=5Gi", "worker.spool.sizeLimit=3Gi")...)
 	})
 	t.Run("the scanning of images off, or the scanning off, is not checked", func(t *testing.T) {
-		render(t, required(), "worker.spool.sizeLimit=3Gi", "scanner.spool.sizeLimit=1Gi", "config.vulnerabilities.images.enabled=false")
-		render(t, required(), "worker.spool.sizeLimit=3Gi", "scanner.spool.sizeLimit=1Gi", "config.vulnerabilities.enabled=false")
+		render(t, required(), "worker.spool.sizeLimit=3Gi", "vulnScannerTrivy.spool.sizeLimit=1Gi", "config.vulnerabilities.images.enabled=false")
+		render(t, required(), "worker.spool.sizeLimit=3Gi", "vulnScannerTrivy.spool.sizeLimit=1Gi", "config.vulnerabilities.enabled=false")
 	})
 	t.Run("R-HA-029 the scanner's replicas, and a Secret of its own with named Secrets", func(t *testing.T) {
-		renderFails(t, required(), []string{"scanner.replicaCount=0"}, "scanner.replicaCount")
+		renderFails(t, required(), []string{"vulnScannerTrivy.replicaCount=0"}, "vulnScannerTrivy.replicaCount")
 		renderFails(t, required(), []string{
 			"tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p",
 			"tls.existingSecrets.worker=w",
-		}, "tls.existingSecrets.scanner")
+		}, "tls.existingSecrets.vuln-scanner-trivy")
 	})
 }
 
@@ -185,7 +185,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		for name, want := range map[string]struct {
 			port      int
 			component string
-		}{"quader-scanner": {8080, "scanner"}, "quader-packages-scan": {8082, "packages"}} {
+		}{"quader-vuln-scanner-trivy": {8080, "vuln-scanner-trivy"}, "quader-packages-scan": {8082, "packages"}} {
 			s := find(docs, "Service", name)
 			if s == nil {
 				t.Fatalf("no Service %s", name)
@@ -208,7 +208,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 				t.Errorf("%s: QUADER_SERVER_SCAN_LISTEN %v", name, scan)
 			}
 			ca := slices.Contains(tlsItems(pod), "ca.crt")
-			wantCA := name == "quader-packages" || name == "quader-scanner" || name == "quader-malware-scanner" || strings.HasPrefix(name, "quader-worker")
+			wantCA := name == "quader-packages" || name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" || strings.HasPrefix(name, "quader-worker")
 			if ca != wantCA {
 				t.Errorf("%s: internal CA mounted %v", name, ca)
 			}
@@ -220,8 +220,8 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 	t.Run("the chart-managed keys of the links", func(t *testing.T) {
 		cfg := renderedConfig(t, docs)
 		for path, want := range map[string]string{
-			"vulnerabilities.images.scanner.url":          "https://quader-scanner.default.svc:8080",
-			"vulnerabilities.images.scanner.server_name":  "quader-scanner.default.svc",
+			"vulnerabilities.images.scanner.url":          "https://quader-vuln-scanner-trivy.default.svc:8080",
+			"vulnerabilities.images.scanner.server_name":  "quader-vuln-scanner-trivy.default.svc",
 			"vulnerabilities.images.scanner.client_name":  "quader-worker.default.svc",
 			"vulnerabilities.images.registry.url":         "https://quader-packages-scan.default.svc:8082",
 			"vulnerabilities.images.registry.server_name": "quader-packages.default.svc",
@@ -235,7 +235,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		renderFails(t, required(), []string{"config.server.scan_listen=:9999"}, "config.server.scan_listen is managed by the chart")
 		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.client_name=x"}, "config.vulnerabilities.images.scanner.client_name is managed by the chart")
 		// The scan listener admits every kind of scanner the release renders, one entry each (quader.tlsKindTable).
-		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-scanner.default.svc\n- quader-malware-scanner.default.svc\n" {
+		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-vuln-scanner-trivy.default.svc\n- quader-malware-scanner-clamav.default.svc\n" {
 			t.Errorf("server.scan_clients = %q, want the names of the two scanners", got)
 		}
 		renderFails(t, required(), []string{"config.server.scan_clients[0]=x"}, "config.server.scan_clients is managed by the chart")
@@ -243,7 +243,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 	t.Run("Q-HA-322 without TLS the links are plain and nothing of TLS mounts", func(t *testing.T) {
 		_, docs := render(t, required(), "tls.enabled=false", "tls.certManager.issuerRef.name=")
 		cfg := renderedConfig(t, docs)
-		if str(cfg, "vulnerabilities", "images", "scanner", "url") != "http://quader-scanner.default.svc:8080" || at(cfg, "server", "internal_tls") != nil {
+		if str(cfg, "vulnerabilities", "images", "scanner", "url") != "http://quader-vuln-scanner-trivy.default.svc:8080" || at(cfg, "server", "internal_tls") != nil {
 			t.Fatalf("%v", at(cfg, "vulnerabilities"))
 		}
 		if got := volumeNames(scannerPod(t, docs)); !slices.Equal(got, []string{"config", "spool", "tmp"}) {
@@ -288,15 +288,15 @@ func TestR_HA_042_TheLinksAdmitTheirOneSender(t *testing.T) {
 		return nil
 	}
 	_, docs := render(t, required(), "config.malware.enabled=false")
-	if m := from(t, docs, "quader-scanner", 8080); m["app.kubernetes.io/component"] != "worker" || m["quader/pool"] != "" {
+	if m := from(t, docs, "quader-vuln-scanner-trivy", 8080); m["app.kubernetes.io/component"] != "worker" || m["quader/pool"] != "" {
 		t.Fatalf("the scanner admits %v", m)
 	}
-	if m := from(t, docs, "quader-packages", 8082); m["app.kubernetes.io/component"] != "scanner" {
+	if m := from(t, docs, "quader-packages", 8082); m["app.kubernetes.io/component"] != "vuln-scanner-trivy" {
 		t.Fatalf("the scan listener admits %v", m)
 	}
 	_, docs = render(t, required(), "worker.pools[0].name=vuln", "worker.pools[0].queues[0]=vuln",
 		"packages.pools[0].name=npm", "packages.pools[0].paths[0]=/api/npm")
-	if m := from(t, docs, "quader-scanner", 8080); m["quader/pool"] != "vuln" {
+	if m := from(t, docs, "quader-vuln-scanner-trivy", 8080); m["quader/pool"] != "vuln" {
 		t.Fatalf("with a pool of the queue vuln the scanner admits %v", m)
 	}
 	// The scan listener opens on the main packages Deployment only: neither a pool's policy nor the policy of a render with both
@@ -312,7 +312,7 @@ func TestR_HA_042_TheLinksAdmitTheirOneSender(t *testing.T) {
 }
 
 // Q-VULN-185, Q-HA-347: the dev profile lets the chart issue its pairs, and the manual's example of named Secrets gives the worker and the
-// scanner client authentication and each kind its name, which the links check.
+// two scanners client authentication and each kind its name, which the links check.
 func TestQ_VULN_185_TheDocumentedPairsAllowTheLinksOfEachKind(t *testing.T) {
 	read := func(t *testing.T, path string) string {
 		t.Helper()
@@ -329,12 +329,12 @@ func TestQ_VULN_185_TheDocumentedPairsAllowTheLinksOfEachKind(t *testing.T) {
 		t.Fatal("the dev profile does not let the chart issue its pairs from the dev CA")
 	}
 	manual := read(t, "docs/manual/admin/tls-and-certificates.md")
-	for _, kind := range []string{"worker", "scanner"} {
+	for _, kind := range []string{"worker", "vuln-scanner-trivy", "malware-scanner-clamav"} {
 		if !strings.Contains(manual, "  name: quader-tls-"+kind+"\n") || !strings.Contains(manual, "- quader-"+kind+".quader.svc\n") {
 			t.Errorf("the manual's example of named Secrets lacks the pair of %s with its name", kind)
 		}
 	}
 	if !strings.Contains(manual, "usages: [digital signature, server auth, client auth]") {
-		t.Fatal("the manual's example does not give the worker and the scanner client authentication, which their links need")
+		t.Fatal("the manual's example does not give the worker and the scanners client authentication, which their links need")
 	}
 }

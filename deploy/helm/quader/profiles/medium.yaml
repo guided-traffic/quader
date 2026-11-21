@@ -38,7 +38,7 @@ worker:
     enabled: true
     minReplicas: 2
     maxReplicas: 4
-malwareScanner:
+malwareScannerClamav:
   replicaCount: 2
   autoscaling:
     enabled: true

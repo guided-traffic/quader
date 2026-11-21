@@ -103,11 +103,12 @@ built in phase 6a). Roles:
   only and no session evaluation, and the cache fills of client misses;
 - `worker`: the job queue, the leases, the scheduler, the mirror's passes and the advisory sync, split into pools by
   queue where an installation wants it;
-- `scanner`: the analysis of container images for the worker's image scanning, without any secret of PostgreSQL, the
-  object store or Valkey (owner, 2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret));
-  the chart renders it while the image scanning is on; a second Deployment of the role, of the kind `malware`, scans every artifact with
-  ClamAV's `clamd` beside it while the malware scanning is on (owner, 2026-11-20, [ADR-221](../decisions.md#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest);
-  specified, not built);
+- `scanner`: a scanning tool's wrapper, without any secret of PostgreSQL, the object store or Valkey: the analysis of container images
+  for the worker's image scanning with Trivy (owner, 2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)),
+  the Deployment `vuln-scanner-trivy`, which the chart renders while the image scanning is on; a second Deployment of the role,
+  `malware-scanner-clamav`, scans every artifact with ClamAV's `clamd` beside it while the malware scanning is on (owner, 2026-11-20,
+  [ADR-221](../decisions.md#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest)).
+  A unit that runs a tool carries the tool's name (owner, 2026-11-21, [ADR-223](../decisions.md#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name));
 - `backup` (the backup and restore commands, run as Kubernetes Job or CronJob) and `bastion` (the internet-facing
   read-only cache instance of [bastion.md](bastion.md), deployed only by the chart `quader-bastion`, without
   PostgreSQL; Q-BAS-22), both unchanged by the cut.

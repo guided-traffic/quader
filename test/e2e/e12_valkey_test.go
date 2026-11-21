@@ -167,12 +167,12 @@ func TestE12Valkey(t *testing.T) {
 	t.Run("R-HA-056 R-HA-008 E0.12 with every Sentinel unreachable at its first start a new replica becomes ready after valkey.startup_answer_timeout, degraded valkey", func(t *testing.T) {
 		// The replica holds its first readiness for the bound and then becomes ready degraded. The bound is set to 5 s
 		// here instead of the default 30 s: what the case shows does not depend on its length, and the leg keeps its time.
-		// The Sentinels are unreachable because the replica carries the scanner's component label, which the profile's
+		// The Sentinels are unreachable because the replica carries the component label vuln-scanner-trivy, which the profile's
 		// Valkey policy does not admit (Q-HA-344), so the case also shows that a scanner pod cannot reach a Sentinel. The
 		// release's instance label is removed so that neither the scanner's Services, its PodDisruptionBudget nor the
 		// chart's policy for the scanner select the replica; the Valkey policy reads name, serve and component only.
 		clonedReplica(t, "quader-e2e-no-sentinel", func(spec, labels map[string]any) {
-			labels["app.kubernetes.io/component"] = "scanner"
+			labels["app.kubernetes.io/component"] = "vuln-scanner-trivy"
 			delete(labels, "app.kubernetes.io/instance")
 			addEnv(spec, "QUADER_VALKEY_STARTUP_ANSWER_TIMEOUT", "5s")
 		})

@@ -25,7 +25,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 */}}
 {{- define "quader.rules.all" -}}
 {{- $ns := printf "namespace=%q" .Release.Namespace -}}
-{{- $roles := printf "%s-(api|packages|worker|scanner|malware-scanner)(-.*)?" (include "quader.fullname" .) -}}
+{{- $roles := printf "%s-(api|packages|worker|vuln-scanner-trivy|malware-scanner-clamav)(-.*)?" (include "quader.fullname" .) -}}
 {{- $stale := include "quader.seconds" (dig "vulnerabilities" "stale_after" "24h" .Values.config) -}}
 {{- $interval := include "quader.seconds" (dig "backup" "expected_interval" "24h" .Values.config) -}}
 {{- $malwareStale := include "quader.seconds" (dig "malware" "database" "stale_after" "48h" .Values.config) -}}
@@ -202,7 +202,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     severity: warning
   annotations:
     summary: A stored file has waited more than an hour for its malware scan.
-    description: The malware scanners do not keep up with what is stored, or calls are put off (R-MAL-004, R-MAL-026). quader_malware_backlog shows the due rows by priority; raise malwareScanner.replicaCount or config.malware.scanner.slots, or look at the codes of quader_malware_scans_total.
+    description: The malware scanners do not keep up with what is stored, or calls are put off (R-MAL-004, R-MAL-026). quader_malware_backlog shows the due rows by priority; raise malwareScannerClamav.replicaCount or config.malware.scanner.slots, or look at the codes of quader_malware_scans_total.
 {{- end }}
 - alert: QuaderMirrorFailing
   expr: max by (repo) (quader_mirror_consecutive_failures{ {{ $ns }} }) >= 3

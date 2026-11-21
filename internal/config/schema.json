@@ -2732,7 +2732,7 @@
           "properties": {
             "client_name": {
               "default": "",
-              "description": "The name the scan listener's malware routes (the blob and the signature database, R-MAL-006) require in a client certificate, listed exactly among its DNS names, so that no other kind of pod the listener admits reads them (Q-MAL-27, Q-MAL-61). It must be one of server.scan_clients when that list is set. Empty: the routes admit whatever the listener admits (the role all, and an installation that has not set it). The chart sets \u003cfullname\u003e-malware-scanner.\u003cnamespace\u003e.svc.",
+              "description": "The name the scan listener's malware routes (the blob and the signature database, R-MAL-006) require in a client certificate, listed exactly among its DNS names, so that no other kind of pod the listener admits reads them (Q-MAL-27, Q-MAL-61). It must be one of server.scan_clients when that list is set. Empty: the routes admit whatever the listener admits (the role all, and an installation that has not set it). The chart sets \u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_CLIENT_NAME"
             },
@@ -2807,7 +2807,7 @@
             },
             "server_name": {
               "default": "",
-              "description": "The name the worker requires in the malware scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-malware-scanner.\u003cnamespace\u003e.svc, the name of the malware scanner's own pair (R-HA-063).",
+              "description": "The name the worker requires in the malware scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc, the name of the malware scanner's own pair (R-HA-063).",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCANNER_SERVER_NAME"
             },
@@ -2827,7 +2827,7 @@
             },
             "url": {
               "default": "",
-              "description": "The malware scanner's listener, an origin: https://\u003cfullname\u003e-malware-scanner.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Empty: the worker's job makes no call and its check malware_scanner reports why (Q-MAL-60); the blobs wait pending.",
+              "description": "The malware scanner's listener, an origin: https://\u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Empty: the worker's job makes no call and its check malware_scanner reports why (Q-MAL-60); the blobs wait pending.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCANNER_URL"
             }
@@ -3155,7 +3155,7 @@
       "additionalProperties": false,
       "properties": {
         "role": {
-          "description": "Role of this replica: api, packages, worker, scanner (the analysis of container images, holding no secret of the installation, R-ARCH-036), web (api and packages in one process, development and tests only) or all (local development only). No default.",
+          "description": "Role of this replica: api, packages, worker, scanner (a scanning tool's wrapper, the tool chosen by process.scanner_kind, holding no secret of the installation, R-ARCH-036), web (api and packages in one process, development and tests only) or all (local development only). No default.",
           "enum": [
             "api",
             "packages",
@@ -3168,11 +3168,11 @@
           "x-quader-env": "QUADER_PROCESS_ROLE"
         },
         "scanner_kind": {
-          "default": "image",
-          "description": "What a process of the role scanner does: image, the analysis of container images (R-VULN-041), or malware, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007). The chart sets malware on the Deployment \u003cfullname\u003e-malware-scanner. A scanner of the kind malware reads the section malware instead of vulnerabilities.images. Read by the role scanner only.",
+          "default": "trivy",
+          "description": "The tool a process of the role scanner wraps: trivy, the analysis of container images with Trivy (R-VULN-041), or clamav, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007). The chart runs trivy on the Deployment \u003cfullname\u003e-vuln-scanner-trivy and sets clamav on \u003cfullname\u003e-malware-scanner-clamav. A scanner of the kind clamav reads the section malware instead of vulnerabilities.images. Read by the role scanner only.",
           "enum": [
-            "image",
-            "malware"
+            "trivy",
+            "clamav"
           ],
           "type": "string",
           "x-quader-env": "QUADER_PROCESS_SCANNER_KIND"
@@ -3660,7 +3660,7 @@
         },
         "scan_clients": {
           "default": [],
-          "description": "The names of the kinds of pod the scan listener admits: a client certificate of internal_tls.ca_file must list one of them exactly among its DNS names, no wildcard standing for it (R-ARCH-038, Q-ARCH-552). Required while scan_listen is open with TLS, except in the role all, where empty lets the CA alone admit (Q-ARCH-553). The chart sets the name of every kind of scanner it renders, [\u003cfullname\u003e-scanner.\u003cnamespace\u003e.svc]; a route of the listener may narrow it to one of them.",
+          "description": "The names of the kinds of pod the scan listener admits: a client certificate of internal_tls.ca_file must list one of them exactly among its DNS names, no wildcard standing for it (R-ARCH-038, Q-ARCH-552). Required while scan_listen is open with TLS, except in the role all, where empty lets the CA alone admit (Q-ARCH-553). The chart sets the name of every kind of scanner it renders, [\u003cfullname\u003e-vuln-scanner-trivy.\u003cnamespace\u003e.svc, \u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc]; a route of the listener may narrow it to one of them.",
           "items": {
             "type": "string"
           },
@@ -5096,7 +5096,7 @@
                 },
                 "server_name": {
                   "default": "",
-                  "description": "The name the worker requires in the scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-scanner.\u003cnamespace\u003e.svc, the scanner's name (R-HA-063).",
+                  "description": "The name the worker requires in the scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-vuln-scanner-trivy.\u003cnamespace\u003e.svc, the scanner's name (R-HA-063).",
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME"
                 },
@@ -5110,7 +5110,7 @@
                 },
                 "url": {
                   "default": "",
-                  "description": "The scanner's listener, an origin: https://\u003cfullname\u003e-scanner.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531).",
+                  "description": "The scanner's listener, an origin: https://\u003cfullname\u003e-vuln-scanner-trivy.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531).",
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL"
                 }

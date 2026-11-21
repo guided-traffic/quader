@@ -184,8 +184,9 @@ func TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName
 	caFile := ca.WriteCA(t, dir, "ca.crt")
 	const ns = ".quader.svc"
 	names := map[string]string{
-		"api": "quader-api" + ns, "packages": "quader-packages" + ns, "worker": "quader-worker" + ns, "scanner": "quader-scanner" + ns,
-		"wildcard": "*" + ns,
+		"api": "quader-api" + ns, "packages": "quader-packages" + ns, "worker": "quader-worker" + ns,
+		"vuln-scanner-trivy": "quader-vuln-scanner-trivy" + ns,
+		"wildcard":           "*" + ns,
 	}
 	pairs := map[string]config.Server{}
 	for kind, name := range names {
@@ -213,8 +214,8 @@ func TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName
 		return c.Config()
 	}
 	for _, link := range []struct{ name, client, server string }{
-		{LinkScanner, "worker", "scanner"}, // the worker's call of the scanner
-		{LinkScan, "scanner", "packages"},  // the scanner's pull from the scan listener of packages
+		{LinkScanner, "worker", "vuln-scanner-trivy"}, // the worker's call of the scanner
+		{LinkScan, "vuln-scanner-trivy", "packages"},  // the scanner's pull from the scan listener of packages
 	} {
 		t.Run(link.name+": the right kinds pass", func(t *testing.T) {
 			if err := handshake(t, listen(link.name, link.server, link.client), dial(link.name, link.client, link.server)); err != nil {
@@ -251,21 +252,21 @@ func TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName
 		})
 	}
 	t.Run("an empty client name lets the CA alone admit, as the role all does", func(t *testing.T) {
-		l, err := NewLinkListenerTLS(LinkScanner, pairs["scanner"], nil)
+		l, err := NewLinkListenerTLS(LinkScanner, pairs["vuln-scanner-trivy"], nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := handshake(t, l, dial(LinkScanner, "packages", "scanner")); err != nil {
+		if err := handshake(t, l, dial(LinkScanner, "packages", "vuln-scanner-trivy")); err != nil {
 			t.Fatalf("a certificate of the CA without the name: %v", err)
 		}
 	})
 	t.Run("a listener that admits two kinds admits each and no third; PeerName tells a route which one called", func(t *testing.T) {
 		// The scan listener admits every kind of scanner (server.scan_clients); here the scanner and, as a second kind, the worker.
-		l, err := NewLinkListenerTLS(LinkScan, pairs["packages"], []string{names["scanner"], names["worker"]})
+		l, err := NewLinkListenerTLS(LinkScan, pairs["packages"], []string{names["vuln-scanner-trivy"], names["worker"]})
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, kind := range []string{"scanner", "worker"} {
+		for _, kind := range []string{"vuln-scanner-trivy", "worker"} {
 			if err := handshake(t, l, dial(LinkScan, kind, "packages")); err != nil {
 				t.Errorf("the pair of %s: %v", kind, err)
 			}
@@ -281,10 +282,10 @@ func TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := PeerName(c, []string{names["scanner"], names["worker"]}); got != names["worker"] {
+		if got := PeerName(c, []string{names["vuln-scanner-trivy"], names["worker"]}); got != names["worker"] {
 			t.Errorf("PeerName = %q, want the worker's", got)
 		}
-		if got := PeerName(c, []string{names["scanner"]}); got != "" {
+		if got := PeerName(c, []string{names["vuln-scanner-trivy"]}); got != "" {
 			t.Errorf("PeerName of another kind's list = %q", got)
 		}
 	})

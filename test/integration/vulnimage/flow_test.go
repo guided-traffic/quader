@@ -236,7 +236,7 @@ func newFlowWith(t *testing.T, o options) *flow {
 	// working directory of its own, as its pod has (R-HA-065).
 	f.api = st.Start(t, testenv.ReplicaOptions{Name: "web", Role: "web", DialOverride: o.dial, Env: append([]string{"QUADER_SERVER_SCAN_LISTEN=127.0.0.1:0"}, o.webEnv...)})
 	own := t.TempDir()
-	f.scanner = st.Start(t, testenv.ReplicaOptions{Name: "scanner", Role: "scanner", Vuln: &app.VulnOverride{ImageAnalyser: f.an}, Env: []string{
+	f.scanner = st.Start(t, testenv.ReplicaOptions{Name: "vuln-scanner-trivy", Role: "scanner", Pair: "vuln-scanner-trivy", Vuln: &app.VulnOverride{ImageAnalyser: f.an}, Env: []string{
 		"QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=" + st.Origin(f.api.Addr("scan")),
 		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + filepath.Join(own, "scan"), "QUADER_STORAGE_SPOOL_DIR=" + filepath.Join(own, "spool"),
 	}})

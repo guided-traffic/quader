@@ -27,7 +27,7 @@ import (
 const AreaScanner Area = "scanner"
 
 // scannerArea is the scanner of the replica and the TLS of its listener and of its link to the scan listener: the image scanner (svc),
-// or the malware scanner (malware) of a process of the kind malware (wire_malware_scanner.go).
+// or the malware scanner (malware) of a process of the kind clamav (wire_malware_scanner.go).
 type scannerArea struct {
 	svc     *scanner.Service
 	malware *mscanner.Service

@@ -72,8 +72,8 @@ func TestRolesDeployments(t *testing.T) {
 	t.Run("R-HA-002 R-HA-062 a Deployment, PodDisruptionBudget and NetworkPolicy per role, pool and endpoint pool, named alike", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := []string{
-			"quader-api", "quader-api-admin", "quader-api-ep-customers", "quader-malware-scanner", "quader-packages", "quader-packages-ep-customers",
-			"quader-packages-npm", "quader-scanner", "quader-worker", "quader-worker-bulk", "quader-worker-vuln",
+			"quader-api", "quader-api-admin", "quader-api-ep-customers", "quader-malware-scanner-clamav", "quader-packages", "quader-packages-ep-customers",
+			"quader-packages-npm", "quader-vuln-scanner-trivy", "quader-worker", "quader-worker-bulk", "quader-worker-vuln",
 		}
 		if got := deploymentNames(docs); !equalStrings(got, want) {
 			t.Fatalf("Deployments = %v, want %v", got, want)
@@ -114,14 +114,14 @@ func TestRolesDeployments(t *testing.T) {
 		for _, d := range ofKind(docs, "Deployment") {
 			name := str(d, "metadata", "name")
 			role, _, _ := strings.Cut(strings.TrimPrefix(name, "quader-"), "-")
-			if name == "quader-malware-scanner" { // the role scanner of the kind malware, a component of its own (R-HA-068)
-				role = "malware-scanner"
+			if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" { // the two kinds of the role scanner, a component each (R-HA-065, R-HA-068, Q-HA-372)
+				role = strings.TrimPrefix(name, "quader-")
 			}
 			labels := at(d, "spec", "template", "metadata", "labels")
 			if got := str(labels, "app.kubernetes.io/component"); got != role {
 				t.Errorf("%s component = %q, want %q", name, got, role)
 			}
-			if role == "scanner" || role == "malware-scanner" {
+			if role == "vuln-scanner-trivy" || role == "malware-scanner-clamav" {
 				// The scanner has no pools; quader/pool belongs to the serving roles only (R-HA-028, R-HA-065).
 				if at(labels, "quader/pool") != nil {
 					t.Errorf("%s carries quader/pool = %v, which only the pods of api, packages and worker do", name, at(labels, "quader/pool"))
@@ -150,7 +150,7 @@ func TestRolesDeployments(t *testing.T) {
 		for _, d := range ofKind(docs, "Deployment") {
 			name := str(d, "metadata", "name")
 			role, _, _ := strings.Cut(strings.TrimPrefix(name, "quader-"), "-")
-			if name == "quader-malware-scanner" {
+			if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" {
 				role = "scanner"
 			}
 			pod := at(d, "spec", "template", "spec")
@@ -234,16 +234,16 @@ func TestRolesServices(t *testing.T) {
 	t.Run("R-HA-002 R-HA-062 each Service selects the pods of one Deployment; the ops Service every serving pod", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := map[string][]string{
-			"quader-api":              {"quader-api"},
-			"quader-packages":         {"quader-packages"},
-			"quader-api-admin":        {"quader-api-admin"},
-			"quader-packages-npm":     {"quader-packages-npm"},
-			"quader-ep-customers":     {"quader-packages-ep-customers"},
-			"quader-api-ep-customers": {"quader-api-ep-customers"},
-			"quader-scanner":          {"quader-scanner"},
-			"quader-malware-scanner":  {"quader-malware-scanner"},
-			"quader-packages-scan":    {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
-			"quader-ops":              deploymentNames(docs),
+			"quader-api":                    {"quader-api"},
+			"quader-packages":               {"quader-packages"},
+			"quader-api-admin":              {"quader-api-admin"},
+			"quader-packages-npm":           {"quader-packages-npm"},
+			"quader-ep-customers":           {"quader-packages-ep-customers"},
+			"quader-api-ep-customers":       {"quader-api-ep-customers"},
+			"quader-vuln-scanner-trivy":     {"quader-vuln-scanner-trivy"},
+			"quader-malware-scanner-clamav": {"quader-malware-scanner-clamav"},
+			"quader-packages-scan":          {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
+			"quader-ops":                    deploymentNames(docs),
 		}
 		for _, s := range ofKind(docs, "Service") {
 			name := str(s, "metadata", "name")
@@ -285,7 +285,7 @@ func TestRolesServices(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := map[string][]int{
 			"quader-api": {8080, 8081}, "quader-packages": {8080, 8082, 8081}, "quader-api-admin": {8080, 8081}, "quader-packages-npm": {8080, 8081},
-			"quader-worker": {8081}, "quader-worker-vuln": {8081}, "quader-worker-bulk": {8081}, "quader-scanner": {8080, 8081},
+			"quader-worker": {8081}, "quader-worker-vuln": {8081}, "quader-worker-bulk": {8081}, "quader-vuln-scanner-trivy": {8080, 8081},
 			"quader-api-ep-customers": {8443, 8081}, "quader-packages-ep-customers": {8443, 8081},
 		}
 		for n, ports := range want {
@@ -519,8 +519,8 @@ func TestRolesNetworkPolicy(t *testing.T) {
 						t.Errorf("%s: 8080 has a from, want from anywhere by default", n)
 					}
 				case len(p) == 1 && p[0] == 8082:
-					if !has || len(from) != 2 || str(from[0], "podSelector", "matchLabels", "app.kubernetes.io/component") != "scanner" ||
-						str(from[1], "podSelector", "matchLabels", "app.kubernetes.io/component") != "malware-scanner" {
+					if !has || len(from) != 2 || str(from[0], "podSelector", "matchLabels", "app.kubernetes.io/component") != "vuln-scanner-trivy" ||
+						str(from[1], "podSelector", "matchLabels", "app.kubernetes.io/component") != "malware-scanner-clamav" {
 						t.Errorf("%s: 8082 from %v, want the pods of the two scanners only", n, from)
 					}
 				}
@@ -544,7 +544,7 @@ func TestRolesNetworkPolicy(t *testing.T) {
 			got = append(got, str(np, "metadata", "name"))
 		}
 		sort.Strings(got)
-		if want := []string{"quader-api", "quader-malware-scanner", "quader-migrate", "quader-packages", "quader-scanner", "quader-worker"}; !equalStrings(got, want) {
+		if want := []string{"quader-api", "quader-malware-scanner-clamav", "quader-migrate", "quader-packages", "quader-vuln-scanner-trivy", "quader-worker"}; !equalStrings(got, want) {
 			t.Errorf("policies = %v, want %v", got, want)
 		}
 		if _, d := render(t, required(), backupSets()...); find(d, "NetworkPolicy", "quader-backup") == nil {

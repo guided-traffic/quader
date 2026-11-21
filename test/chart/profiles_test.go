@@ -182,11 +182,11 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 				t.Fatalf("the malware scanner's row has %d cells, want 5: %v", len(mrow), mrow)
 			}
 			replicas, hasHPA, min, max := replicasCell(t, mrow[1])
-			ms := find(docs, "Deployment", "quader-malware-scanner")
+			ms := find(docs, "Deployment", "quader-malware-scanner-clamav")
 			if ms == nil {
-				t.Fatal("no Deployment quader-malware-scanner")
+				t.Fatal("no Deployment quader-malware-scanner-clamav")
 			}
-			switch msHPA := find(docs, "HorizontalPodAutoscaler", "quader-malware-scanner"); {
+			switch msHPA := find(docs, "HorizontalPodAutoscaler", "quader-malware-scanner-clamav"); {
 			case hasHPA && (msHPA == nil || at(msHPA, "spec", "minReplicas") != min || at(msHPA, "spec", "maxReplicas") != max):
 				t.Errorf("malware scanner autoscaler = %v, want %d to %d", at(msHPA, "spec"), min, max)
 			case !hasHPA && (msHPA != nil || at(ms, "spec", "replicas") != replicas):

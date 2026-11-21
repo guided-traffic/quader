@@ -92,7 +92,7 @@ root context.
 {{- else -}}
 {{- $claimsVuln = not (has "vuln" ($u.excludeQueues | default list)) -}}
 {{- end -}}
-{{- /* The working space of the image scanning's detection is admitted through the same budget (Q-VULN-145, Q-HA-318): the unpacked database (1.6 GiB on 2026-11-10, allowed 2 GiB: a source that is off leaves the stored one in place) and a margin for the detections and the other users of the spool. The images themselves are analysed in the scanner's spool (templates/_scanner.tpl). */ -}}
+{{- /* The working space of the image scanning's detection is admitted through the same budget (Q-VULN-145, Q-HA-318): the unpacked database (1.6 GiB on 2026-11-10, allowed 2 GiB: a source that is off leaves the stored one in place) and a margin for the detections and the other users of the spool. The images themselves are analysed in the spool of vuln-scanner-trivy (templates/_vuln.tpl). */ -}}
 {{- if and $claimsVuln $imagesOn -}}
 {{- $database := 2147483648 -}}
 {{- $margin := 536870912 -}}

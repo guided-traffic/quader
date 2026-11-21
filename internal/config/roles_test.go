@@ -9,7 +9,7 @@ import (
 func TestR_ARCH_001_ProcessRoles(t *testing.T) {
 	t.Run("R-ARCH-001 serve accepts api, packages, worker, scanner, web and all", func(t *testing.T) {
 		links := []string{
-			"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://quader-scanner.quader.svc:8080",
+			"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://quader-vuln-scanner-trivy.quader.svc:8080",
 			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=https://quader-packages-scan.quader.svc:8082",
 		}
 		for _, role := range []string{"api", "packages", "worker", "scanner", "web", "all"} {

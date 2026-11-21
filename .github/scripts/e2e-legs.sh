@@ -206,19 +206,19 @@ EOF
 # NuGet clients its set uses, its screens and browser journeys, its spec. Two patterns of the old list matched no file
 # (queries/vuln_ was anchored at the root; internal/api/v1/vuln_api names no file); they stand here as the paths they meant.
 # The role scanner's paths outside internal/vuln/ follow it, each the scanner's alone, so that no shared path starts the leg
-# (R-VULN-046): the wiring of the role and of the scanning, the scan token's file, the scanner's chart templates and its chart test.
-# The malware scanning's own paths follow, each its alone (R-MAL-030): its packages, its wiring, the malware scanner's templates and
-# their chart test; its end-to-end case is in the set vuln.
+# (R-VULN-046): the wiring of the role and of the scanning, the scan token's file, the chart templates of vuln-scanner-trivy and its
+# chart test. The malware scanning's own paths follow, each its alone (R-MAL-030): its packages, its wiring, the templates of
+# malware-scanner-clamav and their chart test; its end-to-end case is in the set vuln.
 vuln_paths() {
   cat <<'EOF'
 ^internal/vuln/
 ^internal/app/wire_(scanner|vuln)
 ^internal/auth/registrytoken/scan
-^deploy/helm/quader/templates/(scanner|_scanner)
-^test/chart/scanner_
+^deploy/helm/quader/templates/(vuln-scanner-trivy|_vuln)
+^test/chart/vuln_scanner_trivy_
 ^internal/malware/
 ^internal/app/wire_malware
-^deploy/helm/quader/templates/(malware-scanner|_malware)
+^deploy/helm/quader/templates/(malware-scanner-clamav|_malware)
 ^test/chart/malware_
 ^internal/formats/(npm|nuget)/(vuln|handlers_audit|errors)
 ^internal/formathost/

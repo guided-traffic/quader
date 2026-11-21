@@ -41,8 +41,8 @@ The chart mounts each Secret into the pods that need it and nowhere else ([_secr
 - the TLS pair of each kind of pod (`api`, `packages`, `worker`, `scanner`; Secret `<fullname>-tls-<kind>`, which the chart's Certificate
   makes, or `tls.existingSecrets.<kind>`) in the pods of that kind only, and its `ca.crt` beside it where a link verifies with it
   ([R-HA-063](../spec/ha-and-helm.md#r-ha-063--chart-tls-wiring)); a pod holds no other kind's pair;
-- in the `scanner` pods, the scanner's own pair and the internal CA, and nothing else: no key ring, no database, Valkey or object-store file, no shared `extraEnvFrom` or
-  `extraVolumes` ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [scanner.yaml](../../deploy/helm/quader/templates/scanner.yaml)); the same in the malware scanner's container `quader`, and nothing
+- in the `vuln-scanner-trivy` pods, the scanner's own pair and the internal CA, and nothing else: no key ring, no database, Valkey or object-store file, no shared `extraEnvFrom` or
+  `extraVolumes` ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml)); the same in the container `quader` of the `malware-scanner-clamav` pods, and nothing
   of the installation in its container `clamd` or in the worker's container `freshclam`, which hold no credential at all
   ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment), [R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-freshclam-container-of-the-worker));
 - in the `worker` pods while the image scanning is on, the worker's pair as the identity they present to the scanner, and the internal
@@ -53,7 +53,8 @@ The chart mounts each Secret into the pods that need it and nowhere else ([_secr
   endpoint pools), which serve the login; `packages`, `worker` and the Jobs never get them. The Secret that holds the break-glass password is an administrator credential: whoever can
   read it through the Kubernetes API can sign in as the break-glass account, so its RBAC is the access control of that account;
 - the listener certificate (`tls.crt` and `tls.key`) only in the pods whose process serves a listener, and `ca.crt` only in the
-  `worker`, `packages` and `scanner` pods while the image scanning is on, where the links of R-HA-066 verify with it.
+  `worker`, `packages`, `vuln-scanner-trivy` and `malware-scanner-clamav` pods while a scanning is on, where the links of R-HA-066 and
+  R-HA-068 verify with it.
 
 The Valkey and PostgreSQL files are mounted with `defaultMode: 0440`, read-only, without `subPath`, so a rotated Secret reaches
 the process through the kubelet's swap and the next read (see [transport-encryption.md](transport-encryption.md)).
