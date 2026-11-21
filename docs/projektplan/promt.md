@@ -559,6 +559,9 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- The UI's tests that choose a person wait a fixed 320 ms for the search's debounce (`choosePrincipal` of the test
+  helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
+  of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
 - The image scanner's spool writes of large layers may be killed for memory by dirty pages of the file cache, as its
   database's loader was before it flushed every 32 MiB (not measured; found on 2026-11-21 by the builder of the
   analyser's move, left). A scanner's row of a pod removed in a simultaneous rollout stayed "ready" until it was pruned
@@ -1391,7 +1394,7 @@ runs are in `git log`; this section holds the current state.
   configuration of the fetch and the repository member that switches it off. Its worktree and branch are
   removed.
 - **The pipeline of the signatures' second package (run 44926599027) ended at 18:31 with one red job,
-  `integration (shard b)`, which holds no release back; its repair is in work since 18:32.** The area
+  `integration (shard b)`, which holds no release back; its repair landed at 19:27.** The area
   `postgres` holds the schema's conventions, among them that every counter column named as a revision, an
   epoch or a version is in the registry of revision columns; the package's migration added two such columns
   unregistered (the epoch a trust row was computed under, and the version of the update repository's snapshot
@@ -1404,6 +1407,20 @@ runs are in `git log`; this section holds the current state.
   purge test, the formats' client list, now this): each time a test that holds a list or a convention sat in
   an area the builder had no reason to run; the briefs name the three now, and section 12 gets the question
   whether such checks can run without the stack, in the unit job.
+  **The repair** (its builder worked from 18:32 to 19:24, forty minutes of it waiting for the integration
+  stack's lock behind three builders): neither column is a revision, so both are renamed and none is
+  registered. The trust row's epoch is a copy of the settings' counter of anchors and is only ever compared
+  with it; registered, a restore would raise the copy and not the counter and a row would look current for
+  good; it takes the counter's name. The other is the version number of the update repository's snapshot, a
+  number from outside; raised by a restore, the stored root would look newer than every snapshot to come and
+  never be refreshed; it is named a version number. One migration renames both with their index and
+  constraint; the third stage's text names its planned copy of the counter the same way, and the gate's builder
+  was told. The database's developer page says that every migration runs the area `postgres`, and that a copied
+  counter or a number from outside gets a name the rule does not claim. **On the commit as rebased onto
+  `main`, each exit 0:** build, the full unit run, generate-check, the lint, the complexity check, links and
+  check; by its builder under the lock the whole areas `postgres` (100 s) and `signatures`. **Released at 19:46** with the screens of the analyser's move, in one push; the image, the chart, the owner's installation and the shard of this run are being followed. **Not verified:** the migration on a database that holds rows of the tables (the renames ran against the
+  objects the earlier migration made, on an empty schema); old pods read the old names for the seconds between
+  the schema job and their replacement at an upgrade.
 - **Landed on 2026-11-21 at 18:33: package 1 of the image analyser's move, the scanner unit detects as well**
   (R-VULN-048, R-VULN-049 and its part of R-HA-070; what it built, measured and found is in the entry of the
   two builders of 15:16 below, as reported at 17:43; its builder brought it onto `main` from 17:43 to 18:06).
@@ -1458,11 +1475,38 @@ runs are in `git log`; this section holds the current state.
   minutes; **the release was cut at 19:13,** and with it the analyser's move is released. The second commit
   (where the package's time goes and the cheap part of the cure) is in work and is measured only at a lower
   load.
-- **In work since 18:11: package 2 of the image analyser's move, the screens** (on `main` with package 1): what
-  each pod of `vuln-scanner-trivy` holds of the analyser's database (the one in use with its build time, an
-  older one, none yet) on the System page and the advisory sources, beside the rows of the ClamAV updater and
-  the malware scanners and in their words; rendered at every width of the pipeline's job. With the three
-  builders below that makes four.
+- **In work since 19:45: package 3 of the image analyser's move** (on `main` with packages 1 and 2 released): the
+  analyser comes from its own image through an init container that copies the binary into a volume the scanner
+  mounts read-only, and leaves the release image; one pin by digest in place of the version and the four
+  archive digests, the chart's value held equal by a chart test, one Renovate group, the build and release
+  workflows and the job that scans the release image, the development profiles that start the scanner units
+  only where a leg needs them. Its brief asks for exactness at the pipeline and the release image (the check
+  of the workflow files, the image built and looked into, no second pin anywhere), the copy measured in a real
+  pod, the end-to-end set `vuln` on a cluster of its own with a kubeconfig file of its own (so that the
+  machine's default kubeconfig is not touched again), and a unit test's cost measured in the job's mode. With
+  the signing identity and the gate that makes three builders.
+- **Landed on 2026-11-21 at 19:27: package 2 of the image analyser's move, the screens** (R-UI-038, R-OPS-048,
+  R-VULN-022 as amended; its builder worked from 18:11 to 19:11; no change of Go or of the API). Each pod of
+  `vuln-scanner-trivy` says which database it holds, as a badge of icon and word: **Database in use** in green
+  with the time it was built, **Older database** and **No database yet** neutral, the whole digest on
+  pointing; on the System page under the tool's name, in the advisory sources' fold of the image scanners as a
+  column of its own. For the installation: a line of information on the System page while ready pods lack the
+  database in use, and the summary of the advisory sources says how many are on it. **Decided by its builder
+  (Q-UI-915):** an older database is never a warning, because every new database (up to four a day) leaves
+  every pod on the old one for the 10 to 30 s of the load and a warning would flash on a healthy installation;
+  the badge stands under the tool on the System page, because a column of its own made that table stand as
+  blocks at 1,440 px (measured: 1,192 px needed of 1,128); the digest only on pointing. To look at again when
+  the API reports since when a pod holds a database that is not in use: then a pod that lags for minutes can
+  be a warning. **On the commit as rebased onto `main`, each exit 0:** build, the full unit run,
+  generate-check, the lint, the complexity check, links and check, the UI tests and the UI lint; by its builder
+  the layout checks and the renders of ten screens at 1,440, 1,024 and 390 px, light and dark, none failed, no
+  layout finding. **Looked at by the development agent:** the System page with one pod in each state (wide,
+  light) and the advisory sources' fold (narrow, dark). **Its release was cut at 19:46**; the image, the chart and the owner's installation are being followed. **Its tests cost** well under a second of UI tests and an estimated 15 to 30 s of the layout job. **Not
+  verified:** the German texts in a browser (the longer German words may make the System page's table stand as
+  blocks sooner; the margin at 1,440 px is 52 px in English); the rows against real scanner pods. **Found by it
+  and left (section 8):** the UI's tests that search for a person wait a fixed 320 ms and fail under a loaded
+  machine (seen three times on 2026-11-21 by three builders); a comment of the UI development profile still
+  says the role `all` calls its own scanner. Its worktree and branch are removed.
 - **In work since 17:37, three builders on `main` with the signatures' package 2** (with package 1 of the analyser's
   move that makes four): **package 4 of the signatures' first stage, the screens** (the badge and the details at a
   version, a file and an image with the origin of an upload, the settings page of the signatures with the anchors,
@@ -3224,6 +3268,12 @@ it; a format adds a constant; no more data than the assertion needs. **Collected
 the walk items and the run record); what the code holds beyond the plan has not been searched.
 
 ### A · The shape of the test suite (refactor)
+
+- **The integration stack's one lock is the builders' bottleneck** (seen on 2026-11-21 with four to six agents): a
+  builder that changed several formats' serve paths held it for over 45 minutes with a proper list of areas, three others
+  waited 31 to 43 minutes, among them the repair of a red job that needed 100 seconds of it. To look at: a second stack
+  for builders, or a lock per area where two areas share no state; until then a brief says to run the longest areas
+  last and one at a time, so that a short run can pass between them.
 
 - **What a format costs, measured on 2026-11-20** ([test-cost.md](../developer/test-cost.md); two pushes and one full nightly,
   read from the runs' reports, nothing run for it). A push costs 396.0 runner minutes (Test and Release 44693590111), a full
