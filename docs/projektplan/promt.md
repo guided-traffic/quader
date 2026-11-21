@@ -136,13 +136,13 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   zu checken dass auch wirklich noch gearbeitet wird. Teilweise hören deine Watches auf zu funktionieren, wenn der Cache Cold
   wird. Ich möchte auf keinen Fall morgen aufwachen und du hast vergessen nach dem subagent weiter zu machen." Each check looks
   itself (the builders' worktrees, the pipeline, the nightly) and does not rely on a watcher; it ends when nothing is open.
-- **Alone from 2026-11-21, 11:15, until he is back: features only** (owner): "ich muss dann jetzt gleich los und du musst
+- **Alone from 2026-11-21, 11:17, until he is back: features only** (owner): "ich muss dann jetzt gleich los und du musst
   alleine weiter machen. Gibt es noch etwas dass ich schnell beantworten muss? Bitte setze einfach nur noch die Features
   um, keine Begleichtung vom Nachtlauf. Nur fertig bauen und alles immer dokumentiert halten." The development agent builds
   what is decided, in the order of the run record and of "With the owner", keeps this plan current in the same step as
   every start, landing and finding, and follows every release to his installation (rule above). It neither dispatches nor
-  attends the nightly; a red job of a run of its own pushes stays its to fix. The timer of the rule above runs every 30
-  minutes since 11:22. **What was open with him and how it is built meanwhile, told to him before he left (he was told
+  attends the nightly; a red job of a run of its own pushes stays its to fix. The timer of the rule above is set, every 30
+  minutes. **What was open with him and how it is built meanwhile, told to him before he left (he was told
   that none of it needs his answer):** what "betrieben" covers of the three ways to a signature: the tests now, real
   signing services on his cluster only when the first stage runs there; a virtual npm repository's keys endpoint serves
   the union of its members' keys (Q-SIG-34, option a); client certificates reach Quader behind his ingress through an
@@ -1276,10 +1276,10 @@ runs are in `git log`; this section holds the current state.
   every builder's brief from now on:** a builder stops its own processes by process ID or by a pattern that
   holds its worktree's path, never by a pattern that can match the main checkout. **The pipeline of the 09:05
   landing (run 44883240572) ended green on every job at 09:55.**
-- **Planners in work** (11:30, beside the builders below): the client certificates of the ClamAV endpoint (an
-  amendment of the specification, since 11:25), and **the image analyser's move into the scanner unit and out of
+- **Planners in work** (beside the builders below): the client certificates of the ClamAV endpoint (an
+  amendment of the specification, since 11:20), and **the image analyser's move into the scanner unit and out of
   the common image** (decided on 2026-11-21, "With the owner"; its specification with the measurements named
-  there, since 11:30); its packages are built after the ClamAV change is on `main`, because both change the chart
+  there, since 11:21); its packages are built after the ClamAV change is on `main`, because both change the chart
   and the scanner role.
 - **In work** (10:57): three builders, each from a specification that is on `main` (section "With the owner" holds
   what each builds): the format `clamav` with its repository and API (package 1 of the ClamAV change), the chart
@@ -1290,6 +1290,32 @@ runs are in `git log`; this section holds the current state.
   two releases on the owner's installation; package 2 (the updater process and the import) starts on package 1's
   branch when that reports, the UI packages after their APIs exist. One builder's worktree was created at the
   pushed tip and lacked the two specification commits; it was told to fast-forward before reading.
+  **The chart's builder (package 3) reported at 11:26** with one commit that waits for packages 1 and 2. What the
+  chart renders now, while malware scanning is on and the database's source is the updater (both defaults): the
+  Deployment `<fullname>-malware-updater-freshclam` (one replica, `Recreate`, outside the rule of two, no
+  disruption budget, autoscaler or spread; the containers `quader` of role `scanner` and kind `freshclam`, and
+  `freshclam`), its ConfigMap with `freshclam.conf` (`ScriptedUpdates no`, the official origin or
+  `PrivateMirror`, the proxy lines, no `NotifyClamd`), its Service, its NetworkPolicy (the listener from the
+  worker that claims `malware`, the operations port from the ops peers) and its certificate; the `packages`
+  policy admits the updater's pods on the scan listener; the worker lost the `freshclam` container, its volume
+  and its ConfigMap, and the values `freshclam.*` are refused by the schema; `<fullname>` is limited to 37
+  characters; the end-to-end profile of `vuln` takes its database from the repository and renders no updater.
+  **What the chart sets and package 2 has to know:** `malware.updater.url`, `malware.updater.server_name`,
+  `malware.updater.client_name`, `malware.scan_listener.updater_client_name`, a third entry of
+  `server.scan_clients`, the environment `QUADER_PROCESS_SCANNER_KIND=freshclam` and no spool size on the
+  updater; it does not set `malware.updater.directory` and relies on the binary's default `/var/lib/clamav`;
+  the marker `.quader-seeded` and the version file `.quader-tool-version` in that directory. **Decided by the
+  builder (Q-HA-378):** the shape of `privateMirror` and `proxy` is checked so that no value adds a line to
+  `freshclam.conf` or puts a credential into a ConfigMap, and a mirror on `clamav.net` itself is refused; a
+  replica count of zero fails also during a restore. **Its gates, each exit 0:** the chart's lint, the full unit
+  run, links and check, the complexity check; **the chart's tests exit 2 on three tests** that hand the rendered
+  configuration to the binary, which does not know the two new keys before package 2 (expected; they are run
+  again on the landing branch). The owner's values render against it with five new objects and without the
+  worker's ConfigMap, no key of his has to change. **For the landing:** his workers carry the label that opens
+  the internet to them, so the updater's pods need the same label in his values (not verified: whether his
+  cluster denies egress by default and whether that label covers DNS). **Left to package 2:** the README's
+  configuration reference still lists the three keys of the old container, and the operations manual has no
+  row for the updater's readiness check. Nothing ran on a cluster.
 - **Landed on 2026-11-21 at 10:47: a system repository is set apart wherever it is shown** (R-UI-193, Q-UI-898 to
   Q-UI-902): the badge **System** in the admin list and in the search, no address, download or command that would
   answer 404 (the admin list, the file page with one sentence in the address's place, a folder's rows, an opened
