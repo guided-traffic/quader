@@ -1408,7 +1408,9 @@ runs are in `git log`; this section holds the current state.
   **The renders looked at by the development agent:** the definitions' page with every fold open and an
   endpoint that admits certificates (wide, light), the client setup with the four ways (narrow, dark); the
   builder rendered at the three widths of the pipeline's job and corrected a file name that ran into its copy
-  button at 390 px. The owner's UI backend started with it before the push. **Its release was cut at 17:20**; the image, the chart and the owner's installation are being followed, and its run is left to end before the next code push. **Measured once with a real client on a cluster of its own** (recorded on the format's developer page; the
+  button at 390 px. The owner's UI backend started with it before the push. **Its release was cut at 17:20**, image and chart were published at 17:26, and the owner's installation runs it
+  since 17:29 (read on the cluster at 17:31: every Deployment ready, no error line of `api`, `packages` or the
+  worker); its run is left to end before the next code push. **Measured once with a real client on a cluster of its own** (recorded on the format's developer page; the
   real set of 2026-11-21, the switch on at the level internal, a stock `freshclam` of the pinned image; cluster
   and image removed): with an admitted certificate all three databases fetched and tested, exit 0, and the
   second run up to date, exit 0; without a certificate and with one of a foreign CA "Download failed (56)",
