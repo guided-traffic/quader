@@ -1606,8 +1606,14 @@ runs are in `git log`; this section holds the current state.
   tests, lint, layout tests and build, the evidence and its count test. The three diffs hold no name the
   white-label rule forbids. **The owner's values** render against the stack's chart (39 objects; the scanner
   pods gain the analyser's init container and its volume, the gate changes no object). The owner's UI
-  backend started with it before the push (the schema step applied). **Their release was cut at 21:58.** On the pipeline's amd64 runner the image's build (3.6 minutes), the versions check and the job that scans the release image with the analyser's binary taken out of the pinned image (4.7 minutes) are green, which the analyser's builder could not verify; the unit job took 10.8 minutes. Their worktrees and branches are
-  removed.
+  backend started with it before the push (the schema step applied). **Their release was cut at 21:58.** On the pipeline's amd64 runner the image's build (3.6 minutes), the versions check and the job that scans the release image with the analyser's binary taken out of the pinned image (4.7 minutes) are green, which the analyser's builder could not verify; the unit job took 10.8 minutes. Image and chart were published at
+  22:04, and **the owner's installation runs it since 22:06.** Read on the cluster at 22:06: every Deployment
+  ready, no restart, no error line of `api`, `packages` or the workers; the migration job applied the gate's
+  schema step. **The analyser's init container on real amd64 nodes with CRI-O, which nobody had run before:**
+  on both nodes the copy took a second and ended with exit 0, the scanner's listener was bound 0.2 s after its
+  container started, its readiness check `vulnScannerTrivy` passed, and the pods were ready 4 and 2 s after
+  the copy began. Both nodes report the analyser's image as present; the pull itself is in no event that is
+  still listed, so its duration there is not known. Their worktrees and branches are removed.
 - **In work since 21:01 on `main` with the signing identity: package 2 of the second stage, npm's signatures; the
   section started with it landed at 21:47 (the entry above)** (two builders, with the gate's rebase and package 3
   of the analyser's move that made four): **package 2 of the signatures' second stage, npm's registry
@@ -3305,7 +3311,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   unit test on Linux is specified). **The move is whole on `main` since 2026-11-21, 21:47:** its three
   packages are landed (run record). The copy in a real pod was measured by the third package's builder on
   arm64 and checked by the development agent on the amd64 image under emulation; the first amd64 nodes that
-  run it are his cluster's, with the release.
+  run it are his cluster's, with the release: seen there at 22:06, the copy takes a second and the scanner
+  pods are ready within seconds (run record).
 
 **Decided by the owner on 2026-11-20, in work or waiting to be built**
 
