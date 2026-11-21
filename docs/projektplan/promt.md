@@ -1236,7 +1236,25 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (07:58): one builder, and the rename's landing. **The system repositories of `upstream` stand apart on the project's page
+- **In work** (08:10): three builders, and the rename's landing. **What the rename's builder reported and left is
+  built at once** (the owner, 2026-11-21, to that report: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten.
+  Das ist alles wichtig und muss umgesetzt werden"), in two packages on top of the rename's commit, both since
+  08:08. (1) **No name of a scanner unit that an operator reads is left without its tool:** the label `listener` of
+  the links' certificate metrics, the log field `component` of both scanner processes, the readiness checks on both
+  sides (with the sentence the image scanner's check never had on the System page), the system subjects
+  `image-scanner` and `malware-scanner` that an auditor reads as the actor of a scanner's reads (added by the
+  development agent: they name the unit too), anything else of that kind its grep finds; and the chart fails the
+  render for a release name whose longest derived name is no valid DNS label. The role, the jobs and queues, the
+  configuration keys of the worker's one link per purpose and the repositories keep their names. (2) **An
+  administrator sees the scanner replicas and their tool:** the admin area's System page lists every scanner
+  replica with its kind, the tool's version, its state and since when; **Settings › Malware scanning** names each
+  malware scanner with the ClamAV version, the signature database it scans with and its slots; the image scanning
+  shows its scanners the same way. The mechanism is the builder's to decide within bounds given to it: a scanner
+  holds no secret and writes no table, its kind comes from its verified certificate and not from what it says of
+  itself, a gone pod's row goes as the other replicas' rows go, what a scanner reports is bounded, and no end-to-end
+  set or leg is added. Both builders run the set `vuln` on a cluster of their own; the image tag of the development
+  profile is shared on the machine, so they build and load it under one lock and check the commit a pod runs.
+  **The system repositories of `upstream` stand apart on the project's page
   Repositories** (since 07:53; the owner, 2026-11-21, with a picture of the page on his installation: "Bitte die
   internen Repos wie: scanner-trivy und scanner-clamav unter die Liste packen, am besten als seperate Tabelle die
   standardmäßig eingeklappt ist. Sowas wie system repositories, oder etwas besseres. Ohne den client einrichten
