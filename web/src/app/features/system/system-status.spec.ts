@@ -17,6 +17,9 @@ import { SessionStore } from '../../core/session-store';
 import { SystemStatus } from './system-status';
 import { SystemRefresh } from './system-refresh';
 
+/** A badge's word without its icon's glyph name. */
+const word = (badge: HTMLElement): string => text(badge).replace(/^(check_circle|hourglass_empty)/, '');
+
 async function render(setup?: (system: FakeSystemApi, enc: FakeEncryptionApi, session: FakeSessionApi) => void) {
   await TestBed.configureTestingModule({
     imports: [SystemStatus],
@@ -347,6 +350,41 @@ describe('System status screen', () => {
     const summary = text(root.querySelector('p.summary')!);
     expect(summary).toContain('No ready replica of malware-scanner-clamav');
     expect(summary).not.toContain('No ready replica of vuln-scanner-trivy');
+  });
+
+  it('Q-UI-915 the image scanners say per pod which database it holds, and the group informs while ready pods do not hold the database in use', async () => {
+    const current = { version: 'a1b2c3d4e5f6'.padEnd(64, '0'), builtAt: '2026-11-21T07:02:00Z' };
+    const behind = await render((system) => {
+      system.scannersResult = sampleScanners({
+        items: [
+          sampleScannerReplica({ database: current }),
+          sampleScannerReplica({ instanceUid: 't2', name: 'quader-vuln-scanner-trivy-7d9f6c5b8-fghij', database: { version: 'b'.repeat(64), builtAt: null } }),
+          sampleScannerReplica({ instanceUid: 't3', name: 'quader-vuln-scanner-trivy-7d9f6c5b8-klmno', state: 'starting', reason: 'starting', database: null }),
+        ],
+      });
+    });
+    const group = behind.root.querySelector<HTMLElement>('[data-testid="scanner-replicas"]')!;
+    const note = group.querySelector<HTMLElement>('[data-testid="scanner-database-lag"]')!;
+    expect(text(note)).toContain('1 of 2 ready replicas does not hold the database in use yet');
+    // Informing, not a warning: every new database leaves the pods on the one before for the seconds of the load.
+    expect(note.querySelector('.material-icons')!.textContent).toBe('info');
+    expect([...group.querySelectorAll('.database-state')].map((c) => word(c.querySelector<HTMLElement>('.ok, .badge')!))).toEqual([
+      'Database in use',
+      'Older database',
+      'No database yet',
+    ]);
+    // The header warns of no image scanner here: the pods are ready, and the note and the rows say the rest.
+    expect(text(behind.root.querySelector('p.summary')!)).not.toContain('vuln-scanner-trivy');
+  });
+
+  it('Q-UI-915 while every ready image scanner holds the database in use, the group has no note', async () => {
+    const current = { version: 'a1b2c3d4e5f6'.padEnd(64, '0'), builtAt: '2026-11-21T07:02:00Z' };
+    const current2 = await render((system) => {
+      system.scannersResult = sampleScanners({
+        items: [sampleScannerReplica({ database: current }), sampleScannerReplica({ instanceUid: 't2', database: current })],
+      });
+    });
+    expect(current2.root.querySelector('[data-testid="scanner-database-lag"]')).toBeNull();
   });
 
   it('R-OPS-048 Q-UI-897 the role all runs no scanner pod, and the page says so instead of an empty table', async () => {

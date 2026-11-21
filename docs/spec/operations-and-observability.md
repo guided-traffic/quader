@@ -720,9 +720,12 @@ built before the one it follows: [vulnerability-scanning.md](vulnerability-scann
 Q-VULN-213), `database.version` the 64 hexadecimal digits of its layer's digest and `database.builtAt` the build time of
 its `metadata.json`, or no database before its first load; the route accepts a database from `trivy`, and the third criterion above loses
 "a database from `trivy`". The answer's `database.builtAt` follows the rule above: the build time while the row names the database in use (the
-source state's digest), `null` for another. The screens show it on the trivy rows as they show ClamAV's database (R-UI-038,
-[vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022): "Database of 2026-11-21 07:02" for the one in use, "an older database"
-for another, "no database yet" before the first. The loader of the kind `trivy-db` does not report itself; it is part of the scanner's pod.
+source state's digest), `null` for another. The screens show it on the trivy rows, on the System page and in the fold of the advisory
+sources (R-UI-038, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022; built on 2026-11-21,
+[api-and-ui.md](api-and-ui.md#q-ui-915--an-image-scanners-database-is-a-badge-beside-its-tool-and-the-installations-statement-a-line-beside-the-counts)
+Q-UI-915): **Database in use** with "built" and the age of the build for the one in use, **Older database** for another, **No database
+yet** before the first, the digest the badge's title; the System page and the summary of the advisory sources count the ready pods that
+do not hold the database in use. The loader of the kind `trivy-db` does not report itself; it is part of the scanner's pod.
 The value `inProcess` of `replicas` goes: the role `all` builds no image scanner
 ([architecture.md](architecture.md) Q-ARCH-563), so the UI development profile answers `none`.
 

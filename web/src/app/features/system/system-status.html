@@ -339,6 +339,19 @@
                 <span translate="no">{{ g.deployment }}</span>
                 <span class="counts" i18n="@@system.scanner.counts">live {{ g.live }}, ready {{ g.ready }}</span>
               </h4>
+              <!-- Whether every ready image scanner holds the database in use (Q-UI-915): informing, as the replacement of replicas is,
+                   because every new database leaves the pods on the one before for the seconds of its load; a pod that stays on it
+                   shows in its row. -->
+              @if (databaseLag(g); as lag) {
+                @if (lag.lagging > 0) {
+                  <p class="warning" role="note" data-testid="scanner-database-lag">
+                    <span class="material-icons" aria-hidden="true">info</span>
+                    <span i18n="@@system.scanner.database-lag"
+                      >{lag.lagging, plural, =1 {1 of {{ lag.ready }} ready replicas does not hold the database in use yet: the detections it is asked for wait until it has loaded it.} other {{{ lag.lagging }} of {{ lag.ready }} ready replicas do not hold the database in use yet: the detections they are asked for wait until they have loaded it.}}</span
+                    >
+                  </p>
+                }
+              }
               <quader-scanner-replicas [list]="list" [kind]="g.kind" view="system" />
             </section>
           }

@@ -829,7 +829,10 @@ loader (container database, kind trivy-db): every 5 s before its first database,
 | `422 spool_too_small` | `spool_too_small` | none | 1 hour |
 | an answer whose `Quader-Database` or `Quader-Analyser-Version` differs, no JSON, or a report that does not parse | `analyser_failed` | spent | the back-off |
 
-**The API package 2 builds on** (the screens of the database per scanner pod; the contract, not the screens, is this change's):
+**The API the screens of the database per scanner pod read** (built on 2026-11-21: the badge per pod and the count of the ready pods
+that do not hold the database in use on the System page and in **Advisory sources**, `podDatabase` and `databaseLag` in
+[scanner-model.ts](../../web/src/app/shared/scanner/scanner-model.ts), [api-and-ui.md](../spec/api-and-ui.md) Q-UI-915; no change of the
+API):
 
 - `GET /api/v1/system/scanners` (`settings:read`): every row of the kind `trivy` carries `database: {version, builtAt}` once its pod's loader
   completed a database, `null` before. `version` is the 64 lower-case hexadecimal digits of the layer's digest of the **newest** database the

@@ -1,8 +1,11 @@
 import { ScannerList } from '../../api/system-api';
 import { sampleScannerReplica, sampleScanners, withUpdater } from '../../api/testing/fakes';
 import { expectAccessible, renderScreen, text } from '../../testing/screen';
-import { scannerGroups, waitingScanners } from './scanner-model';
+import { databaseLag, podDatabase, scannerGroups, waitingScanners } from './scanner-model';
 import { ScannerReplicas } from './scanner-replicas';
+
+/** A badge's word without its icon's glyph name. */
+const word = (badge: HTMLElement): string => text(badge).replace(/^(check_circle|hourglass_empty)/, '');
 
 const longName = 'quader-malware-scanner-clamav-6d9c7b5f4-x2v4q-with-a-release-name-of-forty-characters';
 
@@ -61,12 +64,77 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
     await expectAccessible(root);
   });
 
-  it('Q-UI-897 the image scanner has no database column, and a lost replica says so', async () => {
+  it('Q-UI-915 the image scanner has the column of the database its pod holds, and a lost replica says so', async () => {
     const { root } = await render({ list: list(), kind: 'trivy' });
     const headers = [...root.querySelectorAll('thead th .th-inner > span:first-child')].map((s) => text(s));
-    expect(headers).toEqual(['Name', 'State', 'Tool', 'Slots']);
+    expect(headers).toEqual(['Name', 'State', 'Tool', 'Database', 'Slots']);
     expect(text(root.querySelector('tbody tr')!)).toContain('Lost');
     expect(text(root.querySelector('tbody tr')!)).toContain('Trivy 0.67.2');
+    expect(text(root.querySelector('tbody tr')!)).toContain('No database yet');
+  });
+
+  it('R-VULN-049 Q-OPS-225 Q-UI-915 each image scanner says whether its pod holds the database in use with the age of its build, an older one, or none yet, on the System page too', async () => {
+    const inUse = 'a1b2c3d4e5f6'.padEnd(64, '0');
+    const older = '9f8e7d6c5b4a'.padEnd(64, '1');
+    const pods = sampleScanners({
+      items: [
+        sampleScannerReplica({ instanceUid: 't1', name: 'trivy-a', database: { version: inUse, builtAt: '2026-11-21T07:02:00Z' } }),
+        sampleScannerReplica({ instanceUid: 't2', name: 'trivy-b', database: { version: older, builtAt: null } }),
+        sampleScannerReplica({ instanceUid: 't3', name: 'trivy-c', state: 'starting', reason: 'starting', toolVersion: null, database: null }),
+        sampleScannerReplica({ kind: 'clamav', instanceUid: 'c1', name: 'clamav-a', toolVersion: '1.5.5', database: { version: 'main-62.daily-27841.bytecode-339', builtAt: '2026-11-21T04:00:00Z' } }),
+      ],
+    });
+    for (const view of ['system', 'settings'] as const) {
+      const { root } = await render({ list: pods, kind: 'trivy', view });
+      const headers = [...root.querySelectorAll('thead th .th-inner > span:first-child')].map((s) => text(s));
+      // The settings' column Database; on the System page the line under the tool, so that its table keeps its columns.
+      expect(headers.includes('Database')).toBe(view === 'settings');
+      const cells = [...root.querySelectorAll(view === 'settings' ? 'tbody td.database-cell' : 'tbody td.tool-cell')];
+      expect(cells.map((c) => word(c.querySelector<HTMLElement>('.database-state .ok, .database-state .badge')!))).toEqual([
+        'Database in use',
+        'Older database',
+        'No database yet',
+      ]);
+      if (view === 'system') expect(text(cells[0]!)).toContain('Trivy 0.67.2');
+      // The state is a badge with its icon and its word, green only for the database in use (never by colour alone).
+      expect(cells[0]!.querySelector('.ok .material-icons')).not.toBeNull();
+      expect(cells[1]!.querySelector('.ok')).toBeNull();
+      // The age of the build beside the badge of the database in use only; the digest is the cell's title, not its text.
+      expect(text(cells[0]!)).toContain('built');
+      expect(cells[0]!.querySelector('time')!.getAttribute('datetime')).toBe('2026-11-21T07:02:00Z');
+      expect(cells[0]!.querySelector('.database-state')!.getAttribute('title')).toBe(`sha256:${inUse}`);
+      expect(text(cells[0]!)).not.toContain('a1b2c3d4e5f6');
+      expect(text(cells[1]!)).not.toContain('built');
+      expect(cells[1]!.querySelector('.database-state')!.getAttribute('title')).toBe(`sha256:${older}`);
+      expect(cells[2]!.querySelector('.database-state')!.hasAttribute('title')).toBe(false);
+      await expectAccessible(root);
+    }
+    // ClamAV keeps its own column on the settings pages and none on the System page.
+    const clamSystem = await render({ list: pods, kind: 'clamav', view: 'system' });
+    expect(clamSystem.root.querySelector('.database-state')).toBeNull();
+    const clamSettings = await render({ list: pods, kind: 'clamav' });
+    expect([...clamSettings.root.querySelectorAll('thead th .th-inner > span:first-child')].map((s) => text(s))).toContain('Signature database');
+    expect(clamSettings.root.querySelector('td.database-cell')).toBeNull();
+  });
+
+  it('Q-UI-915 the installation counts its ready image scanners that do not hold the database in use; lost and starting ones do not count', () => {
+    const current = { version: 'a'.repeat(64), builtAt: '2026-11-21T07:02:00Z' };
+    const lag = (items: Parameters<typeof sampleScanners>[0]) => databaseLag(scannerGroups(sampleScanners(items)).find((g) => g.kind === 'trivy')!);
+    expect(lag({ items: [sampleScannerReplica({ database: current }), sampleScannerReplica({ instanceUid: 't2', database: current })] })).toEqual({ ready: 2, lagging: 0 });
+    expect(
+      lag({
+        items: [
+          sampleScannerReplica({ database: current }),
+          sampleScannerReplica({ instanceUid: 't2', database: { version: 'b'.repeat(64), builtAt: null } }),
+          sampleScannerReplica({ instanceUid: 't3', database: null }),
+          sampleScannerReplica({ instanceUid: 't4', state: 'starting', database: null }),
+          sampleScannerReplica({ instanceUid: 't5', lost: true, database: null }),
+        ],
+      }),
+    ).toEqual({ ready: 3, lagging: 2 });
+    expect(podDatabase(sampleScannerReplica({ database: current }))).toBe('current');
+    // ClamAV's rows name the database they scan with; the installation's statement is the image scanner's alone.
+    expect(databaseLag(scannerGroups(sampleScanners()).find((g) => g.kind === 'clamav')!)).toBeNull();
   });
 
   it('R-OPS-048 a kind without a replica says why, in a sentence, for each way it can have none', async () => {

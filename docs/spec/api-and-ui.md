@@ -5128,14 +5128,20 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   run", "Certificate not loaded", "Spool not writable", "Still starting", else the code), **State changed** (the relative time of
   `stateSince`), heartbeat, and **Tool** in place of the Valkey view ("Trivy 0.67.2", "ClamAV 1.5.5"). A replica that is not ready is shown
   with its reason, a lost one as lost. A kind without a replica says why in a sentence instead of an empty table: none has reported
-  (`reporting`, a warning), the scan listener cannot tell the kind (`unverified`), the development role `all` analyses images in its own
-  process (`inProcess`), or no scanner of the kind is configured (`none`, naming the setting). A failure of the read stands in the group's
-  place and leaves the roles. The rows are the scanners' own statements, bound as text (H-1161 in
-  [security/scanner-replicas.md](../security/scanner-replicas.md)). With the detection in the scanner (specified,
-  [operations-and-observability.md](operations-and-observability.md) Q-OPS-225) the trivy rows show the database the pod detects with, in
-  the words ClamAV's rows use for theirs ("Database of 2026-11-21 07:02", "an older database", "no database yet"), on the System page and in
-  the fold of **Advisory sources**; the sentence of `inProcess` goes, because the role `all` builds no image scanner
-  ([architecture.md](architecture.md) Q-ARCH-563).
+  (`reporting`, a warning), the scan listener cannot tell the kind (`unverified`), or no scanner of the kind is configured (`none`, naming
+  the setting; the role `all` builds no image scanner, [architecture.md](architecture.md) Q-ARCH-563). A failure of the read stands in the
+  group's place and leaves the roles. The rows are the scanners' own statements, bound as text (H-1161 in
+  [security/scanner-replicas.md](../security/scanner-replicas.md)). With the detection in the scanner
+  ([operations-and-observability.md](operations-and-observability.md) Q-OPS-225) the trivy rows name the database the pod holds, here
+  under the tool in **Tool** and in the fold of **Advisory sources** in a column **Database**
+  ([Q-UI-915](#q-ui-915--an-image-scanners-database-is-a-badge-beside-its-tool-and-the-installations-statement-a-line-beside-the-counts)):
+  the badge **Database in use** (a check, green) with "built" and the age of the build, **Older database** or **No database yet** (an
+  hourglass, neutral), the digest its title. While ready pods of the kind do not hold the database
+  in use, a line under the kind's heading informs "*n* of *m* ready replicas do not hold the database in use yet: the detections they are
+  asked for wait until they have loaded it"; it is no warning of the header, because every new database leaves the pods on the one before
+  for the seconds of its load. Built on 2026-11-21: [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts),
+  `databaseLag` in [scanner-model.ts](../../web/src/app/shared/scanner/scanner-model.ts),
+  [system-status.html](../../web/src/app/features/system/system-status.html).
 - Readiness checks per replica, from the `checks` of `/system/replicas` (R-OPS-001, R-OPS-003; Q-OPS-2
   in [operations-and-observability.md](operations-and-observability.md)), in two kinds that the
   screen never merges:
@@ -21252,7 +21258,8 @@ it, the tool's version, its state and why it is not ready, and on the settings p
 
 **Choice:** (a). A kind without a row says why in a sentence, never an empty table: none has reported (a warning, which the System
 page's header repeats as "No ready replica of `<kind>`" while the kind's replicas report and none is ready), the scan listener cannot tell
-the kind, the role `all` analyses images in its own process, or no scanner of the kind is configured. The reason of a state is a few words
+the kind, or no scanner of the kind is configured (the sentence for the role `all`, which analysed images in its own process, went with
+Q-ARCH-563: it builds no image scanner and answers `none`). The reason of a state is a few words
 beside its badge ("No database loaded yet"), so that its first words stand on the row's line (R-UI-172). The malware page keeps the
 worker's summary (Q-MAL-43); the advisory sources gain the section **Image scanners** with a summary of the rows ("2 ready, 1 scan
 running"). **Applied in the spec:** R-UI-038; [malware-scanning.md](malware-scanning.md) R-MAL-023;
@@ -21458,6 +21465,42 @@ the malware scanning's settings (`source`, `enabled`); a reader who may not read
 spec:** R-UI-188. Code: [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts),
 [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html),
 [malware-settings.html](../../web/src/app/features/settings/malware-settings.html).
+
+### Q-UI-915 · An image scanner's database is a badge beside its tool, and the installation's statement a line beside the counts
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. With the
+detection in the scanner each pod of `vuln-scanner-trivy` holds a copy of the advisory database, and its row says which (R-OPS-048,
+[operations-and-observability.md](operations-and-observability.md) Q-OPS-225): `database.version` the digest of the database its loader
+wrote last, `database.builtAt` set only while that is the database in use, `database` `null` before the first load
+([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049, Q-VULN-213). The specification named the three states and the
+screens, not the words, the place or the icon. An administrator should read per pod whether it holds the database in use and since
+when that was built, an older one, or none yet, and for the installation whether every ready pod holds the database in use.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A badge, **Database in use** with a check in green, **Older database** and **No database yet** with an hourglass, neutral; "built" with the age of the build beside the first; the digest as the badge's title. On the System page under the tool in the column **Tool** (whose help then says what the words mean), in the fold of **Advisory sources** a column **Database** as ClamAV's rows have on the malware settings. For the installation an informing line under the kind's heading on the System page while ready pods do not hold the database in use, and on **Advisory sources** a third part of the summary, "all on the database in use" or "*n* not yet on the database in use" (chosen) | A badge as every state of the screens, the age as the updater's daily (Q-UI-913) | At a glance per row and per installation; green only for the positive state and every state a word; the System page's table keeps its columns at 1440 px | Two places for one value on two screens: under the tool on the System page, a column on the settings fold |
+| (b) A column **Database** on both screens | One place | The same on both | Measured on the render profile at 1440 px: the System page's trivy table needs 1,192 px against 1,128 and stands as blocks, while the ClamAV table under it stays a table |
+| (c) The database as a line under the state | The reason's place | No column more | A second thing in the state's cell, against the one meaning of the state (the pod is ready although it holds an older database) |
+| (d) ClamAV's form: the version and its date, no badge | One look for both kinds | Nothing new | A digest of 64 hex digits says nothing to a reader, and "older" would be a missing date, a state by absence |
+| (e) An older database as a warning, and a header warning of the System page | Loud | A stuck pod is seen | Every new database (up to four a day) leaves every pod on the one before for the 10 to 30 s of its load: the warning would flash on a healthy installation |
+
+**Choice:** (a). An older database is neutral, as "Replicas are being replaced" is: the list cannot tell a pod that is loading from one
+whose loader fails, and the first is the normal case after every new database; the help says both and where the reason stands (the log
+of the pod's container `database`). The badge names the database in every state, because under the tool it has no column header to lean
+on. The digest is no text of the cell: twelve hex digits beside the badge made the column too wide for the System page and say nothing
+at a glance; the title keeps it for whoever compares two pods. Lost and starting pods are not counted for the installation; a starting
+pod shows its own badge. The System page shows nothing while every ready pod holds the database in use, as its other notices do; the
+summary of **Advisory sources** says it in words, and leaves the part out while no pod is ready. ClamAV's rows keep their column on the
+settings pages and get none on the System page: the worker does not wait for a malware scanner's database. **Rationale:** the database is
+a second property of a ready pod, so it gets its own badge beside the state and not in it, and on the System page it stands with the
+tool that reads it. The development agent would revisit this when the list reports since when a pod has held a database that is not in
+use: a pod that lags for minutes then becomes a warning, which needs that time in the API (Q-OPS-225 reports none) and is not built.
+
+**Applied in the spec:** R-UI-038, Q-UI-897; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022;
+[operations-and-observability.md](operations-and-observability.md) R-OPS-048. Code: [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts)
+(the badge, the column and the line under the tool), [scanner-model.ts](../../web/src/app/shared/scanner/scanner-model.ts) (`podDatabase`,
+`databaseLag`), [system-status.html](../../web/src/app/features/system/system-status.html) (the line under the heading),
+[vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts) (the summary).
 ## What this does not cover
 
 

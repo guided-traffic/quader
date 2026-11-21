@@ -42956,5 +42956,77 @@
         <target>Client-Zertifikate brauchen einen Endpunkt, den Ihr Betreiber einrichtet.</target>
       </segment>
     </unit>
+    <unit id="system.scanner.database-lag">
+      <notes>
+        <note category="location">src/app/features/system/system-status.html:350,352</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 of <ph id="0" equiv="INTERPOLATION"/> ready replicas does not hold the database in use yet: the detections it is asked for wait until it has loaded it.} other {<ph id="1" equiv="INTERPOLATION_1"/> of <ph id="2" equiv="INTERPOLATION"/> ready replicas do not hold the database in use yet: the detections they are asked for wait until they have loaded it.}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 von <ph id="0" equiv="INTERPOLATION"/> bereiten Replikaten hält die Datenbank in Verwendung noch nicht: Die Erkennungen, die es ausführen soll, warten, bis es sie geladen hat.} other {<ph id="1" equiv="INTERPOLATION_1"/> von <ph id="2" equiv="INTERPOLATION"/> bereiten Replikaten halten die Datenbank in Verwendung noch nicht: Die Erkennungen, die sie ausführen sollen, warten, bis sie sie geladen haben.}}</target>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.scanners-database">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:278,280</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =0 {all on the database in use} =1 {1 not yet on the database in use} other {<ph id="0" equiv="INTERPOLATION"/> not yet on the database in use}}</source>
+        <target>{VAR_PLURAL, plural, =0 {alle mit der Datenbank in Verwendung} =1 {1 noch nicht mit der Datenbank in Verwendung} other {<ph id="0" equiv="INTERPOLATION"/> noch nicht mit der Datenbank in Verwendung}}</target>
+      </segment>
+    </unit>
+    <unit id="scanners.db.current">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:175,176</note>
+      </notes>
+      <segment>
+        <source>Database in use</source>
+        <target>Datenbank in Verwendung</target>
+      </segment>
+    </unit>
+    <unit id="scanners.db.older">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:181,182</note>
+      </notes>
+      <segment>
+        <source>Older database</source>
+        <target>Ältere Datenbank</target>
+      </segment>
+    </unit>
+    <unit id="scanners.db.none">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:184,185</note>
+      </notes>
+      <segment>
+        <source>No database yet</source>
+        <target>Noch keine Datenbank</target>
+      </segment>
+    </unit>
+    <unit id="scanners.db.built">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:177</note>
+      </notes>
+      <segment>
+        <source>built</source>
+        <target>erstellt</target>
+      </segment>
+    </unit>
+    <unit id="scanners.col.pod-database">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:297</note>
+      </notes>
+      <segment>
+        <source>Database</source>
+        <target>Datenbank</target>
+      </segment>
+    </unit>
+    <unit id="scanners.col.pod-database-help">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:298</note>
+      </notes>
+      <segment>
+        <source>The advisory database the pod detects with. Database in use: the one Quader uses now, with how long ago it was built. Older database: the pod is still loading the one in use, which takes under a minute, or its container database cannot load it; that container&apos;s log says why. No database yet: the pod&apos;s first load has not finished.</source>
+        <target>Die Advisory-Datenbank, mit der der Pod erkennt. Datenbank in Verwendung: die Datenbank, die Quader jetzt verwendet, mit dem Alter ihres Builds. Ältere Datenbank: Der Pod lädt die Datenbank in Verwendung noch, was weniger als eine Minute dauert, oder sein Container database kann sie nicht laden; das Log dieses Containers nennt den Grund. Noch keine Datenbank: Das erste Laden des Pods ist noch nicht abgeschlossen.</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

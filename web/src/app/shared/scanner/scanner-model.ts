@@ -68,6 +68,29 @@ export function scannerGroup(list: ScannerList, kind: string): ScannerGroup | nu
 }
 
 /**
+ * The database an image scanner's pod holds (R-VULN-049, Q-OPS-225): the database in use (the row names its build time, which the list
+ * sets only for the digest in use), an older one (a version without a build time: the pod is loading the one in use, or its loader
+ * fails), or none before the pod's first load. Q-VULN-213: the version is the database the pod's loader wrote last.
+ */
+export type PodDatabase = 'current' | 'older' | 'none';
+
+export function podDatabase(r: ScannerReplica): PodDatabase {
+  if (r.database === null) return 'none';
+  return r.database.builtAt ? 'current' : 'older';
+}
+
+/**
+ * Whether the ready replicas of an image scanner's kind hold the database in use (Q-UI-915): the ready ones that are not lost, and how
+ * many of them hold an older database or none. Null for a kind that keeps no database of its own per pod in this sense (ClamAV's rows
+ * name the signature database they scan with, which the worker does not wait for).
+ */
+export function databaseLag(g: ScannerGroup): { readonly ready: number; readonly lagging: number } | null {
+  if (g.purpose !== 'vuln' && g.kind !== 'trivy') return null;
+  const ready = g.rows.filter((r) => !r.lost && r.state === 'ready');
+  return { ready: ready.length, lagging: ready.filter((r) => podDatabase(r) !== 'current').length };
+}
+
+/**
  * A kind whose scanning waits (R-OPS-048): its replicas report themselves, and none of them is ready, or none has reported. The header
  * of the System page warns of it; a kind whose replicas do not report (the role all, no TLS) has nothing to warn of here.
  */

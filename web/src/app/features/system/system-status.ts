@@ -34,7 +34,7 @@ import {
 import { valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
-import { scannerGroups, waitingScanners } from '../../shared/scanner/scanner-model';
+import { databaseLag, scannerGroups, waitingScanners } from '../../shared/scanner/scanner-model';
 import { NoValue } from '../../shared/ui/no-value';
 import { SystemRefresh } from './system-refresh';
 
@@ -129,6 +129,8 @@ export class SystemStatus {
   }));
   /** The kinds whose replicas report themselves and none of which is ready: the header warns that their scans wait. */
   protected readonly waitingScanners = computed(() => waitingScanners(this.scannerGroups()));
+  /** The ready image scanners and how many of them hold an older database or none (Q-UI-915). */
+  protected readonly databaseLag = databaseLag;
   protected readonly scannersFailure = computed(() => {
     const e = this.scanners.error();
     return e instanceof ApiError ? e : e ? new ApiError(0, null, null) : null;

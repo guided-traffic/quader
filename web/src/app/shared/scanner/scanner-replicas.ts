@@ -5,7 +5,7 @@ import { DataTable, TableColumn } from '../ui/data-table';
 import { Disclosure } from '../ui/disclosure';
 import { NoValue } from '../ui/no-value';
 import { TimeAgo } from '../ui/time-ago';
-import { scannerGroup } from './scanner-model';
+import { podDatabase, scannerGroup } from './scanner-model';
 
 /** What a scanner's reason code means (R-OPS-048): the readiness check that fails; a code this screen does not know is shown as it is. */
 export function scannerReasonText(reason: string): string | null {
@@ -33,11 +33,13 @@ export function scannerReasonText(reason: string): string | null {
  * The replicas of one kind of scanner (R-OPS-048, Q-UI-897), the one table of the screens that show them: the System page
  * (`view="system"`, the columns of every replica there: name, node, version, state, since when, heartbeat, and the tool in place of
  * Valkey), and the settings of the malware scanning and the advisory sources (`view="settings"`, closed in a fold under the page's own
- * summary: name, state, the tool's version, ClamAV's signature database, the slots), and the section **Updater** of `upstream/clamav`'s
+ * summary: name, state, the tool's version, the database, the slots), and the section **Updater** of `upstream/clamav`'s
  * page (`view="open"`, the settings' columns without the fold, R-UI-188). The updater (`freshclam`) runs no calls: its rows have no
- * slots, and its database is the set its directory holds with the age of its newest `daily` (Q-UI-913). A kind without a replica says why in a sentence:
- * none reported, the scan listener cannot tell the kind, the role `all` scans in its own process, or no scanner is configured. Every
- * value is the scanner's own statement, bounded by the server (H-1161), and is bound as text.
+ * slots, and its database is the set its directory holds with the age of its newest `daily` (Q-UI-913). An image scanner's rows say
+ * whether the pod holds the database in use with the age of its build, an older one, or none yet: in the column **Database** of the
+ * settings, under the tool on the System page (R-VULN-049, Q-OPS-225, Q-UI-915). A kind without a replica says why in a sentence:
+ * none reported, the scan listener cannot tell the kind, or no scanner is configured. Every value is the scanner's own statement,
+ * bounded by the server (H-1161), and is bound as text.
  */
 @Component({
   selector: 'quader-scanner-replicas',
@@ -46,7 +48,7 @@ export function scannerReasonText(reason: string): string | null {
     @if (group(); as g) {
       @if (g.rows.length > 0) {
         @if (view() === 'system') {
-          <quader-data-table [caption]="caption()" [columns]="systemColumns">
+          <quader-data-table [caption]="caption()" [columns]="systemColumns()">
             @for (r of g.rows; track r.instanceUid) {
               <tr>
                 <th scope="row" class="wrap-name" translate="no">{{ r.name }}</th>
@@ -65,11 +67,18 @@ export function scannerReasonText(reason: string): string | null {
                 <td>
                   <time [attr.datetime]="r.heartbeatAt">{{ r.heartbeatAt | date: 'mediumTime' }}</time>
                 </td>
-                <td translate="no">
-                  @if (r.toolVersion; as v) {
-                    {{ g.tool }} {{ v }}
-                  } @else {
-                    <quader-no-value />
+                <!-- The tool, and under it the database an image scanner's pod detects with (Q-UI-915): the tool and its data in one cell,
+                     so that the table keeps its columns at 1440 px. -->
+                <td class="tool-cell">
+                  <span class="tool" translate="no">
+                    @if (r.toolVersion; as v) {
+                      {{ g.tool }} {{ v }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </span>
+                  @if (podDatabases()) {
+                    <ng-container *ngTemplateOutlet="podDatabaseCell; context: { $implicit: r }" />
                   }
                 </td>
               </tr>
@@ -121,7 +130,11 @@ export function scannerReasonText(reason: string): string | null {
                 <quader-no-value />
               }
             </td>
-            @if (hasDatabase()) {
+            @if (podDatabases()) {
+              <td class="database-cell">
+                <ng-container *ngTemplateOutlet="podDatabaseCell; context: { $implicit: r }" />
+              </td>
+            } @else if (hasDatabase()) {
               <td>
                 @if (r.database; as db) {
                   <!-- One box, so that the date stands under the version also where the row stands as a block. -->
@@ -149,6 +162,29 @@ export function scannerReasonText(reason: string): string | null {
           </tr>
         }
       </quader-data-table>
+    </ng-template>
+
+    <!-- The database an image scanner's pod holds (R-VULN-049, Q-OPS-225, Q-UI-915): a badge that says which, and beside it, for the
+         database in use, how long ago it was built. A block of its own: the settings' column **Database**, or the lines under the tool
+         on the System page. The digest is its title: it names the database for whoever compares two pods, and says nothing at a
+         glance. -->
+    <ng-template #podDatabaseCell let-r>
+      <span class="database-state" [attr.title]="r.database ? 'sha256:' + r.database.version : null">
+        @switch (database(r)) {
+          @case ('current') {
+            <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span><ng-container i18n="@@scanners.db.current">Database in use</ng-container></span>
+            <span class="built"
+              ><ng-container i18n="@@scanners.db.built">built</ng-container>&ngsp;<quader-time-ago [at]="r.database.builtAt" absolute="title"
+            /></span>
+          }
+          @case ('older') {
+            <span class="badge"><span class="material-icons" aria-hidden="true">hourglass_empty</span><ng-container i18n="@@scanners.db.older">Older database</ng-container></span>
+          }
+          @default {
+            <span class="badge"><span class="material-icons" aria-hidden="true">hourglass_empty</span><ng-container i18n="@@scanners.db.none">No database yet</ng-container></span>
+          }
+        }
+      </span>
     </ng-template>
 
     <ng-template #state let-r>
@@ -197,7 +233,7 @@ export function scannerReasonText(reason: string): string | null {
     }
     // In a row that stands as a block the column's name is the cell's first column, so the state starts on the name's line
     // (Q-UI-762), as the System page's replicas do.
-    .quader-data-table.stacked td.state-cell {
+    .quader-data-table.stacked :is(td.state-cell, td.database-cell) {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       align-items: start;
@@ -210,6 +246,24 @@ export function scannerReasonText(reason: string): string | null {
     .database {
       display: inline-block;
       vertical-align: top;
+    }
+    // An image scanner's database: the badge, and the age of the database in use. In the settings' column the age stands beside the
+    // badge, so that the cell's first text is on the row's line (R-UI-176); under the tool on the System page it stands under the
+    // badge, so that the column is no wider than the badge and the table keeps its columns at 1440 px.
+    .database-state {
+      display: flex;
+      align-items: flex-start;
+      column-gap: var(--quader-space-2);
+    }
+    td.tool-cell .database-state {
+      flex-direction: column;
+      margin-block-start: var(--quader-space-1);
+    }
+    // The tool and its version are one value, never broken, as a cell marked translate="no" is (Q-UI-428); so is the age of a
+    // build, which beside the badge stood as "built" over "5 hours ago" while the name's column had the room.
+    .tool,
+    .built {
+      white-space: nowrap;
     }
     .secondary {
       display: block;
@@ -239,6 +293,21 @@ export class ScannerReplicas {
     const g = this.group();
     return g !== null && (g.purpose === 'malware' || g.rows.some((r: ScannerReplica) => r.database !== null));
   });
+  /**
+   * The image scanner (`trivy`): each pod holds a copy of the advisory database that its detections need, so its rows say on every
+   * screen, the System page too, whether that is the database in use (R-VULN-049, Q-OPS-225, Q-UI-915).
+   */
+  protected readonly podDatabases = computed(() => {
+    const g = this.group();
+    return g !== null && (g.purpose === 'vuln' || g.kind === 'trivy');
+  });
+  protected readonly database = podDatabase;
+  /** The column of an image scanner's database, and what its three words mean. */
+  private readonly podDatabaseColumn: TableColumn = {
+    id: 'database',
+    label: $localize`:@@scanners.col.pod-database:Database`,
+    help: $localize`:@@scanners.col.pod-database-help:The advisory database the pod detects with. Database in use: the one Quader uses now, with how long ago it was built. Older database: the pod is still loading the one in use, which takes under a minute, or its container database cannot load it; that container's log says why. No database yet: the pod's first load has not finished.`,
+  };
   protected readonly caption = computed(() => {
     const d = this.group()?.deployment ?? this.kind();
     return $localize`:@@scanners.caption:Replicas of ${d}:deployment:`;
@@ -254,8 +323,11 @@ export class ScannerReplicas {
     this.group()?.purpose === 'malware' ? 'malware.scanner.url' : 'vulnerabilities.images.scanner.url',
   );
 
-  /** The columns of every replica of the System page, with the tool in place of the replica's view of Valkey (Q-UI-897). */
-  protected readonly systemColumns: readonly TableColumn[] = [
+  /**
+   * The columns of every replica of the System page, with the tool in place of the replica's view of Valkey (Q-UI-897); for the image
+   * scanner the database its pod holds stands under the tool, whose help then says what its words mean (Q-UI-915).
+   */
+  protected readonly systemColumns = computed((): readonly TableColumn[] => [
     { id: 'name', label: $localize`:@@scanners.col.name:Name`, width: '10rem', prefer: true },
     { id: 'node', label: $localize`:@@scanners.col.node:Node`, width: '6rem' },
     { id: 'version', label: $localize`:@@scanners.col.version:Version`, width: '5rem' },
@@ -266,15 +338,19 @@ export class ScannerReplicas {
       help: $localize`:@@scanners.col.since-help:When the replica entered the state it shows, or the reason beside it changed.`,
     },
     { id: 'heartbeat', label: $localize`:@@scanners.col.heartbeat:Heartbeat` },
-    { id: 'tool', label: $localize`:@@scanners.col.tool:Tool` },
-  ];
+    this.podDatabases()
+      ? { id: 'tool', label: $localize`:@@scanners.col.tool:Tool`, help: this.podDatabaseColumn.help }
+      : { id: 'tool', label: $localize`:@@scanners.col.tool:Tool` },
+  ]);
 
-  /** The settings pages' columns: what an administrator of the scanning decides on, the database only for ClamAV. */
+  /** The settings pages' columns: what an administrator of the scanning decides on, the database the pod holds or scans with. */
   protected readonly settingsColumns = computed((): readonly TableColumn[] => [
     { id: 'name', label: $localize`:@@scanners.col.name:Name`, width: '9rem', prefer: true },
     { id: 'state', label: $localize`:@@scanners.col.state:State`, width: '12rem' },
     { id: 'tool', label: $localize`:@@scanners.col.tool:Tool` },
-    ...(this.hasDatabase()
+    ...(this.podDatabases()
+      ? [this.podDatabaseColumn]
+      : this.hasDatabase()
       ? [
           (this.updater()
             ? { id: 'database', label: $localize`:@@scanners.col.updater-database:Definitions it holds` }

@@ -28,6 +28,7 @@ import {
 } from './seed';
 import { gradedPackage, manyVersionsPackage } from './advisories';
 import { malwarePackage, quarantine } from './malware';
+import { trivyDatabases } from './scanners';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 
@@ -345,25 +346,40 @@ async function* explained(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The advisory sources as they open; with the fold of the image scanners' replicas open (R-OPS-048, Q-UI-897); where the image
- * database comes from a local repository, with the fold of the commands that fill it open (R-VULN-045, Q-UI-890), which the
- * database's default repository, a remote, does not have; and without a replica, the profile's own answer: its role all analyses
- * images in its own process.
+ * The advisory sources as they open; with the fold of the image scanners' replicas open (R-OPS-048, Q-UI-897), as seeded (no pod holds
+ * a database yet), with the pods in each state of the database they hold and with every pod on the database in use (Q-UI-915); where the
+ * image database comes from a local repository, with the fold of the commands that fill it open (R-VULN-045, Q-UI-890), which the
+ * database's default repository, a remote, does not have; and without a replica, the profile's own answer: its role all runs no image
+ * scanner.
  */
 async function* databaseCommandsOpen(page: Page): AsyncGenerator<string> {
   yield '';
   const scanners = page.locator('main [data-testid="image-scanners"] quader-disclosure button.inline-toggle');
-  await expect(scanners).toHaveAttribute('aria-expanded', 'false');
-  await scanners.click();
-  await expect(scanners).toHaveAttribute('aria-expanded', 'true');
+  const openScanners = async (): Promise<void> => {
+    await expect(scanners).toHaveAttribute('aria-expanded', 'false');
+    await scanners.click();
+    await expect(scanners).toHaveAttribute('aria-expanded', 'true');
+  };
+  await openScanners();
   yield 'scanners';
+  const url = '**/api/v1/system/scanners';
+  await answerWith(page, url, trivyDatabases('mixed'));
+  await openScanners();
+  await expect(page.locator('main [data-testid="image-scanners"] td.database-cell')).toHaveCount(4);
+  yield 'scanners-databases';
+  await answerWith(page, url, trivyDatabases('current'));
+  await expect(page.locator('main [data-testid="image-scanners-summary"]')).toContainText('all on the database in use');
+  await openScanners();
+  yield 'scanners-current';
+  await page.unroute(url);
+  await page.reload();
+  await page.waitForLoadState('networkidle');
   const closed = page.locator('main quader-vulnerability-sources > quader-disclosure button[aria-expanded="false"]');
   if ((await closed.count()) > 0) {
     await closed.first().click();
     await expect(page.locator('main quader-vulnerability-sources > quader-disclosure button[aria-expanded="true"]')).toHaveCount(1);
     yield 'commands';
   }
-  const url = '**/api/v1/system/scanners';
   await answerWith(page, url, (b) => ({ ...b, items: [] }));
   await expect(page.locator('main [data-testid="scanners-none-trivy"]')).toBeVisible();
   yield 'scanners-none';
@@ -371,15 +387,23 @@ async function* databaseCommandsOpen(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The System page's scanner replicas (R-OPS-048, Q-UI-897): as seeded (both kinds, a malware scanner that waits for its first database
- * with the longest pod name); no replica of either kind reported though both report, which the header warns of; and the profile's own
- * answer without rows: its role all runs no scanner pod and says so.
+ * The System page's scanner replicas (R-OPS-048, Q-UI-897): as seeded (both kinds, image scanners that hold no database yet, a malware
+ * scanner that waits for its first database with the longest pod name); the image scanners in each state of the database they hold, and
+ * every one on the database in use (Q-UI-915); no replica of either kind reported though both report, which the header warns of; and the
+ * profile's own answer without rows: its role all runs no scanner pod and says so.
  */
 async function* systemScanners(page: Page): AsyncGenerator<string> {
   // The image scanners, the malware scanners and the malware scanning's updater (Q-UI-913).
   await expect(page.locator('main [data-testid="scanner-replicas"] table')).toHaveCount(3);
   yield '';
   const url = '**/api/v1/system/scanners';
+  await answerWith(page, url, trivyDatabases('mixed'));
+  await expect(page.locator('main [data-testid="scanner-database-lag"]')).toBeVisible();
+  yield 'scanners-databases';
+  await answerWith(page, url, trivyDatabases('current'));
+  await expect(page.locator('main [data-testid="scanner-replicas"] .database-state')).toHaveCount(2);
+  await expect(page.locator('main [data-testid="scanner-database-lag"]')).toHaveCount(0);
+  yield 'scanners-current';
   await answerWith(page, url, (b) => ({
     ...b,
     items: [],
