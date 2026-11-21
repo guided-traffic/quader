@@ -53,6 +53,7 @@ type Store interface {
 	DeferWork(ctx context.Context, w store.Work, notBefore time.Time, failed bool, code string) error
 	ClaimFailedReport(ctx context.Context, kind, code string) (bool, error)
 	Backlog(ctx context.Context) ([]store.Backlog, error)
+	NextDue(ctx context.Context, kinds []string) (time.Time, error)
 	Discovery(ctx context.Context) (map[string]int64, error)
 	SetDiscovery(ctx context.Context, kind string, after int64) error
 }
@@ -79,9 +80,11 @@ type Options struct {
 	Now     func() time.Time
 	// hold is the shared lock of an operation on the current identity's row; a test replaces it.
 	hold func(ctx context.Context, tx meta.Tx, id int64) (time.Time, bool, error)
-	// lock and done are the row of work's lock and removal in an operation's transaction; a test replaces them.
-	lock func(ctx context.Context, tx meta.Tx, w store.Work) (bool, error)
-	done func(ctx context.Context, tx meta.Tx, w store.Work) error
+	// lock and done are the row of work's lock and removal in an operation's transaction, postpone a row that waits; a test replaces
+	// them.
+	lock     func(ctx context.Context, tx meta.Tx, w store.Work) (bool, error)
+	done     func(ctx context.Context, tx meta.Tx, w store.Work) error
+	postpone func(ctx context.Context, tx meta.Tx, w store.Work, notBefore time.Time) error
 }
 
 // Job is the job signing.
@@ -119,6 +122,9 @@ func New(o Options) (*Job, error) {
 	}
 	if o.done == nil {
 		o.done = store.DoneWork
+	}
+	if o.postpone == nil {
+		o.postpone = store.PostponeWork
 	}
 	j := &Job{o: o, kinds: map[string]Kind{}}
 	for _, k := range o.Kinds {
@@ -177,6 +183,16 @@ func (j *Job) RunSigning(ctx context.Context, run Run) error {
 	more, err := j.sign(ctx, &res)
 	if err != nil {
 		return err
+	}
+	// A row that waits (an attestation for its checks, R-SIG-053) wakes the job at its time, unless the announce period ends first.
+	if len(j.names) > 0 && j.o.Enabled {
+		due, err := j.o.Store.NextDue(ctx, j.names)
+		if err != nil {
+			return err
+		}
+		if !due.IsZero() && (next.IsZero() || due.Before(next)) {
+			next = due
+		}
 	}
 	j.observe(ctx)
 	if err := j.reschedule(ctx, next, more); err != nil {
@@ -341,8 +357,9 @@ func (j *Job) batch(ctx context.Context, cur Session, batch []store.Work, res *r
 }
 
 // operate runs one row's operation in a transaction that locks the row and holds the current identity's row: signed is true when the
-// kind's Sign wrote it. An operation that could not run spends an attempt; the error is returned only when the attempt could not be
-// recorded either, or the identity changed (errNotCurrent).
+// kind's Sign wrote it. A Sign that answers signing.ErrNothing is done without a signature; one that answers *signing.Later leaves the
+// row due at its time without spending an attempt (R-SIG-053). An operation that could not run spends an attempt; the error is returned
+// only when the attempt could not be recorded either, or the identity changed (errNotCurrent).
 func (j *Job) operate(ctx context.Context, cur Session, w store.Work) (bool, error) {
 	k := j.kinds[w.Kind]
 	ran := false
@@ -359,7 +376,13 @@ func (j *Job) operate(ctx context.Context, cur Session, w store.Work) (bool, err
 		case !held || (!notAfter.IsZero() && !j.o.Now().Before(notAfter)):
 			return errNotCurrent
 		}
-		if err := k.Sign(ctx, tx, cur, w); err != nil {
+		var later *signing.Later
+		switch err := k.Sign(ctx, tx, cur, w); {
+		case errors.Is(err, signing.ErrNothing):
+			return j.o.done(ctx, tx, w)
+		case errors.As(err, &later):
+			return j.o.postpone(ctx, tx, w, later.Until)
+		case err != nil:
 			return &signError{err: err}
 		}
 		ran = true

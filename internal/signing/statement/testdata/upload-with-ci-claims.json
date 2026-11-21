@@ -1,0 +1,81 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "quader.example.com/web/npm-local/@acme/ui/-/ui-1.2.0.tgz",
+      "digest": {
+        "sha256": "674c4642265b5e32c92ac134a715dee3857c0c4cc1b5346f4ede1054f19ec5f3",
+        "sha512": "9d8a81e4aad92c7286eb321c102ffe4fb2dcf89c20c73223b3f389f92a2c2653d3a12a8e6418668631a19d24fb25d743d04498822f42e64e427e2ec803900e75"
+      }
+    }
+  ],
+  "predicateType": "https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1",
+  "predicate": {
+    "installation": {
+      "id": "6c3e0d2a-1f2e-4b7a-9c1d-5e8f7a6b4c3d",
+      "url": "https://quader.example.com"
+    },
+    "repository": {
+      "project": "web",
+      "key": "npm-local",
+      "format": "npm",
+      "class": "local"
+    },
+    "artifact": {
+      "path": "@acme/ui/-/ui-1.2.0.tgz",
+      "name": "@acme/ui",
+      "version": "1.2.0",
+      "size": 24
+    },
+    "receivedAt": "2026-11-21T10:02:03.456Z",
+    "origin": {
+      "kind": "upload",
+      "principal": {
+        "kind": "ci_mapping",
+        "name": "gitlab-platform"
+      },
+      "ci": {
+        "issuer": "gitlab",
+        "job_id": "991204",
+        "pipeline_id": "48211",
+        "pipeline_source": "push",
+        "project_path": "platform/ui",
+        "ref": "main",
+        "ref_protected": true,
+        "ref_type": "branch",
+        "sha": "3e9d1c"
+      }
+    },
+    "signatures": [
+      {
+        "role": "provenance",
+        "scheme": "sigstore-bundle",
+        "integrity": "valid",
+        "identity": "https://gitlab.example.com/platform/ui//.gitlab-ci.yml@refs/heads/main",
+        "issuer": "https://gitlab.example.com",
+        "keyIds": [
+          "9a41"
+        ]
+      }
+    ],
+    "malware": {
+      "state": "clean",
+      "database": "main-62.daily-27450.bytecode-339",
+      "databaseBuiltAt": "2026-11-21T06:10:00.000Z",
+      "scannedAt": "2026-11-21T10:02:05.120Z"
+    },
+    "vulnerabilities": {
+      "state": "evaluated",
+      "grade": "A",
+      "counts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 2,
+        "unknown": 0
+      },
+      "dataAt": "2026-11-21T04:00:00.000Z"
+    },
+    "issuedAt": "2026-11-21T10:02:06.001Z"
+  }
+}

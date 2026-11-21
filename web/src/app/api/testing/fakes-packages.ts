@@ -717,6 +717,11 @@ export class FakeClientSetupApi extends ClientSetupApi {
    * registration whose address is not listed (409), a name that is not here is no registration (404).
    */
   bastionBases: Record<string, string | null> = { partners: 'https://packages.example.com', unlisted: null };
+  /**
+   * The URI of the installation's current signing identity; set, every answer but a Bastion's carries the tab verify with the cosign
+   * command of signatures.md R-SIG-052 (R-SIG-055, Q-SIG-71). `null`: no identity is current, and the tab is not answered.
+   */
+  signingIdentity: string | null = null;
 
   override async get(repository: string, query: ClientSetupQuery): Promise<ClientSetup> {
     this.calls.push({ repository, query });
@@ -725,7 +730,13 @@ export class FakeClientSetupApi extends ClientSetupApi {
       this.failure = null;
       throw e;
     }
-    return finishSetup(this.answer(repository, query));
+    const raw = this.answer(repository, query);
+    if (this.signingIdentity !== null && !query.bastion) {
+      // npm's client checks the registry signatures with its own command first (Q-SIG-163).
+      if (query.client === 'npm') raw.snippets.push({ id: 'npm.verify.signatures', tab: 'verify', fileName: null, language: 'shell', content: 'npm audit signatures\n' });
+      raw.snippets.push(verifySnippet(repository, query, this.signingIdentity));
+    }
+    return finishSetup(raw);
   }
 
   private answer(repository: string, query: ClientSetupQuery): RawSetup {
@@ -1097,6 +1108,32 @@ function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean
 }
 
 /** The curl snippets of a generic repository: the function of the configure tab and its calls. */
+/** The snippet of the tab verify as the server writes it (internal/api/v1/setup_verify.go): an image's or a file's cosign command. */
+function verifySnippet(repository: string, query: ClientSetupQuery, identity: string): RawSnippet {
+  const trust = [
+    'curl -fsSo quader-trusted-root.json ' + BASE + '/api/v1/signing/trusted-root.json',
+  ];
+  const flags = [
+    '  --trusted-root quader-trusted-root.json \\',
+    `  --certificate-identity ${identity} \\`,
+    "  --certificate-oidc-issuer-regexp '.*' \\",
+    '  --insecure-ignore-tlog --insecure-ignore-sct \\',
+    '  --type https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1 \\',
+  ];
+  const image = OCI_REPOSITORIES.some((r) => refOf(r) === repository);
+  const lines = image
+    ? [...trust, 'cosign verify-attestation \\', ...flags, `  ${BASE.replace(/^https?:\/\//, '')}/${repository}/${query.package ?? 'myapp'}@sha256:<digest>`]
+    : [
+        ...trust,
+        `curl -fsS -o <file>.quader.sigstore.json '${BASE}/api/v1/projects/${repository.replace('/', '/repositories/')}/attestation?path=<path>'`,
+        'cosign verify-blob-attestation \\',
+        '  --bundle <file>.quader.sigstore.json \\',
+        ...flags,
+        '  <file>',
+      ];
+  return { id: `${query.client}.verify.attestation`, tab: 'verify', fileName: null, language: 'shell', content: lines.join('\n') + '\n' };
+}
+
 function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: boolean, ttl: number): RawSetup {
   if (query.client !== 'curl') {
     throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);

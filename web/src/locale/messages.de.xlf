@@ -6219,6 +6219,15 @@
         <target>Veröffentlichen</target>
       </segment>
     </unit>
+    <unit id="setup.tab.verify">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:290</note>
+      </notes>
+      <segment>
+        <source>Verify</source>
+        <target>Prüfen</target>
+      </segment>
+    </unit>
     <unit id="backups.detail.error">
       <notes>
         <note category="location">src/app/features/system/backups/backups-page.html:269,270</note>
@@ -40554,6 +40563,24 @@
       <segment>
         <source>For a Kubernetes cluster</source>
         <target>Für einen Kubernetes-Cluster</target>
+      </segment>
+    </unit>
+    <unit id="setup.caption.verify-npm-signatures">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:195</note>
+      </notes>
+      <segment>
+        <source>Run it in your project: checks the registry signatures of every installed package, this installation's of your own packages included.</source>
+        <target>Im Projekt ausführen: prüft die Registry-Signaturen jedes installierten Pakets, auch die dieser Installation für Ihre eigenen Pakete.</target>
+      </segment>
+    </unit>
+    <unit id="setup.caption.verify-attestation">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:193</note>
+      </notes>
+      <segment>
+        <source>Checks with cosign, offline, that this installation received the artifact and what its checks found. Replace the marked values.</source>
+        <target>Prüft mit cosign offline, dass diese Installation das Artefakt empfangen hat und was ihre Prüfungen ergaben. Die markierten Werte ersetzen.</target>
       </segment>
     </unit>
     <unit id="setup.caption.oci-push">

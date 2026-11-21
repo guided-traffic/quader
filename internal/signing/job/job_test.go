@@ -37,6 +37,7 @@ type fakeStore struct {
 	reports  map[string]int
 	switched bool
 	next     time.Time
+	nextDue  time.Time
 }
 
 type deferral struct {
@@ -51,6 +52,10 @@ func (f *fakeStore) SwitchDue(context.Context) (bool, time.Time, error) {
 }
 func (f *fakeStore) RetryFailedDaily(context.Context) (int64, error)  { return 0, nil }
 func (f *fakeStore) Backlog(context.Context) ([]store.Backlog, error) { return nil, nil }
+func (f *fakeStore) NextDue(context.Context, []string) (time.Time, error) {
+	return f.nextDue, nil
+}
+
 func (f *fakeStore) Discovery(context.Context) (map[string]int64, error) {
 	return map[string]int64{}, nil
 }
@@ -432,4 +437,46 @@ func rsaPair(t *testing.T, ca *signingtest.CA) (*x509.Certificate, []byte) {
 	}
 	leaf, _ := ca.Issue(t, signingtest.Leaf{Public: &k.PublicKey})
 	return leaf, signingtest.KeyPEM(t, k)
+}
+
+// TestR_SIG_053_AnOperationThatWaitsOrHasNothingToSignSpendsNoAttempt: a row whose Sign answers signing.Later is postponed to its time
+// in the operation's transaction and spends no attempt; one that answers signing.ErrNothing is done and counted as no signature (an item
+// that is no subject, an attestation as it should be). Unit, milliseconds.
+func TestR_SIG_053_AnOperationThatWaitsOrHasNothingToSignSpendsNoAttempt(t *testing.T) {
+	st := &fakeStore{deferred: map[string]deferral{}, reports: map[string]int{}}
+	st.due = []store.Work{
+		{Kind: signing.WorkAttestation, ItemID: 1, Priority: 1},
+		{Kind: signing.WorkAttestation, ItemID: 2, Priority: 1},
+		{Kind: signing.WorkAttestation, ItemID: 3, Priority: 1},
+	}
+	until := time.Now().Add(time.Minute)
+	j, _ := newTestJob(t, st, []Kind{{Name: signing.WorkAttestation, Sign: func(_ context.Context, _ meta.Tx, _ Session, w store.Work) error {
+		switch w.ItemID {
+		case 1:
+			return &signing.Later{Until: until}
+		case 2:
+			return signing.ErrNothing
+		}
+		return nil
+	}}}, held)
+	var postponed []int64
+	var done []int64
+	j.o.postpone = func(_ context.Context, _ meta.Tx, w store.Work, at time.Time) error {
+		if !at.Equal(until) {
+			t.Errorf("postponed to %v, want %v", at, until)
+		}
+		postponed = append(postponed, w.ItemID)
+		return nil
+	}
+	j.o.done = func(_ context.Context, _ meta.Tx, w store.Work) error { done = append(done, w.ItemID); return nil }
+	var res runResult
+	if err := j.RunSigning(context.Background(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if len(postponed) != 1 || postponed[0] != 1 || len(done) != 2 || len(st.deferred) != 0 {
+		t.Fatalf("postponed %v, done %v, attempts spent %v", postponed, done, st.deferred)
+	}
+	if r := res.v.(result); r.Signed != 1 {
+		t.Errorf("result %+v: only the third row signed", r)
+	}
 }

@@ -183,7 +183,7 @@ func Fixture() formattest.Fixture {
 			}},
 		}},
 		GateCases: []formattest.GateCase{
-			{Name: "a tarball is an artifact", Seed: publish("left-pad", "1.0.0"), Path: "left-pad/-/left-pad-1.0.0.tgz", Want: formats.GateArtifact},
+			{Name: "a tarball is an artifact", Seed: publish("left-pad", "1.0.0"), Path: "left-pad/-/left-pad-1.0.0.tgz", Want: formats.GateArtifact, Attested: true},
 			{
 				Name: "a tarball's signature file is a signature file", Path: "left-pad/-/left-pad-1.0.0.tgz.sig", Want: formats.GateSignatureFile,
 				Seed: func(h *formattest.Host) error {

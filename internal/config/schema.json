@@ -3989,6 +3989,32 @@
     "signing": {
       "additionalProperties": false,
       "properties": {
+        "attestations": {
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "default": true,
+              "description": "false: Quader makes no receipt attestation; npm's registry signatures go on, and the attestations made before stay stored and served (R-SIG-053).",
+              "type": "boolean",
+              "x-quader-env": "QUADER_SIGNING_ATTESTATIONS_ENABLED"
+            },
+            "fills": {
+              "default": true,
+              "description": "false: only uploads are attested, not the artifacts a remote repository caches, for an installation whose remotes cache more than it wants to sign (R-SIG-053).",
+              "type": "boolean",
+              "x-quader-env": "QUADER_SIGNING_ATTESTATIONS_FILLS"
+            },
+            "wait_for_checks": {
+              "default": "1h",
+              "description": "How long a new attestation waits for its item's first verdicts (the malware scan, the vulnerability evaluation, the checks of the signatures attached at the commit) before it is made with what there is, a pending state signed as such (R-SIG-053).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNING_ATTESTATIONS_WAIT_FOR_CHECKS",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
         "concurrency": {
           "default": 4,
           "description": "Signing operations the one job of the installation has in flight at a time (R-SIG-049).",

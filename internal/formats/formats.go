@@ -35,9 +35,11 @@ import (
 // answered (RemoteFetcher.Probed). Version 8 is the signatures' (signatures.md R-SIG-022, ADR-228): every format declares its
 // signatures and detects them ([Format.Signatures]); Base returns nil and Register refuses nil. Version 9 is the gate per repository's
 // (signatures.md R-SIG-063, Q-SIG-81, ADR-231): a format's [SignatureAdapter] names what the signature gate judges of each stored item
-// it serves (Gate), and [SignatureVerdicts] judges a stored document a format serves without the item store (Refuse). A format declares
-// the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
-const ContractVersion = 9
+// it serves (Gate), and [SignatureVerdicts] judges a stored document a format serves without the item store (Refuse). Version 10 is the
+// receipt attestations' (signatures.md R-SIG-044, Q-SIG-67, Q-SIG-180): a format's [SignatureAdapter] names the stored items Quader
+// attests (AttestationSubjects), its declaration says what it attests or why nothing (Attests, AttestsNone), and NoSignatures takes both
+// reasons. A format declares the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 10
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -286,6 +288,9 @@ type Capabilities struct {
 	// SignatureCoverage answers which signed documents name a stored file (signatures.md R-SIG-030); nil for a format whose signatures
 	// cover the artifact itself.
 	SignatureCoverage SignatureCoverage
+	// AttestationReferrer stores Quader's receipt attestation among an artifact's referrers on the format's own wire (signatures.md
+	// R-SIG-054); nil for a format whose attestations the API alone serves.
+	AttestationReferrer AttestationReferrer
 }
 
 // VersionPather is the optional interface of a format whose versions each have one file that holds their content: npm's
@@ -329,6 +334,9 @@ func CapabilitiesOf(f Format) Capabilities {
 	}
 	if sc, ok := f.(SignatureCoverage); ok {
 		c.SignatureCoverage = sc
+	}
+	if ar, ok := f.(AttestationReferrer); ok {
+		c.AttestationReferrer = ar
 	}
 	if ra := f.Remote(); ra != nil {
 		c.Remote.Discovery, _ = ra.(Discoverer)
@@ -579,6 +587,8 @@ func checkSignatures(f Format, d Descriptor) error {
 		return fmt.Errorf("%q declares neither the kinds of its signatures nor why it has none", d.ID)
 	case decl.None != "" && len(decl.Kinds) > 0:
 		return fmt.Errorf("%q declares kinds of signatures and a reason it has none", d.ID)
+	case (decl.Attests == "") == (decl.AttestsNone == ""):
+		return fmt.Errorf("%q declares neither or both of what Quader attests and why it attests nothing (R-SIG-044)", d.ID)
 	}
 	seen := map[string]bool{}
 	for _, k := range decl.Kinds {

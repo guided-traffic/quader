@@ -756,6 +756,17 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 	if err != nil {
 		return gen.ClientSetup{}, errs.Wrap(err, "api.clientSetup")
 	}
+	if identity, ok := s.verifyIdentity(ctx); ok && !bastion {
+		// The tab verify while an identity is current (R-SIG-055, Q-SIG-71); a Bastion's setup has none, as its URL space has no API.
+		base, err := setupBase(ctx, "The client setup")
+		if err != nil {
+			return gen.ClientSetup{}, err
+		}
+		snippets = append(snippets, verifySnippets(f, base, identity, setupInput{
+			Client: p.Client, Credentials: creds, TokenEnvVar: ps.TokenEnvVar, Package: values["package"],
+			Data: formats.SetupData{ImagePrefix: imagePrefix(f, registry), Project: repoKey.Project, Key: repoKey.Key},
+		})...)
+	}
 	out := gen.ClientSetup{
 		Repository: repoKey.String(), Format: repo.Format, Client: p.Client, Credentials: gen.ClientSetupCredentials(creds),
 		RegistryUrl: registry, EndpointPath: registryKey, PublishTarget: target,

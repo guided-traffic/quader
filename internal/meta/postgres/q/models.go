@@ -1468,6 +1468,20 @@ type SignatureTrustRoot struct {
 	FetchedAt        pgtype.Timestamptz
 }
 
+type SigningAttestation struct {
+	ItemID       int64
+	RepoID       int64
+	SignatureID  int64
+	IdentityID   int64
+	MalwareState string
+	Released     bool
+	Scanned      [][]byte
+	ServedAs     string
+	Referrer     []byte
+	ApiReason    pgtype.Text
+	IssuedAt     pgtype.Timestamptz
+}
+
 type SigningIdentity struct {
 	ID          int64
 	Source      string

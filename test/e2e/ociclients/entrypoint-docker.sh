@@ -24,6 +24,9 @@ if [ -n "${QUADER_ENGINE_MIRROR:-}" ]; then
 else
   printf '{}\n' >/etc/docker/daemon.json
 fi
+# cosign, where the set `oci` puts it on the node (deploy/dev/e2e.sh, a hostPath of deploy/dev/oci-clients.yaml): on PATH as `cosign`,
+# also when a later run of that set puts it there for pods it reuses; for the other sets the link points at nothing.
+ln -sf /opt/quader-e2e-cosign/cosign /usr/local/bin/cosign
 /usr/local/bin/fwd "$@" &
 # dockerd by the image's own entrypoint (cgroup nesting, iptables flavour, docker-init), with the unix socket only: with no
 # arguments the image opens an unauthenticated TCP listener, which every pod of the cluster could reach.

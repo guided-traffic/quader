@@ -61,7 +61,7 @@ func gateCases() []formattest.GateCase {
 		}
 	}
 	return []formattest.GateCase{
-		{Name: "a file is an artifact", Seed: put("tools/tool.tar.gz"), Path: "tools/tool.tar.gz", Want: formats.GateArtifact},
+		{Name: "a file is an artifact", Seed: put("tools/tool.tar.gz"), Path: "tools/tool.tar.gz", Want: formats.GateArtifact, Attested: true},
 		{Name: "an .asc beside a file is a signature file", Seed: put("tools/tool.tar.gz.asc"), Path: "tools/tool.tar.gz.asc", Want: formats.GateSignatureFile},
 		{Name: "a .sigstore.json is a signature file", Seed: put("tools/tool.tar.gz.sigstore.json"), Path: "tools/tool.tar.gz.sigstore.json", Want: formats.GateSignatureFile},
 		{Name: "a Notation .jws.sig is a signature file", Seed: put("tools/tool.jws.sig"), Path: "tools/tool.jws.sig", Want: formats.GateSignatureFile},

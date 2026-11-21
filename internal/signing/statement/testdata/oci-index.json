@@ -1,0 +1,58 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "quader.example.com/web/oci-local/app",
+      "digest": {
+        "sha256": "bafebd36189ad3688b7b3915ea55d461e0bfcfbdde11e54b0a123999fb6be50f"
+      }
+    }
+  ],
+  "predicateType": "https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1",
+  "predicate": {
+    "installation": {
+      "id": "6c3e0d2a-1f2e-4b7a-9c1d-5e8f7a6b4c3d",
+      "url": "https://quader.example.com"
+    },
+    "repository": {
+      "project": "web",
+      "key": "oci-local",
+      "format": "oci",
+      "class": "local"
+    },
+    "artifact": {
+      "path": "app/_manifests/sha256:5f1c",
+      "name": "app",
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "size": 19
+    },
+    "receivedAt": "2026-11-21T10:02:03.456Z",
+    "origin": {
+      "kind": "upload",
+      "principal": {
+        "kind": "user",
+        "name": "ada"
+      }
+    },
+    "signatures": [],
+    "malware": {
+      "state": "clean",
+      "database": "main-62",
+      "databaseBuiltAt": "2026-11-21T06:10:00.000Z",
+      "scannedAt": "2026-11-21T10:02:05.120Z"
+    },
+    "vulnerabilities": {
+      "state": "evaluated",
+      "grade": "B",
+      "counts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 3,
+        "low": 0,
+        "unknown": 0
+      },
+      "dataAt": "2026-11-21T04:00:00.000Z"
+    },
+    "issuedAt": "2026-11-21T10:02:06.001Z"
+  }
+}

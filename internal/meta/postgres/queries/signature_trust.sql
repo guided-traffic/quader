@@ -426,7 +426,7 @@ UPDATE signatures SET state = sqlc.arg(state)::text, reason = NULLIF(sqlc.arg(re
 -- Whether the trust step has work: a valid or no_key signature without an installation row at the epoch, or a trust row of a
 -- signature in another state.
 SELECT (EXISTS (SELECT 1 FROM signatures s
-                 WHERE s.state IN ('valid', 'no_key')
+                 WHERE s.state IN ('valid', 'no_key') AND s.identity_id IS NULL
                    AND NOT EXISTS (SELECT 1 FROM signature_trust t
                                     WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.anchor_epoch >= st.anchor_epoch))
         OR EXISTS (SELECT 1 FROM signature_trust t JOIN signatures s ON s.id = t.signature_id

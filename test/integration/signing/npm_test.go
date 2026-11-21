@@ -370,9 +370,10 @@ func TestR_SIG_050_QuaderSignsTheVersionsOfLocalNpmRepositories(t *testing.T) {
 					slices.Equal(e.doc(npmLocal, "early").keyIDsOf("1.0.0"), []string{second.NpmKeyID})
 			})
 			e.verified(npmAll, "@acme/ui", "1.0.0")
-			if n := e.st.Number(`SELECT count(*) FROM signature_attachments a JOIN signatures s ON s.id = a.signature_id WHERE s.identity_id = $1`, first.ID); n != 0 {
-				t.Errorf("%d attachments of the retired identity's signatures stay", n)
-			}
+			// Its receipt attestations are made again at the same priority by the kind attestation, so they may follow the npm signatures.
+			e.eventually("no attachment of the retired identity's signatures stays", func() bool {
+				return e.st.Number(`SELECT count(*) FROM signature_attachments a JOIN signatures s ON s.id = a.signature_id WHERE s.identity_id = $1`, first.ID) == 0
+			})
 		})
 
 		t.Run("R-SIG-048 a removal leaves no key and no signature on the wire", func(t *testing.T) {

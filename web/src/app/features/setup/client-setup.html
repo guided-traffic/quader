@@ -301,6 +301,12 @@
           <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().publish }" />
         </section>
       }
+      @if (byStep().verify.length > 0) {
+        <section class="step" aria-labelledby="step-verify">
+          <h2 id="step-verify"><span class="step-no" aria-hidden="true">{{ verifyNumber() }}</span><span i18n="@@setup.tab.verify">Verify</span></h2>
+          <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().verify }" />
+        </section>
+      }
     </div>
   } @else if (setupAnswer.isLoading() || guideAnswer.isLoading() || loaded.isLoading()) {
     <p role="status" i18n="@@setup.loading">Loading.</p>

@@ -342,6 +342,11 @@ func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr vi
 		// While signatures.enabled is false nothing is recorded (R-SIG-040).
 		d.Signatures = sg.store
 	}
+	if in.db != nil {
+		// The receipt attestations (signatures.md R-SIG-053): a committed file of a format that attests something becomes work of the job
+		// signing in the commit's transaction, and an older cosign signature tag places an image's attestation again (R-SIG-054).
+		d.Attestations = attestationWork{a.attestHooks()}
+	}
 	// A nil pointer in an interface would not be nil: a seam is set only where its
 	// component exists.
 	if ow.service != nil {

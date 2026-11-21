@@ -30,7 +30,7 @@ type signatureAdapter struct{}
 
 // Declaration implements formats.SignatureAdapter: the row of generic in R-SIG-002.
 func (signatureAdapter) Declaration() formats.SignatureDeclaration {
-	return formats.SignatureDeclaration{Kinds: []formats.SignatureKind{
+	return formats.SignatureDeclaration{Attests: attests, Kinds: []formats.SignatureKind{
 		{
 			Name: "signature file", Schemes: []string{
 				formats.SignatureSchemeOpenPGP, formats.SignatureSchemePublicKey, formats.SignatureSchemeSigstoreBundle,
@@ -156,4 +156,20 @@ func sum32(b []byte) [32]byte {
 	var d [32]byte
 	copy(d[:], b)
 	return d
+}
+
+// attests is what Quader's receipt attestation is about in a generic repository (signatures.md R-SIG-044).
+const attests = "every file, but one named like a signature of the file beside it"
+
+// AttestationSubjects implements formats.SignatureAdapter (R-SIG-044): every file is attested under its path, but a file named like a
+// signature of the file beside it, which R-SIG-032 reads as a publisher's signature.
+func (signatureAdapter) AttestationSubjects(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.AttestationItem) ([]formats.AttestationSubject, error) {
+	out := make([]formats.AttestationSubject, len(items))
+	for i, it := range items {
+		if _, _, sig := SignedFile(it.Path); sig || it.Path == "" {
+			continue
+		}
+		out[i] = formats.AttestationSubject{Attested: true, Name: it.Path}
+	}
+	return out, nil
 }

@@ -18,7 +18,7 @@ import (
 type noSignatureFormat struct{ testformat.Format }
 
 func (noSignatureFormat) Signatures() formats.SignatureAdapter {
-	return formats.NoSignatures("no signatures")
+	return formats.NoSignatures("no signatures", "no signatures")
 }
 
 type discoveryItems []sigstore.DiscoveryItem

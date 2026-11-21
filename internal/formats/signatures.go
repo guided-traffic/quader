@@ -24,6 +24,76 @@ type SignatureAdapter interface {
 	// nothing of its own. It may read the format's own data port through h.FormatData; it never reads the signature tables. The answer
 	// holds one subject per item, in the order of items. [NoSignatures] answers GateNone for every item.
 	Gate(ctx context.Context, h Host, repo RepoRef, items []GateItem) ([]GateSubject, error)
+	// AttestationSubjects names, for stored items of a repository, those Quader's receipt attestation is about (signatures.md
+	// R-SIG-044): the artifacts a client fetches, never an item that carries a signature or an attestation, a layer, a platform manifest
+	// an index lists or a document the format derives. It may read the format's own data port through h.FormatData; it never reads the
+	// signature tables. The answer holds one subject per item, in the order of items. A format whose declaration sets AttestsNone
+	// answers the zero subject for every item ([AttestNoneFor]).
+	AttestationSubjects(ctx context.Context, h Host, repo RepoRef, items []AttestationItem) ([]AttestationSubject, error)
+}
+
+// AttestationItem is a stored item the job signing asks about: its canonical path, its blob's SHA-256 and its size (signatures.md
+// R-SIG-044); Size is 0 where the caller does not know it.
+type AttestationItem struct {
+	Path string
+	Blob [32]byte
+	Size int64
+}
+
+// AttestationSubject is what a format says of one [AttestationItem] (signatures.md R-SIG-044, R-SIG-051).
+type AttestationSubject struct {
+	// Attested is true for an artifact Quader attests; the zero subject is an item it does not attest.
+	Attested bool
+	// Name is the artifact's name in the format's words: an image, a package, a path. Version is its version, "" where the format has
+	// none or the item has none of its own (an image's manifest by digest).
+	Name    string
+	Version string
+	// MediaType is the artifact's own media type where the statement names it (an image's manifest or index), "" otherwise.
+	MediaType string
+	// Scanned are the blobs whose malware verdicts the attestation names (an image's layers); nil names the item's own blob.
+	Scanned [][32]byte
+}
+
+// AttestationReferrer is the optional interface of a format whose clients find Quader's receipt attestation among an artifact's referrers
+// on the format's own wire (OCI, signatures.md R-SIG-054, Q-SIG-66): the job signing asks it where an attestation may stand, has it build
+// the files of a referrer that carries the bundle, and commits them through the item store as Quader's own system write (the actor
+// system:signing), whose commit the format's OnCommit admits by the payload it built. A format without it serves its attestations through
+// the API alone.
+type AttestationReferrer interface {
+	// ReferrerPlacement reports whether a referrer of the attested item may stand in the repository now: only where the repository's
+	// referrers answer for the item is the API's own and nothing of a publisher's would be hidden by it. reason names why not:
+	// ReferrerHidesSignature or ReferrerNoAPI. It may read the format's data port and the host's items.
+	ReferrerPlacement(ctx context.Context, h Host, repo RepoRef, item AttestationItem) (refer bool, reason string, err error)
+	// AttestationReferrer builds the files of a referrer of the attested item that carries the bundle, in commit order (the blobs, then the
+	// manifest), and the digest of the manifest; created is the attestation's issue time, so the same bundle always makes the same
+	// referrer.
+	AttestationReferrer(subject AttestationSubject, item AttestationItem, bundle []byte, predicateType string, created time.Time) (files []ReferrerFile, manifest [32]byte, err error)
+	// ReferrerPaths are the paths of the attested item's referrer of a manifest digest that carries the bundle of a digest, which a
+	// removal takes.
+	ReferrerPaths(item AttestationItem, manifest, bundle [32]byte) []string
+}
+
+// The reasons an attestation is served through the API and not as a referrer (signatures.md R-SIG-054, Q-SIG-66, Q-SIG-183).
+const (
+	// ReferrerHidesSignature: an older cosign signature tag stands for the digest, which the current cosign would stop reading.
+	ReferrerHidesSignature = "hides_signature"
+	// ReferrerNoAPI: the repository's referrers answer is no answer of a referrers API of its own (a remote or a virtual repository).
+	ReferrerNoAPI = "no_referrers_api"
+)
+
+// ReferrerFile is one file of an attestation's referrer: its canonical path, its bytes and media type, and the payload of its commit.
+type ReferrerFile struct {
+	Path      string
+	Body      []byte
+	MediaType string
+	// Payload is what the format's OnCommit admits the file by; nil for a file the format stores like any other (a blob).
+	Payload any
+}
+
+// AttestNoneFor answers the zero subject for every item: the answer of a format that attests nothing (the ClamAV definitions,
+// signatures.md R-SIG-044).
+func AttestNoneFor(items []AttestationItem) []AttestationSubject {
+	return make([]AttestationSubject, len(items))
 }
 
 // GateKind is what the signature gate judges a stored item as (signatures.md R-SIG-063).
@@ -74,7 +144,7 @@ type GateSubject struct {
 // ClamAV definitions, R-SIG-063).
 func GateNoneFor(items []GateItem) []GateSubject { return make([]GateSubject, len(items)) }
 
-// SignatureDeclaration is the row of a format in the table of R-SIG-002.
+// SignatureDeclaration is the row of a format in the table of R-SIG-002, with what Quader's receipt attestation is about (R-SIG-044).
 type SignatureDeclaration struct {
 	None  string // non-empty: the format has no signatures, and why
 	Kinds []SignatureKind
@@ -85,6 +155,10 @@ type SignatureDeclaration struct {
 	// ArtifactName names a stored artifact in its client's words for the signature gate's answers (`unsigned:1.0`, `left-pad@1.3.0`,
 	// signatures.md R-SIG-068, Q-SIG-213), from its path and what Classify said of it; nil, or an empty answer, names it by its path.
 	ArtifactName func(path string, info PathInfo) string
+	// Attests is what Quader attests in the format's words ("every tarball"); AttestsNone, when Attests is empty, why the format gets
+	// no receipt attestation. Exactly one of them is set (R-SIG-044).
+	Attests     string
+	AttestsNone string
 }
 
 // SignatureKind is one kind of signature a format knows.
@@ -338,14 +412,17 @@ type CoveringDocument struct {
 	Verifier string
 }
 
-// NoSignatures is the adapter of a format whose ecosystem has no signatures: its declaration says why, and it detects nothing. A future
-// format without signatures returns it; "This format has no signatures" then stands in its details (R-SIG-002).
-func NoSignatures(reason string) SignatureAdapter { return noSignatures(reason) }
+// NoSignatures is the adapter of a format whose ecosystem has no signatures and whose items Quader does not attest: its declaration says
+// why for both (R-SIG-002, R-SIG-044), it detects nothing and attests nothing. "This format has no signatures" then stands in its details.
+// A future format without signatures whose clients fetch artifacts of a user's repository writes an adapter of its own that attests them.
+func NoSignatures(reason, attestsNone string) SignatureAdapter {
+	return noSignatures{reason: reason, attestsNone: attestsNone}
+}
 
-type noSignatures string
+type noSignatures struct{ reason, attestsNone string }
 
 func (n noSignatures) Declaration() SignatureDeclaration {
-	return SignatureDeclaration{None: string(n)}
+	return SignatureDeclaration{None: n.reason, AttestsNone: n.attestsNone}
 }
 
 func (noSignatures) Detect(context.Context, SignatureEvent) ([]SignatureCandidate, error) {
@@ -355,4 +432,9 @@ func (noSignatures) Detect(context.Context, SignatureEvent) ([]SignatureCandidat
 // Gate implements [SignatureAdapter]: a format without signatures holds nothing the gate judges (R-SIG-063).
 func (noSignatures) Gate(_ context.Context, _ Host, _ RepoRef, items []GateItem) ([]GateSubject, error) {
 	return GateNoneFor(items), nil
+}
+
+// AttestationSubjects implements [SignatureAdapter]: such a format attests nothing (R-SIG-044).
+func (noSignatures) AttestationSubjects(_ context.Context, _ Host, _ RepoRef, items []AttestationItem) ([]AttestationSubject, error) {
+	return AttestNoneFor(items), nil
 }

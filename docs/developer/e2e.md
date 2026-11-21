@@ -2868,6 +2868,18 @@ The real clients of the OCI tests ([R-OCI-035](../spec/formats/oci.md#r-oci-035-
 `make versions-check` runs [check-pins.mjs](../../test/e2e/ociclients/check-pins.mjs)). `TestOCIClients` compares `docker version`, `docker buildx version` and `podman --version` with the tags of
 the pins.
 
+cosign, the binary `/ko-app/cosign` of the official image pinned as `E2E_OCICLIENTS_COSIGN_IMAGE`, is a third image of its own,
+`quader-e2e-ociclients-cosign:dev` ([Dockerfile.cosign](../../test/e2e/ociclients/Dockerfile.cosign), the binary alone on `scratch`, about
+136 MB), which the set `oci` alone puts into the cluster: `oci_cosign_node` of deploy/dev/e2e.sh (`OCI_COSIGN=1`) copies the binary to
+`/opt/quader-e2e-cosign` on the control-plane node before the pods start, the pod mounts that directory (a `hostPath` of
+[oci-clients.yaml](../../deploy/dev/oci-clients.yaml)) and [entrypoint-docker.sh](../../test/e2e/ociclients/entrypoint-docker.sh) links it
+as `cosign` in the Docker container. Its two cases run in `e2e (oci)`: the verification of Quader's receipt attestation of a pushed image
+(`TestOCIAttestation_R_SIG_052_…`, [oci_attestation_test.go](../../test/e2e/oci_attestation_test.go), which compares `cosign version` with
+the pin's tag) and the signature of the pusher in a gated repository (`TestOCIGate_R_SIG_064_…`, [oci_gate_test.go](../../test/e2e/oci_gate_test.go),
+signatures.md R-SIG-064, Q-SIG-211). The sets `oci-closing` and `oci-long` load nothing of it into kind. A second checkout that builds the
+images under names of its own sets `QUADER_E2E_OCI_DOCKER_IMAGE`, `QUADER_E2E_OCI_PODMAN_IMAGE` and `QUADER_E2E_OCI_COSIGN_IMAGE`
+(deploy/dev/e2e.sh).
+
 ```mermaid
 flowchart LR
   subgraph clients["namespace quader-e2e-clients (Pod Security level privileged)"]
@@ -2885,7 +2897,7 @@ flowchart LR
 
 | What | Where |
 |---|---|
-| images | `make oci-clients-image` runs [test/e2e/ociclients/build.sh](../../test/e2e/ociclients/build.sh): the forwarder of the npm clients (`test/e2e/clients/fwd`) for `linux/<arch>`, [Dockerfile.docker](../../test/e2e/ociclients/Dockerfile.docker) on the pinned dind image (`quader-e2e-ociclients-docker:dev`) and [Dockerfile.podman](../../test/e2e/ociclients/Dockerfile.podman) on the pinned Podman image (`quader-e2e-ociclients-podman:dev`). Both are test images, never pushed; the pins are build arguments without a default |
+| images | `make oci-clients-image` runs [test/e2e/ociclients/build.sh](../../test/e2e/ociclients/build.sh): the forwarder of the npm clients (`test/e2e/clients/fwd`) for `linux/<arch>`, [Dockerfile.docker](../../test/e2e/ociclients/Dockerfile.docker) on the pinned dind image (`quader-e2e-ociclients-docker:dev`), [Dockerfile.podman](../../test/e2e/ociclients/Dockerfile.podman) on the pinned Podman image (`quader-e2e-ociclients-podman:dev`) and [Dockerfile.cosign](../../test/e2e/ociclients/Dockerfile.cosign), the pinned cosign binary alone (`quader-e2e-ociclients-cosign:dev`). All three are test images, never pushed; the pins are build arguments without a default |
 | pod | [deploy/dev/oci-clients.yaml](../../deploy/dev/oci-clients.yaml): the Namespace `quader-e2e-clients` with Pod Security `privileged` (dockerd and Podman need a privileged container, root and a writable root file system, which the level `restricted` of the namespace `quader` refuses) and the Pod, rendered once per client with `sed` by [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker T16 oci-clients). The pods run on the control-plane node like the npm and NuGet clients, mount no ServiceAccount token and hold no credential. Their volumes are emptyDirs (`/var/lib/docker`, `/var/lib/containers`, `/work`) |
 | trust | the dev CA is a ConfigMap (`quader-e2e-oci-ca`), never in an image. [entrypoint-docker.sh](../../test/e2e/ociclients/entrypoint-docker.sh) puts it into `/etc/docker/certs.d/<host>/ca.crt` for `localhost:<edge port>` and `oci-mirror.quader.localhost:<edge port>` and into the system trust (BuildKit inside dockerd fetches the token of `buildx build --push` with a client that reads the system trust, not `certs.d`); [entrypoint-podman.sh](../../test/e2e/ociclients/entrypoint-podman.sh) puts it into `/etc/containers/certs.d/<host>/ca.crt` |
 | address | the forwarder in the Docker container listens on `127.0.0.1:<edge port>` and relays to `haproxy-ingress.ingress-controller.svc.cluster.local:443`; the pod shares one network namespace, so both clients reach it as `localhost:<edge port>`, the host of the setup snippets, and verify the edge's certificate for `localhost`. `ociPin` writes a packages pod's address into the forwarder's target file (`/tmp/target`), which pins a pod to one replica until `ociUnpin` |

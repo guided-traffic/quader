@@ -1919,7 +1919,7 @@ or unknown key; npm verifies attestations only with a public log entry against t
   against a trusted root Quader serves (R-SIG-051 to R-SIG-053).
 - Attestations are signatures of the store of stage 1 with the source `issued`; for OCI a referrer, but only where it hides no older cosign
   signature; for every other format and for such an image through the API, never through npm's attestations endpoint (R-SIG-054).
-- The format contract gains `AttestationSubjects` and rises to version 9 (R-SIG-044).
+- The format contract gains `AttestationSubjects` and rises to version 10 (R-SIG-044; written as 9 before the gate of stage 3 took 9, ADR-231): the format is asked when the job signs, for stored items with the host (Q-SIG-180).
 
 **Consequences.** `npm audit signatures` passes for local packages; a cluster can demand Quader's receipt of most images; the worker's key can
 make clients believe anything was received here (H-1187), an uploaded key can be opened by every role with the key ring (H-1188); the

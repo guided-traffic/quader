@@ -1,5 +1,16 @@
-contract version 9
+contract version 10
 formats.Action: alias authz.Action
+formats.AttestationItem: field Blob [32]byte
+formats.AttestationItem: field Path string
+formats.AttestationItem: field Size int64
+formats.AttestationReferrer: method AttestationReferrer(AttestationSubject, AttestationItem, []byte, string, time.Time) ([]ReferrerFile, [32]byte, error)
+formats.AttestationReferrer: method ReferrerPaths(AttestationItem, [32]byte, [32]byte) []string
+formats.AttestationReferrer: method ReferrerPlacement(context.Context, Host, RepoRef, AttestationItem) (bool, string, error)
+formats.AttestationSubject: field Attested bool
+formats.AttestationSubject: field MediaType string
+formats.AttestationSubject: field Name string
+formats.AttestationSubject: field Scanned [][32]byte
+formats.AttestationSubject: field Version string
 formats.Authenticator: method ReadToken(context.Context, RemoteContext, int, []byte) (string, time.Duration, error)
 formats.Authenticator: method TokenRequest(context.Context, RemoteContext, *http.Request, Path, int, http.Header) (*http.Request, string, bool, error)
 formats.AutoClaimResult: alias repository.AutoClaimResult
@@ -24,6 +35,7 @@ formats.CacheStatus: field Negative bool
 formats.CacheStatus: field Stale bool
 formats.CacheStatus: field Stored bool
 formats.CacheStatus: field TTL time.Duration
+formats.Capabilities: field AttestationReferrer AttestationReferrer
 formats.Capabilities: field ImageScanned ImageScanned
 formats.Capabilities: field ItemsRestorer ItemsRestorer
 formats.Capabilities: field Remote RemoteCaps
@@ -336,6 +348,10 @@ formats.ReadScope: method MayRead(qname.Repo, string, string) bool
 formats.ReadScope: method Shape(qname.Repo) ReadShape
 formats.ReadScope: method VersionsByPath(qname.Repo) bool
 formats.ReadShape: type uint8
+formats.ReferrerFile: field Body []byte
+formats.ReferrerFile: field MediaType string
+formats.ReferrerFile: field Path string
+formats.ReferrerFile: field Payload any
 formats.Refusal: field BaseURL string
 formats.Refusal: field CacheView bool
 formats.Refusal: field Format ID
@@ -493,6 +509,7 @@ formats.ShadowOutcome: field Shadowed []ShadowPair
 formats.ShadowOutcome: field Undetermined bool
 formats.ShadowPair: field Remote string
 formats.ShadowPair: field Virtual string
+formats.SignatureAdapter: method AttestationSubjects(context.Context, Host, RepoRef, []AttestationItem) ([]AttestationSubject, error)
 formats.SignatureAdapter: method Declaration() SignatureDeclaration
 formats.SignatureAdapter: method Detect(context.Context, SignatureEvent) ([]SignatureCandidate, error)
 formats.SignatureAdapter: method Gate(context.Context, Host, RepoRef, []GateItem) ([]GateSubject, error)
@@ -511,6 +528,8 @@ formats.SignatureContent: method ReaderAt() (io.ReaderAt, error)
 formats.SignatureContent: method Size() int64
 formats.SignatureCoverage: method Covering(context.Context, any, RepoRef, string, [32]byte) ([]CoveringDocument, error)
 formats.SignatureDeclaration: field ArtifactName func(string, PathInfo) string
+formats.SignatureDeclaration: field Attests string
+formats.SignatureDeclaration: field AttestsNone string
 formats.SignatureDeclaration: field Kinds []SignatureKind
 formats.SignatureDeclaration: field None string
 formats.SignatureDeclaration: field ReadToSign bool
@@ -636,6 +655,7 @@ formats.VulnerabilityData: method Page(context.Context, string, func(context.Con
 formats.VulnerabilityData: method PageKey(string) string
 formats.VulnerabilityData: method RefuseImage(context.Context, *Request, RepoRef, string, [32]byte) error
 formats.VulnerabilityData: method State(string) advisory.DataState
+formats.AttestNoneFor: func([]AttestationItem) []AttestationSubject
 formats.CallerVersions: func(context.Context, *Request, string) (*VersionView, error)
 formats.CapabilitiesFor: func(ID) Capabilities
 formats.CapabilitiesOf: func(Format) Capabilities
@@ -651,7 +671,7 @@ formats.LiveVersions: func(context.Context, *Request, PackageRow) ([]string, Rev
 formats.Lookup: func(string) (Format, bool)
 formats.MatchRoutes: func([]Route, string, string) (*Route, Params, error)
 formats.NoMarkup: func() Markup
-formats.NoSignatures: func(string) SignatureAdapter
+formats.NoSignatures: func(string, string) SignatureAdapter
 formats.NoVulnerabilityData: func() VulnerabilityData
 formats.ProbeFiles: func(Probe) []discover.Item
 formats.RefusalFrom: func(*http.Request) (Refusal, bool)
@@ -678,7 +698,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 9
+formats.ContractVersion: value = 10
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
@@ -726,6 +746,8 @@ formats.PathVolatile: value = (repeated, place 3 of its group)
 formats.ReadAll: value = (repeated, place 1 of its group)
 formats.ReadNone: value ReadShape = iota (place 0 of its group)
 formats.ReadRows: value = (repeated, place 2 of its group)
+formats.ReferrerHidesSignature: value = "hides_signature"
+formats.ReferrerNoAPI: value = "no_referrers_api"
 formats.Remote: value = catalog.Remote
 formats.Revalidated: value = (repeated, place 1 of its group)
 formats.ServeDebLocal: value = servefacts.DebLocal

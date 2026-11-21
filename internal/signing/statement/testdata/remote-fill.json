@@ -1,0 +1,47 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "quader.example.com/web/npm-remote/lodash/-/lodash-4.17.21.tgz",
+      "digest": {
+        "sha256": "94a755535d135f12850ccd5848d10cc7266bbcdb74ad22c7817228ce7abaa506"
+      }
+    }
+  ],
+  "predicateType": "https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1",
+  "predicate": {
+    "installation": {
+      "id": "6c3e0d2a-1f2e-4b7a-9c1d-5e8f7a6b4c3d",
+      "url": "https://quader.example.com"
+    },
+    "repository": {
+      "project": "web",
+      "key": "npm-remote",
+      "format": "npm",
+      "class": "remote"
+    },
+    "artifact": {
+      "path": "lodash/-/lodash-4.17.21.tgz",
+      "name": "lodash",
+      "version": "4.17.21",
+      "size": 6
+    },
+    "receivedAt": "2026-11-21T10:02:03.456Z",
+    "origin": {
+      "kind": "fill",
+      "upstream": "https://registry.npmjs.org/",
+      "fetchedAt": "2026-11-21T10:02:03.456Z"
+    },
+    "signatures": [],
+    "malware": {
+      "state": "clean",
+      "database": "main-62",
+      "databaseBuiltAt": "2026-11-21T06:10:00.000Z",
+      "scannedAt": "2026-11-21T10:02:05.120Z"
+    },
+    "vulnerabilities": {
+      "state": "not_covered"
+    },
+    "issuedAt": "2026-11-21T10:02:06.001Z"
+  }
+}

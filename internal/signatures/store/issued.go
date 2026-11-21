@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -39,6 +41,14 @@ type Issued struct {
 	ItemID   int64
 	Location string
 	Name     string
+	// PredicateType, Signer and ClaimedAt are an attestation's (R-SIG-051): its predicate type, the identity its certificate names, and
+	// the moment its statement claims; empty for npm's registry signature.
+	PredicateType string
+	Signer        *signatures.Signer
+	ClaimedAt     time.Time
+	// Replace removes, in the same transaction, the attachments of the item's other signatures of the scheme Quader made: an
+	// attestation made again replaces the earlier one whichever identity made it (R-SIG-053).
+	Replace bool
 }
 
 // RecordIssued writes a signature Quader made in the caller's transaction (R-SIG-054): the object once per its SHA-256, the signature
@@ -67,9 +77,19 @@ func (s *Store) RecordIssued(ctx context.Context, tx meta.Tx, in Issued) (int64,
 	if keys == nil {
 		keys = []string{}
 	}
+	var signer []byte
+	if in.Signer != nil {
+		if signer, err = json.Marshal(in.Signer); err != nil {
+			return 0, err
+		}
+	}
+	claimed := ""
+	if !in.ClaimedAt.IsZero() {
+		claimed = in.ClaimedAt.UTC().Format(time.RFC3339Nano)
+	}
 	id, err := qs.SignatureInsertIssued(ctx, q.SignatureInsertIssuedParams{
-		ObjectSha256: obj[:], SubjectSha256: in.Subject[:], SubjectName: in.SubjectName, Role: in.Role, SignedDigest: in.SignedDigest,
-		DigestAlg: in.DigestAlg, KeyIds: keys, IdentityID: in.IdentityID,
+		ObjectSha256: obj[:], SubjectSha256: in.Subject[:], SubjectName: in.SubjectName, Role: in.Role, PredicateType: in.PredicateType,
+		SignedDigest: in.SignedDigest, DigestAlg: in.DigestAlg, KeyIds: keys, IdentityID: in.IdentityID, Signer: signer, ClaimedAt: claimed,
 	})
 	if err != nil {
 		return 0, fmt.Errorf("record an issued signature: %w", err)
@@ -78,6 +98,11 @@ func (s *Store) RecordIssued(ctx context.Context, tx meta.Tx, in Issued) (int64,
 		RepoID: in.RepoID, SignatureID: id, Location: in.Location, ItemID: in.ItemID, Name: in.Name,
 	}); err != nil {
 		return 0, fmt.Errorf("attach an issued signature: %w", err)
+	}
+	if in.Replace {
+		if _, err := qs.SignatureDetachIssuedExcept(ctx, q.SignatureDetachIssuedExceptParams{ItemID: in.ItemID, Keep: id, Scheme: in.Scheme}); err != nil {
+			return 0, fmt.Errorf("detach an item's earlier issued signatures: %w", err)
+		}
 	}
 	return id, nil
 }

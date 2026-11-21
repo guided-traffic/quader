@@ -47,7 +47,7 @@ func (f *Format) Signatures() formats.SignatureAdapter { return signatureAdapter
 // Declaration implements formats.SignatureAdapter: the row of OCI in R-SIG-002.
 func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 	const client = "the referrers API; the referrers tag sha256-<hex>; the tags sha256-<hex>.sig, .att and .sbom"
-	return formats.SignatureDeclaration{Kinds: []formats.SignatureKind{
+	return formats.SignatureDeclaration{Attests: attests, Kinds: []formats.SignatureKind{
 		{
 			Name: "Notation", Schemes: []string{formats.SignatureSchemeNotationJWS, formats.SignatureSchemeNotationCOSE},
 			Role: formats.SignatureRolePublisher, Location: "a referrer of the image (artifact type application/vnd.cncf.notary.signature)",

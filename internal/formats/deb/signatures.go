@@ -24,7 +24,7 @@ func (f *Format) Signatures() formats.SignatureAdapter { return signatureAdapter
 
 // Declaration implements formats.SignatureAdapter: the row of Debian in R-SIG-002.
 func (signatureAdapter) Declaration() formats.SignatureDeclaration {
-	return formats.SignatureDeclaration{Kinds: []formats.SignatureKind{
+	return formats.SignatureDeclaration{Attests: attests, Kinds: []formats.SignatureKind{
 		{
 			Name: "release signature", Schemes: []string{formats.SignatureSchemeOpenPGP}, Role: formats.SignatureRoleRegistry,
 			Location: "the OpenPGP signatures of dists/<suite>/InRelease and of Release.gpg",
@@ -119,4 +119,31 @@ func sum32(b []byte) [32]byte {
 	var d [32]byte
 	copy(d[:], b)
 	return d
+}
+
+// attests is what Quader's receipt attestation is about in a Debian repository (signatures.md R-SIG-044, Q-SIG-69): the binary
+// packages; never an index or a release, which the repository's own key signs.
+const attests = "every binary package (.deb, .udeb); never an index"
+
+// AttestationSubjects implements formats.SignatureAdapter (R-SIG-044): a binary package of the pool is attested under its package name
+// and version; the releases, the indexes and the by-hash copies are not.
+func (signatureAdapter) AttestationSubjects(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.AttestationItem) ([]formats.AttestationSubject, error) {
+	out := make([]formats.AttestationSubject, len(items))
+	for i, it := range items {
+		segs := strings.Split(it.Path, "/")
+		if segs[0] == dirDists || it.Path == SigningKeyFile {
+			continue
+		}
+		if segs[0] == dirMembers {
+			if len(segs) < 3 {
+				continue
+			}
+			segs = segs[2:]
+		}
+		info := classifyFile(segs)
+		if info.Kind == formats.Content && info.Package != "" && info.Version != "" {
+			out[i] = formats.AttestationSubject{Attested: true, Name: info.Package, Version: info.Version}
+		}
+	}
+	return out, nil
 }

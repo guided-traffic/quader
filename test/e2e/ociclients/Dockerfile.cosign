@@ -1,0 +1,11 @@
+# cosign of the OCI acceptance suite (signatures.md R-SIG-052, R-SIG-064, docs/developer/e2e.md#the-oci-clients): the official binary
+# alone, about 136 MB, which the set `oci` alone needs (its two cases with the real cosign). It is a test image: never pushed and never
+# run, built by test/e2e/ociclients/build.sh. deploy/dev/e2e.sh copies the binary out of it onto the control-plane node for the set `oci`
+# only, where the Docker container of each client pod finds it (a hostPath of deploy/dev/oci-clients.yaml, linked by
+# entrypoint-docker.sh); the sets oci-closing and oci-long load nothing of it into the cluster.
+#
+#   COSIGN_IMAGE   E2E_OCICLIENTS_COSIGN_IMAGE of tools/versions.env (pinned by digest)
+ARG COSIGN_IMAGE
+FROM ${COSIGN_IMAGE} AS cosign
+FROM scratch
+COPY --from=cosign /ko-app/cosign /cosign

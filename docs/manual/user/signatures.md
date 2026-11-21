@@ -86,6 +86,39 @@ instead of a list, or adding an anchor needs an administrator or someone who tri
 setting: apt checks the signature of the repository's index, not of a package. The client setup of a repository with the check on says so
 above the snippets, with the accepted anchors.
 
+## Quader's receipt attestation
+
+While your installation has a signing identity, Quader signs a receipt of every artifact your repositories receive: an attestation that
+this installation received the bytes of that digest, when, from which uploader or upstream (with a pipeline's claims for a CI upload), what
+the signatures attached to it said, and what the malware scan and the vulnerability evaluation found, each with its date. It says nothing
+about who made the content: that is the publisher's signature above. It is made once the checks have their first verdicts (or after an hour
+with what there is), and again when the malware verdict changes.
+
+To check it, open **Set up client** of the repository: the last step, **Verify**, shows the one command for your client. For an image it is
+`cosign verify-attestation` against the image by its digest; for every other artifact the command downloads the file's attestation from
+`/api/v1/projects/<project>/repositories/<repository>/attestation?path=<path>` as `<file>.quader.sigstore.json` and runs `cosign
+verify-blob-attestation` with it. Both read the installation's trusted root (`/api/v1/signing/trusted-root.json`, public) and need no
+internet:
+
+```shell
+# example: an image of the local repository docker-local of the project web
+curl -fsSo quader-trusted-root.json https://quader.example.com/api/v1/signing/trusted-root.json
+cosign verify-attestation \
+  --trusted-root quader-trusted-root.json \
+  --certificate-identity https://quader.example.com \
+  --certificate-oidc-issuer-regexp '.*' \
+  --insecure-ignore-tlog --insecure-ignore-sct \
+  --type https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1 \
+  quader.example.com/web/docker-local/app@sha256:<digest>
+```
+
+The two `--insecure-ignore-…` flags are needed because the attestation has no transparency-log entry and no timestamp; the time it names is
+Quader's own claim. An image of a local repository carries the attestation among its referrers, unless the image already has a cosign
+signature in the older layout (a tag `sha256-<hex>.sig` or `.att`), which the attestation would hide from cosign; such an image, and an image
+of a remote repository, is verified with the downloaded attestation (`cosign verify-blob-attestation --bundle … --digest <hex>
+--digestAlg sha256`). What the receipt must say (a `clean` malware state, an upload from a protected branch) is your policy: cosign's
+`--policy` or your cluster's policy engine reads the predicate.
+
 ## Trust anchors of your project
 
 While your administrator allows it, the Owner of a project adds trust anchors for the project under **Settings › Trust anchors**: a CA

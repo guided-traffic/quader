@@ -882,6 +882,7 @@ const (
 	ClientSnippetTabConfigure ClientSnippetTab = "configure"
 	ClientSnippetTabInstall   ClientSnippetTab = "install"
 	ClientSnippetTabPublish   ClientSnippetTab = "publish"
+	ClientSnippetTabVerify    ClientSnippetTab = "verify"
 )
 
 // Valid indicates whether the value is a known member of the ClientSnippetTab enum.
@@ -892,6 +893,8 @@ func (e ClientSnippetTab) Valid() bool {
 	case ClientSnippetTabInstall:
 		return true
 	case ClientSnippetTabPublish:
+		return true
+	case ClientSnippetTabVerify:
 		return true
 	default:
 		return false
@@ -8288,7 +8291,9 @@ type ClientSetup struct {
 type ClientSetupCredentials string
 
 // ClientSnippet One snippet. The `id` is stable and names the explanation the UI shows
-// (`<client>.<tab>.<name>`, for example `npm.configure.npmrc`); the text is the UI's.
+// (`<client>.<tab>.<name>`, for example `npm.configure.npmrc`); the text is the UI's. The tab `verify` is answered while a
+// signing identity is current, for every format whose artifacts Quader attests (R-SIG-055, Q-SIG-71): `<client>.verify.attestation`,
+// the download of the trusted root and the cosign command that verifies Quader's receipt attestation.
 type ClientSnippet struct {
 	Content string `json:"content"`
 
@@ -16250,6 +16255,12 @@ type ListAnsibleTombstonesParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// GetAttestationParams defines parameters for GetAttestation.
+type GetAttestationParams struct {
+	// Path The canonical path of a stored file, without a leading or trailing slash.
+	Path string `form:"path" json:"path"`
+}
+
 // ListCacheEntriesParams defines parameters for ListCacheEntries.
 type ListCacheEntriesParams struct {
 	// PathPrefix Only entries below this path prefix; empty or absent lists all of them.
@@ -18903,6 +18914,9 @@ type ServerInterface interface {
 	// ClearAnsibleTombstone Clear the tombstone of a deleted version
 	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version})
 	ClearAnsibleTombstone(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, collection string, version string)
+	// GetAttestation Quader's receipt attestation of one stored file
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/attestation)
+	GetAttestation(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params GetAttestationParams)
 	// ListCacheEntries List the cache entries of a remote repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/cache/entries)
 	ListCacheEntries(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListCacheEntriesParams)
@@ -26850,6 +26864,57 @@ func (siw *ServerInterfaceWrapper) ClearAnsibleTombstone(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ClearAnsibleTombstone(w, r, projectKey, repoKey, collection, version)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAttestation operation middleware
+func (siw *ServerInterfaceWrapper) GetAttestation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAttestationParams
+
+	// ------------- Required query parameter "path" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "path", r.URL.Query(), &params.Path, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "path"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAttestation(w, r, projectKey, repoKey, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -36698,6 +36763,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signing/identities/{id}/retire", wrapper.RetireSigningIdentity)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signing/trusted-root.json", wrapper.GetSigningTrustedRoot)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signing/chain.pem", wrapper.GetSigningChain)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/attestation", wrapper.GetAttestation)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror", wrapper.GetRepositoryMirror)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run", wrapper.RunRepositoryMirror)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/backups", wrapper.ListBackupRuns)

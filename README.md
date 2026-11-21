@@ -673,7 +673,7 @@ of at most 30, or 37 if it contains `quader`); the message names that name and w
 | ServiceAccounts of the Jobs | `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` (`<key>.serviceAccount.name` overrides), without a token; one per Job, so a workload identity maps each to a cloud role of its own | yes ([_helpers.tpl](deploy/helm/quader/templates/_helpers.tpl)) |
 | Journal credentials ConfigMaps | `<fullname>-restore`, `<fullname>-post-restore`, key `credentials.yaml`, when `journalCredentials.source` is not `runtime` and the journal is not skipped | yes ([_backup.tpl](deploy/helm/quader/templates/_backup.tpl)) |
 | Labels of the Job pods | `app.kubernetes.io/component` `backup`, `restore` or `post-restore`; no `quader/serve` label, so no Service selects them; annotation `cluster-autoscaler.kubernetes.io/safe-to-evict: "false"` | yes |
-| Dev profile objects of the OCI e2e set | the namespace `quader-e2e-clients` (Pod Security level `privileged`), its pods `quader-e2e-oci-<i>` (containers `docker` and `podman`) and the ConfigMap `quader-e2e-oci-ca`; in the release namespace the Services `ocistub`, `ocistub-auth` and `ocistub-cdn` of the counting OCI test upstream and the endpoint `ocimirror` (port 8444, host `oci-mirror.quader.localhost`, bound to the repository `e2e/oci-engine-mirror`, Services `<fullname>-ep-ocimirror`); images `quader-e2e-ociclients-docker:dev`, `quader-e2e-ociclients-podman:dev`, `quader-e2e-ocistub:dev` | dev profile only ([e2e.md](docs/developer/e2e.md#the-oci-clients)) |
+| Dev profile objects of the OCI e2e set | the namespace `quader-e2e-clients` (Pod Security level `privileged`), its pods `quader-e2e-oci-<i>` (containers `docker` and `podman`) and the ConfigMap `quader-e2e-oci-ca`; in the release namespace the Services `ocistub`, `ocistub-auth` and `ocistub-cdn` of the counting OCI test upstream and the endpoint `ocimirror` (port 8444, host `oci-mirror.quader.localhost`, bound to the repository `e2e/oci-engine-mirror`, Services `<fullname>-ep-ocimirror`); images `quader-e2e-ociclients-docker:dev`, `quader-e2e-ociclients-podman:dev`, `quader-e2e-ociclients-cosign:dev` (its binary on the control-plane node under `/opt/quader-e2e-cosign`, the set `oci` only), `quader-e2e-ocistub:dev` | dev profile only ([e2e.md](docs/developer/e2e.md#the-oci-clients)) |
 | Dev profile objects of the Debian e2e set | the namespace `quader-e2e-apt` (Pod Security level `baseline`), its pods `quader-e2e-apt-<debian13\|debian12\|ubuntu2404\|ubuntu2204>` (container `apt`) and the ConfigMap `quader-e2e-apt-ca`; in the release namespace the Service `debstub` of the counting Debian test upstream (the Deployment and Secret `quader-debstub`); images `quader-e2e-aptclients-<debian13\|debian12\|ubuntu2404\|ubuntu2204>:dev`, `quader-e2e-debstub:dev` | dev profile only ([e2e.md](docs/developer/e2e.md#the-apt-clients)) |
 | Bastion chart | `deploy/helm/quader-bastion`, released with the chart `quader` at the same version; its own `<fullname>` (release name, or `<release>-quader-bastion`) | yes (phase 5b) |
 | Bastion workload | `<fullname>` (Deployment, or StatefulSet with `cacheVolume.type: persistent`), `--role bastion`, ports `https` 8443 and `ops` 8081 | yes |
@@ -841,7 +841,7 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 | `deb-index` | `internal/formatdata/deb/jobs.go` (kind), `internal/formatdata/deb/build.go` (handler) | queue `index`, coalesce under the key `index:<repository id>`, 5 attempts, 30 minutes; the build of a local Debian repository's indexes (R-DEB-010): one snapshot, signed, published through the publication port in one transaction per suite; for a remote repository the re-verification of its stored releases and the removal of the by-hash files no remembered release names; for a virtual repository the merge of its members' indexes, signed with its own key (R-DEB-025, R-DEB-026) |
 | `deb-remote-parse` | `internal/formatdata/deb/jobs.go`, `internal/formatdata/deb/remote_parse.go` | queue `index`, coalesce per repository, release directory and index path, 5 attempts, 10 minutes (R-DEB-023): reads the `Packages` (and a mirror's `Sources`) index the stored release of a remote names into rows, at most 1 GiB and 1,000,000 paragraphs; without an index path it fetches the release of its directory and queues the parses of its scope |
 | `signature-fetch` | `internal/signatures/fetch/fetch.go` (kind and handler), `internal/app/wire_signature_fetch.go` (on a replica that claims jobs) | queue `index`, coalesce per repository and target (`signature-fetch:<repository id>:<target>`), 5 attempts, 5 minutes; queued by the OCI and npm data ports in the transaction that stored a remote's top-level manifest or tarball, or a refresh after `signatures.remote.refresh_after` (24 h): asks the upstream for the signatures of the target as background requests, at most 600 requests per remote and hour on the worker (signatures.md R-SIG-026) |
-| `signing` | `internal/signing/job/kinds.go` (kind), `internal/app/wire_signing.go` (the handler, on a replica that claims jobs; the task `signing`, `*/10 * * * *`) | queue `signing`, coalesce, 3 attempts; woken by every change of an identity and by work written in a commit's transaction: switches an announced identity after `signing.identity.announce_period`, makes failed work due once a day, and runs the work of the kinds the packages that sign register, with the current identity's key (signatures.md R-SIG-048, R-SIG-049); until npm's signatures and the attestations are built it signs nothing |
+| `signing` | `internal/signing/job/kinds.go` (kind), `internal/app/wire_signing.go` (the handler, on a replica that claims jobs; the task `signing`, `*/10 * * * *`) | queue `signing`, coalesce, 3 attempts; woken by every change of an identity and by work written in a commit's transaction: switches an announced identity after `signing.identity.announce_period`, makes failed work due once a day, and runs the work of the kinds the packages that sign register, with the current identity's key (signatures.md R-SIG-048, R-SIG-049): the receipt attestations of the kind `attestation` (R-SIG-053), and wakes itself for the earliest row that waits for its checks |
 | `deb-index-refresh` | `internal/formatdata/deb/jobs.go`, `internal/formatdata/deb/refresh.go` | task (`maintenance` queue, exclusive, 3 attempts), `* * * * *`: enqueues what is due and deletes nothing (Q-DEB-33); also enqueues the virtual repositories whose check is due and runs the remote part of its registry (`RemoteHandlers.Refresh`) |
 | `session-cleanup` | `internal/auth/session/cleanup.go` | task |
 | `audit-retention` | `internal/app/wire_audit.go` | task |
@@ -2389,7 +2389,7 @@ it ([H-1170](docs/security/artifact-signatures.md#h-1170--without-internet-the-p
 </details>
 
 <details>
-<summary>Quader's signing identity: the files of the Helm values, the announce period and the job signing</summary>
+<summary>Quader's signing identity: the files of the Helm values, the announce period, the receipt attestations and the job signing</summary>
 
 The keys come from the struct tags of [internal/config/signing.go](internal/config/signing.go) (R-SIG-058). Quader signs with one identity
 per installation, an ECDSA P-256 key with a code-signing certificate of the company's CA (R-SIG-045). It comes from the files of the Helm
@@ -2399,7 +2399,9 @@ naming the key, `cert_file` without `key_file` or the reverse, `ca_file` without
 its range. Only the roles `worker` and `all` read the three files; the private key stays in the worker's memory and is never stored. Without
 an identity Quader signs nothing. With one, the job `signing` signs every version of a local npm repository right after its publish (and,
 by its discovery, what was published before), and the local keys endpoint `-/npm/v1/keys` lists the identity's key, so that `npm audit
-signatures` verifies the packages of local and virtual repositories (R-SIG-050). The receipt attestations are not built yet.
+signatures` verifies the packages of local and virtual repositories (R-SIG-050). It also signs a receipt attestation of every artifact a
+repository receives (R-SIG-051 to R-SIG-054): once its checks have their first verdicts or after `attestations.wait_for_checks`, again when the
+malware verdict or the identity changes.
 
 ```yaml
 signing:
@@ -2410,6 +2412,10 @@ signing:
     ca_file: ""                         # default; the chart sets /var/run/secrets/quader/signing/ca.crt (the root of the chain)
     reload_interval: 1m                 # default; 1s to 1h: how often a worker reads the files again; a renewal needs no restart
     announce_period: 10m                # default; 0s to 24h: how long a new identity is listed before it signs; 0s: current at once
+  attestations:
+    enabled: true                       # default; false: no receipt attestation is made; the ones made stay stored and served
+    fills: true                         # default; false: only uploads are attested, not what a remote repository caches
+    wait_for_checks: 1h                 # default; 0s to 168h: how long a new attestation waits for the item's first verdicts
   concurrency: 4                        # default; 1 to 64 operations the one job has in flight
   max_attempts: 5                       # default; 1 to 20 attempts at an operation that could not run, then failed and retried daily
 jobs:

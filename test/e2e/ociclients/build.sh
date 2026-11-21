@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Builds the two client images of the OCI acceptance suite (R-OCI-035, Q-OCI-21) into the local Docker: the static forwarder
-# (test/e2e/clients/fwd, the one of the npm clients) for linux/<arch>, then Dockerfile.docker on the pinned dind image and
-# Dockerfile.podman on the pinned Podman image. `make oci-clients-image` and deploy/dev/e2e.sh both call it.
+# Builds the client images of the OCI acceptance suite (R-OCI-035, Q-OCI-21) into the local Docker: the static forwarder
+# (test/e2e/clients/fwd, the one of the npm clients) for linux/<arch>, then Dockerfile.docker on the pinned dind image,
+# Dockerfile.podman on the pinned Podman image and Dockerfile.cosign, the pinned cosign binary alone (signatures.md R-SIG-052).
+# `make oci-clients-image` and deploy/dev/e2e.sh both call it.
 #
-#   build.sh [docker-image [podman-image]]    default quader-e2e-ociclients-docker:dev and quader-e2e-ociclients-podman:dev
+#   build.sh [docker-image [podman-image [cosign-image]]]
+#     default quader-e2e-ociclients-docker:dev, quader-e2e-ociclients-podman:dev and quader-e2e-ociclients-cosign:dev
 #
 # Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
@@ -12,8 +14,9 @@ set -euo pipefail
 
 docker_image="${1:-quader-e2e-ociclients-docker:dev}"
 podman_image="${2:-quader-e2e-ociclients-podman:dev}"
+cosign_image="${3:-quader-e2e-ociclients-cosign:dev}"
 arch="${QUADER_E2E_CLIENTS_ARCH:-$(arch)}"
-for v in E2E_OCICLIENTS_DOCKER_IMAGE E2E_OCICLIENTS_PODMAN_IMAGE; do
+for v in E2E_OCICLIENTS_DOCKER_IMAGE E2E_OCICLIENTS_PODMAN_IMAGE E2E_OCICLIENTS_COSIGN_IMAGE; do
   [ -n "${!v:-}" ] || die "$v is not set in tools/versions.env"
 done
 command -v docker >/dev/null 2>&1 || die "docker is required"
@@ -29,3 +32,6 @@ docker buildx build --load --platform "linux/$arch" --build-arg DOCKER_IMAGE="$E
 log "building $podman_image on $E2E_OCICLIENTS_PODMAN_IMAGE"
 docker buildx build --load --platform "linux/$arch" --build-arg PODMAN_IMAGE="$E2E_OCICLIENTS_PODMAN_IMAGE" \
   -f "$dir/Dockerfile.podman" -t "$podman_image" "$dir"
+log "building $cosign_image on $E2E_OCICLIENTS_COSIGN_IMAGE"
+docker buildx build --load --platform "linux/$arch" --build-arg COSIGN_IMAGE="$E2E_OCICLIENTS_COSIGN_IMAGE" \
+  -f "$dir/Dockerfile.cosign" -t "$cosign_image" "$dir"

@@ -25,6 +25,8 @@ func (f *Format) OnCommit(ctx context.Context, tx formats.Tx, c formats.CommitEv
 		return f.commitTagItem(ctx, tx, c, p.pushed)
 	case *manifestCommit:
 		return f.commitManifestItem(ctx, tx, c, p.pushed)
+	case *attestationCommit:
+		return f.commitAttestationReferrer(ctx, tx, c, p)
 	}
 	if _, kind, tail, ok := splitLayout(c.Path.Path); ok && kind == dirBlobs {
 		// A blob is named by its digest: whatever commits one, an upload, a mount linking an item of another repository, a fill, holds

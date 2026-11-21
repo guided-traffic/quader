@@ -315,8 +315,14 @@ the identity's files (`Managed`, which every write hands the store) and the anno
 | `retireSigningIdentity` | POST `/api/v1/signing/identities/{id}/retire` | as above | `404`, `409 signing_identity_not_previous`, `409 signing_key_in_use` |
 | `getSigningTrustedRoot` | GET `/api/v1/signing/trusted-root.json` (Sigstore's trusted root media type, cacheable 60 s) | public | `404` without a current or previous identity |
 | `getSigningChain` | GET `/api/v1/signing/chain.pem` (`application/pem-certificate-chain`, cacheable 60 s) | public | `404` without a current identity |
+| `getAttestation` | GET `/api/v1/projects/{projectKey}/repositories/{repoKey}/attestation?path=` (the bundle as `application/vnd.dev.sigstore.bundle.v0.3+json`, `Content-Disposition: attachment; filename="<file>.quader.sigstore.json"`, `private, no-cache`; R-SIG-054) | `read` on the path, decided as the item (R-STOR-016) | `404` for a path the caller may not read, a folder, a file Quader has not attested, an attestation of a retired identity; `503` without `SigningServices.Attestations` |
 
 The response validator of the tests decodes `application/pem-certificate-chain` as text ([apitest](../../internal/api/v1/apitest/apitest.go)).
+
+The client setup (R-API-030) answers the tab `verify` while an identity is current and signing is on, for every client of a format whose
+declaration attests something and never for a Bastion: the snippet `<client>.verify.attestation` of [setup_verify.go](../../internal/api/v1/setup_verify.go),
+written by the core (R-SIG-055, Q-SIG-188). Its marks are the example image or the placeholders `<digest>`, `<path>` and `<file>`, and for a
+file the token's reference by the credential mode.
 
 ## Conventions every resource inherits (WP1.6)
 

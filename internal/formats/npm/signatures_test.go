@@ -155,8 +155,8 @@ func TestR_SIG_028_DetectOverADocumentAndAPublish(t *testing.T) {
 // file; a remote's attestations document is no artifact of its own. Milliseconds.
 func gateCases() []formattest.GateCase {
 	return []formattest.GateCase{
-		{Name: "a tarball is an artifact", Seed: putItem("lodash/-/lodash-4.17.21.tgz"), Path: "lodash/-/lodash-4.17.21.tgz", Want: formats.GateArtifact},
-		{Name: "a scoped tarball is an artifact", Seed: putItem("@acme/ui/-/ui-1.2.0.tgz"), Path: "@acme/ui/-/ui-1.2.0.tgz", Want: formats.GateArtifact},
+		{Name: "a tarball is an artifact", Seed: putItem("lodash/-/lodash-4.17.21.tgz"), Path: "lodash/-/lodash-4.17.21.tgz", Want: formats.GateArtifact, Attested: true},
+		{Name: "a scoped tarball is an artifact", Seed: putItem("@acme/ui/-/ui-1.2.0.tgz"), Path: "@acme/ui/-/ui-1.2.0.tgz", Want: formats.GateArtifact, Attested: true},
 		{
 			Name: "a provenance bundle is a signature file", Seed: putItem("lodash/-/lodash-4.17.21.sigstore"), Path: "lodash/-/lodash-4.17.21.sigstore",
 			Want: formats.GateSignatureFile,

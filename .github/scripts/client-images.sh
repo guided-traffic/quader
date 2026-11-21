@@ -60,9 +60,9 @@ case "$set_name" in
     build() { "$repo_root/test/e2e/nugetclients/build.sh" "${images[0]}"; } ;;
   oci)
     dir=test/e2e/ociclients
-    images=(quader-e2e-ociclients-docker:dev quader-e2e-ociclients-podman:dev)
-    pins=(E2E_OCICLIENTS_DOCKER_IMAGE E2E_OCICLIENTS_PODMAN_IMAGE)
-    build() { "$repo_root/test/e2e/ociclients/build.sh" "${images[0]}" "${images[1]}"; } ;;
+    images=(quader-e2e-ociclients-docker:dev quader-e2e-ociclients-podman:dev quader-e2e-ociclients-cosign:dev)
+    pins=(E2E_OCICLIENTS_DOCKER_IMAGE E2E_OCICLIENTS_PODMAN_IMAGE E2E_OCICLIENTS_COSIGN_IMAGE)
+    build() { "$repo_root/test/e2e/ociclients/build.sh" "${images[0]}" "${images[1]}" "${images[2]}"; } ;;
   apt)
     dir=test/e2e/aptclients
     images=(quader-e2e-aptclients-debian13:dev quader-e2e-aptclients-debian12:dev quader-e2e-aptclients-ubuntu2404:dev quader-e2e-aptclients-ubuntu2204:dev)

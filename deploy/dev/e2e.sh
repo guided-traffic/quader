@@ -247,7 +247,7 @@ case "$set_name" in
   # that touches the format or the registry root; the closing and nightly tests (TestOCIClosing..., TestOCILong...) are sets of their own.
   oci-clients) run='^TestOCIClients$'; OCI_CLIENTS=1 ;;
   oci-clients-down) OCI_CLIENTS=down ;;
-  oci) run='^TestOCI'; skip='^TestOCI(Closing|Long)'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_OCISTUB=1 ;;
+  oci) run='^TestOCI'; skip='^TestOCI(Closing|Long)'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; OCI_COSIGN=1; export QUADER_E2E_OCISTUB=1 ;;
   oci-closing) run='^TestOCIClosing'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_OCISTUB=1 QUADER_E2E_OCI_CLOSING=1 ;;
   oci-long) run='^TestOCILong'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_OCISTUB=1 ;;
   # <<< T16 oci
@@ -716,8 +716,11 @@ OCI_CLIENTS_NS="quader-e2e-clients"
 OCI_CLIENTS_LABEL="app.kubernetes.io/component=e2e-oci-client"
 OCI_CLIENTS_PREFIX="quader-e2e-oci-"
 OCI_CLIENTS_COUNT="${QUADER_E2E_OCI_CLIENTS_PODS:-${OCI_CLIENTS_DEFAULT_PODS:-1}}"
-OCI_DOCKER_IMAGE="quader-e2e-ociclients-docker:dev"
-OCI_PODMAN_IMAGE="quader-e2e-ociclients-podman:dev"
+# QUADER_E2E_OCI_DOCKER_IMAGE, QUADER_E2E_OCI_PODMAN_IMAGE and QUADER_E2E_OCI_COSIGN_IMAGE name the three images otherwise, for a second
+# checkout that builds its own.
+OCI_DOCKER_IMAGE="${QUADER_E2E_OCI_DOCKER_IMAGE:-quader-e2e-ociclients-docker:dev}"
+OCI_PODMAN_IMAGE="${QUADER_E2E_OCI_PODMAN_IMAGE:-quader-e2e-ociclients-podman:dev}"
+OCI_COSIGN_IMAGE="${QUADER_E2E_OCI_COSIGN_IMAGE:-quader-e2e-ociclients-cosign:dev}"
 
 oci_kc() { kubectl --context "$CTX" -n "$OCI_CLIENTS_NS" "$@"; }
 
@@ -745,6 +748,17 @@ oci_node_setup() {
     | docker exec -i "$node" sh -c "cat >'/etc/containerd/certs.d/$host/hosts.toml'"
 }
 
+# oci_cosign_node copies the pinned cosign binary (test/e2e/ociclients/Dockerfile.cosign) to /opt/quader-e2e-cosign on the control-plane
+# node, where the Docker container of each client pod finds it (a hostPath; entrypoint-docker.sh links it as cosign). Only the set `oci`
+# calls it (OCI_COSIGN=1): its two cases run the real cosign (signatures.md R-SIG-052, R-SIG-064); the other OCI sets load nothing of it.
+oci_cosign_node() {
+  local node="${CLUSTER}-control-plane" id
+  id="$(docker create "$OCI_COSIGN_IMAGE" /cosign)" || die "docker create of $OCI_COSIGN_IMAGE failed"
+  docker exec "$node" mkdir -p /opt/quader-e2e-cosign
+  docker cp "$id:/cosign" - | docker cp - "$node:/opt/quader-e2e-cosign/" || { docker rm "$id" >/dev/null; die "copying cosign to $node failed"; }
+  docker rm "$id" >/dev/null
+}
+
 # oci_render_pod <name> prints the manifest of one client pod with the variables of deploy/dev/oci-clients.yaml replaced.
 oci_render_pod() {
   sed -e "s|\${POD}|$1|g" -e "s|\${DOCKER_IMAGE}|$OCI_DOCKER_IMAGE|g" -e "s|\${PODMAN_IMAGE}|$OCI_PODMAN_IMAGE|g" -e "s|\${EDGE_PORT}|$EDGE_PORT|g" \
@@ -755,6 +769,7 @@ oci_render_pod() {
 oci_clients_up() {
   if [ "${QUADER_E2E_REUSE_CLIENTS:-0}" = 1 ] && [ "$(oci_kc get pods -l "$OCI_CLIENTS_LABEL" --field-selector=status.phase=Running -o name 2>/dev/null | wc -l | tr -d ' ')" = "$OCI_CLIENTS_COUNT" ]; then
     log "reusing the $OCI_CLIENTS_COUNT OCI client pod(s) (QUADER_E2E_REUSE_CLIENTS=1)"
+    if [ "${OCI_COSIGN:-0}" = 1 ]; then oci_cosign_node; fi
     oci_node_setup
     return 0
   fi
@@ -762,8 +777,9 @@ oci_clients_up() {
   OCI_TARGET="${QUADER_E2E_OCI_CLIENTS_TARGET:-haproxy-ingress.ingress-controller.svc.cluster.local:443}"
   [ -n "${CA_FILE:-}" ] && [ -s "$CA_FILE" ] || die "the client pods verify the edge against the dev CA, which is missing (QUADER_DEV_CA_FILE, QUADER_DEV_SCHEME=https; run make dev-up)"
   if [ "${QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD:-1}" != 0 ]; then
-    "$REPO_ROOT/test/e2e/ociclients/build.sh" "$OCI_DOCKER_IMAGE" "$OCI_PODMAN_IMAGE" >"$OUT/oci-clients-image.log" 2>&1 || { tail -20 "$OUT/oci-clients-image.log" >&2; die "OCI clients image build failed"; }
+    "$REPO_ROOT/test/e2e/ociclients/build.sh" "$OCI_DOCKER_IMAGE" "$OCI_PODMAN_IMAGE" "$OCI_COSIGN_IMAGE" >"$OUT/oci-clients-image.log" 2>&1 || { tail -20 "$OUT/oci-clients-image.log" >&2; die "OCI clients image build failed"; }
   fi
+  if [ "${OCI_COSIGN:-0}" = 1 ]; then oci_cosign_node; fi
   # the pods run on the control-plane node only (nodeSelector in the manifest): one copy of the images, not one per node
   for image in "$OCI_DOCKER_IMAGE" "$OCI_PODMAN_IMAGE"; do
     kind load docker-image "$image" --name "$CLUSTER" --nodes "${CLUSTER}-control-plane" >>"$OUT/oci-clients-load.log" 2>&1 || { tail -20 "$OUT/oci-clients-load.log" >&2; die "kind load of $image failed"; }

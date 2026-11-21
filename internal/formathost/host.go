@@ -73,6 +73,9 @@ type Deps struct {
 	// Signatures records what a commit or a remote's stored document carries and the origin of an upload (signatures.md R-SIG-010,
 	// R-SIG-011); nil records nothing.
 	Signatures SignatureRecorder
+	// Attestations tells the job signing of a committed item it may attest and of an older cosign signature tag that arrived for an
+	// attested image (signatures.md R-SIG-053, R-SIG-054); nil tells nothing.
+	Attestations AttestationWork
 	// Log receives what the hooks log; nil is slog.Default.
 	Log *slog.Logger
 }

@@ -45,7 +45,9 @@ func detectorSources() []string {
 	}
 }
 
-// recordAt is recordSignatures with the priority the batch's signatures are due at: a commit's, or discovery's (R-SIG-011).
+// recordAt is recordSignatures with the priority the batch's signatures are due at: a commit's, or discovery's (R-SIG-011). An older
+// cosign signature tag it records (the source cosign_tag) takes Quader's referrer of its subject in the same transaction (signatures.md
+// R-SIG-054, Q-SIG-66).
 func (d Deps) recordAt(ctx context.Context, tx meta.Tx, f formats.Format, ev formats.SignatureEvent, fresh bool, priority int) error {
 	if d.Signatures == nil {
 		return nil
@@ -68,12 +70,26 @@ func (d Deps) recordAt(ctx context.Context, tx meta.Tx, f formats.Format, ev for
 	if err != nil {
 		return err
 	}
+	var tagged [][32]byte
 	for _, c := range got {
 		if cand, ok := candidateOf(f, ev, c, stored); ok {
 			b.Candidates = append(b.Candidates, cand)
+			if cand.Source == formats.SignatureSourceCosignTag {
+				tagged = append(tagged, cand.Subject)
+			}
 		}
 	}
-	return d.Signatures.Record(ctx, tx, b)
+	if err := d.Signatures.Record(ctx, tx, b); err != nil {
+		return err
+	}
+	if len(tagged) == 0 || d.Attestations == nil {
+		return nil
+	}
+	displaced, err := d.Attestations.SignatureTagArrived(ctx, tx, ev.Repo.ID, tagged)
+	if err != nil {
+		return err
+	}
+	return d.removeDisplaced(ctx, tx, ev.Repo, displaced)
 }
 
 // resolveNamed resolves every path the candidates name, in one statement.

@@ -131,6 +131,7 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 		{"R-SIG-022 a format whose signature becomes a version fails check 18", testformat.SignatureVersion, formattest.CheckSignatures, "a signature is never a version", nil},
 		{"R-SIG-063 a format that names a signature file an artifact fails check 18", testformat.GatesAttachment, formattest.CheckSignatures, "Gate names GateArtifact", nil},
 		{"R-SIG-063 a format that names an artifact GateNone fails check 18", testformat.PassesArtifact, formattest.CheckSignatures, "Gate names GateNone", nil},
+		{"R-SIG-044 a format that attests a signature file fails check 18", testformat.AttestsSignature, formattest.CheckSignatures, "AttestationSubjects names", nil},
 		{
 			// Check 1 fails with it: Register refuses a format that declares no signatures, and the kit runs Register's checks there.
 			"R-SIG-022 a format that declares no signatures fails check 18", testformat.NoSignatureDeclaration, formattest.CheckSignatures, "Signatures() returns nil",

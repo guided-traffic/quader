@@ -108,6 +108,14 @@ func (h *Hooks) OnCommit(ctx context.Context, tx meta.Tx, e items.CommitEvent) e
 // format's detector names, and the signatures that waited for this content as their subject. A file Quader derived is its own writing:
 // it carries no signature of a publisher and records no origin (Q-SIG-31, Q-SIG-47).
 func (h *Hooks) signaturesOf(ctx context.Context, tx meta.Tx, f formats.Format, e items.CommitEvent, ev formats.CommitEvent) error {
+	if e.By == SigningActor {
+		// Quader's own write of an attestation's referrer (signatures.md R-SIG-054): Quader checks no signature it made itself, records
+		// no origin and attests nothing of it.
+		return nil
+	}
+	if err := h.attestationOf(ctx, tx, f, e); err != nil {
+		return err
+	}
 	if h.d.Signatures == nil {
 		return nil
 	}
@@ -129,6 +137,19 @@ func (h *Hooks) signaturesOf(ctx context.Context, tx meta.Tx, f formats.Format, 
 	}
 	_, err := h.d.Signatures.SubjectArrived(ctx, tx, e.Digests.SHA256)
 	return err
+}
+
+// attestationOf tells the job signing of a committed item that its format may attest (signatures.md R-SIG-053): every file a client or a
+// fill stores in a format that declares what it attests. Which of them is a subject is the format's to say when the job signs, since
+// some formats can tell only from rows written in this very transaction (an image's manifest and the indexes that list it).
+func (h *Hooks) attestationOf(ctx context.Context, tx meta.Tx, f formats.Format, e items.CommitEvent) error {
+	if h.d.Attestations == nil || e.Generated || e.Item.ID == 0 {
+		return nil
+	}
+	if sa := f.Signatures(); sa == nil || sa.Declaration().Attests == "" {
+		return nil
+	}
+	return h.d.Attestations.Committed(ctx, tx, e.Repo.ID, e.Item.ID, e.Origin == items.OriginFill)
 }
 
 // systemRemoval is the actor of a cascade of a removal that had no request: a retention run, the purge of the trash, a job.

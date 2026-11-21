@@ -1,0 +1,173 @@
+-- The statements of the receipt attestations (signatures.md R-SIG-051 to R-SIG-054; internal/signing/attest): what the job signing reads
+-- of an attested item and its checks, its index rows in signing_attestations, the reads of the API's route, and the wake-ups a malware
+-- verdict, an older signature tag or a retirement writes. The signature and its attachment with the source issued are written through
+-- the signature store's RecordIssued, as npm's registry signature is. A time travels as RFC 3339 text in UTC with microseconds ('' for
+-- none), as the other statements of the signing do.
+
+-- name: SigningAttestItem :many
+-- An item the job attests: its path, blob, size and digests, when and how it arrived, its repository, and the origin of an upload
+-- (R-SIG-010). No row: the item is gone or is no file.
+SELECT i.id, i.repo_id, i.path, i.blob_sha256, COALESCE(i.size, 0)::bigint AS size, i.generated, (i.trashed_at IS NULL)::boolean AS live,
+       COALESCE(i.upstream_url, '')::text AS upstream_url,
+       to_char(i.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')::text AS created_at,
+       b.sha512, r.key AS repo_key, p.key AS project_key, r.format, r.class,
+       EXISTS (SELECT 1 FROM upstream_repository u WHERE u.repository_id = r.id AND u.kind = 'system')::boolean AS system_repo,
+       COALESCE(o.principal_kind, '')::text AS principal_kind, COALESCE(o.principal_name, '')::text AS principal_name,
+       COALESCE(o.ci::text, '')::text AS ci
+  FROM items i
+  JOIN repositories r ON r.id = i.repo_id
+  JOIN project p ON p.id = r.project_id
+  JOIN blobs b ON b.sha256 = i.blob_sha256
+  LEFT JOIN artifact_origins o ON o.item_id = i.id
+ WHERE i.id = sqlc.arg(item_id)::bigint AND i.kind = 'file';
+
+-- name: SigningAttestVerdicts :many
+-- The malware verdicts of the blobs a statement names (R-MAL-002) and whether a release passes each (R-MAL-021); a blob without a row
+-- is absent (pending).
+SELECT m.sha256, m.state, COALESCE(m.db_version, '')::text AS db_version,
+       COALESCE(to_char(m.db_built_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'), '')::text AS db_built_at,
+       COALESCE(to_char(m.scanned_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'), '')::text AS scanned_at,
+       EXISTS (SELECT 1 FROM malware_release rl WHERE rl.sha256 = m.sha256)::boolean AS released
+  FROM malware_scan m
+ WHERE m.sha256 = ANY(sqlc.arg(blobs)::bytea[]);
+
+-- name: SigningAttestSignatures :many
+-- Stage 1's signatures of the subject attached in the repository, never one of Quader's own (R-SIG-051): role, scheme, integrity state,
+-- the signer's identity and issuer, the key IDs; the trust state is no part of it.
+SELECT s.role, o.scheme, s.state, COALESCE(s.signer->>'identity', '')::text AS identity,
+       COALESCE(NULLIF(s.signer->>'oidcIssuer', ''), s.signer->>'issuer', '')::text AS issuer, s.key_ids
+  FROM signatures s
+  JOIN signature_objects o ON o.sha256 = s.object_sha256
+ WHERE s.subject_sha256 = sqlc.arg(subject)::bytea AND s.identity_id IS NULL
+   AND EXISTS (SELECT 1 FROM signature_attachments a WHERE a.signature_id = s.id AND a.repo_id = sqlc.arg(repo_id)::bigint)
+ ORDER BY s.id
+ LIMIT 64;
+
+-- name: SigningInstallationID :one
+-- The installation's ID (R-BAK-022): a restore keeps it.
+SELECT (value #>> '{}')::text FROM system_state WHERE key = 'installation_id';
+
+-- name: SigningAttestation :many
+-- The attestation the job issued for an item, with the digest of its bundle (the object's SHA-256) and the state of its identity.
+SELECT sa.item_id, sa.repo_id, sa.signature_id, sa.identity_id, sa.malware_state, sa.released, sa.scanned, sa.served_as, sa.referrer,
+       COALESCE(sa.api_reason, '')::text AS api_reason,
+       to_char(sa.issued_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')::text AS issued_at,
+       s.object_sha256, si.state AS identity_state
+  FROM signing_attestations sa
+  JOIN signatures s ON s.id = sa.signature_id
+  JOIN signing_identities si ON si.id = sa.identity_id
+ WHERE sa.item_id = sqlc.arg(item_id)::bigint;
+
+-- name: SigningPutAttestation :exec
+-- The job's index row of an item's attestation (R-SIG-053: one per item and repository).
+INSERT INTO signing_attestations (item_id, repo_id, signature_id, identity_id, malware_state, released, scanned, served_as, referrer,
+                                  api_reason, issued_at)
+VALUES (sqlc.arg(item_id)::bigint, sqlc.arg(repo_id)::bigint, sqlc.arg(signature_id)::bigint, sqlc.arg(identity_id)::bigint,
+        sqlc.arg(malware_state)::text, sqlc.arg(released)::boolean, sqlc.arg(scanned)::bytea[], sqlc.arg(served_as)::text,
+        sqlc.narg(referrer)::bytea, NULLIF(sqlc.arg(api_reason)::text, ''), sqlc.arg(issued_at)::text::timestamptz)
+ON CONFLICT (item_id) DO UPDATE
+   SET repo_id = excluded.repo_id, signature_id = excluded.signature_id, identity_id = excluded.identity_id,
+       malware_state = excluded.malware_state, released = excluded.released, scanned = excluded.scanned, served_as = excluded.served_as,
+       referrer = excluded.referrer, api_reason = excluded.api_reason, issued_at = excluded.issued_at;
+
+-- name: SigningSetAttestationPlacement :execrows
+-- Where an item's attestation is served, changed without signing again: its referrer removed when an older signature tag arrived, or
+-- made again after it was deleted (R-SIG-054).
+UPDATE signing_attestations
+   SET served_as = sqlc.arg(served_as)::text, referrer = sqlc.narg(referrer)::bytea, api_reason = NULLIF(sqlc.arg(api_reason)::text, '')
+ WHERE item_id = sqlc.arg(item_id)::bigint;
+
+-- name: SigningDropAttestation :execrows
+-- An item that is no subject any more (an index now lists the manifest) keeps no attestation: its index row and its attestation's
+-- attachment go; another signature Quader made of the item (npm's registry signature) stays.
+WITH gone AS (DELETE FROM signing_attestations WHERE item_id = sqlc.arg(item_id)::bigint RETURNING item_id, signature_id)
+DELETE FROM signature_attachments a USING gone
+ WHERE a.item_id = gone.item_id AND a.signature_id = gone.signature_id AND a.source = 'issued';
+
+-- name: SigningReferrerStored :one
+-- Whether the referrer manifest of an attestation is stored in the repository: a deleted one is made again (R-SIG-054).
+SELECT EXISTS (SELECT 1 FROM items WHERE repo_id = sqlc.arg(repo_id)::bigint AND blob_sha256 = sqlc.arg(digest)::bytea
+                                     AND kind = 'file' AND trashed_at IS NULL)::boolean;
+
+-- name: SigningDiscoverAttestations :many
+-- Discovery (R-SIG-049, R-SIG-053): the live files after the cursor, in id order, that have no attestation of the current identity, or
+-- whose referrer was deleted; a generated file, a file of a system repository of upstream, and the referrers the job wrote itself are
+-- left out. The format says which of them it attests.
+SELECT i.id, i.repo_id, i.path, i.blob_sha256, r.key AS repo_key, p.key AS project_key, r.format, r.class,
+       (sa.item_id IS NOT NULL)::boolean AS attested
+  FROM items i
+  JOIN repositories r ON r.id = i.repo_id
+  JOIN project p ON p.id = r.project_id
+  LEFT JOIN signing_attestations sa ON sa.item_id = i.id
+ WHERE i.id > sqlc.arg(after_id)::bigint AND i.kind = 'file' AND NOT i.generated AND i.trashed_at IS NULL
+   AND NOT EXISTS (SELECT 1 FROM upstream_repository u WHERE u.repository_id = i.repo_id AND u.kind = 'system')
+   AND NOT EXISTS (SELECT 1 FROM signing_attestations q WHERE q.repo_id = i.repo_id AND q.referrer = i.blob_sha256)
+   AND (sa.item_id IS NULL OR sa.identity_id <> sqlc.arg(identity_id)::bigint
+        OR (sa.served_as = 'referrer' AND NOT EXISTS (SELECT 1 FROM items ri WHERE ri.repo_id = sa.repo_id AND ri.blob_sha256 = sa.referrer
+                                                                               AND ri.kind = 'file' AND ri.trashed_at IS NULL)))
+ ORDER BY i.id
+ LIMIT sqlc.arg(row_limit)::int;
+
+-- name: SigningDiscoveryEnd :one
+-- The last item id discovery would look at: a step that reaches it starts the next pass at the first.
+SELECT COALESCE(max(id), 0)::bigint FROM items;
+
+-- name: SigningWakeVerdict :execrows
+-- A malware verdict of a blob changed (R-SIG-053): every attestation that names the blob is made again, and the work of an item of the
+-- blob that waits for its first verdict becomes due now.
+WITH remake AS (
+    INSERT INTO signing_work (kind, item_id, reason, priority, not_before)
+    SELECT 'attestation', sa.item_id, 'malware', 1, now()
+      FROM signing_attestations sa
+     WHERE sa.scanned @> ARRAY[sqlc.arg(sha256)::bytea]
+    ON CONFLICT (kind, item_id) DO UPDATE
+       SET reason = 'malware', priority = LEAST(signing_work.priority, 1), not_before = now(), attempts = 0, failed = false, code = NULL
+    RETURNING item_id)
+UPDATE signing_work w
+   SET not_before = now()
+ WHERE w.kind = 'attestation' AND w.not_before > now() AND NOT w.failed
+   AND w.item_id IN (SELECT i.id FROM items i WHERE i.blob_sha256 = sqlc.arg(sha256)::bytea)
+   AND NOT EXISTS (SELECT 1 FROM remake WHERE remake.item_id = w.item_id);
+
+-- name: SigningUnplaceReferrers :many
+-- An older cosign signature tag was stored for digests of a repository (Q-SIG-66): the attestations of those digests that stand as
+-- referrers are served through the API from now on, in the transaction of the tag's commit, and the referrers to remove are answered with
+-- the attested item and the bundle's digest. No identity is needed: nothing is signed.
+WITH old AS (
+    SELECT sa.item_id, sa.referrer, i.path, i.blob_sha256, s.object_sha256
+      FROM signing_attestations sa
+      JOIN items i ON i.id = sa.item_id
+      JOIN signatures s ON s.id = sa.signature_id
+     WHERE sa.repo_id = sqlc.arg(repo_id)::bigint AND sa.served_as = 'referrer' AND i.blob_sha256 = ANY(sqlc.arg(subjects)::bytea[])
+       FOR UPDATE OF sa)
+UPDATE signing_attestations sa
+   SET served_as = 'api', referrer = NULL, api_reason = 'hides_signature'
+  FROM old
+ WHERE sa.item_id = old.item_id
+RETURNING old.path::text AS path, old.blob_sha256, old.referrer::bytea AS referrer, old.object_sha256;
+
+-- name: SigningWakeRetired :execrows
+-- A retired identity's attestations are made again by the current identity at priority 2 (R-SIG-048).
+INSERT INTO signing_work (kind, item_id, reason, priority, not_before)
+SELECT 'attestation', sa.item_id, 'retired', 2, now()
+  FROM signing_attestations sa
+ WHERE sa.identity_id = sqlc.arg(identity_id)::bigint
+ON CONFLICT (kind, item_id) DO UPDATE
+   SET reason = 'retired', priority = LEAST(signing_work.priority, 2), not_before = LEAST(signing_work.not_before, now()),
+       attempts = 0, failed = false, code = NULL;
+
+-- name: SigningAttestationOf :many
+-- The API's route (R-SIG-054): the bundle of the attestation of the live file at a path of a repository, served while its identity is
+-- current or previous; a retired identity's is not served (R-SIG-048).
+SELECT i.id AS item_id, o.raw, sa.served_as, COALESCE(sa.api_reason, '')::text AS api_reason
+  FROM items i
+  JOIN signing_attestations sa ON sa.item_id = i.id
+  JOIN signatures s ON s.id = sa.signature_id
+  JOIN signature_objects o ON o.sha256 = s.object_sha256
+  JOIN signing_identities si ON si.id = sa.identity_id
+ WHERE i.repo_id = sqlc.arg(repo_id)::bigint AND i.path = sqlc.arg(path)::text AND i.kind = 'file' AND i.trashed_at IS NULL
+   AND si.state IN ('current', 'previous') AND o.raw IS NOT NULL;
+
+-- name: SigningBundle :many
+-- The bundle of an attestation by its object's digest: what a referrer that was deleted is made again from, unchanged.
+SELECT raw FROM signature_objects WHERE sha256 = sqlc.arg(sha256)::bytea AND raw IS NOT NULL;

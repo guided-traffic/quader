@@ -43,7 +43,7 @@ func (f *Format) Signatures() formats.SignatureAdapter { return signatureAdapter
 // Declaration implements formats.SignatureAdapter: the row of NuGet in R-SIG-002.
 func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 	const where = "the entry .signature.p7s inside the .nupkg"
-	return formats.SignatureDeclaration{Kinds: []formats.SignatureKind{
+	return formats.SignatureDeclaration{Attests: attests, Kinds: []formats.SignatureKind{
 		{
 			Name: "author signature", Schemes: []string{formats.SignatureSchemeNuGetCMS}, Role: formats.SignatureRolePublisher,
 			Location: where + ", the primary signature with the commitment type proof of origin",
@@ -276,4 +276,24 @@ func artifactName(_ string, info formats.PathInfo) string {
 		return ""
 	}
 	return info.Package + " " + info.Version
+}
+
+// attests is what Quader's receipt attestation is about in a NuGet repository (signatures.md R-SIG-044).
+const attests = "every .nupkg and every .snupkg"
+
+// AttestationSubjects implements formats.SignatureAdapter (R-SIG-044): a version's .nupkg and its .snupkg are attested, one statement
+// each (R-SIG-051), under the package ID and the version of the path; what Quader derives from a package is not.
+func (signatureAdapter) AttestationSubjects(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.AttestationItem) ([]formats.AttestationSubject, error) {
+	out := make([]formats.AttestationSubject, len(items))
+	for i, it := range items {
+		segs := strings.Split(it.Path, "/")
+		if len(segs) != 3 {
+			continue
+		}
+		pkg, ver, file := segs[0], segs[1], segs[2]
+		if file == NupkgFile(pkg, ver) || file == SnupkgFile(pkg, ver) {
+			out[i] = formats.AttestationSubject{Attested: true, Name: pkg, Version: ver}
+		}
+	}
+	return out, nil
 }

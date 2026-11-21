@@ -231,3 +231,17 @@ SELECT kind, priority::int AS priority, failed, count(*)::bigint AS rows,
   FROM signing_work
  GROUP BY kind, priority, failed
  ORDER BY kind, priority, failed;
+
+-- name: SigningPostponeWork :exec
+-- A row whose operation waits for something that is not there yet (an attestation for its item's first verdicts, R-SIG-053) is due
+-- again later and spends no attempt.
+UPDATE signing_work
+   SET not_before = sqlc.arg(not_before)::text::timestamptz
+ WHERE kind = sqlc.arg(kind)::text AND item_id = sqlc.arg(item_id)::bigint;
+
+-- name: SigningNextDue :one
+-- The earliest time a row of the kinds that waits becomes due (an attestation that waits for its checks, R-SIG-053): the job wakes
+-- itself for it; '' when nothing waits.
+SELECT COALESCE(to_char(min(not_before) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'), '')::text
+  FROM signing_work
+ WHERE NOT failed AND not_before > now() AND kind = ANY(sqlc.arg(kinds)::text[]);

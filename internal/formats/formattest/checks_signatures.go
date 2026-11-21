@@ -54,6 +54,9 @@ type GateCase struct {
 	// more); empty for none.
 	Want     formats.GateKind
 	Covering []string
+	// Attested is whether AttestationSubjects must name the item a subject of Quader's receipt attestation (signatures.md R-SIG-044),
+	// under a non-empty name; false: it must not. A format whose declaration attests something has at least one case that is.
+	Attested bool
 }
 
 // ContentOf serves bytes as the content of a [formats.SignatureEvent], for the kit and a format's own tests of its detector.
@@ -164,8 +167,14 @@ func (r *run) signatures() {
 	if len(r.fx.GateCases) == 0 {
 		r.failf("the format declares signature kinds and its fixture has no GateCases: every format names what the gate of a repository judges (R-SIG-063)")
 	}
+	attested := false
 	for _, c := range r.fx.GateCases {
 		r.gateCase(sa, c)
+		attested = attested || c.Attested
+	}
+	if sa.Declaration().Attests != "" && !attested {
+		r.failf("the format declares what Quader attests (%q) and no GateCase is Attested: every format names what its receipt attestation is about (R-SIG-044)",
+			sa.Declaration().Attests)
 	}
 }
 
@@ -195,6 +204,7 @@ func (r *run) gateCase(sa formats.SignatureAdapter, c GateCase) {
 	if got[0].Kind != c.Want {
 		r.failf("gate case %q: Gate names %s at %q, want %s (R-SIG-063)", c.Name, got[0].Kind, c.Path, c.Want)
 	}
+	r.attestationCase(sa, h, c, blob)
 	for _, p := range c.Covering {
 		d, ok := h.storedDigest(p)
 		if !ok {
@@ -204,6 +214,23 @@ func (r *run) gateCase(sa formats.SignatureAdapter, c GateCase) {
 		if !slices.Contains(got[0].Covering, d) {
 			r.failf("gate case %q: Gate does not name %q as covering %q", c.Name, p, c.Path)
 		}
+	}
+}
+
+// attestationCase asks AttestationSubjects about the item of a gate case (R-SIG-044): attested exactly as the case says, an attested one
+// under a name.
+func (r *run) attestationCase(sa formats.SignatureAdapter, h *Host, c GateCase, blob [32]byte) {
+	got, err := sa.AttestationSubjects(context.Background(), h, h.Ref(), []formats.AttestationItem{{Path: c.Path, Blob: blob}})
+	switch {
+	case err != nil:
+		r.failf("gate case %q: AttestationSubjects fails: %v", c.Name, err)
+	case len(got) != 1:
+		r.failf("gate case %q: AttestationSubjects answers %d subjects for one item", c.Name, len(got))
+	case got[0].Attested != c.Attested:
+		r.failf("gate case %q: AttestationSubjects names %q attested %v, want %v (R-SIG-044: Quader attests the artifacts a client fetches, never a carrier of a signature)",
+			c.Name, c.Path, got[0].Attested, c.Attested)
+	case got[0].Attested && got[0].Name == "":
+		r.failf("gate case %q: AttestationSubjects attests %q under no name (R-SIG-051)", c.Name, c.Path)
 	}
 }
 
@@ -337,6 +364,13 @@ func (r *run) signaturesNone(sa formats.SignatureAdapter) {
 			got, err := sa.Gate(context.Background(), h, h.Ref(), []formats.GateItem{{Path: p, Blob: blob}})
 			if err != nil || len(got) != 1 || got[0].Kind != formats.GateNone {
 				r.failf("the format declares no signatures and Gate does not answer GateNone at %q (R-SIG-063): %v %v", p, got, err)
+			}
+			if sa.Declaration().AttestsNone == "" {
+				continue
+			}
+			subs, err := sa.AttestationSubjects(context.Background(), h, h.Ref(), []formats.AttestationItem{{Path: p, Blob: blob}})
+			if err != nil || len(subs) != 1 || subs[0].Attested {
+				r.failf("the format attests nothing (%s) and AttestationSubjects names %q attested (R-SIG-044): %v %v", sa.Declaration().AttestsNone, p, subs, err)
 			}
 		}
 	}

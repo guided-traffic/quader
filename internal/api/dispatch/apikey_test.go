@@ -178,5 +178,5 @@ func TestR_NUGET_012_AnEndpointWithoutThePackageSurfaceHasNoAPIKeyRoute(t *testi
 
 // Signatures declares none: a format of this test (signatures.md R-SIG-022).
 func (keyed) Signatures() formats.SignatureAdapter {
-	return formats.NoSignatures("a format of this test")
+	return formats.NoSignatures("a format of this test", "a format of this test")
 }

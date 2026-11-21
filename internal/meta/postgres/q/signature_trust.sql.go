@@ -1371,7 +1371,7 @@ func (q *Queries) SignatureStoreTrustRoot(ctx context.Context, arg SignatureStor
 
 const signatureTrustBacklog = `-- name: SignatureTrustBacklog :one
 SELECT (EXISTS (SELECT 1 FROM signatures s
-                 WHERE s.state IN ('valid', 'no_key')
+                 WHERE s.state IN ('valid', 'no_key') AND s.identity_id IS NULL
                    AND NOT EXISTS (SELECT 1 FROM signature_trust t
                                     WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.anchor_epoch >= st.anchor_epoch))
         OR EXISTS (SELECT 1 FROM signature_trust t JOIN signatures s ON s.id = t.signature_id

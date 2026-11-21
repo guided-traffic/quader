@@ -47,6 +47,14 @@ days before the end, "expired" in red), the certificate's SHA-256 fingerprint, n
 **Announced** for `signing.identity.announce_period` (10 minutes), so that caches learn its key, and then becomes current. **Remove**
 makes the current uploaded identity previous: Quader signs nothing until another one is current.
 
+**What Quader signs with it:** a receipt attestation of every artifact a repository receives (the statement of the user guide's
+[Signatures](../user/signatures.md#quaders-receipt-attestation)), made by the worker's job `signing` once the item's checks have their first
+verdicts or after `signing.attestations.wait_for_checks` (1 hour), made again when the malware verdict or the identity changes, and removed
+with the item. Repositories of the built-in project `upstream` that hold the product's own tool data get none. `signing.attestations.enabled:
+false` stops them (made ones stay served), `signing.attestations.fills: false` attests uploads only. Each takes about 2.5 KiB in PostgreSQL;
+the first identity after many stored artifacts, and every rotation, makes them all again in the background (minutes per million). The
+**Verify** step of every repository's client setup shows the command your users run.
+
 **Previous identities**, closed, lists the identities that signed before, with their dates. Their npm signatures stay valid. **Retire** one
 whose key you believe taken: "Retire this identity? Its key leaves npm's keys at once; Quader signs its packages and attestations again with
 the current identity." A retirement cannot be undone ([runbook](runbook.md#a-signing-key-believed-taken)).

@@ -4,6 +4,8 @@
 # deploy/dev/e2e.sh and run by the pod of deploy/dev/oci-clients.yaml, which is privileged (dockerd needs it). Not baked in: the
 # dev CA (the pod mounts it; entrypoint-docker.sh puts it into /etc/docker/certs.d) and any credential.
 #
+# cosign is not in this image: the set `oci` alone puts it into the pod (Dockerfile.cosign).
+#
 #   DOCKER_IMAGE   E2E_OCICLIENTS_DOCKER_IMAGE of tools/versions.env (pinned by digest)
 #   --build-context fwd=<dir>   a directory with the static forwarder fwd-linux-<arch> (build.sh builds it)
 ARG DOCKER_IMAGE

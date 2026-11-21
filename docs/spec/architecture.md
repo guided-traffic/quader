@@ -1405,9 +1405,13 @@ package formats
 // probes' (ADR-207, repositories-and-proxy.md R-REPO-065): a format with the class remote declares its probes (Descriptor.Probes, or
 // NoProbe with the reason), its RemoteAdapter names a probed version's content (ProbeContent), and its handler tells the host of a
 // probe it answered (RemoteFetcher.Probed). Version 8 is the signatures' (ADR-228, signatures.md R-SIG-022): every format declares
-// its signatures and detects them (Format.Signatures); Base returns nil and Register refuses nil. A format declares the literal it was
-// written against.
-const ContractVersion = 8
+// its signatures and detects them (Format.Signatures); Base returns nil and Register refuses nil. Version 9 is the gate per repository's
+// (ADR-231, signatures.md R-SIG-063): SignatureAdapter.Gate names what the signature gate judges of each stored item, and
+// SignatureVerdicts.Refuse judges a stored document a format serves without the item store. Version 10 is the receipt attestations'
+// (ADR-230, signatures.md R-SIG-044, Q-SIG-67, Q-SIG-180): SignatureAdapter.AttestationSubjects names the stored items Quader attests, the
+// declaration says what it attests or why nothing (Attests, AttestsNone), and NoSignatures takes both reasons. A format declares the
+// literal it was written against.
+const ContractVersion = 10
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -1860,6 +1864,7 @@ type Capabilities struct {
 	VersionPath   VersionPather        // nil for a format whose versions have no file of their own (Q-AUTHZ-255, ADR-174)
 	SourceSpeller SourceSpeller        // nil for a format whose items have one spelling (Q-OCI-129)
 	SignatureCoverage SignatureCoverage // nil for a format whose signatures cover the artifact itself (signatures.md R-SIG-030)
+	AttestationReferrer AttestationReferrer // nil for a format whose attestations the API alone serves (signatures.md R-SIG-054)
 }
 
 // SourceSpeller is the optional interface of a Format whose items have more than one canonical spelling in a repository (OCI on a Docker Hub
@@ -2101,7 +2106,9 @@ func (f ViewFields) Has(o ViewFields) bool
 **Signatures** ([signatures.md](signatures.md) R-SIG-022, [ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version),
 Q-SIG-43, Q-SIG-47, Q-SIG-48). Every format declares the signatures of its ecosystem, or none with the reason, and names them in what
 a commit or a remote's fill stores; the core resolves what a candidate names by path in the event's repository only, stores it
-(`internal/signatures/store`) and checks it later. A format without signatures returns `NoSignatures(reason)`.
+(`internal/signatures/store`) and checks it later. A format without signatures, whose items Quader does not attest either, returns
+`NoSignatures(reason, attestsNone)`. Every format also names the stored items Quader's receipt attestation is about
+([signatures.md](signatures.md) R-SIG-044, Q-SIG-180), which the job `signing` asks when it signs.
 
 ```go
 // SignatureAdapter is what a format says about the signatures of its ecosystem.
@@ -2115,6 +2122,50 @@ type SignatureAdapter interface {
 	// artifact with the artifacts whose passing signature passes it too, a carrier of signatures, a signature file, or nothing of its
 	// own. It may read the format's data port; it never reads the signature tables. One subject per item, in order.
 	Gate(ctx context.Context, h Host, repo RepoRef, items []GateItem) ([]GateSubject, error)
+	// AttestationSubjects names, for stored items of a repository, those Quader's receipt attestation is about (R-SIG-044): the artifacts
+	// a client fetches, never a carrier of a signature or an attestation, a layer, a platform manifest an index lists or a derived
+	// document. It may read the format's data port; it never reads the signature tables. One subject per item, in order.
+	AttestationSubjects(ctx context.Context, h Host, repo RepoRef, items []AttestationItem) ([]AttestationSubject, error)
+}
+
+type AttestationItem struct {
+	Path string
+	Blob [32]byte // the item's SHA-256
+	Size int64    // the item's size; 0 where the caller does not know it
+}
+
+type AttestationSubject struct {
+	Attested  bool       // the zero subject is an item Quader does not attest
+	Name      string     // the artifact's name in the format's words: an image, a package, a path
+	Version   string     // "" where the format or the item has none
+	MediaType string     // an image's manifest or index media type; "" otherwise
+	Scanned   [][32]byte // the blobs whose malware verdicts the statement names (an image's layers); nil: the item's own
+}
+
+// AttestNoneFor answers the zero subject for every item: the answer of a format that attests nothing (the ClamAV definitions).
+func AttestNoneFor(items []AttestationItem) []AttestationSubject
+
+// AttestationReferrer is the optional interface of a format whose clients find Quader's receipt attestation among an artifact's
+// referrers on its own wire (OCI, R-SIG-054, Q-SIG-66): where an attestation may stand (only where it hides nothing; else the reason,
+// ReferrerHidesSignature or ReferrerNoAPI), the files of a referrer that carries the bundle (blobs first, the manifest last, whose Payload
+// the format's OnCommit admits as Quader's system write), and the paths a removal takes. Capabilities.AttestationReferrer finds it; an
+// addition, the version stays.
+type AttestationReferrer interface {
+	ReferrerPlacement(ctx context.Context, h Host, repo RepoRef, item AttestationItem) (refer bool, reason string, err error)
+	AttestationReferrer(subject AttestationSubject, item AttestationItem, bundle []byte, predicateType string, created time.Time) (files []ReferrerFile, manifest [32]byte, err error)
+	ReferrerPaths(item AttestationItem, manifest, bundle [32]byte) []string
+}
+
+const (
+	ReferrerHidesSignature = "hides_signature"  // an older cosign signature tag stands for the digest
+	ReferrerNoAPI          = "no_referrers_api" // the repository's referrers answer is no referrers API of its own
+)
+
+type ReferrerFile struct {
+	Path      string
+	Body      []byte
+	MediaType string
+	Payload   any // what the format's OnCommit admits the file by; nil for a blob
 }
 
 // GateKind is what the gate judges an item as (R-SIG-063): GateNone (passed: a layer, a config, every item of a format without
@@ -2152,6 +2203,8 @@ type SignatureDeclaration struct {
 	// answers (Q-SIG-213); nil names it by its path. Both are additions of version 9 (ADR-237).
 	ReadToSign   bool
 	ArtifactName func(path string, info PathInfo) string
+	Attests      string // what Quader attests in the format's words (R-SIG-044); exactly one of Attests and AttestsNone is set
+	AttestsNone  string // why the format gets no receipt attestation
 }
 
 type SignatureKind struct {
@@ -2247,7 +2300,7 @@ const (
 
 const MaxSignatureRaw = 256 << 10
 
-func NoSignatures(reason string) SignatureAdapter
+func NoSignatures(reason, attestsNone string) SignatureAdapter
 func SignatureRoleValid(role string) bool
 func SignatureSchemeValid(scheme string) bool
 func SignatureSourceValid(source string) bool // a source a detector names: every one but SignatureSourceUpload (signatures.md Q-SIG-217)
@@ -5109,7 +5162,7 @@ describe the policy from the first stable release on.
 | Token formats | `qdr_*_` prefixes (INV-8) | A prefix never changes meaning. New token types get new prefixes. |
 | Metrics, log and audit fields | Names and labels | Stable within a major. A renamed metric is emitted under both names for at least 2 minors ([operations-and-observability.md](operations-and-observability.md)). |
 | Bastion interface | `bastion.InterfaceVersion`, an integer of its own, carried in `Quader-Bastion-Interface` ([bastion.md](bastion.md) R-BAS-009) | Main installation and Bastion talk only at the same version; every change of the interface raises it, guarded by its surface file; a release that raises it says so in its notes |
-| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 8 since the signatures ([ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version), [signatures.md](signatures.md) R-SIG-022), at 7 since the probes ([ADR-207](../decisions.md#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7), [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065), at 6 since the download limits ([ADR-206](../decisions.md#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce), [usage-and-limits.md](usage-and-limits.md) R-LIM-036), at 5 since the fetch of a version ([ADR-205](../decisions.md#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
+| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 10 since the receipt attestations ([ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker), [signatures.md](signatures.md) R-SIG-044), at 9 since the gate per repository ([ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed), [signatures.md](signatures.md) R-SIG-063), at 8 since the signatures ([ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version), [signatures.md](signatures.md) R-SIG-022), at 7 since the probes ([ADR-207](../decisions.md#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7), [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065), at 6 since the download limits ([ADR-206](../decisions.md#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce), [usage-and-limits.md](usage-and-limits.md) R-LIM-036), at 5 since the fetch of a version ([ADR-205](../decisions.md#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
 
 **Major version 0.** Quader releases stay on major version 0 until the owner decides otherwise
 ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)); Semantic Release sets each version from the

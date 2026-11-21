@@ -57,8 +57,11 @@ export function fillSnippet(sn: ClientSnippet, token: string | null): ClientSnip
 /** The command that puts a token into the variable without the shell's history seeing it (R-UI-122). */
 export const READ_TOKEN_COMMAND = 'read -rs QUADER_TOKEN && export QUADER_TOKEN';
 
-/** The steps of the page, in the order of the job (R-UI-121): the snippets of each are the client setup's tab of that name. */
-type Step = 'configure' | 'install' | 'publish';
+/**
+ * The steps of the page, in the order of the job (R-UI-121): the snippets of each are the client setup's tab of that name. Verify is the
+ * last, and only there while the installation has a signing identity (signatures.md R-SIG-056, Q-SIG-71).
+ */
+type Step = 'configure' | 'install' | 'publish' | 'verify';
 
 /**
  * Set up client (R-UI-120 to R-UI-123, ADR-202): the client setup and the guide of a repository as one page. It opens from the
@@ -307,8 +310,11 @@ export class ClientSetupPage {
       configure: shown.filter((s) => s.tab === 'configure'),
       install: shown.filter((s) => s.tab === 'install'),
       publish: shown.filter((s) => s.tab === 'publish'),
+      verify: shown.filter((s) => s.tab === 'verify'),
     };
   });
+  /** The number of the step Verify: after Publish where the page offers it. */
+  protected readonly verifyNumber = computed(() => (this.offerPublish() ? 4 : 3));
   protected readonly needsToken = computed(() => !this.anonymous() && this.mode() === 'paste' && this.pastedToken() === null);
   protected readonly publishTarget = computed(() => this.setup()?.publishTarget ?? null);
   protected readonly canReadConfig = computed(() => this.session.has('repositories:read-config'));

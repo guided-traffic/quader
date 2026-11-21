@@ -88,14 +88,18 @@ makes npm's registry signature of every version of a local npm repository (R-SIG
 repository receives (R-SIG-051 to R-SIG-054). Debian's index signatures keep their own per-repository keys
 ([deb-signing.md](deb-signing.md)).
 
-**What is built** (packages 1 and 2 of 4, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the identity with its
-states, its two ways in, its checks, the announce and the switch under the lock, removal and retirement, the trusted root and the chain, the
-events, metrics and alerts, the frame of the job `signing`, and npm's registry signature of every version of a local repository with the
-local keys endpoint. The job signs in the worker with the session's key inside a transaction that holds the current identity's row; the
-signing code (`internal/signing/npmsign`) receives the key as a `crypto.Signer` from the job and imports neither the key package nor the job
-(`CheckSigningKey`). What an npm signature says is that this installation served this name, version and integrity from a local repository:
-the message is `<name>@<version>:<integrity>`, the integrity the one the publish computed of the stored tarball. The attestations are not
-built. Retiring an uploaded identity drops its sealed key from the database
+**What is built** (packages 1, 2 and 3 of 4, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the identity with
+its states, its two ways in, its checks, the announce and the switch under the lock, removal and retirement, the trusted root and the chain,
+the events, metrics and alerts, the frame of the job `signing`, npm's registry signature of every version of a local repository with the
+local keys endpoint, and the receipt attestations. The job signs in the worker with the session's key inside a transaction that holds the
+current identity's row; the signing code (`internal/signing/npmsign`, `internal/signing/attest`) receives the key as a `crypto.Signer` from
+the job and imports neither the key package nor the job (`CheckSigningKey`). What an npm signature says is that this installation served
+this name, version and integrity from a local repository: the message is `<name>@<version>:<integrity>`, the integrity the one the publish
+computed of the stored tarball. A receipt attestation is a statement of every artifact a user's repository receives, signed as a Sigstore
+bundle with the identity's leaf (R-SIG-051, R-SIG-052); both are kept in stage 1's store with `identity_id` set and the attachment source
+`issued` (one mechanism, `RecordIssued`), which the gate never counts (R-SIG-062) and the trust job never judges. An attestation is served
+through the API to whoever may read the item, and an image's is written as a referrer by the system (`system:signing`) where it hides no
+older signature (R-SIG-054). Retiring an uploaded identity drops its sealed key from the database
 ([Q-SIG-149](../spec/signatures.md#q-sig-149--retiring-an-uploaded-identity-drops-its-sealed-key)), and a worker drops an opened key once its
 identity neither signs nor waits to.
 
@@ -209,6 +213,12 @@ object store is answered pending (Q-SIG-140). PostgreSQL down fails the download
   with an older cosign signature gets Quader's attestation only through the API.
 - [H-1186](../spec/signatures.md#h-1186--a-policy-engine-that-demands-a-log-or-a-timestamp-cannot-verify-quaders-attestations): a policy
   engine that demands a log or a timestamp cannot verify Quader's attestations.
+- [H-1215](#h-1215--a-remotes-and-a-virtuals-images-carry-quaders-attestation-only-through-the-api): a remote's and a virtual's images carry
+  Quader's attestation only through the API.
+- [H-1216](#h-1216--a-retired-identitys-referrer-stays-among-an-images-referrers-until-the-job-made-it-again): a retired identity's
+  referrer stays among an image's referrers until the job made it again.
+- [H-1217](#h-1217--through-a-virtual-repository-quaders-referrer-of-one-member-can-hide-an-older-signature-tag-of-another): through a
+  virtual repository, Quader's referrer of one member can hide an older signature tag of another.
 - [H-1199](../spec/signatures.md#h-1199--a-client-that-resolves-a-range-picks-a-version-the-gate-refuses): a client that resolves a range
   picks a version the gate refuses.
 - [H-1200](../spec/signatures.md#h-1200--docker-and-ansible-galaxy-fail-a-first-pull-through-a-gated-remote-when-the-checks-outlast-the-wait):
@@ -473,6 +483,36 @@ offer the passphrase to be saved (the field is `autocomplete="off"`, which not e
 ([H-765](deb-signing.md#h-765--an-imported-secret-key-passes-through-the-operators-browser)). What makes it real: an administrator's browser
 or machine that is not trusted with the installation's signing key; `POST /api/v1/signing/identity/import` from `curl` with the key read
 from a file keeps it out of a browser.
+
+### H-1215 · A remote's and a virtual's images carry Quader's attestation only through the API
+
+Component: the placement of an image's attestation (R-SIG-054, Q-SIG-183). Subject: clusters and pipelines that look for Quader's receipt
+among the referrers of an image pulled through a remote repository, or addressed through a virtual repository whose member that holds it is
+a remote. Live since package 3 of stage 2. Quader writes its referrer only into a local repository; an image a remote cached gets its
+attestation through `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/attestation` alone, so `cosign verify-attestation` against the
+remote's address and an admission controller that reads the referrers find none and refuse the image if their policy demands Quader's
+receipt. Nothing is hidden by it: no publisher's signature is shadowed, and the attestation exists. What makes it real: a policy that demands
+Quader's receipt for every image, and images pulled through remotes.
+
+### H-1216 · A retired identity's referrer stays among an image's referrers until the job made it again
+
+Component: the retirement of an identity (R-SIG-048, Q-SIG-191). Subject: verifiers of a local image's attestation after an administrator
+retired the identity that made it, for a key believed taken. Live since package 3 of stage 2. The route stops serving the retired identity's
+attestations at once and the retirement writes each of them as work at priority 2, but the referrer of an image stays in the registry until
+the job replaces it, minutes for a backlog of thousands; a verifier that still trusts the retired identity's chain (an old trusted root, a CA
+anchor of the company) verifies it meanwhile. The certificate's chain is the trust a verifier holds, not Quader's list. What makes it real: a
+retirement of a key that was taken, a large backlog, and verifiers that do not refresh the trusted root.
+
+### H-1217 · Through a virtual repository, Quader's referrer of one member can hide an older signature tag of another
+
+Component: the virtual repository's referrers union (R-SIG-027, R-SIG-054). Subject: verifiers that pull an image through a virtual repository
+whose local member holds the image with Quader's referrer while another member (a remote, or a second local repository) holds a cosign
+signature of the same digest in the older layout (`sha256-<hex>.sig`, `.att`). Live since package 3 of stage 2. Quader's referrer stands only
+where its own repository holds no such tag (Q-SIG-66), but the union of a virtual repository lists the referrers of every member and the
+filter R-SIG-054 names, which would leave Quader's out there, is not built; cosign 3 then finds a bundle among the referrers and stops
+reading the older tag, so `cosign verify` of the publisher's older signature through the virtual address fails, while the same image's address
+of the member that holds the tag verifies. What makes it real: the same digest pushed to a local repository and signed in the older layout
+in another member of the same virtual repository.
 
 ### H-1233 · A timestamp of a Sigstore bundle or a Notation signature whose authority names its signer by its key is not read
 

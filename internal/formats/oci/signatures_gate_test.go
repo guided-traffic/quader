@@ -129,7 +129,7 @@ func gateCases() []formattest.GateCase {
 	}
 	return []formattest.GateCase{
 		{Name: "a manifest by tag is an artifact", Seed: seed, Path: TagPath("app", "1"), Want: formats.GateArtifact},
-		{Name: "a manifest by digest is an artifact", Seed: seed, Path: ManifestPath("app", seedDigest), Want: formats.GateArtifact},
+		{Name: "a manifest by digest is an artifact", Seed: seed, Path: ManifestPath("app", seedDigest), Want: formats.GateArtifact, Attested: true},
 		{
 			Name: "a platform manifest is covered by its index", Seed: withIndex, Path: ManifestPath("app", seedDigest), Want: formats.GateArtifact,
 			Covering: []string{ManifestPath("app", sha(idx))},

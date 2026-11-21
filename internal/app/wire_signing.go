@@ -64,8 +64,12 @@ func (a *App) wireSigning(ctx context.Context, in infra) (signingArea, error) {
 	if err != nil {
 		return signingArea{}, err
 	}
+	attestation, err := a.attestationKind(in)
+	if err != nil {
+		return signingArea{}, err
+	}
 	out.job, err = job.New(job.Options{
-		DB: db, Store: st, Keys: out.keys, Kinds: []job.Kind{npmKind},
+		DB: db, Store: st, Keys: out.keys, Kinds: []job.Kind{npmKind, attestation},
 		Enabled: cfg.Enabled, Concurrency: cfg.Concurrency, MaxAttempts: cfg.MaxAttempts,
 		Wake: func(ctx context.Context, delay time.Duration) error {
 			return db.InTx(ctx, func(tx meta.Tx) error { return job.WakeAfter(ctx, tx, delay) })
@@ -171,7 +175,7 @@ func (a *App) signingAPI() v1.SigningServices {
 		return v1.SigningServices{}
 	}
 	return v1.SigningServices{
-		Store: sg.store, Snapshot: sg.snapshot, Enabled: a.cfg.Signing.Enabled, Managed: a.cfg.Signing.Identity.Files(),
+		Store: sg.store, Snapshot: sg.snapshot, Attestations: sg.store, Enabled: a.cfg.Signing.Enabled, Managed: a.cfg.Signing.Identity.Files(),
 		AnnouncePeriod: a.cfg.Signing.Identity.AnnouncePeriod,
 	}
 }

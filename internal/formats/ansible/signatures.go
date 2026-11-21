@@ -34,7 +34,7 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 		covers = "the collection archive: MANIFEST.json, which names FILES.json, which names every file"
 		client = "signatures[] of the version document"
 	)
-	return formats.SignatureDeclaration{Kinds: []formats.SignatureKind{
+	return formats.SignatureDeclaration{Attests: attests, Kinds: []formats.SignatureKind{
 		{
 			Name: "signing service signature", Schemes: []string{formats.SignatureSchemeOpenPGP}, Role: formats.SignatureRoleRegistry,
 			Location: "an entry of signatures[] that names a signing_service", Covers: covers, Client: client,
@@ -120,4 +120,22 @@ func artifactName(_ string, info formats.PathInfo) string {
 		return ""
 	}
 	return info.Package + ":" + info.Version
+}
+
+// attests is what Quader's receipt attestation is about in an Ansible Galaxy repository (signatures.md R-SIG-044, Q-SIG-68).
+const attests = "every collection archive"
+
+// AttestationSubjects implements formats.SignatureAdapter (R-SIG-044): an archive of a version is attested under its collection and
+// version; the documents a repository stores or derives are not.
+func (a signatureAdapter) AttestationSubjects(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.AttestationItem) ([]formats.AttestationSubject, error) {
+	out := make([]formats.AttestationSubject, len(items))
+	for i, it := range items {
+		if !strings.HasSuffix(it.Path, collection.ArchiveSuffix) {
+			continue
+		}
+		if info := a.f.Classify(formats.Path{Path: it.Path}); info.Kind == formats.Content {
+			out[i] = formats.AttestationSubject{Attested: true, Name: info.Package, Version: info.Version}
+		}
+	}
+	return out, nil
 }

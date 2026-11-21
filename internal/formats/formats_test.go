@@ -39,7 +39,7 @@ func (f fake) Signatures() SignatureAdapter {
 	case f.sigs != nil:
 		return f.sigs
 	}
-	return NoSignatures("a format of the contract's tests")
+	return NoSignatures("a format of the contract's tests", "a format of the contract's tests attests nothing")
 }
 
 func (f fake) Descriptor() Descriptor { return f.d }
@@ -164,12 +164,17 @@ func (declared) Gate(_ context.Context, _ Host, _ RepoRef, items []GateItem) ([]
 	return GateNoneFor(items), nil
 }
 
+func (declared) AttestationSubjects(_ context.Context, _ Host, _ RepoRef, items []AttestationItem) ([]AttestationSubject, error) {
+	return AttestNoneFor(items), nil
+}
+
 // TestR_SIG_022_RegisterRefusesAFormatThatDoesNotDeclareItsSignatures: a format whose Signatures() is nil does not start (Q-SIG-43), nor
 // one whose declaration says neither its kinds nor why it has none, says both, or leaves a field of a kind empty or outside R-SIG-001.
-// A format without signatures declares the reason (NoSignatures). Unit, milliseconds.
+// A format without signatures declares the reason (NoSignatures). Exactly one of what Quader attests and why it attests nothing is declared
+// (R-SIG-044). Unit, milliseconds.
 func TestR_SIG_022_RegisterRefusesAFormatThatDoesNotDeclareItsSignatures(t *testing.T) {
 	kind := SignatureKind{Name: "k", Schemes: []string{SignatureSchemeOpenPGP}, Role: SignatureRolePublisher, Location: "l", Covers: "c", Client: "x"}
-	bad := func(k SignatureKind) declared { return declared{Kinds: []SignatureKind{k}} }
+	bad := func(k SignatureKind) declared { return declared{Kinds: []SignatureKind{k}, Attests: "every file"} }
 	noRole, noClient, badScheme := kind, kind, kind
 	noRole.Role, noClient.Client, badScheme.Schemes = "owner", "", []string{"gpg"}
 	for name, c := range map[string]struct {
@@ -179,10 +184,12 @@ func TestR_SIG_022_RegisterRefusesAFormatThatDoesNotDeclareItsSignatures(t *test
 		"nil":               {fake{d: valid("sig-nil"), noSigs: true}, "declares no signatures"},
 		"neither":           {fake{d: valid("sig-neither"), sigs: declared{}}, "neither the kinds"},
 		"both":              {fake{d: valid("sig-both"), sigs: declared{None: "x", Kinds: []SignatureKind{kind}}}, "and a reason"},
+		"no attestation":    {fake{d: valid("sig-noatt"), sigs: declared{Kinds: []SignatureKind{kind}}}, "neither or both of what Quader attests"},
+		"two attestations":  {fake{d: valid("sig-twoatt"), sigs: declared{Kinds: []SignatureKind{kind}, Attests: "a", AttestsNone: "b"}}, "neither or both"},
 		"a role":            {fake{d: valid("sig-role"), sigs: bad(noRole)}, "with the role"},
 		"a missing client":  {fake{d: valid("sig-client"), sigs: bad(noClient)}, "without its name"},
 		"an unknown scheme": {fake{d: valid("sig-scheme"), sigs: bad(badScheme)}, "with the scheme"},
-		"a kind twice":      {fake{d: valid("sig-twice"), sigs: declared{Kinds: []SignatureKind{kind, kind}}}, "twice"},
+		"a kind twice":      {fake{d: valid("sig-twice"), sigs: declared{Kinds: []SignatureKind{kind, kind}, Attests: "x"}}, "twice"},
 	} {
 		t.Run(name, func(t *testing.T) { mustPanic(t, c.f, c.want) })
 	}

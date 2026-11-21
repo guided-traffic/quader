@@ -273,6 +273,30 @@ func (q *Queries) SignatureDetach(ctx context.Context, arg SignatureDetachParams
 	return result.RowsAffected(), nil
 }
 
+const signatureDetachIssuedExcept = `-- name: SignatureDetachIssuedExcept :execrows
+DELETE FROM signature_attachments a
+ USING signatures s, signature_objects o
+ WHERE a.item_id = $1::bigint AND a.source = 'issued' AND a.signature_id <> $2::bigint
+   AND s.id = a.signature_id AND s.identity_id IS NOT NULL AND o.sha256 = s.object_sha256 AND o.scheme = $3::text
+`
+
+type SignatureDetachIssuedExceptParams struct {
+	ItemID int64
+	Keep   int64
+	Scheme string
+}
+
+// The attachments of the scheme's signatures Quader made of an item but the one just recorded (R-SIG-053): an attestation made again
+// replaces the item's earlier one, whichever identity made that. The job signature-verify removes a signature that loses its last
+// attachment (R-SIG-011).
+func (q *Queries) SignatureDetachIssuedExcept(ctx context.Context, arg SignatureDetachIssuedExceptParams) (int64, error) {
+	result, err := q.db.Exec(ctx, signatureDetachIssuedExcept, arg.ItemID, arg.Keep, arg.Scheme)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const signatureDetachRetiredIssued = `-- name: SignatureDetachRetiredIssued :execrows
 DELETE FROM signature_attachments a
  USING signatures s, signature_objects o, signing_identities si
@@ -304,6 +328,7 @@ SELECT i.id, i.path::text AS path, i.blob_sha256, i.size::bigint AS size, COALES
   JOIN project pr ON pr.id = r.project_id
  WHERE i.id > $1::bigint AND i.kind = 'file' AND i.trashed_at IS NULL AND NOT i.generated
    AND NOT EXISTS (SELECT 1 FROM upstream_repository u WHERE u.repository_id = r.id AND u.kind = 'system')
+   AND NOT EXISTS (SELECT 1 FROM signing_attestations sa WHERE sa.repo_id = i.repo_id AND sa.referrer = i.blob_sha256)
  ORDER BY i.id
  LIMIT $2::int
 `
@@ -329,7 +354,8 @@ type SignatureDiscoverItemsRow struct {
 
 // Discovery's batch (R-SIG-011): the live files after the cursor in item order, with their repository, that a client or a fill stored
 // (a file Quader derived carries no signature of a publisher, Q-SIG-52). A system repository of the project upstream (the analysers'
-// databases, R-REPO-070) holds the product's own files and is not asked: its files cost discovery nothing.
+// databases, R-REPO-070) holds the product's own files and is not asked: its files cost discovery nothing. The referrer manifest of an
+// attestation of Quader's own (signing_attestations.referrer, R-SIG-054) is not asked either: Quader checks no signature it made itself.
 func (q *Queries) SignatureDiscoverItems(ctx context.Context, arg SignatureDiscoverItemsParams) ([]SignatureDiscoverItemsRow, error) {
 	rows, err := q.db.Query(ctx, signatureDiscoverItems, arg.After, arg.RowLimit)
 	if err != nil {
@@ -412,11 +438,12 @@ func (q *Queries) SignatureIDs(ctx context.Context, arg SignatureIDsParams) ([]S
 
 const signatureInsertIssued = `-- name: SignatureInsertIssued :one
 WITH ins AS (
-    INSERT INTO signatures (object_sha256, part, subject_sha256, subject_name, role, signed_digest, digest_alg, state, key_ids, due,
-                            checked_at, identity_id)
+    INSERT INTO signatures (object_sha256, part, subject_sha256, subject_name, role, predicate_type, signed_digest, digest_alg, state,
+                            key_ids, due, checked_at, identity_id, signer, claimed_at)
     VALUES ($1::bytea, 0, $2::bytea, NULLIF($3::text, ''),
-            $4::text, NULLIF($5::bytea, ''::bytea), NULLIF($6::text, ''), 'valid',
-            $7::text[], false, now(), $8::bigint)
+            $4::text, NULLIF($5::text, ''), NULLIF($6::bytea, ''::bytea),
+            NULLIF($7::text, ''), 'valid', $8::text[], false, now(), $9::bigint,
+            $10::jsonb, NULLIF($11::text, '')::timestamptz)
     ON CONFLICT (object_sha256, part, subject_sha256, subject_name) DO NOTHING
     RETURNING id)
 SELECT id FROM ins
@@ -432,25 +459,32 @@ type SignatureInsertIssuedParams struct {
 	SubjectSha256 []byte
 	SubjectName   string
 	Role          string
+	PredicateType string
 	SignedDigest  []byte
 	DigestAlg     string
 	KeyIds        []string
 	IdentityID    int64
+	Signer        json.RawMessage
+	ClaimedAt     string
 }
 
 // The signature row of a signature Quader made itself (R-SIG-054): valid as written and never due, because Quader checks no signature
 // it made (Q-SIG-31's rule); identity_id names the identity that made it. ECDSA signs with a fresh nonce, so the object is new and the
-// row too; one that is there (the same bytes again) answers its id.
+// row too; one that is there (the same bytes again) answers its id. An attestation also carries its predicate type, the signer its
+// certificate names and the moment it claims (claimed_at, ” for none).
 func (q *Queries) SignatureInsertIssued(ctx context.Context, arg SignatureInsertIssuedParams) (int64, error) {
 	row := q.db.QueryRow(ctx, signatureInsertIssued,
 		arg.ObjectSha256,
 		arg.SubjectSha256,
 		arg.SubjectName,
 		arg.Role,
+		arg.PredicateType,
 		arg.SignedDigest,
 		arg.DigestAlg,
 		arg.KeyIds,
 		arg.IdentityID,
+		arg.Signer,
+		arg.ClaimedAt,
 	)
 	var id int64
 	err := row.Scan(&id)

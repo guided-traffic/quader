@@ -153,6 +153,9 @@ const (
 	GatesAttachment Defect = "gates-attachment"
 	// PassesArtifact names a tarball GateNone, so that a gated repository would serve it unsigned: check 18 (signatures.md R-SIG-063).
 	PassesArtifact Defect = "passes-artifact"
+	// AttestsSignature names a tarball's signature file a subject of Quader's receipt attestation, so that Quader would attest a carrier
+	// of a publisher's signature as an artifact: check 18 (signatures.md R-SIG-044).
+	AttestsSignature Defect = "attests-signature"
 )
 
 // Option adjusts the format; it is not a defect.

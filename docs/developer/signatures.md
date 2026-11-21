@@ -369,7 +369,7 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 - **Package 4** (the screens): built, [web-ui.md](web-ui.md#the-signatures-screens). It added to the API the format descriptor's
   `signatureKinds` (the kinds of each format's declaration, Q-SIG-127) and made `signatures` a member an administrator sets on a well-known
   repository of `upstream` (Q-SIG-128, [upstream_managed.go](../../internal/repository/upstream_managed.go)).
-- **Stage 2:** packages 1 and 2 built, below, and of package 4 the section Signing identity; package 3 and the rest of 4 are not.
+- **Stage 2:** packages 1, 2 and 3 built, below, and of package 4 the section Signing identity; the rest of 4 is not.
 - **Stage 3:** packages 1, 2 and 3 built, above; the screens of R-SIG-074 call the operations listed in
   [What the screens of package 3 call](#what-the-screens-of-package-3-call).
 
@@ -378,9 +378,9 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 Stage 2 of [signatures.md](../spec/signatures.md#quader-signs-stage-2) (R-SIG-044 to R-SIG-060, [ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker))
 is built in four packages: (1) the signing identity with its chart, its API, events, metrics and alerts, and the frame of the job
 `signing` (built, below); (2) npm's registry signatures of local versions and the local keys endpoint (built, below); (3) the receipt
-attestations with the contract's `AttestationSubjects`; (4) the screens, of which the section **Signing identity** of the admin area is
-built (below). The decisions of package 1 are Q-SIG-145 to Q-SIG-155, those of package 2 Q-SIG-156 to Q-SIG-163, those of the section
-Q-SIG-170 to Q-SIG-176.
+attestations with the contract's `AttestationSubjects` (built, below); (4) the screens, of which the section **Signing identity** of the
+admin area is built (below). The decisions of package 1 are Q-SIG-145 to Q-SIG-155, those of package 2 Q-SIG-156 to Q-SIG-163, those of the
+section Q-SIG-170 to Q-SIG-176, those of package 3 Q-SIG-180 to Q-SIG-191.
 
 ### What has to be in your head first
 
@@ -533,8 +533,73 @@ once per page load and after each write, and decides every state from that answe
 | Web unit | [signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts): without an identity as the writer (with axe) and read-only; a pending key, its request and **Discard**; an upload with the amber validity, **Replace**, **Remove** and **Retire** with the spec's question; the red "expired" read-only; the Helm values with a refused pair; the key request's defaults and a refused chain under its field | seven cases, about 0.3 s (1.3 s with the file's start) | the fake's answers |
 | Renders | `admin-settings-signing`: five states as the administrator, four as the auditor, at three widths and in both schemes (54 pictures) | 48 s and 39 s of a browser (measured on 2026-11-21 on a shared machine), about 30 s of the job `ui-layout` at its three workers | answers changed in the browser |
 
-What follows with packages 2 and 3: Quader's npm signature and its attestation in the details of a version and a file, and the client
-setup's tab **Verify** (R-SIG-056, the second and third bullets).
+What follows with the second half of package 4: Quader's npm signature and its attestation in the details of a version and a file
+(R-SIG-056, the second bullet). The client setup's tab **Verify** is package 3's (below).
+
+### Package 3: the receipt attestations (built)
+
+Every artifact a user's repository receives gets Quader's signed receipt (R-SIG-051 to R-SIG-055; the decisions Q-SIG-180 to Q-SIG-191).
+
+| What | Where |
+|---|---|
+| The contract: `SignatureAdapter.AttestationSubjects`, `AttestationItem`, `AttestationSubject`, `AttestNoneFor`, the declaration's `Attests` and `AttestsNone`, `NoSignatures(reason, attestsNone)`, `ContractVersion` 10; the optional `AttestationReferrer` with `ReferrerFile` and the reasons `ReferrerHidesSignature`, `ReferrerNoAPI` | [formats/signatures.go](../../internal/formats/signatures.go), [formats.go](../../internal/formats/formats.go) `checkSignatures` |
+| Each format's subjects | `internal/formats/<id>/signatures.go` `AttestationSubjects`; OCI [signatures_attest.go](../../internal/formats/oci/signatures_attest.go) (top-level manifests from `GateFacts`, the blobs whose verdicts count) |
+| OCI's referrer: placement (local, no `.sig`/`.att` tag), the files (empty config, the bundle, the manifest of cosign 3's form), `attestationCommit` admitted by `OnCommit` | [oci/signatures_referrer.go](../../internal/formats/oci/signatures_referrer.go), [oci/hooks.go](../../internal/formats/oci/hooks.go) |
+| Kit check 18: `GateCase.Attested`, the defect `AttestsSignature` | [checks_signatures.go](../../internal/formats/formattest/checks_signatures.go), [testformat/signatures.go](../../internal/formats/formattest/testformat/signatures.go) |
+| The statement (in-toto v1, receipt v1) and its bounds | [signing/statement](../../internal/signing/statement/statement.go), golden files in `testdata/` |
+| The bundle (DSSE in a Sigstore bundle v0.3 with the leaf) | [signing/bundle](../../internal/signing/bundle/bundle.go) |
+| The kind `attestation`: `Sign` (reconcile: make, make again, place, drop), `Discover`, the hooks (`Committed`, `SignatureTagArrived`, `VerdictChanged`) | [signing/attest](../../internal/signing/attest/attest.go), [work.go](../../internal/signing/attest/work.go) |
+| The frame's additions: `signing.Later` (a row due again later, no attempt spent), `signing.ErrNothing` (done without a signature), the job's wake for the earliest waiting row (`store.NextDue`), `store.PostponeWork`, `store.Attestation`, the retirement's work | [signing.go](../../internal/signing/signing.go), [job/job.go](../../internal/signing/job/job.go), [store/work.go](../../internal/signing/store/work.go), [store/store.go](../../internal/signing/store/store.go) |
+| The rows of an attestation in stage 1's store: the signature and its attachment `issued` through package 2's `RecordIssued`, which takes the predicate type, the signer, the claimed time and `Replace` (the item's earlier attestation loses its attachment, `SignatureDetachIssuedExcept`) | [store/issued.go](../../internal/signatures/store/issued.go), [queries/signatures.sql](../../internal/meta/postgres/queries/signatures.sql) `SignatureInsertIssued` |
+| The statements | [queries/signing_attest.sql](../../internal/meta/postgres/queries/signing_attest.sql); the receipt is attached with the source `issued`, which no batch of stage 1 names, so no batch replaces it (Q-SIG-217's rule, no exception of its own); the trust job's `SignatureTrustBatch` and `SignatureTrustBacklog` skip a signature with `identity_id`; `SignatureDiscoverItems` leaves the job's referrer manifests out, so stage 1 never records Quader's referrer as a signature of the image; migration 00105 ([database.md](database.md#the-receipt-attestations-00105)) |
+| The format host's ports: `AttestationSubjects`, `ReferrerPlacement`, `PutReferrer`, `RemoveReferrer`, `SigningActor`, the hooks' `AttestationWork` | [formathost/attestations.go](../../internal/formathost/attestations.go), [formathost/hooks.go](../../internal/formathost/hooks.go), [formathost/signatures.go](../../internal/formathost/signatures.go) |
+| The malware scanning's word | [malware/store](../../internal/malware/store/store.go) `Options.VerdictChanged` |
+| The API: the route, the tab `verify` | [attestation_api.go](../../internal/api/v1/attestation_api.go), [setup_verify.go](../../internal/api/v1/setup_verify.go), [http-api.md](http-api.md#the-signing-identity-r-sig-055) |
+| The configuration `signing.attestations.*` | [config/signing.go](../../internal/config/signing.go) |
+| The wiring: the hooks on every role, the kind on the roles that run jobs with a format host of its own on a worker and the vulnerability report read over every repository | [app/wire_attestations.go](../../internal/app/wire_attestations.go), [wire_signing.go](../../internal/app/wire_signing.go), [wire_formats.go](../../internal/app/wire_formats.go), [wire_malware.go](../../internal/app/wire_malware.go) |
+| The tab **Verify** of the client setup page | [client-setup.html](../../web/src/app/features/setup/client-setup.html), [clients.ts](../../web/src/app/features/setup/clients.ts) |
+
+#### The flow of an attestation
+
+1. **The commit.** `formathost.Hooks.signaturesOf` tells `attest.Hooks.Committed` of every file a client or a fill stores in a format that
+   attests something (not generated, not of a system repository, not the job's own write `system:signing`): a row of `signing_work`
+   (`attestation`, priority 1 an upload, 2 a fill) in the commit's transaction, written by `SigningEnqueueWorkWhileCurrent` only while
+   `signing.enabled` is true and an identity is current (as npm's publish, Q-SIG-158), which wakes the job; discovery attests the rest.
+2. **The operation** (`Attester.Sign`, in the job's transaction that holds the current identity's row): the item and its repository; the
+   format's subject (`AttestationSubjects` through the format host; a worker builds a host of the item store and the data ports at its first
+   operation); the checks: the malware verdicts of the blobs the subject names (an image's config and layers), the version's evaluation by
+   the report, stage 1's signatures attached in the repository. A new attestation whose checks are pending answers `signing.Later` until
+   the bound of `wait_for_checks`. Otherwise the statement, the bundle, the placement (`ReferrerPlacement`; a referrer is committed by
+   `PutReferrer` in transactions of its own before the rows), and the rows: through `RecordIssued` the object (`raw`), the signature
+   (`attestation`, `identity_id`, `valid`, never due), the attachment `issued` at the item and the earlier attestation's attachment
+   dropped (an npm signature of the same tarball stays: it is of another scheme), then `signing_attestations`; an earlier referrer is
+   removed last (`RemoveReferrer`, `items.RemoveIn` in the same transaction).
+3. **Made again:** a changed verdict or release (`VerdictChanged` → `SigningWakeVerdict`), the identity (discovery, `rotation`), a
+   retirement (`SigningWakeRetired` in `Retire`). An attestation that is as it should be is only placed (`place`): a referrer that was
+   deleted is made again from the stored bundle with the same digest. When stage 1 records a `cosign_tag` (an older `.sig` or `.att`), the
+   commit hook takes Quader's referrer of its subject in the tag's own transaction (`SignatureTagArrived` → `SigningUnplaceReferrers`,
+   `Deps.removeDisplaced`), with no identity needed, and the attestation is served through the API from then on.
+4. **Gone:** the item's removal takes `signing_attestations` and the attachment by their keys, stage 1's job the orphaned signature and
+   object; an image's removal cascades to its referrers (R-SIG-025). An item that is no subject any more (an index now lists the manifest)
+   has its attestation dropped.
+
+A referrer committed before the operation's transaction failed stays as an orphan of no attestation; the next attempt writes another one.
+Nothing removes it but the image's removal (a rare case: the database failing between the two transactions).
+
+#### Tests and what they cost
+
+| Tier | What | Run time (the job's mode, `-race -covermode=atomic -coverpkg=./...`, load 15 to 40) | Data |
+|---|---|---|---|
+| Unit | `statement`: five golden statements, the bounds; `bundle`: verification against the trusted root Quader builds with sigstore-go (a flipped byte, another artifact, another CA, another identity, an expired leaf); `attest`: the malware snapshot, the poll, the origin; `job`: `Later` and `ErrNothing`; the API's verify snippet | 0.03 s, 0.03 s, under 0.01 s and under 0.01 s of test time; each of the three new packages about 1.4 s with its binary's start (measured 2026-11-21 at a load of 24 to 36) | bytes, a CA of the test |
+| Kit | check 18's attestation question over every `GateCase` of every format, the defect `AttestsSignature`, the contract's declaration rule | milliseconds per format | the fixtures' cases |
+| Web unit | the step Verify with and without an identity (axe) | about 1 s | the fake's answers |
+| Integration | area `signing`, [attest_test.go](../../test/integration/signing/attest_test.go): a generic file's attestation through the wait, the verdict, the rescan, the route, the verification against the served trusted root, the tab verify (npm's `npm.verify.signatures` first) and the deletion; a local image's referrer in a gated repository, which the preview, the file's answer and its member gate do not count as a publisher's signature, and its removal after a `.sig` tag | about 6 s and 3 s, shard `d` | a file of 16 bytes, manifests of bytes |
+| End to end | `TestOCIAttestation_R_SIG_052_…` in the set `e2e (oci)`: the real cosign verifies the attestation of an image the real Docker pushed, and refuses another identity; `TestOCIGate_R_SIG_064_…`: the pusher's `cosign sign --key` in a gated repository, a reader's `docker pull` refused before and served after | about 3 s each on the set's fixture, no leg of its own | images of a few hundred bytes, a key pair cosign makes |
+
+What every leg gains: the unit run under 0.1 s of test time and about 4.3 s of the three new packages' starts; the integration shard `d` about 9 s (the
+shard took 32.8 minutes in its first run on 2026-11-22, `signing` and `signatures` among its areas); `e2e (oci)`
+about 6 s and the copy of the cosign binary (136 MB) onto its control-plane node, 1.3 to 4.8 s ([Q-SIG-192](../spec/signatures.md#q-sig-192--cosign-reaches-the-set-oci-alone-as-its-binary-copied-onto-the-control-plane-node)); `oci-closing` and `oci-long` nothing. With 25 formats: 25 kit cases more; no leg loads another format's
+client.
 
 ## Measured with real clients
 
@@ -714,8 +779,10 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
    **Repaired** (Q-SIG-211): a principal that may write (`deploy`) to the repository reads through its signature gate where the format's
    signing tools read the artifact, which OCI declares (`SignatureDeclaration.ReadToSign`); the format host passes the right as
    `Download.MayWrite` and the gate asks it only after a decision that is no pass (`Gate.writerRead`); the malware gate and the vulnerability
-   block are not opened. Shown by a unit test and by an integration assertion (`HEAD` and `GET` by digest with the pusher's token in
-   `TestR_SIG_070_…`), not by the real tools again ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
+   block are not opened. Shown by a unit test, by an integration assertion (`HEAD` and `GET` by digest with the pusher's token in
+   `TestR_SIG_070_…`) and since package 3 of stage 2 by the real cosign 3.1.4 in `e2e (oci)` (`TestOCIGate_R_SIG_064_…`): the pusher's
+   `cosign sign --key --signing-config nolog.json` of an image in a gated repository exits 0 in 2.5 s, a reader's `docker pull` is refused
+   before it and served 1.1 s after it. `notation sign` is not measured again ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
 3. **A signature posted for a new Ansible version disappears from the signature store.** Reproduce: publish a collection, post its
    `MANIFEST.json.asc` at once (the manual's CI flow), wait for the worker. Expected: the posted signature is checked and stays attached.
    Actual: the post answers `201` and the version document keeps serving it to `ansible-galaxy`, but its attachment, signature row and

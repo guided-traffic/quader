@@ -302,7 +302,7 @@ versions-check: ## One version per tool (E0.2): go, Node, sqlc, oapi-codegen, th
 	tools/sbom-generator/check-pins.sh || fail=1; \
 	node test/e2e/clients/check-pins.mjs "$(NODE_VERSION)" "$(E2E_CLIENTS_NODE_IMAGE)" "$(E2E_CLIENTS_CURL_VERSION)" "$(E2E_CLIENTS_JQ_VERSION)" || fail=1; \
 	node test/e2e/nugetclients/check-pins.mjs "$(E2E_NUGETCLIENTS_SDK_IMAGE)" "$(NUGETVECTORS_SDK_IMAGE)" "$(E2E_NUGETCLIENTS_MONO_VERSION)" "$(E2E_NUGETCLIENTS_NUGET_EXE_VERSION)" "$(E2E_NUGETCLIENTS_NUGET_EXE_SHA256)" "$(E2E_NUGETCLIENTS_JQ_VERSION)" "$(E2E_NUGETCLIENTS_SDK8_IMAGE)" "$(E2E_NUGETCLIENTS_SDK9_IMAGE)" || fail=1; \
-	node test/e2e/ociclients/check-pins.mjs "$(E2E_OCICLIENTS_DOCKER_IMAGE)" "$(E2E_OCICLIENTS_PODMAN_IMAGE)" || fail=1; \
+	node test/e2e/ociclients/check-pins.mjs "$(E2E_OCICLIENTS_DOCKER_IMAGE)" "$(E2E_OCICLIENTS_PODMAN_IMAGE)" "$(E2E_OCICLIENTS_COSIGN_IMAGE)" || fail=1; \
 	node test/e2e/aptclients/check-pins.mjs "$(E2E_APTCLIENTS_DEBIAN13_IMAGE)" "$(E2E_APTCLIENTS_DEBIAN12_IMAGE)" "$(E2E_APTCLIENTS_UBUNTU2404_IMAGE)" "$(E2E_APTCLIENTS_UBUNTU2204_IMAGE)" || fail=1; \
 	node test/e2e/ansibleclients/check-pins.mjs "$(E2E_ANSIBLECLIENTS_CORE217_IMAGE)" "$(E2E_ANSIBLECLIENTS_CORE217_VERSION)" "$(E2E_ANSIBLECLIENTS_CORE221_IMAGE)" "$(E2E_ANSIBLECLIENTS_CORE221_VERSION)" || fail=1; \
 	if [ $$fail -ne 0 ]; then exit 1; fi; \
@@ -778,8 +778,8 @@ oci-conformance: oci-conformance-build ## OCI conformance suite (pull, push, con
 # The OCI clients images (R-OCI-035, Q-OCI-21: dockerd with Buildx and Podman in a privileged pod, test/e2e/ociclients,
 # docs/developer/e2e.md#the-oci-clients). Edit only between the markers.
 .PHONY: oci-clients-image
-oci-clients-image: ## Build the OCI clients images (the pinned dind image with the forwarder, the pinned Podman image) into the local Docker; OCI_CLIENTS_DOCKER_IMAGE and OCI_CLIENTS_PODMAN_IMAGE, default quader-e2e-ociclients-{docker,podman}:dev
-	test/e2e/ociclients/build.sh $(or $(OCI_CLIENTS_DOCKER_IMAGE),quader-e2e-ociclients-docker:dev) $(or $(OCI_CLIENTS_PODMAN_IMAGE),quader-e2e-ociclients-podman:dev)
+oci-clients-image: ## Build the OCI clients images (the pinned dind image with the forwarder, the pinned Podman image, the pinned cosign binary) into the local Docker; OCI_CLIENTS_DOCKER_IMAGE, OCI_CLIENTS_PODMAN_IMAGE and OCI_CLIENTS_COSIGN_IMAGE, default quader-e2e-ociclients-{docker,podman,cosign}:dev
+	test/e2e/ociclients/build.sh $(or $(OCI_CLIENTS_DOCKER_IMAGE),quader-e2e-ociclients-docker:dev) $(or $(OCI_CLIENTS_PODMAN_IMAGE),quader-e2e-ociclients-podman:dev) $(or $(OCI_CLIENTS_COSIGN_IMAGE),quader-e2e-ociclients-cosign:dev)
 # <<< T16 oci-clients
 
 # >>> T17 apt-clients

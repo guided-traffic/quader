@@ -38,10 +38,17 @@ type SigningSnapshot interface {
 	Identities(ctx context.Context) ([]signing.Identity, error)
 }
 
+// SigningAttestations reads the bundle of Quader's receipt attestation of a stored file (R-SIG-054); *signingstore.Store implements it.
+type SigningAttestations interface {
+	Attestation(ctx context.Context, repoID int64, path string) (bundle []byte, found bool, err error)
+}
+
 // SigningServices are what the signing operations need; without Store they answer 503.
 type SigningServices struct {
 	Store    SigningStore
 	Snapshot SigningSnapshot
+	// Attestations answers the route of a file's attestation; nil answers it 503.
+	Attestations SigningAttestations
 	// Enabled is signing.enabled; Managed is true while the configuration names the identity's files (the Helm values name it,
 	// R-SIG-046); AnnouncePeriod is signing.identity.announce_period.
 	Enabled        bool
@@ -49,7 +56,10 @@ type SigningServices struct {
 	AnnouncePeriod time.Duration
 }
 
-var _ SigningStore = (*signingstore.Store)(nil)
+var (
+	_ SigningStore        = (*signingstore.Store)(nil)
+	_ SigningAttestations = (*signingstore.Store)(nil)
+)
 
 func (s *Server) signingServices() (SigningServices, error) {
 	sv := s.o.Signing

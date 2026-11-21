@@ -194,6 +194,8 @@ type App struct {
 	scannerSrv *httpserver.Server
 	// probeState holds the counters of the background downloads a probe starts (wire_background_download.go).
 	probeState
+	// attestations are the hooks of the receipt attestations (wire_attestations.go).
+	attestations attestationHooks
 }
 
 // Run runs one replica of a role until ctx ends, then shuts down in the order of

@@ -58,7 +58,7 @@ func gateCases() []formattest.GateCase {
 		}
 	}
 	return []formattest.GateCase{
-		{Name: "a package is no artifact the gate judges", Seed: put(poolPath("1.0-1")), Path: poolPath("1.0-1"), Want: formats.GateNone},
+		{Name: "a package is no artifact the gate judges", Seed: put(poolPath("1.0-1")), Path: poolPath("1.0-1"), Want: formats.GateNone, Attested: true},
 		{Name: "a release is none", Seed: put("dists/stable/InRelease"), Path: "dists/stable/InRelease", Want: formats.GateNone},
 	}
 }

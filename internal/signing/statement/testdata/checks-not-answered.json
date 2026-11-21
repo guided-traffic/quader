@@ -1,0 +1,52 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "quader.example.com/web/nuget-local/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg",
+      "digest": {
+        "sha256": "5fe23c5c1db1132a49a45e2fa68141fe47af8bd1bf73eb20606e98b561543706"
+      }
+    }
+  ],
+  "predicateType": "https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1",
+  "predicate": {
+    "installation": {
+      "id": "6c3e0d2a-1f2e-4b7a-9c1d-5e8f7a6b4c3d",
+      "url": "https://quader.example.com"
+    },
+    "repository": {
+      "project": "web",
+      "key": "nuget-local",
+      "format": "nuget",
+      "class": "local"
+    },
+    "artifact": {
+      "path": "acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg",
+      "name": "acme.widgets",
+      "version": "1.2.3",
+      "size": 5
+    },
+    "receivedAt": "2026-11-21T10:02:03.456Z",
+    "origin": {
+      "kind": "upload",
+      "principal": {
+        "kind": "user",
+        "name": "ada"
+      }
+    },
+    "signatures": [
+      {
+        "role": "publisher",
+        "scheme": "nuget-cms",
+        "integrity": "pending"
+      }
+    ],
+    "malware": {
+      "state": "pending"
+    },
+    "vulnerabilities": {
+      "state": "pending_data"
+    },
+    "issuedAt": "2026-11-21T10:02:06.001Z"
+  }
+}

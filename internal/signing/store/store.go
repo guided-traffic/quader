@@ -506,6 +506,11 @@ func (s *Store) Retire(ctx context.Context, actor audit.Actor, id int64) (signin
 		if _, err := qs.SigningRetire(ctx, id); err != nil {
 			return err
 		}
+		// Its attestations are made again by the current identity at priority 2 (R-SIG-048); the route serves none of a retired
+		// identity's meanwhile.
+		if _, err := qs.SigningWakeRetired(ctx, id); err != nil {
+			return err
+		}
 		if err := s.o.Audit.RecordTx(ctx, tx, retiredEvent(actor, cur, count)); err != nil {
 			return err
 		}

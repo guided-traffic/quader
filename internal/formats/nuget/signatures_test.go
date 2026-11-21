@@ -196,8 +196,8 @@ func gateCases() []formattest.GateCase {
 		return putItem(snupkg)(h)
 	}
 	return []formattest.GateCase{
-		{Name: "a .nupkg is an artifact", Seed: putItem(nupkg), Path: nupkg, Want: formats.GateArtifact},
-		{Name: "a .snupkg is covered by its .nupkg", Seed: both, Path: snupkg, Want: formats.GateArtifact, Covering: []string{nupkg}},
+		{Name: "a .nupkg is an artifact", Seed: putItem(nupkg), Path: nupkg, Want: formats.GateArtifact, Attested: true},
+		{Name: "a .snupkg is covered by its .nupkg", Seed: both, Path: snupkg, Want: formats.GateArtifact, Attested: true, Covering: []string{nupkg}},
 		{Name: "a .nuspec is none", Seed: putItem("acme.widgets/1.2.3/acme.widgets.nuspec"), Path: "acme.widgets/1.2.3/acme.widgets.nuspec", Want: formats.GateNone},
 	}
 }

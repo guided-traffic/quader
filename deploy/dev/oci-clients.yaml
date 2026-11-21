@@ -13,6 +13,8 @@
 #   ${POD}              pod name: quader-e2e-oci-<i>
 #   ${DOCKER_IMAGE}     the Docker image built by test/e2e/ociclients/build.sh (quader-e2e-ociclients-docker:dev)
 #   ${PODMAN_IMAGE}     the Podman image built by the same script (quader-e2e-ociclients-podman:dev)
+# The third image of that script, the cosign binary, is not a container here: the set `oci` copies the binary onto the node (the volume
+# cosign below).
 #   ${EDGE_PORT}        the port of the edge (QUADER_DEV_HTTP_PORT), the forwarder's listener and the port of every registry host
 #   ${TARGET}           host:port the forwarder relays to (the in-cluster HAProxy Ingress)
 #   ${REGISTRY_HOSTS}   the registry hosts the clients trust the dev CA for: localhost:<port> and the bound host of the Docker Engine mirror
@@ -74,6 +76,7 @@ spec:
         - { name: docker-lib, mountPath: /var/lib/docker }
         - { name: work, mountPath: /work }
         - { name: tmp, mountPath: /tmp }
+        - { name: cosign, mountPath: /opt/quader-e2e-cosign, readOnly: true }
     - name: podman
       image: ${PODMAN_IMAGE}
       imagePullPolicy: IfNotPresent
@@ -97,3 +100,6 @@ spec:
     - { name: podman-lib, emptyDir: { sizeLimit: 8Gi } }
     - { name: work, emptyDir: { sizeLimit: 4Gi } }
     - { name: tmp, emptyDir: { sizeLimit: 256Mi } }
+    # cosign for the set `oci` alone: deploy/dev/e2e.sh copies the binary there on the control-plane node before the pods start; for the
+    # other sets the directory is empty and entrypoint-docker.sh links nothing.
+    - { name: cosign, hostPath: { path: /opt/quader-e2e-cosign, type: DirectoryOrCreate } }

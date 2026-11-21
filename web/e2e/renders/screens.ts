@@ -31,6 +31,7 @@ import { malwarePackage, quarantine } from './malware';
 import { trivyDatabases } from './scanners';
 import { signedFile, signedImage, signedVersions } from './signatures';
 import { signingAnswer } from './signing';
+import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 
@@ -1523,6 +1524,20 @@ async function* signingIdentity(page: Page): AsyncGenerator<string> {
   await page.unroute(url);
 }
 
+/**
+ * The client setup page as it opens, then with the step **Verify** (R-SIG-056): the profile holds no signing identity, so the tab is the real
+ * answer with the server's snippet added in the browser (renders/verify.ts).
+ */
+async function* setupVerify(page: Page): AsyncGenerator<string> {
+  yield '';
+  const url = '**/api/v1/projects/*/repositories/*/client-setup*';
+  await answerWith(page, url, withVerify);
+  // npm's step holds npm audit signatures before the attestation's command: the last one is the server's added snippet either way.
+  await expect(page.locator('main section[aria-labelledby="step-verify"] quader-setup-snippet pre').last()).toBeVisible();
+  yield 'verify';
+  await page.unroute(url);
+}
+
 /** The project's section **Trust anchors** opened (R-SIG-037), its form for an Owner; then the switch off, with the anchor not applied. */
 async function* projectAnchors(page: Page): AsyncGenerator<string> {
   const anchors = `**/api/v1/projects/${mainProject}/signatures/anchors`;
@@ -2079,12 +2094,12 @@ export const screens: readonly Screen[] = [
   // The refused downloads and the releases of the gates (R-SIG-074), with the release's dialog for both who triage.
   { id: 'security-signature-refusals', path: '/ui/security/signatures', kinds: auditors, walk: refusalsWalk },
   // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
-  { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all },
+  { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all, walk: setupVerify },
   { id: 'setup-npm-remote', path: `${P}/repositories/npmjs/setup`, kinds: all },
   { id: 'setup-npm-virtual', path: `${P}/repositories/npm/setup`, kinds: all, walk: setupWalk },
   { id: 'setup-long-key', path: `${P}/repositories/${longNpmKey}/setup`, kinds: all },
-  { id: 'setup-generic', path: `${P}/repositories/assets/setup`, kinds: all },
-  { id: 'setup-oci-local', path: `${P}/repositories/images/setup`, kinds: all },
+  { id: 'setup-generic', path: `${P}/repositories/assets/setup`, kinds: all, walk: setupVerify },
+  { id: 'setup-oci-local', path: `${P}/repositories/images/setup`, kinds: all, walk: setupVerify },
   { id: 'setup-oci-remote', path: `${O}/repositories/docker-hub-remote/setup`, kinds: all },
   { id: 'setup-nuget', path: `${O}/repositories/nuget/setup`, kinds: all },
   { id: 'setup-deb', path: `${O}/repositories/${longDebKey}/setup`, kinds: all, walk: explained },

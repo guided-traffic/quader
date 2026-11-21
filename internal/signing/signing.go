@@ -13,6 +13,7 @@ package signing
 
 import (
 	"encoding/hex"
+	"errors"
 	"time"
 )
 
@@ -53,6 +54,18 @@ const (
 	ReasonRetired   = "retired"
 	ReasonDiscovery = "discovery"
 )
+
+// Later is what an operation of the job signing answers when what it needs is not there yet (an attestation that waits for its item's
+// first verdicts, R-SIG-053): the row is due again at Until and spends no attempt.
+type Later struct{ Until time.Time }
+
+func (l *Later) Error() string {
+	return "the operation waits until " + l.Until.UTC().Format(time.RFC3339)
+}
+
+// ErrNothing is what an operation answers when its row is done without a signature: an item that is no subject, an attestation that is
+// as it should be. The row goes and no signature is counted.
+var ErrNothing = errors.New("signing: nothing to sign")
 
 // The priorities of work (R-SIG-049): 0 an npm signature of a publish, 1 the attestation of an upload, 2 the attestation of a fill and
 // what a retirement left, 3 discovery and what a rotation left.

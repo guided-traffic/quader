@@ -28773,9 +28773,17 @@
         <source>Open the repository&apos;s settings to see its members</source>
       </segment>
     </unit>
+    <unit id="setup.tab.verify">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:306,307</note>
+      </notes>
+      <segment>
+        <source>Verify</source>
+      </segment>
+    </unit>
     <unit id="setup.loading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:306,309</note>
+        <note category="location">src/app/features/setup/client-setup.html:312,315</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -28783,7 +28791,7 @@
     </unit>
     <unit id="setup.bastion.no-guide">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:312,314</note>
+        <note category="location">src/app/features/setup/client-setup.html:318,320</note>
       </notes>
       <segment>
         <source>The explanation describes this installation. Choose This installation under More options to read it.</source>
@@ -28791,7 +28799,7 @@
     </unit>
     <unit id="setup.guide.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:315,316</note>
+        <note category="location">src/app/features/setup/client-setup.html:321,322</note>
       </notes>
       <segment>
         <source>Guide</source>
@@ -28799,7 +28807,7 @@
     </unit>
     <unit id="setup.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:117</note>
+        <note category="location">src/app/features/setup/client-setup.ts:120</note>
       </notes>
       <segment>
         <source>Set up client</source>
@@ -28807,7 +28815,7 @@
     </unit>
     <unit id="setup.more">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:118</note>
+        <note category="location">src/app/features/setup/client-setup.ts:121</note>
       </notes>
       <segment>
         <source>More options</source>
@@ -28815,7 +28823,7 @@
     </unit>
     <unit id="setup.copy-token">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:121</note>
+        <note category="location">src/app/features/setup/client-setup.ts:124</note>
       </notes>
       <segment>
         <source>Copy token</source>
@@ -28823,7 +28831,7 @@
     </unit>
     <unit id="setup.copy-command">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:122</note>
+        <note category="location">src/app/features/setup/client-setup.ts:125</note>
       </notes>
       <segment>
         <source>Copy command</source>
@@ -28831,7 +28839,7 @@
     </unit>
     <unit id="setup.token.label">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:123</note>
+        <note category="location">src/app/features/setup/client-setup.ts:126</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -28839,7 +28847,7 @@
     </unit>
     <unit id="setup.bastion.replace-host">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:354</note>
+        <note category="location">src/app/features/setup/client-setup.ts:360</note>
       </notes>
       <segment>
         <source>replace-registry-host=always makes npm fetch every package from this address, also when a lockfile written against another host names that host.</source>
@@ -28847,7 +28855,7 @@
     </unit>
     <unit id="setup.token.description">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:375</note>
+        <note category="location">src/app/features/setup/client-setup.ts:381</note>
       </notes>
       <segment>
         <source>Client setup: <ph id="0" equiv="client" disp="setup.client"/>, <ph id="1" equiv="repository" disp="repository"/>, <ph id="2" equiv="date" disp="new Date().toISOString().slice(0, 10)"/></source>
@@ -29180,6 +29188,22 @@
       </notes>
       <segment>
         <source>Publishes an archive built with `ansible-galaxy collection build`.</source>
+      </segment>
+    </unit>
+    <unit id="setup.caption.verify-npm-signatures">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:195</note>
+      </notes>
+      <segment>
+        <source>Run it in your project: checks the registry signatures of every installed package, this installation&apos;s of your own packages included.</source>
+      </segment>
+    </unit>
+    <unit id="setup.caption.verify-attestation">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:199</note>
+      </notes>
+      <segment>
+        <source>Checks with cosign, offline, that this installation received the artifact and what its checks found. Replace the marked values.</source>
       </segment>
     </unit>
     <unit id="backups.state.stopped">

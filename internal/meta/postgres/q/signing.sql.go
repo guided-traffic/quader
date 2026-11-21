@@ -654,6 +654,21 @@ func (q *Queries) SigningMakePrevious(ctx context.Context, id int64) (int64, err
 	return result.RowsAffected(), nil
 }
 
+const signingNextDue = `-- name: SigningNextDue :one
+SELECT COALESCE(to_char(min(not_before) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'), '')::text
+  FROM signing_work
+ WHERE NOT failed AND not_before > now() AND kind = ANY($1::text[])
+`
+
+// The earliest time a row of the kinds that waits becomes due (an attestation that waits for its checks, R-SIG-053): the job wakes
+// itself for it; ” when nothing waits.
+func (q *Queries) SigningNextDue(ctx context.Context, kinds []string) (string, error) {
+	row := q.db.QueryRow(ctx, signingNextDue, kinds)
+	var column_1 string
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const signingNextID = `-- name: SigningNextID :one
 SELECT nextval(pg_get_serial_sequence('signing_identities', 'id'))::bigint AS id
 `
@@ -676,6 +691,25 @@ func (q *Queries) SigningNow(ctx context.Context) (string, error) {
 	var now string
 	err := row.Scan(&now)
 	return now, err
+}
+
+const signingPostponeWork = `-- name: SigningPostponeWork :exec
+UPDATE signing_work
+   SET not_before = $1::text::timestamptz
+ WHERE kind = $2::text AND item_id = $3::bigint
+`
+
+type SigningPostponeWorkParams struct {
+	NotBefore string
+	Kind      string
+	ItemID    int64
+}
+
+// A row whose operation waits for something that is not there yet (an attestation for its item's first verdicts, R-SIG-053) is due
+// again later and spends no attempt.
+func (q *Queries) SigningPostponeWork(ctx context.Context, arg SigningPostponeWorkParams) error {
+	_, err := q.db.Exec(ctx, signingPostponeWork, arg.NotBefore, arg.Kind, arg.ItemID)
+	return err
 }
 
 const signingRetire = `-- name: SigningRetire :execrows

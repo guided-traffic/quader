@@ -108,8 +108,8 @@ func TestR_SIG_031_TheSignaturesOfARemotesVersionDocument(t *testing.T) {
 func gateCases() []formattest.GateCase {
 	const archive = "collections/acme/tools/acme-tools-1.0.0.tar.gz"
 	return []formattest.GateCase{
-		{Name: "a collection archive is an artifact", Seed: putItem(archive), Path: archive, Want: formats.GateArtifact},
-		{Name: "a role archive is an artifact", Seed: putItem("roles/123/v1.0.tar.gz"), Path: "roles/123/v1.0.tar.gz", Want: formats.GateArtifact},
+		{Name: "a collection archive is an artifact", Seed: putItem(archive), Path: archive, Want: formats.GateArtifact, Attested: true},
+		{Name: "a role archive is an artifact", Seed: putItem("roles/123/v1.0.tar.gz"), Path: "roles/123/v1.0.tar.gz", Want: formats.GateArtifact, Attested: true},
 		{Name: "a version document is none", Seed: putItem("collections/acme/tools/1.0.0.json"), Path: "collections/acme/tools/1.0.0.json", Want: formats.GateNone},
 	}
 }

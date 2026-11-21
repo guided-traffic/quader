@@ -52,7 +52,7 @@ async function open(
 }
 
 /** The snippets of a step, as the page shows them. */
-const snippets = (r: Opened, step?: 'configure' | 'install' | 'publish') =>
+const snippets = (r: Opened, step?: 'configure' | 'install' | 'publish' | 'verify') =>
   [...r.root.querySelectorAll<HTMLElement>(`${step ? `section[aria-labelledby="step-${step}"] ` : ''}quader-setup-snippet pre`)].map(
     (p) => [...p.querySelectorAll('.line')].map((l) => l.textContent ?? '').join('\n'),
   );
@@ -123,6 +123,35 @@ describe('Set up client', () => {
     // A snippet keeps only the sentence its window does not say; the install command needs none (Q-UI-804).
     expect(text(r.root.querySelector('section[aria-labelledby="step-configure"] quader-setup-snippet .why')!)).toBe('Save as .npmrc in your project.');
     expect(r.root.querySelector('section[aria-labelledby="step-install"] .why')).toBeNull();
+  });
+
+  it('R-SIG-056 the step Verify follows the others while the installation has a signing identity, and is not there without one', async () => {
+    const without = await open({ project: 'web', key: 'oci-local' }, { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).signingIdentity = null) });
+    expect(stepHeadings(without)).not.toContain('4Verify');
+    expect(without.root.querySelector('section[aria-labelledby="step-verify"]')).toBeNull();
+    const r = await open(
+      { project: 'web', key: 'oci-local' },
+      { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).signingIdentity = 'https://quader.example.net') },
+    );
+    expect(stepHeadings(r)).toEqual(['1Configure', '2Install', '3Publish', '4Verify']);
+    const verify = snippets(r, 'verify');
+    expect(verify).toHaveLength(1);
+    expect(verify[0]).toContain('cosign verify-attestation');
+    expect(verify[0]).toContain('--certificate-identity https://quader.example.net');
+    expect(text(r.root.querySelector('section[aria-labelledby="step-verify"] quader-setup-snippet .why')!)).toContain('cosign');
+    await expectAccessible(r.root);
+  });
+
+  it('R-SIG-056 npm\'s step Verify starts with npm audit signatures, then the attestation\'s check', async () => {
+    const r = await open(
+      { project: 'web', key: 'npm-local' },
+      { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).signingIdentity = 'https://quader.example.net') },
+    );
+    const verify = snippets(r, 'verify');
+    expect(verify).toHaveLength(2);
+    expect(verify[0]).toContain('npm audit signatures');
+    expect(verify[1]).toContain('cosign verify-blob-attestation');
+    expect(text(r.root.querySelector('section[aria-labelledby="step-verify"] quader-setup-snippet .why')!)).toContain('registry signatures');
   });
 
   it('R-UI-016 acceptance: the default produces a .npmrc with the literal ${QUADER_TOKEN} and shows no secret', async () => {

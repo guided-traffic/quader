@@ -191,7 +191,13 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
       return text($localize`:@@setup.caption.freshclam-run:Run it once: it fetches each database whole, then reports each as up to date.`);
     case 'ansible-galaxy.publish.collection':
       return text($localize`:@@setup.caption.ansible-publish:Publishes an archive built with \`ansible-galaxy collection build\`.`);
+    case 'npm.verify.signatures':
+      return text($localize`:@@setup.caption.verify-npm-signatures:Run it in your project: checks the registry signatures of every installed package, this installation's of your own packages included.`);
     default:
+      // The tab Verify of every client of a format Quader attests (signatures.md R-SIG-056): one sentence for all of them.
+      if (id.endsWith('.verify.attestation')) {
+        return text($localize`:@@setup.caption.verify-attestation:Checks with cosign, offline, that this installation received the artifact and what its checks found. Replace the marked values.`);
+      }
       return null;
   }
 }

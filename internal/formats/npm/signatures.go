@@ -37,7 +37,7 @@ func (f *Format) Signatures() formats.SignatureAdapter { return signatureAdapter
 
 // Declaration implements formats.SignatureAdapter: the row of npm in R-SIG-002.
 func (signatureAdapter) Declaration() formats.SignatureDeclaration {
-	return formats.SignatureDeclaration{Kinds: []formats.SignatureKind{
+	return formats.SignatureDeclaration{Attests: attests, Kinds: []formats.SignatureKind{
 		{
 			Name: "registry signature", Schemes: []string{formats.SignatureSchemeNPMRegistry}, Role: formats.SignatureRoleRegistry,
 			Location: "dist.signatures of the version in the package document", Covers: "<name>@<version>:<integrity>, and so the tarball",
@@ -231,4 +231,25 @@ func artifactName(_ string, info formats.PathInfo) string {
 		return ""
 	}
 	return info.Package + "@" + info.Version
+}
+
+// attests is what Quader's receipt attestation is about in an npm repository (signatures.md R-SIG-044).
+const attests = "every tarball"
+
+// AttestationSubjects implements formats.SignatureAdapter (R-SIG-044): a version's tarball is attested under its package and version;
+// its provenance bundle, the documents and what a remote stores of keys and attestations are not.
+func (a signatureAdapter) AttestationSubjects(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.AttestationItem) ([]formats.AttestationSubject, error) {
+	out := make([]formats.AttestationSubject, len(items))
+	for i, it := range items {
+		dir, file, ok := strings.Cut(it.Path, "/-/")
+		if !ok || dir == "" || strings.Contains(file, "/") || !strings.HasSuffix(file, tarballSuffix) {
+			continue
+		}
+		info := a.f.Classify(formats.Path{Path: it.Path})
+		if info.Kind != formats.Content || info.Package == "" || info.Version == "" {
+			continue
+		}
+		out[i] = formats.AttestationSubject{Attested: true, Name: info.Package, Version: info.Version}
+	}
+	return out, nil
 }

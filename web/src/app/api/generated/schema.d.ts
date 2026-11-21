@@ -5988,6 +5988,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/attestation": {
+        parameters: {
+            query: {
+                /** @description The canonical path of a stored file, without a leading or trailing slash. */
+                path: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Quader's receipt attestation of one stored file
+         * @description The Sigstore bundle of Quader's receipt attestation of the file (R-SIG-051, R-SIG-052, R-SIG-054): an in-toto statement with the
+         *     predicate receipt v1 in a DSSE envelope with the signing identity's leaf certificate, no transparency-log entry and no timestamp.
+         *     It verifies with `cosign verify-blob-attestation --bundle` (or, for an image, `cosign verify-attestation`) against the trusted
+         *     root of `/api/v1/signing/trusted-root.json`. Served as a download `<file>.quader.sigstore.json`. Decided as the item (R-STOR-016):
+         *     `read` on the path; a path the caller may not read answers `404`, as a missing one, a folder and a file Quader has not attested do.
+         *     An attestation of a retired identity is not served (R-SIG-048).
+         */
+        get: operations["getAttestation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror": {
         parameters: {
             query?: never;
@@ -11023,12 +11056,14 @@ export interface components {
         };
         /**
          * @description One snippet. The `id` is stable and names the explanation the UI shows
-         *     (`<client>.<tab>.<name>`, for example `npm.configure.npmrc`); the text is the UI's.
+         *     (`<client>.<tab>.<name>`, for example `npm.configure.npmrc`); the text is the UI's. The tab `verify` is answered while a
+         *     signing identity is current, for every format whose artifacts Quader attests (R-SIG-055, Q-SIG-71): `<client>.verify.attestation`,
+         *     the download of the trusted root and the cosign command that verifies Quader's receipt attestation.
          */
         ClientSnippet: {
             id: string;
             /** @enum {string} */
-            tab: "configure" | "install" | "publish";
+            tab: "configure" | "install" | "publish" | "verify";
             /** @description The file the snippet belongs in (`.npmrc`, `.yarnrc.yml`); null for a command. */
             fileName: string | null;
             /**
@@ -27479,6 +27514,43 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getAttestation: {
+        parameters: {
+            query: {
+                /** @description The canonical path of a stored file, without a leading or trailing slash. */
+                path: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bundle. */
+            200: {
+                headers: {
+                    /** @description `attachment; filename="<file>.quader.sigstore.json"` */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.dev.sigstore.bundle.v0.3+json": Record<string, never>;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];

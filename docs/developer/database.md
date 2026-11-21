@@ -744,6 +744,24 @@ list of refused downloads and the stored file a release names (through `items_bl
 [bastion_feed.sql](../../internal/meta/postgres/queries/bastion_feed.sql) reads the repositories whose `config -> 'signatures' ->>
 'onlyVerified'` is true. No column is a revision (R-ARCH-009). The number 00104 follows 00103_npm_registry_signatures.
 
+## The receipt attestations (00105)
+
+[00105_receipt_attestations](../../internal/meta/postgres/migrations/00105_receipt_attestations.sql) is an expand step of package 3 of the
+signatures' stage 2 ([signatures.md](signatures.md#package-3-the-receipt-attestations-built), [spec](../spec/signatures.md) R-SIG-053,
+R-SIG-054, Q-SIG-185): `signing_attestations`, one row per attested item (an item belongs to one repository): the signature, the identity,
+the malware state and release the statement names, the blobs it names (`bytea[]` with a GIN index, so a changed verdict finds every
+attestation that names the blob), where it is served (`referrer` with the manifest's digest, or `api` with the reason; the partial index on
+`(repo_id, referrer)` lets the discoveries leave the job's own referrers out item by item). It goes with its item (`ON DELETE CASCADE`) and
+its signature; `repo_id` carries no key, so the purge of a retired well-known repository (which removes the items) needs no line of its own.
+`data` for backups. No column is a revision. The attestation's signature and its attachment are written with the source `issued` of 00103
+through the signature store's `RecordIssued`, as npm's registry signature is; no batch of stage 1 names that source, so none replaces it.
+
+The statements are in [signing_attest.sql](../../internal/meta/postgres/queries/signing_attest.sql); `SigningPostponeWork` and
+`SigningNextDue` in [signing.sql](../../internal/meta/postgres/queries/signing.sql); `SignatureDetachIssuedExcept` in
+[signatures.sql](../../internal/meta/postgres/queries/signatures.sql). The trust job (`SignatureTrustBatch`, `SignatureTrustBacklog`) skips a
+signature with `identity_id`, and stage 1's discovery (`SignatureDiscoverItems`) leaves the job's referrer manifests out. The number 00105
+follows 00104_signature_releases.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

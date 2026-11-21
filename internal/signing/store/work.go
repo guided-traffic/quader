@@ -157,6 +157,15 @@ func DoneWork(ctx context.Context, tx meta.Tx, w Work) error {
 	return qs.SigningDoneWork(ctx, q.SigningDoneWorkParams{Kind: w.Kind, ItemID: w.ItemID})
 }
 
+// PostponeWork makes a row due again at notBefore in the operation's transaction, spending no attempt (signing.Later, R-SIG-053).
+func PostponeWork(ctx context.Context, tx meta.Tx, w Work, notBefore time.Time) error {
+	qs, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return qs.SigningPostponeWork(ctx, q.SigningPostponeWorkParams{Kind: w.Kind, ItemID: w.ItemID, NotBefore: stamp(notBefore)})
+}
+
 // DeferWork spends an attempt of a row (R-SIG-049): due again at notBefore, or failed with the code of the attempt.
 func (s *Store) DeferWork(ctx context.Context, w Work, notBefore time.Time, failed bool, code string) error {
 	return s.in(ctx, func(qs *q.Queries, _ meta.Tx) error {
@@ -164,6 +173,17 @@ func (s *Store) DeferWork(ctx context.Context, w Work, notBefore time.Time, fail
 			Kind: w.Kind, ItemID: w.ItemID, NotBefore: stamp(notBefore), Failed: failed, Code: bounded(code, 64),
 		})
 	})
+}
+
+// NextDue answers the earliest time a row of the kinds that waits becomes due; zero when nothing waits.
+func (s *Store) NextDue(ctx context.Context, kinds []string) (time.Time, error) {
+	var out time.Time
+	err := s.in(ctx, func(qs *q.Queries, _ meta.Tx) error {
+		text, err := qs.SigningNextDue(ctx, kinds)
+		out = parseTime(text)
+		return err
+	})
+	return out, err
 }
 
 // Backlog answers the work per kind, priority and whether it failed.
@@ -236,4 +256,18 @@ func (s *Store) SetDiscovery(ctx context.Context, kind string, after int64) erro
 	return s.in(ctx, func(qs *q.Queries, _ meta.Tx) error {
 		return qs.SigningSetDiscovery(ctx, q.SigningSetDiscoveryParams{Kind: kind, AfterID: after})
 	})
+}
+
+// Attestation answers the bundle of Quader's receipt attestation of the live file at a path of a repository (R-SIG-054), while the
+// identity that made it is current or previous; found is false for a file without one, or one of a retired identity (R-SIG-048).
+func (s *Store) Attestation(ctx context.Context, repoID int64, path string) (bundle []byte, found bool, err error) {
+	err = s.in(ctx, func(qs *q.Queries, _ meta.Tx) error {
+		rows, err := qs.SigningAttestationOf(ctx, q.SigningAttestationOfParams{RepoID: repoID, Path: path})
+		if err != nil || len(rows) == 0 {
+			return err
+		}
+		bundle, found = rows[0].Raw, true
+		return nil
+	})
+	return bundle, found, err
 }
