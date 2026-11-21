@@ -559,6 +559,10 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- The image scanner's spool writes of large layers may be killed for memory by dirty pages of the file cache, as its
+  database's loader was before it flushed every 32 MiB (not measured; found on 2026-11-21 by the builder of the
+  analyser's move, left). A scanner's row of a pod removed in a simultaneous rollout stayed "ready" until it was pruned
+  (the same builder, not looked into).
 - The client setup of the ClamAV definitions: its table of troubleshooting is squeezed at 390 px, and one sentence shows the
   address with the trailing slash it tells the reader to leave out; the usage overview's page of one caller lists no
   credentials for a certificate holder (found on 2026-11-21 by the builder of the client certificates, left).
@@ -1386,6 +1390,46 @@ runs are in `git log`; this section holds the current state.
   developer page): the verdicts that let a local npm bundle be served, the counter of requests to remotes, the
   configuration of the fetch and the repository member that switches it off. Its worktree and branch are
   removed.
+- **In work since 17:37, three builders on `main` with the signatures' package 2** (with package 1 of the analyser's
+  move that makes four): **package 4 of the signatures' first stage, the screens** (the badge and the details at a
+  version, a file and an image with the origin of an upload, the settings page of the signatures with the anchors,
+  the switch and the blocks, a project's anchors, the security dashboard's view, the badge on the version list, the
+  detail setting that switches a remote's fetch off; rendered at every width of the pipeline's job); **package 1
+  of the second stage, the signing identity** (its states, the two ways to it by the chart and by the admin area's
+  back end, the announce and the switch on rotation, the frame of the job `signing`, its API, events, metrics and
+  alerts, backups and restores); **package 1 of the third stage, the gate** (the repository's setting, what passes
+  state by state, the format contract's method that classifies an item, the gate at the download beside the
+  malware gate with one decision and one wait for the three checks, the pending answer with its bounded wait and
+  the held fill, the answers per format, the audit event, metrics, alert). Each was told what the day taught: no
+  agents of its own, migration numbers set anew at the landing, the area `upstream` for a table with a key to
+  repositories, the copy of the values file equal to the chart's values, a new format method joins the developer
+  page's list, UI changes rendered at every width of the job.
+- **Landed on 2026-11-21 at 17:48: package 2 of the signatures' first stage, verification and trust** (R-SIG-005
+  to R-SIG-021, R-SIG-034, R-SIG-039 to R-SIG-041; what it built is in the entry of the two builders below, as
+  reported at 15:50; its builder brought it onto `main` from 15:50 to 17:30, alone, over four rebases while
+  `main` moved). **Added on the way, as sent back:** the wiring package 3 had left (a local npm repository
+  serves a bundle the trust step vouches for; the counter of requests to remotes; the fetch's configuration,
+  whose two bounds reach a format through the run's context, an addition to the format contract (ADR-233); the
+  repository member that switches a remote's fetch off, settable and validated, so the manual says it again;
+  Debian's covering releases in the API); **the badge on the version list** (one statement per page and one
+  count per project among the rows' repositories, no query per row); **the journal's replay into a restore**
+  (a removed anchor, a block and the switch, in the area `backup`, about 2 s); the discovery skips system
+  repositories and formats without signatures, so the ClamAV definitions cost nothing there and show as
+  nothing unchecked. **Its numbers after the rebases:** migration 00098, decisions Q-SIG-109 to Q-SIG-123, gaps
+  H-1202 (a project that begins to hold a signature already checked sees the installation's trust until the
+  next recomputation) and H-1203 (a break of the object store inside an archive's read is recorded as
+  malformed, not tried again), ADR-233. **Corrected in the specification:** a project's ID is a uuid. **On the
+  commit as rebased onto `main`, each exit 0:** build, the full unit run, generate-check, the lint, the
+  complexity check, links and check, the chart's lint and tests, the UI tests and the UI lint (after the UI's
+  packages were installed in its worktree, which had borrowed the main checkout's); by its builder under the
+  lock the areas `signatures`, `upstream`, `npm`, `ociremote`, `ansiblelocal`, `debremote`, `packages`,
+  `backup` and `malware`, three of them again after the last rebase that changed code. The owner's values
+  render against its chart unchanged (39 objects). The owner's UI backend started with it before the push
+  (the schema step applied). **Its release was cut at 18:04**; the image, the chart and the owner's installation are being followed, and its run is left to end before the next code push. **Not verified:** signatures made by real clients; a live
+  refresh of the shipped root; real timestamp authorities beyond the chains read from twelve nuget.org
+  packages; the heap bound of the read is asserted by no test; the wiring of the requests' counter has no
+  test; a whole backup and restore of the signatures' tables; the recomputation with the object store stopped.
+  Its worktree and branch are removed.
 - **Landed on 2026-11-21 at 17:05: a ClamAV installation updates from Quader with its client certificate**
   (R-CLAMAV-010; the owner's "b + zusätzlich Client-Zertifikate"; its builder worked from 15:16 to 16:47).
   **What an operator configures:** a further endpoint with a host of its own, `auth.clientCertificates`, a
@@ -1410,7 +1454,8 @@ runs are in `git log`; this section holds the current state.
   builder rendered at the three widths of the pipeline's job and corrected a file name that ran into its copy
   button at 390 px. The owner's UI backend started with it before the push. **Its release was cut at 17:20**, image and chart were published at 17:26, and the owner's installation runs it
   since 17:29 (read on the cluster at 17:31: every Deployment ready, no error line of `api`, `packages` or the
-  worker); its run is left to end before the next code push. **Measured once with a real client on a cluster of its own** (recorded on the format's developer page; the
+  worker); its run (44922668978) was left to end before the next code push and ended green on every job at
+  17:48. **Measured once with a real client on a cluster of its own** (recorded on the format's developer page; the
   real set of 2026-11-21, the switch on at the level internal, a stock `freshclam` of the pinned image; cluster
   and image removed): with an admitted certificate all three databases fetched and tested, exit 0, and the
   second run up to date, exit 0; without a certificate and with one of a foreign CA "Download failed (56)",
@@ -1440,7 +1485,37 @@ runs are in `git log`; this section holds the current state.
   fidelity test go; with the end-to-end set `vuln` and a measurement on a cluster of its own). Both were told
   what the day taught: no agents of their own, migration numbers set anew at the landing, the area `upstream`
   for a table with a key to repositories, the copy of the values file equal to the chart's values. With the
-  signatures' packages 2 and 3 that makes four builders.
+  signatures' packages 2 and 3 that makes four builders. (The client certificates landed at 17:05, the entry
+  above.)
+  **Package 1 of the analyser's move reported at 17:43** with one commit on the base of 15:16; since 17:43 its
+  builder brings it onto today's `main`. **What runs where by its report:** the worker sends the stored
+  analysis to the scanner for the detection, checks the answer's headers before it reads the body and parses
+  the report under limits; it runs no tool and holds no database. The scanner pod's container `quader` does
+  the analysis and the detection with one set of slots and mounts the database read-only; a second container
+  `database` (kind `trivy-db`) loads the database in use from the scan listener with the pod's certificate,
+  checks the hash while it unpacks and keeps the newest and the one before; both processes are not dumpable;
+  the role `all` builds no image scanner. **Found by its measurement on a cluster of its own with the real
+  database (1.8 GB unpacked) and repaired in the commit:** the loader was killed five times for memory while
+  unpacking, by dirty pages of the file cache and not by its own 22 MB, and now flushes each file every 32 MiB
+  (Q-VULN-212); after the database's tag moved back to an older build the pods reported the newer one they no
+  longer used and the loader would have removed the one in use first, so "newest" is now the one written
+  last (Q-VULN-213). **Measured there** (under a load of 12 to 80 from other clusters, so upper bounds): a
+  loader holds the real database 4.4 to 5.6 s after it is recorded, without a restart; the fixture path
+  analyses in 0.16 to 1.4 s and detects 0.15 to 0.17 s later; a probe container of the same user cannot read
+  the scanner's environment or memory map in a real pod. **The end-to-end set `vuln` passed on a fresh
+  cluster** (98 tests, 230 s); its one grown case takes 4.8 to 11.6 s where it took 6.9 s. **Removed with it:**
+  the fidelity test of the analysis' rewrite with its step in the release workflow, and two tests of the
+  worker's spool. **Its further decisions:** the analysis row keeps its count of packages (Q-VULN-207), the
+  database's build time in the source's watermark (Q-VULN-208), the loader's budget a key the chart sets
+  (Q-VULN-209), the database routes on a listener without TLS as the malware scanner's (Q-VULN-210), the
+  process not dumpable at the entry of `serve` for every scanner kind (Q-VULN-211). **Sent back at 17:43 with:**
+  the rebase (its migration behind those `main` holds), and one decision of the development agent for the
+  owner's walkthrough: the migration removes the stored analyses, so that every image is analysed afresh by the
+  new unit and none shows 0 packages (the builder had kept the rows and named the wrong count; the price is
+  one pull per image after the upgrade). **Not verified by its report:** a detection against the real database
+  in a pod; the worker's transaction that applies a detection; amd64 and the pipeline's runners. **Found by it
+  beside the task (section 8):** the scanner's spool writes of large layers may carry the same risk of dirty
+  pages as the loader had; a scanner's row of a pod removed in a rollout stayed ready until pruned.
 - **Landed on 2026-11-21 at 14:46 in one push of four commits: ClamAV's definitions are a repository of their
   own, the updater is a Deployment of its own, and an administrator can serve the definitions to every ClamAV
   of the company** (the owner's request of that morning, "With the owner"; R-CLAMAV-001 to R-CLAMAV-009,
@@ -2449,7 +2524,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   the anchors, the API, events and metrics; (3) the formats' wire behaviour (OCI's attachment tags out of the
   lists and following their image, mirror, the background fetch, npm's keys and attestations endpoints, Ansible's
   upload of signatures); (4) the UI. **Package 1 is landed (2026-11-21, 12:55, run record), package 3 is landed
-  (the same day, run record), package 2 is in work since 12:56,** 4 follows 2's operations. **One question of the planner for the owner (Q-SIG-34), told to him at 11:20 with its default, unanswered when he left:**
+  (the same day, run record), package 2 is landed (the same day, run record),** and package 4, the screens, is in
+  work on its operations. **One question of the planner for the owner (Q-SIG-34), told to him at 11:20 with its default, unanswered when he left:**
   what a virtual npm repository's keys endpoint serves before Quader signs local packages: (a) the union of its
   members' keys, with `npm audit signatures` reporting every local package as unsigned until the second stage
   (the planner's recommendation, H-1176); (b) no keys; (c) signing of local npm packages pulled into the first
