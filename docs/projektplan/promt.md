@@ -661,6 +661,10 @@ records the recorder that tells such a stall apart).
   (`deploy/helm/quader/templates/_malware.tpl`, named so in R-HA-069), and the option takes the path of `clamd`'s
   configuration, not a switch: `no` is read as a file name. The update itself succeeds. The line has to go from the
   rendered configuration and from the requirement's list; not fixed.
+- **The chart checks no name's length**: `quader.fullname` cuts at 50 characters, and the longest name built from it,
+  the Service `<fullname>-malware-scanner-clamav`, is a valid DNS label only up to 40 (before the rename of
+  2026-11-21 the limit was 47, with `-packages-scan` at 49). A release name between 41 and 50 characters fails at
+  the API server and not at the render. Written down in Q-HA-372 and the developer page of the chart; not fixed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -1232,7 +1236,7 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (07:55): two builders. **The system repositories of `upstream` stand apart on the project's page
+- **In work** (07:58): one builder, and the rename's landing. **The system repositories of `upstream` stand apart on the project's page
   Repositories** (since 07:53; the owner, 2026-11-21, with a picture of the page on his installation: "Bitte die
   internen Repos wie: scanner-trivy und scanner-clamav unter die Liste packen, am besten als seperate Tabelle die
   standardmäßig eingeklappt ist. Sowas wie system repositories, oder etwas besseres. Ohne den client einrichten
@@ -1242,16 +1246,39 @@ runs are in `git log`; this section holds the current state.
   match. Seen by the development agent in the same picture and given to the builder: the description under the
   title is the stored description of the built-in project, English in a German UI, and comes from a localized text
   instead. The builder reports every other place that lists a system repository among the repositories a user works
-  with, and renders the page in both schemes, wide and narrow, closed and opened. **And the two scanner units take
-  their tool's name** (since 06:48, the owner's
-  decision of that morning, standing rules): the kinds `scanner` and `malware-scanner` become `vuln-scanner-trivy` and
-  `malware-scanner-clamav` in the chart (every object, certificate and Secret named after a kind, the keys of
-  `tls.existingSecrets`), the value blocks `scanner` and `malwareScanner` become `vulnScannerTrivy` and
-  `malwareScannerClamav`, `process.scanner_kind` names the tool, every profile and start outside the chart follows, the
-  specification and the documentation in the same commit, and the rule goes into the repository's `CLAUDE.md`. No
-  screen changes; the builder reports what the System page and the malware settings show for a scanner replica. The
-  owner's values name none of the renamed keys (read); they are rendered against the new chart before it lands, and the
-  installation's upgrade replaces both Deployments and leaves the two old certificate Secrets behind. **Housekeeping at 07:02:** the worktrees and branches of the malware scan's landing, of its third package and of
+  with, and renders the page in both schemes, wide and narrow, closed and opened. **The two scanner units' rename is built and stands before its landing** (builder from 06:48 to 07:54, one commit,
+  84 files): the kinds `vuln-scanner-trivy` and `malware-scanner-clamav` in the chart's table of kinds, from which
+  every Deployment, Service, disruption budget, autoscaler, NetworkPolicy, Certificate and Secret follows, with the
+  component label, the names in the certificates, `server.scan_clients`, the scanners' addresses and the keys of
+  `tls.existingSecrets`; the value blocks `vulnScannerTrivy` and `malwareScannerClamav` (the schema refuses the old
+  ones); `process.scanner_kind` takes `trivy` or `clamav`, default `trivy`; the development profile, the
+  end-to-end suite's selectors, the integration harness, the list of paths that starts a leg; the specification, six
+  security pages, five developer pages, the manual, the README's naming tables, and the rule in `CLAUDE.md`. **Its
+  decisions:** Q-HA-372 (the owner's, with his words and the boundary as the development agent's choice), Q-ARCH-561
+  (the values of `process.scanner_kind`), ADR-223. **Fixed on the way, each a miss of the malware scan's landing:** the
+  manual's example of `tls.existingSecrets` lacked the malware scanner's Secret, so following it failed the render;
+  the README's reference of the values had no block for ClamAV, the malware scanner or `freshclam`; the
+  specification's alert expression and default policy list missed the malware scanner; a chart test covered the
+  malware scanner only by an accidental match of a suffix. **Gates of the builder on its commit, each exit 0:** build,
+  the full unit run, generate-check, chart lint and tests (119 s), lint, links and check, the areas `vulnimage`,
+  `malware`, `server` and `tls`, the set `vuln` on a cluster of its own (both scanners ran their cases under the new
+  names; one browser test failed first on a missing Playwright install of the worktree and passed after it), the
+  render with an issuer and with five existing Secrets read for old names. **Of the development agent on the commit
+  rebased onto `main`:** build, the full unit run, links and check, each exit 0; the owner's values rendered against
+  the new chart (35 objects, the five Deployments and Certificates under the new names, no old name); the set `push`
+  on a cluster of its own, because its Valkey case names a component and the builder had not run it (running at
+  07:58). **What an operator still sees with the purpose's name, reported by the builder and left for the package
+  that moves the detection into the unit:** the label `listener` of the links' certificate metrics (`scanner`,
+  `malware-scanner`), the log field `component` of both scanner processes, and the readiness check `scanner` that both
+  kinds register. **What the screens show for a scanner:** nothing on the admin area's System page (a scanner writes
+  no row of the replica registry, R-HA-002) and only the counts "ready" and "scans running" on **Settings ›
+  Malware scanning**; so no screen names a scanner pod or its tool, a point for the walkthrough. **A finding, not
+  fixed (section 8):** the Service `<fullname>-malware-scanner-clamav` is a valid DNS label only up to a release
+  name of 40 characters, and nothing checks the sum. **What an installation sees at the upgrade:** both Deployments
+  and their Services, budgets, policies and Certificates are removed and created under the new names, every pod
+  rolls, scanning pauses until the new scanners are ready, and the two certificate Secrets of the old names stay
+  behind. The owner's values name none of the renamed keys.
+  **Housekeeping at 07:02:** the worktrees and branches of the malware scan's landing, of its third package and of
   the lock script are removed, every commit of them being on `main` (the third package's as the commits of the
   landing: no difference between its tip and the landed tree but this plan); nine worktrees of another session
   stay. No builder of the malware scan is at work; their records, kept until the walkthrough:
