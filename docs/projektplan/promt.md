@@ -1309,6 +1309,19 @@ runs are in `git log`; this section holds the current state.
   owner; rebased without a conflict, links and check exit 0, the count test at 1,149 requirements; it does not
   touch the chart's page); its worktree and branch are removed. Its three packages follow the first stage's.
   **Found by it and left (section 8):** the decisions' index has no rows for the second stage's decisions.
+- **In work since 15:16, two builders on `main` with the ClamAV change:** **the client certificates of the
+  definitions' endpoint** (R-CLAMAV-010; the endpoint key, the certificate subject and its one rule, usage and
+  request log, the chart's passthrough per ingress controller, the read-only lines on the registry's page, the
+  client setup's ways with a certificate and by plain download; with renders, and with one measurement on a
+  cluster of its own: a stock `freshclam` with an admitted certificate, without one and with a foreign one,
+  and what the first measurement left out, the token in the client's URL and the plain download); and
+  **package 1 of the image analyser's move** (R-VULN-048, R-VULN-049 and its part of R-HA-070: the scanner
+  unit detects as well, the worker runs no tool and reads the report under limits, each scanner pod holds the
+  database read-only through a second container of the kind `trivy-db`, the rewrite of the analysis and its
+  fidelity test go; with the end-to-end set `vuln` and a measurement on a cluster of its own). Both were told
+  what the day taught: no agents of their own, migration numbers set anew at the landing, the area `upstream`
+  for a table with a key to repositories, the copy of the values file equal to the chart's values. With the
+  signatures' packages 2 and 3 that makes four builders.
 - **Landed on 2026-11-21 at 14:46 in one push of four commits: ClamAV's definitions are a repository of their
   own, the updater is a Deployment of its own, and an administrator can serve the definitions to every ClamAV
   of the company** (the owner's request of that morning, "With the owner"; R-CLAMAV-001 to R-CLAMAV-009,
