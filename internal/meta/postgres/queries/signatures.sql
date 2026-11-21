@@ -59,11 +59,12 @@ SELECT k.ord::bigint AS ord, s.id::bigint AS id
 -- The attachments a commit or a fill no longer makes (R-SIG-004): those of the carrier item, those of a stored document (its path and
 -- every path#pointer below it), and, at a location the batch names, those of the same object against another subject (the file a
 -- signature file stands beside was replaced), each unless the batch makes it again. An attachment of another part of the same object
--- and subject stays: a batch that names an object by its path names its first part only. An attachment of a signature Quader made
--- itself (source issued, R-SIG-054) is no batch's: the job signing writes and removes it.
+-- and subject stays: a batch that names an object by its path names its first part only. Only attachments of the batch's own sources
+-- go (Q-SIG-217): a signature posted through the management API at the archive's item (upload) outlives the detector's batch of that
+-- item, and an attachment of a signature Quader made itself (issued, R-SIG-054) is no batch's: the job signing writes and removes it.
 DELETE FROM signature_attachments a
  USING signatures s
- WHERE a.repo_id = sqlc.arg(repo_id)::bigint AND s.id = a.signature_id AND a.source <> 'issued'
+ WHERE a.repo_id = sqlc.arg(repo_id)::bigint AND s.id = a.signature_id AND a.source = ANY(sqlc.arg(sources)::text[])
    AND ((sqlc.arg(item_id)::bigint <> 0 AND a.item_id = sqlc.arg(item_id)::bigint)
         OR (sqlc.arg(document)::text <> '' AND a.item_id IS NULL
             AND (a.location = sqlc.arg(document)::text OR starts_with(a.location, sqlc.arg(document)::text || '#')))

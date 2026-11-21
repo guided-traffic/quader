@@ -3,14 +3,14 @@ package nugetcms
 import (
 	"bytes"
 	"crypto"
+	"crypto/sha1" //nolint:gosec // RFC 5280's key identifier of a certificate without the extension
 	"crypto/subtle"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"encoding/hex"
 	"math/big"
 	"time"
-
-	"github.com/digitorus/pkcs7"
 
 	"github.com/guided-traffic/quader/internal/signatures"
 	"github.com/guided-traffic/quader/internal/signatures/scheme/rawkey/pki"
@@ -130,6 +130,10 @@ func oidDSASignature() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 2, 840, 10040, 4, 3}
 }
 
+func oidSignedData() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 7, 2}
+}
+
 // maxCountersignatures bounds the countersignatures a check reads (R-SIG-013): nuget.org adds one.
 const maxCountersignatures = 16
 
@@ -139,21 +143,51 @@ type attribute struct {
 	Value asn1.RawValue `asn1:"set"`
 }
 
-// issuerAndSerial names a signer's certificate.
-type issuerAndSerial struct {
-	IssuerName   asn1.RawValue
-	SerialNumber *big.Int
-}
+// The CMS structures as they are encoded (RFC 5652, sections 3, 5.1 to 5.3). The reader is code of this package on encoding/asn1
+// (Q-SIG-216): a SignerInfo names its signer by issuer and serial number (version 1) or by subject key identifier (version 3), and
+// dotnet nuget sign and nuget.org write the second, which digitorus/pkcs7 does not read.
+type (
+	contentInfo struct {
+		ContentType asn1.ObjectIdentifier
+		Content     asn1.RawValue `asn1:"explicit,optional,tag:0"`
+	}
+	encapsulatedContentInfo struct {
+		EContentType asn1.ObjectIdentifier
+		EContent     asn1.RawValue `asn1:"explicit,optional,tag:0"`
+	}
+	signedData struct {
+		Version          int
+		DigestAlgorithms asn1.RawValue
+		EncapContentInfo encapsulatedContentInfo
+		Certificates     asn1.RawValue `asn1:"optional,tag:0"`
+		CRLs             asn1.RawValue `asn1:"optional,tag:1"`
+		SignerInfos      asn1.RawValue
+	}
+	signerInfoASN1 struct {
+		Version            int
+		SID                asn1.RawValue
+		DigestAlgorithm    pkix.AlgorithmIdentifier
+		SignedAttrs        asn1.RawValue `asn1:"optional,tag:0"`
+		SignatureAlgorithm pkix.AlgorithmIdentifier
+		Signature          []byte
+		UnsignedAttrs      asn1.RawValue `asn1:"optional,tag:1"`
+	}
+	issuerAndSerial struct {
+		IssuerName   asn1.RawValue
+		SerialNumber *big.Int
+	}
+)
 
-// signerInfo is a CMS SignerInfo (RFC 5652, section 5.3) of version 1, identified by issuer and serial, as a countersignature carries it.
+// signerInfo is a CMS SignerInfo as the checks read it: who signed (sid, one of the two forms of RFC 5652, section 5.3), its algorithms,
+// its signed attributes with the DER the signature covers (an explicit SET OF, section 5.4), its signature and its unsigned attributes.
 type signerInfo struct {
-	Version                   int `asn1:"default:1"`
-	IssuerAndSerialNumber     issuerAndSerial
+	sid                       asn1.RawValue
 	DigestAlgorithm           pkix.AlgorithmIdentifier
-	AuthenticatedAttributes   []attribute `asn1:"optional,omitempty,tag:0"`
+	AuthenticatedAttributes   []attribute
+	signedDER                 []byte
 	DigestEncryptionAlgorithm pkix.AlgorithmIdentifier
 	EncryptedDigest           []byte
-	UnauthenticatedAttributes []attribute `asn1:"optional,omitempty,tag:1"`
+	UnauthenticatedAttributes []attribute
 }
 
 // parsed is the CMS SignedData of a .signature.p7s: its content (the signature content), its certificates, its primary signer and the
@@ -165,43 +199,192 @@ type parsed struct {
 	counters []*signerInfo
 }
 
-// parse parses a .signature.p7s with digitorus/pkcs7, after the bounds of R-SIG-013.
+// parse parses a .signature.p7s after the bounds of R-SIG-013.
 func parse(p7s []byte, maxDepth, maxCerts, maxCertSize int) (*parsed, error) {
-	if err := pki.CheckBER(p7s, maxDepth); err != nil {
+	sd, err := parseSignedData(p7s, maxDepth, maxCerts, maxCertSize)
+	if err != nil {
 		return nil, err
 	}
-	p7, err := pkcs7.Parse(p7s)
-	if err != nil {
-		return nil, pki.Malformed("the .signature.p7s is no CMS SignedData")
+	if len(sd.signers) != 1 {
+		return nil, pki.Malformed("the .signature.p7s has %d signers, a NuGet signature one", len(sd.signers))
 	}
-	if len(p7.Signers) != 1 {
-		return nil, pki.Malformed("the .signature.p7s has %d signers, a NuGet signature one", len(p7.Signers))
-	}
-	if len(p7.Certificates) > maxCerts {
-		return nil, pki.TooLarge("the .signature.p7s carries %d certificates, more than %d", len(p7.Certificates), maxCerts)
-	}
-	for _, c := range p7.Certificates {
-		if len(c.Raw) > maxCertSize {
-			return nil, pki.TooLarge("a certificate of the .signature.p7s is larger than %d bytes", maxCertSize)
-		}
-	}
-	s := p7.Signers[0]
-	primary := &signerInfo{
-		Version: s.Version, DigestAlgorithm: s.DigestAlgorithm, DigestEncryptionAlgorithm: s.DigestEncryptionAlgorithm,
-		EncryptedDigest:       s.EncryptedDigest,
-		IssuerAndSerialNumber: issuerAndSerial{IssuerName: s.IssuerAndSerialNumber.IssuerName, SerialNumber: s.IssuerAndSerialNumber.SerialNumber},
-	}
-	for _, a := range s.AuthenticatedAttributes {
-		primary.AuthenticatedAttributes = append(primary.AuthenticatedAttributes, attribute{Type: a.Type, Value: a.Value})
-	}
-	for _, a := range s.UnauthenticatedAttributes {
-		primary.UnauthenticatedAttributes = append(primary.UnauthenticatedAttributes, attribute{Type: a.Type, Value: a.Value})
-	}
+	primary := sd.signers[0]
 	counters, err := countersignatures(primary)
 	if err != nil {
 		return nil, err
 	}
-	return &parsed{content: p7.Content, certs: p7.Certificates, primary: primary, counters: counters}, nil
+	return &parsed{content: sd.content, certs: sd.certs, primary: primary, counters: counters}, nil
+}
+
+// cms is a SignedData as read: the encapsulated content's type and bytes, the certificates and the signers.
+type cms struct {
+	contentType asn1.ObjectIdentifier
+	content     []byte
+	certs       []*x509.Certificate
+	signers     []*signerInfo
+}
+
+// parseSignedData reads a ContentInfo of signedData within the bounds: at most maxDepth levels of nesting (BER is brought to definite
+// lengths first, so that a writer's BER reads as its DER would), at most maxCerts certificates of at most maxCertSize bytes each.
+func parseSignedData(der []byte, maxDepth, maxCerts, maxCertSize int) (*cms, error) {
+	der, err := pki.Definite(der, maxDepth)
+	if err != nil {
+		return nil, err
+	}
+	// An explicitly tagged RawValue holds the tag's element; its Bytes are the encoding of what it wraps.
+	var ci contentInfo
+	if rest, err := asn1.Unmarshal(der, &ci); err != nil || len(rest) > 0 || !ci.ContentType.Equal(oidSignedData()) || len(ci.Content.Bytes) == 0 {
+		return nil, pki.Malformed("the structure is no CMS SignedData")
+	}
+	var sd signedData
+	if rest, err := asn1.Unmarshal(ci.Content.Bytes, &sd); err != nil || len(rest) > 0 {
+		return nil, pki.Malformed("the CMS SignedData does not parse")
+	}
+	out := &cms{contentType: sd.EncapContentInfo.EContentType}
+	if wrapped := sd.EncapContentInfo.EContent.Bytes; len(wrapped) > 0 {
+		var os asn1.RawValue
+		if rest, err := asn1.Unmarshal(wrapped, &os); err != nil || len(rest) > 0 {
+			return nil, pki.Malformed("the encapsulated content does not parse")
+		}
+		if out.content, err = octets(os); err != nil {
+			return nil, err
+		}
+	}
+	if out.certs, err = certificates(sd.Certificates, maxCerts, maxCertSize); err != nil {
+		return nil, err
+	}
+	if out.signers, err = signerInfos(sd.SignerInfos.Bytes); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// octets reads an OCTET STRING, a constructed one (BER) as its segments in order.
+func octets(v asn1.RawValue) ([]byte, error) {
+	if v.Class != asn1.ClassUniversal || v.Tag != asn1.TagOctetString {
+		return nil, pki.Malformed("the encapsulated content is no OCTET STRING")
+	}
+	if !v.IsCompound {
+		return v.Bytes, nil
+	}
+	var out []byte
+	for rest := v.Bytes; len(rest) > 0; {
+		var seg asn1.RawValue
+		r, err := asn1.Unmarshal(rest, &seg)
+		if err != nil {
+			return nil, pki.Malformed("a segment of the encapsulated content does not parse")
+		}
+		b, err := octets(seg)
+		if err != nil {
+			return nil, err
+		}
+		out, rest = append(out, b...), r
+	}
+	return out, nil
+}
+
+// certificates reads the CertificateSet [0]: the X.509 certificates in it; an attribute certificate or another format is left out.
+func certificates(set asn1.RawValue, maxCerts, maxCertSize int) ([]*x509.Certificate, error) {
+	var out []*x509.Certificate
+	for rest := set.Bytes; len(rest) > 0; {
+		var el asn1.RawValue
+		r, err := asn1.Unmarshal(rest, &el)
+		if err != nil {
+			return nil, pki.Malformed("the certificates of the SignedData do not parse")
+		}
+		rest = r
+		if el.Class != asn1.ClassUniversal || el.Tag != asn1.TagSequence {
+			continue
+		}
+		if len(out) == maxCerts {
+			return nil, pki.TooLarge("the SignedData carries more than %d certificates", maxCerts)
+		}
+		if len(el.FullBytes) > maxCertSize {
+			return nil, pki.TooLarge("a certificate of the SignedData is larger than %d bytes", maxCertSize)
+		}
+		c, err := x509.ParseCertificate(el.FullBytes)
+		if err != nil {
+			return nil, pki.Malformed("a certificate of the SignedData does not parse")
+		}
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+// signerInfos reads the SignerInfos of a SET OF SignerInfo's content (the SignedData's, or a countersignature attribute's values).
+func signerInfos(b []byte) ([]*signerInfo, error) {
+	var out []*signerInfo
+	for rest := b; len(rest) > 0; {
+		if len(out) == maxCountersignatures {
+			return nil, pki.TooLarge("the structure holds more than %d signers", maxCountersignatures)
+		}
+		var w signerInfoASN1
+		r, err := asn1.Unmarshal(rest, &w)
+		if err != nil {
+			return nil, pki.Malformed("a SignerInfo does not parse")
+		}
+		si, err := signerOf(w)
+		if err != nil {
+			return nil, err
+		}
+		out, rest = append(out, si), r
+	}
+	return out, nil
+}
+
+// signerOf reads the attributes of an encoded SignerInfo and keeps the DER its signature covers: the signed attributes with the
+// explicit SET OF tag in place of the implicit [0] (RFC 5652, section 5.4).
+func signerOf(w signerInfoASN1) (*signerInfo, error) {
+	si := &signerInfo{
+		sid: w.SID, DigestAlgorithm: w.DigestAlgorithm, DigestEncryptionAlgorithm: w.SignatureAlgorithm, EncryptedDigest: w.Signature,
+	}
+	if !sidReadable(w.SID) {
+		return nil, pki.Malformed("a SignerInfo names its signer neither by issuer and serial number nor by subject key identifier")
+	}
+	var err error
+	if len(w.SignedAttrs.FullBytes) > 0 {
+		if !w.SignedAttrs.IsCompound {
+			return nil, pki.Malformed("the signed attributes of a SignerInfo are not a SET")
+		}
+		si.signedDER = append([]byte{0x31}, w.SignedAttrs.FullBytes[1:]...)
+		if si.AuthenticatedAttributes, err = attributes(w.SignedAttrs.Bytes); err != nil {
+			return nil, err
+		}
+	}
+	if len(w.UnsignedAttrs.FullBytes) > 0 {
+		if si.UnauthenticatedAttributes, err = attributes(w.UnsignedAttrs.Bytes); err != nil {
+			return nil, err
+		}
+	}
+	return si, nil
+}
+
+// attributes reads the content of a SET OF Attribute.
+func attributes(b []byte) ([]attribute, error) {
+	var out []attribute
+	for rest := b; len(rest) > 0; {
+		var a attribute
+		r, err := asn1.Unmarshal(rest, &a)
+		if err != nil {
+			return nil, pki.Malformed("an attribute of a SignerInfo does not parse")
+		}
+		out, rest = append(out, a), r
+	}
+	return out, nil
+}
+
+// sidReadable reports whether a SignerIdentifier is one of its two forms: issuerAndSerialNumber (a SEQUENCE) or subjectKeyIdentifier
+// [0] IMPLICIT OCTET STRING.
+func sidReadable(sid asn1.RawValue) bool {
+	switch {
+	case sid.Class == asn1.ClassUniversal && sid.Tag == asn1.TagSequence:
+		var ias issuerAndSerial
+		rest, err := asn1.Unmarshal(sid.FullBytes, &ias)
+		return err == nil && len(rest) == 0 && ias.SerialNumber != nil
+	case sid.Class == asn1.ClassContextSpecific && sid.Tag == 0 && !sid.IsCompound:
+		return len(sid.Bytes) > 0
+	}
+	return false
 }
 
 // countersignatures reads the SignerInfos of the primary's countersignature attributes, in order.
@@ -211,17 +394,14 @@ func countersignatures(primary *signerInfo) ([]*signerInfo, error) {
 		if !a.Type.Equal(oidCountersignature()) {
 			continue
 		}
-		for rest := a.Value.Bytes; len(rest) > 0; {
-			if len(out) == maxCountersignatures {
-				return nil, pki.TooLarge("the signature has more than %d countersignatures", maxCountersignatures)
-			}
-			si := new(signerInfo)
-			r, err := asn1.Unmarshal(rest, si)
-			if err != nil {
-				return nil, pki.Malformed("a countersignature does not parse")
-			}
-			out, rest = append(out, si), r
+		got, err := signerInfos(a.Value.Bytes)
+		if err != nil {
+			return nil, err
 		}
+		if len(out)+len(got) > maxCountersignatures {
+			return nil, pki.TooLarge("the signature has more than %d countersignatures", maxCountersignatures)
+		}
+		out = append(out, got...)
 	}
 	return out, nil
 }
@@ -245,15 +425,63 @@ func value(a *attribute, out any) bool {
 	return err == nil
 }
 
-// certificateOf finds a signer's certificate among the certificates of the SignedData by issuer and serial.
+// certificateOf finds a signer's certificate among the certificates of the SignedData by the form its SignerInfo names it in: issuer and
+// serial number, or subject key identifier (RFC 5652, section 5.3).
 func certificateOf(si *signerInfo, certs []*x509.Certificate) *x509.Certificate {
 	for _, c := range certs {
-		if bytes.Equal(c.RawIssuer, si.IssuerAndSerialNumber.IssuerName.FullBytes) && si.IssuerAndSerialNumber.SerialNumber != nil &&
-			c.SerialNumber.Cmp(si.IssuerAndSerialNumber.SerialNumber) == 0 {
+		if names(si.sid, c) {
 			return c
 		}
 	}
 	return nil
+}
+
+// names reports whether a SignerIdentifier names c: by its issuer and serial number, or by its subject key identifier, which is the
+// certificate's extension or, for a certificate without one, the SHA-1 of its public key (RFC 5280, section 4.2.1.2, method 1).
+func names(sid asn1.RawValue, c *x509.Certificate) bool {
+	if sid.Class == asn1.ClassContextSpecific {
+		ski := c.SubjectKeyId
+		if len(ski) == 0 {
+			ski = publicKeyID(c)
+		}
+		return len(sid.Bytes) > 0 && bytes.Equal(sid.Bytes, ski)
+	}
+	var ias issuerAndSerial
+	if _, err := asn1.Unmarshal(sid.FullBytes, &ias); err != nil || ias.SerialNumber == nil {
+		return false
+	}
+	return bytes.Equal(c.RawIssuer, ias.IssuerName.FullBytes) && c.SerialNumber.Cmp(ias.SerialNumber) == 0
+}
+
+// publicKeyID is the SHA-1 of a certificate's subjectPublicKey bits: the key identifier of a certificate without the extension.
+func publicKeyID(c *x509.Certificate) []byte {
+	var spki struct {
+		Algorithm pkix.AlgorithmIdentifier
+		PublicKey asn1.BitString
+	}
+	if _, err := asn1.Unmarshal(c.RawSubjectPublicKeyInfo, &spki); err != nil {
+		return nil
+	}
+	sum := sha1.Sum(spki.PublicKey.Bytes) //nolint:gosec // RFC 5280's key identifier, no signature
+	return sum[:]
+}
+
+// signerName describes who a SignerInfo names, for a refusal's detail.
+func signerName(sid asn1.RawValue) string {
+	if sid.Class == asn1.ClassContextSpecific {
+		return "the key " + hex.EncodeToString(sid.Bytes)
+	}
+	var ias issuerAndSerial
+	if _, err := asn1.Unmarshal(sid.FullBytes, &ias); err != nil || ias.SerialNumber == nil {
+		return "a signer"
+	}
+	var rdn pkix.RDNSequence
+	if _, err := asn1.Unmarshal(ias.IssuerName.FullBytes, &rdn); err != nil {
+		return "a signer"
+	}
+	var n pkix.Name
+	n.FillFromRDNSequence(&rdn)
+	return "the serial " + ias.SerialNumber.Text(16) + " of " + n.String()
 }
 
 // digestHash is the hash a digest algorithm names: SHA-256, SHA-384 or SHA-512; SHA-1 is weak.
@@ -311,17 +539,7 @@ func verify(si *signerInfo, cert *x509.Certificate, message []byte) error {
 	if subtle.ConstantTimeCompare(md, sum.Sum(nil)) != 1 {
 		return pki.Invalid(signatures.ReasonSignatureMismatch, "the signer's message digest is not the hash of what it signs")
 	}
-	signed, err := asn1.Marshal(struct {
-		A []attribute `asn1:"set"`
-	}{A: si.AuthenticatedAttributes})
-	if err != nil {
-		return pki.Malformed("the signed attributes do not encode")
-	}
-	var set asn1.RawValue
-	if _, err := asn1.Unmarshal(signed, &set); err != nil {
-		return pki.Malformed("the signed attributes do not encode")
-	}
-	if err := cert.CheckSignature(alg, set.Bytes, si.EncryptedDigest); err != nil {
+	if err := cert.CheckSignature(alg, si.signedDER, si.EncryptedDigest); err != nil {
 		return pki.Invalid(signatures.ReasonSignatureMismatch, "the signature does not verify with the signer's certificate")
 	}
 	return nil

@@ -146,9 +146,14 @@ type Candidate struct {
 type Batch struct {
 	RepoID int64
 	// CarrierItem is the committed item, 0 for a stored document; Document is the stored document's path, "" for an item. The
-	// attachments of the carrier and those at every location the batch names that the batch does not make again are removed.
+	// attachments of the carrier and those at every location the batch names that the batch does not make again are removed, of the
+	// batch's Sources only.
 	CarrierItem int64
 	Document    string
+	// Sources are the attachment sources the batch speaks for: a format's detector (a commit, a fill, discovery) every source a
+	// detector names, a signature a client posts through the management API "upload". A batch replaces attachments of these sources
+	// only, so that what one writer recorded is never removed by another's batch (R-SIG-004, Q-SIG-217); none replaces nothing.
+	Sources []string
 	// Fresh says the carrier is an item the commit created: it carried no attachment before, so a batch without candidates writes
 	// nothing.
 	Fresh      bool

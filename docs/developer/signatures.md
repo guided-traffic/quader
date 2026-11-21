@@ -106,7 +106,7 @@ Verification, trust, anchors, the jobs, the API, events and metrics (R-SIG-005 t
 | The dispatch by scheme with the object bound, the check's deadline and the recovery of a panic | [scheme/all](../../internal/signatures/scheme/all/all.go) |
 | `sigstore-bundle` and `cosign-legacy` (sigstore-go; the older layout converted to a bundle of version 0.1), `LoadRoot` and `Judge` for an identity anchor | [scheme/sigstore](../../internal/signatures/scheme/sigstore/sigstore.go) |
 | `notation-jws`, `notation-cose` (notation-core-go, tspclient-go) | [scheme/notation](../../internal/signatures/scheme/notation/notation.go) |
-| `nuget-cms`: the CMS, the countersignatures, the timestamps, the unsigned-package hash | [scheme/nugetcms](../../internal/signatures/scheme/nugetcms/nugetcms.go) |
+| `nuget-cms`: the CMS (its own reader on `encoding/asn1`, a signer named by issuer and serial number or by its key, Q-SIG-216), the countersignatures, the timestamps, the unsigned-package hash; the real tools' signatures of the measurement in `testdata/` | [scheme/nugetcms](../../internal/signatures/scheme/nugetcms/nugetcms.go) |
 | `openpgp`: the committed digest, `VerifyDigest` for a key added later, Debian's cleartext, Ansible's chain to every file | [scheme/openpgp](../../internal/signatures/scheme/openpgp/openpgp.go) |
 | `npm-registry`, `public-key`, and `Verify` of a stored digest | [scheme/rawkey](../../internal/signatures/scheme/rawkey/rawkey.go) |
 | What the verifiers share (refusals, the signer's certificate fields, chains, keys, bounded ASN.1 and CBOR) and the tests' certificate authority and keys | [scheme/rawkey/pki](../../internal/signatures/scheme/rawkey/pki/outcome.go), [pki/pkitest](../../internal/signatures/scheme/rawkey/pki/pkitest/pkitest.go) |
@@ -302,7 +302,7 @@ nothing here is per format.
 | Method | For | What |
 |---|---|---|
 | `Resolve(ctx, tx, repoID, paths)` | the hook | What the paths of one repository hold now: a live file's blob, size and item, or a remote's stored document |
-| `Record(ctx, tx, Batch)` | the hook, and package 3's management API (Ansible's posted signatures) | Objects and signatures once, attachments replaced; at most `MaxPerSubject` per subject; an object above `MaxObjectSize` is born `malformed`, `limits_exceeded`, not due (Q-SIG-49); calls `Options.Wake` |
+| `Record(ctx, tx, Batch)` | the hook, and package 3's management API (Ansible's posted signatures) | Objects and signatures once, attachments replaced of the batch's own `Sources` only (the hook: the eight a detector names; the API: `upload`; none: nothing replaced, Q-SIG-217); at most `MaxPerSubject` per subject; an object above `MaxObjectSize` is born `malformed`, `limits_exceeded`, not due (Q-SIG-49); calls `Options.Wake` |
 | `SubjectArrived(ctx, tx, subject)` | the hook | Makes the signatures waiting for the subject due |
 | `RecordOrigin(ctx, tx, Origin)` | the hook | The origin of an uploaded item, with a CI job's claims |
 | `Due(ctx, tx, limit)` | package 2's job | Locks due rows whose `not_before` passed, by priority and time, `SKIP LOCKED` |
@@ -323,7 +323,7 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 | Format | Event | Candidates |
 |---|---|---|
 | OCI ([signatures.go](../../internal/formats/oci/signatures.go)) | a `_manifests/` item; a `_tags/` item or a remote's tag document whose name is an attachment tag | A referrer (a manifest with `subject`): object the manifest (blob, part = the layer index), scheme and role by artifact type, layers and the predicate annotation, source `referrer`; BuildKit's attestation entries of an index: object the entry's manifest, subject `vnd.docker.reference.digest`, `index_entry`, location `path#/manifests/<i>`; a referrers tag: each listed manifest, `referrers_tag`; `.sig`: one per layer, `.att`: one per layer by predicate, `.sbom`: one attachment, all `cosign_tag`; at most 32 per event (Q-SIG-48) |
-| npm ([signatures.go](../../internal/formats/npm/signatures.go)) | a remote's package document; a local publish's `.sigstore` companion; a remote's attestations document at `-/npm/v1/attestations/<name>@<version>` (Q-SIG-51) | Each `dist.signatures` entry: `Raw` the entry, subject the SHA-256 of `<name>@<version>:<integrity>`, `SubjectName`, `SignedContent.Raw` the message (Q-SIG-50); the bundle: `provenance` of `SubjectPath` the tarball, `upload`; each attestation: `Raw` the bundle, role by predicate type, subject path the tarball |
+| npm ([signatures.go](../../internal/formats/npm/signatures.go)) | a remote's package document; a local publish's `.sigstore` companion; a remote's attestations document at `-/npm/v1/attestations/<name>@<version>` (Q-SIG-51) | Each `dist.signatures` entry: `Raw` the entry, subject the SHA-256 of `<name>@<version>:<integrity>`, `SubjectName`, `SignedContent.Raw` the message (Q-SIG-50); the bundle: `provenance` of `SubjectPath` the tarball, `sibling` (Q-SIG-217); each attestation: `Raw` the bundle, role by predicate type, subject path the tarball |
 | NuGet ([signatures.go](../../internal/formats/nuget/signatures.go)) | a `.nupkg` item (push or fill) | The entry `.signature.p7s`: object the package blob with locator `entry:.signature.p7s` and the entry's SHA-256, part 0 with the role its commitment type gives, parts 1… the repository countersignatures; subject the package; signed content `unsigned`; `embedded` |
 | Debian ([signatures.go](../../internal/formats/deb/signatures.go)) | a remote's `dists/<suite>/InRelease`, `Release.gpg`, `Release` | One per OpenPGP signature packet, `registry`, `release`: InRelease with signed content `cleartext`; Release.gpg with subject path `Release`; Release names `Release.gpg` beside it by path (its first signature; the read finds the others) |
 | Ansible ([signatures.go](../../internal/formats/ansible/signatures.go)) | a remote's version document | Each `signatures[]` entry: `Raw` the armored signature, one candidate per packet, subject `artifact.sha256`, signed content `entry:MANIFEST.json`, `registry` with a `signing_service`, else `publisher`; `document` at `path#/signatures/<i>` |
@@ -368,7 +368,8 @@ Q-SIG-170 to Q-SIG-176.
 - **The public parts are a snapshot.** Every replica answers the trusted root, the chain and npm's keys of a local repository from
   `store.Snapshot`, which the change area `signing_identities` refreshes.
 - **A signature of Quader's is a row of stage 1's store.** npm's registry signature is a `signatures` row with `identity_id`, attached
-  `issued` to the version's tarball; Quader never checks it (no trust row, never due), stage 1's batches never replace it, and the documents
+  `issued` to the version's tarball; Quader never checks it (no trust row, never due), stage 1's batches never replace it (no batch speaks
+  for `issued`, Q-SIG-217), and the documents
   render it while its identity is listed.
 
 ### Package 1 (built)
@@ -654,6 +655,23 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
    5.3), and `github.com/digitorus/pkcs7` parses only `issuerAndSerialNumber` (`asn1: structure error: tags don't match … issuerAndSerial
    @5`). The place: `parse` in [nugetcms/cms.go](../../internal/signatures/scheme/nugetcms/cms.go) and the `signerInfo` it fills; the
    unit tests sign with `issuerAndSerialNumber` only, which is why they pass.
+   **Repaired:** `nugetcms` reads `ContentInfo`, `SignedData`, every `SignerInfo` (the signer by issuer and serial number or by subject key
+   identifier, a certificate without the extension by the SHA-1 of its key) and the timestamp's `TSTInfo` itself on `encoding/asn1`, BER
+   brought to definite lengths by `pki.Definite` first, the signature checked over the signed attributes as encoded
+   ([Q-SIG-216](../spec/signatures.md#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key)); `nugetcms` imports
+   digitorus no more. With that, nuget.org's countersignature of 2023 read `weak_algorithm`: its chain ends at a root self-signed with SHA-1
+   in 2006, and `pki.CheckCertificate` no longer judges a self-signed certificate's own signature
+   ([Q-SIG-218](../spec/signatures.md#q-sig-218--a-self-signed-roots-own-signature-is-not-judged)). The two signatures of this measurement
+   are the fixtures of [realtool_test.go](../../internal/signatures/scheme/nugetcms/realtool_test.go) (31 KiB): `dotnet nuget sign`'s package
+   reads `valid`; nuget.org's author signature and countersignature each find their certificate, chain, verify and carry DigiCert's verified
+   timestamp, and the whole check reaches the package's hash (the 205 KiB package is not kept). The old parser refuses both fixtures with the
+   error above (probed once). Why the vectors did not catch it: every NuGet signature of the tests was made in process by digitorus/pkcs7,
+   the library that read them, which writes the one form it reads; no signature came from dotnet or nuget.org. The tests' own signatures now
+   also name every signer by its key. Not measured again with the real client: a gated repository serving `Sigm.Signed`, and the trust
+   row of nuget.org's countersignature under the shipped anchors. A row the defect already wrote stays `malformed` in an installation:
+   nothing reads it again (the trust job recomputes trust rows only, discovery's insert keeps an existing row's verdict, the daily retry
+   takes `failed` rows only), and storing the same package again reaches the same row; only after every attachment of it is gone and the
+   job's removal of orphans has deleted the row does the next store read the signature anew.
 2. **In a gated OCI repository no client can sign an image after the push.** Reproduce: gate on `docker-local`, push an unsigned image,
    `cosign sign --key k <repo>/<image>@<digest>` or `notation sign` of the same. Expected (R-SIG-064: "OCI's signatures arrive after the
    push"): the signature is pushed and the image passes. Actual: cosign `GET`s and notation `HEAD`s the manifest before signing, the gate
@@ -678,11 +696,29 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
    `RemoveOrphans` then removes the row and the object. Since discovery starts again from the first item once a day
    ([Q-SIG-111](../spec/signatures.md#q-sig-111--discovery-walks-the-items-by-a-cursor-and-starts-a-new-pass-once-a-day)), every
    posted signature is lost at the latest at the next pass (inferred, not waited for).
+   **Repaired:** a batch names the sources it speaks for (`signatures.Batch.Sources`) and `SignatureReplaceAttachments` removes attachments
+   of those sources only; a detector's batch (`formathost.recordAt`, so a commit, a fill and discovery) speaks for the eight sources a
+   detector names, the posted signature's for `upload`, and `formats.SignatureSourceValid` refuses `upload` from a detector. npm's provenance
+   bundle, the one detector candidate that was `upload`, is attached `sibling`
+   ([Q-SIG-217](../spec/signatures.md#q-sig-217--a-batch-replaces-the-attachments-of-its-own-sources-only)). The formats that attach from
+   more than one writer are Ansible (the detector's `document` in a remote, the management API's `upload` in a local repository) and npm
+   (the detector's `sibling` and `document`, and stage 2's `issued`); every other format attaches from its detector alone. Tested in
+   `ansiblelocal` by running the worker's discovery and the removal of orphans in process after the post (the attachment, its row and its
+   object stay; with `upload` among a detector's sources the test fails, run once), and at the unit tier in `internal/formathost`. A
+   version whose posted signature an installation already lost stays without it until the signature is posted again.
 4. **A remote OCI image's version lists no signature.** Reproduce: pull a signed image through an OCI remote and read
    `GET /api/v1/packages/{id}/versions/1.0/signatures?repository=web/docker-remote`. Expected: the fetched signatures and **Verified ·
    internal**. Actual: `"state":"none"` with no signature, while the manifest's file view of the same repository shows them verified. The
    place: `versionSubjects` in [signatures_views.go](../../internal/api/v1/signatures_views.go) adds the tag's digest only when the
    repository holds the tag as a file, and a remote holds its tags as documents (R-OCI-022), so the version has no files and no subject.
+   **Repaired:** `SignatureVersionBlobs` also answers the blob of the document a repository lists a version by
+   (`package_version_listing.document_sha256`: a remote's OCI tag, whose document is the manifest), marked `Document`; the version's answer
+   reads it for all holders in one call (`versionDocuments`) and a holder whose document names the metadata's manifest asks for it and its
+   platforms, one whose tag names another manifest asks for that one; the version list counts it the same way
+   ([Q-SIG-219](../spec/signatures.md#q-sig-219--a-remotes-version-reads-the-document-it-holds-the-version-as)). The other formats' remotes
+   (npm, NuGet, Ansible Galaxy, Debian) hold a version's file as an item and showed their signatures already; the generic format has no
+   remote class; a virtual repository shows its members' union, a remote member now included. Tested at the unit tier
+   (`TestR_SIG_034_VersionSignatures`) and in `ociremote` (`TestR_SIG_026_…`, the version's answer and its list after the fetch).
 5. **NuGet and `ansible-galaxy` never show the gate's text, and Docker does not show it for a pending image.** `dotnet restore` prints
    `Response status code does not indicate success: 403 (Forbidden).` (also with `-v detailed`, where the body never appears), retries a
    403 and a 503 five times, and after the 503s ends with "The feed is either invalid or required packages were removed"; `ansible-galaxy`
@@ -705,6 +741,22 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
    case), Ansible Galaxy `sigm.unsigned:1.0.0`; a generic file and `/files/` keep the path, which is the client's own. The details link keeps
    the stored path.
 
+What the repairs of 1, 3 and 4 cost in tests (measured on 2026-11-21 in the unit job's mode, `-race -covermode=atomic -coverpkg=./...`,
+load 14 to 16 on 20 cores):
+
+| Tier | Test | Run time | Data |
+|---|---|---|---|
+| Unit | `nugetcms`: the real tools' two signatures (`TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsValid`, `…NugetOrgsAuthorSignatureAndRepositoryCountersignatureRead`), the signers named by key in DER and BER (`TestR_SIG_006_ASignerNamedByItsKeyIdentifierIsFound`) | 0.02 s, 0.02 s and 0.03 s | the fixtures, 31 KiB; packages of the test |
+| Unit | `trust`: the `dotnet nuget sign` package internal under its CA (`TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsInternalUnderItsCA`) | under 0.01 s | the fixture, 7.5 KiB |
+| Unit | `formathost`: a detector's batch speaks for the detectors' sources (`TestR_SIG_004_…`); `api/v1`: two cases of a remote's tag in `TestR_SIG_034_VersionSignatures` | under 0.01 s each | none |
+| Unit (fuzz seeds) | `FuzzSignatureP7s` (`nugetcms`: the parse and every step of a check on each part) and `FuzzDefinite` (`pki`: the conversion to definite lengths is DER in its tags and lengths, nests at most 32 deep, grows by at most 64 bytes, is a fixed point); R-SIG-013 lists the bounds they assert | 0.04 s and 0.02 s | the fixtures and the tests' own signatures; six short BER structures and one kept input |
+| Fuzz (closing run only) | the same two targets in the `fuzz nuget` matrix, 30 minutes a leg; run here two minutes each on 2026-11-22 (8 workers, `-fuzzminimizetime 5s`, load 15 to 25): 565,507 executions of the CMS target and 7,407,794 of `Definite`, no finding of the readers; `Definite`'s first run found a flaw of the target's own walk (an empty constructed value at the deepest level counted as one level deeper), whose input stays as `testdata/fuzz/FuzzDefinite/ca72bc74dfb10117` | two legs of 30 minutes | none kept besides the input |
+| Integration | `ansiblelocal`: discovery and the removal of orphans in process after a post; `ociremote`: the remote's version and its list after the fetch | about 0.1 s (0.09 s measured); two requests and a wait of at most 10 s for the tag's download to be counted, in existing tests (`TestR_SIG_026_…` took 42.6 s whole at load 15 to 30, its share not isolated) | rows; the stub's image |
+
+No leg gains a second the unit run would notice; the shard with `ociremote` at most the 10 s wait, the one with `ansiblelocal` 0.1 s; no
+end-to-end leg anything; with 25
+formats the same: the rules are the core's.
+
 ### Not measured, and why
 
 - **Keyless signing** (cosign with Fulcio and an OIDC token, npm provenance): it needs an interactive sign-in or a signing service of its
@@ -717,7 +769,8 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
 - The malware gate's refusals: not provoked (the scanning was off). The user manual's line on Docker for them was changed with this
   measurement because the OCI error body is the same writer's (R-SIG-068); that line is inferred, not seen.
 - Verified, not only read: every row of both tables. Read, not run: the cause of defect 3 (the code path), the daily repetition of
-  discovery, and whether `X-NuGet-Warning` would reach a NuGet user.
+  discovery, and whether `X-NuGet-Warning` would reach a NuGet user. The cause of defect 3 was run since, with the repair: discovery in
+  process removes the posted signature when a detector's batch speaks for `upload`, and keeps it when it does not.
 
 ## What this page does not cover
 

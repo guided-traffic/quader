@@ -46,7 +46,8 @@ on:
           The full run on the commit that closes a phase (Q-NPM-46): adds the legs the roadmap reserves for it, the npm
           scenario list and cold-cache install with Valkey stopped, the read-only subset against the public registry, the
           5-minute Valkey outage under the npm load, the NuGet closing leg (nuget-closing), and the 30-minute fuzz runs of
-          npm's Match and Inspect and of the NuGet readers and version rules. Choose the closing commit as the ref of the run.
+          npm's Match and Inspect, of the NuGet readers and version rules and of the reader of a NuGet signature. Choose the
+          closing commit as the ref of the run.
         type: boolean
         default: false
 
@@ -2990,9 +2991,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # The 30-minute fuzz runs of the NuGet readers (nupkg, nuspec) and of the version and ID rules (version, id), in the full run on
-  # the commit that closes the phase only (dispatch with closing=true; Q-ARCH-278). One leg per target, the six of NUGET_FUZZ_TARGETS
-  # in the Makefile, so the legs run side by side and a crash fails its own leg and uploads its input.
+  # The 30-minute fuzz runs of the NuGet readers (nupkg, nuspec), of the version and ID rules (version, id) and of the reader of a
+  # NuGet signature (the CMS of a .signature.p7s, the BER bounds; Q-SIG-216), in the full run on the commit that closes the phase only
+  # (dispatch with closing=true; Q-ARCH-278). One leg per target, the eight of NUGET_FUZZ_TARGETS in the Makefile (the package below
+  # internal/), so the legs run side by side and a crash fails its own leg and uploads its input.
   fuzz-nuget:
     name: fuzz nuget ${{ matrix.fuzz }} (30 min)
     if: github.event_name == 'workflow_dispatch' && inputs.closing
@@ -3002,18 +3004,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - pkg: nupkg
+          - pkg: formats/nuget/nupkg
             fuzz: FuzzR_ARCH_028_Inspect
-          - pkg: nuspec
+          - pkg: formats/nuget/nuspec
             fuzz: FuzzR_NUGET_005_Nuspec
-          - pkg: version
+          - pkg: formats/nuget/version
             fuzz: FuzzNormalize
-          - pkg: version
+          - pkg: formats/nuget/version
             fuzz: FuzzCompare
-          - pkg: version
+          - pkg: formats/nuget/version
             fuzz: FuzzRange
-          - pkg: id
+          - pkg: formats/nuget/id
             fuzz: FuzzID
+          - pkg: signatures/scheme/nugetcms
+            fuzz: FuzzSignatureP7s
+          - pkg: signatures/scheme/rawkey/pki
+            fuzz: FuzzDefinite
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -3040,8 +3046,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: fuzz-nuget-${{ matrix.pkg }}-${{ matrix.fuzz }}
-          path: internal/formats/nuget/${{ matrix.pkg }}/testdata/fuzz/
+          name: fuzz-nuget-${{ matrix.fuzz }}
+          path: internal/${{ matrix.pkg }}/testdata/fuzz/
           if-no-files-found: ignore
           retention-days: 14
 

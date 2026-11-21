@@ -632,19 +632,22 @@ oidc-fixtures: ## Re-record the GitLab fixtures of the OIDC issuer double from a
 # <<< M4 oidc-stub
 
 # >>> M3 nuget
-# The NuGet format's fuzz targets (id, version, nupkg, nuspec; R-NUGET-003, R-NUGET-005, R-ARCH-028), the golden vectors
+# The NuGet format's fuzz targets (id, version, nupkg, nuspec; R-NUGET-003, R-NUGET-005, R-ARCH-028) and those of the reader of a
+# NuGet signature (the CMS of a .signature.p7s and the BER bounds; signatures.md R-SIG-013, Q-SIG-216), the golden vectors
 # of the version and ID rules generated with NuGet.Versioning (tools/nugetvectors, R-NUGET-003) and the counting NuGet
-# test upstream (test/nugetstub, docs/developer/e2e.md). Edit only between the markers.
-NUGET_FUZZ_TARGETS ?= nupkg:FuzzR_ARCH_028_Inspect nuspec:FuzzR_NUGET_005_Nuspec version:FuzzNormalize version:FuzzCompare version:FuzzRange id:FuzzID
+# test upstream (test/nugetstub, docs/developer/e2e.md). A target is <package below internal/>:<Target>. Edit only between the markers.
+NUGET_FUZZ_TARGETS ?= formats/nuget/nupkg:FuzzR_ARCH_028_Inspect formats/nuget/nuspec:FuzzR_NUGET_005_Nuspec \
+  formats/nuget/version:FuzzNormalize formats/nuget/version:FuzzCompare formats/nuget/version:FuzzRange formats/nuget/id:FuzzID \
+  signatures/scheme/nugetcms:FuzzSignatureP7s signatures/scheme/rawkey/pki:FuzzDefinite
 NUGET_FUZZTIME ?= 5m
 NUGET_STUB_IMAGE ?= quader-e2e-nugetstub:dev
 NUGET_VECTORS := internal/formats/nuget/version/testdata/vectors.json
 
 .PHONY: fuzz-nuget
-fuzz-nuget: ## Fuzz every NuGet target (NUGET_FUZZ_TARGETS, package:Target pairs) for NUGET_FUZZTIME each (default 5m); a failing input stays in the package's testdata/fuzz
+fuzz-nuget: ## Fuzz every NuGet target (NUGET_FUZZ_TARGETS, package:Target pairs, the package below internal/) for NUGET_FUZZTIME each (default 5m); a failing input stays in the package's testdata/fuzz
 	@set -e; for t in $(NUGET_FUZZ_TARGETS); do pkg=$${t%%:*}; fz=$${t##*:}; \
 	  echo "fuzz $$pkg $$fz for $(NUGET_FUZZTIME)"; \
-	  go test ./internal/formats/nuget/$$pkg -run '^$$' -fuzz "^$$fz\$$" -fuzztime $(NUGET_FUZZTIME); \
+	  go test ./internal/$$pkg -run '^$$' -fuzz "^$$fz\$$" -fuzztime $(NUGET_FUZZTIME); \
 	done
 
 .PHONY: nuget-vectors

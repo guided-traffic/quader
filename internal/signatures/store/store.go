@@ -131,8 +131,9 @@ func (s *Store) Resolve(ctx context.Context, tx meta.Tx, repoID int64, paths []s
 }
 
 // Record stores a batch in tx (R-SIG-003, R-SIG-004): the objects and the signatures once (an existing row keeps what it has), and
-// the attachments of the batch in place of those its carrier and its locations had. At most MaxPerSubject candidates per subject are
-// recorded. An object larger than MaxObjectSize is recorded with a signature that is born malformed (limits_exceeded) and not due.
+// the attachments of the batch in place of those of the batch's sources its carrier and its locations had: an attachment another writer
+// recorded under another source stays (Q-SIG-217). At most MaxPerSubject candidates per subject are recorded. An object larger than
+// MaxObjectSize is recorded with a signature that is born malformed (limits_exceeded) and not due.
 func (s *Store) Record(ctx context.Context, tx meta.Tx, b signatures.Batch) error {
 	qs, err := queries(tx)
 	if err != nil {
@@ -148,8 +149,8 @@ func (s *Store) Record(ctx context.Context, tx meta.Tx, b signatures.Batch) erro
 	}
 	at := q.SignatureUpsertAttachmentsParams{RepoID: b.RepoID}
 	rp := q.SignatureReplaceAttachmentsParams{
-		RepoID: b.RepoID, ItemID: b.CarrierItem, Document: b.Document, Locations: []string{}, Objects: [][]byte{}, Subjects: [][]byte{},
-		KeepIds: []int64{}, KeepLocations: []string{},
+		RepoID: b.RepoID, ItemID: b.CarrierItem, Document: b.Document, Sources: append([]string{}, b.Sources...), Locations: []string{},
+		Objects: [][]byte{}, Subjects: [][]byte{}, KeepIds: []int64{}, KeepLocations: []string{},
 	}
 	for i, c := range cands {
 		rp.Locations, rp.Objects, rp.Subjects = append(rp.Locations, c.Location), append(rp.Objects, c.Object.SHA256[:]), append(rp.Subjects, c.Subject[:])
@@ -160,8 +161,10 @@ func (s *Store) Record(ctx context.Context, tx meta.Tx, b signatures.Batch) erro
 	if len(cands) == 0 && (b.Fresh || (b.CarrierItem == 0 && b.Document == "")) {
 		return nil // a new item carried nothing before, and the batch makes nothing: nothing to replace
 	}
-	if err := qs.SignatureReplaceAttachments(ctx, rp); err != nil {
-		return err
+	if len(b.Sources) > 0 {
+		if err := qs.SignatureReplaceAttachments(ctx, rp); err != nil {
+			return err
+		}
 	}
 	if len(cands) == 0 {
 		return nil

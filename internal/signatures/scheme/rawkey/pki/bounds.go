@@ -7,14 +7,93 @@ package pki
 // maxLengthBytes is the most bytes an ASN.1 long-form length may take: four bytes declare up to 4 GiB, far beyond any object.
 const maxLengthBytes = 4
 
-// CheckBER walks one BER or DER value (definite and indefinite lengths) and refuses it beyond maxDepth levels of nesting or with a declared
-// length longer than the data.
+// maxTagBytes is the most base-128 octets of a tag number in the high-tag-number form: four name a number below 2^28, as encoding/asn1
+// reads it.
+const maxTagBytes = 4
+
+// CheckBER walks one BER or DER value (definite and indefinite lengths) and refuses it beyond maxDepth levels of nesting, with a declared
+// length longer than the data, a long-form length of more than maxLengthBytes octets, or a tag number not in its shortest form (X.690,
+// 8.1.2: the high-tag-number form only for 31 and more, no leading zero octet, at most maxTagBytes octets).
 func CheckBER(data []byte, maxDepth int) error {
 	if len(data) == 0 {
 		return Malformed("the ASN.1 structure is empty")
 	}
 	_, err := berValue(data, 1, maxDepth)
 	return err
+}
+
+// Definite re-encodes one BER value with definite lengths in the fewest octets, the form of DER's lengths: encoding/asn1 reads no
+// indefinite length and no long form where a short one does (Q-SIG-216). A DER value comes back unchanged. It refuses what CheckBER
+// refuses, and data after the value. What it returns is DER in its tags and lengths at every level (the content rules of DER, a primitive
+// string or the order of a SET OF, are the schema's), at most 2*maxDepth bytes longer than data: only an indefinite length whose content
+// needs a length of three or four octets grows, by at most two, and such values nest at most maxDepth deep.
+func Definite(data []byte, maxDepth int) ([]byte, error) {
+	if err := CheckBER(data, maxDepth); err != nil {
+		return nil, err
+	}
+	out, rest, err := definiteValue(nil, data)
+	if err != nil {
+		return nil, err
+	}
+	if len(rest) > 0 {
+		return nil, Malformed("the ASN.1 structure is followed by %d bytes", len(rest))
+	}
+	return out, nil
+}
+
+// definiteValue appends the value at the start of b, re-encoded, to out and returns what follows it. CheckBER has bounded the nesting
+// and the lengths.
+func definiteValue(out, b []byte) ([]byte, []byte, error) {
+	constructed, rest, err := berTag(b)
+	if err != nil {
+		return nil, nil, err
+	}
+	out = append(out, b[:len(b)-len(rest)]...)
+	length, indefinite, rest, err := berLength(rest)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !constructed {
+		return append(appendLength(out, length), rest[:length]...), rest[length:], nil
+	}
+	var children []byte
+	if indefinite {
+		for {
+			if len(rest) < 2 {
+				return nil, nil, Malformed("an indefinite ASN.1 value has no end")
+			}
+			if rest[0] == 0 && rest[1] == 0 {
+				rest = rest[2:]
+				break
+			}
+			if children, rest, err = definiteValue(children, rest); err != nil {
+				return nil, nil, err
+			}
+		}
+	} else {
+		content := rest[:length]
+		rest = rest[length:]
+		for len(content) > 0 {
+			if children, content, err = definiteValue(children, content); err != nil {
+				return nil, nil, err
+			}
+		}
+	}
+	return append(appendLength(out, len(children)), children...), rest, nil
+}
+
+// appendLength appends a definite length in the fewest octets.
+func appendLength(out []byte, n int) []byte {
+	if n < 0x80 {
+		return append(out, byte(n)) //nolint:gosec // below 0x80
+	}
+	var be [8]byte
+	i := len(be)
+	for ; n > 0; n >>= 8 {
+		i--
+		be[i] = byte(n)
+	}
+	return append(append(out, 0x80|byte(len(be)-i)), be[i:]...)
 }
 
 // berValue walks the value at the start of b and returns what follows it.
@@ -66,7 +145,7 @@ func berIndefinite(b []byte, depth, maxDepth int) ([]byte, error) {
 	}
 }
 
-// berTag reads an identifier octet (and the octets of a high tag number).
+// berTag reads an identifier octet and the octets of a high tag number, which must be the number's shortest form (X.690, 8.1.2.4).
 func berTag(b []byte) (constructed bool, rest []byte, err error) {
 	if len(b) == 0 {
 		return false, nil, Malformed("the ASN.1 structure ends early")
@@ -75,8 +154,16 @@ func berTag(b []byte) (constructed bool, rest []byte, err error) {
 	if b[0]&0x1f != 0x1f {
 		return constructed, b[1:], nil
 	}
-	for i := 1; i < len(b) && i <= maxLengthBytes+1; i++ {
+	if len(b) > 1 && b[1] == 0x80 {
+		return false, nil, Malformed("an ASN.1 tag number starts with a zero octet")
+	}
+	n := 0
+	for i := 1; i < len(b) && i <= maxTagBytes; i++ {
+		n = n<<7 | int(b[i]&0x7f)
 		if b[i]&0x80 == 0 {
+			if n < 0x1f {
+				return false, nil, Malformed("an ASN.1 tag number below 31 is written in the high-tag-number form")
+			}
 			return constructed, b[i+1:], nil
 		}
 	}

@@ -1,7 +1,10 @@
 package formathost
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"slices"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -39,6 +42,53 @@ func (nopRecorder) SubjectArrived(context.Context, meta.Tx, [32]byte) (int64, er
 	return 0, nil
 }
 func (nopRecorder) RecordOrigin(context.Context, meta.Tx, signatures.Origin) error { return nil }
+
+// batchRecorder keeps the batches it is handed.
+type batchRecorder struct {
+	nopRecorder
+	got []signatures.Batch
+}
+
+func (b *batchRecorder) Record(_ context.Context, _ meta.Tx, x signatures.Batch) error {
+	b.got = append(b.got, x)
+	return nil
+}
+
+// bytesContent is stored content of a few bytes.
+type bytesContent []byte
+
+func (c bytesContent) Size() int64                    { return int64(len(c)) }
+func (c bytesContent) Bytes(int64) ([]byte, error)    { return c, nil }
+func (c bytesContent) ReaderAt() (io.ReaderAt, error) { return bytes.NewReader(c), nil }
+
+// TestR_SIG_004_ADetectorsBatchSpeaksForTheDetectorsSourcesOnly: the batch a commit or discovery records for an item, also one without
+// candidates, replaces the attachments of every source a detector names and of no other: not upload, the signature a client posted
+// through the management API at that item (R-SIG-004, Q-SIG-217, the measurement's defect 3). Unit, milliseconds.
+func TestR_SIG_004_ADetectorsBatchSpeaksForTheDetectorsSourcesOnly(t *testing.T) {
+	rec := &batchRecorder{}
+	ev := formats.SignatureEvent{
+		Origin: formats.OriginUpload, Item: formats.ItemRef{ID: 7}, Path: formats.Path{Path: "acme/tools-1.0.0.tar.gz"},
+		Digests: formats.Digests{SHA256: make([]byte, 32)}, Content: bytesContent("an archive"),
+	}
+	if err := (Deps{Signatures: rec}).recordAt(context.Background(), nil, testformat.New(), ev, false, signatures.PriorityDiscovery); err != nil {
+		t.Fatal(err)
+	}
+	if len(rec.got) != 1 || len(rec.got[0].Candidates) != 0 || rec.got[0].CarrierItem != 7 {
+		t.Fatalf("batches %+v, want one without candidates for item 7", rec.got)
+	}
+	sources := rec.got[0].Sources
+	for _, s := range sources {
+		if !formats.SignatureSourceValid(s) {
+			t.Errorf("the batch speaks for %q, a source no detector names", s)
+		}
+	}
+	if slices.Contains(sources, formats.SignatureSourceUpload) || formats.SignatureSourceValid(formats.SignatureSourceUpload) {
+		t.Errorf("a detector's batch speaks for upload: %v", sources)
+	}
+	if len(sources) != 8 {
+		t.Errorf("the batch speaks for %d sources, want the eight a detector names: %v", len(sources), sources)
+	}
+}
 
 // TestR_SIG_011_DiscoveryAsksNoFormatWithoutSignatures: the files of a format that declares no signatures (the ClamAV definitions) cost
 // discovery no transaction and no read, and the cursor passes them; a format that declares signatures is asked in a transaction of its

@@ -110,7 +110,7 @@ type SignatureCandidate struct {
 	SubjectName string   // npm: <name>@<version>
 	Role        string
 	SchemeHint  string
-	Source      string // referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release, upload
+	Source      string // referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release (upload is no detector's)
 	Location    string // the attachment's location (R-SIG-004): an item path, or path#pointer in a document
 	// SignedContent is what a keyless scheme or NuGet hashes: the subject, an entry of it, its unsigned view, or the message itself
 	// (npm's registry signature: Raw). The zero locator is the subject's own bytes.
@@ -185,7 +185,9 @@ const (
 	SignatureSchemeUnknown        = "unknown"
 )
 
-// The sources of an attachment: how a signature reaches its subject in a repository (R-SIG-004).
+// The sources of an attachment: how a signature reaches its subject in a repository (R-SIG-004). A detector names every one but
+// SignatureSourceUpload, which is a signature a client posts through the management API for a stored version (Ansible's) and which no
+// detector records: a detector's batch replaces the attachments of the detectors' sources only (Q-SIG-217).
 const (
 	SignatureSourceReferrer     = "referrer"
 	SignatureSourceReferrersTag = "referrers_tag"
@@ -230,11 +232,12 @@ func SignatureSchemeValid(scheme string) bool {
 	return false
 }
 
-// SignatureSourceValid reports whether source is one of R-SIG-004's sources.
+// SignatureSourceValid reports whether source is one of R-SIG-004's sources a detector names: every one but SignatureSourceUpload
+// (Q-SIG-217). The core drops a candidate of another source.
 func SignatureSourceValid(source string) bool {
 	switch source {
 	case SignatureSourceReferrer, SignatureSourceReferrersTag, SignatureSourceCosignTag, SignatureSourceIndexEntry,
-		SignatureSourceDocument, SignatureSourceEmbedded, SignatureSourceSibling, SignatureSourceRelease, SignatureSourceUpload:
+		SignatureSourceDocument, SignatureSourceEmbedded, SignatureSourceSibling, SignatureSourceRelease:
 		return true
 	}
 	return false

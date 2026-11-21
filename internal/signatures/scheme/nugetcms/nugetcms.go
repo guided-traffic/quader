@@ -1,7 +1,8 @@
 // Package nugetcms verifies nuget-cms (signatures.md R-SIG-005, R-SIG-006, R-SIG-007, R-SIG-013, R-SIG-029): the CMS SignedData of a
-// NuGet package's .signature.p7s (digitorus/pkcs7), its repository countersignatures, their RFC 3161 timestamps (digitorus/timestamp),
-// and the hash of the package's unsigned bytes. The countersignature, the attribute checks and the unsigned view are code of this
-// package (R-SIG-014).
+// NuGet package's .signature.p7s, its repository countersignatures, their RFC 3161 timestamps, and the hash of the package's unsigned
+// bytes. The CMS reader (both forms of a SignerInfo's signer, issuer and serial number or subject key identifier: dotnet nuget sign and
+// nuget.org write the second), the countersignature, the timestamps, the attribute checks and the unsigned view are code of this package
+// on encoding/asn1 (R-SIG-014, Q-SIG-216).
 //
 // The object is the package blob with the locator "entry:.signature.p7s"; part 0 is the primary signature (an author's, role publisher, or
 // a repository's, role registry, by its commitment type), part n the n-th repository countersignature (role registry). The check runs in
@@ -164,7 +165,7 @@ func zipError(ctx context.Context, err error) error {
 func signerChain(si *signerInfo, certs []*x509.Certificate, l scheme.Limits) ([]*x509.Certificate, error) {
 	leaf := certificateOf(si, certs)
 	if leaf == nil {
-		return nil, pki.Invalid(signatures.ReasonChainBroken, "the signer's certificate is not in the signature")
+		return nil, pki.Invalid(signatures.ReasonChainBroken, "the certificate of the signer (%s) is not in the signature", signerName(si.sid))
 	}
 	chain := pki.Order(leaf, certs, l.MaxChain+1)
 	if len(chain) > l.MaxChain {

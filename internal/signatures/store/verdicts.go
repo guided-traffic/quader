@@ -31,7 +31,7 @@ func (s *Store) PublicProvenance(ctx context.Context, repoID int64, paths []stri
 }
 
 // VersionBlobs answers the blobs of the files of versions of a package in repositories, in one statement (R-SIG-034): what a page of the
-// version list counts the signatures of.
+// version list counts the signatures of, and, for a version a remote holds as a document (an OCI tag), the document's blob (Q-SIG-219).
 func (s *Store) VersionBlobs(ctx context.Context, repoIDs []int64, name string, versions []string) ([]signatures.VersionBlob, error) {
 	if len(repoIDs) == 0 || len(versions) == 0 {
 		return nil, nil
@@ -51,7 +51,7 @@ func (s *Store) VersionBlobs(ctx context.Context, repoIDs []int64, name string, 
 			if !asked[v] {
 				v = r.DisplayVersion
 			}
-			out = append(out, signatures.VersionBlob{Version: v, RepoID: r.RepoID, Blob: digest(r.BlobSha256), Path: r.Path})
+			out = append(out, signatures.VersionBlob{Version: v, RepoID: r.RepoID, Blob: digest(r.BlobSha256), Path: r.Path, Document: r.Document})
 		}
 		return nil
 	})

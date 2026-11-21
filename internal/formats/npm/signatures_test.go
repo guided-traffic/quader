@@ -83,7 +83,7 @@ func signatureCases(t testing.TB, bind func(*formattest.Host)) []formattest.Sign
 			},
 			Want: []formats.SignatureCandidate{{
 				Object: formats.SignatureLocator{Blob: sha256.Sum256(bundleSample)}, SubjectPath: "lodash/-/lodash-4.17.21.tgz",
-				Role: formats.SignatureRoleProvenance, SchemeHint: formats.SignatureSchemeSigstoreBundle, Source: formats.SignatureSourceUpload,
+				Role: formats.SignatureRoleProvenance, SchemeHint: formats.SignatureSchemeSigstoreBundle, Source: formats.SignatureSourceSibling,
 				Location: "lodash/-/lodash-4.17.21.sigstore",
 			}},
 		},

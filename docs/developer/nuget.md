@@ -151,12 +151,16 @@ catch that, so extend the vectors when a rule depends on a category.
 ## Fuzzing
 
 ```bash
-make fuzz-nuget NUGET_FUZZTIME=1m   # nupkg Inspect, nuspec Parse, version Normalize/Compare/Range, id: one minute each
+make fuzz-nuget NUGET_FUZZTIME=1m   # nupkg Inspect, nuspec Parse, version Normalize/Compare/Range, id, the signature's CMS and BER: one minute each
 ```
 
-`NUGET_FUZZ_TARGETS` holds the `package:Target` pairs. A failing input stays in the package's `testdata/fuzz`; the one under `version/` is a
-kept regression input. The closing dispatch of Test and Release runs each of the six targets as its own leg for 30 minutes (job
-`fuzz-nuget`, [releasing.md](releasing.md#ci)); a push or a pull request runs none of them.
+`NUGET_FUZZ_TARGETS` holds the `package:Target` pairs, the package below `internal/`. Besides the format's own (`formats/nuget/…`) it names
+the reader of a NuGet signature: `signatures/scheme/nugetcms:FuzzSignatureP7s` (a `.signature.p7s` with its countersignatures
+and timestamps, seeded with the real tools' signatures) and `signatures/scheme/rawkey/pki:FuzzDefinite` (the BER bounds and the
+conversion to definite lengths; [signatures.md](signatures.md#defects-found)). A failing input stays in the package's `testdata/fuzz`; the
+one under `version/` and the one under `pki/` are kept regression inputs. The closing dispatch of Test and Release runs each of the eight
+targets as its own leg for 30 minutes (job `fuzz-nuget`, [releasing.md](releasing.md#ci)); a push or a pull request runs none of them, and
+the unit run runs their seeds as tests.
 
 ## The counting test upstream
 

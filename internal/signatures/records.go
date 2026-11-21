@@ -233,13 +233,15 @@ type Holder struct {
 }
 
 // VersionBlob is the blob of one file of a version in a repository (R-SIG-034, the version list); Version is the version as the list
-// names it (its stored or its display form, whichever was asked).
+// names it (its stored or its display form, whichever was asked). Document marks the blob of a document the repository holds the
+// version as instead of files: a remote's OCI tag, whose document is the manifest the tag names (R-OCI-036, Q-SIG-219).
 type VersionBlob struct {
 	Version string
 	RepoID  int64
 	Blob    [32]byte
-	// Path is the file's item path, which the gate of the repository classifies (R-SIG-073).
-	Path string
+	// Path is the file's item path, which the gate of the repository classifies (R-SIG-073); "" for a document.
+	Path     string
+	Document bool
 }
 
 // GateRelease is a release of one artifact for one repository's gate (stage 3, R-SIG-070): the repository, the artifact's blob, the reason

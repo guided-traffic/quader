@@ -487,11 +487,19 @@ SELECT DISTINCT ON (a.location) a.location::text AS path, COALESCE(s.predicate_t
 
 -- name: SignatureVersionBlobs :many
 -- The blobs of the files of some versions of a package in some repositories, in one statement for a page of the version list (R-SIG-034):
--- the subjects whose counted signatures give each version its badge, and the paths a repository's gate classifies (R-SIG-073).
+-- the subjects whose counted signatures give each version its badge, and the paths a repository's gate classifies (R-SIG-073). A version
+-- a repository holds as a document and not as files (a remote's OCI tag, R-OCI-036, whose document is the manifest the tag names)
+-- answers the document's blob, marked as one and without a path (Q-SIG-219).
 SELECT pv.version::text AS version, pv.display_version::text AS display_version, p.repo_id::bigint AS repo_id, i.blob_sha256,
-       i.path::text AS path
+       i.path::text AS path, false::boolean AS document
   FROM packages p
   JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
   JOIN items i ON i.version_id = pv.id AND i.kind = 'file' AND i.trashed_at IS NULL
  WHERE p.repo_id = ANY(sqlc.arg(repo_ids)::bigint[]) AND p.name = sqlc.arg(name)::text
-   AND (pv.version = ANY(sqlc.arg(versions)::text[]) OR pv.display_version = ANY(sqlc.arg(versions)::text[]));
+   AND (pv.version = ANY(sqlc.arg(versions)::text[]) OR pv.display_version = ANY(sqlc.arg(versions)::text[]))
+UNION ALL
+SELECT l.version::text, l.version::text, p.repo_id::bigint, l.document_sha256, ''::text, true::boolean
+  FROM packages p
+  JOIN package_version_listing l ON l.package_id = p.id AND l.document_sha256 IS NOT NULL
+ WHERE p.repo_id = ANY(sqlc.arg(repo_ids)::bigint[]) AND p.name = sqlc.arg(name)::text
+   AND l.version = ANY(sqlc.arg(versions)::text[]);

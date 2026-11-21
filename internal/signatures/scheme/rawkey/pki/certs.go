@@ -42,13 +42,17 @@ func ParseChain(ders [][]byte, l scheme.Limits) ([]*x509.Certificate, error) {
 	return out, nil
 }
 
-// CheckCertificate refuses a certificate signed with a weak algorithm (SHA-1, MD5) or holding a key CheckKey refuses.
+// CheckCertificate refuses a certificate signed with a weak algorithm (SHA-1, MD5) or holding a key CheckKey refuses. The signature of a
+// self-signed certificate is not judged: nothing verifies it, because a root is trusted as an anchor and not by its own signature (as
+// crypto/x509 never checks it), so a root signed with SHA-1 in 2006 does not make a chain weak; its key is judged (Q-SIG-218).
 func CheckCertificate(c *x509.Certificate, l scheme.Limits) error {
-	switch c.SignatureAlgorithm {
-	case x509.SHA1WithRSA, x509.ECDSAWithSHA1, x509.DSAWithSHA1, x509.DSAWithSHA256, x509.MD5WithRSA, x509.MD2WithRSA:
-		return Unsupported(signatures.ReasonWeakAlgorithm, "the certificate %q is signed with %s", c.Subject.String(), c.SignatureAlgorithm)
-	case x509.UnknownSignatureAlgorithm:
-		return Unsupported(signatures.ReasonVersionUnsupported, "the certificate %q is signed with an algorithm Quader does not read", c.Subject.String())
+	if !bytes.Equal(c.RawIssuer, c.RawSubject) {
+		switch c.SignatureAlgorithm {
+		case x509.SHA1WithRSA, x509.ECDSAWithSHA1, x509.DSAWithSHA1, x509.DSAWithSHA256, x509.MD5WithRSA, x509.MD2WithRSA:
+			return Unsupported(signatures.ReasonWeakAlgorithm, "the certificate %q is signed with %s", c.Subject.String(), c.SignatureAlgorithm)
+		case x509.UnknownSignatureAlgorithm:
+			return Unsupported(signatures.ReasonVersionUnsupported, "the certificate %q is signed with an algorithm Quader does not read", c.Subject.String())
+		}
 	}
 	return CheckKey(c.PublicKey, l)
 }

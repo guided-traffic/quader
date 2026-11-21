@@ -3,14 +3,21 @@
 package ansiblelocal
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/openpgp"
+	sigstore "github.com/guided-traffic/quader/internal/signatures/store"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // releaseKeySign signs data detached with a release key made by the test (Ed25519, milliseconds) and returns the armored signature
@@ -30,6 +37,33 @@ func releaseKeySign(t *testing.T, data []byte) (string, string) {
 		t.Fatal(err)
 	}
 	return string(sig), strings.ToLower(strings.ReplaceAll(fp, " ", ""))
+}
+
+// discover runs one pass of the job's discovery over every live file in this process, as the worker does (R-SIG-011), and then the
+// job's removal of signatures without an attachment.
+func discover(t *testing.T, e *env) {
+	t.Helper()
+	ctx := context.Background()
+	loaded, err := config.Load(config.Options{Environ: e.st.Environ(), Command: config.CommandAdmin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := postgres.Open(ctx, loaded.Config.Database, "ansiblelocal", meta.RoleWorker, testenv.Quiet())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	st := sigstore.New(sigstore.Options{Runner: db})
+	x := &formathost.Discoverer{Deps: formathost.Deps{Signatures: st}, Items: st, DB: db}
+	if _, err := x.Discover(ctx, 0, 1000); err != nil {
+		t.Fatalf("discovery: %v", err)
+	}
+	if err := db.InTx(ctx, func(tx meta.Tx) error {
+		_, _, err := st.RemoveOrphans(ctx, tx, 1000)
+		return err
+	}); err != nil {
+		t.Fatalf("the removal of orphans: %v", err)
+	}
 }
 
 // manifestOf is MANIFEST.json of the archive of a spec.
@@ -103,6 +137,15 @@ func TestR_SIG_031_ASignaturePostedForALocalVersionIsServed(t *testing.T) {
 	                     WHERE a.repo_id = $1 AND s.priority = 0 AND s.due`, e.repoID()); n != 1 {
 		t.Errorf("%d posted signatures due at the priority of an upload, want 1", n)
 	}
+	t.Run("discovery passing the archive keeps the posted signature", func(t *testing.T) {
+		// The worker's discovery records the detector's batch of the archive's item, which carries nothing, and the job then removes
+		// what has no attachment (R-SIG-011); the attachment of the source upload is no detector's and stays (R-SIG-004, Q-SIG-217).
+		discover(t, e)
+		if n := e.st.Number(`SELECT count(*) FROM signature_attachments a JOIN signatures s ON s.id = a.signature_id
+		                     JOIN signature_objects o ON o.sha256 = s.object_sha256 WHERE a.repo_id = $1 AND a.source = 'upload'`, e.repoID()); n != 1 {
+			t.Errorf("%d posted signatures with their attachment, row and object after discovery, want 1", n)
+		}
+	})
 
 	if a := e.st.Do(e.r, http.MethodDelete, op+"/"+fp, e.tokA, nil); a.Status != http.StatusNoContent {
 		t.Fatalf("the removal: %d %s", a.Status, a.Body)

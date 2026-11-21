@@ -3,10 +3,13 @@
 package ociremote
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/packages/view"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/ocistub"
 )
@@ -70,6 +73,32 @@ func TestR_SIG_026_ARemotesSignaturesAreFetchedInTheBackground(t *testing.T) {
 	if got := e.st.Text(`SELECT count(*)::text FROM signature_attachments a JOIN repositories r ON r.id = a.repo_id
 	                     WHERE r.key = $1 AND a.source = 'cosign_tag'`, rAnon); got != "1" {
 		t.Errorf("%s attachments of the .sig tag (manifest %s), want 1", got, sigManifest)
+	}
+	// The version of the remote's tag lists what its manifest's file view shows, and the version list counts it (Q-SIG-219): the remote
+	// holds the tag as a document and no file (R-OCI-036). The tag is listed once the GET of its manifest counted (R-API-081).
+	e.fetched(rAnon, subject)
+	id, scoped := view.ID("oci", "acme/signed"), "repository="+url.QueryEscape(testenv.DefaultProject+"/"+rAnon)
+	var rep struct {
+		Repositories []struct {
+			State      string            `json:"state"`
+			Signatures []json.RawMessage `json:"signatures"`
+		} `json:"repositories"`
+	}
+	if a := e.st.Do(web, http.MethodGet, "/api/v1/packages/"+id+"/versions/1.0/signatures?"+scoped, e.admin, nil); a.Status != http.StatusOK ||
+		json.Unmarshal(a.Body, &rep) != nil || len(rep.Repositories) != 1 || len(rep.Repositories[0].Signatures) == 0 || rep.Repositories[0].State == "none" {
+		t.Errorf("the remote's version answers %d %s, want the image's signatures and a badge", a.Status, a.Body)
+	}
+	var list struct {
+		Items []struct {
+			Version    string `json:"version"`
+			Signatures *struct {
+				State string `json:"state"`
+			} `json:"signatures"`
+		} `json:"items"`
+	}
+	if a := e.st.Do(web, http.MethodGet, "/api/v1/packages/"+id+"/versions?"+scoped, e.admin, nil); a.Status != http.StatusOK ||
+		json.Unmarshal(a.Body, &list) != nil || len(list.Items) != 1 || list.Items[0].Signatures == nil || list.Items[0].Signatures.State == "none" {
+		t.Errorf("the remote's version list answers %d %s, want the tag with the badge of its manifest's signatures", a.Status, a.Body)
 	}
 	// The fetch state the gate of stage 3 reads (Q-SIG-106): the image's row is fetched, carries its digest and is due no more; it goes
 	// with the manifest's row when the remote's manifest item is removed.

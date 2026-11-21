@@ -97,7 +97,9 @@ func (a signatureAdapter) Detect(_ context.Context, ev formats.SignatureEvent) (
 	return nil, nil
 }
 
-// detectBundle names the provenance bundle of a publish (R-NPM-006, R-SIG-028): it covers the tarball it was published with.
+// detectBundle names the provenance bundle of a publish (R-NPM-006, R-SIG-028): it covers the tarball it was published with. The bundle
+// is stored as a file of its own beside the tarball, the signature file the gate judges it as (GateSignatureFile), so it is attached
+// sibling; upload is a signature posted through the management API, which no detector names (Q-SIG-217).
 func (a signatureAdapter) detectBundle(ev formats.SignatureEvent) []formats.SignatureCandidate {
 	info := a.f.Classify(ev.Path)
 	n, err := name.Parse(info.Package)
@@ -107,7 +109,7 @@ func (a signatureAdapter) detectBundle(ev formats.SignatureEvent) []formats.Sign
 	return []formats.SignatureCandidate{{
 		Object:      formats.SignatureLocator{Blob: sum32(ev.Digests.SHA256), MediaType: ev.MediaType},
 		SubjectPath: TarballPath(n, info.Version), Role: formats.SignatureRoleProvenance,
-		SchemeHint: formats.SignatureSchemeSigstoreBundle, Source: formats.SignatureSourceUpload, Location: ev.Path.Path,
+		SchemeHint: formats.SignatureSchemeSigstoreBundle, Source: formats.SignatureSourceSibling, Location: ev.Path.Path,
 	}}
 }
 

@@ -687,20 +687,21 @@ func (q *Queries) SignatureRemoveOrphans(ctx context.Context, rowLimit int32) (i
 const signatureReplaceAttachments = `-- name: SignatureReplaceAttachments :exec
 DELETE FROM signature_attachments a
  USING signatures s
- WHERE a.repo_id = $1::bigint AND s.id = a.signature_id AND a.source <> 'issued'
-   AND (($2::bigint <> 0 AND a.item_id = $2::bigint)
-        OR ($3::text <> '' AND a.item_id IS NULL
-            AND (a.location = $3::text OR starts_with(a.location, $3::text || '#')))
+ WHERE a.repo_id = $1::bigint AND s.id = a.signature_id AND a.source = ANY($2::text[])
+   AND (($3::bigint <> 0 AND a.item_id = $3::bigint)
+        OR ($4::text <> '' AND a.item_id IS NULL
+            AND (a.location = $4::text OR starts_with(a.location, $4::text || '#')))
         OR EXISTS (SELECT 1
-                     FROM (SELECT unnest($4::text[]) AS location, unnest($5::bytea[]) AS object_sha256,
-                                  unnest($6::bytea[]) AS subject_sha256) AS n
+                     FROM (SELECT unnest($5::text[]) AS location, unnest($6::bytea[]) AS object_sha256,
+                                  unnest($7::bytea[]) AS subject_sha256) AS n
                     WHERE n.location = a.location AND n.object_sha256 = s.object_sha256 AND n.subject_sha256 <> s.subject_sha256))
-   AND NOT EXISTS (SELECT 1 FROM (SELECT unnest($7::bigint[]) AS id, unnest($8::text[]) AS location) AS k
+   AND NOT EXISTS (SELECT 1 FROM (SELECT unnest($8::bigint[]) AS id, unnest($9::text[]) AS location) AS k
                     WHERE k.id = a.signature_id AND k.location = a.location)
 `
 
 type SignatureReplaceAttachmentsParams struct {
 	RepoID        int64
+	Sources       []string
 	ItemID        int64
 	Document      string
 	Locations     []string
@@ -713,11 +714,13 @@ type SignatureReplaceAttachmentsParams struct {
 // The attachments a commit or a fill no longer makes (R-SIG-004): those of the carrier item, those of a stored document (its path and
 // every path#pointer below it), and, at a location the batch names, those of the same object against another subject (the file a
 // signature file stands beside was replaced), each unless the batch makes it again. An attachment of another part of the same object
-// and subject stays: a batch that names an object by its path names its first part only. An attachment of a signature Quader made
-// itself (source issued, R-SIG-054) is no batch's: the job signing writes and removes it.
+// and subject stays: a batch that names an object by its path names its first part only. Only attachments of the batch's own sources
+// go (Q-SIG-217): a signature posted through the management API at the archive's item (upload) outlives the detector's batch of that
+// item, and an attachment of a signature Quader made itself (issued, R-SIG-054) is no batch's: the job signing writes and removes it.
 func (q *Queries) SignatureReplaceAttachments(ctx context.Context, arg SignatureReplaceAttachmentsParams) error {
 	_, err := q.db.Exec(ctx, signatureReplaceAttachments,
 		arg.RepoID,
+		arg.Sources,
 		arg.ItemID,
 		arg.Document,
 		arg.Locations,

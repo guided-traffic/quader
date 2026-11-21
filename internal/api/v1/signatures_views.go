@@ -331,10 +331,11 @@ func originCIRep(raw json.RawMessage) *gen.SignatureOriginCI {
 // the repository the version was read from and carry no origin.
 type sigItemLookup func(ctx context.Context, repo qname.Repo, path string) (items.Item, bool, error)
 
-// sigVersion is what the version's answer reads of the package view: the version as the caller sees it and the topology of the
-// repositories it was read in.
+// sigVersion is what the version's answer reads of the package view: the version as the caller sees it, the package's name as the
+// repositories store it, and the topology of the repositories it was read in.
 type sigVersion struct {
 	detail view.VersionDetail
+	name   string
 	topo   view.Topology
 }
 
@@ -361,7 +362,7 @@ func (s *Server) GetPackageVersionSignatures(w http.ResponseWriter, r *http.Requ
 		}
 		only = &n
 	}
-	var in sigVersion
+	in := sigVersion{name: name}
 	ctx := r.Context()
 	if err == nil {
 		var sc view.Scope
@@ -414,10 +415,16 @@ func (s *Server) versionSignatureReport(ctx context.Context, sv SignatureService
 	d := in.detail
 	out := gen.SignatureVersionReport{PackageId: d.PackageID, Version: d.Version, Repositories: []gen.SignatureRepositoryReport{}}
 	physical := map[int64]bool{}
+	var ids []int64
 	for _, e := range d.Repositories {
 		if e.Class != string(repository.Virtual) {
 			physical[in.topo.ID(e.Repo)] = true
+			ids = append(ids, in.topo.ID(e.Repo))
 		}
+	}
+	docs, err := versionDocuments(ctx, sv, in, ids)
+	if err != nil {
+		return out, err
 	}
 	names := func(id int64) string { return in.topo.Name(id).String() }
 	for _, e := range d.Repositories {
@@ -437,7 +444,7 @@ func (s *Server) versionSignatureReport(ctx context.Context, sv SignatureService
 				}
 			}
 		}
-		rep, err := s.repositorySignatures(ctx, sv, in, holders, scopeProject(repo), lookup, names)
+		rep, err := s.repositorySignatures(ctx, sv, in, holders, docs, scopeProject(repo), lookup, names)
 		if err != nil {
 			return out, err
 		}
@@ -454,14 +461,14 @@ func (s *Server) versionSignatureReport(ctx context.Context, sv SignatureService
 }
 
 // repositorySignatures reads one entry: the subjects of the version in each holding repository, their attachments there, and the
-// origin of the first file a holder stores.
-func (s *Server) repositorySignatures(ctx context.Context, sv SignatureServices, in sigVersion, holders []int64, project string, lookup sigItemLookup, names func(int64) string) (gen.SignatureRepositoryReport, error) {
+// origin of the first file a holder stores. docs are the documents each holder keeps the version as (versionDocuments).
+func (s *Server) repositorySignatures(ctx context.Context, sv SignatureServices, in sigVersion, holders []int64, docs map[int64][][32]byte, project string, lookup sigItemLookup, names func(int64) string) (gen.SignatureRepositoryReport, error) {
 	rep := gen.SignatureRepositoryReport{Signatures: []gen.SignatureEntry{}, Attestations: []gen.SignatureEntry{}, Covering: []gen.SignatureCovering{}, State: gen.SignatureBadgeState(signatures.BadgeNone)}
 	var ss sigSubjects
 	var first items.Item
 	perHolder := make(map[int64]sigSubjects, len(holders))
 	for _, h := range holders {
-		got, it, err := versionSubjects(ctx, in, in.topo.Name(h), lookup)
+		got, it, err := versionSubjects(ctx, in, in.topo.Name(h), docs[h], lookup)
 		if err != nil {
 			return rep, err
 		}
@@ -517,7 +524,8 @@ func (s *Server) entryGate(ctx context.Context, sv SignatureServices, in sigVers
 		if repo.Class == repository.Virtual {
 			members = append(members, hr)
 		}
-		got, _, err := versionSubjects(ctx, in, in.topo.Name(h), lookup)
+		// The gate judges stored files by their paths; a remote's tag document has none (versionDocuments), so none is handed here.
+		got, _, err := versionSubjects(ctx, in, in.topo.Name(h), nil, lookup)
 		if err != nil {
 			return nil, err
 		}
@@ -530,11 +538,31 @@ func (s *Server) entryGate(ctx context.Context, sv SignatureServices, in sigVers
 	return gateViewRep(ctx, sv, repo, members, fs)
 }
 
+// versionDocuments are, per holder, the blobs of the documents it holds the version as instead of files (a remote's OCI tag, whose
+// document is the manifest the tag names, R-OCI-036), read in one statement for every holder (Q-SIG-219).
+func versionDocuments(ctx context.Context, sv SignatureServices, in sigVersion, holders []int64) (map[int64][][32]byte, error) {
+	out := map[int64][][32]byte{}
+	if len(holders) == 0 || in.detail.Version == "" {
+		return out, nil
+	}
+	blobs, err := sv.Store.VersionBlobs(ctx, holders, in.name, []string{in.detail.Version})
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range blobs {
+		if b.Document {
+			out[b.RepoID] = append(out[b.RepoID], b.Blob)
+		}
+	}
+	return out, nil
+}
+
 // versionSubjects are the subjects of the version in one physical repository: the blobs of the files at the paths the package view
 // read the version with, as that repository stores them; for an OCI tag the manifest the metadata names and each platform's
-// manifest, while the repository's tag points at that manifest (R-SIG-024); for npm the registry signature's subject name. first is
-// the first stored file, the item whose origin the entry shows.
-func versionSubjects(ctx context.Context, in sigVersion, repo qname.Repo, lookup sigItemLookup) (sigSubjects, items.Item, error) {
+// manifest, while the repository's tag points at that manifest (R-SIG-024): as a file of a local repository or as the document a
+// remote holds the tag as (docs), a remote's tag naming another manifest asking for that one, as the manifest's file view does
+// (Q-SIG-219); for npm the registry signature's subject name. first is the first stored file, the item whose origin the entry shows.
+func versionSubjects(ctx context.Context, in sigVersion, repo qname.Repo, docs [][32]byte, lookup sigItemLookup) (sigSubjects, items.Item, error) {
 	d := in.detail
 	var ss sigSubjects
 	var first items.Item
@@ -557,11 +585,14 @@ func versionSubjects(ctx context.Context, in sigVersion, repo qname.Repo, lookup
 			first = it
 		}
 	}
-	if digest, ok := ociDigest(d.Metadata["digest"]); ok && (lookup == nil || ss.of(digest).digest == digest) {
+	if digest, ok := ociDigest(d.Metadata["digest"]); ok && (lookup == nil || ss.of(digest).digest == digest || slices.Contains(docs, digest)) {
 		ss.add(digest, "", "")
 		for _, p := range ociPlatforms(d.Metadata["platforms"]) {
 			ss.add(p.digest, "", p.platform)
 		}
+	}
+	for _, doc := range docs {
+		ss.add(doc, "", "")
 	}
 	if d.Format == "npm" {
 		ss.names = []string{d.Name + "@" + d.Version}

@@ -2171,7 +2171,7 @@ type SignatureCandidate struct {
 	SubjectName   string           // npm: <name>@<version>
 	Role          string
 	SchemeHint    string
-	Source        string // referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release, upload
+	Source        string // referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release (upload is no detector's)
 	Location      string // the attachment's location (R-SIG-004)
 	SignedContent SignatureLocator // what a keyless scheme or NuGet hashes; the zero locator is the subject's bytes
 }
@@ -2250,7 +2250,7 @@ const MaxSignatureRaw = 256 << 10
 func NoSignatures(reason string) SignatureAdapter
 func SignatureRoleValid(role string) bool
 func SignatureSchemeValid(scheme string) bool
-func SignatureSourceValid(source string) bool
+func SignatureSourceValid(source string) bool // a source a detector names: every one but SignatureSourceUpload (signatures.md Q-SIG-217)
 
 // The formats' wire behaviour of signatures (signatures.md R-SIG-023 to R-SIG-033), package 3 of stage 1.
 
@@ -8940,6 +8940,9 @@ added to `NUGET_FUZZ_TARGETS` is fuzzed in the closing run only when the matrix 
 
 **Revisit:** when the runner pool cannot hold six legs at once, or when the copy of the list drifts (then the workflow reads the list from the Makefile).
 Not decided here: whether the root package's match fuzz belongs to the closing run (option (d)).
+
+Since 2026-11-22 the list holds eight pairs and names each package below `internal/`: the reader of a NuGet signature joined with two targets
+([signatures.md](signatures.md#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key)); the matrix names the same eight.
 
 **Applied in the spec:** none (CI wiring). Elsewhere: [release.yml](../../.github/workflows/release.yml) (job `fuzz-nuget`),
 [releasing.md](../developer/releasing.md#ci), [nuget.md](../developer/nuget.md#fuzzing), [build-and-test.md](../developer/build-and-test.md).

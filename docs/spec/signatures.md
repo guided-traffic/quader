@@ -275,6 +275,14 @@ CREATE INDEX signature_attachments_repo_name ON signature_attachments (repo_id, 
   attachment with `source` `embedded` at the commit, without a new read when the signature row exists.
 - **A document's signatures** (npm's `dist.signatures`, Ansible's `signatures[]` of a remote) are attached to the repository whose stored
   document carries them; a fill that replaces the document replaces its attachments in the fill's transaction.
+- **A batch replaces the attachments of its own sources only**
+  ([Q-SIG-217](#q-sig-217--a-batch-replaces-the-attachments-of-its-own-sources-only)). A format's detector (a commit, a fill, discovery)
+  speaks for every source a detector names: `referrer`, `referrers_tag`, `cosign_tag`, `index_entry`, `document`, `embedded`, `sibling`,
+  `release`. `upload` is a signature a client posts through the management API for a stored version (Ansible's, R-SIG-031), which no
+  detector names; its batch speaks for `upload`. `issued` (stage 2, R-SIG-054) is written and removed by the job `signing` through
+  statements of its own, and no batch speaks for it. An attachment another writer recorded at the same item stays when the item's own batch
+  carries nothing: the measurement's defect 3, where discovery's empty batch of an Ansible archive removed the signature posted for it.
+  npm's provenance bundle of a publish is stored beside its tarball and attached `sibling`, the signature file its gate judges it as.
 - What a reader sees of a subject is the attachments of the repositories it may read: the addressed repository and, for a virtual
   repository, the members that serve the subject to the caller (R-SIG-027 and the format sections).
 
@@ -283,6 +291,11 @@ Acceptance criteria:
 - Integration (area `signatures`, `TestR_SIG_004_…`, about 2 s, bytes): the same image digest in `docker-local` and in a second local
   repository, signed only in `docker-local`: the version of the second repository shows no signature and its referrers answer is empty;
   the signed one shows it. The same `.nupkg` bytes pushed to two NuGet repositories show the embedded signature in both after one check.
+- Unit (`internal/formathost`, `TestR_SIG_004_ADetectorsBatchSpeaksForTheDetectorsSourcesOnly`, milliseconds): the batch of an item without
+  candidates speaks for the eight sources a detector names and not for `upload`. Integration (area `ansiblelocal`,
+  `TestR_SIG_031_ASignaturePostedForALocalVersionIsServed`, about 0.1 s more, rows): the worker's discovery run in process over the archive
+  after a signature was posted for it, and then the removal of what has no attachment, leave the signature's attachment, row and object.
+  Built.
 
 ### R-SIG-005 · The read: what is taken from a signature
 Priority: **P1** · Covers: quader-only
@@ -610,7 +623,7 @@ bounds sit outside the libraries ([Q-SIG-45](#q-sig-45--the-bounds-and-their-def
 | `signatures.max_per_subject`: signatures read per subject and repository | 32 | the rest is not read; the details say "32 of 40 signatures read" |
 | `signatures.max_chain`: certificates in a chain, and the size of each | 8, 16 KiB | `malformed`, `limits_exceeded` |
 | JSON documents (bundles, JWS, payloads, statements) | `untrusted.CheckJSON`: 32 levels, 100,000 values, before any decoder | `malformed` |
-| ASN.1 and CBOR (CMS, COSE, timestamps) | the object's size; no nesting deeper than 32 levels, of definite or indefinite length | `malformed` |
+| ASN.1 and CBOR (CMS, COSE, timestamps) | the object's size; no nesting deeper than 32 levels, of definite or indefinite length; an ASN.1 length of at most four octets, a tag number in its shortest form of at most four octets (X.690, 8.1.2; since Q-SIG-216) | `malformed` |
 | OpenPGP packets in one object, NuGet countersignatures, timestamps per signer | 32, 16, 4 | `malformed`, `limits_exceeded` |
 | RSA keys | 2048 to 8192 bits | `unsupported` (`weak_algorithm`) or `malformed` |
 | `signatures.check_timeout`: one check | 5 s | `failed` after the attempts |
@@ -626,6 +639,15 @@ Acceptance criteria:
   certificates, a JSON bundle 100,000 levels deep, a COSE envelope with a 2 GiB declared length and a CMS with an indefinitely nested
   attribute are refused within the bounds without a panic and with the heap within 64 MiB of its baseline. Built: the refusals; the heap
   bound is not asserted by a test (H-1166).
+- Fuzz (since Q-SIG-216, the readers that are code of this repository; their seeds run as unit tests, 0.04 s and 0.02 s in the unit job's
+  mode; 30 minutes each in the closing run's `fuzz nuget` legs): `FuzzSignatureP7s` (`internal/signatures/scheme/nugetcms`)
+  reads any bytes as a `.signature.p7s` and runs every step of a check on each part it finds, asserting no panic and that each step refuses
+  with a closed refusal or stays within the bounds: at most 2 × `max_chain` certificates of at most 16 KiB each, one primary signer,
+  16 countersignatures, 4 timestamps a signer, a chain of at most `max_chain`, content no longer than the object; seeded with the real
+  tools' two signatures and the tests' own in both forms of a signer, in DER and BER. `FuzzDefinite`
+  (`internal/signatures/scheme/rawkey/pki`) asserts that the conversion to definite lengths refuses with `malformed` or returns DER in its
+  tags and lengths at every level, nested at most 32 deep, at most 64 bytes longer than its input, passing the bounds and a fixed point of a
+  second conversion. A memory bound beyond these counts is not asserted (H-1166). Built; two minutes each were run on 2026-11-22.
 
 ### R-SIG-014 · Libraries in process, one version each
 Priority: **P1** · Covers: quader-only
@@ -639,7 +661,7 @@ that calls each verifier, outside the repository:
 | Sigstore bundles, the older cosign layout through its `verify.SignedEntity` interface, the trust root and its TUF client | `github.com/sigstore/sigstore-go` v1.4.0 (2026-10-29) | Apache-2.0 | 4.08 MiB |
 | Notation (JWS, COSE) | `github.com/notaryproject/notation-core-go` v1.3.0 (2025-04-16) with `github.com/veraison/go-cose` v1.3.0 | Apache-2.0; go-cose MPL-2.0 | 0.61 MiB |
 | RFC 3161 timestamps of Notation | `github.com/notaryproject/tspclient-go` v1.0.0 (2024-12-30), a dependency of notation-core-go | Apache-2.0 | in the row above |
-| NuGet's CMS `SignedData` and its RFC 3161 timestamp | `github.com/digitorus/pkcs7` (MIT) and `github.com/digitorus/timestamp` (BSD-2-Clause), which sigstore-go already pulls in for its own timestamps (both maintained, untagged: pseudo-versions of 2026-08-21 and 2023-12-17 selected by sigstore-go v1.4.0); the unsigned-package hash, the countersignature and the attribute checks are code of this repository | MIT, BSD-2-Clause | no module more; the NuGet probe added 0.11 MiB less than one on `smallstep/pkcs7` v0.2.3, the other candidate |
+| NuGet's CMS `SignedData` and its RFC 3161 timestamp | code of this repository on `encoding/asn1` since the measurement's defect 1 ([Q-SIG-216](#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key)): the reader of both forms of a signer, the countersignature, the timestamp's TSTInfo, the attribute checks and the unsigned-package hash. `github.com/digitorus/pkcs7` (MIT) and `github.com/digitorus/timestamp` (BSD-2-Clause), measured here first, read a signer named by issuer and serial number only; they stay in the build for sigstore-go's timestamps and Quader's reading of a bundle's timestamp ([proofs.go](../../internal/signatures/scheme/sigstore/proofs.go)) | BSD-3-Clause (the standard library) | none |
 | OpenPGP | `github.com/ProtonMail/go-crypto` v1.5.2, already in the build (Debian) | BSD-3-Clause | 0.04 MiB |
 | npm's ECDSA and a raw public key | the standard library | BSD-3-Clause | none |
 
@@ -934,7 +956,7 @@ type SignatureCandidate struct {
     SubjectName   string           // npm: <name>@<version>
     Role          string
     SchemeHint    string
-    Source        string           // referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release, upload
+    Source        string           // referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release (upload is no detector's)
     Location      string           // the attachment's location (R-SIG-004)
     SignedContent SignatureLocator // what a keyless scheme or NuGet hashes: the subject, an entry of it, its unsigned view
 }
@@ -1104,6 +1126,13 @@ signatures along.
   replica) bounds it ([H-1173](../security/artifact-signatures.md#h-1173--the-background-fetch-asks-an-upstream-for-what-no-client-asked)).
 - **A client's referrers query** through a remote passes through as today (R-OCI-024); its answer and the manifests the client then fetches
   are stored and detected without a request more.
+- **What a remote's version shows** ([Q-SIG-219](#q-sig-219--a-remotes-version-reads-the-document-it-holds-the-version-as)): a remote holds an
+  OCI tag as a document and no file (R-OCI-036), so the version's answer and the version list take the tag's subject from that document,
+  whose blob is the manifest the tag names: the signatures the manifest's file view shows. A remote's tag that names another manifest than
+  the version's metadata (the version read from another repository) asks for its own. The measurement's defect 4, where a remote's version
+  listed none of the signatures its fetch had stored. The other formats' remotes hold a version's file as an item (npm's tarball, NuGet's
+  package, Ansible's archive, Debian's package), so their versions read their subjects as a local repository's do; a virtual repository
+  shows its members' (R-SIG-027).
 - **A repository's detail setting** `signatures.fetch` (remote repositories, default `true`) switches the background fetch off for an
   upstream whose limits are tight; it is in the closed section **Signatures** of the repository's settings, never in the creation form.
   The job reads it from the repository document; the member `signatures` of the document accepts it on a remote repository and answers
@@ -1128,6 +1157,12 @@ Acceptance criteria:
   tags and no `GET` for them; with `signatures.fetch: false` nothing is asked. The badge's state after the job is package 2's. Unit
   (`internal/formats/oci`, `internal/formats/npm`, `internal/signatures/fetch`, milliseconds): the requests of a fetch, the bound of four
   manifests, the queueing of a fill, an npm version's attestations only when its entry names them, the budget per hour.
+- The same integration test, two requests more and a wait of at most 10 s until the tag's download is counted (the whole test took 42.6 s
+  on a loaded machine on 2026-11-22; the addition's share was not isolated): once the tag's download counted, the remote's version answers the image's
+  signatures with a badge, and its version list carries the badge. Unit (`internal/api/v1`, `TestR_SIG_034_VersionSignatures`, milliseconds):
+  a version read from a local repository and held by a remote whose tag is a document asks the remote's attachments for the manifest and
+  its platforms, a virtual repository over both shows the remote's signature, the holders' documents are read in one call, and a remote's
+  tag that names another manifest asks for that one. Built.
 
 ### R-SIG-027 · OCI virtual repositories
 Priority: **P1** · Covers: BEYOND-015
@@ -1162,7 +1197,7 @@ carry the tarball's SHA-512.
   (`sigstore-bundle`, the provenance as `provenance`, npm's publish attestation as `registry`) when the attestations document is stored at
   `-/npm/v1/attestations/<name>@<version>` ([Q-SIG-51](#q-sig-51--a-remotes-npm-attestations-are-stored-at-the-path-of-their-endpoint)),
   each covering the version's tarball; at a local publish, the provenance bundle `<name>/-/<basename>-<version>.sigstore` (R-NPM-006,
-  Q-NPM-58) as `provenance` of the tarball.
+  Q-NPM-58) as `provenance` of the tarball, attached `sibling` (Q-SIG-217).
 - **Local publish** keeps refusing trust evidence from clients: `dist.signatures` and `dist.attestations` of the request are removed
   (R-NPM-007, unchanged), because a client must not set what a registry vouches for.
 - **The keys endpoint** `GET <registry URL>-/npm/v1/keys` ([Q-SIG-34](#q-sig-34--the-keys-of-a-local-a-remote-and-a-virtual-npm-repository)),
@@ -1229,13 +1264,25 @@ Priority: **P1** · Covers: quader-only
 
 Measured on 2026-11-21 (R-SIG-042): an author's signature of `dotnet nuget sign` (SDK 10.0.403) and the signatures of a nuget.org package
 both read `malformed`, "the .signature.p7s is no CMS SignedData": their signer is named by `subjectKeyIdentifier`, which the built parser
-does not take. `dotnet nuget verify` passes on the same bytes downloaded from Quader.
+does not take. `dotnet nuget verify` passes on the same bytes downloaded from Quader. Repaired: the CMS of a NuGet signature, its
+countersignatures and their timestamps are read by code of this repository that takes both forms of a signer
+([Q-SIG-216](#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key)), and a chain that ends in a root signed with SHA-1, as
+nuget.org's older repository certificate's does, is no longer `weak_algorithm`
+([Q-SIG-218](#q-sig-218--a-self-signed-roots-own-signature-is-not-judged)); the two signatures of the measurement are the unit test's
+fixtures and read `valid`.
 
 Acceptance criteria:
 
 - Unit (`internal/signatures/scheme/nugetcms`, milliseconds, packages signed by the test with digitorus/pkcs7 and a test timestamp authority):
   an author signature with a timestamp, a repository countersignature, a package whose bytes changed after signing (`digest_mismatch`), a
-  countersignature over another signature value (`signature_mismatch`).
+  countersignature over another signature value (`signature_mismatch`); the same signatures with every signer, the timestamp authority's
+  included, named by its subject key identifier (a leaf without the extension by the SHA-1 of its key), also in BER with indefinite lengths,
+  and one whose key identifier names no certificate of the signature (`chain_broken`). Built.
+- Unit (the same package, milliseconds, the real tools' signatures of the measurement as fixtures in `testdata/`, 31 KiB together): the
+  package `dotnet nuget sign` of the .NET SDK 10.0.403 signed with a throwaway CA reads `valid`, `publisher`, `author`; the `.signature.p7s`
+  of `Microsoft.Extensions.Primitives` 8.0.0 as nuget.org serves it: Microsoft's author signature and nuget.org's repository countersignature
+  each find their certificate by its key, build and check their chain (nuget.org's ends at a root signed with SHA-1), verify, and carry one
+  verified timestamp of DigiCert, and the whole check of each part reaches the package's hash. Built.
 - Integration (area `signatures`, `TestR_SIG_029_…`, about 2 s): a package signed by the company CA pushed to a local NuGet repository reads
   `internal` under the company CA's anchor and its bytes are served unchanged.
 
@@ -1292,7 +1339,9 @@ Priority: **P1** · Covers: quader-only
 Measured on 2026-11-21 (R-SIG-042): `ansible-galaxy collection install --keyring … --required-valid-signature-count +1` and `collection
 verify` pass on a posted signature, and refuse an unsigned version (`Signature verification failed for 'sigm.unsigned': no successful
 signatures`); without the `+` an unsigned version installs. A signature posted right after the publish stays in `signatures[]` but leaves
-the signature store when the worker's discovery reaches the archive, so the version reads **No signature**.
+the signature store when the worker's discovery reaches the archive, so the version reads **No signature**. Repaired: the archive's batch
+speaks for the detectors' sources and the posted signature's attachment is `upload`, which it no longer replaces
+([Q-SIG-217](#q-sig-217--a-batch-replaces-the-attachments-of-its-own-sources-only)); not measured again with `ansible-galaxy`.
 
 Acceptance criteria:
 
@@ -1301,8 +1350,9 @@ Acceptance criteria:
   names another digest (package 2's check).
 - Integration (area `ansiblelocal`, `TestR_SIG_031_ASignaturePostedForALocalVersionIsServed`, about 2 s, a release key made by the test): a
   signature posted to `ansible-local` is served in the version document with its fingerprint and recorded with the source `upload`; one of
-  other content answers 422; a reader may not post; the removal empties `signatures[]`; the post and the removal each wrote their audit
-  event with the fingerprint. Unit (`internal/formats/untrusted`, milliseconds):
+  other content answers 422; a reader may not post; the worker's discovery run in process over the archive, and the removal of what has no
+  attachment, leave the posted signature's attachment, row and object (Q-SIG-217); the removal empties `signatures[]`; the post and the
+  removal each wrote their audit event with the fingerprint. Unit (`internal/formats/untrusted`, milliseconds):
   the facts of a real signature read without a key and its hash prefix against other content.
 
 ### R-SIG-032 · Generic repositories: a file beside the file
@@ -1619,7 +1669,10 @@ bytes to kilobytes. Every one of the owner's three ways is exercised by a real s
   the test's own, verified in v1.3.0's source) issues a certificate for an identity and an issuer of a GitLab job and signs; its trusted root
   is the anchor's own trust root. The public trust root's case uses a second virtual Sigstore standing for the public one.
 - **The company CA:** a root, an intermediate and a code-signing leaf made by the test with `crypto/x509`; Notation envelopes signed with
-  notation-core-go, NuGet packages with digitorus/pkcs7 and a timestamp token of a test authority, cosign's older layout with the leaf.
+  notation-core-go, NuGet packages with digitorus/pkcs7 and a timestamp token of a test authority (re-encoded to name each signer by its
+  key as well, which digitorus/pkcs7 does not write), cosign's older layout with the leaf. NuGet's case also keeps two signatures of the
+  real tools as fixtures (R-SIG-029): a signature made in process by a library shares that library's blind spots, which is how every NuGet
+  signature of the real tools read malformed while the tests passed.
 - **The release key:** an OpenPGP key made by go-crypto signs detached.
 
 | Tier | What | Run time | Data | Where |
@@ -1650,7 +1703,11 @@ and turn **Verified · internal** or **· public** when the anchor is added; `co
 `dotnet nuget verify` and `ansible-galaxy … --keyring` pass through Quader, also through an OCI remote. Falsified: **no real NuGet
 signature is readable** (`dotnet nuget sign` of SDK 10.0.403 and nuget.org's both name the signer by `subjectKeyIdentifier`, which the
 CMS parser of `nugetcms` does not take; every one reads **Scheme not supported**); a signature posted for a new Ansible version is
-removed from the store by the worker's discovery; a remote OCI image's version lists none of the signatures its fetch stored. cosign 3.1.4
+removed from the store by the worker's discovery; a remote OCI image's version lists none of the signatures its fetch stored. The three are
+repaired: the measurement's two NuGet signatures are fixtures of the unit tests and read `valid` (Q-SIG-216, Q-SIG-218); a detector's
+batch replaces only its own sources' attachments (Q-SIG-217), tested with the worker's discovery run in process in `ansiblelocal`; a
+remote's version reads its tag's document (Q-SIG-219), tested at the unit tier and in `ociremote`. None was measured again with the real
+clients. cosign 3.1.4
 with `--certificate-chain` writes a bundle that neither cosign nor Quader reads (bundle v0.3 with a certificate chain); the company CA's
 way through cosign works with `--new-bundle-format=false`. Keyless signing was not measured: it needs an interactive sign-in or a signing
 service of its own.
@@ -2290,7 +2347,8 @@ Priority: **P1** · Covers: quader-only
 
 - **Built of this** (package 2 of stage 2): the source `issued` of `signature_attachments` (migration 00103), the store's `RecordIssued` and
   `DetachRetiredIssued` ([store/issued.go](../../internal/signatures/store/issued.go)), npm's registry signature stored as above; the
-  commit hook's and the fill's batches never replace an `issued` attachment, and the trust job writes no row for a signature with
+  commit hook's and the fill's batches never replace an `issued` attachment, because a batch replaces the attachments of its own sources
+  only and no batch speaks for `issued` ([Q-SIG-217](#q-sig-217--a-batch-replaces-the-attachments-of-its-own-sources-only)), and the trust job writes no row for a signature with
   `identity_id` ([Q-SIG-161](#q-sig-161--npms-signatures-are-written-through-a-signature-store-of-their-own-whatever-signaturesenabled)
   for the store npm's signatures are written through). The attestations, OCI's referrer and the API's route are package 3's.
 
@@ -5804,6 +5862,83 @@ Status: **Decided by the development agent** after the measurement of 2026-11-21
 | (b) Send the gate's text in `X-NuGet-Warning` on NuGet's routes | | NuGet's client prints the header for nuget.org's notices | Whether it prints it on an error answer was not measured; showing it needs a run of the pinned .NET SDK against a gated repository, which this change did not make |
 
 **Choice:** (a), revisited when the header is measured with the pinned SDK. **Applied in the spec:** R-SIG-068.
+
+### Q-SIG-216 · Quader reads NuGet's CMS itself, and a signer named by its key
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the measurement of 2026-11-21 ([developer/signatures.md](../developer/signatures.md#defects-found), defect 1). `dotnet nuget sign`
+(SDK 10.0.403) and nuget.org write every `SignerInfo` as version 3, naming the signer by `subjectKeyIdentifier` (RFC 5652, section 5.3);
+`github.com/digitorus/pkcs7` reads `issuerAndSerialNumber` only, in its newest version too (2026-09-14), as `smallstep/pkcs7` v0.2.3 and
+tspclient-go's CMS do. The package already carried its own countersignature reader, attribute checks and signature verification over the
+signed attributes; the library parsed the outer `SignedData` and the timestamp tokens.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reader of `ContentInfo`, `SignedData`, `SignerInfo` (both forms of the signer) and RFC 3161's `TSTInfo` is code of `nugetcms` on `encoding/asn1`; BER is brought to definite lengths by the bounds' walker first; the timestamp token is verified by the same code as the signers (chosen) | | No dependency changes; one reader for the author, the countersignature and the timestamps; the signature is checked over the signed attributes as encoded, not as re-encoded | About 250 lines of ASN.1 that are this repository's to keep |
+| (b) Another library that reads both forms | | Written by others | A module more for about 250 lines; none of the CMS readers already in the build reads both (digitorus/pkcs7, tspclient-go's), and a second timestamp reader beside digitorus's; no other library was examined |
+| (c) Fork digitorus/pkcs7 through a `replace` | | Smallest diff | A fork to keep against upstream; Renovate cannot raise it |
+
+**Choice:** (a). digitorus/pkcs7 and digitorus/timestamp stay in the build for sigstore-go and for Quader's reading of a Sigstore bundle's
+timestamp ([proofs.go](../../internal/signatures/scheme/sigstore/proofs.go)), where the verification is sigstore-go's own; the blind spot
+there is [H-1233](../security/artifact-signatures.md#h-1233--a-timestamp-of-a-sigstore-bundle-or-a-notation-signature-whose-authority-names-its-signer-by-its-key-is-not-read).
+A certificate without the key identifier extension is named by the SHA-1 of its key (RFC 5280, section 4.2.1.2, method 1); both
+signatures of the real tools carry the extension, so that fallback is tested with the tests' own signatures only. **Applied in the
+spec:** R-SIG-014, R-SIG-029, R-SIG-042.
+
+### Q-SIG-217 · A batch replaces the attachments of its own sources only
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the measurement's defect 3. A signature posted for a local Ansible version is attached at the archive's item (so that it goes with
+the version) with the source `upload`; discovery records the detector's batch of that item, which carries nothing, and the statement that
+replaces a carrier's attachments removed every attachment of the item, the posted one with it. Stage 2's signatures Quader issues are
+attached at the signed item too (`issued`, R-SIG-054). `upload` was also the source of npm's provenance bundle, which the npm detector
+names.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A batch names the sources it speaks for and replaces attachments of those only; a detector's batch speaks for the eight sources a detector names, the management API's for `upload`; `issued` is written and removed by the job `signing` through statements of its own (`RecordIssued`, `DetachRetiredIssued`), so no batch speaks for it and stage 2's exception in the statement (`source <> 'issued'`) becomes a case of the rule; npm's provenance bundle, stored beside its tarball and judged by its gate as a signature file, is attached `sibling`, and `formats.SignatureSourceValid` refuses `upload` from a detector (chosen) | | One rule for every writer and format; no migration, no API change, no change of the format contract's surface; the writers' sources are disjoint and a detector cannot take one of the others' | npm's provenance bundle shows the source `sibling` where it showed `upload` |
+| (b) A source of its own for a posted signature (`posted`), npm keeping `upload` | | `upload` keeps its meaning for npm | A migration of the source's CHECK and an API enum for one writer; the same three places stage 2 changes for `issued` |
+| (c) Each format declares the sources its detector names, and the batch replaces those | | Per format exact | A change of the frozen contract for a storage rule; nothing stops a format's detector and its API sharing a source |
+| (d) The replacement leaves out `upload` and `issued` by name | | Smallest | A special case per writer, the next writer forgotten |
+
+**Choice:** (a). A batch without sources replaces nothing. Rows the defect already removed are not brought back: a version whose posted
+signature was lost shows **No signature** and is posted again. **Applied in the spec:** R-SIG-004, R-SIG-028, R-SIG-031, R-SIG-054; the code comment of
+`SignatureCandidate.Source` and `SignatureSourceValid` in [architecture.md](architecture.md) R-ARCH-008.
+
+### Q-SIG-218 · A self-signed root's own signature is not judged
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: with defect 1 repaired, nuget.org's repository countersignature of 2023 read `unsupported` (`weak_algorithm`): its chain ends at
+DigiCert Assured ID Root CA, self-signed with SHA-1 in 2006, and every certificate of a chain was refused for a weak signature algorithm.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The signature algorithm of a self-signed certificate is not judged; its key is (chosen) | crypto/x509 never verifies a root's own signature; a root is trusted as an anchor | nuget.org's older countersignatures, and a Notation chain to such a root, read as what they are | A root's age is not shown as weak |
+| (b) Leave the root out of the chain before the checks | | The same effect | The evidence loses the root the trust step matches an anchor by |
+| (c) Keep refusing | | Strict | Most of nuget.org's packages read **Scheme not supported** |
+
+**Choice:** (a), in `pki.CheckCertificate`, so it holds for NuGet and Notation alike. A certificate a chain verifies with SHA-1 (a leaf or an
+intermediate) stays `weak_algorithm`. **Applied in the spec:** R-SIG-029.
+
+### Q-SIG-219 · A remote's version reads the document it holds the version as
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the measurement's defect 4. The version's answer takes an OCI tag's subjects from the version's metadata only where the repository
+holds the tag as a file whose blob is that manifest; a remote holds its tags as documents (R-OCI-036), so a remote's version had no subject.
+The version list had the same gap: it counts the blobs of a version's files.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `SignatureVersionBlobs` also answers the blob of the document a repository lists a version by (`package_version_listing.document_sha256`, a remote's OCI tag), marked as a document; the version's answer reads it for every holder in one call and the version list counts it (chosen) | | Format-neutral: the listing's own column; each holder's own tag, also when the version was read from another repository; the list and the answer agree | One statement more per version answer |
+| (b) Trust the metadata's digest for the repository the version was read from | | No statement | A remote that is not that repository still shows nothing, as in the measurement, where the local upstream held the tag first |
+| (c) Look up the manifest by its digest path in each holder | | Uses the items API | A remote whose tag moved shows the old image's signatures; OCI's path layout in the API |
+
+**Choice:** (a). npm's, NuGet's, Ansible's and Debian's remotes hold a version's file as an item and needed no change; the generic format has
+no remote class; a virtual repository shows the union of its members, a remote member now included. **Applied in the spec:** R-SIG-026.
 
 ## What this does not cover
 

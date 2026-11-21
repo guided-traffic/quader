@@ -220,7 +220,9 @@ object store is answered pending (Q-SIG-140). PostgreSQL down fails the download
 
 Component: the read and the integrity check of the job `signature-verify` (R-SIG-005, R-SIG-006, R-SIG-013). Subject: the installation's
 credentials the worker holds. Live from stage 1. A signature object is parsed by sigstore-go, notation-core-go with go-cose, tspclient-go,
-digitorus/pkcs7 and digitorus/timestamp, go-crypto and code of this repository (ASN.1, CBOR, protobuf JSON, OpenPGP packets, zip offsets for NuGet). A flaw that
+digitorus/pkcs7 and digitorus/timestamp (a Sigstore bundle's timestamps), go-crypto and code of this repository (ASN.1 of NuGet's CMS and
+its timestamps since [Q-SIG-216](../spec/signatures.md#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key), CBOR,
+protobuf JSON, OpenPGP packets, zip offsets for NuGet). A flaw that
 turns a crafted object into more than a refusal (a memory blow-up past the bounds, a hang the deadline does not reach, a logic flaw in a
 verifier) runs in the worker. What bounds it: the refusals of R-SIG-013, tested with crafted objects at the unit tier; the heap bound
 of 64 MiB that R-SIG-013's criterion names is not asserted by a test. What makes it real: a library flaw of that kind and a push or an
@@ -471,3 +473,19 @@ offer the passphrase to be saved (the field is `autocomplete="off"`, which not e
 ([H-765](deb-signing.md#h-765--an-imported-secret-key-passes-through-the-operators-browser)). What makes it real: an administrator's browser
 or machine that is not trusted with the installation's signing key; `POST /api/v1/signing/identity/import` from `curl` with the key read
 from a file keeps it out of a browser.
+
+### H-1233 · A timestamp of a Sigstore bundle or a Notation signature whose authority names its signer by its key is not read
+
+Component: the RFC 3161 timestamps of the schemes `sigstore-bundle` and `cosign-legacy` (sigstore-go with digitorus/timestamp, and
+Quader's reading of a bundle's timestamp in [proofs.go](../../internal/signatures/scheme/sigstore/proofs.go) on digitorus/pkcs7) and of
+`notation-jws` and `notation-cose` (tspclient-go). Subject: a signature whose timestamp authority writes its `SignerInfo` as version 3, the
+signer named by `subjectKeyIdentifier` (RFC 5652, section 5.3). Dormant: all three libraries read a signer named by issuer and serial
+number only, the form of NuGet's own blind spot until
+[Q-SIG-216](../spec/signatures.md#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key) repaired it for NuGet. Such a
+bundle reads `malformed` ("an RFC 3161 timestamp of the bundle does not parse") and such a Notation signature does not verify. It stays
+dormant as long as the writing tools share the readers: cosign parses an authority's answer with digitorus/timestamp and Notation with
+tspclient-go before either writes the signature (read from what each tool depends on, not run here); the authorities seen on 2026-11-21
+(DigiCert's tokens in nuget.org's packages) name their signer by issuer and serial number. What makes it real: a timestamp
+authority that answers in the other form and a signing tool that does not check the answer with one of these libraries. Repairing only
+Quader's own reading in `proofs.go` would turn such a signature from unreadable into `timestamp_invalid` wherever a root knows the authority,
+because sigstore-go's verification still refuses it.

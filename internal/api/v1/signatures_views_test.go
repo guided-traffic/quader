@@ -195,6 +195,62 @@ func TestR_SIG_034_VersionSignatures(t *testing.T) {
 			}
 		}
 	})
+	t.Run("R-SIG-024 a remote holds its tag as a document: its entry asks for the manifest the document names", func(t *testing.T) {
+		// The measurement's defect 4 (Q-SIG-219): the version was read from web/npm-local, whose tag is a file; upstream/npmjs is a
+		// remote, whose tag is a document (R-OCI-036) and no file, and showed no signature while its manifest's file view showed them.
+		idx, amd, moved := [32]byte{1}, [32]byte{2}, [32]byte{3}
+		version := func() sigVersion {
+			return sigVersion{
+				detail: view.VersionDetail{
+					Format: "oci", Name: "app", Version: "1.0", Repo: qname.Repo{Project: "web", Key: "npm-local"},
+					Repositories: []view.RepositoryEntry{
+						{Repo: qname.Repo{Project: "web", Key: "npm-local"}, Class: "local"},
+						{Repo: qname.Repo{Project: "upstream", Key: "npmjs"}, Class: "remote"},
+						{Repo: qname.Repo{Project: "web", Key: "npm-all"}, Class: "virtual"},
+					},
+					Files:    []view.File{{Path: "app/_tags/1.0", SHA256: hex.EncodeToString(idx[:])}},
+					Metadata: map[string]any{"digest": "sha256:" + hex.EncodeToString(idx[:]), "platforms": []map[string]any{{"platform": "linux/amd64", "digest": "sha256:" + hex.EncodeToString(amd[:])}}},
+				},
+				name: "app", topo: sigTopology(),
+			}
+		}
+		lookup := func(_ context.Context, repo qname.Repo, path string) (items.Item, bool, error) {
+			if repo.Key == "npmjs" {
+				return items.Item{}, false, nil // a remote's tag is a document, not an item
+			}
+			return items.Item{ID: 81, Kind: items.KindFile, Digest: idx, Path: path}, true, nil
+		}
+		t.Run("the same manifest as the local tag", func(t *testing.T) {
+			st := newFakeSigStore()
+			st.versionBlobs = []signatures.VersionBlob{{Version: "1.0", RepoID: 2, Blob: idx, Document: true}}
+			st.views = []signatures.View{sigViewFor(1, idx, signatures.RolePublisher, signatures.StateValid, nil, 2)}
+			out, err := (&Server{}).versionSignatureReport(context.Background(), sv(st), version(), nil, lookup)
+			if err != nil {
+				t.Fatal(err)
+			}
+			remote, virtual := out.Repositories[1], out.Repositories[2]
+			if remote.Repository != "upstream/npmjs" || remote.State != "untrusted" || len(remote.Signatures) != 1 || len(st.viewQueries) != 3 ||
+				len(st.viewQueries[1].Subjects) != 2 || st.viewQueries[1].RepoIDs[0] != 2 {
+				t.Fatalf("remote %+v, queries %+v", remote, st.viewQueries)
+			}
+			if virtual.State != "untrusted" || len(virtual.Signatures) != 1 || virtual.Signatures[0].Repository != "upstream/npmjs" {
+				t.Fatalf("a virtual repository shows its remote member's signatures: %+v", virtual)
+			}
+			if st.versionBlobCalls != 1 {
+				t.Fatalf("%d reads of the holders' documents, want one for the version", st.versionBlobCalls)
+			}
+		})
+		t.Run("a remote's tag that names another manifest asks for that one", func(t *testing.T) {
+			st := newFakeSigStore()
+			st.versionBlobs = []signatures.VersionBlob{{Version: "1.0", RepoID: 2, Blob: moved, Document: true}}
+			if _, err := (&Server{}).versionSignatureReport(context.Background(), sv(st), version(), nil, lookup); err != nil {
+				t.Fatal(err)
+			}
+			if q := st.viewQueries[1]; len(q.Subjects) != 1 || q.Subjects[0] != moved {
+				t.Fatalf("the remote asks for %v, want only the manifest its own tag names", q.Subjects)
+			}
+		})
+	})
 	t.Run("R-SIG-034 a signature's texts are returned as they were read, without markup or escaping", func(t *testing.T) {
 		st, in, _ := sigFixture()
 		out, _ := (&Server{}).versionSignatureReport(context.Background(), sv(st), in, nil, nil)

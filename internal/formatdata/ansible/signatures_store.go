@@ -29,6 +29,9 @@ const (
 	maxPostedSignature = 64 << 10
 	// manifestLocator is the entry of the archive a signature signs.
 	manifestLocator = "entry:" + collection.ManifestName
+	// sourceUpload is the attachment source of a signature a client posts through the management API (formats.SignatureSourceUpload,
+	// which no detector names, R-SIG-004).
+	sourceUpload = "upload"
 )
 
 // SignatureRecorder is the signature store as the port records a posted signature through it; *store.Store of
@@ -165,13 +168,15 @@ func (s localStore) record(ctx context.Context, tx meta.Tx, in rows.SignatureInp
 	}
 	raw := []byte(in.Signature)
 	subject := digestOf(v.Sha256)
+	// The batch speaks for the source upload only: the archive's own batches (its commit, discovery) speak for the detectors' sources
+	// and leave this attachment alone, and this one leaves theirs (Q-SIG-217).
 	return s.o.Signatures.Record(ctx, tx, signatures.Batch{
-		RepoID: in.RepoID, Priority: signatures.PriorityUpload,
+		RepoID: in.RepoID, Priority: signatures.PriorityUpload, Sources: []string{sourceUpload},
 		Candidates: []signatures.Candidate{{
 			Object: signatures.Object{
 				SHA256: sha256.Sum256(raw), Scheme: "openpgp", MediaType: "application/pgp-signature", Raw: raw, Size: int64(len(raw)),
 			},
-			Subject: subject, Role: "publisher", Source: "upload", Location: loc, Name: in.Name, ItemID: v.ItemID,
+			Subject: subject, Role: "publisher", Source: sourceUpload, Location: loc, Name: in.Name, ItemID: v.ItemID,
 			ContentBlob: subject, ContentLocator: manifestLocator,
 		}},
 	})

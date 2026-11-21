@@ -23,7 +23,8 @@ type SignatureRecorder interface {
 }
 
 // recordSignatures asks the format's detector what ev carries and records it in tx: the candidates, each path they name resolved in
-// the event's repository and nowhere else, as one batch that replaces what the carrier and the named locations had (R-SIG-004). A
+// the event's repository and nowhere else, as one batch that replaces what the carrier and the named locations had of the sources a
+// detector names (R-SIG-004, Q-SIG-217). A
 // detector's error never fails the commit: it is logged, and the content is stored without candidates (Q-SIG-47). A store error
 // does: the rows and the content commit together.
 func (d Deps) recordSignatures(ctx context.Context, tx meta.Tx, f formats.Format, ev formats.SignatureEvent, fresh bool) error {
@@ -32,6 +33,16 @@ func (d Deps) recordSignatures(ctx context.Context, tx meta.Tx, f formats.Format
 		priority = signatures.PriorityUpload
 	}
 	return d.recordAt(ctx, tx, f, ev, fresh, priority)
+}
+
+// detectorSources are the attachment sources a format's detector names (formats.SignatureSourceValid): a detector's batch replaces
+// attachments of these and of no other source, so a signature a client posted through the management API ("upload") or one Quader
+// issued is never removed by the batch of the item it is attached to (R-SIG-004, Q-SIG-217).
+func detectorSources() []string {
+	return []string{
+		formats.SignatureSourceReferrer, formats.SignatureSourceReferrersTag, formats.SignatureSourceCosignTag, formats.SignatureSourceIndexEntry,
+		formats.SignatureSourceDocument, formats.SignatureSourceEmbedded, formats.SignatureSourceSibling, formats.SignatureSourceRelease,
+	}
 }
 
 // recordAt is recordSignatures with the priority the batch's signatures are due at: a commit's, or discovery's (R-SIG-011).
@@ -49,7 +60,7 @@ func (d Deps) recordAt(ctx context.Context, tx meta.Tx, f formats.Format, ev for
 			"format", f.Descriptor().ID, "repo", ev.Repo.Name.String(), "path", ev.Path.Path, "err", err)
 		got = nil
 	}
-	b := signatures.Batch{RepoID: ev.Repo.ID, CarrierItem: ev.Item.ID, Fresh: fresh && ev.Item.ID != 0, Priority: priority}
+	b := signatures.Batch{RepoID: ev.Repo.ID, CarrierItem: ev.Item.ID, Fresh: fresh && ev.Item.ID != 0, Priority: priority, Sources: detectorSources()}
 	if ev.Item.ID == 0 {
 		b.Document = ev.Path.Path
 	}

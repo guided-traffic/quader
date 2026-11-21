@@ -22,10 +22,12 @@ import (
 
 // The NuGet packages of the tests (R-SIG-042): an unsigned package built with archive/zip, signed by the test with digitorus/pkcs7 (an
 // author signature of the company CA with a timestamp of the test's authority, and a repository countersignature of a second CA), the
-// signature entry inserted first, in the middle or last.
+// signature entry inserted first, in the middle or last. digitorus/pkcs7 writes a signer by issuer and serial number only; with keyIDs
+// every SignerInfo is re-encoded to name its signer by subject key identifier, as dotnet and nuget.org write it (Q-SIG-216). The real
+// tools' own signatures are the fixtures of realtool_test.go.
 
 // unsignedPackage builds a package of three entries.
-func unsignedPackage(t *testing.T) []byte {
+func unsignedPackage(t testing.TB) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
@@ -50,7 +52,7 @@ func unsignedPackage(t *testing.T) []byte {
 
 // insertEntry inserts a stored entry before entry k of a package (k = the number of entries: after the last), moving the later entries'
 // offsets, the central directory and the end record as a signing tool does.
-func insertEntry(t *testing.T, pkg []byte, k int, name string, data []byte) []byte {
+func insertEntry(t testing.TB, pkg []byte, k int, name string, data []byte) []byte {
 	t.Helper()
 	le := binary.LittleEndian
 	end := pkg[len(pkg)-endLen:]
@@ -119,7 +121,7 @@ func content(sum []byte) []byte {
 }
 
 // signingCertV2 is the signing-certificate-v2 attribute's value for a certificate (SHA-256, the default algorithm).
-func signingCertV2(t *testing.T, c *x509.Certificate) asn1.RawValue {
+func signingCertV2(t testing.TB, c *x509.Certificate) asn1.RawValue {
 	t.Helper()
 	sum := sha256.Sum256(c.Raw)
 	b, err := asn1.Marshal(struct {
@@ -131,7 +133,7 @@ func signingCertV2(t *testing.T, c *x509.Certificate) asn1.RawValue {
 	return asn1.RawValue{FullBytes: b}
 }
 
-func commitmentOf(t *testing.T, oid asn1.ObjectIdentifier) asn1.RawValue {
+func commitmentOf(t testing.TB, oid asn1.ObjectIdentifier) asn1.RawValue {
 	t.Helper()
 	b, err := asn1.Marshal(struct{ ID asn1.ObjectIdentifier }{oid})
 	if err != nil {
@@ -140,7 +142,7 @@ func commitmentOf(t *testing.T, oid asn1.ObjectIdentifier) asn1.RawValue {
 	return asn1.RawValue{FullBytes: b}
 }
 
-func ia5(t *testing.T, s string) asn1.RawValue {
+func ia5(t testing.TB, s string) asn1.RawValue {
 	t.Helper()
 	b, err := asn1.MarshalWithParams(s, "ia5")
 	if err != nil {
@@ -156,7 +158,7 @@ type signer struct {
 	key  *ecdsa.PrivateKey
 }
 
-func newSigner(t *testing.T, org string) signer {
+func newSigner(t testing.TB, org string) signer {
 	t.Helper()
 	ca := pkitest.NewCA(t, org)
 	leaf, key := ca.Issue(t, pkitest.Leaf{})
@@ -169,11 +171,14 @@ type signOptions struct {
 	tsa         *pkitest.TSA
 	counter     *signer
 	counterOver []byte // the signature value the countersignature signs; nil: the primary's
+	// keyIDs names every signer (the author, the timestamp authority, the countersigner) by its subject key identifier in a SignerInfo
+	// of version 3, as dotnet nuget sign and nuget.org do; digitorus/pkcs7 writes issuer and serial number only.
+	keyIDs bool
 }
 
 // sign makes the .signature.p7s of an unsigned package: an author signature (proof of origin, signing-certificate-v2), with a timestamp
 // over its signature value when tsa is set, and a repository countersignature when counter is set.
-func sign(t *testing.T, unsigned []byte, o signOptions) []byte {
+func sign(t testing.TB, unsigned []byte, o signOptions) []byte {
 	t.Helper()
 	sum := sha256.Sum256(unsigned)
 	sd, err := pkcs7.NewSignedData(content(sum[:]))
@@ -194,6 +199,9 @@ func sign(t *testing.T, unsigned []byte, o signOptions) []byte {
 	var unsignedAttrs []pkcs7.Attribute
 	if o.tsa != nil {
 		tok := o.tsa.Token(t, crypto.SHA256, primary.EncryptedDigest, time.Now().Add(-time.Minute))
+		if o.keyIDs {
+			tok = signedDataByKeyID(t, tok, o.tsa.Leaf)
+		}
 		unsignedAttrs = append(unsignedAttrs, pkcs7.Attribute{Type: oidTimestampToken(), Value: asn1.RawValue{FullBytes: tok}})
 	}
 	if o.counter != nil {
@@ -201,7 +209,11 @@ func sign(t *testing.T, unsigned []byte, o signOptions) []byte {
 		if over == nil {
 			over = primary.EncryptedDigest
 		}
-		unsignedAttrs = append(unsignedAttrs, pkcs7.Attribute{Type: oidCountersignature(), Value: countersign(t, *o.counter, over)})
+		cs := countersign(t, *o.counter, over)
+		if o.keyIDs {
+			cs = asn1.RawValue{FullBytes: byKeyID(t, cs.FullBytes, o.counter.leaf)}
+		}
+		unsignedAttrs = append(unsignedAttrs, pkcs7.Attribute{Type: oidCountersignature(), Value: cs})
 		for _, c := range []*x509.Certificate{o.counter.leaf, o.counter.ca.Inter, o.counter.ca.Root} {
 			sd.AddCertificate(c)
 		}
@@ -215,11 +227,84 @@ func sign(t *testing.T, unsigned []byte, o signOptions) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if o.keyIDs {
+		p7s = signedDataByKeyID(t, p7s, o.author.leaf)
+	}
 	return p7s
 }
 
+// keyID is the subject key identifier a SignerInfo names c by: its extension, else the SHA-1 of its key (a leaf of pkitest has no
+// extension).
+func keyID(c *x509.Certificate) []byte {
+	if len(c.SubjectKeyId) > 0 {
+		return c.SubjectKeyId
+	}
+	return publicKeyID(c)
+}
+
+// byKeyID re-encodes a SignerInfo as version 3 naming its signer c by subject key identifier; its signature covers neither, so it still
+// verifies.
+func byKeyID(t testing.TB, si []byte, c *x509.Certificate) []byte {
+	t.Helper()
+	var w signerInfoASN1
+	if rest, err := asn1.Unmarshal(si, &w); err != nil || len(rest) > 0 {
+		t.Fatalf("the SignerInfo does not parse: %v", err)
+	}
+	w.Version, w.SID = 3, asn1.RawValue{Class: asn1.ClassContextSpecific, Tag: 0, Bytes: keyID(c)}
+	out, err := asn1.Marshal(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// signedDataByKeyID re-encodes a ContentInfo of signedData whose single signer is c, naming c by subject key identifier.
+func signedDataByKeyID(t testing.TB, der []byte, c *x509.Certificate) []byte {
+	t.Helper()
+	var ci contentInfo
+	if _, err := asn1.Unmarshal(der, &ci); err != nil {
+		t.Fatal(err)
+	}
+	var sd signedData
+	if _, err := asn1.Unmarshal(ci.Content.Bytes, &sd); err != nil {
+		t.Fatal(err)
+	}
+	var si asn1.RawValue
+	if rest, err := asn1.Unmarshal(sd.SignerInfos.Bytes, &si); err != nil || len(rest) > 0 {
+		t.Fatalf("the SignedData has not one SignerInfo: %v", err)
+	}
+	sd.Version = 3
+	sd.SignerInfos = asn1.RawValue{Class: asn1.ClassUniversal, Tag: asn1.TagSet, IsCompound: true, Bytes: byKeyID(t, si.FullBytes, c)}
+	sdDER, err := asn1.Marshal(sd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ci.Content = asn1.RawValue{Class: asn1.ClassContextSpecific, Tag: 0, IsCompound: true, Bytes: sdDER}
+	out, err := asn1.Marshal(ci)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// indefinite re-encodes a ContentInfo with indefinite lengths for itself and its [0], as a BER writer may.
+func indefinite(t testing.TB, der []byte) []byte {
+	t.Helper()
+	var ci contentInfo
+	if _, err := asn1.Unmarshal(der, &ci); err != nil {
+		t.Fatal(err)
+	}
+	oid, err := asn1.Marshal(ci.ContentType)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := append([]byte{0x30, 0x80}, oid...)
+	out = append(append(out, 0xa0, 0x80), ci.Content.Bytes...)
+	return append(out, 0, 0, 0, 0)
+}
+
 // countersign makes a repository countersignature (proof of receipt, a service index, an owner) over a signature value.
-func countersign(t *testing.T, s signer, over []byte) asn1.RawValue {
+func countersign(t testing.TB, s signer, over []byte) asn1.RawValue {
 	t.Helper()
 	sd, err := pkcs7.NewSignedData(over)
 	if err != nil {

@@ -248,9 +248,10 @@ What the handlers decide and what they leave to the store:
   that the caller reads (`members`), and each signature names the member in `repository`.
 - **Subjects** (`versionSubjects`): per holding repository the blobs of the version's files at the paths the package view read, looked up
   in that repository through the files service (`sigItems`, decided as `getItem` decides), so a holder whose file has other bytes is asked
-  for its own; an OCI tag adds its manifest and each platform's manifest while the repository's tag points at that manifest; npm adds the
-  subject name `<name>@<version>` of the registry signature (Q-SIG-50). Without the files service the subjects are the view's and no
-  entry carries an origin.
+  for its own; an OCI tag adds its manifest and each platform's manifest while the repository's tag points at that manifest, as a file or,
+  in a remote, as the document it holds the tag as (`versionDocuments`: one `Store.VersionBlobs` for every holder, its `Document` blobs; a
+  remote's tag that names another manifest adds that one, Q-SIG-219); npm adds the subject name `<name>@<version>` of the registry
+  signature (Q-SIG-50). Without the files service the subjects are the view's and no entry carries an origin.
 - **Entries**: the views of the roles `publisher`, `provenance` and `registry` in `signatures`, those of the role `attestation` in
   `attestations`, ordered by role and receipt; `state` and `stale` are `signatures.Badge` over them. The signer is the read's
   `signatures.Signer`, returned as text. A signature this installation made (stage 2: npm's registry signature of a local version, read
@@ -274,8 +275,9 @@ What the handlers decide and what they leave to the store:
 - **The member `signatures`** (`signatureMember` for the item, `addSignatureStatus` for a version and its files): one `Store.Counts` per
   answer over the repository the file or the version was read from, absent for a folder, while `signatures.enabled` is false and without
   a store. The version list carries it per row (`versionListSignatures`, [signatures_versionlist.go](../../internal/api/v1/signatures_versionlist.go)):
-  one `Store.VersionBlobs` for the page's files in the rows' repositories and one `Store.Counts` per project of those repositories, none
-  per row; a version's state is the best of its files' signatures in every repository that holds it for the caller.
+  one `Store.VersionBlobs` for the page's files in the rows' repositories (and a remote's tag documents, Q-SIG-219) and one `Store.Counts`
+  per project of those repositories, none per row; a version's state is the best of its files' signatures in every repository that holds it
+  for the caller.
 - **The repository member `signatures`** (`RepositorySignatureSettings`): `fetch` on a remote repository switches the background fetch of
   R-SIG-026; on a local or a virtual one it answers `422 not_applicable` at `/signatures/fetch` (R-SIG-040). On a well-known repository of
   `upstream` an administrator sets it as the narrowing members; on a system repository it is the product's (`managed_by_product`, Q-SIG-128).
