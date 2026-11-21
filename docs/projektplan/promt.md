@@ -1255,17 +1255,45 @@ runs are in `git log`; this section holds the current state.
   itself, a gone pod's row goes as the other replicas' rows go, what a scanner reports is bounded, and no end-to-end
   set or leg is added. Both builders run the set `vuln` on a cluster of their own; the image tag of the development
   profile is shared on the machine, so they build and load it under one lock and check the commit a pod runs.
-  **The system repositories of `upstream` stand apart on the project's page
-  Repositories** (since 07:53; the owner, 2026-11-21, with a picture of the page on his installation: "Bitte die
-  internen Repos wie: scanner-trivy und scanner-clamav unter die Liste packen, am besten als seperate Tabelle die
-  standardmäßig eingeklappt ist. Sowas wie system repositories, oder etwas besseres. Ohne den client einrichten
-  button. Einfach bewusst abgesetzt."): the main table without them; below it a section of its own, collapsed by
-  default, with their number, a sentence that says what they are and a table of the same columns; no **Set up
-  client** for a system repository there or anywhere else; the filter covers both tables and opens the section on a
-  match. Seen by the development agent in the same picture and given to the builder: the description under the
-  title is the stored description of the built-in project, English in a German UI, and comes from a localized text
-  instead. The builder reports every other place that lists a system repository among the repositories a user works
-  with, and renders the page in both schemes, wide and narrow, closed and opened. **The two scanner units' rename, landed on 2026-11-21 at 08:12** (builder from 06:48 to 07:54, one commit,
+  **The system repositories of `upstream` stand apart on the project's page Repositories: built, sent back once for
+  a unit test, not landed yet** (builder from 07:53 to 08:21, one commit of 29 files; the owner, 2026-11-21, with a
+  picture of the page on his installation: "Bitte die internen Repos wie: scanner-trivy und scanner-clamav unter die
+  Liste packen, am besten als seperate Tabelle die standardmäßig eingeklappt ist. Sowas wie system repositories, oder
+  etwas besseres. Ohne den client einrichten button. Einfach bewusst abgesetzt."). **As built:** the list holds the
+  twelve registries alone; below it, after a hairline, the shared disclosure **System repositories** with a count,
+  closed at every visit, with the sentence "Quader keeps these repositories for itself: only its scanners read them,
+  and no client is set up for them.", and inside a table of the list's columns. The filter, the drawer's format,
+  class and state included, opens the section where it matches a system repository and counts the matches; the
+  section's rows are read by name once per visit and filtered in the browser, so they do not depend on the list's
+  page. No **Set up client** for a system repository anywhere (the list, the content page, the guides, a package's
+  install panel: the helper that builds the button returns nothing for one, and the type forces every caller to
+  handle it). The project's description under the title, on the start page and in the search is a localized text of
+  the UI (it was the stored English row). **Found by the builder in its renders and built with it:** the content
+  page of a system repository offered **Upload files** and **New folder**, which the server refuses for every caller;
+  they are gone there. **The name:** "System repositories", the specification's word since R-REPO-066 and the
+  owner's own suggestion; "internal" was not taken because it reads as the visibility level. The admin area's page
+  of the upstream registries calls the same two "Used by Quader": two names for one thing, left for the owner.
+  **The row menu of a system repository:** Settings, Files, and for `scanner-trivy` Vulnerabilities (always empty,
+  the scanning of that repository is off); no delete, no move. **Its decisions:** R-UI-192, R-UI-190 amended,
+  Q-UI-891 (the owner's) to Q-UI-896. **Gates of the builder on its commit:** the UI tests (1,811, 29 s), the UI
+  lint, the layout check's tests, the localized build, links and check, the renders (no layout finding). **Looked at
+  by the development agent** (rule 11): the page closed and opened at 1440 px dark, opened at 390 px light, and with
+  the filter "trivy" at 1440 px light (the list says no repository matches, the section is open with one row).
+  **Seen in them and left, named to the owner:** the section's columns Format and Class stand about 120 px right of
+  the list's, because its table is indented and its action column holds the menu alone. **The development agent's
+  full unit run on the commit failed in one test**, the count of requirements in the coverage tool's test (1,048
+  against the expected 1,047: the builder had run the manual's Go packages only); back with the builder since
+  08:26. **What it costs:** four component tests (0.3 s), two render cases with 24 pictures, about 19 s of the job
+  `UI layout checks`. **A change of shared state, by the documented way of rendering from a worktree:** the render
+  seed switched four registries on (`ghcr`, `quay`, `ubuntu`, `debian-security`) in the database of the owner's UI
+  stack. **Where a system repository still stands among the repositories a user works with, reported and unchanged,
+  to put to the owner one at a time:** the admin area's list of repositories (with **Copy client address** for an
+  address that answers 404), the search's suggestions and its tab Repositories, the guides' list (a row with an
+  empty action cell now), the repository pickers of the exposure rules, the security dashboard and the limit
+  explanation, **Recently opened**, and the file page of a system repository, which still offers **Download** and
+  a curl command that answer 404. **Not verified:** the German page in a browser (the German bundle carries the
+  texts); the whole render run with four registries on.
+  **The two scanner units' rename, landed on 2026-11-21 at 08:12** (builder from 06:48 to 07:54, one commit,
   84 files; pipeline 44879147044): the kinds `vuln-scanner-trivy` and `malware-scanner-clamav` in the chart's table of kinds, from which
   every Deployment, Service, disruption budget, autoscaler, NetworkPolicy, Certificate and Secret follows, with the
   component label, the names in the certificates, `server.scan_clients`, the scanners' addresses and the keys of
