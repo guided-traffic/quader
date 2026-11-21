@@ -1097,9 +1097,18 @@ runs are in `git log`; this section holds the current state.
   the development agent at 1440 px dark and 390 px light. **Gates of the development agent on the tip, each exit 0:**
   build, the full unit run (176 packages), generate-check, chart lint and tests, links and check, the UI tests
   (1,803), the UI lint and layout tests, lint, cyclo, gosec; the commits and the diff scanned for names that may not
-  appear. **Running since 04:10:** every integration area once, through the new lock script. It lands when that run
-  is green and the pipeline on `main` has ended.
-- **The stack's lock and the coordination tests, fixed (one commit of the type `test`, first on the landing branch):**
+  appear. **The first run of every integration area on that tip, through the new lock script, was stopped at 04:40
+  after 18 areas: the script itself broke three of them.** It exported a variable `QUADER_IT_LOCK_HELD` to know a
+  nested call, and the product refuses every environment variable with the prefix `QUADER_` that is no setting, so
+  every test that starts a quader process inherited it and the process ended at start ("unknown environment variable
+  QUADER_IT_LOCK_HELD"): `backup` (four tests), `bastion` (nearly all), `bastionreg`. The script's author had proven
+  it with the area `coordination`, which starts no process. Nothing of the feature. **The lock script's commit is
+  taken off the landing branch** and mended on a branch of its own (a builder, since 04:41; it lands by itself when
+  it has run the process-starting areas); the landing branch is `main` and the eleven commits, its tree the builder's
+  rebased tip. **The run of every area started again at 04:41**, with the lock taken by hand and nothing else on the
+  stack. It lands when that run is green.
+- **The stack's lock and the coordination tests (one commit of the type `test`, being mended, see the malware scan's
+  entry above for what it broke):**
   `test/integration/locked.sh` runs a command under the stack's lock from the main checkout or a worktree, loads the
   stack's environment, never removes the lock file, waits without a timeout and holds the lock as long as the test
   binaries live; the developer page names the commands. **What `lockf` had really done, shown on scratch files, and it
@@ -1112,7 +1121,7 @@ runs are in `git log`; this section holds the current state.
   `TestJobs` (100 coalesced enqueues) failed in both of those double runs with a database timeout and passes under
   the lock, the finding of section 8 seen again. Not verified: the script's path with `flock` on Linux; the changed
   end-to-end queries on a cluster.
-- **In work** (04:17), no builder; the development agent's integration run on the landing branch and the pipeline on `main`:
+- **In work** (04:41), one builder (the lock script's variable); the development agent's integration run on the landing branch; the dispatched legs of the nightly's fixes (run 44862237399):
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
