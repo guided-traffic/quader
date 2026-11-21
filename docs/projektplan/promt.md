@@ -569,6 +569,13 @@ records the recorder that tells such a stall apart).
   archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
 - `TestR_BAS_006` (unit, `internal/bastion/mainclient`) failed once in a full unit run beside an integration build
   and passed alone (2026-11-21); cause not looked at.
+- **The lock of the shared integration stack did not keep two runs apart** (2026-11-21, 02:03): the development
+  agent's run of every area took the lock at 01:49 while a builder's three areas ran under the same lock file from
+  01:47 to 02:01, each started with `lockf`. Likely cause, not verified: `lockf` without `-k` removes the lock file
+  when its command ends, so a process that waited on the old file and one that creates the file anew both hold
+  "the" lock. No developer page says which command takes the lock; the builders took it from each other's
+  briefs. What two runs on one stack do to each other was not looked at; areas that fail a primary or stop
+  Valkey are the ones to suspect when an area fails only beside another run.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -990,8 +997,8 @@ runs are in `git log`; this section holds the current state.
   nightly:** a slot is given back in both places, locally at once and in Valkey by the flush, retried until it
   arrives or has expired there; renewals too; no round trip more. Five unit cases against a store that is down or
   that runs a batch and then answers with a timeout; four of them fail on the old code. The decision is Q-LIM-95,
-  the development agent's. Gates: build, the full unit run, lint, generate-check, links; the area `limits` passed,
-  `coordination` and `npm` were running. **Not known:** why that one replica and that one minute (the circuit's state
+  the development agent's. Gates: build, the full unit run, lint, generate-check, links; the areas `limits` (which logs two round trips of
+  the limits around a cached download, as before the fix), `coordination` and `npm` passed, once each. **Not known:** why that one replica and that one minute (the circuit's state
   over time and the other replicas' logs before the fault are not kept); whether the leg passes with the fix, which
   the next nightly shows. **The fifth red leg, at 01:51, a return of F-165:** `e2e (ha-pooler)`,
   `TestHAPooler_Switchover`: after a switchover of PostgreSQL one instance of the control pooler logged refused
@@ -1021,7 +1028,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (01:52), four builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the fix of the limits' slots finishing its integration areas, the reading of F-165); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and the fix of the limits' slots:
+- **In work** (02:03), three builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the reading of F-165); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and the fix of the limits' slots, each on a branch of its own:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
