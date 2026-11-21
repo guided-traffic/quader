@@ -567,6 +567,8 @@ records the recorder that tells such a stall apart).
 - The clients' cases for the download limits (five formats, end to end) wait a fixed three seconds for a new rule
   to reach every replica; a replica that takes longer counts the first document against the instance and the
   archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
+- `TestR_BAS_006` (unit, `internal/bastion/mainclient`) failed once in a full unit run beside an integration build
+  and passed alone (2026-11-21); cause not looked at.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -1092,7 +1094,42 @@ runs are in `git log`; this section holds the current state.
     planner could not make (the image's user and file system, `clamd`'s memory, the time to ready) and the one
     end-to-end case. No test downloads the real database: ClamAV's project allows only its own two tools to fetch
     it, so the tests fill the repository with a database of a few signatures, as an installation without internet
-    does.
+    does. **First stage reported at 01:45 and put on `feat/malware` by the development agent** (three commits,
+    rebased by the builder onto package 2; the first two are squashed by the builder at the start of its second
+    stage, because the first alone registers a gauge twice and stops a worker at start): the task `malware-sync-db`
+    reads the header of each ClamAV file, wants `main` and `daily` and takes `bytecode`, stores a version under
+    `<version>/<file>` in `upstream/scanner-clamav` in the transaction that records it and marks what was downloaded
+    lately, refuses a lower version, removes old ones but the one in use and the one before, and fills `freshclam`'s
+    directory from the version in use at a worker's start; a version a scanner refuses is put back. The repository is
+    a local generic system repository (the declaration got its class), fixed in address and account, shown as "In use
+    by the malware scan"; an installation without internet deploys the files of ClamAV's mirror tool into it. The
+    chart: the malware scanner's Deployment with the containers `quader` and `clamd`, its disruption budget,
+    autoscaler, Service, an ingress-only NetworkPolicy and the certificate of a fifth kind of pod; `freshclam` beside
+    each worker that claims the queue `malware`; the values with their schema. The pin `CLAMAV_IMAGE` with its
+    Renovate rule, and the release-gating job `Malware Scan (source code)` runs the pinned image now and keeps the
+    real database in the runner's cache under a key of the day (before, every run fetched it anew, unpinned).
+    **Its decisions:** Q-MAL-80 to 88, Q-HA-363, Q-REPO-412, Q-UI-883, the gap H-1140. The one to look at first: the
+    image is `clamav/clamav-debian:1.5.5_base` by digest (Q-MAL-80), because the Alpine image exists for amd64 alone
+    and Quader ships both architectures, and the feature line 1.5 over the long-term 1.4 because the unpacking table
+    was read against 1.5. **Measured with the pinned image:** an unsigned database file is refused by `clamd`, and so
+    is one whose index carries no signature (the planner's open H-1107); `freshclam` keeps the detached signatures;
+    the real database is 89 MB, 23 MB and 0.3 MB; the first fetch took 11 s; the scan of the source tree 64 s over
+    5,598 files; the image is 74 MiB compressed. Gates with exit 0: build, generate-check, lint, cyclo, gosec, chart
+    lint and tests, links and check, the UI tests, lint and layout tests, the UI profile's configuration, the three
+    bare starts; the areas `malware`, `upstream`, `postgres`, `vulnimage`, `coordination` (119 tests); `versions-check`
+    fails on this machine's buildx as known; in the full unit run `TestR_BAS_006` failed once beside an integration
+    build and passed alone (section 8). Looked at by the development agent: the section **Used by Quader** of the
+    upstream registries page at 1440 px light and the page of `scanner-clamav` at 390 px dark; its badge says
+    "Upstream registry" for a local repository, which the builder fixes. **What it cost:** unit and chart tests of
+    about a second each, two integration tests of about 4 s; nothing end to end yet. **Not verified:** the changed
+    CI job on CI; `clamd` in a pod, its memory, its file system, the time to ready. **Seen beside it:** the batched
+    marking of what was downloaded lately reads the verdicts' table from its start at each batch; the settings page
+    of a system repository offers access details, download limits and notes. **Second stage since 01:49**: the
+    loader, a kind cluster with the real image, the measurements, the one end-to-end case in the set `vuln`.
+  **The run of every integration area on the landing branch** (the development agent's, since 01:49, once the three
+  packages were on it): every area once under the stack's lock, on the tip with the screens, the gate, the scanning
+  side and the first stage of the database and the chart. On that tip build is green; the unit run and the UI tests
+  follow when the second stage is in.
   **How the malware scan lands from here** (the development agent's, 2026-11-20): its first stage is on `main`; what
   follows (the gate, the screens, the scanning side, the database and the chart) is collected on a branch
   `feat/malware` and lands together, as the project `upstream` did. Why: with the scanning on by default and no
