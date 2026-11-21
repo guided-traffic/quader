@@ -518,11 +518,11 @@ function trustSql(sig: string, t: Trust, project: string | null): string {
   const ids = `ARRAY(SELECT a.id FROM signature_anchors a WHERE a.key = ANY(${textArray(t.anchors ?? [])}) ORDER BY a.id)::bigint[]`;
   const block = t.block ? `(SELECT b.id FROM signature_blocks b WHERE b.value = ${lit(blockedIdentity)})` : 'NULL::bigint';
   return `
-INSERT INTO signature_trust (signature_id, project_id, state, anchor_ids, block_id, epoch, computed_at)
+INSERT INTO signature_trust (signature_id, project_id, state, anchor_ids, block_id, anchor_epoch, computed_at)
 SELECT ${sig}, ${projectId}, ${lit(t.state)}, ${ids}, ${block}, (SELECT anchor_epoch FROM signature_settings WHERE id), now() - interval '10 minutes'
  WHERE ${sig} IS NOT NULL
 ON CONFLICT (signature_id, project_id) DO UPDATE SET state = EXCLUDED.state, anchor_ids = EXCLUDED.anchor_ids, block_id = EXCLUDED.block_id,
-       epoch = EXCLUDED.epoch, computed_at = EXCLUDED.computed_at;`;
+       anchor_epoch = EXCLUDED.anchor_epoch, computed_at = EXCLUDED.computed_at;`;
 }
 
 /** The package or image name an attachment is under; none for a generic file. */

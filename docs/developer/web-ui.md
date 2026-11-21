@@ -338,7 +338,11 @@ running and stops only what it started: Quader with the sign-in provider (`serve
 
 **Add a screen.** A new route gets a line in `screens.ts` with the kinds that reach it from the navigation and the seed's
 parameters; data the screen needs goes into `seed.ts`, idempotent and through the API; a flow gets a `walk` that yields the name
-of each state to render (an empty name is the screen as it opens). `UI_RENDERS_WIDTHS=1440,1280,1024,390` adds a width, `UI_RENDERS_WORKERS` sets the browsers at a time
+of each state to render (an empty name is the screen as it opens). The seed writes some rows by SQL (`psql` of `seed.ts`, used by
+`seed.ts`, `malware.ts`, `scanners.ts` and `signatures.ts`), which no compiler and no unit test checks against the schema, so a
+migration that renames or removes a column is followed by a search of `web/e2e/renders/` for it and by a render run (on 2026-11-21
+the signatures' seed still wrote `signature_trust.epoch` after migration 00100 had renamed it, and the job `ui-layout` failed in its
+setup). `UI_RENDERS_WIDTHS=1440,1280,1024,390` adds a width, `UI_RENDERS_WORKERS` sets the browsers at a time
 (3), `UI_RENDERS_DEBUG=1` prints the time of each step, `UI_RENDERS_EDGE` names another dev server and `UI_RENDERS_POSTGRES` another PostgreSQL container for the seed's SQL ([Local UI development](#local-ui-development)). The variables do not start with `QUADER_`: Quader refuses an unknown
 `QUADER_` variable, and the backend that `make ui-renders` starts inherits the environment.
 
