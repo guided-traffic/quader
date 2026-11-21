@@ -1066,7 +1066,19 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (03:36), two builders (the fix of the download's second statement on the malware scan's branch; the stack's lock and the coordination tests' queries); collected on the branch `fixes/nightly`, its gates running, and held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case), two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165) and package B of the scanner:
+- **The nightly of 2026-11-20 (run 44828435420), read to its end:** 26 legs and the latency job green, nine legs
+  red, every one explained. The four of the platform matrix: cert-manager's CRDs on a plain cluster (the scanner's
+  landing; a commit of the type `test`). `drain-roles` and `drain-load-e`: the development profile's PostgreSQL
+  primary killed at its limit of 1 GiB (the profile, `test`). `ansible`: a race in the test (`test`). `ha-faults`: a
+  slot of the parallel-download limit not given back while Valkey is slow, a defect of the product since 2026-11-19
+  (`fix`). `ha-pooler`: F-165, a window the test counted while nobody asked, and a connect that hangs for 15 s
+  without a timeout (`fix`). Green for the first time with the scanner role: the sets of every format but Ansible's,
+  `failover`, `npm-ha`, `ha-suite`, `nuget-ha`, the three other drain variants, `cold-crash`, `backup`, `bastion`,
+  `alerts`, `upgrade`, `edge`, `vuln` with its long and pooler forms, `oci-long`, `ci-ha`, the soak. **The six commits
+  land in one push with package B of the scanner at the nightly's end** (the branch `fixes/nightly`, gates of the
+  development agent on it, each exit 0: build, the full unit run, generate-check, chart tests, lint, the UI tests and
+  lint, links and check, the tests' packages with their build tags); the legs they fix are dispatched alone after it.
+- **In work** (03:51), two builders (the malware scan's branch being rebased onto what lands before it, with its areas and renders; the stack's lock and the coordination tests' queries):
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
