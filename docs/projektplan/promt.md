@@ -366,8 +366,9 @@ records the recorder that tells such a stall apart).
   own with unit tests from lines of both runs; over the eight real logs the windows are 7.3 to 9.1 s, and 21.1 s
   for the instance with the hung connect, which stays a failure as it should); the profile's poolers get
   `server_connect_timeout` 5 (Q-HA-371; worst case of an instance 8.1 s promotion, 5 s hung connect and two retries,
-  15.1 s under the bound of 20). **Not verified:** the new setting on a cluster (the operator's webhook allows the
-  parameter, read in its source). What remains by design: an idle instance turns its next client away once,
+  15.1 s under the bound of 20). **Landed on 2026-11-21 at 03:56 and seen on a cluster** in the leg dispatched after it (run 44862237399,
+  green): the operator took the parameter, all four instances carry `server_connect_timeout 5`, the windows were 7.6
+  to 10.5 s. No connect hung in that run, so the 5 s themselves were not exercised. What remains by design: an idle instance turns its next client away once,
   however late, and Quader retries that answer.
 - **F-160 · `drain-load-e` failed its latency condition once, with every functional condition held** (nightly 44595121737 of
   2026-11-19, the code of `ad01d57e`, the last nightly before the download limits). R-HA-059: the k6 p99 from the first
@@ -610,6 +611,14 @@ records the recorder that tells such a stall apart).
   "the" lock. No developer page says which command takes the lock; the builders took it from each other's
   briefs. What two runs on one stack do to each other was not looked at; areas that fail a primary or stop
   Valkey are the ones to suspect when an area fails only beside another run.
+- **Twelve files of the integration tests start a quader process with the whole environment of the caller**
+  (`append(os.Environ(), …)`; found on 2026-11-21 by the builder who mended the lock script, which had tripped
+  over exactly that). The product refuses a variable with the prefix `QUADER_` that is no setting and reads one
+  that is, so a variable exported in a developer's shell or by a wrapper either ends every such process at start or
+  changes its configuration without a word; the names seen in the repository that would do it are
+  `QUADER_PERF_GATE`, `QUADER_IT_NO_DOCKER` and `QUADER_DEB_PROOF_DIR`. Dormant: nothing in the repository exports
+  one around those tests today, and CI sets none. The tests should start their processes with the variables they
+  name; not fixed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -1086,8 +1095,13 @@ runs are in `git log`; this section holds the current state.
   the UI profile). **Its pipeline (run 44858533514) ended green on every job at 04:39:** the three integration
   shards, `UI layout checks`, the source tree's malware scan, and the legs `e2e (ansible)` (the changed limits case's
   first run on a cluster), `oci`, `vuln`, `npm`, `push`, `ci` and `access-long`. **The legs the fixes are for were
-  dispatched alone at 04:39** (run 44862237399: the platform matrix, `drain-roles`, `drain-load-e`, `ha-faults`,
-  `ha-pooler`). **The owner's installation** shows the upgrade to the new chart refused by the chart's schema, as
+  dispatched alone at 04:39 and all ended green at 06:04** (run 44862237399: the four of the platform matrix,
+  `drain-roles`, `drain-load-e`, `ha-faults`, `ha-pooler`; each ran its steps, none was skipped). In `ha-pooler`
+  every instance of both poolers shows `server_connect_timeout 5` in its configuration, and after the switchover
+  the four instances were without a server for 7.6, 8.1, 8.9 and 10.5 s against the bound of 20 s; two of them
+  turned one or two clients away later, which the test names and does not count (Q-HA-370). One green run each:
+  it shows the fixes do what they were built for, not that the latency of `drain-load-e` (F-160) or a hung
+  connect (F-165) cannot return. **The owner's installation** shows the upgrade to the new chart refused by the chart's schema, as
   foreseen, and keeps serving the release before the scanner role; it waits for the change of its values that was
   given to the owner.
 - **The malware scan on its landing branch, 04:17:** `feat/malware` is `main` with the stack's lock fix and the eleven
@@ -1106,9 +1120,12 @@ runs are in `git log`; this section holds the current state.
   taken off the landing branch** and mended on a branch of its own (a builder, since 04:41; it lands by itself when
   it has run the process-starting areas); the landing branch is `main` and the eleven commits, its tree the builder's
   rebased tip. **The run of every area started again at 04:41**, with the lock taken by hand and nothing else on the
-  stack. It lands when that run is green.
-- **The stack's lock and the coordination tests (one commit of the type `test`, being mended, see the malware scan's
-  entry above for what it broke):**
+  stack, **and ended green at 06:10: all 67 packages that hold tests passed in one run, none run again**, the areas
+  `coordination`, `backup`, `bastion`, `bastionreg`, `querybudget`, `malware` and `files` among them, each of which
+  had failed in an earlier run of that night for a reason outside the feature. The feature lands on that.
+- **The stack's lock and the coordination tests (one commit of the type `test` on the branch `fix/it-lock`, mended
+  at 04:44, see the malware scan's entry above for what it broke; it lands by itself after the malware scan, when
+  its builder has run the four areas through it):**
   `test/integration/locked.sh` runs a command under the stack's lock from the main checkout or a worktree, loads the
   stack's environment, never removes the lock file, waits without a timeout and holds the lock as long as the test
   binaries live; the developer page names the commands. **What `lockf` had really done, shown on scratch files, and it
@@ -1120,8 +1137,14 @@ runs are in `git log`; this section holds the current state.
   twice at once without the lock fails the lease tests on the old code in both runs and passes them with the fix;
   `TestJobs` (100 coalesced enqueues) failed in both of those double runs with a database timeout and passes under
   the lock, the finding of section 8 seen again. Not verified: the script's path with `flock` on Linux; the changed
-  end-to-end queries on a cluster.
-- **In work** (04:41), one builder (the lock script's variable); the development agent's integration run on the landing branch; the dispatched legs of the nightly's fixes (run 44862237399):
+  end-to-end queries on a cluster. **The mend:** the script's two variables are `QUADER_TEST_LOCK_HELD` and
+  `QUADER_TEST_STACK_ROOT`. The prefix `QUADER_TEST_` is the one the check of the environment lets through for the
+  integration suite (`reservedEnv` in `internal/config/load.go`), and the Bastion runs the same check. Shown
+  without the stack: a binary built from the branch ends under the first script with "unknown environment
+  variable", and under the mended one `admin config validate` passes and the Bastion gets past its check of the
+  environment. **Not run yet:** the areas `bastionreg`, `backup`, `bastion` and `coordination` through the script;
+  the stack was held by the landing branch's run until then.
+- **In work** (06:10), one builder (the lock script's four areas on the stack); the development agent lands the malware scan from its branch:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1966,7 +1989,7 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)
 
-- **F-165** one instance of a pooler without a server after a switchover (33.7 s on 2026-11-20, 69.4 s on 2026-11-21): cause known since 2026-11-21, a fix waits to land (section 8).
+- **F-165** one instance of a pooler without a server after a switchover (33.7 s on 2026-11-20, 69.4 s on 2026-11-21): cause known and fixed on 2026-11-21, `ha-pooler` green once with the fix; why the one connect hung is not known (section 8).
 - **`TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`** red once by timing (Test and Release 44632375471,
   `integration (shard c)`: "the build after the change left the suite current", while the log shows the build failing with
   `member_unverified` in the second the replica shut down; no limit in it, first record of it). **Again** in Test and
