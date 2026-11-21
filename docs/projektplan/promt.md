@@ -1276,10 +1276,12 @@ runs are in `git log`; this section holds the current state.
   every builder's brief from now on:** a builder stops its own processes by process ID or by a pattern that
   holds its worktree's path, never by a pattern that can match the main checkout. **The pipeline of the 09:05
   landing (run 44883240572) ended green on every job at 09:55.**
-- **Planner in work** (beside the builders below): **the image analyser's move into the scanner unit and out of
-  the common image** (decided on 2026-11-21, "With the owner"; its specification with the measurements named
-  there, since 11:21); its packages are built after the ClamAV change is on `main`, because both change the chart
-  and the scanner role. **The planner of the ClamAV endpoint's client certificates (11:20 to 11:39) is done:**
+- **The planner of the image analyser's move into the scanner unit and out of the common image (11:21 to 12:06)
+  is done:** its specification is on `main` since 12:07 ("With the owner" holds what it says and what was
+  measured; rebased, its two gaps renumbered behind those of the client certificates, links and check exit 0,
+  the count test at 1,110 requirements); its three packages are built after the ClamAV change is on `main`,
+  because both change the chart and the scanner role. The chart's builder of the ClamAV change had taken a
+  decision number the planner took too; the chart's is Q-HA-384 on its branch now. **The planner of the ClamAV endpoint's client certificates (11:20 to 11:39) is done:**
   its amendment is on `main` since 11:40 (rebased, links and check exit 0, the count test at 1,107
   requirements; "With the owner" holds what it says), its worktree and branch are removed; its one package is
   built after the ClamAV change's packages 1 to 4.
@@ -1314,7 +1316,7 @@ runs are in `git log`; this section holds the current state.
   `server.scan_clients`, the environment `QUADER_PROCESS_SCANNER_KIND=freshclam` and no spool size on the
   updater; it does not set `malware.updater.directory` and relies on the binary's default `/var/lib/clamav`;
   the marker `.quader-seeded` and the version file `.quader-tool-version` in that directory. **Decided by the
-  builder (Q-HA-378):** the shape of `privateMirror` and `proxy` is checked so that no value adds a line to
+  builder (Q-HA-384, renumbered before the landing):** the shape of `privateMirror` and `proxy` is checked so that no value adds a line to
   `freshclam.conf` or puts a credential into a ConfigMap, and a mirror on `clamav.net` itself is refused; a
   replica count of zero fails also during a restore. **Its gates, each exit 0:** the chart's lint, the full unit
   run, links and check, the complexity check; **the chart's tests exit 2 on three tests** that hand the rendered
@@ -2154,6 +2156,41 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   the legs whose tests need them, so that every other leg loads the small image alone (read in the profile: today
   every end-to-end leg starts the scanner pods). **Not verified:** the copy as non-root in a pod; the time of pull
   and copy at a pod's start; a rate limit of the registry on the owner's nodes.
+  **Specified on `main` since 2026-11-21, 12:07** (R-VULN-048, R-VULN-049, R-HA-070, Q-VULN-196 to Q-VULN-206,
+  Q-HA-378 to Q-HA-383, Q-ARCH-563, Q-ARCH-564, Q-OPS-225, ADR-229, H-1181, H-1182). The unit does both steps:
+  for the detection the worker sends the stored analysis and names the database and the analyser's version, with
+  no token, because the call reads nothing from Quader and the link admits the worker alone; the worker runs no
+  tool and decodes the report in Go under limits. The analysis is kept as the scanner answered it after a bounded
+  check, so the rewrite, its fidelity test and H-1038 go when this is built. Each scanner pod holds the database
+  read-only: a second container of the kind `trivy-db` reads it through a route of the scan listener with the
+  pod's certificate into a volume that the scanner's container mounts read-only, as it does the analyser's
+  binary; the scanner's process is not dumpable. After a new database the images that were never detected go
+  first, and while the scanners load it the run waits 30 seconds. One analysis per digest; a scanner of another
+  analyser version refuses a stored one and the worker analyses again. One pin by digest replaces the version
+  and the four archive digests, the chart's image is held equal by a chart test, an update of the digest merges
+  and a new version is opened for review. The role `all` builds no image scanner; the test profiles run the
+  image scanning in `vuln` and the platform matrix alone. **Measured once on the development machine** (arm64,
+  the pinned analyser image): a detection of 17 to 892 components takes 0.06 to 0.30 s at 110 to 230 MB, the
+  worker's decoding 0.1 to 32 ms; the database is 142,567,123 bytes and unpacks to 1,807,314,944 in 7 s; the
+  analyser's image is 58.5 MB compressed (63.4 MB on amd64), its binary 163 MB; the copy as user 65532 on a
+  read-only root file system without capabilities works and runs from a read-only mount. **Estimated, not
+  measured:** with two scanner pods a new database is through 1,000 small images in about 1.3 minutes and
+  through 10,000 with about 1,000 advisories each in about 80 minutes; a pod loads a database in 10 to 30 s;
+  most kind legs gain 5 to 10 s. **Three packages, all after the ClamAV change is on `main`:** the detection in
+  the scanner with the loader, the migration and the chart's second container; the database per scanner pod on
+  the System page and the advisory sources, beside the first on its API; the analyser out of the images after
+  the first is released (the image build, the pins, the workflows, the chart's init container, the development
+  profiles). **His installation needs no change of values;** it will pull the analyser's image of its own on
+  every node that starts a scanner pod, and each scanner pod reads 142.6 MB per new database and holds about
+  1.7 GiB of it, 3.4 GiB while the next unpacks (his nodes' disks were not looked at). **A point the planner
+  put to him, decided meanwhile by the development agent (H-1181):** a scanner pod whose own process is taken
+  over can answer false detections for every image it serves until the pod restarts, so findings would resolve
+  and blocks of the triage would lift. Options: (a) accept it and take it into the security pass before BETA;
+  (b) repeat a sample of the detections on a second pod; (c) restart the scanner pods regularly. Built with (a):
+  the read-only database and binary and the process that is not dumpable close the cheap ways in, (b) costs
+  scanner capacity on every database, and (c) bounds the time without closing the way. **Not verified:** the
+  copy in a real pod; any load through the scan listener; anything on amd64; the hardening of the process (a
+  unit test on Linux is specified).
 
 **Decided by the owner on 2026-11-20, in work or waiting to be built**
 
