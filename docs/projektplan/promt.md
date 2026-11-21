@@ -559,6 +559,9 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- A ClamAV inside the cluster that names the definitions' endpoint by a host the endpoint does not accept gets 421, which
+  `freshclam` counts as a failed attempt without a cool-down; the client setup does not say which host to use from inside the
+  cluster (found on 2026-11-21 by the builder of the ClamAV import's measurement, left).
 - The German text of **Well-known registries** spells the plural "Registries" where the glossary says "Registrys" (found on
   2026-11-21 by the builder of the presets, left).
 - The hint under **Upstream URL** still says "Choose a well-known registry or enter the address of another" when the form
@@ -1343,7 +1346,10 @@ runs are in `git log`; this section holds the current state.
   change of the chart; the owner's UI backend started with both from the main checkout before the push and
   answers ready (both schema steps applied). **Sent back once:** the signatures' commit put one function of
   the kit one over the complexity threshold; its builder moved two cases into a helper (two minutes). Both
-  worktrees and branches are removed. **Their release was cut at 13:26** by the run of the correcting push (the entry above this one); the image, the chart and the owner's installation are being followed. **Decided by the presets' builder, for the owner's
+  worktrees and branches are removed. **Their release was cut at 13:26** by the run of the correcting push (the entry above this one), image and chart
+  were published at 13:32, and **the owner's installation runs it since 13:34** (read on the cluster at 13:45:
+  five Deployments with two ready pods each on the new image, no restart, the schema job complete, the ingress
+  answers, no error line of `api` or the worker). **Decided by the presets' builder, for the owner's
   walkthrough:** a preset holds format, name, address and further hosts and any other member is refused
   (Q-REPO-417); nothing follows a preset and the server fills in no hosts (Q-REPO-418); who may write and read
   the list, and that whoever may create a remote in a project reads that format's presets (Q-REPO-419); the
@@ -1465,6 +1471,51 @@ runs are in `git log`; this section holds the current state.
   section **Updater** with the updater's replicas; and, as briefed, what the client certificates add. **Not
   verified:** the German texts in a browser; the switch against a real updater; the lowered level against a
   server that allows no public level.
+  **The builder of the updater's process and the import (package 2) reported at 13:43** with one commit on the
+  landing branch. **What runs where:** the updater pod's `freshclam` fetches ClamAV's whole signed files; its
+  `quader` container (role `scanner`, kind `freshclam`, no secret of the installation) copies the set in use
+  from the scan listener into the shared directory at its start, lists and serves the directory to the worker
+  over mutual TLS, reports itself as a scanner replica and exports the age of its newest `daily`; readiness
+  check, log field and replica rows carry the unit's name. The worker's import (every 30 minutes and once at a
+  worker's start) fetches only what `upstream/clamav` does not hold, checks each container's checksum against
+  its header and the header's signature against ClamAV's public key, checks every new file of a set before it
+  commits any, records the set and marks it in use in one transaction; the cleanup leaves files only to the
+  set in use and the one before it, and the history rows go after the rescan cycle. **The legacy signature**
+  was read in ClamAV's source (release 1.5.5) and built with big integers; it verifies the three real
+  containers that lay on the machine, and a changed signature character fails. **Configuration:** new are the
+  database's source (`updater`, the default, or `repository`) and the updater's address, names and directory;
+  gone without an alias are the four keys of the old container; the malware settings of the API name the
+  source. **Decided by the builder:** a put-back keeps the refused version until the next set (Q-MAL-102);
+  every new file of a set is checked before any is stored (Q-MAL-103); the updater's report carries its
+  `daily`'s build time and no slots (Q-OPS-226). **Its gates, each exit 0:** build, the full unit run,
+  generate-check, the lint, the complexity check, links and check, the chart's lint and tests (the three that
+  had waited for the binary pass), the UI tests and lint, the integration area `upstream`; in the area
+  `malware` one test still asserted the old field, was corrected and passed alone, and the whole area runs
+  again at the assembly. **Its tests cost** about 1 s more in the unit job and about 3 s in the area `malware`.
+  **Measured once on a kind cluster of its own, with ClamAV's real files** (recorded on the format's developer
+  page; cluster and image removed afterwards): the updater is ready 5 s after its start; `freshclam` fetched
+  about 113 MB from ClamAV's network in 4 s, the detached signature files among them; the import took six
+  files, all three containers verified by ClamAV's signature, and marked them in use; both malware scanners
+  loaded the set; after a restart the updater seeded the six files from Quader in 0.5 s and `freshclam` fetched
+  nothing from ClamAV; the list of scanners shows the updater with its tool's version and the set. **A stock
+  `freshclam` with `PrivateMirror` at Quader's endpoint, the switch on at the level public:** per database it
+  asked for the `.cld` (404), the `.cvd` with a range (206), the `.cvd` (200) and the signature file (200) and
+  ended with exit 0 after 7 s; its second run asked for the `.cld` (404) and the `.cvd` with a range and the
+  date (206), said up to date and ended with exit 0. That is the recorded measurement with a real client that
+  was owed. **Not measured:** a token in the client's URL; the plain download; a new `daily` arriving while
+  the updater runs. **Not verified:** the 503 at a request limit and an external user's 404 in an integration
+  case; the database's write of the switch's journal part after a restore. **Found by it:** on a fresh
+  installation the worker's first run came three seconds before `freshclam` had finished, and the next run
+  would have been up to half an hour later; decided by the development agent for the owner's walkthrough and
+  built at the assembly: while no set is in use the import asks again every 30 seconds. Inside a cluster a
+  ClamAV must name one of the endpoint's accepted hosts, another name answers 421, which `freshclam` counts as
+  a failed attempt (section 8).
+  **The assembly is in work since 13:44** by package 2's builder: the three commits of the Go side and the
+  chart onto today's `main` (the migrations renumbered behind those of the presets and the signatures, the
+  decision of package 1 renumbered, the format's declaration of signatures for the contract's version 8 with
+  its row in the signatures' table, the copy of the values file equal to the chart's again, the 30 seconds
+  above), every gate on the tip and the whole area `malware`. The screens' builder puts its commit onto that
+  tip afterwards, and the change lands as one push of four commits.
 - **Landed on 2026-11-21 at 10:47: a system repository is set apart wherever it is shown** (R-UI-193, Q-UI-898 to
   Q-UI-902): the badge **System** in the admin list and in the search, no address, download or command that would
   answer 404 (the admin list, the file page with one sentence in the address's place, a folder's rows, an opened
