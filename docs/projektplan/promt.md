@@ -1422,8 +1422,15 @@ runs are in `git log`; this section holds the current state.
   his cluster before the landing** (what the specification had left open): the three nodes that carry
   workloads have about 222 GiB of allocatable ephemeral storage each, so two scanner pods with up to 3.4 GiB
   of database each fit. The owner's UI backend started with it before the push (the schema step applied). **Released at 19:13** by the run of the unit job's repair (the entry above; the job `unit tests` of its own run had
-  gone red at 18:48 and held the release back); the image, the chart and the owner's installation are being
-  followed. **Not verified:** a detection against the real database in a pod; the worker's transaction that applies a
+  gone red at 18:48 and held the release back), image and chart were published at 19:20, and **the owner's
+  installation runs it since 19:23.** Read on the cluster at 19:24: every Deployment ready, no restart, no
+  error line; each scanner pod with its two containers. **Seen there, which the builder could not verify:** the
+  loader of each pod took the real database through the scan listener (1,807,315,087 bytes in 8.1 s, after
+  five warnings five seconds apart while `packages` was still rolling) and, two minutes later, the next one
+  (1,809,780,879 bytes in 7.6 s), within its memory limit of 256 MiB and without a restart. **Not seen in the
+  pipeline:** the end-to-end leg `vuln` on this change; its own run was stopped by the push of the unit job's
+  repair before the leg ended, and that push's run did not start the leg (its change was the Makefile). The
+  leg runs with the next change of the image scanning (package 3 of the move). **Not verified:** a detection against the real database in a pod; the worker's transaction that applies a
   detection; amd64; the migration's removal on a table that holds rows (the integration stack's are empty).
   **Left for package 3 of the move:** the analyser from its own image through an init container and out of
   the release image, the pin, the workflows, the development profiles; **package 2,** the database per
