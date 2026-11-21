@@ -1390,6 +1390,20 @@ runs are in `git log`; this section holds the current state.
   developer page): the verdicts that let a local npm bundle be served, the counter of requests to remotes, the
   configuration of the fetch and the repository member that switches it off. Its worktree and branch are
   removed.
+- **The pipeline of the signatures' second package (run 44926599027) ended at 18:31 with one red job,
+  `integration (shard b)`, which holds no release back; its repair is in work since 18:32.** The area
+  `postgres` holds the schema's conventions, among them that every counter column named as a revision, an
+  epoch or a version is in the registry of revision columns; the package's migration added two such columns
+  unregistered (the epoch a trust row was computed under, and the version of the update repository's snapshot
+  a shipped root came from), and its builder had run nine areas, not that one. One builder decides for each
+  whether it is a revision in the rule's sense (then it is registered) or not (then it gets a name the rule
+  does not claim), runs the whole area, and writes onto the database's developer page that a migration runs
+  this area. The two builders in work that add migrations were told. Every other job of the run was green,
+  the end-to-end legs among them. **For every builder's brief from now on:** a migration runs the integration
+  areas `postgres` and, for a table with a key to repositories, `upstream`. **A third such case today** (the
+  purge test, the formats' client list, now this): each time a test that holds a list or a convention sat in
+  an area the builder had no reason to run; the briefs name the three now, and section 12 gets the question
+  whether such checks can run without the stack, in the unit job.
 - **In work since 17:37, three builders on `main` with the signatures' package 2** (with package 1 of the analyser's
   move that makes four): **package 4 of the signatures' first stage, the screens** (the badge and the details at a
   version, a file and an image with the origin of an upload, the settings page of the signatures with the anchors,
@@ -3192,6 +3206,17 @@ the walk items and the run record); what the code holds beyond the plan has not 
   ("3 findings · / 0 fixable" at 1,024 px is one), text cut at the start of a wrapped line, a stacked label off its control,
   two words for one thing across screens.
 
+- **The integration shards are close to their limit of 45 minutes** (read from three runs of 2026-11-21 between 16:20 and
+  18:31): shard a 37.0 to 39.3, shard b 39.5 to 41.0, shard c 37.8 to 42.2 minutes, and the packages in work add about a
+  minute more. This is the lever the owner has before him in "With the owner" (a fourth shard, or the formats' repeated
+  integration tests into the kit). Until he decides: when a shard is stopped by its limit or passes 43.5 minutes, the
+  development agent cuts a fourth shard by the Makefile's rule, because a higher limit would hide the growth and a
+  stopped shard is a red job without a finding; it is told to him with the minutes it costs.
+- **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, three red jobs in one
+  day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
+  revision columns (area `postgres`). Each failed in the pipeline after a landing whose builder had run other areas.
+  To look at: which of them can be decided from the migrations' text or the catalog without a database, in the unit
+  job that every builder and the landing run anyway; until then the builders' briefs name the three areas.
 ### B · The download limits (W-26) and a probe starts the download (W-25)
 
 - **A CI token on the request path** is not tested anywhere above the unit test of its subject: the integration stack has no
