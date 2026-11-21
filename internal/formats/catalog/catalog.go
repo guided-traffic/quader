@@ -140,6 +140,12 @@ type Facts struct {
 	// files (R-AUTHZ-034): npm and NuGet serve a README. A repository of such a format has a wiki level worth setting; the kit
 	// holds the format to the wiki rules with check 15 (R-ARCH-010), and a format without wiki content declares no Wiki route.
 	Wiki bool
+	// SystemOnly is true for a format whose only repository is one the product declares in the project upstream (ClamAV's
+	// definitions, formats/clamav.md R-CLAMAV-001, ADR-225): no caller creates a repository of it (422 format_system_only at
+	// /format), GET /api/v1/formats lists it with systemOnly true so that no creation form offers it, and the per-class enums of
+	// the create schemas leave it out. Register refuses it with the class remote or virtual; formats.Validate refuses it with a
+	// route of the kind Upload.
+	SystemOnly bool
 	// PatternSubject is what include and exclude patterns match.
 	PatternSubject PatternSubject
 	// PackageNames is true for a format whose content has package names:
@@ -393,8 +399,8 @@ func ReservedPresetIDs() []string {
 	return []string{
 		"batch-create", "batch-update", "batch-get", "batch-delete", "quick-setup", // R-REPO-002
 		"switch-on-all", "set-visibility", // R-REPO-073
-		"scanner-trivy",  // R-REPO-070
-		"scanner-clamav", // R-REPO-075
+		"scanner-trivy", // R-REPO-070
+		"clamav",        // R-REPO-075
 	}
 }
 
@@ -462,6 +468,8 @@ func check(e Entry) error {
 		return fmt.Errorf("%q exposes versions and has no versioning", e.ID)
 	case !e.Exposure.Exposable && (e.Exposure.Packages || e.Exposure.Versions || e.Exposure.Tags):
 		return fmt.Errorf("%q narrows exposure dimensions and is not exposable", e.ID)
+	case e.SystemOnly && (e.Supports(Remote) || e.Supports(Virtual)):
+		return fmt.Errorf("%q is system only and declares the class remote or virtual: only the product writes its repository (R-CLAMAV-001)", e.ID)
 	}
 	if err := checkPresets(e.Facts); err != nil {
 		return err

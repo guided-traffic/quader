@@ -49,15 +49,15 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 			t.Errorf("levels %s", lv)
 		}
 	})
-	t.Run("R-REPO-075 Q-REPO-410 Q-REPO-411 scanner-clamav is a local generic repository, private, with nothing of a remote", func(t *testing.T) {
-		row := f.e.Text(`SELECT r.class || '/' || r.format || '/' || r.visibility_artifacts || '/' || r.visibility_wiki || '/' || u.kind
-		                 FROM repositories r JOIN upstream_repository u ON u.repository_id = r.id WHERE r.id = $1`, f.id("scanner-clamav"))
-		if row != "local/generic/private/private/system" {
-			t.Fatalf("scanner-clamav %s", row)
+	t.Run("R-REPO-075 Q-REPO-411 Q-REPO-413 clamav is a local repository of the format clamav, private, its clients off", func(t *testing.T) {
+		row := f.e.Text(`SELECT r.class || '/' || r.format || '/' || r.visibility_artifacts || '/' || r.visibility_wiki || '/' || u.kind || '/' || u.clients_enabled
+		                 FROM repositories r JOIN upstream_repository u ON u.repository_id = r.id WHERE r.id = $1`, f.id("clamav"))
+		if row != "local/clamav/private/private/system/false" {
+			t.Fatalf("clamav %s", row)
 		}
-		if f.config("scanner-clamav", "{disabled}") != "false" || f.config("scanner-clamav", "{remote}") != "<none>" ||
-			f.config("scanner-clamav", "{malware}") != "<none>" || f.config("scanner-clamav", "{description}") != "Malware scan database" {
-			t.Fatalf("scanner-clamav: %s", f.e.Text("SELECT config::text FROM repositories WHERE id = $1", f.id("scanner-clamav")))
+		if f.config("clamav", "{disabled}") != "false" || f.config("clamav", "{remote}") != "<none>" ||
+			f.config("clamav", "{malware}") != "<none>" || f.config("clamav", "{description}") != "ClamAV definitions" {
+			t.Fatalf("clamav: %s", f.e.Text("SELECT config::text FROM repositories WHERE id = $1", f.id("clamav")))
 		}
 	})
 	t.Run("Q-REPO-379 the Debian and Ubuntu presets carry their archive keys", func(t *testing.T) {

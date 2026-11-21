@@ -149,8 +149,11 @@ const (
 	CodeUnknownPrincipal             = "unknown_principal"
 	CodeUnknownRepository            = "unknown_repository"
 	CodeUnknownFormat                = "unknown_format"
-	CodeDuplicatePrincipal           = "duplicate_principal"
-	CodeVirtualActionNotApplicable   = "virtual_action_not_applicable"
+	// CodeFormatSystemOnly is the field code at /format of a create of a repository of a system-only format (ClamAV's definitions,
+	// formats/clamav.md R-CLAMAV-001): only the product declares its repository.
+	CodeFormatSystemOnly           = "format_system_only"
+	CodeDuplicatePrincipal         = "duplicate_principal"
+	CodeVirtualActionNotApplicable = "virtual_action_not_applicable"
 )
 
 // CodeRoleBindingManagedByConfiguration refuses to remove a role binding that
@@ -930,6 +933,7 @@ var registry = []CodeInfo{
 	{CodeInvalidDocument, Invalid, "Invalid document", "The configuration document is not valid JSON of the expected shape, or it names a member that does not exist."},
 	{CodeNotApplicable, Invalid, "Not applicable", "The setting does not apply to the repository's class or format."},
 	{CodeUnknownFormat, Invalid, "Unknown format", "The format is not in the format catalog; GET /api/v1/formats lists the formats."},
+	{CodeFormatSystemOnly, Invalid, "Format is system only", "The format has one repository, which Quader declares in the project upstream (systemOnly in GET /api/v1/formats); no repository of it is created."},
 	{CodeUnsupportedClass, Invalid, "Unsupported class", "The class is unknown, or the format does not support it."},
 	{CodeUnsupportedLayout, Invalid, "Unsupported layout", "A repository has the one layout of its format; it cannot be set to another."},
 	{CodeBatchTooLarge, Invalid, "Batch too large", "A batch operation names more repositories than repositories.batch_limit."},

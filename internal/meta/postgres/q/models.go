@@ -441,6 +441,22 @@ type CiTokenIssuance struct {
 	UserAgent      pgtype.Text
 }
 
+type ClamavVersion struct {
+	VersionID      int64
+	Db             string
+	Version        int32
+	File           pgtype.Text
+	BuiltAt        pgtype.Timestamptz
+	Metadata       json.RawMessage
+	SignName       pgtype.Text
+	SignSize       pgtype.Int8
+	SignSignatures pgtype.Int4
+	InUse          bool
+	Previous       bool
+	StoredAt       time.Time
+	FilesRemovedAt pgtype.Timestamptz
+}
+
 type CliLogin struct {
 	ID                 pgtype.UUID
 	PublicIDSha256     []byte
@@ -1459,6 +1475,7 @@ type UpstreamRepository struct {
 	RetiredAt         pgtype.Timestamptz
 	AddressOverridden bool
 	AccountRemovedAt  pgtype.Timestamptz
+	ClientsEnabled    bool
 }
 
 type UsageBucket struct {

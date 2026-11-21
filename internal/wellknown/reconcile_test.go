@@ -54,7 +54,7 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 
 	t.Run("R-REPO-067 step 1 an empty project gets one create per declaration, in catalog order: a preset internal, the system repositories private (Q-REPO-388)", func(t *testing.T) {
 		steps := plan(t, decls, nil)
-		if len(steps) != 14 || steps[0].Op != wellknown.OpCreate || steps[len(steps)-1].Key != "scanner-clamav" {
+		if len(steps) != 14 || steps[0].Op != wellknown.OpCreate || steps[len(steps)-1].Key != "clamav" {
 			t.Fatalf("steps = %v", stepsOf(steps))
 		}
 		for _, s := range steps {
@@ -155,17 +155,29 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 			t.Fatalf("err %v, calls %v", err, rec.calls)
 		}
 	})
-	t.Run("Q-REPO-411 step 6 scanner-clamav stored as a remote repository writes nothing and names its class", func(t *testing.T) {
-		stored := with("scanner-clamav", func(s *wellknown.Stored) { s.Class = catalog.Remote })
+	t.Run("Q-REPO-411 step 6 clamav stored as a remote repository writes nothing and names its class", func(t *testing.T) {
+		stored := with("clamav", func(s *wellknown.Stored) { s.Class = catalog.Remote })
 		_, err := wellknown.Plan(decls, stored)
-		if err == nil || !strings.Contains(err.Error(), "upstream/scanner-clamav as a system local repository") {
+		if err == nil || !strings.Contains(err.Error(), "upstream/clamav as a system local repository") {
 			t.Fatalf("err = %v", err)
 		}
 	})
-	t.Run("R-REPO-075 scanner-clamav has no address to write back: the stored one is empty as the declaration's", func(t *testing.T) {
-		stored := with("scanner-clamav", func(s *wellknown.Stored) { s.Address = wellknown.Address{} })
+	t.Run("R-REPO-075 clamav has no address to write back: the stored one is empty as the declaration's", func(t *testing.T) {
+		stored := with("clamav", func(s *wellknown.Stored) { s.Address = wellknown.Address{} })
 		if steps := plan(t, decls, stored); len(steps) != 0 {
 			t.Fatalf("steps = %v", stepsOf(steps))
+		}
+	})
+	t.Run("Q-REPO-414 the level of clamav while its clients are on is the administrator's: the reconcile writes nothing back", func(t *testing.T) {
+		for _, private := range []bool{true, false} {
+			stored := with("clamav", func(s *wellknown.Stored) { s.Fixed.Private = private })
+			if steps := plan(t, decls, stored); len(steps) != 0 {
+				t.Fatalf("private %v: steps = %v", private, stepsOf(steps))
+			}
+		}
+		stored := with("scanner-trivy", func(s *wellknown.Stored) { s.Fixed.Private = false })
+		if steps := plan(t, decls, stored); len(steps) != 1 || !steps[0].Write.Fixed {
+			t.Fatalf("scanner-trivy's fixed level is not written back: %v", stepsOf(steps))
 		}
 	})
 	t.Run("R-REPO-067 Reconcile applies the plan through the store and stops at its first error", func(t *testing.T) {

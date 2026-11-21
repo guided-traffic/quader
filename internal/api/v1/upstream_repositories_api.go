@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
@@ -11,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/wellknown"
 )
@@ -29,9 +31,9 @@ type UpstreamServices struct {
 	// ScannerTrivyInUse is the image scanning's answer for scanner-trivy; nil reads as not in use. The scanning's package of the
 	// analyser's database supplies it (vulnerability-scanning.md R-VULN-044).
 	ScannerTrivyInUse ScannerInUse
-	// ScannerClamavInUse is the malware scanning's answer for scanner-clamav: the scanning is on and malware.database.repository
-	// names it (malware-scanning.md R-MAL-011); nil reads as not in use.
-	ScannerClamavInUse ScannerInUse
+	// ClamavInUse is the malware scanning's answer for clamav: the scanning is on and malware.database.repository names it
+	// (malware-scanning.md R-MAL-011); nil reads as not in use.
+	ClamavInUse ScannerInUse
 }
 
 // inUse answers the use of a system repository by its key.
@@ -40,18 +42,19 @@ func (u UpstreamServices) inUse(key string) bool {
 	switch key {
 	case wellknown.ScannerTrivyKey:
 		f = u.ScannerTrivyInUse
-	case wellknown.ScannerClamavKey:
-		f = u.ScannerClamavInUse
+	case wellknown.ClamavKey:
+		f = u.ClamavInUse
 	}
 	return f != nil && f()
 }
 
 // upstreamServes reports whether a repository serves in the sense of Q-AUTHZ-305: a repository of the built-in project upstream that
-// is switched on, not being deleted and no system repository; a repository of any other project always passes. A caller without
+// is switched on, not being deleted and not closed to clients (a system repository, unless its clients are switched on: upstream/clamav,
+// R-REPO-075); a repository of any other project always passes. A caller without
 // repositories:read-config sees the project upstream (readsUpstream) and lists and is suggested its repositories (Q-AUTHZ-306) only
 // through such a one, so a preset that is internal and off (Q-REPO-388) shows nobody anything until it is switched on.
 func upstreamServes(r repository.Repository) bool {
-	return !wellknown.IsProject(r.Name.Project) || (!r.Disabled && r.Lifecycle != repository.Deleting && !r.Upstream.System())
+	return !wellknown.IsProject(r.Name.Project) || (!r.Disabled && r.Lifecycle != repository.Deleting && !r.Upstream.Closed())
 }
 
 // upstreamCaller is the caller of a write: the actor, the administrator's choice of a restricted level (R-AUTHZ-037), and the
@@ -66,8 +69,9 @@ func (s *Server) upstreamCaller(r *http.Request) (repository.Caller, error) {
 	return c, nil
 }
 
-// toUpstream renders an item; inUse is answered for a system repository from the replica's configuration.
-func (s *Server) toUpstream(it repository.UpstreamItem) gen.UpstreamRepository {
+// toUpstream renders an item; inUse is answered for a system repository from the replica's configuration, and the address of the
+// clients of upstream/clamav is the protocol base on the base URL of the request (Q-API-382).
+func (s *Server) toUpstream(r *http.Request, it repository.UpstreamItem) gen.UpstreamRepository {
 	out := gen.UpstreamRepository{
 		Key: it.Key, Name: wellknown.ProjectKey + "/" + it.Key, Format: it.Format, Kind: gen.UpstreamRepositoryKind(it.Kind),
 		DisplayName: it.DisplayName, Visibility: gen.VisibilityLevel(it.Visibility), Fixed: make([]gen.UpstreamRepositoryFixed, 0, len(it.Fixed)),
@@ -86,6 +90,9 @@ func (s *Server) toUpstream(it repository.UpstreamItem) gen.UpstreamRepository {
 	}
 	for _, f := range it.Fixed {
 		out.Fixed = append(out.Fixed, gen.UpstreamRepositoryFixed(f))
+	}
+	if it.Clients != nil {
+		out.Clients = &gen.UpstreamRepositoryClients{Enabled: it.Clients.Enabled, Address: clientsAddress(r, it.Format, it.Key)}
 	}
 	if it.ListedByNames != nil {
 		names := it.ListedByNames
@@ -145,10 +152,21 @@ func genSecret(f *repository.SecretField) *gen.SecretField {
 	return &out
 }
 
+// clientsAddress is the address a ClamAV installation names in PrivateMirror: the format's protocol base of the repository on the
+// base URL of the request, without its trailing slash (R-CLAMAV-006).
+func clientsAddress(r *http.Request, format, key string) string {
+	base := strings.TrimSuffix(httpserver.InfoFrom(r.Context()).BaseURL, "/")
+	tmpl := "/api/" + format + "/{project}/{key}/"
+	if f, ok := formats.Lookup(format); ok {
+		tmpl = f.Descriptor().ProtocolBasePath
+	}
+	return base + strings.TrimSuffix(qname.ProtocolBase(tmpl, qname.Repo{Project: wellknown.ProjectKey, Key: key}), "/")
+}
+
 // writeUpstream answers an item with its ETag.
 func (s *Server) writeUpstream(w http.ResponseWriter, r *http.Request, it repository.UpstreamItem) {
 	SetETag(w, it.ConfigVersion, "")
-	writeJSON(w, r, http.StatusOK, s.toUpstream(it))
+	writeJSON(w, r, http.StatusOK, s.toUpstream(r, it))
 }
 
 // ListUpstreamRepositories implements GET /api/v1/upstream-repositories.
@@ -164,7 +182,7 @@ func (s *Server) ListUpstreamRepositories(w http.ResponseWriter, r *http.Request
 	}
 	out := gen.UpstreamRepositoryList{Items: make([]gen.UpstreamRepository, 0, len(items))}
 	for _, it := range items {
-		out.Items = append(out.Items, s.toUpstream(it))
+		out.Items = append(out.Items, s.toUpstream(r, it))
 	}
 	writeJSON(w, r, http.StatusOK, out)
 }
@@ -256,6 +274,39 @@ func (s *Server) SetUpstreamRepositoryVisibility(w http.ResponseWriter, r *http.
 	s.writeUpstream(w, r, it)
 }
 
+// SetUpstreamRepositoryClients implements PUT /api/v1/upstream-repositories/{key}/clients: the switch "ClamAV definition updates"
+// (R-REPO-075, Q-API-382). Switching on widens, so the caller's gate asks for a recent sign-in inside the write.
+func (s *Server) SetUpstreamRepositoryClients(w http.ResponseWriter, r *http.Request, key gen.UpstreamRepositoryKey) {
+	svc, err := s.repositoryService()
+	var in gen.UpstreamRepositoryClientsRequest
+	if err == nil {
+		err = DecodeJSON(w, r, &in, s.bodyLimit())
+	}
+	level := ""
+	if err == nil && in.Level != nil && in.Enabled {
+		switch *in.Level {
+		case gen.VisibilityLevelPrivate, gen.VisibilityLevelInternal, gen.VisibilityLevelPublic:
+			level = string(*in.Level)
+		default:
+			err = errs.E(errs.Invalid, errs.CodeValidation, "The level is one of private, internal and public.",
+				errs.WithFields(errs.FieldError{Pointer: "/level", Code: "invalid_value", Detail: "private, internal or public"}))
+		}
+	}
+	var c repository.Caller
+	if err == nil {
+		c, err = s.upstreamCaller(r)
+	}
+	var it repository.UpstreamItem
+	if err == nil {
+		it, err = svc.SetUpstreamClients(r.Context(), c, key, in.Enabled, level)
+	}
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	s.writeUpstream(w, r, it)
+}
+
 // upstreamLevel reads the body {"level": …} of a level operation.
 func (s *Server) upstreamLevel(w http.ResponseWriter, r *http.Request) (string, error) {
 	var in gen.UpstreamRepositoryVisibilityRequest
@@ -327,7 +378,7 @@ func (s *Server) upstreamBulk(w http.ResponseWriter, r *http.Request, body []byt
 		out := map[string]any{"bulkId": bulkID}
 		list := make([]gen.UpstreamRepository, 0, len(items))
 		for _, it := range items {
-			list = append(list, s.toUpstream(it))
+			list = append(list, s.toUpstream(r, it))
 		}
 		out["items"] = list
 		return Outcome{Status: http.StatusOK, Body: out}, nil

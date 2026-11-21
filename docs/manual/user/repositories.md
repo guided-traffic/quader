@@ -42,7 +42,7 @@ repository: **Set up client** in a registry's row shows how. The line under the 
 language of the page.
 
 Below the registries, set apart and closed, **System repositories** with their number holds the two repositories Quader keeps for its
-own work: `scanner-trivy`, the database of the image scanning, and `scanner-clamav`, the signature database of the malware scan. Only
+own work: `scanner-trivy`, the database of the image scanning, and `clamav`, the signature database of the malware scan. Only
 Quader's scanners read them, and their addresses answer `404` to every client, so neither their rows nor their pages offer **Set up
 client**, and nothing can be uploaded to them or downloaded from them. They are always Private: the section is there only if you may read them, normally as
 an administrator. Select its heading to open it. The filter above the list covers it too: a text or a filter that matches one of them

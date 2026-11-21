@@ -237,9 +237,9 @@ func (t target) resolved(strict bool) (repository.Repository, error) {
 	if t.err != nil {
 		return repository.Repository{}, t.err
 	}
-	if t.repo.Lifecycle == repository.Deleting || t.repo.Upstream.System() && strict {
+	if t.repo.Lifecycle == repository.Deleting || t.repo.Upstream.Closed() && strict {
 		// A system repository of the project upstream answers no client, as one that does not exist (R-REPO-070, Q-REPO-380);
-		// the management API reads its items.
+		// the management API reads its items. upstream/clamav serves clients while they are switched on (R-REPO-075).
 		return repository.Repository{}, errs.E(errs.NotFound, errs.CodeRepositoryNotFound, "No repository has the requested key.")
 	}
 	if t.repo.Disabled && strict {

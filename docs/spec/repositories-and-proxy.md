@@ -2085,7 +2085,7 @@ ClamAV-Definition-Updates einschalten, wodurch ein unternehmens-Endpunkt für al
   ([Q-REPO-412](#q-repo-412--a-local-system-repository-names-its-address-and-account-as-fixed-and-refuses-their-operations)), and
   `visibility` too while the switch is off.
 - **The switch "ClamAV definition updates"** ([Q-REPO-414](#q-repo-414--clamav-definition-updates-is-a-switch-of-its-own-off-by-default-and-the-level-is-private-while-it-is-off)),
-  stored as `upstream_repository.clients_enabled` (migration 00091; a row of another kind or of a declaration without the flag cannot set
+  stored as `upstream_repository.clients_enabled` (migration 00094; a row of another kind or of a declaration without the flag cannot set
   it):
   - **Off** (the default, and after every create): the repository is Quader's own. Every protocol request addressed to it
     (`/api/clamav/upstream/clamav/…`, `/files/upstream/clamav/…`, a host bound to it) answers 404 as for a repository that does not exist,
@@ -2098,7 +2098,8 @@ ClamAV-Definition-Updates einschalten, wodurch ein unternehmens-Endpunkt für al
     `config_version`, records `repository.updated` with `changes.clients` and `reason: clients_on`, needs recent authentication (it widens,
     R-API-007), and notifies `repo_config`, so every replica serves it within 2 s (R-REPO-049).
   - **Off again** sets the levels back to `private`, records `repository.updated` with `reason: clients_off` and `repository.narrowed`,
-    journaled ([authorization.md](authorization.md) R-AUTHZ-031), so a restore keeps it off.
+    journaled ([authorization.md](authorization.md) R-AUTHZ-031) with the part `clientsOff`, which the replay applies again, so a restore
+    keeps it off ([Q-REPO-420](#q-repo-420--switching-the-clients-off-is-the-journal-part-clientsoff)).
   - The switch changes nothing for Quader: the database task writes the repository and the scanners load from it either way, and **Switch
     all on** never touches it.
 - **Who writes it.** Only the malware scanning's task `malware-sync-db`, in process, as system work with the actor `system:malware-database`
@@ -10295,6 +10296,21 @@ administrator keeps the list is the owner's.
 address as information. The development agent would revisit (c) if a screen outside the creation form needs the list.
 
 **Applied in the spec:** R-REPO-076, R-REPO-063; [api-and-ui.md](api-and-ui.md) R-API-084.
+
+### Q-REPO-420 · Switching the clients off is the journal part `clientsOff`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-REPO-075 journals the switch-off so that a restore keeps the clients off. `repository.narrowed` carries the parts of a narrowing
+that the replay applies (R-REPO-061); the switch is a column of `upstream_repository`, not a member of the document, and the levels are
+columns too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A part `clientsOff` of `repository.narrowed`; the replay sets `clients_enabled` false and writes the document so that every replica reads it (chosen) | One more part of the entry | The journal's one mechanism of narrowings; a closed repository answers no client whatever its restored level | The restored level may stay above `private` while the clients are off; switching on sets it anew |
+| (b) A journal entry of its own (`upstream.clients_off`) with its own replay handler | A new event | Explicit | A second mechanism for one column |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-075; [developer/clamav.md](../developer/clamav.md).
 
 ## What this does not cover
 

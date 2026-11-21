@@ -273,6 +273,9 @@ func (r *replayer) narrowed() (journal.Result, error) {
 	if err := r.debUpstreamKeysRemoved(e.DebUpstreamKeysRemoved); err != nil {
 		return journal.Result{}, err
 	}
+	if err := r.clientsOff(e.ClientsOff); err != nil {
+		return journal.Result{}, err
+	}
 	return r.finish(e.parts())
 }
 
@@ -576,6 +579,25 @@ func (r *replayer) malware(m *MalwareSettings) {
 	r.set.Malware = &next
 	r.setMember("malware", next)
 	r.applied(partMalware)
+}
+
+// clientsOff replays the part clientsOff (R-REPO-075, Q-REPO-414): the switch "ClamAV definition updates" of a system repository is
+// switched off again, and the document is written so that every replica reads the change; a switch that is off already leaves the
+// part in effect.
+func (r *replayer) clientsOff(off bool) error {
+	if !off {
+		return nil
+	}
+	facts, err := r.qs.GetUpstreamRepositoryFacts(r.ctx, r.id)
+	if err != nil || len(facts) == 0 || !facts[0].ClientsEnabled {
+		return err
+	}
+	if err := r.qs.SetUpstreamClientsEnabled(r.ctx, q.SetUpstreamClientsEnabledParams{Enabled: false, RepositoryID: r.id}); err != nil {
+		return err
+	}
+	r.touched = true
+	r.applied(partClientsOff)
+	return nil
 }
 
 // finish writes the document when a part touched it or the rows, tells the change areas, and builds the result: suspended

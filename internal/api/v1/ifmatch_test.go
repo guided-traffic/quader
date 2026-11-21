@@ -30,6 +30,7 @@ var ifMatchExempt = map[string]string{
 	// R-REPO-073: the state and the level of a well-known repository set one value each, as a project's level does (Q-AUTHZ-280).
 	"setUpstreamRepositoryState":      "sets one value; the last write wins and a repeat changes nothing (R-REPO-073)",
 	"setUpstreamRepositoryVisibility": "sets one value; the last write wins and a repeat changes nothing (R-REPO-073, Q-AUTHZ-280)",
+	"setUpstreamRepositoryClients":    "sets one switch with its level; the last write wins (R-REPO-075, Q-API-382)",
 }
 
 // ifMatchOnReplace are the PUT operations that create a resource where none exists and replace it where one does (Q-API-354):

@@ -19,7 +19,7 @@ import (
 var retiredPresetIDs = []string{}
 
 // TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemRepositories: Declared over the registered catalog lists one
-// preset repository per upstream preset of every format, in catalog order, and then scanner-trivy and scanner-clamav; every key is a repository key
+// preset repository per upstream preset of every format, in catalog order, and then scanner-trivy and clamav; every key is a repository key
 // of the project upstream, unique, not reserved and not retired.
 func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemRepositories(t *testing.T) {
 	got := wellknown.Declared(nil)
@@ -34,7 +34,7 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 		"nuget:nuget-org",
 		"oci:docker-hub", "oci:quay", "oci:ghcr", "oci:gitlab",
 		"oci:scanner-trivy",
-		"generic:scanner-clamav",
+		"clamav:clamav",
 	}
 	if !slices.Equal(keys, want) {
 		t.Fatalf("declared %v\nwant     %v", keys, want)
@@ -86,15 +86,20 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 			t.Fatalf("names: %v %q", wellknown.ScannerTrivy, wellknown.ScannerTrivyImage)
 		}
 	})
-	t.Run("R-REPO-075 Q-REPO-410 Q-REPO-411 scanner-clamav is the malware scanning's local generic database repository", func(t *testing.T) {
+	t.Run("R-REPO-075 Q-REPO-411 Q-REPO-413 clamav is the local repository of ClamAV's definitions that may serve clients", func(t *testing.T) {
 		d := got[len(got)-1]
-		if d.Name() != wellknown.ScannerClamav || d.Kind != wellknown.KindSystem || d.Format != "generic" || d.Class != catalog.Local || !d.Local() ||
-			d.URL != "" || d.ExtraHosts != nil || d.Settings != nil || d.IncludePatterns != nil || !d.Private || d.Level != "private" ||
-			d.ScanningOff || d.UnusedRetentionHours != 0 || d.DisplayName != "Malware scan database" {
-			t.Fatalf("scanner-clamav = %+v", d)
+		if d.Name() != wellknown.Clamav || d.Kind != wellknown.KindSystem || d.Format != "clamav" || d.Class != catalog.Local || !d.Local() ||
+			d.URL != "" || d.ExtraHosts != nil || d.Settings != nil || d.IncludePatterns != nil || d.Private || d.Level != "private" ||
+			d.ScanningOff || d.UnusedRetentionHours != 0 || d.DisplayName != "ClamAV definitions" || !d.Clients {
+			t.Fatalf("clamav = %+v", d)
 		}
-		if wellknown.ScannerClamav != (qname.Repo{Project: "upstream", Key: "scanner-clamav"}) {
-			t.Fatalf("name: %v", wellknown.ScannerClamav)
+		if wellknown.Clamav != (qname.Repo{Project: "upstream", Key: "clamav"}) {
+			t.Fatalf("name: %v", wellknown.Clamav)
+		}
+		for _, other := range got[:len(got)-1] {
+			if other.Clients {
+				t.Fatalf("%s lets clients in; only clamav does (Q-REPO-413)", other.Key)
+			}
 		}
 	})
 	t.Run("R-REPO-066 a catalog without a format declares nothing of it", func(t *testing.T) {

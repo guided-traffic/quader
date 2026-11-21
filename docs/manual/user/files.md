@@ -45,7 +45,7 @@ its reason. What to do then is in
 [Errors and troubleshooting](troubleshooting.md#a-download-is-refused-for-malware). The same bytes have the same state in every
 repository that holds them.
 
-The files of the two system repositories of the project Upstream, `scanner-trivy` and `scanner-clamav`, which an administrator can
+The files of the two system repositories of the project Upstream, `scanner-trivy` and `clamav`, which an administrator can
 open, cannot be downloaded at all: their pages offer no **Download**, no **Download address** and no copy button in a folder's rows,
 and say in one sentence which of Quader's work reads them ([Upstream registries](../admin/upstream-registries.md#where-the-system-repositories-show)).
 

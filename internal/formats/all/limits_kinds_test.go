@@ -96,6 +96,11 @@ func TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind(t *testing.T) {
 			"oci.upload.start":        formats.Upload,
 			"oci.upload.status":       formats.Upload,
 		},
+		// The bytes under <db>.cvd change with every new set in use: documents, which no byte figure refuses (Q-CLAMAV-2).
+		"clamav": {
+			"clamav.container.get": formats.Metadata,
+			"clamav.signature.get": formats.Metadata,
+		},
 	}
 	seen := map[formats.ID]bool{}
 	for _, f := range formats.List() {

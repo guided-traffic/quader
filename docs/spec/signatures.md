@@ -131,7 +131,7 @@ Priority: **P1** · Covers: quader-only
 
 The owner's reading ([Q-SIG-16](#q-sig-16--the-eight-readings-of-the-request) r2): per format what its ecosystem knows as a signature;
 Quader invents no scheme for a foreign client; a format without a scheme says so; where only the index is signed, the screen says exactly
-that. The six formats declare (R-SIG-022; sources read 2026-11-21, marked where a fact rests on a secondary source):
+that. The formats declare (R-SIG-022; sources read 2026-11-21, marked where a fact rests on a secondary source):
 
 | Format | Signatures | Subject | Role | Where the client gets them | Requirement |
 |---|---|---|---|---|---|
@@ -141,6 +141,7 @@ that. The six formats declare (R-SIG-022; sources read 2026-11-21, marked where 
 | Debian | OpenPGP signatures of the release document (`InRelease`, `Release.gpg`); apt checks no signature of a package | the release document, which names the index files, which name each package's SHA-256 | `registry` | `dists/<suite>/InRelease`, `Release`, `Release.gpg` | R-SIG-030 |
 | Ansible Galaxy | detached OpenPGP signatures of `MANIFEST.json`, which names `FILES.json`, which names every file | the collection archive | `registry` (a signing service of the server), `publisher` (an uploaded signature) | `signatures[]` of the version document | R-SIG-031 |
 | generic | a file beside the file: `<file>.asc` and `<file>.sig` (OpenPGP, or a raw signature of `cosign sign-blob`), `<file>.sigstore.json` (Sigstore bundle), `<file>.jws.sig` and `<file>.cose.sig` (Notation blob signatures) | the file of the same directory | `publisher` | the sibling file, downloaded as a file | R-SIG-032 |
+| ClamAV definitions | none in the store: a container's RSA signature in its header and its detached `<db>-<version>.cvd.sign` are ClamAV's file format; the import checks the header's signature before it stores a container, and the version shows it as its verification ([formats/clamav.md](formats/clamav.md) R-CLAMAV-003, [malware-scanning.md](malware-scanning.md) R-MAL-033) | — | none | the container and its `.cvd.sign` through the definitions' endpoint; `freshclam` and `clamd` check them | [Q-SIG-96](#q-sig-96--the-clamav-definitions-declare-no-signature-their-containers-signature-is-the-imports) |
 
 - A scheme Quader does not read (Docker Content Trust, whose signatures live on a separate server; Red Hat's simple signing on a lookaside
   server; minisign; an `.sbom` of a format Quader does not parse) is detected where it lives in Quader and shown as **Scheme not
@@ -4191,6 +4192,29 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) One case in `e2e (oci)`: a signed image pulls, an unsigned one is refused | | A real client on every OCI change | About 5 s on a leg for what the integration tier already shows |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-078.
+
+### Q-SIG-96 · The ClamAV definitions declare no signature: their containers' signature is the import's
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Taken when the
+format `clamav` (a system format, [formats/clamav.md](formats/clamav.md)) met the contract's version 8, which asks every format for its
+declaration.
+
+Context: a ClamAV container carries an RSA signature in its header over the MD5 of its archive (libclamav's legacy check, a 1024-bit key
+and a digit encoding of its own), and ClamAV 1.5 publishes a detached `<db>-<version>.cvd.sign` of PKCS#7 signatures. The import checks the
+header's signature against ClamAV's key before it stores a container and refuses every other (R-MAL-033); the version shows the outcome as
+its verification (R-CLAMAV-003); `clamd` and every `freshclam` check both signatures again. The store's `public-key` scheme verifies a raw
+signature over the subject's SHA-256 with an anchor of 2048 bits or more (R-SIG-007, R-SIG-012).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `NoSignatures` with the reason that the container's signature is ClamAV's file format, checked by the import and shown as the verification (chosen) | The format's row says none, with its reason in the details | One place says whether a container is ClamAV's, the one that refuses it before it is stored; nothing is shown twice in two vocabularies; no detector reads 90 MB containers again | The badge of R-SIG-009 never appears on a definition file; the verification row of the version says it instead |
+| (b) A `publisher` kind of the scheme `public-key`, the header's signature as the object, and ClamAV's key as an anchor of the installation | The store holds every container's signature | The definitions look like every other signed artifact | The scheme verifies over SHA-256, ClamAV signs an MD5 in an encoding of its own, and its key has 1024 bits, which the anchors refuse: every container would read "Signed · signer not trusted" beside a verification that says it verified |
+| (c) A kind of the scheme `unknown` for the `.cvd.sign` | The detached signature detected | Something in the store | Every version would read **Scheme not supported**, for files ClamAV's own tools check |
+
+**Choice:** (a). **Rationale:** a definition file reaches the repository only after its signature verified, so the store would add a
+second, weaker statement of a fact the import already decided. The development agent would revisit this if the store learns PKCS#7 for the
+`.cvd.sign` (Q-MAL-95's revisit condition) or a client of the format asks Quader for signatures.
+**Applied in the spec:** R-SIG-002; [formats/clamav.md](formats/clamav.md) R-CLAMAV-001.
 
 ## What this does not cover
 

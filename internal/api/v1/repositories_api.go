@@ -392,6 +392,9 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 		// Wiki is the catalog fact Facts.Wiki: the format has wiki content, so the wiki level of its repositories is worth setting
 		// (R-AUTHZ-034).
 		Wiki bool `json:"wiki"`
+		// SystemOnly is the catalog fact Facts.SystemOnly: only the product declares a repository of the format, so no creation form
+		// offers it (R-CLAMAV-001).
+		SystemOnly bool `json:"systemOnly"`
 		// SettingsSchema is the JSON Schema of the format's settings member; null for
 		// a format without settings.
 		SettingsSchema json.RawMessage `json:"settingsSchema"`
@@ -412,7 +415,7 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 			UpstreamPresets:  presetsOf(d.UpstreamPresets),
 			ProtocolBasePath: d.ProtocolBasePath, DefaultMetadataTTLSeconds: d.DefaultMetadataTTLSeconds,
 			DefaultNotFoundTTLSeconds: d.DefaultNotFoundTTLSeconds, PatternSubject: string(d.PatternSubject),
-			PriorityMembers: d.PriorityMembers, PinsAndClaims: d.PinsAndClaims, Caps: d.Caps, Wiki: d.Wiki, SettingsSchema: json.RawMessage("null"),
+			PriorityMembers: d.PriorityMembers, PinsAndClaims: d.PinsAndClaims, Caps: d.Caps, Wiki: d.Wiki, SystemOnly: d.SystemOnly, SettingsSchema: json.RawMessage("null"),
 		}
 		if len(d.SettingsSchema) > 0 {
 			x.SettingsSchema = d.SettingsSchema

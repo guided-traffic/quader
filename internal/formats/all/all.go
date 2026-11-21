@@ -5,6 +5,7 @@ package all
 import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/ansible"
+	"github.com/guided-traffic/quader/internal/formats/clamav"
 	"github.com/guided-traffic/quader/internal/formats/deb"
 	"github.com/guided-traffic/quader/internal/formats/generic"
 	"github.com/guided-traffic/quader/internal/formats/npm"
@@ -19,4 +20,5 @@ func init() {
 	formats.Register(oci.New())
 	formats.Register(deb.New())
 	formats.Register(ansible.New())
+	formats.Register(clamav.Format{})
 }

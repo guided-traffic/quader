@@ -83,7 +83,7 @@ func (s *Service) Stat(ctx context.Context, c Caller, repoKey qname.Repo, p repo
 	// download. An infected blob is refused, and where only checked artifacts are served one without a verdict waits (R-MAL-014).
 	if s.malware.Enabled() {
 		err := s.malware.Check(ctx, gate.Download{
-			Addressed: repoKey, HolderID: repo.NumericID(), Path: it.Path, Digest: it.Digest, Size: it.Size, Generated: it.Generated,
+			Addressed: repoKey, HolderID: repo.NumericID(), Path: it.Path, Digest: it.Digest, Size: it.Size, Generated: it.Generated, System: repo.Upstream.System(),
 			Verdict: it.Malware, Strict: s.malware.Strict(repo.MalwareOnlyChecked()), Arrived: c.Received,
 			Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
 		})

@@ -1,12 +1,13 @@
 # ClamAV's definitions: from the internet to the company's ClamAV installations
 
-Status: specified on 2026-11-21, not built ([malware-scanning.md](../spec/malware-scanning.md) R-MAL-010, R-MAL-012, R-MAL-032 to
+Status: specified on 2026-11-21 ([malware-scanning.md](../spec/malware-scanning.md) R-MAL-010, R-MAL-012, R-MAL-032 to
 R-MAL-034; [formats/clamav.md](../spec/formats/clamav.md); [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-075;
 [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-069; the client certificates of [formats/clamav.md](../spec/formats/clamav.md)
 R-CLAMAV-010 and [endpoints.md](../spec/endpoints.md) R-EP-008, R-EP-010;
-[ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format)). Every
-statement below says what the specification requires; none is enforced by code yet, and the test column names the tests the specification
-asks for.
+[ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format)). Built:
+the endpoint, its switch, its answers and the refused hand delete (the rows of the table below that name their tests by name). Not built
+yet: the updater, its listener, the worker's verification and the client certificates; for those every statement says what the
+specification requires, and the test column names the tests the specification asks for.
 
 The perspective of this page is the path of ClamAV's signature databases: what each hop trusts of the one before it, what a hop that is
 taken over can do to the ones after it (Quader's scanners and every ClamAV of the company that updates from Quader), and what the endpoint
@@ -118,9 +119,9 @@ of it ([formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-010, Q-CLAMAV-8 t
 | no container reaches `upstream/clamav` from the updater unless its header's signature verifies against ClamAV's key and its archive has the header's MD5 | the database task's check (R-MAL-033) | `TestR_MAL_033_*` (`internal/malware/database`) |
 | the updater's listener admits the worker's certificate name only, and lists regular files of known names inside its directory | the updater's listener and its `os.Root` (R-MAL-032) | `TestR_MAL_032_*` |
 | the updater's pod mounts no secret but its TLS pair, and `freshclam` mounts none | the chart's volume list (R-HA-069) | `TestR_HA_069_*` (`test/chart`) |
-| the endpoint answers 404 for every caller while the switch is off, and no route of the format writes | the system repository's rule and the format's routes (R-REPO-075, R-CLAMAV-008) | `TestR_REPO_075_*`, the format's kit run |
-| no answer of the endpoint is a `403` or a `429` | the format's `WriteError` and the chain's error shape (R-CLAMAV-005) | `TestR_CLAMAV_005_*` |
-| no caller deletes a definition file | the system repository's refusal (R-REPO-075) | `TestR_REPO_075_*` |
+| the endpoint answers as for a missing repository for every caller while the switch is off, and no route of the format writes | `UpstreamFacts.Closed` in the dispatcher and `/files/`, and the format's routes (R-REPO-075, R-CLAMAV-008) | `TestR_REPO_070_ASystemRepositoryOfUpstreamAnswersNoClient`, `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint`, `TestR_ARCH_010_Conformance` (`internal/formats/clamav`) |
+| no answer of the endpoint is a `403` or a `429` | the format's `WriteError` and the chain's error shape (R-CLAMAV-005) | `TestR_CLAMAV_005_NoAnswerIsA403OrA429` |
+| no caller deletes a definition file | `Repository.RefusesHandDelete` in `files.Service.Delete` (R-REPO-075, Q-REPO-416) | `TestQ_REPO_416_NoOneDeletesADefinitionFileByHand`, `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint` |
 | a client certificate is a credential only on an endpoint with `auth.client_certificates` and `tls.client_ca_file`, never on the default endpoint, and only one that verifies against the endpoint's CAs reaches a request | the configuration's validation and the listener's TLS (R-EP-001, R-EP-004, R-EP-010) | `TestR_CLAMAV_010_*` (`internal/config`, area `malware`) |
 | the certificate subject reads only repositories that admit certificate readers, at `internal` or `public`, never writes or fills, and is refused at `private` and while the switch is off | the fixed rule of the decision point (R-AUTHZ-002) | `TestR_CLAMAV_010_*` (`internal/authz`) |
 | a token on a request of that endpoint is decided as the token, and a refused one does not fall through to the certificate | the authentication stage's order (R-AUTH-001) | `TestR_CLAMAV_010_*` (`internal/auth`) |

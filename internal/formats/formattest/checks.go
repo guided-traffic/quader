@@ -718,7 +718,10 @@ func (r *run) setup() {
 		// (R-API-030), and schemeless; the check only needs them to exist, the quoting is the API's and
 		// tested there.
 		quote := func(v string) string { return v }
-		tp, err := template.New(t.ID).Option("missingkey=error").Funcs(template.FuncMap{"shell": quote, "powershell": quote, "cmd": quote, "xml": quote, "schemeless": quote, "hostname": quote}).Parse(t.Template)
+		tp, err := template.New(t.ID).Option("missingkey=error").Funcs(template.FuncMap{
+			"shell": quote, "powershell": quote, "cmd": quote, "xml": quote, "schemeless": quote, "hostname": quote,
+			"trimslash": func(v string) string { return strings.TrimSuffix(v, "/") },
+		}).Parse(t.Template)
 		if err != nil {
 			r.failf("setup template %q does not parse: %v", t.ID, err)
 			continue

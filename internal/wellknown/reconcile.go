@@ -223,9 +223,10 @@ func AddressEqual(declared, stored Address) bool {
 	return true
 }
 
-// FixedEqual reports whether the fixed members of a system repository are the declared ones.
+// FixedEqual reports whether the fixed members of a system repository are the declared ones. The level is compared only where the
+// declaration fixes it at private: the level of clamav is the administrator's while its clients are on (Q-REPO-414).
 func FixedEqual(declared, stored Fixed) bool {
-	return slices.Equal(nonNil(declared.IncludePatterns), nonNil(stored.IncludePatterns)) && declared.Private == stored.Private &&
+	return slices.Equal(nonNil(declared.IncludePatterns), nonNil(stored.IncludePatterns)) && (!declared.Private || stored.Private) &&
 		declared.ScanningOff == stored.ScanningOff && declared.UnusedRetentionHours == stored.UnusedRetentionHours
 }
 

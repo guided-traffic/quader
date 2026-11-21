@@ -116,6 +116,8 @@ for `Lookup` and `List`. It panics on:
 - a route set that is not servable: a route without name, method, template, handler, kind, action or example; a name used twice; a route
   that does not match its own example; an example that another route of the same method (and an overlapping class set) also matches; routes under a protocol base
   path other than `/api/<id>/{project}/{key}/` (the format that declares `catalog.Facts.RegistryRoot` has `/v2/{project}/{key}/` instead, and the catalog refuses a second one); a route of a class the format does not support;
+- a format that is system only (`catalog.Facts.SystemOnly`, ADR-225: its one repository is the product's, [clamav.md](clamav.md)) and has
+  a route of the kind `Upload`; the catalog refuses one with the class `remote` or `virtual`;
 - every rule of the catalog (class set, layout, pattern subject, name rule, exposure).
 
 `formats.Validate(f)` runs the contract checks without registering. The exposure facts of the catalog come from `Format.Exposure()`: no adapter

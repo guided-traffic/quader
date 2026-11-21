@@ -48,6 +48,12 @@ func (s *Service) Delete(ctx context.Context, c Caller, req DeleteRequest) (item
 	if err := s.refuseWrite(ctx); err != nil {
 		return items.DeleteResult{}, err
 	}
+	if t.err == nil && t.repo.RefusesHandDelete() {
+		// Only the product's cleanup removes a definition file of upstream/clamav (R-REPO-075, Q-REPO-416): for every caller, through
+		// /files/ and the items API alike, administrators and holders of content:bypass included, whether its clients are on or off.
+		return items.DeleteResult{}, errs.E(errs.Conflict, errs.CodeManagedByProduct,
+			"No file of "+t.repo.Name.String()+" is deleted by hand: Quader writes it and removes a version once two newer sets are in use.")
+	}
 	repo, err := t.resolved(req.Strict)
 	if err != nil {
 		return items.DeleteResult{}, err

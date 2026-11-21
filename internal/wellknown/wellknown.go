@@ -1,7 +1,7 @@
 // Package wellknown names the built-in project upstream and the repositories the product declares in it (repositories-and-proxy.md
 // R-REPO-066 to R-REPO-070, R-REPO-075, authorization.md R-AUTHZ-041, ADR-209, ADR-211, ADR-222): one remote repository per upstream
 // preset of the format catalog, and the system repositories of the product's own work, today scanner-trivy (a remote) and
-// scanner-clamav (a local repository).
+// clamav (a local repository of ClamAV's definitions).
 //
 // It is a leaf (the format catalog, qname and the standard library), so the repository model, the project service, the
 // authorization engine and the edge read one set of names, states and declarations. The reconcile of `quader migrate` brings the
@@ -45,17 +45,18 @@ const (
 // ScannerTrivy is the qualified name of the image scanning's database repository: upstream/scanner-trivy.
 var ScannerTrivy = qname.Repo{Project: ProjectKey, Key: ScannerTrivyKey}
 
-// The system repository of the malware scanning's signature database (R-REPO-075, Q-REPO-410, ADR-222): a local generic repository
-// that the database task writes in process and that answers no client.
+// The system repository of ClamAV's definitions (R-REPO-075, Q-REPO-413, ADR-225): a local repository of the format clamav that the
+// malware scanning's database task writes in process and that serves the company's ClamAV installations while an administrator has
+// switched "ClamAV definition updates" on.
 const (
-	// ScannerClamavKey is the key of the repository in the project upstream.
-	ScannerClamavKey = "scanner-clamav"
-	// ScannerClamavDisplayName names the repository on the admin page and is its description (R-UI-187).
-	ScannerClamavDisplayName = "Malware scan database"
+	// ClamavKey is the key of the repository in the project upstream.
+	ClamavKey = "clamav"
+	// ClamavDisplayName names the repository on the admin page and is its description (R-UI-187).
+	ClamavDisplayName = "ClamAV definitions"
 )
 
-// ScannerClamav is the qualified name of the malware scanning's database repository: upstream/scanner-clamav.
-var ScannerClamav = qname.Repo{Project: ProjectKey, Key: ScannerClamavKey}
+// Clamav is the qualified name of the repository of ClamAV's definitions: upstream/clamav.
+var Clamav = qname.Repo{Project: ProjectKey, Key: ClamavKey}
 
 // The literal sub-paths of /api/v1/upstream-repositories (R-REPO-073, R-API-083): siblings of {key}, so no preset takes them.
 const (
@@ -67,7 +68,7 @@ const (
 // R-REPO-002: the literal sub-paths of R-REPO-073 and the keys of the system repositories (R-REPO-062, Q-REPO-387). The catalog
 // refuses them at registration (catalog.ReservedPresetIDs); TestReservedKeysAreTheCatalogs holds the two lists together.
 func ReservedKeys() []string {
-	return []string{PathSwitchOnAll, PathSetVisibility, ScannerTrivyKey, ScannerClamavKey}
+	return []string{PathSwitchOnAll, PathSetVisibility, ScannerTrivyKey, ClamavKey}
 }
 
 // IsProject reports whether a project key names the built-in project.
@@ -146,7 +147,8 @@ type Declaration struct {
 	// IncludePatterns are fixed include patterns of a system repository (scanner-trivy admits only its image); nil for a
 	// preset, whose patterns are an administrator's (R-REPO-069).
 	IncludePatterns []string
-	// Private is true for a repository whose levels are fixed at private (scanner-trivy).
+	// Private is true for a repository whose levels are fixed at private (scanner-trivy); false for clamav, whose level the switch
+	// of its clients decides (it is created private, Level).
 	Private bool
 	// Level is the level both parts of the repository take when the reconcile creates it: PresetLevel for a preset repository
 	// (the owner's decision Q-REPO-388), private for a system repository. It is never written again after the create.
@@ -157,6 +159,10 @@ type Declaration struct {
 	// UnusedRetentionHours is remote.cache.unusedRetentionHours fixed by the product, 0 for none: scanner-trivy keeps a layer 48
 	// hours after its last use (R-REPO-070, Q-VULN-175). The cleanup that applies it is R-REPO-046's.
 	UnusedRetentionHours int
+	// Clients is true for the one system repository an administrator may open to clients (clamav, R-REPO-075, Q-REPO-413): its
+	// switch "ClamAV definition updates" (upstream_repository.clients_enabled) and its level while the switch is on are the
+	// administrator's; while it is off, the level is private and fixed. No other declaration has it.
+	Clients bool
 }
 
 // ScannerTrivyRetentionHours is the cache period of scanner-trivy (R-REPO-070): two days, so the repository holds the database in
@@ -177,7 +183,7 @@ func (d Declaration) Name() qname.Repo { return qname.Repo{Project: ProjectKey, 
 // Declared lists the repositories the product declares for the formats of the catalog (nil is catalog.Default): one preset
 // repository per upstream preset of every registered format, in catalog order (formats by ID, presets in the format's order),
 // then the system repositories. A format the catalog does not register declares nothing, so scanner-trivy is declared only while
-// the format oci is registered and scanner-clamav only while the format generic is.
+// the format oci is registered and clamav only while the format clamav is.
 func Declared(cat *catalog.Registry) []Declaration {
 	var out []Declaration
 	for _, e := range catalog.Or(cat).List() {
@@ -191,8 +197,8 @@ func Declared(cat *catalog.Registry) []Declaration {
 	if _, ok := catalog.Or(cat).Lookup(string(scannerTrivyFormat)); ok {
 		out = append(out, scannerTrivy())
 	}
-	if _, ok := catalog.Or(cat).Lookup(string(scannerClamavFormat)); ok {
-		out = append(out, scannerClamav())
+	if _, ok := catalog.Or(cat).Lookup(string(clamavFormat)); ok {
+		out = append(out, clamav())
 	}
 	return out
 }
@@ -209,16 +215,16 @@ func scannerTrivy() Declaration {
 	}
 }
 
-// scannerClamavFormat is the format of scanner-clamav: the database is plain files (Q-REPO-410).
-const scannerClamavFormat catalog.ID = "generic"
+// clamavFormat is the format of upstream/clamav (R-CLAMAV-001).
+const clamavFormat catalog.ID = "clamav"
 
-// scannerClamav is the declaration of R-REPO-075: a local generic repository, both levels private, no address and no account; the
-// member malware stays at its default, which the refusals of R-REPO-069 keep (its content is never scanned, R-MAL-001), and the format
-// has no member vulnerabilities.
-func scannerClamav() Declaration {
+// clamav is the declaration of R-REPO-075: a local repository of the format clamav, created private, no address and no account; the
+// member malware stays at its default, which the refusals of R-REPO-069 keep (its content is never scanned, R-MAL-001). Its level is
+// not a fixed member: it is private while clients are off and the administrator's while they are on (Q-REPO-414).
+func clamav() Declaration {
 	return Declaration{
-		Key: ScannerClamavKey, Format: scannerClamavFormat, Class: catalog.Local, Kind: KindSystem, DisplayName: ScannerClamavDisplayName,
-		Private: true, Level: systemLevel,
+		Key: ClamavKey, Format: clamavFormat, Class: catalog.Local, Kind: KindSystem, DisplayName: ClamavDisplayName,
+		Level: systemLevel, Clients: true,
 	}
 }
 

@@ -30,7 +30,8 @@ type SetupTemplate struct {
 	// function schemeless drops the scheme of a URL ("https://host/p/" becomes
 	// "//host/p/"): the form in which npm and pnpm bind a credential to a registry
 	// (R-NPM-041), so a template derives that key from RegistryURL and the core
-	// carries no field for it.
+	// carries no field for it. The function hostname gives a URL's host name alone, and trimslash drops one trailing slash, for a
+	// client that joins the base and a file name with a slash of its own (freshclam's PrivateMirror, R-CLAMAV-006).
 	//
 	// The credential is one of the literals [SetupTokenRef], [SetupTokenRefWin] and
 	// [SetupTokenRefPS], the one the syntax of the file or shell the template writes

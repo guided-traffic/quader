@@ -150,6 +150,7 @@ export const GENERIC_FORMAT: FormatDescriptor = {
   mirror: false,
   settingsSchema: null,
   wiki: false,
+  systemOnly: false,
 };
 
 /** The settings schema npm registers (internal/formats/npm/settings.schema.json), as the catalog serves it. */
@@ -252,6 +253,7 @@ export const PACKAGE_FORMAT: FormatDescriptor = {
   mirror: true,
   settingsSchema: NPM_SETTINGS_SCHEMA,
   wiki: true,
+  systemOnly: false,
 };
 
 /** The settings schema NuGet registers (internal/formats/nuget/settings.schema.json), as the catalog serves it. */
@@ -295,6 +297,7 @@ export const NUGET_FORMAT: FormatDescriptor = {
   upstreamPresets: [...NUGET_PRESETS],
   settingsSchema: NUGET_SETTINGS_SCHEMA,
   wiki: true,
+  systemOnly: false,
 };
 
 /**
@@ -384,6 +387,7 @@ export const DEB_FORMAT: FormatDescriptor = {
   upstreamPresets: [...DEB_PRESETS],
   settingsSchema: DEB_SETTINGS_SCHEMA,
   wiki: false,
+  systemOnly: false,
 };
 
 /** The settings of the Ansible Galaxy format (internal/formats/ansible/settings.schema.json): two members, both for remote repositories. */
@@ -419,6 +423,7 @@ export const ANSIBLE_FORMAT: FormatDescriptor = {
   upstreamPresets: [...ANSIBLE_PRESETS],
   settingsSchema: ANSIBLE_SETTINGS_SCHEMA,
   wiki: true,
+  systemOnly: false,
 };
 
 /** A repository of the fake: the project is writable so that a test can move one. */

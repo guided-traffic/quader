@@ -1,0 +1,3 @@
+{{if .Repository}}`{{.Repository}}`{{else}}This repository{{end}} holds ClamAV's signature databases, `main`, `daily` and `bytecode`, as ClamAV publishes them. Quader fetches them itself, checks the publisher's signature of each container before it stores it, and its own malware scan loads the same set. A ClamAV installation that updates from Quader gets the version Quader's scanners use, byte for byte as ClamAV signed it, with its detached signature.
+
+Nobody uploads or deletes a file here: Quader writes the repository and removes a version once two newer sets are in use. The repository answers clients only while an administrator has switched **ClamAV definition updates** on; while it is off, every request answers `404`.

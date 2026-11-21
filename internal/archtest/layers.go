@@ -114,6 +114,11 @@ func layerTable() []layerRule {
 		{"internal/formats/ansible/galaxydoc", layerLeaf},
 		{"internal/formats/ansible/docgen", layerLeaf},
 		{"internal/formats/ansible/merge", layerLeaf},
+		// The reader of ClamAV's definition files imports only internal/formats/untrusted, errs and the standard library: the header,
+		// the names, the functionality levels, the members of a container and a detached signature's count. A leaf so that the format
+		// (edge), its data port and the malware scanning's database task share one parser (R-CLAMAV-003, R-MAL-033). The values of the
+		// data port are internal/formats/clamav/rows, a leaf by the rule below.
+		{"internal/formats/clamav/cvd", layerLeaf},
 		{"internal/auth/scope", layerLeaf},
 		// The CI federation's pure parts (R-CI-004, R-CI-010 to R-CI-014): reason names, the claim engine
 		// and the subject-token validation import only the standard library and each other, so that the

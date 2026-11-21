@@ -2602,7 +2602,7 @@
             },
             "keep": {
               "default": "48h",
-              "description": "How long the task keeps the items of versions that are not in use in upstream/scanner-clamav; the version in use is never removed (R-MAL-010).",
+              "description": "How long the task keeps the items of versions that are not in use in upstream/clamav; the version in use is never removed (R-MAL-010).",
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_DATABASE_KEEP",
@@ -2625,8 +2625,8 @@
               "x-quader-env": "QUADER_MALWARE_DATABASE_PROXY"
             },
             "repository": {
-              "default": "upstream/scanner-clamav",
-              "description": "The qualified name \u003cprojectKey\u003e/\u003crepoKey\u003e of the repository the signature database is kept in: the system repository upstream/scanner-clamav, or a local generic repository of an own project for an installation without internet (R-MAL-012). Whoever holds deploy on such a repository decides what the scanners compare content with (H-1107).",
+              "default": "upstream/clamav",
+              "description": "The qualified name \u003cprojectKey\u003e/\u003crepoKey\u003e of the repository the signature database is kept in: the system repository upstream/clamav of ClamAV's definitions (R-REPO-075), or a local generic repository of an own project for an installation without internet (R-MAL-012). Whoever holds deploy on such a repository decides what the scanners compare content with (H-1107).",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_DATABASE_REPOSITORY"
             },

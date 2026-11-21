@@ -4268,6 +4268,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/upstream-repositories/{key}/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Switch ClamAV definition updates on or off
+         * @description Switches the clients of `clamav` on or off (R-REPO-075, Q-API-382, Q-REPO-414). On, the endpoint
+         *     `/api/clamav/upstream/clamav` and `/files/` serve the repository at `level` (`public` when omitted); where the default endpoint
+         *     admits no request without a credential and the level is `public`, it is switched on at `internal` and the answer's `warnings`
+         *     carry `public_not_allowed_lowered`. Switching on widens and asks for a recent sign-in where the session needs one (R-API-007,
+         *     inside the write); the other refusals of R-AUTHZ-038 for the level apply. Off, every protocol request answers `404` again and
+         *     both levels are `private`; the write records `repository.narrowed`, journaled. Each write records `repository.updated` with
+         *     `clients` among its changes and the reason `clients_on` or `clients_off`. Sets one value and takes no `If-Match`.
+         *     `409 managed_by_product` for every repository but `clamav`.
+         */
+        put: operations["setUpstreamRepositoryClients"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/upstream-repositories/set-visibility": {
         parameters: {
             query?: never;
@@ -8951,6 +8984,12 @@ export interface components {
              */
             wiki: boolean;
             /**
+             * @description Whether the format's only repository is one Quader declares in the project `upstream` (`clamav`, R-CLAMAV-001, ADR-225): no
+             *     repository of it is created (`422 validation_failed` with `format_system_only` at `/format`), and the create form does
+             *     not offer it.
+             */
+            systemOnly: boolean;
+            /**
              * @description The JSON Schema 2020-12 of the format's settings member of a repository document (the member named
              *     after the format, R-REPO-004), which the create form renders and the service validates a document
              *     against (R-ARCH-008). Its properties may carry `x-quader-classes`, the classes the setting applies to;
@@ -9049,8 +9088,9 @@ export interface components {
          */
         UpstreamRepositoryKind: "preset" | "system";
         /**
-         * @description What the product holds of a repository beyond the table of R-REPO-069: `state` and `visibility` of a system repository, and
-         *     `address` and `account` of a local one (`scanner-clamav`), which has neither (Q-REPO-412).
+         * @description What the product holds of a repository beyond the table of R-REPO-069: `state` and `visibility` of a system repository (the
+         *     `visibility` of `clamav` only while its clients are off), and `address` and `account` of a local one (`clamav`), which has
+         *     neither (Q-REPO-412).
          * @enum {string}
          */
         UpstreamRepositoryFixed: "state" | "visibility" | "address" | "account";
@@ -9097,8 +9137,10 @@ export interface components {
         /**
          * @description A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
          *     repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
-         *     (`[state, visibility]` for `scanner-trivy`, `[state, visibility, address, account]` for `scanner-clamav`, whose address is
-         *     empty and whose account is `none`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+         *     (`[state, visibility]` for `scanner-trivy`; `[state, visibility, address, account]` for `clamav` while its clients are off and
+         *     `[state, address, account]` while they are on, its address being empty and its account `none`). `clients` is the switch
+         *     **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382), `null` for every other repository. `visibility` is the one
+         *     level of both parts. `listedBy` is the number of virtual
          *     repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
          *     `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
          *     answered.
@@ -9108,7 +9150,7 @@ export interface components {
             key: string;
             /** @description The qualified name, `upstream/<key>`. */
             name: string;
-            /** @description The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `scanner-clamav` (Q-REPO-411). */
+            /** @description The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `clamav` (Q-REPO-411). */
             format: string;
             kind: components["schemas"]["UpstreamRepositoryKind"];
             /** @description The preset's display name, a product name the UI does not translate; the system repository's name. */
@@ -9116,6 +9158,7 @@ export interface components {
             state: components["schemas"]["UpstreamRepositoryState"] | null;
             /** @description For a system repository, whether the work it serves reads through it, from the configuration of the replica that answers (R-REPO-070). */
             inUse: boolean | null;
+            clients: components["schemas"]["UpstreamRepositoryClients"] | null;
             visibility: components["schemas"]["VisibilityLevel"];
             fixed: components["schemas"]["UpstreamRepositoryFixed"][];
             address: components["schemas"]["UpstreamRepositoryAddressInfo"];
@@ -9165,6 +9208,20 @@ export interface components {
             /** @enum {string} */
             state: "on" | "off";
         };
+        /**
+         * @description The switch **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382): whether the endpoint serves the company's ClamAV
+         *     installations, and its address, the protocol base of the repository on the base URL of the request.
+         */
+        UpstreamRepositoryClients: {
+            enabled: boolean;
+            /** @example https://quader.example.com/api/clamav/upstream/clamav */
+            address: string;
+        };
+        /** @description Switches the clients of `clamav` on or off (R-REPO-075). `level` is read only with `enabled: true`; omitted, it is `public`. */
+        UpstreamRepositoryClientsRequest: {
+            enabled: boolean;
+            level?: components["schemas"]["VisibilityLevel"];
+        };
         UpstreamRepositoryVisibilityRequest: {
             level: components["schemas"]["VisibilityLevel"];
         };
@@ -9207,9 +9264,10 @@ export interface components {
          *     any difference; no list of formats per class is kept by hand anywhere.
          * @enum {string}
          */
-        FormatName: "ansible" | "deb" | "generic" | "npm" | "nuget" | "oci";
+        FormatName: "ansible" | "clamav" | "deb" | "generic" | "npm" | "nuget" | "oci";
         /**
-         * @description The formats whose classes contain `local`. The create form offers these for a local repository.
+         * @description The formats whose classes contain `local`, without a system-only format (`systemOnly`, R-CLAMAV-001), of which no repository
+         *     is created. The create form offers these for a local repository.
          * @enum {string}
          */
         LocalFormatName: "ansible" | "deb" | "generic" | "npm" | "nuget" | "oci";
@@ -18054,6 +18112,7 @@ export interface operations {
                      *           "vulnerabilityScanning": false,
                      *           "mirror": false,
                      *           "wiki": false,
+                     *           "systemOnly": false,
                      *           "settingsSchema": null
                      *         }
                      *       ],
@@ -22521,6 +22580,54 @@ export interface operations {
         };
         responses: {
             /** @description The well-known repository after the change, with the warnings of the write. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpstreamRepository"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setUpstreamRepositoryClients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The key of a repository of the project `upstream` (R-REPO-066): a preset's id or a system repository's key. `switch-on-all`
+                 *     and `set-visibility` are the collection's literal sub-paths, which no preset takes (R-REPO-062, R-REPO-073).
+                 */
+                key: components["parameters"]["UpstreamRepositoryKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "enabled": true,
+                 *       "level": "public"
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpstreamRepositoryClientsRequest"];
+            };
+        };
+        responses: {
+            /** @description The repository after the change, with the warnings of the write. */
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];

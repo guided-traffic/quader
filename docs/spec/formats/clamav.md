@@ -1,6 +1,9 @@
 # ClamAV definitions format
 
-Status: specification (2026-11-21), not built. The owner's words of 2026-11-21: "Außerdem möchte ich, dass wir das freshclam artefakt als
+Status: the format, its data port, the endpoint, the switch and the API are built (2026-11-21, [developer/clamav.md](../../developer/clamav.md));
+the database task that fills the repository with verified containers and marks the set in use (R-MAL-010, R-MAL-033, R-MAL-034) and the
+screens (R-UI-194), the client certificates (R-CLAMAV-010) and the setup of the certificate and of the plain download (R-CLAMAV-006) are not
+built yet, nor is the measurement of R-CLAMAV-009. The owner's words of 2026-11-21: "Außerdem möchte ich, dass wir das freshclam artefakt als
 spezifisches ClamAV-Repo in Upstream einbindbar machen. ClamAV wird also ein eigenständiges Artefakt-Repo, wir ziehen alle verfügbaren
 Metadaten aus dem ClamAV-Definitionen. Ein Admin kann in den Upstream-Repos ClamAV-Definition-Updates einschalten, wodurch ein
 unternehmens-Endpunkt für alle ClamAV Instanzen bereitgestellt wird, dieser Endpunkt bedient sich automatisch aus dem internen Freshclam
@@ -59,8 +62,9 @@ Priority: **P1** · Covers: quader-only
   `/format` in every project; `GET /api/v1/formats` lists the format with `systemOnly: true`, and the creation form does not offer it;
   `Register` refuses a format that is system only and declares the class `remote` or `virtual`, or a route of the kind `Upload`. The per-class
   enums of the OpenAPI document (`TestR_ARCH_010_PerClassFormatEnums`) leave a system-only format out of the create schemas.
-- The format declares its signatures once the format contract asks a format to declare them; until then the verification of a container
-  is this format's own metadata (R-CLAMAV-003).
+- The format declares no signatures ([signatures.md](../signatures.md) R-SIG-002,
+  [Q-SIG-96](../signatures.md#q-sig-96--the-clamav-definitions-declare-no-signature-their-containers-signature-is-the-imports)): the
+  verification of a container is this format's own metadata (R-CLAMAV-003), decided by the import before the container is stored.
 
 Acceptance criteria: unit (`internal/formats/clamav`, under a second): the descriptor; `Register` refuses a system-only test format with a
 remote class or an `Upload` route; integration (area `upstream`, about 1 s): a create of a `clamav` repository in `web` answers 422 with
@@ -89,8 +93,10 @@ Priority: **P1** · Covers: quader-only
 - **Written by one writer.** The database task commits each new container and signature in process, as system work with the actor
   `system:malware-database`, with the container's metadata of R-CLAMAV-003 as the commit's payload; the format's `OnCommit` hook writes the
   package row, the version row and the side row of the metadata in the commit's transaction, through the format's data port
-  (`internal/formatdata/clamav`, table `clamav_version`, migration 00091). The cleanup removes items through the item store, and
-  `OnItemsRemoved` marks the version's files as removed and keeps the side row as history (R-MAL-034).
+  (`internal/formatdata/clamav`, table `clamav_version`, migration 00094). A commit at another path, or one without its payload, is
+  refused ([Q-CLAMAV-17](#q-clamav-17--a-commit-without-its-metadata-is-refused)). The cleanup removes items through the item store, and
+  `OnItemsRemoved` marks the version's files as removed and keeps the side row and the version row as history (R-MAL-034,
+  [Q-CLAMAV-15](#q-clamav-15--the-version-row-stays-as-history-when-its-files-go)).
 
 Acceptance criteria: unit (the kit's checks 3, 9 and 10, milliseconds): the classification of the layout and the root routes, the hook's
 rows for a committed container, the three names; integration (area `malware`, R-MAL-010's case): two sets that share `main` hold one
@@ -208,7 +214,8 @@ The snippet of the client `freshclam` and the guide (R-UI-049, [api-and-ui.md](.
 PrivateMirror https://quader.example.com/api/clamav/upstream/clamav
 ```
 
-- **One line.** `PrivateMirror` replaces the publisher's network, its DNS record and its patch files; existing `DatabaseMirror` lines may
+- **One line**, the address written without its trailing slash, which `freshclam` adds itself
+  ([Q-CLAMAV-16](#q-clamav-16--the-snippet-writes-the-address-without-its-trailing-slash)). `PrivateMirror` replaces the publisher's network, its DNS record and its patch files; existing `DatabaseMirror` lines may
   stay, `PrivateMirror` wins. The scheme is written out: `freshclam` reads a `PrivateMirror` without one as `http://`. `ScriptedUpdates`,
   `DNSDatabaseInfo` and `Checks` need no change (the checks are the client's own, 12 a day by default; Quader serves each in one request
   while the copy is current).
@@ -643,6 +650,47 @@ the owner's goal that Quader is the company's central endpoint for ClamAV.
 | (c) Only `freshclam` | The one line | Simplest | An installation without `freshclam` would need a server in front of it, which the owner's goal rules out |
 
 **Choice:** (a). **Applied in the spec:** R-CLAMAV-006.
+
+
+### Q-CLAMAV-15 · The version row stays as history when its files go
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-MAL-034 keeps a version's metadata after the cleanup removed its files, and R-UI-194 lists such a version as **Files removed** on
+the repository's package screens, which list the generic version rows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The version row stays with no file; the side row, keyed by the version row, carries `files_removed_at`; the task deletes both after `malware.rescan.cycle` (chosen) | One row per version on every screen | The package screens list the history without a read of their own; the side row goes with its version by the foreign key | A version without a file stands in the generic rows until the history ends |
+| (b) The version row goes with its files; the side row, keyed by repository, database and version, stays | Generic rows only for stored versions | The generic rows say what is stored | The screens need a second list for the history; a side row with a foreign key to the repository joins the purge's list |
+
+**Choice:** (a). **Applied in the spec:** R-CLAMAV-002, R-CLAMAV-007; [developer/clamav.md](../../developer/clamav.md).
+
+### Q-CLAMAV-16 · The snippet writes the address without its trailing slash
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `freshclam` joins its `PrivateMirror` and a file name with a slash of its own (read in ClamAV 1.5.5's source), and a path with
+an empty segment is refused by the dispatcher as `400 invalid_path`. A setup template sees the registry URL with its trailing slash.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A template function `trimslash` beside `schemeless` and `hostname` (chosen) | The template writes `{{trimslash .RegistryURL}}` | One function, usable by any later client that joins a path itself | A function more in the setup templates' set |
+| (b) A field of `SetupData` with the address without the slash | Data | No function | A field of the frozen contract for one format |
+| (c) Serve `//daily.cvd` too | Tolerate the empty segment | No template change | Every route and the dispatcher's clean path would have to admit an empty segment |
+
+**Choice:** (a). **Applied in the spec:** R-CLAMAV-006.
+
+### Q-CLAMAV-17 · A commit without its metadata is refused
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `OnCommit` refuses a commit at a path outside the layout and one without the payload of its kind (`rows.Container`, `rows.Signature`) whose database and version agree with the path (chosen) | The only writer states what it stores | No version reaches the screens that they cannot describe; a wrong path fails the task's run, not a screen | A commit by any other code needs the payload too |
+| (b) The hook writes what the path gives and leaves the metadata empty | Lenient | Any commit succeeds | Versions without build time, level or verification |
+
+**Choice:** (a). **Applied in the spec:** R-CLAMAV-002.
 
 ## What this does not cover
 

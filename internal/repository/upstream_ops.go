@@ -32,8 +32,12 @@ type UpstreamItem struct {
 	// State is empty for a system repository.
 	State      wellknown.State
 	Visibility string
-	// Fixed names what the product holds beyond the table of R-REPO-069: state and visibility of a system repository.
-	Fixed   []string
+	// Fixed names what the product holds beyond the table of R-REPO-069: state and visibility of a system repository (the visibility
+	// of upstream/clamav only while its clients are off), address and account of a local one.
+	Fixed []string
+	// Clients is the switch "ClamAV definition updates" of a repository whose declaration lets clients in (upstream/clamav,
+	// R-REPO-075, Q-API-382); nil for every other repository.
+	Clients *UpstreamClients
 	Address UpstreamAddress
 	Account UpstreamAccount
 	// ListedBy is the number of virtual repositories whose member lists or pin rules name the repository, ListedByProjects the number
@@ -45,6 +49,12 @@ type UpstreamItem struct {
 	ListedByNames []string
 	ConfigVersion int64
 	Warnings      []Warning
+}
+
+// UpstreamClients is whether an administrator switched the clients of a system repository on (R-REPO-075). The address the item
+// shows is the API's: the protocol base on the base URL of the request.
+type UpstreamClients struct {
+	Enabled bool
 }
 
 // UpstreamAddress is the stored address, whether it differs from the product's, and the product's.
@@ -255,8 +265,16 @@ func (s *Service) upstreamItem(row q.Repository, facts map[int64]q.UpstreamRepos
 	if r.Upstream != nil {
 		it.State = r.Upstream.State
 	}
+	decl, declared := wellknown.Lookup(wellknown.Declared(s.cat), row.Key)
 	if it.Kind == wellknown.KindSystem {
 		it.Fixed = []string{"state", "visibility"}
+		if declared && decl.Clients {
+			it.Clients = &UpstreamClients{Enabled: f.ClientsEnabled}
+			if f.ClientsEnabled {
+				// While clients are on, the level is the administrator's (Q-REPO-415).
+				it.Fixed = []string{"state"}
+			}
+		}
 	}
 	rs := &RemoteSettings{AuthMode: AuthNone}
 	if d.Class == Remote {
@@ -264,12 +282,12 @@ func (s *Service) upstreamItem(row q.Repository, facts map[int64]q.UpstreamRepos
 			return UpstreamItem{}, fmt.Errorf("repository: stored remote section of upstream/%s: %w", row.Key, err)
 		}
 	} else {
-		// A local system repository (scanner-clamav, R-REPO-075) has no address and no account to set (Q-REPO-412).
+		// A local system repository (clamav, R-REPO-075) has no address and no account to set (Q-REPO-412).
 		it.Fixed = append(it.Fixed, "address", "account")
 	}
 	stored := storedAddress(rs, d)
 	product := stored
-	if decl, ok := wellknown.Lookup(wellknown.Declared(s.cat), row.Key); ok {
+	if declared {
 		product = decl.Address()
 		it.DisplayName = decl.DisplayName
 	}
@@ -325,7 +343,7 @@ func (s *Service) upstreamWrite(ctx context.Context, tx meta.Tx, c Caller, key s
 	build func(cur Document) (Document, error), after func(qs *q.Queries, id int64) error,
 ) (UpstreamItem, error) {
 	pc := productCaller(c, reason)
-	pc.product.bulkID = c.product.bulkID
+	pc.product.bulkID, pc.product.clients = c.product.bulkID, c.product.clients
 	st, err := s.updateTx(ctx, tx, pc, upstreamName(key), pre, build)
 	if err != nil {
 		return UpstreamItem{}, err
@@ -474,7 +492,10 @@ func (s *Service) setUpstreamVisibilityTx(ctx context.Context, tx meta.Tx, c Cal
 	if err != nil {
 		return UpstreamItem{}, err
 	}
-	if f.System() {
+	if f.System() && !f.ClientsEnabled {
+		if decl, ok := wellknown.Lookup(wellknown.Declared(s.cat), key); ok && decl.Clients {
+			return UpstreamItem{}, managedByProduct("The level of upstream/" + key + " is private while its clients are switched off; switch them on with a level.")
+		}
 		return UpstreamItem{}, managedByProduct("The level of upstream/" + key + " is fixed: it is always private and only for Quader's own work.")
 	}
 	return s.upstreamWrite(ctx, tx, c, key, MatchAny(), "", func(cur Document) (Document, error) {
@@ -506,6 +527,77 @@ func (s *Service) SetAllUpstreamVisibilityTx(ctx context.Context, tx meta.Tx, c 
 		}
 	}
 	return out, c.product.bulkID, nil
+}
+
+// The reasons of the switch of a system repository's clients (R-REPO-075).
+const (
+	ReasonClientsOn  = "clients_on"
+	ReasonClientsOff = "clients_off"
+)
+
+// WarningPublicNotAllowedLowered is the warning of a switch-on at public in an installation whose default endpoint admits no request
+// without a credential: the clients are switched on at internal instead (R-REPO-075, R-REPO-073).
+const WarningPublicNotAllowedLowered = "public_not_allowed_lowered"
+
+// SetUpstreamClients switches the clients of a system repository on or off (R-REPO-075, Q-REPO-414, Q-API-382): only a repository
+// whose declaration lets clients in (upstream/clamav) has the switch, every other answers 409 managed_by_product. Switching on opens the
+// repository at level (public when empty), and at internal with the warning public_not_allowed_lowered where the installation does not
+// allow public and the caller asked for public; it is a widening, so the caller's RaiseGate asks for a recent sign-in. Switching off
+// sets both levels back to private, which records repository.narrowed. Each write raises config_version, records repository.updated
+// with clients among its changes and the reason clients_on or clients_off, and notifies repo_config.
+func (s *Service) SetUpstreamClients(ctx context.Context, c Caller, key string, enabled bool, level string) (UpstreamItem, error) {
+	var out UpstreamItem
+	err := s.run.InTx(ctx, func(tx meta.Tx) error {
+		f, err := s.upstreamFacts(ctx, tx, key)
+		if err != nil {
+			return err
+		}
+		if decl, ok := wellknown.Lookup(wellknown.Declared(s.cat), key); !ok || !decl.Clients || !f.System() {
+			return managedByProduct("upstream/" + key + " serves no client of its own: only the repository of ClamAV's definitions has this switch.")
+		}
+		if !enabled {
+			out, err = s.writeClients(ctx, tx, c, key, false, LevelPrivate, nil)
+			return err
+		}
+		if level == "" {
+			level = LevelPublic
+		}
+		if c.RaiseGate != nil && !f.ClientsEnabled {
+			if err := c.RaiseGate(ctx); err != nil {
+				return err
+			}
+		}
+		out, err = s.writeClients(ctx, tx, c, key, true, level, nil)
+		if e, ok := errs.As(err); ok && e.Code == errs.CodePublicNotAllowed && level == LevelPublic {
+			out, err = s.writeClients(ctx, tx, c, key, true, LevelInternal, []Warning{{
+				Code: WarningPublicNotAllowedLowered, Pointer: "/level",
+				Detail: "The default endpoint admits no request without a credential, so the ClamAV definitions are served at internal; ClamAV installations send a token.",
+			}})
+		}
+		return err
+	})
+	return out, err
+}
+
+// writeClients writes the switch and the level of a system repository's clients in one update.
+func (s *Service) writeClients(ctx context.Context, tx meta.Tx, c Caller, key string, enabled bool, level string, warnings []Warning) (UpstreamItem, error) {
+	reason := ReasonClientsOff
+	if enabled {
+		reason = ReasonClientsOn
+	}
+	pc := c
+	pc.product.clients = true
+	it, err := s.upstreamWrite(ctx, tx, pc, key, MatchAny(), reason, func(cur Document) (Document, error) {
+		cur.Visibility = Visibility{Artifacts: level, Wiki: level}
+		return cur, nil
+	}, func(qs *q.Queries, id int64) error {
+		return qs.SetUpstreamClientsEnabled(ctx, q.SetUpstreamClientsEnabledParams{Enabled: enabled, RepositoryID: id})
+	})
+	if err != nil {
+		return UpstreamItem{}, err
+	}
+	it.Warnings = append(it.Warnings, warnings...)
+	return it, nil
 }
 
 // UpstreamAddressInput is the body of setUpstreamRepositoryAddress: an omitted member is the product's; Account replaces the stored
@@ -675,7 +767,7 @@ func (s *Service) RemoveUpstreamAccount(ctx context.Context, c Caller, key strin
 	return out, err
 }
 
-// remoteOnly refuses the address and the account of a local system repository (scanner-clamav, R-REPO-075): it has neither, and
+// remoteOnly refuses the address and the account of a local system repository (clamav, R-REPO-075): it has neither, and
 // the operations answer 409 managed_by_product.
 func remoteOnly(cur Document) error {
 	if cur.Class == Remote {

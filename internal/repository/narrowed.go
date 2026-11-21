@@ -33,6 +33,8 @@ const (
 	// partDebUpstreamKeysRemoved lists the fingerprints an update took out of deb.upstreamKeys of a remote Debian repository
 	// (R-DEB-020, R-DEB-032, Q-REPO-274).
 	partDebUpstreamKeysRemoved = "debUpstreamKeysRemoved"
+	// partClientsOff is the switch "ClamAV definition updates" of upstream/clamav switched off (R-REPO-075, Q-REPO-414).
+	partClientsOff = "clientsOff"
 )
 
 // repoRef names a repository of an entry: its ID as decimal text, which the replay acts on, and its qualified name, for
@@ -71,6 +73,8 @@ type narrowedEntry struct {
 	Malware *MalwareSettings `json:"malware,omitempty"`
 	// DebUpstreamKeysRemoved are the fingerprints taken out of deb.upstreamKeys.
 	DebUpstreamKeysRemoved []string `json:"debUpstreamKeysRemoved,omitempty"`
+	// ClientsOff is true for the write that switched the clients of a system repository off; the replay switches them off again.
+	ClientsOff bool `json:"clientsOff,omitempty"`
 }
 
 // parts lists the parts the entry carries, in the order of the table of R-REPO-061.
@@ -90,6 +94,7 @@ func (e narrowedEntry) parts() []string {
 	add(e.Vulnerabilities != nil, partVulnerabilities)
 	add(e.Malware != nil, partMalware)
 	add(len(e.DebUpstreamKeysRemoved) > 0, partDebUpstreamKeysRemoved)
+	add(e.ClientsOff, partClientsOff)
 	return out
 }
 

@@ -782,6 +782,7 @@ catalog.Facts: field ProbePath string
 catalog.Facts: field ProtocolBasePath string
 catalog.Facts: field RegistryRoot bool
 catalog.Facts: field SettingsSchema []byte
+catalog.Facts: field SystemOnly bool
 catalog.Facts: field UpstreamPresets []UpstreamPreset
 catalog.Facts: field Wiki bool
 catalog.Facts: method DefaultPreset() (UpstreamPreset, bool)

@@ -23,6 +23,13 @@ UPDATE upstream_repository
    SET first_switched_on_at = COALESCE(first_switched_on_at, now())
  WHERE repository_id = sqlc.arg(repository_id)::bigint AND kind = 'preset';
 
+-- name: SetUpstreamClientsEnabled :exec
+-- The switch "ClamAV definition updates" of a system repository (R-REPO-075, Q-REPO-414); the CHECK of migration 00094 keeps it to a
+-- system row.
+UPDATE upstream_repository
+   SET clients_enabled = sqlc.arg(enabled)::boolean
+ WHERE repository_id = sqlc.arg(repository_id)::bigint AND kind = 'system';
+
 -- name: SetUpstreamRetired :exec
 -- The product no longer declares the repository (R-REPO-067 step 5); the first retirement's time is kept.
 UPDATE upstream_repository

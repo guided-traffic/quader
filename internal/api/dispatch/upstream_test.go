@@ -32,4 +32,12 @@ func TestR_REPO_070_ASystemRepositoryOfUpstreamAnswersNoClient(t *testing.T) {
 	if rec := r.do("GET", "/api/probe/it/preset/left-pad"); rec.Code != 204 || len(r.reached) != 1 {
 		t.Fatalf("an active preset repository is served: %d %v %v", rec.Code, rec.Header(), r.reached)
 	}
+	// R-REPO-075: a system repository whose clients an administrator switched on (upstream/clamav) is served at its level.
+	r.repos.byKey[qr("definitions")] = repository.Repository{
+		ID: "11", Name: qr("definitions"), Class: repository.Local, Format: "probe",
+		Upstream: &repository.UpstreamFacts{Kind: wellknown.KindSystem, ClientsEnabled: true},
+	}
+	if rec := r.do("GET", "/api/probe/it/definitions/left-pad"); rec.Code != 204 || len(r.reached) != 2 {
+		t.Fatalf("R-REPO-075 a system repository with its clients on is not served: %d %v %v", rec.Code, rec.Header(), r.reached)
+	}
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/files"
 	ansibledata "github.com/guided-traffic/quader/internal/formatdata/ansible"
+	clamavdata "github.com/guided-traffic/quader/internal/formatdata/clamav"
 	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
 	"github.com/guided-traffic/quader/internal/formatdata/npm"
 	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
@@ -23,6 +24,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	ansibleformat "github.com/guided-traffic/quader/internal/formats/ansible"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	clamavformat "github.com/guided-traffic/quader/internal/formats/clamav"
 	debformat "github.com/guided-traffic/quader/internal/formats/deb"
 	npmformat "github.com/guided-traffic/quader/internal/formats/npm"
 	nugetformat "github.com/guided-traffic/quader/internal/formats/nuget"
@@ -191,6 +193,9 @@ var _ debformat.Store = (*debdata.Store)(nil)
 // The same for the Ansible Galaxy data port.
 var _ ansibleformat.Store = (*ansibledata.Store)(nil)
 
+// The same for the data port of ClamAV's definitions.
+var _ clamavformat.Store = (*clamavdata.Store)(nil)
+
 func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nugetdata.Jobs, ring *secrets.KeyRing, debCfg config.Deb) (map[formats.ID]any, error) {
 	st, err := npm.New(npm.Options{
 		DB: db, Recorder: rec, Source: httpserver.SourceFrom,
@@ -238,7 +243,13 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	if err != nil {
 		return nil, fmt.Errorf("formats: ansible data port: %w", err)
 	}
-	return map[formats.ID]any{npmformat.ID: st, nugetformat.ID: nuget, ociformat.ID: oci, debformat.ID: deb, ansibleformat.ID: ansible}, nil
+	clamav, err := clamavdata.New(clamavdata.Options{DB: db})
+	if err != nil {
+		return nil, fmt.Errorf("formats: clamav data port: %w", err)
+	}
+	return map[formats.ID]any{
+		npmformat.ID: st, nugetformat.ID: nuget, ociformat.ID: oci, debformat.ID: deb, ansibleformat.ID: ansible, clamavformat.ID: clamav,
+	}, nil
 }
 
 // bindFormatPorts binds the ports and checks them against the formats: a format that

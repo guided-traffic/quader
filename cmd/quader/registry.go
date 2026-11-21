@@ -9,6 +9,7 @@ import (
 	_ "github.com/guided-traffic/quader/internal/blob"
 	_ "github.com/guided-traffic/quader/internal/cluster"
 	_ "github.com/guided-traffic/quader/internal/formatdata/ansible"
+	_ "github.com/guided-traffic/quader/internal/formatdata/clamav"
 	_ "github.com/guided-traffic/quader/internal/formatdata/deb"
 	_ "github.com/guided-traffic/quader/internal/formatdata/nuget"
 	_ "github.com/guided-traffic/quader/internal/formatdata/oci"

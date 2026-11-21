@@ -1207,6 +1207,7 @@ func (e FormatDescriptorPatternSubject) Valid() bool {
 // Defines values for FormatName.
 const (
 	FormatNameAnsible FormatName = "ansible"
+	FormatNameClamav  FormatName = "clamav"
 	FormatNameDeb     FormatName = "deb"
 	FormatNameGeneric FormatName = "generic"
 	FormatNameNpm     FormatName = "npm"
@@ -1218,6 +1219,8 @@ const (
 func (e FormatName) Valid() bool {
 	switch e {
 	case FormatNameAnsible:
+		return true
+	case FormatNameClamav:
 		return true
 	case FormatNameDeb:
 		return true
@@ -8087,6 +8090,11 @@ type FormatDescriptor struct {
 	// reader. `null` for a format without settings.
 	SettingsSchema *map[string]interface{} `json:"settingsSchema"`
 
+	// SystemOnly Whether the format's only repository is one Quader declares in the project `upstream` (`clamav`, R-CLAMAV-001, ADR-225): no
+	// repository of it is created (`422 validation_failed` with `format_system_only` at `/format`), and the create form does
+	// not offer it.
+	SystemOnly bool `json:"systemOnly"`
+
 	// UpstreamPresets The well-known public registries of the format's ecosystem, in the format's order (R-REPO-062): the one-click choices of a
 	// remote repository's upstream. Exactly one is the `default`, the upstream an omitted `remote.url` takes; a create whose
 	// `url` equals a preset's and that omits `extraHosts` stores that preset's hosts. Empty for a format without a well-known
@@ -8912,7 +8920,8 @@ type LimitWhoUser struct {
 // LimitWhoUserKind defines model for LimitWhoUser.Kind.
 type LimitWhoUserKind string
 
-// LocalFormatName The formats whose classes contain `local`. The create form offers these for a local repository.
+// LocalFormatName The formats whose classes contain `local`, without a system-only format (`systemOnly`, R-CLAMAV-001), of which no repository
+// is created. The create form offers these for a local repository.
 type LocalFormatName string
 
 // LoginOptions What the sign-in screen offers (R-AUTH-009). It names no issuer, client ID or error detail.
@@ -12045,8 +12054,10 @@ type UpstreamProductAddress struct {
 
 // UpstreamRepository A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
 // repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
-// (`[state, visibility]` for `scanner-trivy`, `[state, visibility, address, account]` for `scanner-clamav`, whose address is
-// empty and whose account is `none`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+// (`[state, visibility]` for `scanner-trivy`; `[state, visibility, address, account]` for `clamav` while its clients are off and
+// `[state, address, account]` while they are on, its address being empty and its account `none`). `clients` is the switch
+// **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382), `null` for every other repository. `visibility` is the one
+// level of both parts. `listedBy` is the number of virtual
 // repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
 // `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
 // answered.
@@ -12057,6 +12068,7 @@ type UpstreamRepository struct {
 	// Address The stored address (`remote.url`, `remote.extraHosts`, for an APT archive the keys of `deb.upstreamKeys`), whether it differs
 	// from the product's, and the product's (R-REPO-069, R-REPO-073).
 	Address UpstreamRepositoryAddressInfo `json:"address"`
+	Clients *UpstreamRepositoryClients    `json:"clients"`
 
 	// ConfigVersion The repository's `config_version`, the value of the `ETag`.
 	ConfigVersion int `json:"configVersion"`
@@ -12065,7 +12077,7 @@ type UpstreamRepository struct {
 	DisplayName string                    `json:"displayName"`
 	Fixed       []UpstreamRepositoryFixed `json:"fixed"`
 
-	// Format The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `scanner-clamav` (Q-REPO-411).
+	// Format The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `clamav` (Q-REPO-411).
 	Format string `json:"format"`
 
 	// InUse For a system repository, whether the work it serves reads through it, from the configuration of the replica that answers (R-REPO-070).
@@ -12172,8 +12184,26 @@ type UpstreamRepositoryBulkResult struct {
 	Items  []UpstreamRepository `json:"items"`
 }
 
-// UpstreamRepositoryFixed What the product holds of a repository beyond the table of R-REPO-069: `state` and `visibility` of a system repository, and
-// `address` and `account` of a local one (`scanner-clamav`), which has neither (Q-REPO-412).
+// UpstreamRepositoryClients The switch **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382): whether the endpoint serves the company's ClamAV
+// installations, and its address, the protocol base of the repository on the base URL of the request.
+type UpstreamRepositoryClients struct {
+	Address string `json:"address"`
+	Enabled bool   `json:"enabled"`
+}
+
+// UpstreamRepositoryClientsRequest Switches the clients of `clamav` on or off (R-REPO-075). `level` is read only with `enabled: true`; omitted, it is `public`.
+type UpstreamRepositoryClientsRequest struct {
+	Enabled bool `json:"enabled"`
+
+	// Level A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
+	// principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
+	// request, also one without a credential.
+	Level *VisibilityLevel `json:"level,omitempty"`
+}
+
+// UpstreamRepositoryFixed What the product holds of a repository beyond the table of R-REPO-069: `state` and `visibility` of a system repository (the
+// `visibility` of `clamav` only while its clients are off), and `address` and `account` of a local one (`clamav`), which has
+// neither (Q-REPO-412).
 type UpstreamRepositoryFixed string
 
 // UpstreamRepositoryKind `preset`: a repository of an upstream preset of the format catalog; `system`: a repository of Quader's own work (R-REPO-066).
@@ -15698,6 +15728,9 @@ type SetUpstreamRepositoryAccountJSONRequestBody = UpstreamRepositoryAccount
 // SetUpstreamRepositoryAddressJSONRequestBody defines body for SetUpstreamRepositoryAddress for application/json ContentType.
 type SetUpstreamRepositoryAddressJSONRequestBody = UpstreamRepositoryAddress
 
+// SetUpstreamRepositoryClientsJSONRequestBody defines body for SetUpstreamRepositoryClients for application/json ContentType.
+type SetUpstreamRepositoryClientsJSONRequestBody = UpstreamRepositoryClientsRequest
+
 // SetUpstreamRepositoryStateJSONRequestBody defines body for SetUpstreamRepositoryState for application/json ContentType.
 type SetUpstreamRepositoryStateJSONRequestBody = UpstreamRepositoryStateRequest
 
@@ -17268,6 +17301,9 @@ type ServerInterface interface {
 	// SetUpstreamRepositoryAddress Override the address of a well-known repository
 	// (PUT /api/v1/upstream-repositories/{key}/address)
 	SetUpstreamRepositoryAddress(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey, params SetUpstreamRepositoryAddressParams)
+	// SetUpstreamRepositoryClients Switch ClamAV definition updates on or off
+	// (PUT /api/v1/upstream-repositories/{key}/clients)
+	SetUpstreamRepositoryClients(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey)
 	// SetUpstreamRepositoryState Switch a well-known repository on or off
 	// (PUT /api/v1/upstream-repositories/{key}/state)
 	SetUpstreamRepositoryState(w http.ResponseWriter, r *http.Request, key UpstreamRepositoryKey)
@@ -30922,6 +30958,32 @@ func (siw *ServerInterfaceWrapper) SetUpstreamRepositoryAddress(w http.ResponseW
 	handler.ServeHTTP(w, r)
 }
 
+// SetUpstreamRepositoryClients operation middleware
+func (siw *ServerInterfaceWrapper) SetUpstreamRepositoryClients(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key UpstreamRepositoryKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", r.PathValue("key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUpstreamRepositoryClients(w, r, key)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetUpstreamRepositoryState operation middleware
 func (siw *ServerInterfaceWrapper) SetUpstreamRepositoryState(w http.ResponseWriter, r *http.Request) {
 
@@ -33336,6 +33398,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/state", wrapper.SetUpstreamRepositoryState)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/upstream-repositories/switch-on-all", wrapper.SwitchOnAllUpstreamRepositories)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/visibility", wrapper.SetUpstreamRepositoryVisibility)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/clients", wrapper.SetUpstreamRepositoryClients)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/upstream-repositories/set-visibility", wrapper.SetAllUpstreamRepositoriesVisibility)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/address", wrapper.ResetUpstreamRepositoryAddress)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/address", wrapper.SetUpstreamRepositoryAddress)

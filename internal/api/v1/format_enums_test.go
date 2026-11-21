@@ -29,6 +29,10 @@ func TestR_ARCH_010_PerClassFormatEnums(t *testing.T) {
 	want := map[string][]string{"FormatName": {}, "LocalFormatName": {}, "RemoteFormatName": {}, "VirtualFormatName": {}}
 	for _, e := range catalog.Default().List() {
 		want["FormatName"] = append(want["FormatName"], string(e.ID))
+		if e.SystemOnly {
+			// No repository of a system-only format is created, so no create schema offers it (R-CLAMAV-001).
+			continue
+		}
 		for _, c := range []catalog.Class{catalog.Local, catalog.Remote, catalog.Virtual} {
 			if e.Supports(c) {
 				name := map[catalog.Class]string{catalog.Local: "LocalFormatName", catalog.Remote: "RemoteFormatName", catalog.Virtual: "VirtualFormatName"}[c]

@@ -17,6 +17,7 @@ func TestR_API_079_EveryFormatWithPackageScreensCountsTheFetchesOfItsVersionsByI
 		"ansible": formats.FetchLeadFile, // the collection archive; the version documents are none
 		"deb":     formats.FetchAnyFile,  // the package file of every architecture; the indexes are none
 		"oci":     formats.FetchDocument, // the tag's manifest by the tag or by its digest; a HEAD and the platform manifests are none
+		"clamav":  formats.FetchLeadFile, // the container of the version; its detached signature is none (R-CLAMAV-007)
 	}
 	seen := map[formats.ID]bool{}
 	for _, f := range formats.List() {
@@ -54,6 +55,7 @@ func TestR_REPO_065_EveryFormatDeclaresItsProbes(t *testing.T) {
 		"deb":     {"HEAD deb.pool.get", "HEAD deb.flat.file", "HEAD deb.members.get"},
 		"oci":     {"GET oci.manifest.get.tag", "HEAD oci.manifest.get.tag", "HEAD oci.manifest.get.digest", "HEAD oci.blob.get"},
 		"generic": nil, // no class remote (R-GENERIC-001)
+		"clamav":  nil, // no class remote (R-CLAMAV-001)
 	}
 	seen := map[formats.ID]bool{}
 	for _, f := range formats.List() {

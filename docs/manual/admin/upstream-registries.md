@@ -25,7 +25,7 @@ repositories**, without **Set up client** ([Repositories](../user/repositories.m
 | NuGet | nuget.org (`upstream/nuget-org`) | `https://api.nuget.org/v3/index.json` |
 | OCI (Docker) | Docker Hub (`upstream/docker-hub`), Quay (`upstream/quay`), GitHub (ghcr.io) (`upstream/ghcr`), GitLab (`upstream/gitlab`) | Docker Hub, Quay, GitHub (ghcr.io), GitLab |
 | OCI (Docker) | Image scanning database (`upstream/scanner-trivy`) | `https://mirror.gcr.io/`, the image `aquasec/trivy-db` only |
-| Generic | Malware scan database (`upstream/scanner-clamav`) | none: a local repository that Quader fills with ClamAV's signature database |
+| ClamAV definitions | ClamAV definitions (`upstream/clamav`) | none: a local repository that Quader fills with ClamAV's signature databases, which serves the company's ClamAV installations while **ClamAV definition updates** is on |
 
 The Debian and Ubuntu repositories come with the archive keys of their distribution, so they verify what they fetch from the start.
 Every repository is addressed like any other: `https://quader.example.com/api/npm/upstream/npmjs/`,
@@ -42,7 +42,7 @@ the old host; the repository says so, and you enter the account again.
 **Admin area › Upstream registries** lists the registries grouped by format. Each row has the registry's name with `upstream/<key>`
 under it, its switch, its visibility level, **Listed by** (how many virtual repositories, in all projects, list it) and **Details**.
 Below them the section **Registries of this installation** holds your organization's own registries ([below](#registries-of-this-installation)),
-and the table **System repositories** holds `scanner-trivy` and `scanner-clamav`, the same name the project's page gives them.
+and the table **System repositories** holds `scanner-trivy` and `clamav`, the same name the project's page gives them.
 Holders of the roles admin and repository-admin change them; security-admin and auditor read the page without the controls.
 
 ## Switching on and off
@@ -74,8 +74,9 @@ Through the API: one registry with `PUT /api/v1/upstream-repositories/<key>/stat
 once with `POST /api/v1/upstream-repositories/switch-on-all`. The list counts the listing virtual repositories and their projects
 (`listedBy`, `listedByProjects`), and `GET /api/v1/upstream-repositories/<key>` names them (`listedByNames`, up to 100).
 
-`scanner-trivy` has no switch: it is in use exactly while the image scanning reads its database through it. Nor has `scanner-clamav`:
-it is in use exactly while the malware scan keeps its signature database in it.
+`scanner-trivy` has no switch: it is in use exactly while the image scanning reads its database through it. Nor has `clamav` a state:
+it is in use exactly while the malware scan keeps its signature database in it; its switch **ClamAV definition updates** decides only
+whether it serves the company's ClamAV installations.
 
 ## Who reads a registry
 
@@ -141,17 +142,22 @@ Its page lets you change the address and store
 an account like any registry; the address must serve the image `aquasec/trivy-db`. For a registry that publishes the database under
 another name, set the image scanning's database setting instead ([Advisory sources](vulnerability-sources.md#container-images)).
 
-## The malware scan's database
+## ClamAV's definitions
 
-Below it stands `scanner-clamav`, **Malware scan database**: the repository in which the malware scan keeps every version of ClamAV's
-signature database. `freshclam` beside the worker fetches the database from ClamAV's network; every 30 minutes the task
-`malware-sync-db` stores a new version at `<version>/<file>` (`main-63.daily-28189.bytecode-339/main.cvd`, …) and makes it the version
-the malware scanners load, and it removes versions older than two days that are neither in use nor the one before. An unchanged
-`main.cvd` is one stored file for every version. It has no switch, no address and no account, and its level is always Private: it is
-**In use by the malware scan** while the scanning is on and `malware.database.repository` names it (the default), else **Not in use**.
-It answers no client, administrators included, and nobody deploys to it, so its repository's page offers no upload, and its page here carries the badge **Local repository** and
-its **Details** hold only the link to its settings page and its dates. Its files are listed on the repository's page; removing one
-makes the next run store its version again. An installation without internet names a repository of its own instead
+Below it stands `clamav`, **ClamAV definitions**: the repository of the format ClamAV definitions in which the malware scan keeps ClamAV's
+signature databases, one package per database (`main`, `daily`, `bytecode`) and one version per container (`daily/28190/daily.cvd`, with
+its detached signature `daily-28190.cvd.sign` beside it). Only Quader writes it; nobody uploads to it or deletes a file of it by hand
+(`409 managed_by_product`, also for an administrator). It has no state, no address and no account: it is **In use by the malware scan**
+while the scanning is on and `malware.database.repository` names it (the default), else **Not in use**. No repository of the format is
+created in a project.
+
+**ClamAV definition updates** is its switch, off by default. While it is off, the repository answers no client, administrators included,
+and its level is Private. Switched on (`PUT /api/v1/upstream-repositories/clamav/clients` with `{"enabled": true}`, which asks for a
+recent sign-in), it serves the set of definitions Quader's own scanners use to every ClamAV of the company at
+`https://<your installation>/api/clamav/upstream/clamav`, at the level Public unless you name a lower one, or Internal where the
+installation allows no Public level; the level can then be changed like any registry's. A ClamAV installation names the address in one
+line of `freshclam.conf` (`PrivateMirror`); the repository's **Set up client** page shows it. Switched off again, the level is Private and
+every request answers `404`. An installation without internet names a repository of its own as the source instead
 ([Monitoring and operations](operations.md#malware-scanning)).
 
 ## Where the system repositories show

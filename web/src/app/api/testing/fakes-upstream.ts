@@ -40,6 +40,7 @@ export function presetRepository(format: string, p: UpstreamPreset, over: Partia
     displayName: p.displayName,
     state: 'not-switched-on',
     inUse: null,
+    clients: null,
     visibility: 'internal',
     fixed: [],
     address: {
@@ -68,6 +69,7 @@ export function scannerTrivy(over: Partial<UpstreamRepository> = {}): UpstreamRe
     displayName: 'Image scanning database',
     state: null,
     inUse: true,
+    clients: null,
     visibility: 'private',
     fixed: ['state', 'visibility'],
     address: { ...product, overridden: false, product },
@@ -90,6 +92,7 @@ export function scannerClamav(over: Partial<UpstreamRepository> = {}): UpstreamR
     displayName: 'Malware scan database',
     state: null,
     inUse: true,
+    clients: null,
     visibility: 'private',
     fixed: ['state', 'visibility', 'address', 'account'],
     address: { ...product, overridden: false, product },

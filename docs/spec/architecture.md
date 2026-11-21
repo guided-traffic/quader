@@ -2478,6 +2478,10 @@ type UploadSession struct {
 // authenticated null; Register refuses the fact for a format without the class remote, a ProbePath or a remote adapter that implements
 // Authenticator, Q-REPO-280). For the format that declares RegistryRoot the probe resource is at the root of the host, not below the
 // path of the upstream URL, which is a namespace prefix there (Q-REPO-281).
+// Facts also gains SystemOnly (ADR-225, formats/clamav.md R-CLAMAV-001): the format's only repository is one the product declares in the
+// project upstream; no caller creates one (422 format_system_only at /format), GET /api/v1/formats lists it with systemOnly, the catalog
+// refuses it with the class remote or virtual and formats.Validate with a route of the kind Upload. It is an addition: ContractVersion
+// stays 7. The setup templates gain the function trimslash (Q-CLAMAV-16).
 
 type PackageStore interface {
 	Package(ctx context.Context, repo RepoRef, name string) (PackageRow, bool, error)

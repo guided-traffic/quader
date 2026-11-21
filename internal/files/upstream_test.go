@@ -20,4 +20,24 @@ func TestR_REPO_070_TheFilesOfASystemRepositoryServeNoClient(t *testing.T) {
 	if _, err := tg.resolved(false); err != nil {
 		t.Fatalf("the management API: %v", err)
 	}
+	// R-REPO-075: upstream/clamav serves clients while they are switched on.
+	open := target{repo: repository.Repository{Lifecycle: repository.Active, Upstream: &repository.UpstreamFacts{Kind: wellknown.KindSystem, ClientsEnabled: true}}}
+	if _, err := open.resolved(true); err != nil {
+		t.Fatalf("R-REPO-075 a system repository with its clients on: %v", err)
+	}
+}
+
+// TestQ_REPO_416_NoOneDeletesADefinitionFileByHand: a local system repository of the project upstream refuses a hand delete with 409
+// managed_by_product, whether its clients are on or off; the remote scanner-trivy does not (R-REPO-075). Milliseconds.
+func TestQ_REPO_416_NoOneDeletesADefinitionFileByHand(t *testing.T) {
+	for _, on := range []bool{false, true} {
+		r := repository.Repository{Class: repository.Local, Upstream: &repository.UpstreamFacts{Kind: wellknown.KindSystem, ClientsEnabled: on}}
+		if !r.RefusesHandDelete() {
+			t.Errorf("clients on %v: a hand delete is taken", on)
+		}
+	}
+	if (repository.Repository{Class: repository.Remote, Upstream: &repository.UpstreamFacts{Kind: wellknown.KindSystem}}).RefusesHandDelete() ||
+		(repository.Repository{Class: repository.Local}).RefusesHandDelete() {
+		t.Error("scanner-trivy or a repository of another project refuses a hand delete")
+	}
 }

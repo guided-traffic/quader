@@ -69,7 +69,7 @@ func (q *Queries) CountUpstreamListedBy(ctx context.Context) ([]CountUpstreamLis
 }
 
 const getUpstreamRepositoryFacts = `-- name: GetUpstreamRepositoryFacts :many
-SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at FROM upstream_repository WHERE repository_id = $1::bigint
+SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at, clients_enabled FROM upstream_repository WHERE repository_id = $1::bigint
 `
 
 func (q *Queries) GetUpstreamRepositoryFacts(ctx context.Context, repositoryID int64) ([]UpstreamRepository, error) {
@@ -88,6 +88,7 @@ func (q *Queries) GetUpstreamRepositoryFacts(ctx context.Context, repositoryID i
 			&i.RetiredAt,
 			&i.AddressOverridden,
 			&i.AccountRemovedAt,
+			&i.ClientsEnabled,
 		); err != nil {
 			return nil, err
 		}
@@ -118,7 +119,7 @@ func (q *Queries) InsertUpstreamRepository(ctx context.Context, arg InsertUpstre
 
 const listUpstreamRepositoryFacts = `-- name: ListUpstreamRepositoryFacts :many
 
-SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at FROM upstream_repository ORDER BY repository_id
+SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at, clients_enabled FROM upstream_repository ORDER BY repository_id
 `
 
 // Queries of the built-in project upstream (repositories-and-proxy.md R-REPO-066 to R-REPO-073): the rows of upstream_repository
@@ -143,6 +144,7 @@ func (q *Queries) ListUpstreamRepositoryFacts(ctx context.Context) ([]UpstreamRe
 			&i.RetiredAt,
 			&i.AddressOverridden,
 			&i.AccountRemovedAt,
+			&i.ClientsEnabled,
 		); err != nil {
 			return nil, err
 		}
@@ -201,6 +203,24 @@ type SetUpstreamAddressOverriddenParams struct {
 // Whether the stored address differs from the product's (R-REPO-069, R-REPO-067 step 3).
 func (q *Queries) SetUpstreamAddressOverridden(ctx context.Context, arg SetUpstreamAddressOverriddenParams) error {
 	_, err := q.db.Exec(ctx, setUpstreamAddressOverridden, arg.Overridden, arg.RepositoryID)
+	return err
+}
+
+const setUpstreamClientsEnabled = `-- name: SetUpstreamClientsEnabled :exec
+UPDATE upstream_repository
+   SET clients_enabled = $1::boolean
+ WHERE repository_id = $2::bigint AND kind = 'system'
+`
+
+type SetUpstreamClientsEnabledParams struct {
+	Enabled      bool
+	RepositoryID int64
+}
+
+// The switch "ClamAV definition updates" of a system repository (R-REPO-075, Q-REPO-414); the CHECK of migration 00094 keeps it to a
+// system row.
+func (q *Queries) SetUpstreamClientsEnabled(ctx context.Context, arg SetUpstreamClientsEnabledParams) error {
+	_, err := q.db.Exec(ctx, setUpstreamClientsEnabled, arg.Enabled, arg.RepositoryID)
 	return err
 }
 

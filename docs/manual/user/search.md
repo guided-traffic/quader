@@ -56,6 +56,6 @@ An administrator of the installation also sees, last and apart, the pages of the
 area**. Only choosing one of those marked entries opens the admin area; Enter and the results page always stay in the area you work
 in. See [the admin dashboard](../admin/dashboard.md).
 
-The two system repositories of the project Upstream, `scanner-trivy` and `scanner-clamav`, which only administrators read, are found
+The two system repositories of the project Upstream, `scanner-trivy` and `clamav`, which only administrators read, are found
 like any repository and carry the badge **System**, in the suggestions and on the results page: Quader keeps them for its scanners, and
 no client can use them ([Upstream registries](../admin/upstream-registries.md#where-the-system-repositories-show)).

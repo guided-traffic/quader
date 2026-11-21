@@ -180,6 +180,7 @@ func parseSetupTemplate(t formats.SetupTemplate) (*template.Template, error) {
 		"xml":        html.EscapeString,
 		"schemeless": schemeless,
 		"hostname":   hostname,
+		"trimslash":  trimSlash,
 	}).Parse(t.Template)
 }
 
@@ -258,6 +259,10 @@ func schemeless(u string) string {
 	}
 	return u
 }
+
+// trimSlash drops one trailing slash of a URL: the form of a client that joins the base and a file name with a slash of its own
+// (freshclam's PrivateMirror, formats/clamav.md R-CLAMAV-006).
+func trimSlash(u string) string { return strings.TrimSuffix(u, "/") }
 
 // hostname is the host name of a URL without its port, brackets or path: the key of a client that binds a credential to a host
 // name alone (a ~/.netrc line, R-ANS-025, Q-ANS-48). A value that is not an http or https URL with a host is returned as it is.

@@ -207,6 +207,9 @@ type productWrite struct {
 	// level is the level an absent member of the reconcile's create takes instead of the installation's default (a preset's
 	// internal, Q-REPO-388); empty for every other write.
 	level string
+	// clients marks the write of the switch "ClamAV definition updates" (R-REPO-075): repository.updated names the member clients
+	// among its changes, and the write raises config_version even where the level stays.
+	clients bool
 }
 
 // principalID returns the actor id when it is a uuid and "" otherwise (a break-glass
@@ -273,7 +276,11 @@ func (s *Service) createTx(ctx context.Context, tx meta.Tx, c Caller, project st
 	if wellknown.IsProject(project) && (!c.product.on || kind == "") {
 		return Stored{}, managedByProduct("Nothing is created in the project upstream: its repositories are the ones Quader declares.")
 	}
-	_, v := validate(s.cat, &d, true)
+	info, v := validate(s.cat, &d, true)
+	if info.SystemOnly && !c.product.on {
+		// Only the product declares a repository of a system-only format (R-CLAMAV-001, ADR-225).
+		v.add("/format", errs.CodeFormatSystemOnly, fmt.Sprintf("the %s format has one repository, which Quader declares in the project upstream", info.ID))
+	}
 	if c.product.on {
 		dropProductHeld(v, nil, &d)
 	}
@@ -468,6 +475,10 @@ func (s *Service) updateTx(ctx context.Context, tx meta.Tx, c Caller, name qname
 	changes, err := updateChanges(&cur, &nd)
 	if err != nil {
 		return Stored{}, err
+	}
+	if c.product.clients {
+		changes = append(changes, "clients")
+		sort.Strings(changes)
 	}
 	if len(changes) == 0 {
 		return s.stored(ctx, qs, row, name.Project, v.warnings) // nothing to write: same version, no event
@@ -858,6 +869,8 @@ func (s *Service) recordUpdate(ctx context.Context, tx meta.Tx, c Caller, r Repo
 		return err
 	}
 	narrowed := s.narrowing(r, cur, nd, curRel, rel)
+	// Switching the clients of upstream/clamav off narrows who reads it (R-REPO-075): journaled, so a restore keeps it off.
+	narrowed.ClientsOff = c.product.clients && c.product.reason == ReasonClientsOff
 	if err := s.recordNarrowed(ctx, tx, c, r, narrowed); err != nil {
 		return err
 	}

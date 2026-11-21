@@ -24,15 +24,28 @@ type UpstreamFacts struct {
 	// State is the state of a preset repository derived from what is stored (R-REPO-068, Q-REPO-375); empty for a system
 	// repository, which has none (R-REPO-070).
 	State wellknown.State
+	// ClientsEnabled is upstream_repository.clients_enabled: the switch "ClamAV definition updates" of upstream/clamav, which opens
+	// the system repository to clients at its level (R-REPO-075, Q-REPO-414); false for every other repository.
+	ClientsEnabled bool
 }
 
 // Retired reports whether the product no longer declares the repository (R-REPO-067 step 5): no new member names it
 // (R-REPO-071).
 func (f *UpstreamFacts) Retired() bool { return f != nil && f.State == wellknown.StateRetired }
 
-// System reports whether the repository is a system repository of the product (scanner-trivy): no client path reaches it, and it
-// is never a member of a virtual repository (R-REPO-070, Q-REPO-380).
+// System reports whether the repository is a system repository of the product (scanner-trivy, clamav): it is never a member of a
+// virtual repository (R-REPO-070, R-REPO-075, Q-REPO-380), and its items are never scanned nor asked about by the malware gate
+// (R-MAL-001, Q-MAL-100).
 func (f *UpstreamFacts) System() bool { return f != nil && f.Kind == wellknown.KindSystem }
+
+// Closed reports whether the repository answers no client: a system repository, unless an administrator switched its clients on
+// (upstream/clamav, R-REPO-075). A closed repository answers every protocol request as one that does not exist, for every caller.
+func (f *UpstreamFacts) Closed() bool { return f.System() && !f.ClientsEnabled }
+
+// RefusesHandDelete reports whether no caller deletes an item of the repository (Q-REPO-416): a local system repository of the
+// project upstream, which only the product writes and cleans (upstream/clamav). scanner-trivy is a remote, whose cached items a holder
+// of delete removes.
+func (r Repository) RefusesHandDelete() bool { return r.Upstream.System() && r.Class == Local }
 
 // upstreamFactsByID reads every row of upstream_repository, keyed by repository ID.
 func upstreamFactsByID(ctx context.Context, qs *q.Queries) (map[int64]q.UpstreamRepository, error) {
@@ -70,5 +83,8 @@ func withUpstream(r *Repository, facts map[int64]q.UpstreamRepository) {
 		return
 	}
 	kind := wellknown.Kind(row.Kind)
-	r.Upstream = &UpstreamFacts{Kind: kind, State: wellknown.StateOf(kind, r.Disabled, row.FirstSwitchedOnAt.Valid, row.RetiredAt.Valid)}
+	r.Upstream = &UpstreamFacts{
+		Kind: kind, State: wellknown.StateOf(kind, r.Disabled, row.FirstSwitchedOnAt.Valid, row.RetiredAt.Valid),
+		ClientsEnabled: kind == wellknown.KindSystem && row.ClientsEnabled,
+	}
 }

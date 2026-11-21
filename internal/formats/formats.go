@@ -467,6 +467,9 @@ func Validate(f Format) error {
 			return fmt.Errorf("%q narrows exposure by package, version or tag and has no package names", id)
 		}
 	}
+	if err := checkSystemOnly(f, d); err != nil {
+		return err
+	}
 	if err := checkView(f, d); err != nil {
 		return err
 	}
@@ -483,6 +486,19 @@ func Validate(f Format) error {
 		return fmt.Errorf("%q declares a settings schema and the repository document has no %q member for it", id, id)
 	}
 	return checkRoutes(f, d)
+}
+
+// checkSystemOnly refuses an upload route of a system-only format (R-CLAMAV-001, ADR-225): only the product writes its repository.
+func checkSystemOnly(f Format, d Descriptor) error {
+	if !d.SystemOnly {
+		return nil
+	}
+	for _, r := range f.Routes() {
+		if r.Kind == Upload {
+			return fmt.Errorf("%q is system only and has the upload route %q: only the product writes its repository", d.ID, r.Name)
+		}
+	}
+	return nil
 }
 
 // checkView holds a format with a package view to what the view rests on: package names, the identity of a package, and the rule of
