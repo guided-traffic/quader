@@ -343,9 +343,32 @@ records the recorder that tells such a stall apart).
   the control pooler after 7.3 and 7.8 s. Everything the load asserts held: 16,118 k6 requests with no failure (p99 8.27 s
   over the switchover), 96 `npm ci` and 14 publishes all exit 0, every acknowledged publish installs, no restart, `/readyz`
   200 on every replica. The four pooler faults before it in the same leg were clean (k6 p99 174 to 191 ms). Nothing of the
-  download limits is in it. Cause not known (why one of two instances of the same Deployment needed 25 s longer to find the
-  new primary); one red run, not re-run: the owner ended the nightly for the day when he saw it. Next: read it in the next
-  full nightly.
+  download limits is in it. One red run, not re-run: the owner ended the nightly for the day when he saw it. **It
+  returned in the nightly of 2026-11-21 (69.4 s on one instance of the control pooler) and was read from both runs'
+  logs (02:16); the cause is known, and it is two things.** (1) **The test counted time in which nobody asked.**
+  After the switchover every instance fails its first login at the new primary once, because the new primary sets
+  the application's password again (Q-HA-302), and PgBouncer tries a server again only when a client arrives after
+  `server_login_retry`. Each replica of Quader holds exactly one control connection, and on 2026-11-21 all of them
+  had landed on the sibling; the long instance saw one client 0.75 s after its failed login (inside the retry's
+  second, so refused from the cached error) and then none for 61 s (its pod at 0.000 cores); the next client was
+  refused once more with the old error and the connect it started succeeded 6 ms later. The window from the first
+  to the last failure line was 69.4 s; the instance could not serve for 8.6 s. Q-HA-302's reproduction had run
+  login loops without a pause and so never saw an idle instance. (2) **On 2026-11-20 a connect hung**: the request
+  pooler's long instance started a connect that got no answer and gave up after 15 s, PgBouncer's default
+  `server_connect_timeout`, and while an attempt is under way a pool starts no other, so that instance took no new
+  login for those seconds; then the same idle minute in small (13.7 s). That one is real: with both instances of a
+  pooler hit, every replica would turn unready. Why that connect hung is not known (no packet trace; a connection
+  tracked to an address the Service was leaving is the candidate). Ruled out with evidence: a starved runner, the
+  primary's memory (561 MiB of 1 GiB; its restart is the demotion). **The fix, one commit held for the end of the
+  nightly** (the type `fix`, because the manual, the README and R-HA-058 gain a requirement for an operator's
+  pooler): the test ends an instance's window at its last failed server attempt plus its `server_login_retry`,
+  read from the rendered configuration, and names later refusals without counting them (Q-HA-370; a package of its
+  own with unit tests from lines of both runs; over the eight real logs the windows are 7.3 to 9.1 s, and 21.1 s
+  for the instance with the hung connect, which stays a failure as it should); the profile's poolers get
+  `server_connect_timeout` 5 (Q-HA-371; worst case of an instance 8.1 s promotion, 5 s hung connect and two retries,
+  15.1 s under the bound of 20). **Not verified:** the new setting on a cluster (the operator's webhook allows the
+  parameter, read in its source). What remains by design: an idle instance turns its next client away once,
+  however late, and Quader retries that answer.
 - **F-160 · `drain-load-e` failed its latency condition once, with every functional condition held** (nightly 44595121737 of
   2026-11-19, the code of `ad01d57e`, the last nightly before the download limits). R-HA-059: the k6 p99 from the first
   eviction until two minutes after the drain was 1.48 s over 35,826 requests against a warm-up of 532 ms, the limit being twice
@@ -1007,7 +1030,8 @@ runs are in `git log`; this section holds the current state.
   first time, on 2026-11-20, it was one instance of the request pooler for 33.7 s. The builder of the Ansible leg's
   diagnosis reads that instance's log and the profile's pooler configuration (since 01:52): whether it had no
   server for 69 s or was only asked rarely, with a last failure line that is late (60 refused clients in 69 s is
-  sparse), which would make the test's reading of the log the defect.
+  sparse), which would make the test's reading of the log the defect. **Read, and it is so; with a second, real
+  component in the first occurrence:** the entry F-165 in section 8.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -1028,7 +1052,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (02:03), three builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the reading of F-165); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and the fix of the limits' slots, each on a branch of its own:
+- **In work** (02:16), two builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly, each on a branch of its own: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165):
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1792,7 +1816,7 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)
 
-- **F-165** one instance of the request pooler without a server for 33.7 s after a switchover (one red run).
+- **F-165** one instance of a pooler without a server after a switchover (33.7 s on 2026-11-20, 69.4 s on 2026-11-21): cause known since 2026-11-21, a fix waits to land (section 8).
 - **`TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`** red once by timing (Test and Release 44632375471,
   `integration (shard c)`: "the build after the change left the suite current", while the log shows the build failing with
   `member_unverified` in the second the replica shut down; no limit in it, first record of it). **Again** in Test and
