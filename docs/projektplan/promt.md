@@ -1329,8 +1329,8 @@ runs are in `git log`; this section holds the current state.
   image, no restart, no pod outside Running, the ingress answers). **Found by its builder and left (section 8):** a disabled
   repository's file page offers **Download**, which answers 404; the version page's header shows the format's key
   instead of its name; the decisions' index stops at Q-UI-844; one stylesheet is 227 bytes over its warning
-  budget. **Not verified:** the German screens in a browser; the pipeline's layout job for the four new render
-  cases.
+  budget. **The pipeline of this landing (run 44891227453) ended green on every job at 11:31,** the layout job
+  with the four new render cases among them. **Not verified:** the German screens in a browser.
 - **The two builders of 09:22** (both landed, entries above): the scanner replicas on the screens (since 08:08), and **a system repository
   set apart everywhere** (since 09:20; what the builder of the project page's section had reported and left, taken up
   at once by the owner's word of that morning to such reports): no action that leads to a 404 (the admin list's
