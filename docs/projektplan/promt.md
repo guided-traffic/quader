@@ -1313,6 +1313,15 @@ runs are in `git log`; this section holds the current state.
   npm's keys and attestations endpoints with Q-SIG-34 as option (a), NuGet, Debian, Ansible's upload of
   signatures, generic, the Bastion). Each names the files it touched outside its area, so that the landing
   orders the two commits; package 4 (the screens) follows package 2's operations.
+- **The pipeline of the correcting push (run 44902596352) ended at 13:52 with one red job, `integration (shard
+  b)`, which holds no release back; its repair is in work since 13:53.** One test of the area `upstream` holds
+  every table that references a repository by a cascading key in one of two lists, purged with a retired
+  repository of the upstream registries or kept; the signatures' first package added such a table (the
+  attachments) and its builder had run seventeen areas, not that one. One builder writes the migration that
+  lets the purge take the attachments, puts the table into the test's list and writes down the rule on the
+  database's developer page; the two builders of the signatures' packages 2 and 3 were told the rule for
+  their own tables. It lands with the next push, renumbered into the order of landing. Every other job of the
+  run was green, the layout checks with the presets' new states among them.
 - **The pipeline of the 12:55 push went red on the job `chart` at 13:02, which holds the release back; corrected
   and pushed at 13:10.** Cause: a specification commit of the morning (the ClamAV change's) had written values
   that are specified and not built into the copy of the values file under R-HA-031, which a chart test holds
