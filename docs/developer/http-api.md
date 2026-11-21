@@ -274,7 +274,11 @@ What the handlers decide and what they leave to the store:
   one `Store.VersionBlobs` for the page's files in the rows' repositories and one `Store.Counts` per project of those repositories, none
   per row; a version's state is the best of its files' signatures in every repository that holds it for the caller.
 - **The repository member `signatures`** (`RepositorySignatureSettings`): `fetch` on a remote repository switches the background fetch of
-  R-SIG-026; on a local or a virtual one it answers `422 not_applicable` at `/signatures/fetch` (R-SIG-040).
+  R-SIG-026; on a local or a virtual one it answers `422 not_applicable` at `/signatures/fetch` (R-SIG-040). On a well-known repository of
+  `upstream` an administrator sets it as the narrowing members; on a system repository it is the product's (`managed_by_product`, Q-SIG-128).
+- **The format descriptor** of `listFormats` carries `signatureKinds` (`FormatSignatureKind`: `name`, `role`), read from each format's
+  `Signatures().Declaration()` (`signatureKindsOf`, [repositories_api.go](../../internal/api/v1/repositories_api.go)); the details of a version
+  without a signature name the kinds of the roles that count for the badge (R-SIG-009, Q-SIG-127).
 - The anchor and block IDs of a path are strings of digits in the document (`signatureID`): the generated wrapper would answer an
   unreadable integer `400` before the `428` of a missing `If-Match` (R-API-012); any other text names nothing and answers `404`.
 

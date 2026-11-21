@@ -8570,6 +8570,11 @@ type FormatDescriptor struct {
 	// reader. `null` for a format without settings.
 	SettingsSchema *map[string]interface{} `json:"settingsSchema"`
 
+	// SignatureKinds The kinds of signature the format declares (R-SIG-002, R-SIG-022), in the format's order: what a version or a file without a
+	// signature names in its details ("Signatures this format knows: Notation, cosign.", R-SIG-009). Empty for a format that has no
+	// signatures (the ClamAV definitions). `name` is the format's own word for the kind and is not translated.
+	SignatureKinds []FormatSignatureKind `json:"signatureKinds"`
+
 	// SystemOnly Whether the format's only repository is one Quader declares in the project `upstream` (`clamav`, R-CLAMAV-001, ADR-225): no
 	// repository of it is created (`422 validation_failed` with `format_system_only` at `/format`), and the create form does
 	// not offer it.
@@ -8612,6 +8617,15 @@ type FormatList struct {
 // this block are generated from the format registry and `TestR_ARCH_010_PerClassFormatEnums` fails on
 // any difference; no list of formats per class is kept by hand anywhere.
 type FormatName string
+
+// FormatSignatureKind defines model for FormatSignatureKind.
+type FormatSignatureKind struct {
+	// Name The format's word for the kind ("Notation", "Sigstore bundle", "registry signature").
+	Name string `json:"name"`
+
+	// Role The role of a signature (R-SIG-001); only `publisher` and `provenance` count for the badge (R-SIG-009).
+	Role SignatureRole `json:"role"`
+}
 
 // Group A group (R-AUTH-018). `roles`, `memberCount` and `syncDetached` are read only here; `syncDetached` is cleared with `PATCH`.
 type Group struct {

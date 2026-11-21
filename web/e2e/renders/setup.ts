@@ -18,6 +18,7 @@ import {
 } from './seed';
 import { authFile, edge, outDir, stateDir } from './paths';
 import { seedMalwareContent, seedMalwareVerdicts } from './malware';
+import { seedSignatures, seedSignatureSettings } from './signatures';
 import { seedScannerReplicas } from './scanners';
 
 /**
@@ -56,7 +57,11 @@ export default async function setup(): Promise<void> {
     seedMalwareVerdicts();
     // The scanner replicas, with the database in use the verdicts name (R-OPS-048).
     seedScannerReplicas();
+    // The anchors, the switch, a block and the generic file with its signature files, then the signatures of the content with their
+    // verdicts, after the long sync so that the worker's own record of the signature files is done (R-SIG-035 to R-SIG-038).
+    await seedSignatureSettings(admin);
     await syncAdvisories(admin);
+    seedSignatures();
     for (const kind of ['plain', 'power', 'admin'] as const) await openRecent(browser, kind);
   } finally {
     await browser.close();

@@ -319,6 +319,18 @@
         }
         <!-- <<< malware -->
 
+        <!-- The fetch of the upstream's signatures (R-SIG-026, R-SIG-040): a detail of a remote repository, never a step of the creation
+             flow; not on a system repository, whose members are the product's. -->
+        @if (signaturesShown()) {
+          <quader-repository-signatures
+            [stored]="repo.signatures?.fetch ?? true"
+            [canChange]="managed() ? canNarrow() : canChange()"
+            [saving]="signaturesSaving()"
+            [failure]="signaturesFailure()"
+            (save)="saveSignatures($event)"
+          />
+        }
+
         <!-- >>> W-26 limits -->
         @if (limitsShown()) {
           <quader-repository-limits [project]="project()" [repository]="key()" [remote]="repo.class === 'remote'" />

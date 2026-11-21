@@ -395,6 +395,9 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 		// SystemOnly is the catalog fact Facts.SystemOnly: only the product declares a repository of the format, so no creation form
 		// offers it (R-CLAMAV-001).
 		SystemOnly bool `json:"systemOnly"`
+		// SignatureKinds are the kinds of the format's signature declaration (R-SIG-002, R-SIG-022): what a version without a signature
+		// names in its details (R-SIG-009); empty for a format without signatures.
+		SignatureKinds []gen.FormatSignatureKind `json:"signatureKinds"`
 		// SettingsSchema is the JSON Schema of the format's settings member; null for
 		// a format without settings.
 		SettingsSchema json.RawMessage `json:"settingsSchema"`
@@ -416,6 +419,7 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 			ProtocolBasePath: d.ProtocolBasePath, DefaultMetadataTTLSeconds: d.DefaultMetadataTTLSeconds,
 			DefaultNotFoundTTLSeconds: d.DefaultNotFoundTTLSeconds, PatternSubject: string(d.PatternSubject),
 			PriorityMembers: d.PriorityMembers, PinsAndClaims: d.PinsAndClaims, Caps: d.Caps, Wiki: d.Wiki, SystemOnly: d.SystemOnly, SettingsSchema: json.RawMessage("null"),
+			SignatureKinds: []gen.FormatSignatureKind{},
 		}
 		if len(d.SettingsSchema) > 0 {
 			x.SettingsSchema = d.SettingsSchema
@@ -424,6 +428,7 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 		if f, ok := formats.Lookup(string(d.ID)); ok {
 			caps := formats.CapabilitiesOf(f)
 			x.VulnerabilityScanning = caps.Vulnerability != nil || caps.ImageScanned != nil
+			x.SignatureKinds = signatureKindsOf(f)
 		}
 		for _, c := range d.Classes {
 			x.Classes = append(x.Classes, string(c))
@@ -434,6 +439,20 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 		out.Formats = append(out.Formats, x)
 	}
 	writeJSON(w, r, http.StatusOK, out)
+}
+
+// signatureKindsOf lists the kinds of a format's signature declaration (R-SIG-022) as the format descriptor serves them: every kind once by
+// its name and role, in the declaration's order; none for a format that declares none.
+func signatureKindsOf(f formats.Format) []gen.FormatSignatureKind {
+	out := []gen.FormatSignatureKind{}
+	adapter := f.Signatures()
+	if adapter == nil {
+		return out
+	}
+	for _, k := range adapter.Declaration().Kinds {
+		out = append(out, gen.FormatSignatureKind{Name: k.Name, Role: gen.SignatureRole(k.Role)})
+	}
+	return out
 }
 
 // presetsOf renders a format's upstream presets as the API serves them (R-REPO-062): every member present, an empty list

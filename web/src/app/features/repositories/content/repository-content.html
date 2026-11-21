@@ -180,7 +180,7 @@
       }
       @case ('file') {
         @if (item(); as it) {
-          <quader-repository-file [item]="it" />
+          <quader-repository-file [item]="it" [format]="repository()?.format ?? 'generic'" />
         }
       }
       @default {

@@ -1,0 +1,260 @@
+import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { RepositoriesApi, refOf, splitRef } from '../../api/repositories-api';
+import { SIGNATURE_FINDING_KINDS, SignatureFinding, SignatureFindingFilters, SignatureFindingKind, SignaturesApi } from '../../api/signatures-api';
+import { SessionStore } from '../../core/session-store';
+import { isSystemRepository } from '../../core/upstream-project';
+import { PagedResource, valueOf } from '../../shared/paged-resource';
+import { entryKind, signaturePromise, signatureReason } from '../../shared/signatures/signature-words';
+import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { TimeAgo } from '../../shared/ui/time-ago';
+import { SecurityViews } from './security-views';
+
+/** One chip of a filter that is set, with the query change that removes it. */
+interface Chip extends ListChip {
+  readonly remove: Readonly<Record<string, string | null>>;
+}
+
+/** The drawer's filters before **Apply**. */
+interface Staged {
+  readonly kind: string;
+  readonly repository: string;
+}
+
+/** The word of a finding's kind. */
+export function findingKindWord(kind: SignatureFindingKind): string {
+  return kind === 'invalid' ? $localize`:@@sig.badge.invalid:Invalid signature` : $localize`:@@sig.finding.blocked:Blocked signer`;
+}
+
+/**
+ * The signatures view of the security dashboard (R-SIG-038, Q-SIG-9): one row per signature that is invalid or whose signer an
+ * administrator blocked, newest first, with the artifact it covers and the repository that holds it, the kind, the signer as it claims,
+ * the reason, when it was found and how many repositories hold it. The head searches a signer, the drawer filters by kind and
+ * repository; filters live in the address. Stage 1 refuses nothing, so nothing is released here; a holder of
+ * `security-settings:write` finds **Block signer** on the admin page.
+ */
+@Component({
+  selector: 'quader-signature-findings',
+  imports: [DataTable, FilterCategory, FilterPanel, ListHead, RouterLink, SecurityViews, TimeAgo],
+  template: `
+    <header class="page-header">
+      <h1 tabindex="-1" i18n="@@security.heading">Security dashboard</h1>
+    </header>
+    <quader-security-views />
+    <p class="hint" role="note" data-testid="signature-promise">{{ promise }}</p>
+
+    <h2 class="vuln-list-title" i18n="@@sig.findings.title">Findings</h2>
+    <quader-list-head
+      [searchLabel]="searchLabel"
+      [search]="q() ?? ''"
+      (searchChange)="searchFor($event)"
+      [chips]="chips()"
+      (removeChip)="removeChip($event)"
+      [(filtersOpen)]="panelOpen"
+      [controls]="panel.panelId"
+    />
+    <quader-filter-panel #panel [(open)]="panelOpen" [activeCount]="chips().length" (apply)="submitFilters()" (clearAll)="clearFilters()" (dismissed)="restage()">
+      <quader-filter-category i18n-label="@@sig.findings.filter.kind" label="Kind">
+        <select class="select-input" aria-label="Kind" i18n-aria-label="@@sig.findings.filter.kind" (change)="stage('kind', $any($event.target).value)">
+          <option value="" [selected]="!staged().kind" i18n="@@sig.findings.filter.any">Any</option>
+          @for (k of kinds; track k) {
+            <option [value]="k" [selected]="staged().kind === k">{{ kindWord(k) }}</option>
+          }
+        </select>
+      </quader-filter-category>
+      <quader-filter-category i18n-label="@@malware.filter.repository" label="Repository">
+        <select class="select-input" aria-label="Repository" i18n-aria-label="@@malware.filter.repository" (change)="stage('repository', $any($event.target).value)">
+          <option value="" [selected]="!staged().repository" i18n="@@malware.filter.any-repository">Any repository</option>
+          @for (r of repositoryOptions(); track r) {
+            <option [value]="r" [selected]="staged().repository === r" translate="no">{{ r }}</option>
+          }
+        </select>
+      </quader-filter-category>
+    </quader-filter-panel>
+
+    <quader-data-table
+      [caption]="caption"
+      [columns]="columns"
+      [loaded]="list.loaded()"
+      [loading]="list.loading()"
+      [error]="list.error()"
+      [empty]="list.items().length === 0"
+      [emptyText]="filtered() ? emptyFiltered : emptyText"
+      [hasMore]="list.hasMore()"
+      (more)="list.more()"
+      (retry)="list.more()"
+    >
+      @for (f of list.items(); track f.id) {
+        <tr>
+          <th scope="row" class="wrap-name">
+            <span class="icon-name-text">
+              <span class="finding-name" translate="no">{{ artifact(f) }}</span>
+              @if (artifactPath(f); as path) {
+                <span class="secondary finding-text" translate="no">{{ path }}</span>
+              }
+            </span>
+          </th>
+          <td>
+            <!-- The kind as the list's status is shown: its icon and word on the row's line, the kind of signature under it (Q-UI-876). -->
+            <span [class]="'fstatus ' + (f.kind === 'invalid' ? 'bad' : '')"
+              ><span class="fstatus-main"
+                ><span class="material-icons" aria-hidden="true">{{ f.kind === 'invalid' ? 'gpp_bad' : 'block' }}</span><span>{{ kindWord(f.kind) }}</span></span
+              ></span
+            >&ngsp;<span class="secondary block">{{ kindOf(f) }}</span>
+          </td>
+          <td class="finding-text">
+            <span translate="no">{{ f.signer ?? f.identity ?? f.keyId ?? '–' }}</span>
+            @if (f.issuer; as issuer) {
+              <span class="secondary block" translate="no">{{ issuer }}</span>
+            }
+          </td>
+          <td class="finding-text">
+            @if (f.block; as b) {
+              <span translate="no">{{ b.reason }}</span>
+            } @else {
+              {{ reason(f.reason) }}
+            }
+          </td>
+          <td class="repositories">
+            <a [routerLink]="repositoryLink(f.firstRepository)" translate="no">{{ f.firstRepository }}</a>
+            @if (f.repositoryCount > 1) {
+              <span class="secondary block" i18n="@@sig.findings.more-repositories">and {{ f.repositoryCount - 1 }} more</span>
+            }
+          </td>
+          <td class="nowrap"><quader-time-ago [at]="f.foundAt" absolute="title" /></td>
+        </tr>
+      }
+    </quader-data-table>
+  `,
+  styles: `
+    .finding-name {
+      font-weight: 600;
+    }
+    .finding-text {
+      overflow-wrap: anywhere;
+    }
+  `,
+})
+export class SignatureFindings {
+  private readonly api = inject(SignaturesApi);
+  private readonly repositories = inject(RepositoriesApi);
+  private readonly router = inject(Router);
+  protected readonly session = inject(SessionStore);
+
+  /** Query parameters, bound by the router. */
+  readonly kind = input<string | undefined>();
+  readonly repository = input<string | undefined>();
+  readonly q = input<string | undefined>();
+
+  protected readonly list = new PagedResource<SignatureFinding>();
+  protected readonly panelOpen = signal(false);
+  protected readonly staged = signal<Staged>({ kind: '', repository: '' });
+  protected readonly kinds = SIGNATURE_FINDING_KINDS;
+  protected readonly kindWord = findingKindWord;
+  protected readonly reason = signatureReason;
+  protected readonly promise = signaturePromise();
+
+  private readonly repositoryList = resource({ loader: () => this.repositories.listAll() });
+  /** The repositories the filter offers; a system repository of `upstream` holds no signature (R-SIG-011). */
+  protected readonly repositoryOptions = computed(() => {
+    const names = (valueOf(this.repositoryList) ?? []).filter((r) => !isSystemRepository(r.project, r.key)).map((r) => refOf(r));
+    const current = this.repository();
+    return current && !names.includes(current) ? [current, ...names] : names;
+  });
+
+  protected readonly filters = computed<SignatureFindingFilters>(() => {
+    const kind = this.kind();
+    return {
+      kind: (SIGNATURE_FINDING_KINDS as readonly string[]).includes(kind ?? '') ? (kind as SignatureFindingKind) : undefined,
+      repository: this.repository() || undefined,
+      q: this.q() || undefined,
+    };
+  });
+
+  protected readonly chips = computed<readonly Chip[]>(() => {
+    const f = this.filters();
+    const out: Chip[] = [];
+    if (f.kind) out.push({ key: 'kind', label: $localize`:@@sig.findings.filter.kind:Kind`, value: findingKindWord(f.kind), remove: { kind: null } });
+    if (f.repository) out.push({ key: 'repository', label: $localize`:@@malware.filter.repository:Repository`, value: f.repository, remove: { repository: null } });
+    return out;
+  });
+  protected readonly filtered = computed(() => this.chips().length > 0 || !!this.q());
+
+  protected readonly searchLabel = $localize`:@@sig.findings.search:Search by signer`;
+  protected readonly caption = $localize`:@@sig.findings.caption:Invalid signatures and blocked signers`;
+  protected readonly emptyText = $localize`:@@sig.findings.empty:No invalid signatures.`;
+  protected readonly emptyFiltered = $localize`:@@sig.findings.empty-filtered:No finding matches the filters.`;
+  protected readonly columns: readonly TableColumn[] = [
+    { id: 'artifact', label: $localize`:@@sig.findings.col.artifact:Artifact`, width: '12rem', prefer: true },
+    { id: 'kind', label: $localize`:@@sig.findings.col.kind:Kind`, width: '10rem' },
+    { id: 'signer', label: $localize`:@@sig.findings.col.signer:Signer`, width: '12rem' },
+    { id: 'reason', label: $localize`:@@sig.findings.col.reason:Reason`, width: '9rem' },
+    { id: 'repositories', label: $localize`:@@sig.findings.col.repositories:Repositories`, width: '12rem' },
+    { id: 'found', label: $localize`:@@sig.findings.col.found:Found` },
+  ];
+
+  constructor() {
+    effect(() => {
+      const filters = this.filters();
+      untracked(() => {
+        this.restage();
+        void this.list.start(this.api.findings(filters));
+      });
+    });
+  }
+
+  /** The artifact a finding's signature covers: its package and version, else its file, else the npm subject's name. */
+  protected artifact(f: SignatureFinding): string {
+    const item = f.items[0];
+    if (item?.package) return item.version ? `${item.package} ${item.version}` : item.package;
+    if (item?.path) return item.path.split('/').pop() ?? item.path;
+    return f.subjectName ?? `sha256:${f.subject.slice(0, 12)}…`;
+  }
+
+  /** The path of the file under the name, where the name is the package's. */
+  protected artifactPath(f: SignatureFinding): string | null {
+    const item = f.items[0];
+    return item?.package && item.path ? item.path : null;
+  }
+
+  protected kindOf(f: SignatureFinding): string {
+    return entryKind(f);
+  }
+
+  protected repositoryLink(qualified: string): string[] {
+    const { project, key } = splitRef(qualified);
+    return ['/projects', project, 'repositories', key];
+  }
+
+  protected restage(): void {
+    const f = this.filters();
+    this.staged.set({ kind: f.kind ?? '', repository: f.repository ?? '' });
+  }
+
+  protected stage(key: 'kind' | 'repository', value: string): void {
+    this.staged.update((s) => ({ ...s, [key]: value }));
+  }
+
+  protected submitFilters(): void {
+    const s = this.staged();
+    this.navigate({ kind: s.kind || null, repository: s.repository || null });
+  }
+
+  protected clearFilters(): void {
+    this.navigate({ kind: null, repository: null });
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.navigate({ ...(chip as Chip).remove });
+  }
+
+  protected searchFor(text: string): void {
+    this.navigate({ q: text || null });
+  }
+
+  private navigate(queryParams: Record<string, string | null>): void {
+    void this.router.navigate([], { queryParams, queryParamsHandling: 'merge' });
+  }
+}

@@ -43028,5 +43028,2594 @@
         <target>Die Advisory-Datenbank, mit der der Pod erkennt. Datenbank in Verwendung: die Datenbank, die Quader jetzt verwendet, mit dem Alter ihres Builds. Ältere Datenbank: Der Pod lädt die Datenbank in Verwendung noch, was weniger als eine Minute dauert, oder sein Container database kann sie nicht laden; das Log dieses Containers nennt den Grund. Noch keine Datenbank: Das erste Laden des Pods ist noch nicht abgeschlossen.</target>
       </segment>
     </unit>
+    <unit id="problem.secret_material">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:8</note>
+      </notes>
+      <segment>
+        <source>This holds a private key. A trust anchor takes public material only: a certificate or a public key.</source>
+        <target>Das enthält einen privaten Schlüssel. Ein Vertrauensanker nimmt nur öffentliches Material: ein Zertifikat oder einen öffentlichen Schlüssel.</target>
+      </segment>
+    </unit>
+    <unit id="problem.anchor_exists">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:10</note>
+      </notes>
+      <segment>
+        <source>A trust anchor with this key exists already. Choose another key.</source>
+        <target>Ein Vertrauensanker mit diesem Schlüssel existiert bereits. Wählen Sie einen anderen Schlüssel.</target>
+      </segment>
+    </unit>
+    <unit id="problem.anchor_managed">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:12</note>
+      </notes>
+      <segment>
+        <source>This trust anchor is shipped with Quader or declared in the Helm values; it cannot be changed here.</source>
+        <target>Dieser Vertrauensanker wird mit Quader ausgeliefert oder in den Helm-Values deklariert; er kann hier nicht geändert werden.</target>
+      </segment>
+    </unit>
+    <unit id="problem.project_anchors_disabled">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:14</note>
+      </notes>
+      <segment>
+        <source>An administrator has switched project trust anchors off, so a project&apos;s anchors cannot be changed now.</source>
+        <target>Ein Administrator hat Projekt-Vertrauensanker ausgeschaltet, deshalb können die Anker eines Projekts jetzt nicht geändert werden.</target>
+      </segment>
+    </unit>
+    <unit id="problem.block_exists">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:16</note>
+      </notes>
+      <segment>
+        <source>This signer is blocked already.</source>
+        <target>Dieser Signierer ist bereits gesperrt.</target>
+      </segment>
+    </unit>
+    <unit id="nav.settings.signatures">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:183</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.tab.signatures">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:222</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.file.signature">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:420</note>
+      </notes>
+      <segment>
+        <source>Signature</source>
+        <target>Signatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.version.none">
+      <notes>
+        <note category="location">src/app/features/packages/version-signatures.ts:22,24</note>
+      </notes>
+      <segment>
+        <source>No repository you may read holds this version.</source>
+        <target>Kein Repository, das Sie lesen dürfen, enthält diese Version.</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.heading">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:28</note>
+      </notes>
+      <segment>
+        <source>Trust anchors</source>
+        <target>Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.not-applied">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:35,37</note>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:136</note>
+      </notes>
+      <segment>
+        <source>Not applied: project anchors are switched off by an administrator.</source>
+        <target>Nicht angewendet: Projekt-Vertrauensanker sind von einem Administrator ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.heading">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:39,41</note>
+        <note category="location">src/app/features/settings/signature-settings.html:35,37</note>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:130</note>
+      </notes>
+      <segment>
+        <source>Add trust anchor</source>
+        <target>Vertrauensanker hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.also">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:50,51</note>
+      </notes>
+      <segment>
+        <source>Also trusted in this project</source>
+        <target>Ebenfalls vertrauenswürdig in diesem Projekt</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.also-note">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:51,52</note>
+      </notes>
+      <segment>
+        <source>The anchors of the installation apply in every project; a project cannot switch them off.</source>
+        <target>Die Anker der Installation gelten in jedem Projekt; ein Projekt kann sie nicht ausschalten.</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.hint">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:115</note>
+      </notes>
+      <segment>
+        <source>Certificates and keys whose signatures read as verified in this project&apos;s repositories.</source>
+        <target>Zertifikate und Schlüssel, deren Signaturen in den Repositories dieses Projekts als verifiziert gelten.</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.hint-off">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:116</note>
+      </notes>
+      <segment>
+        <source>This project&apos;s anchors do not apply while project anchors are switched off.</source>
+        <target>Die Anker dieses Projekts gelten nicht, solange Projekt-Vertrauensanker ausgeschaltet sind.</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.caption">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:118</note>
+      </notes>
+      <segment>
+        <source>Trust anchors of this project</source>
+        <target>Vertrauensanker dieses Projekts</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.empty">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:119</note>
+      </notes>
+      <segment>
+        <source>This project has no trust anchor of its own.</source>
+        <target>Dieses Projekt hat keinen eigenen Vertrauensanker.</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.installation-caption">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:120</note>
+      </notes>
+      <segment>
+        <source>Trust anchors of the installation</source>
+        <target>Vertrauensanker der Installation</target>
+      </segment>
+    </unit>
+    <unit id="sig.project.installation-empty">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:121</note>
+      </notes>
+      <segment>
+        <source>The installation has no trust anchor that applies.</source>
+        <target>Die Installation hat keinen Vertrauensanker, der gilt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.remove-title">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:132</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:209</note>
+      </notes>
+      <segment>
+        <source>Remove the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
+        <target>Vertrauensanker <ph id="0" equiv="title" disp="title"/> entfernen?</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.remove-text">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:133</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:211</note>
+      </notes>
+      <segment>
+        <source>The signatures it knows read &quot;Signed · signer not trusted&quot; unless another anchor knows their signer.</source>
+        <target>Die Signaturen, die er kennt, lauten „Signiert · Signierer nicht vertrauenswürdig“, sofern kein anderer Anker ihren Signierer kennt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.remove-confirm">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:134</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:213</note>
+      </notes>
+      <segment>
+        <source>Remove trust anchor</source>
+        <target>Vertrauensanker entfernen</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.removed">
+      <notes>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:143</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:222</note>
+      </notes>
+      <segment>
+        <source>Trust anchor removed.</source>
+        <target>Vertrauensanker entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.signature">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:93,94</note>
+      </notes>
+      <segment>
+        <source>Signature</source>
+        <target>Signatur</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.signature-of">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:103,104</note>
+      </notes>
+      <segment>
+        <source>Signature of</source>
+        <target>Signatur von</target>
+      </segment>
+    </unit>
+    <unit id="files.signatures">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:120,121</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="files.signatures-hint-none">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:214</note>
+      </notes>
+      <segment>
+        <source>No signature found, and who uploaded the file or where it was fetched from.</source>
+        <target>Keine Signatur gefunden, und wer die Datei hochgeladen hat oder woher sie geholt wurde.</target>
+      </segment>
+    </unit>
+    <unit id="files.signatures-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:215</note>
+      </notes>
+      <segment>
+        <source>Who signed the file, whether a trust anchor knows the signer, and who uploaded it.</source>
+        <target>Wer die Datei signiert hat, ob ein Vertrauensanker den Signierer kennt, und wer sie hochgeladen hat.</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:725</note>
+      </notes>
+      <segment>
+        <source>Quader fetches the upstream&apos;s signatures for this repository again.</source>
+        <target>Quader holt die Signaturen des Upstreams für dieses Repository wieder.</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:726</note>
+      </notes>
+      <segment>
+        <source>Quader no longer fetches the upstream&apos;s signatures for this repository.</source>
+        <target>Quader holt die Signaturen des Upstreams für dieses Repository nicht mehr.</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:20,21</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:22,23</note>
+      </notes>
+      <segment>
+        <source>Whether Quader fetches the upstream&apos;s signatures of what this repository stores.</source>
+        <target>Ob Quader die Signaturen des Upstreams zu dem holt, was dieses Repository speichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.fetch">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:30,31</note>
+      </notes>
+      <segment>
+        <source>Fetch the upstream&apos;s signatures</source>
+        <target>Signaturen des Upstreams holen</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.what">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:34,36</note>
+      </notes>
+      <segment>
+        <source> Quader asks the upstream in the background for the signatures of what this repository stores, at most 600 requests an hour, so that the badge is right before any client asks. A client&apos;s own request for signatures passes through either way. </source>
+        <target> Quader fragt den Upstream im Hintergrund nach den Signaturen dessen, was dieses Repository speichert, höchstens 600 Anfragen pro Stunde, damit das Abzeichen stimmt, bevor ein Client fragt. Die eigene Anfrage eines Clients nach Signaturen wird in jedem Fall durchgereicht. </target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:38,40</note>
+      </notes>
+      <segment>
+        <source> Switch it off for an upstream with tight rate limits: on Docker Hub without an account, fetching a signature counts as a pull. </source>
+        <target> Schalten Sie es für einen Upstream mit knappen Ratenlimits aus: Bei Docker Hub ohne Konto zählt das Holen einer Signatur als Pull. </target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.save-for">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:45,47</note>
+      </notes>
+      <segment>
+        <source> (signatures)</source>
+        <target> (Signaturen)</target>
+      </segment>
+    </unit>
+    <unit id="route.settings.signatures.title">
+      <notes>
+        <note category="location">src/app/features/settings/settings.routes.ts:28</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:1</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.off">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:16,18</note>
+      </notes>
+      <segment>
+        <source>Signatures are off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signatures.enabled</pc> is false in the configuration. Nothing is checked, and no badge is shown. The stored signatures and anchors stay.</source>
+        <target>Signaturen sind in dieser Installation ausgeschaltet: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signatures.enabled</pc> ist in der Konfiguration false. Nichts wird geprüft, und kein Abzeichen wird gezeigt. Die gespeicherten Signaturen und Anker bleiben.</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.anchors">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:28,29</note>
+      </notes>
+      <segment>
+        <source>Trust anchors</source>
+        <target>Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.anchors-note">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:30,33</note>
+      </notes>
+      <segment>
+        <source> A signature reads as verified when one of these knows its signer: public when an anchor shipped with Quader knows it, internal when an anchor of this installation does. </source>
+        <target> Eine Signatur gilt als verifiziert, wenn einer dieser Anker ihren Signierer kennt: öffentlich, wenn ein mit Quader ausgelieferter Anker ihn kennt, intern, wenn ein Anker dieser Installation ihn kennt. </target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.pending">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:47,48</note>
+      </notes>
+      <segment>
+        <source>Waiting for their check</source>
+        <target>Warten auf ihre Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.stale">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:49,50</note>
+      </notes>
+      <segment>
+        <source>Trust being recomputed</source>
+        <target>Vertrauen wird neu berechnet</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.findings-link">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:54,58</note>
+      </notes>
+      <segment>
+        <source>Invalid signatures are in the security dashboard</source>
+        <target>Ungültige Signaturen stehen im Sicherheits-Dashboard</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.project">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:60,61</note>
+      </notes>
+      <segment>
+        <source>Project trust anchors</source>
+        <target>Projekt-Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.switch">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:67,68</note>
+      </notes>
+      <segment>
+        <source>Project owners may add trust anchors for their project</source>
+        <target>Projekteigentümer dürfen Vertrauensanker für ihr Projekt hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.switch-on">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:72,73</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Project owners may add trust anchors for their project</pc> is on.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Projekteigentümer dürfen Vertrauensanker für ihr Projekt hinzufügen</pc> ist eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.switch-off">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:74,75</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Project owners may add trust anchors for their project</pc> is off.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Projekteigentümer dürfen Vertrauensanker für ihr Projekt hinzufügen</pc> ist ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.switch-note">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:79,81</note>
+      </notes>
+      <segment>
+        <source> Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation. </source>
+        <target> Projekt-Anker gelten nur für die Repositories ihres Projekts. Ein Projekt kann keinen Anker der Installation ausschalten. </target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.changed-by">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:83</note>
+      </notes>
+      <segment>
+        <source>Last changed by</source>
+        <target>Zuletzt geändert von</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.save">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:91,92</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+        <target>Änderungen speichern</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.save-for">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:92,94</note>
+      </notes>
+      <segment>
+        <source> (project trust anchors)</source>
+        <target> (Projekt-Vertrauensanker)</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.project-list">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:98,100</note>
+      </notes>
+      <segment>
+        <source>Anchors of the projects</source>
+        <target>Anker der Projekte</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.blocks">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:111</note>
+      </notes>
+      <segment>
+        <source>Blocked signers</source>
+        <target>Gesperrte Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:114,116</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:21,22</note>
+      </notes>
+      <segment>
+        <source>Block signer</source>
+        <target>Signierer sperren</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.lift">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:139</note>
+      </notes>
+      <segment>
+        <source>Lift block</source>
+        <target>Sperre aufheben</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.source">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:151,153</note>
+      </notes>
+      <segment>
+        <source>Source</source>
+        <target>Quelle</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.refreshed">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:154,155</note>
+      </notes>
+      <segment>
+        <source>Refreshed from the Sigstore update repository</source>
+        <target>Aktualisiert aus dem Update-Repository von Sigstore</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.release">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:156,158</note>
+      </notes>
+      <segment>
+        <source>The snapshot this release of Quader ships</source>
+        <target>Der Schnappschuss, den dieses Release von Quader mitbringt</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.fetched">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:159,161</note>
+      </notes>
+      <segment>
+        <source>Fetched</source>
+        <target>Geholt</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.version">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:167,168</note>
+      </notes>
+      <segment>
+        <source>Version</source>
+        <target>Version</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.failure">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:169,171</note>
+      </notes>
+      <segment>
+        <source>Last failure</source>
+        <target>Letzter Fehler</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.failed">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:172,173</note>
+      </notes>
+      <segment>
+        <source>Failed</source>
+        <target>Fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.no-failure">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:178,181</note>
+      </notes>
+      <segment>
+        <source>None since the last refresh</source>
+        <target>Keiner seit der letzten Aktualisierung</target>
+      </segment>
+    </unit>
+    <unit id="sig.root.note">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:183,186</note>
+      </notes>
+      <segment>
+        <source> Without internet, the release&apos;s snapshot holds and ages with the release; an operator can point the refresh at a mirror of the company. </source>
+        <target> Ohne Internet gilt der Schnappschuss des Releases und altert mit dem Release; ein Betreiber kann die Aktualisierung auf einen Mirror des Unternehmens richten. </target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.anchors-caption">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:127</note>
+      </notes>
+      <segment>
+        <source>Trust anchors of the installation</source>
+        <target>Vertrauensanker der Installation</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.project-caption">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:128</note>
+      </notes>
+      <segment>
+        <source>Trust anchors of the projects</source>
+        <target>Vertrauensanker der Projekte</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.project-empty">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:129</note>
+      </notes>
+      <segment>
+        <source>No project has a trust anchor of its own.</source>
+        <target>Kein Projekt hat einen eigenen Vertrauensanker.</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.blocks-caption">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:130</note>
+      </notes>
+      <segment>
+        <source>Blocked signers</source>
+        <target>Gesperrte Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.blocks-empty">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:131</note>
+      </notes>
+      <segment>
+        <source>No signer is blocked.</source>
+        <target>Kein Signierer ist gesperrt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.blocks-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:132</note>
+      </notes>
+      <segment>
+        <source>Signers whose signatures read as not trusted, whatever anchor knows them.</source>
+        <target>Signierer, deren Signaturen als nicht vertrauenswürdig gelten, welcher Anker sie auch kennt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.root">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:133</note>
+      </notes>
+      <segment>
+        <source>Public Sigstore root</source>
+        <target>Öffentliche Sigstore-Vertrauensbasis</target>
+      </segment>
+    </unit>
+    <unit id="sig.settings.root-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:134</note>
+      </notes>
+      <segment>
+        <source>Where the public Sigstore root and npm&apos;s registry keys in use come from.</source>
+        <target>Woher die öffentliche Sigstore-Vertrauensbasis und die Registry-Schlüssel von npm in Verwendung stammen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.col.signer">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:136</note>
+      </notes>
+      <segment>
+        <source>Signer</source>
+        <target>Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.col.reason">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Grund</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.signatures">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:138</note>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:122</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.col.blocked">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
+      </notes>
+      <segment>
+        <source>Blocked</source>
+        <target>Gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.actions">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:127</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.switched-on">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:196</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="title" disp="title"/> applies again. Its signatures are judged again in the background.</source>
+        <target><ph id="0" equiv="title" disp="title"/> gilt wieder. Seine Signaturen werden im Hintergrund neu beurteilt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.switched-off">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:197</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="title" disp="title"/> no longer applies. Its signatures are judged again in the background.</source>
+        <target><ph id="0" equiv="title" disp="title"/> gilt nicht mehr. Seine Signaturen werden im Hintergrund neu beurteilt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.switch.off-title">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:239</note>
+      </notes>
+      <segment>
+        <source>Switch project trust anchors off?</source>
+        <target>Projekt-Vertrauensanker ausschalten?</target>
+      </segment>
+    </unit>
+    <unit id="sig.switch.off-text">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:241</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> project anchors stay stored and stop applying. The signatures only they know read &quot;Signed · signer not trusted&quot;.</source>
+        <target><ph id="0" equiv="count" disp="n"/> Projekt-Anker bleiben gespeichert und gelten nicht mehr. Die Signaturen, die nur sie kennen, lauten „Signiert · Signierer nicht vertrauenswürdig“.</target>
+      </segment>
+    </unit>
+    <unit id="sig.switch.off-confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:243</note>
+      </notes>
+      <segment>
+        <source>Switch off</source>
+        <target>Ausschalten</target>
+      </segment>
+    </unit>
+    <unit id="sig.switch.saved-on">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:254</note>
+      </notes>
+      <segment>
+        <source>Project owners may add trust anchors for their project now.</source>
+        <target>Projekteigentümer dürfen jetzt Vertrauensanker für ihr Projekt hinzufügen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.switch.saved-off">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:255</note>
+      </notes>
+      <segment>
+        <source>Project trust anchors are switched off.</source>
+        <target>Projekt-Vertrauensanker sind ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.lift-title">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:298</note>
+      </notes>
+      <segment>
+        <source>Lift this block?</source>
+        <target>Diese Sperre aufheben?</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.lift-text">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:299</note>
+      </notes>
+      <segment>
+        <source>The signer&apos;s signatures are judged by the trust anchors again.</source>
+        <target>Die Signaturen des Signierers werden wieder von den Vertrauensankern beurteilt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.lift-confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:300</note>
+      </notes>
+      <segment>
+        <source>Lift block</source>
+        <target>Sperre aufheben</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.lifted">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:308</note>
+      </notes>
+      <segment>
+        <source>Block lifted.</source>
+        <target>Sperre aufgehoben.</target>
+      </segment>
+    </unit>
+    <unit id="security.view.signatures">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security-views.ts:23,27</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="route.security.signatures.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/security.routes.ts:31</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="sig.badge.invalid">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:28</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:42</note>
+      </notes>
+      <segment>
+        <source>Invalid signature</source>
+        <target>Ungültige Signatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.finding.blocked">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:28</note>
+      </notes>
+      <segment>
+        <source>Blocked signer</source>
+        <target>Gesperrter Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:48,50</note>
+      </notes>
+      <segment>
+        <source>Findings</source>
+        <target>Befunde</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.filter.kind">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:60</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:60</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:179</note>
+      </notes>
+      <segment>
+        <source>Kind</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.filter.any">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:61,62</note>
+      </notes>
+      <segment>
+        <source>Any</source>
+        <target>Beliebig</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.more-repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:123,124</note>
+      </notes>
+      <segment>
+        <source>and <ph id="0" equiv="INTERPOLATION" disp="{{ f.repositoryCount - 1 }}"/> more</source>
+        <target>und <ph id="0" equiv="INTERPOLATION" disp="{{ f.repositoryCount - 1 }}"/> weitere</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.search">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:185</note>
+      </notes>
+      <segment>
+        <source>Search by signer</source>
+        <target>Nach Signierer suchen</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:186</note>
+      </notes>
+      <segment>
+        <source>Invalid signatures and blocked signers</source>
+        <target>Ungültige Signaturen und gesperrte Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.empty">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:187</note>
+      </notes>
+      <segment>
+        <source>No invalid signatures.</source>
+        <target>Keine ungültigen Signaturen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:188</note>
+      </notes>
+      <segment>
+        <source>No finding matches the filters.</source>
+        <target>Kein Befund passt zu den Filtern.</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.col.artifact">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:190</note>
+      </notes>
+      <segment>
+        <source>Artifact</source>
+        <target>Artefakt</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.col.kind">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:191</note>
+      </notes>
+      <segment>
+        <source>Kind</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.col.signer">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:192</note>
+      </notes>
+      <segment>
+        <source>Signer</source>
+        <target>Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.col.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:193</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Grund</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.col.repositories">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:194</note>
+      </notes>
+      <segment>
+        <source>Repositories</source>
+        <target>Repositories</target>
+      </segment>
+    </unit>
+    <unit id="sig.findings.col.found">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:195</note>
+      </notes>
+      <segment>
+        <source>Found</source>
+        <target>Gefunden</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.kind">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:47</note>
+      </notes>
+      <segment>
+        <source>Kind</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.title">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:48</note>
+      </notes>
+      <segment>
+        <source>Title</source>
+        <target>Titel</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.title-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:49,50</note>
+      </notes>
+      <segment>
+        <source>The name shown at the signatures this anchor knows.</source>
+        <target>Der Name, der an den Signaturen steht, die dieser Anker kennt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.key">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:50</note>
+      </notes>
+      <segment>
+        <source>Key</source>
+        <target>Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.key-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:51,53</note>
+      </notes>
+      <segment>
+        <source>Lower-case letters, digits and hyphens; unique among the anchors.</source>
+        <target>Kleinbuchstaben, Ziffern und Bindestriche; eindeutig unter den Ankern.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.certificates">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:55</note>
+      </notes>
+      <segment>
+        <source>Certificates (PEM)</source>
+        <target>Zertifikate (PEM)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.certificates-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:56,57</note>
+      </notes>
+      <segment>
+        <source>1 to 16 CA certificates, or the signer&apos;s own certificate to pin it.</source>
+        <target>1 bis 16 CA-Zertifikate, oder das eigene Zertifikat des Signierers, um es festzuschreiben.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.more">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:57,58</note>
+      </notes>
+      <segment>
+        <source>More options</source>
+        <target>Weitere Optionen</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.use">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:58</note>
+      </notes>
+      <segment>
+        <source>Use</source>
+        <target>Verwendung</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.subject-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:59,60</note>
+      </notes>
+      <segment>
+        <source>Only signers whose certificate subject has these values (all optional):</source>
+        <target>Nur Signierer, deren Zertifikatsinhaber diese Werte hat (alle optional):</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.sans">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:66</note>
+      </notes>
+      <segment>
+        <source>Alternative names (patterns, one per line)</source>
+        <target>Alternative Namen (Muster, eines pro Zeile)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.openpgp">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:71</note>
+      </notes>
+      <segment>
+        <source>Public keys (armored)</source>
+        <target>Öffentliche Schlüssel (ASCII-armored)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.openpgp-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:72,74</note>
+      </notes>
+      <segment>
+        <source>1 to 32 public keys, as gpg --armor --export writes them.</source>
+        <target>1 bis 32 öffentliche Schlüssel, wie gpg --armor --export sie schreibt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.pem">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:75</note>
+      </notes>
+      <segment>
+        <source>Public key (PEM)</source>
+        <target>Öffentlicher Schlüssel (PEM)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.keyid">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:77</note>
+      </notes>
+      <segment>
+        <source>Key ID (optional)</source>
+        <target>Schlüssel-ID (optional)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.keyid-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:78,79</note>
+      </notes>
+      <segment>
+        <source>npm&apos;s key ID, SHA256: and the key&apos;s digest in base64.</source>
+        <target>Die Schlüssel-ID von npm, SHA256: und der Digest des Schlüssels in Base64.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.expires">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:79</note>
+      </notes>
+      <segment>
+        <source>Expires (optional)</source>
+        <target>Läuft ab (optional)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.issuer">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:83</note>
+      </notes>
+      <segment>
+        <source>OIDC issuer</source>
+        <target>OIDC-Aussteller</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.issuer-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:84,85</note>
+      </notes>
+      <segment>
+        <source>The issuer of the CI&apos;s identity tokens, such as your GitLab&apos;s address.</source>
+        <target>Der Aussteller der Identitäts-Token der CI, etwa die Adresse Ihres GitLab.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.identity">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:85</note>
+      </notes>
+      <segment>
+        <source>Identity</source>
+        <target>Identität</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.pattern">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:88,89</note>
+      </notes>
+      <segment>
+        <source>The identity is a pattern (a regular expression of the whole identity)</source>
+        <target>Die Identität ist ein Muster (ein regulärer Ausdruck der ganzen Identität)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.root">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:90</note>
+      </notes>
+      <segment>
+        <source>Trust root</source>
+        <target>Vertrauensbasis</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.trusted-root">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:92</note>
+      </notes>
+      <segment>
+        <source>Trusted root (trusted_root.json)</source>
+        <target>Vertrauensbasis (trusted_root.json)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.note">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:97</note>
+      </notes>
+      <segment>
+        <source>Note (optional)</source>
+        <target>Notiz (optional)</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.cancel">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:100,101</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:37,38</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.submit">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:101,103</note>
+      </notes>
+      <segment>
+        <source>Add trust anchor</source>
+        <target>Vertrauensanker hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.heading-project">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:129</note>
+      </notes>
+      <segment>
+        <source>Add a trust anchor to this project</source>
+        <target>Diesem Projekt einen Vertrauensanker hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.use-code">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:133</note>
+      </notes>
+      <segment>
+        <source>Code signing</source>
+        <target>Codesignatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.use-timestamping">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:134</note>
+      </notes>
+      <segment>
+        <source>Timestamping</source>
+        <target>Zeitstempel</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.root-public">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:137</note>
+      </notes>
+      <segment>
+        <source>The public Sigstore</source>
+        <target>Das öffentliche Sigstore</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.root-own">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:138</note>
+      </notes>
+      <segment>
+        <source>Our own Sigstore</source>
+        <target>Unser eigenes Sigstore</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.trusted-root-json">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:237</note>
+      </notes>
+      <segment>
+        <source>This is not a JSON document. Paste the whole trusted_root.json of your Sigstore.</source>
+        <target>Das ist kein JSON-Dokument. Fügen Sie die ganze trusted_root.json Ihres Sigstore ein.</target>
+      </segment>
+    </unit>
+    <unit id="sig.form.created">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-dialog.ts:264</note>
+      </notes>
+      <segment>
+        <source>Trust anchor added. Signatures it knows are judged again in the background.</source>
+        <target>Vertrauensanker hinzugefügt. Die Signaturen, die er kennt, werden im Hintergrund neu beurteilt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.remove">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:74</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+        <target>Entfernen</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.title">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:114</note>
+      </notes>
+      <segment>
+        <source>Trust anchor</source>
+        <target>Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.kind">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:115</note>
+      </notes>
+      <segment>
+        <source>Kind</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.project">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:117</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+        <target>Projekt</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.scope">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:118</note>
+      </notes>
+      <segment>
+        <source>Source</source>
+        <target>Quelle</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.expiry">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:119</note>
+      </notes>
+      <segment>
+        <source>Expires</source>
+        <target>Läuft ab</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.signatures-help">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:124</note>
+      </notes>
+      <segment>
+        <source>The signatures this anchor knows in the installation&apos;s scope.</source>
+        <target>Die Signaturen, die dieser Anker im Geltungsbereich der Installation kennt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.col.state">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:126</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.expired">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:134</note>
+      </notes>
+      <segment>
+        <source>expired</source>
+        <target>abgelaufen</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.applied">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:135</note>
+      </notes>
+      <segment>
+        <source>Applied</source>
+        <target>Angewendet</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.any-identity">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:141</note>
+      </notes>
+      <segment>
+        <source>Any identity of any issuer</source>
+        <target>Jede Identität jedes Ausstellers</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.switch">
+      <notes>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:163</note>
+      </notes>
+      <segment>
+        <source>Apply <ph id="0" equiv="title" disp="title"/></source>
+        <target><ph id="0" equiv="title" disp="title"/> anwenden</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.kind">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:27</note>
+      </notes>
+      <segment>
+        <source>Kind</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.issuer">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:29</note>
+      </notes>
+      <segment>
+        <source>OIDC issuer</source>
+        <target>OIDC-Aussteller</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.value">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:31</note>
+      </notes>
+      <segment>
+        <source>Value</source>
+        <target>Wert</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.reason">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:32</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Grund</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.reason-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:33,34</note>
+      </notes>
+      <segment>
+        <source>Shown at every signature of this signer.</source>
+        <target>Wird an jeder Signatur dieses Signierers gezeigt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.effect">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:34,36</note>
+      </notes>
+      <segment>
+        <source>The block acts at once on every signature of this signer, in every project.</source>
+        <target>Die Sperre wirkt sofort auf jede Signatur dieses Signierers, in jedem Projekt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.submit">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:38,40</note>
+      </notes>
+      <segment>
+        <source>Block signer</source>
+        <target>Signierer sperren</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.hint-fingerprint">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:63</note>
+      </notes>
+      <segment>
+        <source>The SHA-256 fingerprint of a certificate, or an OpenPGP key&apos;s fingerprint.</source>
+        <target>Der SHA-256-Fingerabdruck eines Zertifikats, oder der Fingerabdruck eines OpenPGP-Schlüssels.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.hint-serial">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:65</note>
+      </notes>
+      <segment>
+        <source>The issuer&apos;s name and the certificate&apos;s serial, separated by a vertical bar.</source>
+        <target>Der Name des Ausstellers und die Seriennummer des Zertifikats, getrennt durch einen senkrechten Strich.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.hint-keyid">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:67</note>
+      </notes>
+      <segment>
+        <source>npm&apos;s key ID, or the SHA-256 of a raw public key.</source>
+        <target>Die Schlüssel-ID von npm, oder der SHA-256 eines rohen öffentlichen Schlüssels.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.hint-identity">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:69</note>
+      </notes>
+      <segment>
+        <source>The identity, exact or as a pattern of the whole identity.</source>
+        <target>Die Identität, genau oder als Muster der ganzen Identität.</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.created">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:90</note>
+      </notes>
+      <segment>
+        <source>Signer blocked. Its signatures read &quot;Signed · signer not trusted&quot; once the trust is recomputed.</source>
+        <target>Signierer gesperrt. Seine Signaturen lauten „Signiert · Signierer nicht vertrauenswürdig“, sobald das Vertrauen neu berechnet ist.</target>
+      </segment>
+    </unit>
+    <unit id="sig.badge.stale">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-badge.ts:39</note>
+      </notes>
+      <segment>
+        <source>Trust is being recomputed after a change of trust anchors.</source>
+        <target>Das Vertrauen wird nach einer Änderung der Vertrauensanker neu berechnet.</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.blocked">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:16,18</note>
+      </notes>
+      <segment>
+        <source>The signature matches the content, but an administrator blocked its signer on <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;block.createdAt&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ block.createdAt | date: &apos;mediumDate&apos; }}"/></pc>:</source>
+        <target>Die Signatur passt zum Inhalt, aber ein Administrator hat ihren Signierer am <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;block.createdAt&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ block.createdAt | date: &apos;mediumDate&apos; }}"/></pc> gesperrt:</target>
+      </segment>
+    </unit>
+    <unit id="sig.stale">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:29,32</note>
+      </notes>
+      <segment>
+        <source>Trust is being recomputed after a change of trust anchors; the badge may still change.</source>
+        <target>Das Vertrauen wird nach einer Änderung der Vertrauensanker neu berechnet; das Abzeichen kann sich noch ändern.</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:34,36</note>
+      </notes>
+      <segment>
+        <source>Origin</source>
+        <target>Herkunft</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.protected">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:43,44</note>
+      </notes>
+      <segment>
+        <source>protected ref</source>
+        <target>geschützte Ref</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.unprotected">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:45,47</note>
+      </notes>
+      <segment>
+        <source>ref not protected</source>
+        <target>Ref nicht geschützt</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.job">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:48</note>
+      </notes>
+      <segment>
+        <source>job</source>
+        <target>Job</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.commit">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:51</note>
+      </notes>
+      <segment>
+        <source>commit</source>
+        <target>Commit</target>
+      </segment>
+    </unit>
+    <unit id="sig.covering">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:66,67</note>
+      </notes>
+      <segment>
+        <source>Releases whose signed index names this package</source>
+        <target>Releases, deren signierter Index dieses Paket nennt</target>
+      </segment>
+    </unit>
+    <unit id="sig.blocked">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:98</note>
+      </notes>
+      <segment>
+        <source>Blocked by an administrator on <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;block.createdAt&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ block.createdAt | date: &apos;mediumDate&apos; }}"/></pc>:</source>
+        <target>Gesperrt von einem Administrator am <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;block.createdAt&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ block.createdAt | date: &apos;mediumDate&apos; }}"/></pc>:</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.signer">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:108,109</note>
+      </notes>
+      <segment>
+        <source>Signer</source>
+        <target>Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.identity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:112,113</note>
+      </notes>
+      <segment>
+        <source>Identity</source>
+        <target>Identität</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.issuer">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:116,117</note>
+      </notes>
+      <segment>
+        <source>Issuer</source>
+        <target>Aussteller</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.key">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:126</note>
+      </notes>
+      <segment>
+        <source>Key</source>
+        <target>Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.signed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:128,130</note>
+      </notes>
+      <segment>
+        <source>Signed</source>
+        <target>Signiert</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.certificate">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:133,134</note>
+      </notes>
+      <segment>
+        <source>Certificate</source>
+        <target>Zertifikat</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.anchor">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:137,139</note>
+      </notes>
+      <segment>
+        <source>Trust anchor</source>
+        <target>Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.no-anchor">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:144,146</note>
+      </notes>
+      <segment>
+        <source>None knows this signer</source>
+        <target>Keiner kennt diesen Signierer</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.ci">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:150,152</note>
+      </notes>
+      <segment>
+        <source>CI job</source>
+        <target>CI-Job</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.platform">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:159,160</note>
+      </notes>
+      <segment>
+        <source>Platform</source>
+        <target>Plattform</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.file">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:164,165</note>
+      </notes>
+      <segment>
+        <source>File</source>
+        <target>Datei</target>
+      </segment>
+    </unit>
+    <unit id="sig.fact.repository">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:168,169</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="sig.download">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:173,175</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:265,267</note>
+      </notes>
+      <segment>
+        <source>Download original</source>
+        <target>Original herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.key-ids">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:178,180</note>
+      </notes>
+      <segment>
+        <source>Key identifiers</source>
+        <target>Schlüsselkennungen</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.algorithm">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:186,187</note>
+      </notes>
+      <segment>
+        <source>Algorithm</source>
+        <target>Algorithmus</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.serial">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:190,191</note>
+      </notes>
+      <segment>
+        <source>Serial</source>
+        <target>Seriennummer</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.chain">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:194,196</note>
+      </notes>
+      <segment>
+        <source>Chain</source>
+        <target>Kette</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.log">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:202,204</note>
+      </notes>
+      <segment>
+        <source>Transparency log</source>
+        <target>Transparenzprotokoll</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.timestamp">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:211,213</note>
+      </notes>
+      <segment>
+        <source>Timestamp</source>
+        <target>Zeitstempel</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.claimed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:220,221</note>
+      </notes>
+      <segment>
+        <source>Time the signer claims</source>
+        <target>Vom Signierer angegebene Zeit</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.received">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:223,224</note>
+      </notes>
+      <segment>
+        <source>Received by Quader</source>
+        <target>Von Quader empfangen</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.predicate">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:226,227</note>
+      </notes>
+      <segment>
+        <source>Predicate</source>
+        <target>Prädikat</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.media-type">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:230,231</note>
+      </notes>
+      <segment>
+        <source>Media type</source>
+        <target>Medientyp</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.size">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:233,234</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.attached">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:235,237</note>
+      </notes>
+      <segment>
+        <source>Attached at</source>
+        <target>Angehängt an</target>
+      </segment>
+    </unit>
+    <unit id="sig.tech.cut">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:242,243</note>
+      </notes>
+      <segment>
+        <source>Cut at the bounds</source>
+        <target>An den Grenzen abgeschnitten</target>
+      </segment>
+    </unit>
+    <unit id="sig.attestations">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:251,252</note>
+      </notes>
+      <segment>
+        <source>Attestations and SBOMs</source>
+        <target>Attestierungen und SBOMs</target>
+      </segment>
+    </unit>
+    <unit id="sig.att.type">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:130</note>
+      </notes>
+      <segment>
+        <source>Type</source>
+        <target>Typ</target>
+      </segment>
+    </unit>
+    <unit id="sig.att.platform">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:131</note>
+      </notes>
+      <segment>
+        <source>Platform</source>
+        <target>Plattform</target>
+      </segment>
+    </unit>
+    <unit id="sig.att.size">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:132</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="sig.att.received">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:133</note>
+      </notes>
+      <segment>
+        <source>Received</source>
+        <target>Empfangen</target>
+      </segment>
+    </unit>
+    <unit id="sig.att.download">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:134</note>
+      </notes>
+      <segment>
+        <source>Download</source>
+        <target>Herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="sig.att.caption">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:136</note>
+      </notes>
+      <segment>
+        <source>Attestations and SBOMs of this image</source>
+        <target>Attestierungen und SBOMs dieses Images</target>
+      </segment>
+    </unit>
+    <unit id="sig.technical">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:137</note>
+      </notes>
+      <segment>
+        <source>Technical details</source>
+        <target>Technische Details</target>
+      </segment>
+    </unit>
+    <unit id="sig.att.image">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.ts:138</note>
+      </notes>
+      <segment>
+        <source>Image</source>
+        <target>Image</target>
+      </segment>
+    </unit>
+    <unit id="sig.promise">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:29</note>
+      </notes>
+      <segment>
+        <source>A signature tells who signed an artifact and whether a trust anchor knows the signer. It does not tell that the content is safe; the malware scan and the vulnerability scanning check that.</source>
+        <target>Eine Signatur sagt, wer ein Artefakt signiert hat und ob ein Vertrauensanker den Signierer kennt. Sie sagt nicht, dass der Inhalt sicher ist; das prüfen die Malware-Prüfung und die Schwachstellenanalyse.</target>
+      </segment>
+    </unit>
+    <unit id="sig.badge.verified-public">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:36</note>
+      </notes>
+      <segment>
+        <source>Verified · public</source>
+        <target>Verifiziert · öffentlich</target>
+      </segment>
+    </unit>
+    <unit id="sig.badge.verified-internal">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:38</note>
+      </notes>
+      <segment>
+        <source>Verified · internal</source>
+        <target>Verifiziert · intern</target>
+      </segment>
+    </unit>
+    <unit id="sig.badge.untrusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:40</note>
+      </notes>
+      <segment>
+        <source>Signed · signer not trusted</source>
+        <target>Signiert · Signierer nicht vertrauenswürdig</target>
+      </segment>
+    </unit>
+    <unit id="sig.state.not-checked">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:59</note>
+      </notes>
+      <segment>
+        <source>Not checked yet</source>
+        <target>Noch nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="sig.state.unsupported">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:61</note>
+      </notes>
+      <segment>
+        <source>Scheme not supported</source>
+        <target>Schema nicht unterstützt</target>
+      </segment>
+    </unit>
+    <unit id="sig.state.none">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:63</note>
+      </notes>
+      <segment>
+        <source>No signature</source>
+        <target>Keine Signatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.verified-internal">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:71</note>
+      </notes>
+      <segment>
+        <source>The signature matches the content, and a trust anchor of this installation or of this project knows the signer.</source>
+        <target>Die Signatur passt zum Inhalt, und ein Vertrauensanker dieser Installation oder dieses Projekts kennt den Signierer.</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.verified-public">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:73</note>
+      </notes>
+      <segment>
+        <source>The signature matches the content, and a public trust anchor shipped with Quader knows the signer.</source>
+        <target>Die Signatur passt zum Inhalt, und ein mit Quader ausgelieferter öffentlicher Vertrauensanker kennt den Signierer.</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.untrusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:75</note>
+      </notes>
+      <segment>
+        <source>The signature matches the content or cannot be matched without a key. No trust anchor knows this signer.</source>
+        <target>Die Signatur passt zum Inhalt oder kann ohne Schlüssel nicht abgeglichen werden. Kein Vertrauensanker kennt diesen Signierer.</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:77</note>
+      </notes>
+      <segment>
+        <source>The signature does not match the content.</source>
+        <target>Die Signatur passt nicht zum Inhalt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.not-checked">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:79</note>
+      </notes>
+      <segment>
+        <source>A signature was found and is not checked yet.</source>
+        <target>Eine Signatur wurde gefunden und ist noch nicht geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.unsupported">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:81</note>
+      </notes>
+      <segment>
+        <source>A signature was found in a scheme Quader does not read, or it could not be read.</source>
+        <target>Eine Signatur wurde in einem Schema gefunden, das Quader nicht liest, oder sie konnte nicht gelesen werden.</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.none">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:83</note>
+      </notes>
+      <segment>
+        <source>No signature found.</source>
+        <target>Keine Signatur gefunden.</target>
+      </segment>
+    </unit>
+    <unit id="sig.kinds.none">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:90</note>
+      </notes>
+      <segment>
+        <source>This format has no signatures.</source>
+        <target>Dieses Format hat keine Signaturen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.kinds.known">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:92</note>
+      </notes>
+      <segment>
+        <source>Signatures this format knows: <ph id="0" equiv="kinds" disp="list"/>.</source>
+        <target>Signaturen, die dieses Format kennt: <ph id="0" equiv="kinds" disp="list"/>.</target>
+      </segment>
+    </unit>
+    <unit id="sig.deb.index">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:97</note>
+      </notes>
+      <segment>
+        <source>apt checks the signature of this repository&apos;s index, not of the package.</source>
+        <target>apt prüft die Signatur des Index dieses Repositorys, nicht die des Pakets.</target>
+      </segment>
+    </unit>
+    <unit id="sig.scheme.sigstore-keyless">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:104</note>
+      </notes>
+      <segment>
+        <source>Sigstore, keyless</source>
+        <target>Sigstore, schlüssellos</target>
+      </segment>
+    </unit>
+    <unit id="sig.scheme.sigstore-key">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:104</note>
+      </notes>
+      <segment>
+        <source>Sigstore, with a key</source>
+        <target>Sigstore, mit einem Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="sig.scheme.cosign">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:106</note>
+      </notes>
+      <segment>
+        <source>cosign, older layout</source>
+        <target>cosign, ältere Form</target>
+      </segment>
+    </unit>
+    <unit id="sig.scheme.nuget">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:111</note>
+      </notes>
+      <segment>
+        <source>NuGet package signature</source>
+        <target>NuGet-Paketsignatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.scheme.npm">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:115</note>
+      </notes>
+      <segment>
+        <source>npm registry signature</source>
+        <target>npm-Registry-Signatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.scheme.public-key">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:117</note>
+      </notes>
+      <segment>
+        <source>a public key</source>
+        <target>ein öffentlicher Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="sig.scheme.unknown">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:119</note>
+      </notes>
+      <segment>
+        <source>an unknown scheme</source>
+        <target>ein unbekanntes Schema</target>
+      </segment>
+    </unit>
+    <unit id="sig.kind.author">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:128</note>
+      </notes>
+      <segment>
+        <source>Author signature · <ph id="0" equiv="scheme" disp="scheme"/></source>
+        <target>Autorensignatur · <ph id="0" equiv="scheme" disp="scheme"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.kind.publisher">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:129</note>
+      </notes>
+      <segment>
+        <source>Publisher signature · <ph id="0" equiv="scheme" disp="scheme"/></source>
+        <target>Herausgebersignatur · <ph id="0" equiv="scheme" disp="scheme"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.kind.provenance">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:132</note>
+      </notes>
+      <segment>
+        <source>Provenance attestation</source>
+        <target>Provenienz-Attestierung</target>
+      </segment>
+    </unit>
+    <unit id="sig.kind.registry">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:134</note>
+      </notes>
+      <segment>
+        <source>Origin confirmed by registry</source>
+        <target>Herkunft von der Registry bestätigt</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.digest">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:146</note>
+      </notes>
+      <segment>
+        <source>the content&apos;s digest differs from the signed one</source>
+        <target>der Digest des Inhalts weicht vom signierten ab</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.subject">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:148</note>
+      </notes>
+      <segment>
+        <source>the signature names other content</source>
+        <target>die Signatur nennt einen anderen Inhalt</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.signature">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:150</note>
+      </notes>
+      <segment>
+        <source>the signature value does not verify</source>
+        <target>der Signaturwert lässt sich nicht verifizieren</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.chain">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:152</note>
+      </notes>
+      <segment>
+        <source>the certificate chain does not sign it</source>
+        <target>die Zertifikatskette signiert sie nicht</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.log">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:154</note>
+      </notes>
+      <segment>
+        <source>its transparency-log entry does not verify</source>
+        <target>ihr Eintrag im Transparenzprotokoll lässt sich nicht verifizieren</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.timestamp">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:156</note>
+      </notes>
+      <segment>
+        <source>its timestamp does not verify</source>
+        <target>ihr Zeitstempel lässt sich nicht verifizieren</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.attribute">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:158</note>
+      </notes>
+      <segment>
+        <source>a signed attribute the scheme requires is missing</source>
+        <target>ein signiertes Attribut, das das Schema verlangt, fehlt</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.weak">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:160</note>
+      </notes>
+      <segment>
+        <source>a weak algorithm (SHA-1, or RSA below 2048 bits)</source>
+        <target>ein schwacher Algorithmus (SHA-1 oder RSA unter 2048 Bit)</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.scheme">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:162</note>
+      </notes>
+      <segment>
+        <source>a scheme Quader does not read</source>
+        <target>ein Schema, das Quader nicht liest</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.version">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:164</note>
+      </notes>
+      <segment>
+        <source>a version of the scheme Quader does not read</source>
+        <target>eine Version des Schemas, die Quader nicht liest</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.limits">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:166</note>
+      </notes>
+      <segment>
+        <source>larger than the bounds Quader reads</source>
+        <target>größer als die Grenzen, die Quader liest</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.subject-missing">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:168</note>
+      </notes>
+      <segment>
+        <source>the signed content is not stored yet</source>
+        <target>der signierte Inhalt ist noch nicht gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="sig.reason.content">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:170</note>
+      </notes>
+      <segment>
+        <source>the signed content could not be read</source>
+        <target>der signierte Inhalt konnte nicht gelesen werden</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.trusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:181</note>
+      </notes>
+      <segment>
+        <source>The signature matches the content. A trust anchor knows the signer.</source>
+        <target>Die Signatur passt zum Inhalt. Ein Vertrauensanker kennt den Signierer.</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.untrusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:183</note>
+      </notes>
+      <segment>
+        <source>The signature matches the content. No trust anchor knows this signer.</source>
+        <target>Die Signatur passt zum Inhalt. Kein Vertrauensanker kennt diesen Signierer.</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.no-key">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:185</note>
+      </notes>
+      <segment>
+        <source>No key of this signer is known, so the signature cannot be matched with the content yet.</source>
+        <target>Kein Schlüssel dieses Signierers ist bekannt, deshalb kann die Signatur noch nicht mit dem Inhalt abgeglichen werden.</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.invalid-why">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:189</note>
+      </notes>
+      <segment>
+        <source>The signature does not match the content: <ph id="0" equiv="reason" disp="why"/>.</source>
+        <target>Die Signatur passt nicht zum Inhalt: <ph id="0" equiv="reason" disp="why"/>.</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:190</note>
+      </notes>
+      <segment>
+        <source>The signature does not match the content.</source>
+        <target>Die Signatur passt nicht zum Inhalt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.unsupported">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:193</note>
+      </notes>
+      <segment>
+        <source>Scheme not supported.</source>
+        <target>Schema nicht unterstützt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.malformed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:195</note>
+      </notes>
+      <segment>
+        <source>The signature could not be read.</source>
+        <target>Die Signatur konnte nicht gelesen werden.</target>
+      </segment>
+    </unit>
+    <unit id="sig.entry.pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:197</note>
+      </notes>
+      <segment>
+        <source>Not checked yet.</source>
+        <target>Noch nicht geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="sig.cert.short-log">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:230</note>
+      </notes>
+      <segment>
+        <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing; covered by the log entry</source>
+        <target>beim Signieren <ph id="0" equiv="minutes" disp="minutes"/> Minuten gültig; durch den Protokolleintrag abgedeckt</target>
+      </segment>
+    </unit>
+    <unit id="sig.cert.short-timestamp">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:231</note>
+      </notes>
+      <segment>
+        <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing; covered by the timestamp</source>
+        <target>beim Signieren <ph id="0" equiv="minutes" disp="minutes"/> Minuten gültig; durch den Zeitstempel abgedeckt</target>
+      </segment>
+    </unit>
+    <unit id="sig.cert.short">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:232</note>
+      </notes>
+      <segment>
+        <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing</source>
+        <target>beim Signieren <ph id="0" equiv="minutes" disp="minutes"/> Minuten gültig</target>
+      </segment>
+    </unit>
+    <unit id="sig.cert.expired">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:236</note>
+      </notes>
+      <segment>
+        <source>expired on <ph id="0" equiv="date" disp="when"/></source>
+        <target>abgelaufen am <ph id="0" equiv="date" disp="when"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.cert.valid-until">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:236</note>
+      </notes>
+      <segment>
+        <source>valid until <ph id="0" equiv="date" disp="when"/></source>
+        <target>gültig bis <ph id="0" equiv="date" disp="when"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.time.log">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:243</note>
+      </notes>
+      <segment>
+        <source>proven by the transparency log</source>
+        <target>belegt durch das Transparenzprotokoll</target>
+      </segment>
+    </unit>
+    <unit id="sig.time.timestamp">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:245</note>
+      </notes>
+      <segment>
+        <source>proven by a timestamp</source>
+        <target>belegt durch einen Zeitstempel</target>
+      </segment>
+    </unit>
+    <unit id="sig.time.received">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:247</note>
+      </notes>
+      <segment>
+        <source>received by Quader</source>
+        <target>von Quader empfangen</target>
+      </segment>
+    </unit>
+    <unit id="sig.scope.shipped">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:260</note>
+      </notes>
+      <segment>
+        <source>Shipped with Quader</source>
+        <target>Mit Quader ausgeliefert</target>
+      </segment>
+    </unit>
+    <unit id="sig.scope.configuration">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:262</note>
+      </notes>
+      <segment>
+        <source>From the Helm values</source>
+        <target>Aus den Helm-Values</target>
+      </segment>
+    </unit>
+    <unit id="sig.scope.installation">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:264</note>
+      </notes>
+      <segment>
+        <source>Added by an administrator</source>
+        <target>Von einem Administrator hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="sig.scope.project">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:266</note>
+      </notes>
+      <segment>
+        <source>Added by the project&apos;s Owner</source>
+        <target>Vom Eigentümer des Projekts hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor-kind.ca">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:274</note>
+      </notes>
+      <segment>
+        <source>CA certificate</source>
+        <target>CA-Zertifikat</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor-kind.openpgp">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:276</note>
+      </notes>
+      <segment>
+        <source>OpenPGP key</source>
+        <target>OpenPGP-Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor-kind.public-key">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:278</note>
+      </notes>
+      <segment>
+        <source>Public key</source>
+        <target>Öffentlicher Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor-kind.sigstore">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:280</note>
+      </notes>
+      <segment>
+        <source>Sigstore identity</source>
+        <target>Sigstore-Identität</target>
+      </segment>
+    </unit>
+    <unit id="sig.block-kind.fingerprint">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:288</note>
+      </notes>
+      <segment>
+        <source>Fingerprint</source>
+        <target>Fingerabdruck</target>
+      </segment>
+    </unit>
+    <unit id="sig.block-kind.serial">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:290</note>
+      </notes>
+      <segment>
+        <source>Issuer and serial</source>
+        <target>Aussteller und Seriennummer</target>
+      </segment>
+    </unit>
+    <unit id="sig.block-kind.keyid">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:292</note>
+      </notes>
+      <segment>
+        <source>Key ID</source>
+        <target>Schlüssel-ID</target>
+      </segment>
+    </unit>
+    <unit id="sig.block-kind.identity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:294</note>
+      </notes>
+      <segment>
+        <source>Sigstore identity</source>
+        <target>Sigstore-Identität</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.fetched">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:302</note>
+      </notes>
+      <segment>
+        <source>Fetched from <ph id="0" equiv="upstream" disp="from"/></source>
+        <target>Geholt von <ph id="0" equiv="upstream" disp="from"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.fetched-remote">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:302</note>
+      </notes>
+      <segment>
+        <source>Fetched from the remote&apos;s upstream</source>
+        <target>Vom Upstream des Remote-Repositorys geholt</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.pipeline">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:306</note>
+      </notes>
+      <segment>
+        <source>pipeline <ph id="0" equiv="id" disp="o.ci.pipelineId"/></source>
+        <target>Pipeline <ph id="0" equiv="id" disp="o.ci.pipelineId"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.ci">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:309</note>
+      </notes>
+      <segment>
+        <source>Uploaded by CI job <ph id="0" equiv="job" disp="parts"/></source>
+        <target>Hochgeladen vom CI-Job <ph id="0" equiv="job" disp="parts"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.service-account">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:313</note>
+      </notes>
+      <segment>
+        <source>Uploaded by the service account <ph id="0" equiv="name" disp="name"/></source>
+        <target>Hochgeladen vom Servicekonto <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.anonymous">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:315</note>
+      </notes>
+      <segment>
+        <source>Uploaded without signing in</source>
+        <target>Ohne Anmeldung hochgeladen</target>
+      </segment>
+    </unit>
+    <unit id="sig.origin.user">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:317</note>
+      </notes>
+      <segment>
+        <source>Uploaded by <ph id="0" equiv="name" disp="name"/></source>
+        <target>Hochgeladen von <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
   </file>
 </xliff>

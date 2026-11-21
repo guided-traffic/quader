@@ -99,6 +99,9 @@ func TestR_REPO_069_AMergePatchOfAWellKnownRepositoryChangesOnlyTheNarrowingSett
 			[]string{"/description", "/hideExistence", "/remote/availability/failureThreshold"},
 		},
 		{"the format's member", wellknown.KindPreset, `{"npm":{"auditMode":"forward"}}`, []string{"/npm"}},
+		// R-SIG-040: an administrator switches the background fetch of a well-known upstream's signatures off.
+		{"the fetch of the upstream's signatures", wellknown.KindPreset, `{"signatures":{"fetch":false}}`, nil},
+		{"the signatures of a system repository", wellknown.KindSystem, `{"signatures":{"fetch":false}}`, []string{"/signatures"}},
 		{
 			"the include patterns and the scanning of a system repository", wellknown.KindSystem,
 			`{"includePatterns":["aquasec/*"],"vulnerabilities":{"enabled":true},"excludePatterns":["x"]}`,

@@ -11,6 +11,15 @@ import { formatSize } from '../../packages/format-size';
 import { nameOf } from './file-paths';
 import { systemClientSentence, upstreamKeyOf } from '../../../core/upstream-project';
 import { systemClosed } from '../../../core/system-clients';
+import { RouterLink } from '@angular/router';
+import { SignatureBadgeState, SignatureStatus, SignaturesApi } from '../../../api/signatures-api';
+import { filesCommands } from '../../../core/project-links';
+import { SignatureBadge } from '../../../shared/signatures/signature-badge';
+import { SignatureReport } from '../../../shared/signatures/signature-report';
+import { hasSignatureBadge, signatureStateWord } from '../../../shared/signatures/signature-words';
+
+/** The names of a signature beside its file in a generic repository, longest first (R-SIG-032). */
+const SIBLING_SUFFIXES = ['.sigstore.json', '.jws.sig', '.cose.sig', '.asc', '.sig'];
 
 /** A POSIX shell word for `value`: single quotes, with an embedded single quote closed and escaped. */
 const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
@@ -25,7 +34,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
  */
 @Component({
   selector: 'quader-repository-file',
-  imports: [AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, TimeAgo],
+  imports: [AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureReport, TimeAgo],
   template: `
     @let it = item();
     <section class="file-view" aria-labelledby="file-name">
@@ -79,6 +88,21 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           <dt i18n="@@files.fact.malware">Malware scan</dt>
           <dd data-testid="malware-fact"><quader-malware-status [status]="m" /></dd>
         }
+        <!-- The badge of the file's signatures, or the word of a state without one (R-SIG-035); absent while the signatures are off. -->
+        @if (it.signatures; as sig) {
+          <dt i18n="@@files.fact.signature">Signature</dt>
+          <dd data-testid="signature-fact">
+            @if (badged(sig)) {
+              <quader-signature-badge [state]="sig.state" [stale]="sig.stale" />
+            } @else {
+              <span class="muted">{{ stateWord(sig.state) }}</span>
+            }
+          </dd>
+        }
+        @if (signatureOf(); as subject) {
+          <dt i18n="@@files.fact.signature-of">Signature of</dt>
+          <dd><a [routerLink]="subject.link" translate="no">{{ subject.name }}</a></dd>
+        }
         @if (it.digests?.sha256; as sha) {
           <dt translate="no">SHA-256</dt>
           <dd class="digest">
@@ -87,6 +111,25 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           </dd>
         }
       </dl>
+
+      <!-- The details of the signatures and the origin of the upload, one click away (R-SIG-035, R-SIG-010). -->
+      @if (it.signatures; as sig) {
+        <quader-disclosure
+          class="details"
+          i18n-heading="@@files.signatures"
+          heading="Signatures"
+          [hint]="signaturesHint(sig.state)"
+          (expandedChange)="signaturesOpen.set($event)"
+        >
+          @if (signatureFailure(); as f) {
+            <quader-error-notice [error]="f" (retry)="signatureReport.reload()" />
+          } @else if (valueOf(signatureReport); as report) {
+            <quader-signature-report [report]="report" [format]="format()" [level]="3" />
+          } @else if (signaturesOpen()) {
+            <p role="status" i18n="@@repo.loading">Loading.</p>
+          }
+        </quader-disclosure>
+      }
 
       <quader-disclosure
         class="details"
@@ -149,6 +192,40 @@ export class RepositoryFile {
 
   /** The file, as the items API describes it (R-STOR-016). */
   readonly item = input.required<Item>();
+  /** The repository's format: Debian's sentence and the kinds a file without a signature names (R-SIG-009), a generic sibling. */
+  readonly format = input('generic');
+
+  // ---- The signatures (R-SIG-035) ----
+  private readonly signaturesApi = inject(SignaturesApi);
+  protected readonly signaturesOpen = signal(false);
+  /** The details, read once the section is open. */
+  protected readonly signatureReport = resource({
+    params: () => (this.signaturesOpen() && this.item().signatures ? { repo: this.item().repository, path: this.item().path } : undefined),
+    loader: ({ params }) => this.signaturesApi.file(params.repo, params.path),
+  });
+  protected readonly signatureFailure = computed(() => {
+    const e = this.signatureReport.error();
+    return e ? asApiError(e) : null;
+  });
+  protected readonly badged = (s: SignatureStatus): boolean => hasSignatureBadge(s);
+  protected readonly stateWord = signatureStateWord;
+  protected signaturesHint(state: SignatureBadgeState): string {
+    return state === 'none'
+      ? $localize`:@@files.signatures-hint-none:No signature found, and who uploaded the file or where it was fetched from.`
+      : $localize`:@@files.signatures-hint:Who signed the file, whether a trust anchor knows the signer, and who uploaded it.`;
+  }
+  /**
+   * A generic file whose name is a signature's (R-SIG-032, Q-SIG-8): "Signature of" the file beside it, by the longest suffix. The
+   * file stays a file to download; the signed one carries the badge.
+   */
+  protected readonly signatureOf = computed<{ readonly name: string; readonly link: string[] } | null>(() => {
+    if (this.format() !== 'generic') return null;
+    const path = this.item().path;
+    const suffix = SIBLING_SUFFIXES.find((s) => path.endsWith(s) && path.length > s.length && !path.endsWith(`/${s}`));
+    if (!suffix) return null;
+    const subject = path.slice(0, -suffix.length);
+    return { name: nameOf(subject), link: filesCommands(this.item().repository, subject.split('/')) };
+  });
 
   protected readonly detailsOpen = signal(false);
   protected readonly name = computed(() => nameOf(this.item().path));

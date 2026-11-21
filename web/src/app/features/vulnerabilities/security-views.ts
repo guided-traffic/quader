@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 /**
- * The two views of the security dashboard (R-UI-158, R-MAL-025, Q-UI-871): **Vulnerabilities** (`/security`) and **Malware**
- * (`/security/malware`), links under the page's title, each its own address with its own filters. Every view puts the strip
+ * The three views of the security dashboard (R-UI-158, R-MAL-025, Q-UI-871, R-SIG-038): **Vulnerabilities** (`/security`),
+ * **Malware** (`/security/malware`) and **Signatures** (`/security/signatures`), links under the page's title, each its own address
+ * with its own filters. Every view puts the strip
  * directly under its header; the side bar keeps its one entry.
  */
 @Component({
@@ -17,6 +18,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       >
       <a class="tab-link" routerLink="/security/malware" routerLinkActive [routerLinkActiveOptions]="exact" ariaCurrentWhenActive="page" i18n="@@security.view.malware"
         >Malware</a
+      >
+      <a class="tab-link" routerLink="/security/signatures" routerLinkActive [routerLinkActiveOptions]="exact" ariaCurrentWhenActive="page" i18n="@@security.view.signatures"
+        >Signatures</a
       >
     </nav>
   `,

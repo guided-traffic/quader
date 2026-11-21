@@ -1,0 +1,62 @@
+:host {
+  display: block;
+}
+.sig-report {
+  max-inline-size: var(--quader-settings-measure);
+}
+.sig-state {
+  margin-block: 0 var(--quader-space-3);
+}
+.hint {
+  margin-block: 0 var(--quader-space-3);
+}
+.sig-origin {
+  margin-block-end: var(--quader-space-4);
+}
+.sig-heading {
+  margin: var(--quader-space-5) 0 var(--quader-space-2);
+  font: var(--quader-type-title-small);
+}
+.sig-covering {
+  margin: 0 0 var(--quader-space-4);
+  padding-inline-start: var(--quader-space-5);
+}
+.sig-covering li {
+  margin-block: var(--quader-space-1);
+}
+/* One signature: a block under a rule, its kind as the block's heading with its own verdict after it. */
+.sig-entry {
+  padding-block: var(--quader-space-4);
+  border-block-start: 1px solid var(--quader-border);
+}
+.sig-kind {
+  margin: 0 0 var(--quader-space-1);
+  font-weight: 600;
+}
+.sig-kind quader-signature-badge {
+  font-weight: 400;
+}
+.sig-sentence {
+  margin-block: 0 var(--quader-space-2);
+}
+.sig-line {
+  display: block;
+}
+/* A signer's subject, an identity, a URI: long texts without spaces that break anywhere rather than widen the page. */
+.sig-text {
+  overflow-wrap: anywhere;
+}
+.sig-actions {
+  margin-block: var(--quader-space-2);
+}
+.muted {
+  color: var(--quader-text-muted);
+}
+.sig-attestations {
+  display: block;
+  margin-block-start: var(--quader-space-2);
+}
+/* A time never breaks inside itself. */
+time {
+  white-space: nowrap;
+}

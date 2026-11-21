@@ -1,0 +1,270 @@
+@let r = report();
+<div class="sig-report">
+  <p class="sig-state" data-testid="signature-state">
+    @if (r.state === 'verified_public' || r.state === 'verified_internal' || r.state === 'untrusted' || r.state === 'invalid') {
+      <quader-signature-badge [state]="r.state" [stale]="r.stale" />&ngsp;
+    } @else {
+      <strong>{{ stateWord() }}.</strong>&ngsp;
+    }
+    @if (deb() && r.state === 'none') {
+      <span>{{ debSentence }}</span>
+    } @else {
+      @if (blockedBy(); as block) {
+        <!-- The badge falls because an administrator blocked the signer, whatever anchor knows it (R-SIG-020): the block decides. -->
+        <span data-testid="signature-blocked-sentence"
+          ><ng-container i18n="@@sig.sentence.blocked"
+            >The signature matches the content, but an administrator blocked its signer on
+            <time [attr.datetime]="block.createdAt">{{ block.createdAt | date: 'mediumDate' }}</time>:</ng-container
+          >&ngsp;<span translate="no">{{ block.reason }}</span></span
+        >
+      } @else {
+        <span>{{ sentence() }}</span>
+      }
+      @if (r.state === 'none' && kindsSentence()) {
+        &ngsp;<span data-testid="signature-kinds">{{ kindsSentence() }}</span>
+      }
+    }
+  </p>
+  @if (r.stale) {
+    <p class="hint" i18n="@@sig.stale">Trust is being recomputed after a change of trust anchors; the badge may still change.</p>
+  }
+
+  @if (r.origin; as o) {
+    <dl class="facts sig-origin" data-testid="signature-origin">
+      <dt i18n="@@sig.origin">Origin</dt>
+      <dd>
+        <span translate="no">{{ originText(o) }}</span>
+        @if (o.at; as at) {
+          &ngsp;<span class="muted">·</span>&ngsp;<quader-time-ago [at]="at" absolute="title" />
+        }
+        @if (o.ci; as ci) {
+          <span class="sig-line muted">
+            @if (ci.refProtected === true) {
+              <ng-container i18n="@@sig.origin.protected">protected ref</ng-container>
+            } @else if (ci.refProtected === false) {
+              <ng-container i18n="@@sig.origin.unprotected">ref not protected</ng-container>
+            }
+            @if (ci.jobId; as job) {
+              · <ng-container i18n="@@sig.origin.job">job</ng-container>&ngsp;<span translate="no">{{ job }}</span>
+            }
+            @if (ci.sha; as sha) {
+              · <ng-container i18n="@@sig.origin.commit">commit</ng-container>&ngsp;<code translate="no">{{ sha.slice(0, 12) }}</code>
+            }
+            @if (ci.issuer; as issuer) {
+              · <span translate="no">{{ issuer }}</span>
+            }
+          </span>
+        }
+      </dd>
+    </dl>
+  }
+
+  @if (deb() && r.state !== 'none') {
+    <p data-testid="signature-deb">{{ debSentence }}</p>
+  }
+  @if (r.covering.length > 0) {
+    <p class="sig-heading" role="heading" [attr.aria-level]="entryLevel()" i18n="@@sig.covering">Releases whose signed index names this package</p>
+    <ul class="sig-covering" data-testid="signature-covering">
+      @for (c of r.covering; track c.release) {
+        <li>
+          <span translate="no">{{ c.suite }}</span>
+          @if (c.date; as d) {
+            &ngsp;<span class="muted"><time [attr.datetime]="d">{{ d | date: 'mediumDate' }}</time></span>
+          }
+          &ngsp;<quader-signature-badge [state]="c.state" />
+          @if (c.state === 'not_checked' || c.state === 'unsupported') {
+            <span class="muted">{{ wordOf(c.state) }}</span>
+          }
+          @for (s of c.signatures; track s.id) {
+            @if (s.signer || s.fingerprint) {
+              <span class="sig-line muted" translate="no">{{ s.signer ?? s.fingerprint }}</span>
+            }
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  @for (e of r.signatures; track e.id; let i = $index) {
+    <article class="sig-entry" [attr.aria-labelledby]="entryId(e, i)" data-testid="signature-entry">
+      <p class="sig-kind" role="heading" [attr.aria-level]="entryLevel()" [id]="entryId(e, i)">
+        <span class="sig-kind-name">{{ kind(e) }}</span>
+        @if (badgeOf(e); as b) {
+          &ngsp;<quader-signature-badge [state]="b" [stale]="e.trust?.stale ?? false" />
+        }
+      </p>
+      @if (e.trust?.block; as block) {
+        <p class="sig-sentence" data-testid="signature-block">
+          <span i18n="@@sig.blocked">Blocked by an administrator on <time [attr.datetime]="block.createdAt">{{ block.createdAt | date: 'mediumDate' }}</time>:</span>&ngsp;<span translate="no">{{ block.reason }}</span>
+        </p>
+      } @else {
+        <p class="sig-sentence">{{ entrySentence(e) }}</p>
+      }
+      @if (e.detail; as detail) {
+        <p class="hint" translate="no">{{ detail }}</p>
+      }
+      <dl class="facts">
+        @if (e.signer; as signer) {
+          <dt i18n="@@sig.fact.signer">Signer</dt>
+          <dd class="sig-text" translate="no">{{ signer }}</dd>
+        }
+        @if (e.identity; as identity) {
+          <dt i18n="@@sig.fact.identity">Identity</dt>
+          <dd class="sig-text" translate="no">{{ identity }}</dd>
+        }
+        @if (e.issuer || e.oidcIssuer) {
+          <dt i18n="@@sig.fact.issuer">Issuer</dt>
+          <dd class="sig-text" translate="no">
+            {{ e.issuer ?? e.oidcIssuer }}
+            @if (e.issuer && e.oidcIssuer) {
+              <span class="sig-line muted">{{ e.oidcIssuer }}</span>
+            }
+          </dd>
+        }
+        @if (!e.signer && !e.identity && (e.fingerprint || e.keyId)) {
+          <dt i18n="@@sig.fact.key">Key</dt>
+          <dd><code class="sig-text" translate="no">{{ e.fingerprint ?? e.keyId }}</code></dd>
+        }
+        <dt i18n="@@sig.fact.signed">Signed</dt>
+        <dd>
+          <time [attr.datetime]="time(e)">{{ time(e) | date: 'medium' }}</time>&ngsp;<span class="muted">· {{ proof(e) }}</span>
+        </dd>
+        @if (certificate(e); as cert) {
+          <dt i18n="@@sig.fact.certificate">Certificate</dt>
+          <dd>{{ cert }}</dd>
+        }
+        @if (e.trust; as t) {
+          <dt i18n="@@sig.fact.anchor">Trust anchor</dt>
+          <dd>
+            @for (a of t.anchors; track a.id) {
+              <span class="sig-line"
+                ><span translate="no">{{ a.title }}</span>&ngsp;<span class="muted">· {{ scopeWords(a.scope) }}</span></span
+              >
+            } @empty {
+              <span class="muted" i18n="@@sig.fact.no-anchor">None knows this signer</span>
+            }
+          </dd>
+        }
+        @if (ciLines(e); as lines) {
+          @if (lines.length > 0) {
+            <dt i18n="@@sig.fact.ci">CI job</dt>
+            <dd>
+              @for (l of lines; track l) {
+                <span class="sig-line sig-text" translate="no">{{ l }}</span>
+              }
+            </dd>
+          }
+        }
+        @if (e.platform; as platform) {
+          <dt i18n="@@sig.fact.platform">Platform</dt>
+          <dd translate="no">{{ platform }}</dd>
+        }
+        <!-- The file only where the signatures cover different files; an image's manifest is no file a reader knows. -->
+        @if (format() !== 'oci' && severalFiles() && e.path; as path) {
+          <dt i18n="@@sig.fact.file">File</dt>
+          <dd class="sig-text" translate="no">{{ path }}</dd>
+        }
+        @if (showRepository()) {
+          <dt i18n="@@sig.fact.repository">Repository</dt>
+          <dd translate="no">{{ e.repository }}</dd>
+        }
+      </dl>
+      <p class="sig-actions">
+        <a class="btn btn-tertiary" [href]="e.original" download i18n="@@sig.download">Download original</a>
+      </p>
+      <quader-disclosure class="sig-technical" [inline]="true" [heading]="technicalHeading">
+        <dl class="facts">
+          @if (e.keyIds.length > 0) {
+            <dt i18n="@@sig.tech.key-ids">Key identifiers</dt>
+            <dd>
+              @for (k of e.keyIds; track k) {
+                <code class="sig-line sig-text" translate="no">{{ k }}</code>
+              }
+            </dd>
+          }
+          @if (e.algorithm || e.hashAlgorithm) {
+            <dt i18n="@@sig.tech.algorithm">Algorithm</dt>
+            <dd translate="no">{{ algorithms(e) }}</dd>
+          }
+          @if (e.serial; as serial) {
+            <dt i18n="@@sig.tech.serial">Serial</dt>
+            <dd><code class="sig-text" translate="no">{{ serial }}</code></dd>
+          }
+          @if (e.chain && e.chain.length > 0) {
+            <dt i18n="@@sig.tech.chain">Chain</dt>
+            <dd>
+              @for (c of e.chain; track $index) {
+                <span class="sig-line sig-text" translate="no">{{ c }}</span>
+              }
+            </dd>
+          }
+          @for (l of e.log; track l.index) {
+            <dt i18n="@@sig.tech.log">Transparency log</dt>
+            <dd>
+              <span translate="no">#{{ l.index }}</span>
+              @if (l.integratedTime; as t) {
+                &ngsp;<span class="muted">· <time [attr.datetime]="t">{{ t | date: 'medium' }}</time></span>
+              }
+            </dd>
+          }
+          @for (ts of e.timestamps; track $index) {
+            <dt i18n="@@sig.tech.timestamp">Timestamp</dt>
+            <dd>
+              <time [attr.datetime]="ts.time">{{ ts.time | date: 'medium' }}</time>
+              @if (ts.authority; as authority) {
+                &ngsp;<span class="muted sig-text" translate="no">· {{ authority }}</span>
+              }
+            </dd>
+          }
+          @if (e.claimedAt; as claimed) {
+            <dt i18n="@@sig.tech.claimed">Time the signer claims</dt>
+            <dd><time [attr.datetime]="claimed">{{ claimed | date: 'medium' }}</time></dd>
+          }
+          <dt i18n="@@sig.tech.received">Received by Quader</dt>
+          <dd><time [attr.datetime]="e.receivedAt">{{ e.receivedAt | date: 'medium' }}</time></dd>
+          @if (e.predicateType; as pt) {
+            <dt i18n="@@sig.tech.predicate">Predicate</dt>
+            <dd class="sig-text" translate="no">{{ pt }}</dd>
+          }
+          @if (e.mediaType; as mt) {
+            <dt i18n="@@sig.tech.media-type">Media type</dt>
+            <dd class="sig-text" translate="no">{{ mt }}</dd>
+          }
+          <dt i18n="@@sig.tech.size">Size</dt>
+          <dd>{{ size(e.size) }}</dd>
+          <dt i18n="@@sig.tech.attached">Attached at</dt>
+          <dd>
+            @for (a of e.attachments; track $index) {
+              <span class="sig-line sig-text" translate="no">{{ a.repository }} · {{ a.source }} · {{ a.location }}</span>
+            }
+          </dd>
+          @if (e.cut; as cut) {
+            <dt i18n="@@sig.tech.cut">Cut at the bounds</dt>
+            <dd class="sig-text" translate="no">{{ cut }}</dd>
+          }
+        </dl>
+      </quader-disclosure>
+    </article>
+  }
+
+  @if (r.attestations.length > 0) {
+    <p class="sig-heading" role="heading" [attr.aria-level]="level()" i18n="@@sig.attestations">Attestations and SBOMs</p>
+    <quader-data-table class="sig-attestations" [caption]="attestationCaption" [columns]="attestationColumns" [empty]="false">
+      @for (a of r.attestations; track a.id) {
+        <tr>
+          <th scope="row" class="wrap-name" translate="no">{{ a.type }}</th>
+          <td translate="no">
+            @if (a.platform; as p) {
+              {{ p }}
+            } @else {
+              {{ imageWord }}
+            }
+          </td>
+          <td class="num nowrap" [attr.title]="a.size + ' B'">{{ size(a.size) }}</td>
+          <td class="nowrap"><quader-time-ago [at]="a.receivedAt" absolute="title" /></td>
+          <td><a class="btn btn-tertiary" [href]="a.original" download i18n="@@sig.download">Download original</a></td>
+        </tr>
+      }
+    </quader-data-table>
+  }
+</div>

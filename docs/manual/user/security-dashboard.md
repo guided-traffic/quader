@@ -1,6 +1,6 @@
 # Security dashboard
 
-The security dashboard is the instance-wide view of the vulnerability findings and of the malware scan's finds, for the auditors and the administrators of the installation. It shows the counts and the trend over every project, finds a finding by its advisory identifier or any alias of it, lists the findings with the project of each, and lets the people who may triage change their status; its second view lists the malware finds and releases one.
+The security dashboard is the instance-wide view of the vulnerability findings and of the malware scan's finds, for the auditors and the administrators of the installation. It shows the counts and the trend over every project, finds a finding by its advisory identifier or any alias of it, lists the findings with the project of each, and lets the people who may triage change their status; its second view lists the malware finds and releases one, and its third lists the invalid signatures and the signatures of blocked signers.
 
 A project's **Vulnerabilities** screen is the same report for that project; this page covers what differs. For what a finding is and what the triage statuses mean, see [Vulnerabilities](vulnerabilities.md).
 
@@ -85,6 +85,18 @@ holder of `delete` on a repository removes its files as any files.
 
 The settings of the scan (the switch, the backlog, the scanners, the signature database) are the administrator's, in the admin area
 under **Settings › Malware scanning** ([Monitoring and operations](../admin/operations.md#malware-scanning)).
+
+## Signatures
+
+The third view, **Signatures** (`/ui/<locale>/security/signatures`), lists one row per signature that does not match its content or whose
+signer an administrator blocked, newest first: the artifact it covers (the package and version, or the file), the kind ("Invalid
+signature" or "Blocked signer") with the kind of signature, the signer as the signature claims it, the reason (why it does not match, or
+the block's reason), the first repository that holds it and how many more, and when it was found. Search by signer; **Filters** narrows by
+kind and repository. An empty list says "No invalid signatures."
+
+Nothing is refused because of a signature, so there is nothing to release here. A holder of `security-settings:write` blocks a signer
+under **Admin area › Settings › Signatures** ([Signatures](../admin/signatures.md#blocked-signers)). What the states mean is in
+[Signatures](signatures.md).
 
 ## Limits
 

@@ -22,4 +22,10 @@ export const SETTINGS_ROUTES: Routes = [
     title: $localize`:@@route.settings.malware.title:Malware scanning`,
     loadComponent: () => import('./malware-settings').then((m) => m.MalwareSettingsPage),
   },
+  {
+    // The fourth page of the group (R-SIG-036): the trust anchors, the switch for project Owners, blocks and the public root.
+    path: 'signatures',
+    title: $localize`:@@route.settings.signatures.title:Signatures`,
+    loadComponent: () => import('./signature-settings').then((m) => m.SignatureSettingsPage),
+  },
 ];

@@ -63,6 +63,7 @@ import { provideSearchFakes } from './fakes-search';
 // >>> upstream
 import { provideUpstreamFakes } from './fakes-upstream';
 import { provideMalwareFakes } from './fakes-malware';
+import { provideSignatureFakes } from './fakes-signatures';
 // <<< upstream
 // >>> W-26 limits
 import { provideLimitsFakes } from './fakes-limits';
@@ -533,5 +534,8 @@ export function provideFakeApis(): Provider[] {
     // >>> malware
     ...provideMalwareFakes(),
     // <<< malware
+    // >>> signatures
+    ...provideSignatureFakes(),
+    // <<< signatures
   ];
 }

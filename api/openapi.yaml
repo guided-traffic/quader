@@ -6393,6 +6393,8 @@ paths:
                     mirror: false
                     wiki: false
                     systemOnly: false
+                    signatureKinds:
+                      - { name: signature file, role: publisher }
                     settingsSchema: null
                 baseUrl: https://quader.example.com
         "401":
@@ -21978,7 +21980,7 @@ components:
     # >>> M1 repository
     FormatDescriptor:
       type: object
-      required: [name, classes, clients, layout, protocolBasePath, upstreamPresets, defaultMetadataTtlSeconds, defaultNotFoundTtlSeconds, patternSubject, priorityMembers, pinsAndClaims, caps, vulnerabilityScanning, mirror, wiki, systemOnly, settingsSchema]
+      required: [name, classes, clients, layout, protocolBasePath, upstreamPresets, defaultMetadataTtlSeconds, defaultNotFoundTtlSeconds, patternSubject, priorityMembers, pinsAndClaims, caps, vulnerabilityScanning, mirror, wiki, systemOnly, signatureKinds, settingsSchema]
       properties:
         name:
           type: string
@@ -22052,6 +22054,14 @@ components:
             Whether the format's only repository is one Quader declares in the project `upstream` (`clamav`, R-CLAMAV-001, ADR-225): no
             repository of it is created (`422 validation_failed` with `format_system_only` at `/format`), and the create form does
             not offer it.
+        signatureKinds:
+          type: array
+          description: |
+            The kinds of signature the format declares (R-SIG-002, R-SIG-022), in the format's order: what a version or a file without a
+            signature names in its details ("Signatures this format knows: Notation, cosign.", R-SIG-009). Empty for a format that has no
+            signatures (the ClamAV definitions). `name` is the format's own word for the kind and is not translated.
+          items:
+            $ref: "#/components/schemas/FormatSignatureKind"
         settingsSchema:
           type: [object, "null"]
           additionalProperties: true
@@ -22063,6 +22073,15 @@ components:
             the label the form shows for each value (R-UI-088). A `title` and a `description` are the texts the form shows,
             in plain words; the member schemas of this document (`NpmSettings`, …) describe each setting for the API
             reader. `null` for a format without settings.
+    FormatSignatureKind:
+      type: object
+      required: [name, role]
+      properties:
+        name:
+          type: string
+          description: The format's word for the kind ("Notation", "Sigstore bundle", "registry signature").
+        role:
+          $ref: "#/components/schemas/SignatureRole"
     FormatClient:
       type: object
       required: [id, displayName]

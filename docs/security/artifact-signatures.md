@@ -3,7 +3,7 @@
 Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins, the read and the integrity check of
 every scheme, the trust step, the anchors with the switch and the blocks, the jobs and the API are built, and so is the formats' wire
 behaviour (an OCI attachment follows its image, the background fetch of a remote's signatures, npm's keys and attestations endpoints,
-the signatures a client posts for a local Ansible Galaxy version); the screens are not ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
+the signatures a client posts for a local Ansible Galaxy version), and so are the screens ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
 [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) to
 [ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version)) and stage 2,
 Quader signs (R-SIG-044 to R-SIG-060,
@@ -253,9 +253,9 @@ writer who wants to bury a real finding among false ones.
 ### H-1173 · The background fetch asks an upstream for what no client asked
 
 Component: the remote's fetch (R-SIG-026, built: the job `signature-fetch` and the mirror's plan). Subject: the installation's standing with
-an upstream's rate limits, and the upstream that learns which images the installation stores. Live for every remote: the member
-`signatures.fetch` that switches it off is R-SIG-040's and not built
-([Q-SIG-108](../spec/signatures.md#q-sig-108--the-fetch-switch-waits-for-the-member-of-r-sig-040-and-the-manual-promises-none)). The requests
+an upstream's rate limits, and the upstream that learns which images the installation stores. Live for every remote whose member
+`signatures.fetch` (R-SIG-040, the closed section **Signatures** of its settings; an administrator's on a well-known registry, Q-SIG-128)
+is on, the default. The requests
 are system work, charged to no caller and no ceiling
 ([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-015), bounded by four signature manifests per image and eight layers per manifest,
 and the job's by `signatures.remote.requests_per_hour` per remote on the worker that runs it (600 by default); a mirror's pass asks for the

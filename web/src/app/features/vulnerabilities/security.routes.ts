@@ -26,6 +26,12 @@ export const SECURITY_ROUTES: Routes = [
         loadComponent: () => import('./malware-finds').then((m) => m.MalwareFinds),
       },
       {
+        // The dashboard's third view (R-SIG-038): invalid signatures and the signatures of blocked signers.
+        path: 'signatures',
+        title: $localize`:@@route.security.signatures.title:Signatures`,
+        loadComponent: () => import('./signature-findings').then((m) => m.SignatureFindings),
+      },
+      {
         path: 'findings/:id',
         title: $localize`:@@route.vulnerabilities.finding.title:Finding`,
         loadComponent: () => import('./vulnerability-finding').then((m) => m.FindingPage),

@@ -75,6 +75,8 @@
                   {{ b.text }}
                 </span>
               }
+              <!-- The badge of the version's signatures (R-SIG-035); nothing for a state without one. -->
+              <quader-signature-badge [state]="v.signatures?.state" [stale]="v.signatures?.stale ?? false" />
             </span>
           </th>
           <td class="num size"><quader-version-size [bytes]="v.sizeBytes" [partial]="v.sizePartial" /></td>

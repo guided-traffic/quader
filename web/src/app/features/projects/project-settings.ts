@@ -29,6 +29,7 @@ import { formatSize } from '../packages/format-size';
 import { projectRoleLabel } from './project-roles';
 import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectLimitsSection } from '../limits/project-limits-section';
+import { ProjectSignatureAnchors } from './project-signature-anchors';
 
 /**
  * The settings of one project (R-UI-041, R-UI-054, Q-UI-129, Q-UI-215): the display name and the description edited in place by
@@ -40,7 +41,7 @@ import { ProjectLimitsSection } from '../limits/project-limits-section';
  */
 @Component({
   selector: 'quader-project-settings',
-  imports: [PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, TextField, VisibilityLevelControl],
+  imports: [PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, ProjectSignatureAnchors, TextField, VisibilityLevelControl],
   template: `
     <quader-page-header heading="Settings" i18n-heading="@@project.settings" />
 
@@ -146,6 +147,9 @@ import { ProjectLimitsSection } from '../limits/project-limits-section';
             <dd>{{ p.updatedAt | date: 'medium' }}</dd>
           </dl>
         </quader-disclosure>
+
+        <!-- The project's trust anchors while the administrator allows them (R-SIG-037). -->
+        <quader-project-signature-anchors [project]="p.key" />
 
         <!-- >>> W-26 limits -->
         @if (limitsShown()) {

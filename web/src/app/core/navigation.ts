@@ -179,6 +179,8 @@ export const NAV_AREAS: readonly NavArea[] = [
                 feature: 'malware',
               },
               // <<< malware
+              // The fourth page of the group (R-SIG-036): every holder of settings:read reads it, the security settings' writers change it.
+              { route: '/admin/settings/signatures', icon: 'verified', label: $localize`:@@nav.settings.signatures:Signatures`, capability: 'settings:read' },
             ],
           },
         ],

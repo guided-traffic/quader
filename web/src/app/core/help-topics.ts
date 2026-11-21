@@ -53,6 +53,8 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   // >>> malware
   ['/admin/settings/malware', { section: 'admin', page: 'operations' }],
   // <<< malware
+  ['/admin/settings/signatures', { section: 'admin', page: 'signatures' }],
+  ['/security/signatures', { section: 'user', page: 'signatures' }],
   ['/admin/tokens', { section: 'admin', page: 'tokens' }],
   // >>> M4 ci
   ['/admin/ci', { section: 'admin', page: 'gitlab-ci' }],

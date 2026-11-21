@@ -1430,6 +1430,37 @@ are hidden until it answers that the scanning is on (Q-UI-874), and the security
 shows the rows of `malware-scanner-clamav` with the shared `<quader-scanner-replicas kind="clamav">` under the worker's summary
 ([shared/scanner](../../web/src/app/shared/scanner/scanner-replicas.ts), R-OPS-048, Q-UI-897).
 
+## The signatures screens
+
+Stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-035 to R-SIG-038, R-SIG-040; decisions Q-SIG-124 to Q-SIG-130). The API is
+`SignaturesApi` ([signatures-api.ts](../../web/src/app/api/signatures-api.ts)), its fake [fakes-signatures.ts](../../web/src/app/api/testing/fakes-signatures.ts).
+
+| What | Where |
+|---|---|
+| The words of every state, role, scheme, reason, anchor and origin, one place for every screen | [shared/signatures/signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) |
+| The badge `<quader-signature-badge [state] [stale]>`: draws the four states of R-SIG-009 (green only for the verified ones), nothing for the other three | [signature-badge.ts](../../web/src/app/shared/signatures/signature-badge.ts) |
+| The details `<quader-signature-report [report] [format] [level]>` of a version's repository or a file: the state's sentence, the origin, each signature with a fold **Technical details**, Debian's covering releases, an image's **Attestations and SBOMs**; the kinds a format knows come from `signatureKinds` of the format descriptor | [signature-report.ts](../../web/src/app/shared/signatures/signature-report.ts), `.html`, `.scss` |
+| The version list's badge (the row's member `signatures`), the version page's header badge, its column **Signature** of Files and its tab **Signatures** | [package-detail.html](../../web/src/app/features/packages/package-detail.html), [package-version.ts](../../web/src/app/features/packages/package-version.ts), [version-signatures.ts](../../web/src/app/features/packages/version-signatures.ts) |
+| A file's fact **Signature**, its section **Signatures** read on opening, a generic signature file's **Signature of** | [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts) |
+| **Admin area › Settings › Signatures**, the anchors' table and the dialogs **Add trust anchor** and **Block signer** | [signature-settings.ts](../../web/src/app/features/settings/signature-settings.ts), [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts), [anchor-dialog.ts](../../web/src/app/shared/signatures/anchor-dialog.ts), [block-dialog.ts](../../web/src/app/shared/signatures/block-dialog.ts) |
+| A project's section **Trust anchors** | [project-signature-anchors.ts](../../web/src/app/features/projects/project-signature-anchors.ts) |
+| The dashboard's view **Signatures** (`/security/signatures`) | [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts) |
+| A remote repository's section **Signatures** (`signatures.fetch`) | [repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts) |
+| The refusals of the operations (`secret_material`, `anchor_exists`, `anchor_managed`, `project_anchors_disabled`, `block_exists`) | [problem-messages-signatures.ts](../../web/src/app/core/http/problem-messages-signatures.ts) |
+
+**Renders.** No signing key exists in the profile, so the seed ([renders/signatures.ts](../../web/e2e/renders/signatures.ts)) adds the
+anchors (material made once and committed as public data, [signature-material.ts](../../web/e2e/renders/signature-material.ts)), the switch
+and a block through the API, uploads a generic file with three signature files, and writes the signatures with their verdicts and trust
+rows under the current anchor epoch into the database, after the advisories' sync, so that the worker's jobs have nothing left to do with
+them. The screens: `package-version-signatures` (every state of `chart-render-kit`), `package-version-signatures-oci`, `files-signatures`,
+`admin-settings-signatures` (each form, the switch off, a failed refresh of the root, the signatures off), `project-settings-anchors`,
+`security-signatures`, `repository-settings-signatures` and `-docker-hub`; the lists that gained the badge render it from the same seed.
+
+**Tests** (Vitest, about 2.5 s for the four spec files together, data of the fakes): [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts),
+[signature-settings.spec.ts](../../web/src/app/features/settings/signature-settings.spec.ts),
+[version-signatures.spec.ts](../../web/src/app/features/packages/version-signatures.spec.ts),
+[repository-signatures.spec.ts](../../web/src/app/features/repositories/repository-signatures.spec.ts).
+
 ## The usage and download limits screens
 
 `features/limits/` (the admin area's **Download limits**, the rule table of every place, the profile editor, the sections of a

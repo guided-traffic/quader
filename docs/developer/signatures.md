@@ -224,7 +224,9 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 
 - **Package 2** (verification and trust): built, above.
 - **Package 3** (the formats' wire behaviour): built, above.
-- **Package 4**: the screens.
+- **Package 4** (the screens): built, [web-ui.md](web-ui.md#the-signatures-screens). It added to the API the format descriptor's
+  `signatureKinds` (the kinds of each format's declaration, Q-SIG-127) and made `signatures` a member an administrator sets on a well-known
+  repository of `upstream` (Q-SIG-128, [upstream_managed.go](../../internal/repository/upstream_managed.go)).
 
 ## What this page does not cover
 

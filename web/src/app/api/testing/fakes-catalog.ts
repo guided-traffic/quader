@@ -151,6 +151,7 @@ export const GENERIC_FORMAT: FormatDescriptor = {
   settingsSchema: null,
   wiki: false,
   systemOnly: false,
+  signatureKinds: [{ name: 'signature file', role: 'publisher' }],
 };
 
 /** The settings schema npm registers (internal/formats/npm/settings.schema.json), as the catalog serves it. */
@@ -254,6 +255,11 @@ export const PACKAGE_FORMAT: FormatDescriptor = {
   settingsSchema: NPM_SETTINGS_SCHEMA,
   wiki: true,
   systemOnly: false,
+  signatureKinds: [
+    { name: 'registry signature', role: 'registry' },
+    { name: 'provenance attestation', role: 'provenance' },
+    { name: 'publish attestation', role: 'registry' },
+  ],
 };
 
 /** The settings schema NuGet registers (internal/formats/nuget/settings.schema.json), as the catalog serves it. */
@@ -298,6 +304,10 @@ export const NUGET_FORMAT: FormatDescriptor = {
   settingsSchema: NUGET_SETTINGS_SCHEMA,
   wiki: true,
   systemOnly: false,
+  signatureKinds: [
+    { name: 'author signature', role: 'publisher' },
+    { name: 'repository signature', role: 'registry' },
+  ],
 };
 
 /**
@@ -307,6 +317,13 @@ export const NUGET_FORMAT: FormatDescriptor = {
 export const OCI_FORMAT: FormatDescriptor = {
   ...GENERIC_FORMAT,
   name: 'oci',
+  signatureKinds: [
+    { name: 'Notation', role: 'publisher' },
+    { name: 'Sigstore bundle', role: 'publisher' },
+    { name: 'cosign signature', role: 'publisher' },
+    { name: 'provenance attestation', role: 'provenance' },
+    { name: 'attestation or SBOM', role: 'attestation' },
+  ],
   vulnerabilityScanning: true,
   displayName: 'OCI (Docker)',
   classes: ['local', 'remote', 'virtual'],
@@ -388,6 +405,7 @@ export const DEB_FORMAT: FormatDescriptor = {
   settingsSchema: DEB_SETTINGS_SCHEMA,
   wiki: false,
   systemOnly: false,
+  signatureKinds: [{ name: 'release signature', role: 'registry' }],
 };
 
 /** The settings of the Ansible Galaxy format (internal/formats/ansible/settings.schema.json): two members, both for remote repositories. */
@@ -424,6 +442,10 @@ export const ANSIBLE_FORMAT: FormatDescriptor = {
   settingsSchema: ANSIBLE_SETTINGS_SCHEMA,
   wiki: true,
   systemOnly: false,
+  signatureKinds: [
+    { name: 'signing service signature', role: 'registry' },
+    { name: 'uploaded signature', role: 'publisher' },
+  ],
 };
 
 /** A repository of the fake: the project is writable so that a test can move one. */

@@ -1,0 +1,188 @@
+<quader-page-header heading="Signatures" i18n-heading="@@sig.settings.heading" />
+<quader-needs capability="security-settings:write" />
+
+@if (loadError(); as e) {
+  <quader-error-notice [error]="e" (retry)="load()" />
+}
+
+@if (settings(); as s) {
+  <div class="settings">
+    <p class="hint promise" role="note" data-testid="signature-promise">{{ promise }}</p>
+    @if (!s.enabled) {
+      <!-- The configuration switched the signatures off (R-SIG-040): nothing is detected or checked, and no badge is shown. -->
+      <p class="banner-warning" role="note" data-testid="signatures-off">
+        <span class="material-icons inline warn" aria-hidden="true">info</span>
+        <span i18n="@@sig.settings.off"
+          >Signatures are off in this installation: <code translate="no">signatures.enabled</code> is false in the configuration. Nothing is
+          checked, and no badge is shown. The stored signatures and anchors stay.</span
+        >
+      </p>
+    }
+    @if (actionError(); as e) {
+      <quader-error-notice [error]="e" />
+    }
+
+    <!-- Stage 2 adds the section Signing identity here, before the four (R-SIG-056). -->
+
+    <section class="open-section" aria-labelledby="sig-anchors">
+      <h2 id="sig-anchors" i18n="@@sig.settings.anchors">Trust anchors</h2>
+      <p class="muted" i18n="@@sig.settings.anchors-note">
+        A signature reads as verified when one of these knows its signer: public when an anchor shipped with Quader knows it, internal
+        when an anchor of this installation does.
+      </p>
+      @if (canWrite()) {
+        <div class="row-actions">
+          <button class="btn btn-default" type="button" (click)="addAnchor()" i18n="@@sig.form.heading">Add trust anchor</button>
+        </div>
+      }
+      <quader-anchor-table
+        [anchors]="installationAnchors()"
+        [caption]="anchorsCaption"
+        [controls]="installationControls"
+        [busy]="busy()"
+        (switched)="toggle($event)"
+        (remove)="removeAnchor($event)"
+      />
+      <dl class="facts" data-testid="signature-backlog">
+        <dt i18n="@@sig.settings.pending">Waiting for their check</dt>
+        <dd>{{ s.backlog.pending | number }}</dd>
+        <dt i18n="@@sig.settings.stale">Trust being recomputed</dt>
+        <dd>{{ s.backlog.stale | number }}</dd>
+      </dl>
+      @if (canSeeFindings()) {
+        <p class="row-actions">
+          <a routerLink="/security/signatures" i18n="@@sig.settings.findings-link">Invalid signatures are in the security dashboard</a>
+        </p>
+      }
+    </section>
+
+    <section class="open-section" aria-labelledby="sig-project-anchors">
+      <h2 id="sig-project-anchors" i18n="@@sig.settings.project">Project trust anchors</h2>
+      @if (switchError(); as e) {
+        <quader-error-notice [error]="e" />
+      }
+      <form (submit)="saveSwitch($event)" novalidate>
+        @if (canWrite()) {
+          <quader-checkbox [checked]="projectAnchors()" [describedBy]="'project-anchors-note'" (checkedChange)="projectAnchors.set($event)">
+            <ng-container i18n="@@sig.settings.switch">Project owners may add trust anchors for their project</ng-container>
+          </quader-checkbox>
+        } @else {
+          <p data-testid="project-anchors-state">
+            @if (s.projectAnchors) {
+              <ng-container i18n="@@sig.settings.switch-on"><strong>Project owners may add trust anchors for their project</strong> is on.</ng-container>
+            } @else {
+              <ng-container i18n="@@sig.settings.switch-off"><strong>Project owners may add trust anchors for their project</strong> is off.</ng-container>
+            }
+          </p>
+        }
+        <p id="project-anchors-note" class="muted" i18n="@@sig.settings.switch-note">
+          Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation.
+        </p>
+        @if (s.updatedBy; as by) {
+          <p class="muted">
+            <ng-container i18n="@@sig.settings.changed-by">Last changed by</ng-container>&ngsp;<span translate="no">{{ principal(by) }}</span>&ngsp;<quader-time-ago
+              [at]="s.updatedAt"
+            />
+          </p>
+        }
+        @if (canWrite()) {
+          <div class="row-actions">
+            <button class="btn btn-confirm" type="submit" [disabled]="saving() || !dirty()">
+              <ng-container i18n="@@sig.settings.save">Save changes</ng-container>
+              <span class="visually-hidden" i18n="@@sig.settings.save-for"> (project trust anchors)</span>
+            </button>
+          </div>
+        }
+      </form>
+      @if (projectAnchorList().length > 0 || s.projectAnchors) {
+        <h3 i18n="@@sig.settings.project-list">Anchors of the projects</h3>
+        <quader-anchor-table
+          [anchors]="projectAnchorList()"
+          [caption]="projectCaption"
+          [emptyText]="projectEmpty"
+          [project]="true"
+          [controls]="projectControls"
+          [busy]="busy()"
+          (remove)="removeAnchor($event)"
+        />
+      }
+    </section>
+
+    <quader-disclosure i18n-heading="@@sig.settings.blocks" heading="Blocked signers" [hint]="blocksHint" [count]="blocks().length">
+      @if (canWrite()) {
+        <div class="row-actions">
+          <button class="btn btn-default" type="button" (click)="blockSigner()" i18n="@@sig.block.heading">Block signer</button>
+        </div>
+      }
+      <quader-data-table [caption]="blocksCaption" [columns]="blockColumns()" [empty]="blocks().length === 0" [emptyText]="blocksEmpty">
+        @for (b of blocks(); track b.id) {
+          <tr>
+            <th scope="row">
+              <span class="icon-name-text">
+                <code class="block-value" translate="no">{{ b.value }}</code>
+                <span class="secondary"
+                  >{{ blockKind(b.kind) }}@if (b.issuer; as issuer) {<span translate="no">&ngsp;· {{ issuer }}</span>}</span
+                >
+              </span>
+            </th>
+            <td class="block-reason wrap" translate="no">{{ b.reason }}</td>
+            <td class="num">{{ b.signatures | number }}</td>
+            <td class="nowrap">
+              <quader-time-ago [at]="b.createdAt" absolute="title" />
+              @if (b.createdBy; as by) {
+                <span class="secondary block" translate="no">{{ principal(by) }}</span>
+              }
+            </td>
+            @if (canWrite()) {
+              <td class="actions">
+                <button class="btn btn-tertiary" type="button" [disabled]="liftBusy(b)" (click)="lift(b)">
+                  <ng-container i18n="@@sig.block.lift">Lift block</ng-container><span class="visually-hidden">&ngsp;{{ b.value }}</span>
+                </button>
+              </td>
+            }
+          </tr>
+        }
+      </quader-data-table>
+    </quader-disclosure>
+
+    <quader-disclosure [heading]="rootHeading" [hint]="rootHint">
+      @let root = s.trustRoot;
+      <dl class="facts" data-testid="signature-root">
+        <dt i18n="@@sig.root.source">Source</dt>
+        <dd>
+          @if (root.source === 'refreshed') {
+            <ng-container i18n="@@sig.root.refreshed">Refreshed from the Sigstore update repository</ng-container>
+          } @else {
+            <ng-container i18n="@@sig.root.release">The snapshot this release of Quader ships</ng-container>
+          }
+        </dd>
+        <dt i18n="@@sig.root.fetched">Fetched</dt>
+        <dd>
+          @if (root.fetchedAt; as at) {
+            <time [attr.datetime]="at" [attr.title]="at | date: 'medium'">{{ at | date: 'mediumDate' }}</time>
+          } @else {
+            –
+          }
+        </dd>
+        <dt i18n="@@sig.root.version">Version</dt>
+        <dd>{{ root.tufVersion }}</dd>
+        <dt i18n="@@sig.root.failure">Last failure</dt>
+        <dd>
+          @if (root.lastError; as err) {
+            <span class="warn"><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@sig.root.failed">Failed</ng-container></span
+            >&ngsp;<span class="block-value" translate="no">{{ err }}</span>
+            @if (root.lastErrorAt; as at) {
+              &ngsp;<quader-time-ago [at]="at" absolute="title" />
+            }
+          } @else {
+            <span class="muted" i18n="@@sig.root.no-failure">None since the last refresh</span>
+          }
+        </dd>
+      </dl>
+      <p class="muted" i18n="@@sig.root.note">
+        Without internet, the release's snapshot holds and ages with the release; an operator can point the refresh at a mirror of the
+        company.
+      </p>
+    </quader-disclosure>
+  </div>
+}

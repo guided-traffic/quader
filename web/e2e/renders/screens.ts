@@ -29,6 +29,7 @@ import {
 import { gradedPackage, manyVersionsPackage } from './advisories';
 import { malwarePackage, quarantine } from './malware';
 import { trivyDatabases } from './scanners';
+import { signedFile, signedImage, signedVersions } from './signatures';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 
@@ -1346,6 +1347,170 @@ async function* limitsSectionOpen(page: Page): AsyncGenerator<string> {
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
 }
 
+// ---- The signatures (R-SIG-035 to R-SIG-038) ----
+
+/** Opens every fold of the details of the signatures (Technical details) and waits for their animations. */
+async function openTechnical(page: Page): Promise<void> {
+  for (const fold of await page.locator('main quader-signature-report quader-disclosure button.inline-toggle').all()) {
+    await fold.click();
+    await expect(fold).toHaveAttribute('aria-expanded', 'true');
+  }
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+}
+
+/**
+ * The tab **Signatures** of the versions of one package in every state (R-SIG-009, R-SIG-035): Verified · public with npm's registry
+ * signature and a provenance, its technical details opened, Verified · internal, a blocked signer, an invalid provenance, one that
+ * waits and none.
+ */
+async function* signatureVersions(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="signature-entry"]').first()).toBeVisible();
+  yield '';
+  await openTechnical(page);
+  yield 'technical';
+  for (const [state, version] of Object.entries(signedVersions).filter(([k]) => k !== 'public')) {
+    await page.goto(`${ver(P, manyVersionsPackage, version)}?tab=signatures`);
+    await expect(page.locator('main [data-testid="signature-state"]')).toBeVisible();
+    yield state;
+  }
+}
+
+/** The image's tab **Signatures** (R-SIG-024): its signatures and, apart, its attestations and SBOMs; then the image no anchor knows. */
+async function* signatureImages(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main .sig-attestations table')).toBeVisible();
+  yield '';
+  await openTechnical(page);
+  yield 'technical';
+  await page.goto(`${ver(P, { format: 'oci', name: signedImage.untrusted }, '1.4.0')}?tab=signatures`);
+  await expect(page.locator('main [data-testid="signature-entry"]').first()).toBeVisible();
+  yield 'untrusted';
+}
+
+/** A file's section **Signatures** opened (R-SIG-035, R-SIG-010): three signature files and the pipeline that uploaded it; then one of them. */
+async function* signatureFile(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="signature-fact"]')).toBeVisible();
+  yield '';
+  const { toggle } = sectionHeaded(page, 'Signatures');
+  await toggle.click();
+  await expect(page.locator('main [data-testid="signature-origin"]')).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'details';
+  await page.goto(`${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}.asc`);
+  await expect(page.locator('main dl.file-facts')).toBeVisible();
+  yield 'sibling';
+}
+
+/**
+ * **Settings › Signatures** (R-SIG-036): as seeded (anchors of every kind and scope, the switch on, a block), the closed sections opened,
+ * the form of each kind of anchor with a CA's More options, the form of a block; then the switch off with a project's anchor kept, the
+ * public root refreshed with a failure and a backlog, and the signatures off in the configuration. Nothing is saved.
+ */
+async function* signatureSettings(page: Page): AsyncGenerator<string> {
+  const settings = '**/api/v1/signatures/settings';
+  await expect(page.locator('main quader-anchor-table tbody tr').first()).toBeVisible();
+  yield '';
+  for (const heading of ['Blocked signers', 'Public Sigstore root']) {
+    const { toggle } = sectionHeaded(page, heading);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  }
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'sections';
+  await page.getByRole('button', { name: 'Add trust anchor' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Add trust anchor' });
+  await expect(dialog).toBeVisible();
+  await dialog.locator('quader-disclosure button.inline-toggle').click();
+  yield 'anchor-ca';
+  for (const [kind, name] of [
+    ['openpgp', 'anchor-openpgp'],
+    ['public-key', 'anchor-public-key'],
+    ['sigstore', 'anchor-sigstore'],
+  ] as const) {
+    await dialog.locator('select[name="kind"]').selectOption(kind);
+    yield name;
+  }
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: 'Block signer' }).first().click();
+  await expect(page.getByRole('dialog', { name: 'Block signer' })).toBeVisible();
+  yield 'block';
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await answerWith(page, settings, (b) => ({
+    ...b,
+    projectAnchors: false,
+    backlog: { pending: 1240, stale: 38211 },
+    trustRoot: {
+      source: 'refreshed',
+      fetchedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+      tufVersion: 14,
+      lastError: 'tuf: fetching timestamp.json from https://tuf-repo-cdn.sigstore.dev: dial tcp: i/o timeout',
+      lastErrorAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+    },
+  }));
+  yield 'switch-off';
+  await answerWith(page, settings, (b) => ({ ...b, enabled: false }));
+  yield 'off';
+  await page.unroute(settings);
+}
+
+/** The project's section **Trust anchors** opened (R-SIG-037), its form for an Owner; then the switch off, with the anchor not applied. */
+async function* projectAnchors(page: Page): AsyncGenerator<string> {
+  const anchors = `**/api/v1/projects/${mainProject}/signatures/anchors`;
+  const { toggle } = sectionHeaded(page, 'Trust anchors');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield '';
+  const add = page.getByRole('button', { name: 'Add trust anchor' });
+  if ((await add.count()) > 0) {
+    await add.click();
+    await expect(page.getByRole('dialog', { name: 'Add a trust anchor to this project' })).toBeVisible();
+    yield 'add';
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  }
+  await answerWith(page, anchors, (b) => ({
+    ...b,
+    projectAnchors: false,
+    items: ((b['items'] as Record<string, unknown>[] | undefined) ?? []).map((a) => ({ ...a, applied: false })),
+  }));
+  const off = sectionHeaded(page, 'Trust anchors');
+  if ((await off.toggle.count()) > 0) {
+    await off.toggle.click();
+    await expect(page.locator('main [data-testid="project-anchors-off"]')).toBeVisible();
+    yield 'off';
+  }
+  await page.unroute(anchors);
+}
+
+/** A remote repository's closed section **Signatures** opened (R-SIG-040): the fetch of the upstream's signatures. */
+async function* signaturesSection(page: Page): AsyncGenerator<string> {
+  const { toggle } = sectionHeaded(page, 'Signatures');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield '';
+}
+
+/** The dashboard's view **Signatures** (R-SIG-038): the findings, the drawer, a filter of a kind, and the empty list. */
+async function* signatureFindings(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main tbody tr').first()).toBeVisible();
+  yield '';
+  await page.locator('main .filter-toggle').first().click();
+  const drawer = page.getByRole('dialog', { name: 'Filters' });
+  await expect(drawer.locator('form.filter-form')).toBeVisible();
+  yield 'filters';
+  await drawer.locator('select').first().selectOption('blocked');
+  await drawer.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(drawer).toBeHidden();
+  await expect(page.locator('main .list-filters .chip-row')).toBeVisible();
+  await expect(page.locator('main tbody tr').first()).toBeVisible();
+  yield 'blocked';
+  await page.route('**/api/v1/signatures/findings?**', (route) => route.fulfill({ json: { items: [], nextCursor: null } }));
+  await page.goto('/ui/security/signatures');
+  await expect(page.getByText('No invalid signatures.')).toBeVisible();
+  yield 'empty';
+  await page.unroute('**/api/v1/signatures/findings?**');
+}
+
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
 /** A signed-out visitor's page asks who is signed in and is told nobody. */
 const noSession = [{ match: /^GET \/api\/v1\/auth\/whoami answered 401$/, why: 'an anonymous visitor has no session' }];
@@ -1474,6 +1639,11 @@ export const screens: readonly Screen[] = [
     walk: malwareFiles,
   },
   { id: 'package-version-malware', path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`, kinds: ['plain'], walk: malwareVersions },
+  // The signatures at a version, an image and a file (R-SIG-035, R-SIG-024, R-SIG-010): what a plain user meets; the same for every kind.
+  { id: 'package-version-signatures', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=signatures`, kinds: ['plain'], walk: signatureVersions },
+  { id: 'package-version-signatures-files', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=files`, kinds: ['plain'] },
+  { id: 'package-version-signatures-oci', path: `${ver(P, ociPackage, signedImage.tag)}?tab=signatures`, kinds: ['plain'], walk: signatureImages },
+  { id: 'files-signatures', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain'], walk: signatureFile },
   { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips) },
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },
@@ -1485,6 +1655,8 @@ export const screens: readonly Screen[] = [
   { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'] },
   // The dashboard's malware view (R-MAL-025): what the auditor assesses and releases; an administrator sees the same.
   { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds },
+  // The dashboard's signatures view (R-SIG-038): invalid signatures and blocked signers; an administrator sees the same.
+  { id: 'security-signatures', path: '/ui/security/signatures', kinds: ['auditor'], walk: signatureFindings },
   // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
   { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all },
   { id: 'setup-npm-remote', path: `${P}/repositories/npmjs/setup`, kinds: all },
@@ -1545,6 +1717,8 @@ export const screens: readonly Screen[] = [
   // The download limits of a project and of a remote repository, and the project's usage (R-UI-180, R-UI-183, R-UI-184).
   // The main project has no maximum: its read answers 200 with `maximum` null (Q-API-356).
   { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen },
+  // The project's trust anchors (R-SIG-037): the Owner's form, a member's read, and the switch off.
+  { id: 'project-settings-anchors', path: `${P}/settings`, kinds: [...owners, 'plain'], walk: projectAnchors },
   { id: 'repository-settings-limits', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: limitsSectionOpen },
   { id: 'project-usage', path: `${P}/usage`, kinds: owners, walk: usageWalk },
   { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },
@@ -1552,6 +1726,9 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
   // The strict repository's section Malware scan (R-MAL-020): its Owner may not switch it off, an administrator may.
   { id: 'repository-settings-malware', path: `${P}/repositories/${malwarePackage.repo}/settings`, kinds: owners, walk: malwareSection },
+  // The fetch of a remote's signatures (R-SIG-040): a project's remote, and Docker Hub of the project upstream, an administrator's.
+  { id: 'repository-settings-signatures', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: signaturesSection },
+  { id: 'repository-settings-signatures-docker-hub', path: '/ui/projects/upstream/repositories/docker-hub/settings', kinds: admins, walk: signaturesSection },
   // The one state of the visibility section that no stored repository shows: the server's answer under each level's group.
   {
     id: 'repository-settings-visibility-refused',
@@ -1656,4 +1833,6 @@ export const screens: readonly Screen[] = [
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
   { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
+  { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings },
+  { id: 'admin-settings-signatures-read', path: '/ui/admin/settings/signatures', kinds: ['auditor'] },
 ];

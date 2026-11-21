@@ -27,6 +27,7 @@ import {
 } from './package-versions-model';
 import { GradeLabel } from '../../shared/vulnerability/grade';
 import { VersionSize } from './version-size';
+import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
 
 /**
@@ -41,6 +42,7 @@ import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-defin
 @Component({
   selector: 'quader-package-detail',
   imports: [
+    SignatureBadge,
     DecimalPipe,
     RouterLink,
     TimeAgo,

@@ -9,7 +9,8 @@ values and the projects' with the switch, blocks, the jobs `signature-verify` an
 behaviour of R-SIG-023 to R-SIG-033: an OCI attachment follows its image on delete and eviction and stays out of the image scanning and
 of a mirror's versions; the background fetch of a remote's signatures (job `signature-fetch`) and the mirror's; npm's keys and
 attestations endpoints of every class; the signatures a client posts for a local Ansible Galaxy version; Debian's coverage port; the
-kit's case that a signature follows its subject (package 3). Not built: the screens. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
+kit's case that a signature follows its subject (package 3); the screens of R-SIG-035 to R-SIG-038 and the repository's section of
+R-SIG-040 (package 4, [developer/web-ui.md](../developer/web-ui.md#the-signatures-screens)). Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
 each original signature with its verdict, decides trust against trust anchors of the installation and, where the administrator allows it,
 of a project, shows the result at the artifact, alarms on an invalid signature, and serves signatures to every client the way its
 protocol expects. It blocks nothing. Stage 2, Quader signs, is specified in the section
@@ -1027,7 +1028,7 @@ UI they appear in no tag or version list and in no count, but at the image.
   BuildKit's attestation entries leave the version's list of platforms (today `unknown/unknown` rows) and stand there. Built of this: the
   version's data lists them under `attestations` and no longer under `platforms` ([view.go](../../internal/formats/oci/view.go)); the image
   scanning's selection leaves out a referrer and a manifest that is the object of a signature attached in its repository
-  ([Q-SIG-104](#q-sig-104--the-image-scanning-leaves-out-what-is-a-signature-in-its-repository)). The screens are package 4's.
+  ([Q-SIG-104](#q-sig-104--the-image-scanning-leaves-out-what-is-a-signature-in-its-repository)). The screens are built (package 4, R-SIG-035).
 
 Acceptance criteria:
 
@@ -1362,6 +1363,9 @@ The operations, in `api/openapi.yaml` under the tag `signatures` ([Q-SIG-44](#q-
   `unsupported`, `none`, absent for a folder and while `signatures.enabled` is false; the version list carries it per version for the badge.
   Stage 3 adds `refused` and `refusedReason` while a gate applies (R-SIG-073).
 - Every text a signature carries (a subject, a user ID, an identity, a predicate) is shown as text and never as markup.
+- **The format descriptor** of `GET /api/v1/formats` carries `signatureKinds` (`name`, `role`): the kinds of the format's declaration
+  (R-SIG-022), which the details of a version without a signature name ([Q-SIG-127](#q-sig-127--the-format-descriptor-names-the-kinds-of-signature-its-format-knows)).
+  Built with package 4 (`TestR_SIG_009_FormatDescriptorNamesTheSignatureKinds`).
 
 Acceptance criteria:
 
@@ -1391,6 +1395,20 @@ default, details on demand" ([CLAUDE.md](../../CLAUDE.md)): the plain user sees 
 - The screens are rendered and looked at before they land (rule 11 of the plan): light and dark, wide and narrow, a version of each of the
   four states, one with seven signatures and long identities, a Debian package with its covering release, a generic file with three
   siblings, and a version with no signature.
+- **Built** (package 4, [Q-SIG-124](#q-sig-124--a-versions-details-are-a-tab-signatures-and-the-badge-opens-it) to
+  [Q-SIG-126](#q-sig-126--a-files-page-carries-the-badge-as-a-fact-and-the-details-in-a-closed-section)): the badge
+  (`quader-signature-badge`) beside the version in the version list, in the version page's header (a link to the tab) and in a column
+  **Signature** of the Files tab while a file carries one; the version page's tab **Signatures** (per holding repository); a file's fact
+  **Signature** and its closed section **Signatures**; the details (`quader-signature-report`) with the state's sentence (a badge that
+  fell because every counting signature's signer is blocked names the block, its date and its reason, instead of saying that no anchor
+  knows the signer), the origin, each signature's kind,
+  signer, issuer, identity, time and its proof, certificate, trust anchors or block, a CI job's claims, **Download original**, the
+  technical details in a fold, Debian's covering releases and an image's **Attestations and SBOMs** in a table; a generic signature file's
+  **Signature of**. Rendered with the seed of the renders (`web/e2e/renders/signatures.ts`): the versions of `chart-render-kit` in every
+  state, the image `portal/web` with two signatures, a provenance, an SBOM and an attestation of a scan, an npm version with npm's registry
+  signature and a provenance, a NuGet author signature, and a generic file with three signature files uploaded by a pipeline. Not
+  rendered: a Debian package with its covering release (the renders' Debian remote holds no content) and a version with seven signatures;
+  the details' layout is the same per signature.
 
 Acceptance criteria:
 
@@ -1420,6 +1438,11 @@ Priority: **P1** · Covers: quader-only
 - The page is rendered and looked at before it lands: both schemes, wide and narrow, with the shipped anchors only, with twelve anchors of
   all kinds and long titles, with the switch off and on, and with a block.
 
+- **Built** (package 4, [Q-SIG-129](#q-sig-129--the-admin-pages-controls-a-table-of-anchors-a-dialog-per-form-the-switch-saved-on-its-own)):
+  `/admin/settings/signatures`, the fourth entry of the side bar's group Settings for the holder of `settings:read`; the four sections, the
+  forms of **Add trust anchor** and **Block signer** as dialogs, the backlog under the anchors, and a link to the dashboard's view for the
+  holder of `content:metadata-read`. The page leaves a comment where stage 2's section **Signing identity** goes.
+
 Acceptance criteria:
 
 - Web unit (Vitest, under a second): the form shows the fields of the kind chosen; the switch is a checkbox for the holder of
@@ -1432,6 +1455,9 @@ Priority: **P1** · Covers: quader-only
   Owner, **Add trust anchor** (the form of R-SIG-036); members see the list. While it is off the section is not shown, and a project that
   holds anchors shows them to its Owner with "Not applied: project anchors are switched off by an administrator."
 - The installation's anchors are listed read-only below the project's ("Also trusted in this project"), so an Owner sees the whole scope.
+
+- **Built** (package 4): the section `quader-project-signature-anchors` after **Details** of the project's settings; an administrator
+  removes a project's anchor through the installation's route whatever the switch says, an Owner through the project's.
 
 Acceptance criteria: web unit (Vitest, under a second): the section is hidden with the switch off and no anchors; read-only for a member.
 
@@ -1448,6 +1474,9 @@ dashboard.
   filters kind and repository; newest first. An empty list says "No invalid signatures."
 - No action in stage 1: nothing is released, because nothing is refused; a holder of `security-settings:write` finds **Block signer** on the
   admin page. Stage 3 adds the refused downloads of gated repositories and their releases (R-SIG-070, R-SIG-074).
+
+- **Built** (package 4, [Q-SIG-130](#q-sig-130--the-security-dashboards-view-of-signatures)): `/security/signatures`, the third link of the
+  dashboard's views, with a search by signer and a drawer of kind and repository; filters live in the address.
 
 Acceptance criteria: web unit (Vitest, under a second): the empty list's text; a row of each kind.
 
@@ -1531,7 +1560,9 @@ jobs:
 ```
 
 - **The repository member** `signatures` (R-REPO-004): `{"fetch": true}` on a remote repository (default), switched in the closed section
-  **Signatures** of its settings page. Stage 3 adds `onlyVerified` and `anchors` on every class (R-SIG-061) and its own keys under
+  **Signatures** of its settings page (built with package 4, **Fetch the upstream's signatures**); on a well-known repository of the
+  project `upstream` it is an administrator's member, on a system repository the product's
+  ([Q-SIG-128](#q-sig-128--the-fetch-of-a-well-known-registrys-signatures-is-an-administrators-setting)). Stage 3 adds `onlyVerified` and `anchors` on every class (R-SIG-061) and its own keys under
   `signatures.gate` (R-SIG-076).
 - **What it costs:** no new Deployment, image or container; the binary grows by 4.76 MiB (R-SIG-014); PostgreSQL holds a signature object of
   a few hundred bytes to some kilobytes (an npm registry signature about 150 bytes, a Sigstore bundle about 4 KiB, a NuGet `.p7s` with its
@@ -4711,6 +4742,95 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) The UI reads the installation's list; only the winning member | | Shorter | Members hold no `settings:read`; a signature of a member that does not win stays hidden |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-034; [http-api.md](../developer/http-api.md).
+
+### Q-SIG-124 · A version's details are a tab Signatures, and the badge opens it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context:
+R-SIG-035 names "a section Signatures of the version page"; the version page is tabs (R-UI-111), and its Details tab holds the format's
+metadata and the repositories.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tab **Signatures** after **Files**, read when it is opened; the header's badge is a link to it; the Files tab gains a column **Signature** only while a file carries a badge (chosen) | | The page's own pattern (the grade opens Vulnerabilities); one request only for whom looks; no column of dashes for a version without signatures | One tab more |
+| (b) A section inside **Details** | | No new tab | Signatures and their attestations under the format's metadata, read with every Details open |
+| (c) A fold under the header | | Seen at once | The header grows by kilobytes of facts for every version |
+
+**Choice:** (a). The tab is shown while the version's answer carries the member `signatures` (the signatures are on); a version held by
+several repositories lists each under its name and class. **Applied in the spec:** R-SIG-035.
+
+### Q-SIG-125 · The shields of the badge, and each signature's own verdict
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context:
+R-SIG-035 says "a shield mark"; the icon font is Material Icons Outlined, whose `verified_user` is the malware scan's "No malware found".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `gpp_good` (a shield with a check) for both verified states, `shield` for "Signed · signer not trusted", `gpp_bad` (a shield with a cross) for "Invalid signature"; each signature of the details carries the badge of its own verdict (chosen) | | One family of shields, none shared with the malware scan; the states differ by words and shape, not only by colour | Public and internal share the icon and differ by their words |
+| (b) `verified_user` for verified | | The familiar check | The same icon as "No malware found" beside it on a file |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-035.
+
+### Q-SIG-126 · A file's page carries the badge as a fact and the details in a closed section
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fact **Signature** (the badge, or the word of a state without one) beside **Malware scan**; a closed section **Signatures** with the details and the origin, read when it opens; a generic signature file says **Signature of** the file it belongs to (chosen) | | One click away (R-SIG-035), no request for whom does not look | — |
+| (b) The details always open | | No click | A file's page of a few facts grows by every signature |
+
+**Choice:** (a). The repository's browse list shows no badge: its rows (`Child`) carry no member `signatures`, and the specification
+names the version's Files tab. **Applied in the spec:** R-SIG-035, R-SIG-032.
+
+### Q-SIG-127 · The format descriptor names the kinds of signature its format knows
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: a
+version without a signature says "Signatures this format knows: Notation, cosign." (R-SIG-009); the API's answers of a version carry no
+such list.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/formats` carries `signatureKinds` (`name`, `role`) from each format's declaration (R-SIG-022); the screen names the kinds of the roles that count for the badge (chosen) | | A future format's kinds appear without a change of the UI (the owner's "automatisch mit berücksichtigt") | The names are the formats' words in English |
+| (b) A list per format in the UI | | No API change | A new format needs a UI change |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-034; [http-api.md](../developer/http-api.md).
+
+### Q-SIG-128 · The fetch of a well-known registry's signatures is an administrator's setting
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: R-SIG-026
+advises `signatures.fetch: false` for Docker Hub without an account, and Docker Hub is a well-known repository of the project `upstream`,
+whose members are the product's except the narrowing ones (R-REPO-069), so the setting answered `managed_by_product` there.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `signatures` is a member an administrator sets on a well-known repository, and the product's on a system repository; the section **Signatures** stands on every remote repository's settings but a system one (chosen) | | The one place R-SIG-026 names is the one that can use it | A member that does not narrow access among the narrowing ones |
+| (b) Leave it the product's | | R-REPO-069 unchanged | Docker Hub without an account cannot be switched off |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-040; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-069.
+
+### Q-SIG-129 · The admin page's controls: a table of anchors, a dialog per form, the switch saved on its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One table of the installation's anchors with a switch per row where one may switch (shipped, an administrator's) and **Remove** for an administrator's; **Add trust anchor** and **Block signer** open dialogs; the switch for project Owners is a check box saved with the settings' `ETag`, and switching it off asks first while projects hold anchors; the lists take the page's width, the text the settings measure (chosen) | | The list and the forms of the other admin pages (malware, upstream registries); a narrowing of trust is never one click without a question | — |
+| (b) A page per anchor | | Room for long material | A second screen for what the list holds |
+
+**Choice:** (a). An anchor's material is not edited in place in stage 1's screens: an administrator removes it and adds the new one
+(the API's `PATCH` of the material stays); a public key anchor takes one key in the form, more through the API. **Applied in the spec:**
+R-SIG-036.
+
+### Q-SIG-130 · The security dashboard's view of signatures
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A list of the malware view's form: the artifact (package and version, or the file), the kind with the kind of signature, the signer as claimed, the reason (or the block's), the first repository and how many more, when it was found; a search by signer and a drawer of kind and repository; no action (chosen) | | The dashboard's other views; stage 1 refuses nothing (R-SIG-038) | — |
+| (b) A row that opens to every file that holds it | | Every holder at once | The answer carries the first holders only (`itemsTruncated`) |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-038.
 
 ## What this does not cover
 

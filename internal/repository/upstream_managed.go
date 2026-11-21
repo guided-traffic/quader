@@ -24,14 +24,15 @@ func managedByProduct(detail string) error {
 }
 
 // The members an administrator sets with a merge patch (R-REPO-069): the top-level members, and the members of remote. For a system
-// repository the include patterns, vulnerabilities and malware are the product's as well (R-REPO-070, R-REPO-075). The spec's
-// remote.offline is remote.availability.mode.
+// repository the include patterns, vulnerabilities, malware and signatures are the product's as well (R-REPO-070, R-REPO-075). The
+// spec's remote.offline is remote.availability.mode. signatures.fetch switches the background fetch of a well-known upstream's
+// signatures off, for Docker Hub without an account (R-SIG-026, R-SIG-040).
 func patchableTop(k string) bool {
-	return k == "adminNotes" || k == "includePatterns" || k == "excludePatterns" || k == "vulnerabilities" || k == "malware"
+	return k == "adminNotes" || k == "includePatterns" || k == "excludePatterns" || k == "vulnerabilities" || k == "malware" || k == "signatures"
 }
 
 func systemFixedTop(k string) bool {
-	return k == "includePatterns" || k == "vulnerabilities" || k == "malware"
+	return k == "includePatterns" || k == "vulnerabilities" || k == "malware" || k == "signatures"
 }
 
 func identityMember(k string) bool {

@@ -1,4 +1,5 @@
 import { PackageVersionSummary } from '../../api/packages-api';
+import { SignatureStatus } from '../../api/signatures-api';
 import { VulnerabilityGrade } from '../../api/vulnerabilities-api';
 import { SortDirection, TableSort } from '../../shared/ui/data-table';
 import { gradeRank } from '../../shared/vulnerability/grade-words';
@@ -29,6 +30,8 @@ export interface VersionRow {
   readonly order: number;
   /** Its state from the format's metadata (`include=state`: the ClamAV definitions, R-UI-194); null for a format without one. */
   readonly state: string | null;
+  /** The badge of its signatures (R-SIG-035), the member of the row; null while the signatures are off. */
+  readonly signatures: SignatureStatus | null;
 }
 
 /** The sortable columns, by the name the address carries (`?sort=-published`). */
@@ -62,6 +65,7 @@ export function versionRows(
     grade: grades.get(v.version) ?? null,
     order,
     state: v.state ?? null,
+    signatures: v.signatures ?? null,
   }));
 }
 

@@ -9394,6 +9394,12 @@ export interface components {
              */
             systemOnly: boolean;
             /**
+             * @description The kinds of signature the format declares (R-SIG-002, R-SIG-022), in the format's order: what a version or a file without a
+             *     signature names in its details ("Signatures this format knows: Notation, cosign.", R-SIG-009). Empty for a format that has no
+             *     signatures (the ClamAV definitions). `name` is the format's own word for the kind and is not translated.
+             */
+            signatureKinds: components["schemas"]["FormatSignatureKind"][];
+            /**
              * @description The JSON Schema 2020-12 of the format's settings member of a repository document (the member named
              *     after the format, R-REPO-004), which the create form renders and the service validates a document
              *     against (R-ARCH-008). Its properties may carry `x-quader-classes`, the classes the setting applies to;
@@ -9405,6 +9411,11 @@ export interface components {
             settingsSchema: {
                 [key: string]: unknown;
             } | null;
+        };
+        FormatSignatureKind: {
+            /** @description The format's word for the kind ("Notation", "Sigstore bundle", "registry signature"). */
+            name: string;
+            role: components["schemas"]["SignatureRole"];
         };
         FormatClient: {
             /** @description The value of `client` of the client setup and the guide (`npm`, `pnpm`, `yarn`, `yarn-classic`). */
@@ -19113,6 +19124,12 @@ export interface operations {
                      *           "mirror": false,
                      *           "wiki": false,
                      *           "systemOnly": false,
+                     *           "signatureKinds": [
+                     *             {
+                     *               "name": "signature file",
+                     *               "role": "publisher"
+                     *             }
+                     *           ],
                      *           "settingsSchema": null
                      *         }
                      *       ],

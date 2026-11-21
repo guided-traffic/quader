@@ -16,6 +16,9 @@ import { describeLimitsProblem } from './problem-messages-limits';
 // >>> malware
 import { describeMalwareProblem } from './problem-messages-malware';
 // <<< malware
+// >>> signatures
+import { describeSignatureProblem } from './problem-messages-signatures';
+// <<< signatures
 // <<< M4b vulnerabilities
 
 export interface ProblemText {
@@ -134,7 +137,7 @@ export function describeProblem(error: ApiError): ProblemText {
     // <<< M2 ownership
     default:
       // >>> M1 ui-b
-      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? malwareProblem(error) ?? fallback(error);
+      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? malwareProblem(error) ?? signatureProblem(error) ?? fallback(error);
       // <<< M1 ui-b
   }
 }
@@ -180,6 +183,13 @@ function malwareProblem(error: ApiError): ProblemText | null {
   return text === null ? null : { text, known: true };
 }
 // <<< malware
+
+// >>> signatures
+function signatureProblem(error: ApiError): ProblemText | null {
+  const text = describeSignatureProblem(error.code);
+  return text === null ? null : { text, known: true };
+}
+// <<< signatures
 
 function rateLimited(seconds: number | null): string {
   return seconds === null

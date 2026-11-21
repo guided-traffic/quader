@@ -56,6 +56,9 @@ import { HttpUpstreamApi, UpstreamApi } from './upstream-api';
 // >>> malware
 import { HttpMalwareApi, MalwareApi } from './malware-api';
 // <<< malware
+// >>> signatures
+import { HttpSignaturesApi, SignaturesApi } from './signatures-api';
+// <<< signatures
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -123,5 +126,8 @@ export function provideApiServices(): Provider[] {
     // >>> malware
     { provide: MalwareApi, useClass: HttpMalwareApi },
     // <<< malware
+    // >>> signatures
+    { provide: SignaturesApi, useClass: HttpSignaturesApi },
+    // <<< signatures
   ];
 }

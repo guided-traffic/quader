@@ -60,6 +60,11 @@ dl.digests {
   color: var(--quader-text-muted);
 }
 
+/* The signatures' badge in the header opens its tab; the badge keeps its own colours. */
+.facts-signature {
+  display: inline-flex;
+  text-decoration: none;
+}
 .facts-grade {
   color: var(--quader-on-surface);
   text-decoration: none;

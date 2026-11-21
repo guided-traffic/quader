@@ -313,7 +313,7 @@ describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-
     expect(helpFor('/security')).toEqual(['/help', 'user', 'security-dashboard']);
     expect(helpFor('/security/findings/abc')).toEqual(['/help', 'user', 'security-dashboard']);
     const inner = SECURITY_ROUTES[0]!.children!;
-    expect(inner.map((c) => c.path ?? 'matcher')).toEqual(['', 'malware', 'findings/:id', 'matcher']);
+    expect(inner.map((c) => c.path ?? 'matcher')).toEqual(['', 'malware', 'signatures', 'findings/:id', 'matcher']);
     expect(SECURITY_ROUTES[0]!.providers).toEqual([{ provide: VULN_CONTEXT, useValue: SECURITY_CONTEXT }]);
   });
 });

@@ -66,6 +66,7 @@ import { MemberState, stateBadge, systemLevelSentence } from '../upstream/upstre
 import { memberInactiveText } from './well-known-members';
 import { MalwareSwitchStore } from '../../core/malware-switch';
 import { RepositoryMalwareSection } from './repository-malware';
+import { RepositorySignaturesSection } from './repository-signatures';
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
 type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
@@ -101,6 +102,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     RepositoryServiceAccounts,
     RepositoryLimitsSection,
     RepositoryMalwareSection,
+    RepositorySignaturesSection,
     RepositoryVisibilityBlock,
     RouterLink,
     SelectField,
@@ -700,6 +702,33 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.malwareFailure.set(asApiError(e));
     } finally {
       this.malwareSaving.set(false);
+    }
+  }
+
+  // ---- The fetch of the upstream's signatures (R-SIG-026, R-SIG-040) ----
+
+  /** The section on a remote repository; a system repository's members are the product's. */
+  protected readonly signaturesShown = computed(() => this.stored()?.class === 'remote' && !this.systemRepository());
+  protected readonly signaturesSaving = signal(false);
+  protected readonly signaturesFailure = signal<ApiError | null>(null);
+
+  /** Stores `signatures.fetch` with the loaded `ETag`; the patch carries that member only, so other unsaved edits stay. */
+  protected async saveSignatures(fetch: boolean): Promise<void> {
+    if (this.signaturesSaving() || !this.stored()) return;
+    this.signaturesSaving.set(true);
+    this.signaturesFailure.set(null);
+    try {
+      const saved = await this.api.patch(this.ref(), { signatures: { fetch } }, this.etag);
+      this.takeStored(saved.value, saved.etag);
+      this.notifier.status(
+        fetch
+          ? $localize`:@@repo.signatures.saved-on:Quader fetches the upstream's signatures for this repository again.`
+          : $localize`:@@repo.signatures.saved-off:Quader no longer fetches the upstream's signatures for this repository.`,
+      );
+    } catch (e) {
+      this.signaturesFailure.set(asApiError(e));
+    } finally {
+      this.signaturesSaving.set(false);
     }
   }
 

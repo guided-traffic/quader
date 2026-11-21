@@ -39,6 +39,10 @@ import {
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareStatusView } from '../../shared/malware/malware-status';
+import { SignatureStatus } from '../../api/signatures-api';
+import { SignatureBadge } from '../../shared/signatures/signature-badge';
+import { hasSignatureBadge } from '../../shared/signatures/signature-words';
+import { VersionSignatures } from './version-signatures';
 import { contentPath } from '../../api/files-api';
 import { systemRepositoryNames, upstreamName, CLAMAV_KEY } from '../../core/upstream-project';
 import { systemClosed } from '../../core/system-clients';
@@ -55,7 +59,7 @@ import {
   verificationText,
 } from './clamav-definitions';
 
-export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'details' | 'import-log';
+export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'signatures' | 'details' | 'import-log';
 
 /** The content routes of the system repositories, `/api/v1/projects/upstream/repositories/<key>/content/` (R-API-025, Q-UI-898). */
 const SYSTEM_CONTENT = systemRepositoryNames().map((name) => contentPath(name, ''));
@@ -103,6 +107,8 @@ interface TabEntry {
     NoValue,
     DownloadLink,
     MalwareStatusView,
+    SignatureBadge,
+    VersionSignatures,
     Disclosure,
     DatePipe,
   ],
@@ -212,6 +218,8 @@ export class PackageVersionPage {
         : []),
       ...(d?.hasReadme && d.format !== 'ansible' ? [{ id: 'readme' as const, label: $localize`:@@pkg.tab.readme:README` }] : []),
       { id: 'files', label: $localize`:@@pkg.tab.files:Files` },
+      // The details of the signatures while the installation checks them (R-SIG-035): the member is absent while they are off.
+      ...(d?.signatures !== undefined ? [{ id: 'signatures' as const, label: $localize`:@@pkg.tab.signatures:Signatures` }] : []),
       { id: 'details', label: $localize`:@@pkg.tab.details:Details` },
       ...(gradedFirst ? [] : vulnerabilities),
       ...(this.localRepository() !== null ? [{ id: 'import-log' as const, label: $localize`:@@pkg.tab.import-log:Import log` }] : []),
@@ -389,6 +397,17 @@ export class PackageVersionPage {
     return path.split('/').filter((p) => p !== '').pop() ?? path;
   }
 
+  /**
+   * The badge per file (R-SIG-035): a column while some file carries one of the four states with a badge; a file without one shows
+   * no value, and the tab Signatures says why.
+   */
+  protected readonly signatureShown = computed(() => (this.detail()?.files ?? []).some((f) => hasSignatureBadge(f.signatures)));
+  /** The version's member `signatures` while it carries a badge (R-SIG-035). */
+  protected readonly signatureBadged = computed(() => this.badged(this.detail()?.signatures));
+  protected badged(s: SignatureStatus | undefined): SignatureStatus | null {
+    return hasSignatureBadge(s) ? s : null;
+  }
+
   protected readonly fileColumns = computed<readonly TableColumn[]>(() => [
     { id: 'path', label: $localize`:@@pkg.file.path:File`, width: '12rem' },
     { id: 'size', label: $localize`:@@pkg.file.size:Size`, numeric: true },
@@ -398,6 +417,7 @@ export class PackageVersionPage {
       help: $localize`:@@pkg.help.sha256:The checksum of the file's content. Compare it with the output of sha256sum on the downloaded file.`,
     },
     ...(this.malwareShown() ? [{ id: 'malware', label: $localize`:@@pkg.file.malware:Malware scan`, width: '12rem' }] : []),
+    ...(this.signatureShown() ? [{ id: 'signature', label: $localize`:@@pkg.file.signature:Signature`, width: '12rem' }] : []),
     ...(this.downloadable() ? [{ id: 'download', label: $localize`:@@pkg.file.download:Download`, hideLabel: true }] : []),
   ]);
   /**
