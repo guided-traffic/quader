@@ -1542,7 +1542,11 @@ runs are in `git log`; this section holds the current state.
   0 with a stated limit of 40 minutes, which every builder's brief now names. The diff holds no name the
   white-label rule forbids. **The owner's values** render against its chart with no difference in any object
   (39 objects): nothing of the identity renders unless a value names one. The owner's UI backend started
-  with it before the push (the schema step applied). **Its release was cut at 21:10.** **Not verified:** a real cert-manager, a real
+  with it before the push (the schema step applied). **Its release was cut at 21:10,** image and chart were
+  published at 21:17 (the release workflow had waited seven minutes for a runner), and **the owner's
+  installation runs it since 21:19.** Read on the cluster at 21:19: every Deployment ready, no restart, the
+  migration job applied the schema step in ten seconds, a worker scheduled the task `signing`, no error line of
+  the workers. No identity is configured there, so nothing is signed. **Not verified:** a real cert-manager, a real
   company CA, a rotation on a cluster, a whole backup restored into a fresh installation. Its worktree and
   branch are removed.
 - **Reported at 21:04 and waiting for its landing (in work since 19:45): package 3 of the image analyser's move**
@@ -1597,7 +1601,12 @@ runs are in `git log`; this section holds the current state.
   script that picks the end-to-end legs, the restore drill's values, and that nothing in the pipeline scans
   the analyser's image any more (H-1003 says so). **The push waits for the run of the signing identity to
   end** (about 21:40): the layout job ended last at 18:27, was stopped four times since by the next push and
-  failed once at the seed, and the identity's run is the first with the seed's repair that can end.
+  failed once at the seed, and the identity's run is the first with the seed's repair that can end. **On the
+  commit as rebased onto `main`, each exit 0** (21:05 to 21:15): build, the full unit run, generate-check, the
+  evidence regenerated without a difference, links and check, the complexity check, the chart's lint and
+  tests, the lint (with a stated limit), the check of the workflow files and the tests of the pipeline's
+  files; `main` changed no file of the pipeline since the package's base, so `make image` was not built
+  again. The diff holds no name the white-label rule forbids.
 - **Landed on 2026-11-21 at 19:27: package 2 of the image analyser's move, the screens** (R-UI-038, R-OPS-048,
   R-VULN-022 as amended; its builder worked from 18:11 to 19:11; no change of Go or of the API). Each pod of
   `vuln-scanner-trivy` says which database it holds, as a badge of icon and word: **Database in use** in green
