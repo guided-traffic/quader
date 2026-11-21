@@ -3,10 +3,13 @@
 Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins are built, the read, the checks
 and the trust step are not ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
 [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) to
-[ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version)). The
-perspective of this page is what a verdict about a signature can be made to say, by whom, and what reading a hostile signature container
-can do to the process that reads it. Stage 1 refuses no download; every gap below is about what a reader is shown, what the worker is made
-to do, and what an operator relies on.
+[ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version)) and stage 2,
+Quader signs (R-SIG-044 to R-SIG-060,
+[ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker)).
+The perspective of this page is what a verdict about a signature can be made to say, by whom, and what reading a hostile signature container
+can do to the process that reads it; and, for stage 2, what Quader's own signature makes others believe, who holds the key that makes it,
+and what a holder of that key can do. Neither stage refuses a download; every gap below is about what a reader or a client is shown, what
+the worker is made to do, and what an operator relies on.
 
 ## The boundary
 
@@ -63,10 +66,69 @@ scheme or NuGet reads is streamed from the blob store and hashed, never written 
   added later checks against it. The digest is as trustworthy as the worker that computed it and the database row that holds it.
 - **The original is kept** in `signature_objects` (bounded) or as the item that carries it, so a re-judgement needs no upstream.
 
+## Quader's own signature (stage 2)
+
+Quader signs with one identity per installation: an ECDSA P-256 key and a code-signing certificate of the company's CA (R-SIG-045). It
+makes npm's registry signature of every version of a local npm repository (R-SIG-050) and a receipt attestation of every artifact a user's
+repository receives (R-SIG-051 to R-SIG-054). Debian's index signatures keep their own per-repository keys
+([deb-signing.md](deb-signing.md)).
+
+```
+ Helm values: Secret (cert-manager may issue it)        admin area: key request, certificate upload, import
+        │ mounted into worker pods only                        │ api seals the key under the key ring
+        ▼                                                      ▼
+ worker: reloads the files ──────────▶ signing_identities ◀── sealed_key (PostgreSQL, travels with backups)
+        │ holds the key in memory        public key, chain, state
+        ▼                                      │
+ job `signing` ── npm signature, attestation ──▶ store (role registry / attestation, source issued)
+                                               │
+ api, packages: keys endpoint, documents, referrers, trusted root, chain ── public parts only, never the key
+```
+
+**What a signature of Quader proves, and what it does not.** npm's signature proves that this installation's local repository serves the
+version with that integrity. The receipt attestation proves that this installation received the bytes of that digest, when, from which
+uploader or upstream, and what its checks said then, with the dates of those checks. Neither proves who made the content, that the uploader's
+account was not taken over, or that the content is safe today: the uploader's pipeline claims are the claims Quader verified at the upload
+(R-SIG-010), and the malware and vulnerability states are snapshots (R-SIG-051).
+
+**Who holds the key, and what that holder can do.**
+
+| Holder | How | What it can make clients believe |
+|---|---|---|
+| A worker process | it loads the key from the files or opens the sealed key (R-SIG-049) | everything below, and it also writes the facts an attestation states ([H-1187](#h-1187--a-holder-of-the-signing-key-can-make-clients-believe-anything-was-received-here)) |
+| A reader of the Secret of the Helm values | the Kubernetes API or the node | as a worker, outside Quader, without an audit event of Quader's |
+| A role that holds the key ring and the database (`api`, `packages`, `worker`, the restore Job) | it opens an uploaded key ([H-1188](#h-1188--an-uploaded-identity-can-be-opened-by-every-role-that-holds-the-key-ring-and-the-database)) | as a worker; the Secret way keeps the key out of `api` and `packages` |
+| An administrator (`security-settings:write`) | makes, uploads, imports, removes and retires the identity (R-SIG-055) | that a key the company's CA certified is Quader's; never reads the private key back |
+| The company's CA | issues the certificate | that any key it certifies with that name is Quader's: the CA is the root of every attestation's trust |
+| Whoever restores a backup with the key ring | the sealed key travels with the database | that its copy is the installation ([H-1191](#h-1191--a-restore-carries-the-uploaded-identity-into-whichever-installation-restores-it)) |
+
+**What a taken-over worker can make clients believe:** that any npm package of any name and integrity was served by a local repository of the
+installation (a valid registry signature under the listed key, which `npm audit signatures` accepts for any registry that lists that key),
+and that any digest was received from any uploader with any pipeline's claims and found clean (an attestation that `cosign
+verify-attestation` with Quader's identity accepts). It can do so while it runs and, with a copy of the key, after it is gone, until an
+administrator retires the identity and, for attestations, until the certificate expires, because no verifier of Quader's attestations
+asks for revocation ([H-1190](#h-1190--a-copied-attestation-outlives-what-it-says)).
+
+**What the design keeps small.** Only the worker loads the key (`api` and `packages`, which face clients and parse their uploads, read
+public parts only, held by the archtest of R-SIG-049); the Helm way keeps the key out of the database and the backups; the plain upload is a
+certificate request, so the key never passes a browser (R-SIG-047); a new key is announced before it signs and a signature after its key's
+switch is refused by a lock (R-SIG-048), so no client run aborts on Quader's keys; Quader's referrer never stands where it would hide a
+publisher's older cosign signature (R-SIG-054); every change of the identity is an audit event, and a removal and a retirement carry the
+journal flag (R-SIG-057).
+
 ## What this does not cover
 
 - [H-1176](../spec/signatures.md#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature):
-  through a virtual npm repository, `npm audit signatures` reports local packages as missing a registry signature.
+  through a virtual npm repository, `npm audit signatures` reports local packages as missing a registry signature (closed by stage 2 for an
+  installation with a signing identity).
+- [H-1183](../spec/signatures.md#h-1183--npm-audit-signatures-reports-a-local-version-as-missing-until-quader-has-signed-it):
+  `npm audit signatures` reports a local version as missing until Quader has signed it.
+- [H-1184](../spec/signatures.md#h-1184--npm-audit-signatures-needs-the-public-sigstore-tuf-repository-before-it-asks-quader):
+  `npm audit signatures` needs the public Sigstore TUF repository before it asks Quader.
+- [H-1185](../spec/signatures.md#h-1185--an-image-with-an-older-cosign-signature-gets-quaders-attestation-only-through-the-api): an image
+  with an older cosign signature gets Quader's attestation only through the API.
+- [H-1186](../spec/signatures.md#h-1186--a-policy-engine-that-demands-a-log-or-a-timestamp-cannot-verify-quaders-attestations): a policy
+  engine that demands a log or a timestamp cannot verify Quader's attestations.
 
 ### H-1166 · The worker reads hostile signature containers in a process that holds secrets
 
@@ -146,3 +208,59 @@ Component: the trust job (R-SIG-012). Subject: readers after an anchor was remov
 the job reaches a row, the screens show the trust computed under the previous anchors, marked `stale` in the API; with a million signatures
 that can be minutes. Stage 1 refuses nothing, so the lag misleads a reader and lets nothing through; a gate of stage 3 has to decide on stale
 rows itself (R-SIG-043). What makes it real: a block of a stolen key, read by someone in the minutes after.
+
+### H-1187 · A holder of the signing key can make clients believe anything was received here
+
+Component: the signing identity and the job `signing` (R-SIG-045, R-SIG-049). Subject: every consumer that trusts Quader's npm keys or its
+attestations: pipelines that run `npm audit signatures`, clusters and pipelines that run `cosign verify-attestation` with Quader's identity.
+Live from stage 2 in an installation with an identity. Whoever holds the private key (a worker process, a reader of the Secret of the Helm
+values, a role that holds the key ring and the database for an uploaded key) signs any package name and integrity as served by a local
+repository and any digest as received, from any uploader, with any pipeline claims and a clean verdict. A taken-over worker also writes the
+facts an honest attestation states, so even a correct key states false facts. What bounds it: the key is loaded by the worker alone; the
+Helm way keeps it out of the database; an administrator retires a key believed taken, which takes it out of npm's keys at once. What makes it
+real: a flaw that runs code in the worker (H-1166 is one way in) or read access to the Secret.
+
+### H-1188 · An uploaded identity can be opened by every role that holds the key ring and the database
+
+Component: the sealed key of an upload (R-SIG-047, Q-SIG-54). Subject: installations whose identity was uploaded in the admin area. Live from
+stage 2 there; dormant with the Helm way. The key ring is mounted into every replica (`api`, `packages`, `worker`) and the restore Job
+([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-030), so a taken-over `api` or `packages` process can read `signing_identities.sealed_key`
+and open it, although only the worker ever does in normal operation. What makes it real: code execution in a role that faces clients; the
+Helm way, whose Secret only the worker pods mount, avoids it.
+
+### H-1189 · The time and the facts of an attestation are Quader's own claim
+
+Component: the receipt attestation without a log and without a timestamp (R-SIG-051, R-SIG-052, Q-SIG-63). Subject: auditors and consumers who
+read `receivedAt` and `issuedAt`. Live from stage 2. Nothing outside Quader witnesses when an attestation was made: a holder of the key can make
+one today that claims a receipt of last year, and no log shows which attestations exist. What makes it real: an audit that relies on the
+attestation's dates alone; a company timestamp authority or a log of the company's own Sigstore would give the time a witness.
+
+### H-1190 · A copied attestation outlives what it says
+
+Component: the receipt attestation's snapshots and its lifetime (R-SIG-051, R-SIG-053). Subject: consumers who keep or cache an attestation.
+Live from stage 2. Quader replaces an attestation when the malware state changes and when the identity changes, and removes it with the item,
+but a copy that someone saved keeps verifying until its certificate expires: "clean" for a blob found infected since, a vulnerability grade
+from before new advisories, a receipt of an item deleted since. No verifier of Quader's attestations asks for revocation, and Quader publishes
+none. What makes it real: a policy that verifies a stored attestation instead of fetching the current one from Quader.
+
+### H-1191 · A restore carries the uploaded identity into whichever installation restores it
+
+Component: backups of `signing_identities` (R-SIG-059, Q-SIG-74). Subject: installations with an uploaded identity whose backups are restored
+elsewhere with the same key ring. Live from stage 2 there. The restored copy keeps the installation's ID and opens the sealed key, so a copy
+restored for a test signs npm packages and attestations as production until an administrator removes the identity. What makes it real: a
+restore into a test cluster that reuses production's key ring.
+
+### H-1192 · The signing key is in memory and in a Secret or the database, not in hardware
+
+Component: the signing identity (R-SIG-045, Q-SIG-73). Subject: the key. Live from stage 2. The key lives in the worker's memory and either in
+a Kubernetes Secret or sealed in PostgreSQL; a copy can be taken by whoever reads one of them, and nothing shows that it was. No PKCS#11 device
+and no cloud key store is supported. What makes it real: a company policy that requires signing keys in hardware, as the CA/Browser Forum does
+for publicly trusted code-signing certificates.
+
+### H-1193 · `cosign verify` with Quader's identity accepts Quader's receipt as a signature of the image
+
+Component: the OCI attestation referrer (R-SIG-054). Subject: whoever runs `cosign verify` (signatures, not attestations) with
+`--certificate-identity` set to Quader's. Live from stage 2. cosign 3.1.4 takes every bundle among the referrers as a candidate and accepts a
+DSSE bundle whose statement names the image (read in its source on 2026-11-21), so Quader's receipt passes as "signed by Quader". It says
+received, not made; a policy that reads it as the publisher's signature trusts the wrong fact. What makes it real: a policy written with
+Quader's identity in `cosign verify` instead of `cosign verify-attestation` with the receipt's type.

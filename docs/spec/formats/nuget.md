@@ -157,7 +157,8 @@ values it knows, each resource MUST be listed under every alias in the table.
 - Resources the protocol defines but Quader does not implement (catalog, repository signatures,
   package details, owner details, report abuse) MUST NOT be listed. The repository signatures resource stays unlisted also once
   signatures are verified: it names the certificates a source signs with itself, and Quader signs no NuGet package
-  ([signatures.md](../signatures.md) Q-SIG-36).
+  ([signatures.md](../signatures.md) Q-SIG-36); also with stage 2 a package's bytes are never countersigned, and its receipt attestation
+  is served by the management API (R-SIG-044, R-SIG-054, specified, not built).
 - The service index is rendered by `nuget.ServiceIndex` from the repository's base URL, key and class
   alone. The MVP resources of the table are listed from the skeleton on, although the operations behind
   them are written by later work packages and answer 501 `nuget_not_implemented` until then

@@ -329,8 +329,9 @@ Priority: **MVP** · Covers: PKG-NPM-033, PKG-NPM-034, REPO-029, FMT-008
   check (R-ARCH-012, R-ARCH-015), so every npm write that changes a package increments
   `packages.rev_seq` in its transaction.
 - Because an npm file can only ever live on its canonical path, REPO-029's strict layout is
-  permanently on and has no setting. The signing-key settings of REPO-029 are deferred with
-  PKG-NPM-037.
+  permanently on and has no setting. REPO-029's signing-key settings per repository have no counterpart: Quader signs every local
+  npm repository with the installation's one signing identity (PKG-NPM-037, [signatures.md](../signatures.md) R-SIG-050, specified,
+  not built).
 - The format properties `npm.name`, `npm.version` and, for scoped names, `npm.scope` are exposed
   read-only on every stored or cached tarball (FMT-008), derived from these rows.
 - All npm state is in these PostgreSQL tables and in the blob store (INV-3, INV-4). Nothing npm
@@ -1566,7 +1567,10 @@ Priority: **MVP** · Covers: PKG-NPM-038
   to `<serving registry URL>-/npm/v1/attestations/<name>@<version>`; its path then lies below the
   registry URL, so the request reaches the serving repository with its permissions, and no
   host-root route is needed (Q-NPM-1). `dist.signatures` stays byte for byte; registry signing of local packages is stage 2
-  (PKG-NPM-037).
+  (PKG-NPM-037), specified in [signatures.md](../signatures.md) R-SIG-050 and not built: while the installation has a signing identity,
+  every version of a local repository carries Quader's `dist.signatures` and the local keys endpoint lists Quader's keys; a remote's and a
+  virtual's versions keep their upstream's and their winning member's signatures. Quader's receipt attestation of a tarball is served by
+  the management API, never in `dist.attestations` (R-SIG-054).
 
 Acceptance criteria:
 
@@ -2123,7 +2127,9 @@ and Yarn 1 `<client> publish --registry <registry URL>`, Yarn 2 and later `npmPu
 URL>"` in `.yarnrc.yml`. The registry URL is the one of the selected repository, also for a virtual
 repository, which forwards the publish to its deployment target; the credential line of the configure
 snippet is keyed to that URL, so no second credential is needed (Q-API-180). The GitLab CI snippets
-below are not templates.
+below are not templates. While the installation has a signing identity, the tab `verify` holds `npm audit signatures` for the npm
+client and, for every client, the check of a tarball's receipt attestation with cosign ([signatures.md](../signatures.md) R-SIG-055,
+specified, not built).
 
 <details>
 <summary>Snippets per client</summary>
@@ -2731,7 +2737,6 @@ Acceptance criteria (fixture of [endpoints.md](../endpoints.md) R-EP-012, with `
 | PKG-NPM-024 | P2 | Provenance bundles: stored on publish (R-NPM-006); serving them below the registry URL at `-/npm/v1/attestations/<name>@<version>`, with `dist.attestations.url` rewritten to it, is specified in [signatures.md](../signatures.md) R-SIG-028 (Q-NPM-1, H-32); 404 until it is built. |
 | PKG-NPM-035 | P2 | Strict layout setting; Quader stores only canonical paths, so it is permanently on (R-NPM-006). |
 | PKG-NPM-036 | P2 | Strict-layout conversion; nothing to convert. Relevant only to an import from another system. |
-| PKG-NPM-037 | P2 | Registry signatures of local packages with Quader's key: stage 2 of [signatures.md](../signatures.md) (Q-SIG-10); the keys endpoint itself is stage 1 (R-SIG-028). |
 | PKG-NPM-041 | P2 | FHIR package registry as upstream, with its rule against mixing it with ordinary npm members. |
 | PKG-NPM-061 | Out of scope | Public-registry account endpoints (organizations, teams, access, visibility, collaborators, hooks, stars); 404. |
 
@@ -5228,7 +5233,9 @@ attestations, so the upstream signatures and provenance it passes through (R-NPM
 it is built, upstream signatures and provenance verify through every class, and what stays is that a local package carries no
 registry signature before stage 2 signs it (Q-SIG-10): a client reads it as unsigned, and through a virtual repository with a
 remote member as missing a signature ([signatures.md](../signatures.md#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature)
-H-1176). pnpm's trust policy works on the passed-through fields.
+H-1176). pnpm's trust policy works on the passed-through fields. Stage 2 (R-SIG-050, specified, not built) closes the rest for an
+installation with a signing identity; without one it stays, and with one a version reads as missing in the seconds before it is signed
+([signatures.md](../signatures.md#h-1183--npm-audit-signatures-reports-a-local-version-as-missing-until-quader-has-signed-it) H-1183).
 
 ### H-33 · Takedown delay and earlier downloads
 

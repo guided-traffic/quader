@@ -6,8 +6,10 @@ attachment tags without a version row ([developer/signatures.md](../developer/si
 the trust step and its anchors, the job, the API, the screens, the formats' wire behaviour. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
 each original signature with its verdict, decides trust against trust anchors of the installation and, where the administrator allows it,
 of a project, shows the result at the artifact, alarms on an invalid signature, and serves signatures to every client the way its
-protocol expects. It blocks nothing. Stage 2 (Quader signs) and stage 3 (a gate per repository) are not specified here; what stage 1's
-model already carries for them is [R-SIG-043](#r-sig-043--what-stage-1-keeps-for-stage-2-and-stage-3).
+protocol expects. It blocks nothing. Stage 2, Quader signs, is specified in the section
+[Quader signs (stage 2)](#quader-signs-stage-2) (R-SIG-044 to R-SIG-060, specified, not built): one signing identity per installation,
+npm's registry signatures of local packages and a signed receipt attestation of every artifact. Stage 3 (a gate per repository) is not
+specified here; what the model already carries for it is [R-SIG-043](#r-sig-043--what-stage-1-keeps-for-stage-2-and-stage-3).
 
 The owner asked for it on 2026-11-21 ("Quader muss in Zukunft auch das feststellen, auslesen und verifizieren von Signaturen auf (wenn
 möglich) allen Artefaktarten unterstützen. Dabei muss es zwischen öffentlich gültigen oder intern gültigen Signaturen unterscheiden
@@ -35,7 +37,11 @@ This page covers:
 - the formats: the obligation in the format contract and the kit's case, and what OCI, npm, NuGet, Debian, Ansible Galaxy and generic
   repositories detect, verify, show and serve; the fetch of a remote's signatures in the background; virtual repositories and the Bastion;
 - the API, the badge and the details, the admin page, a project's anchors, the security dashboard's view, audit events, metrics, alerts,
-  the configuration, backups and replicas, and the tests with their cost.
+  the configuration, backups and replicas, and the tests with their cost;
+- stage 2: what Quader signs per format; the signing identity, its two ways (the Helm values, an upload in the admin area), its states,
+  its rotation and where it is used; npm's registry signatures of local packages and the keys endpoint; the receipt attestation, its
+  statement, its envelope, when it is made and where it is kept and served; its API, screens, events, metrics, alerts, configuration,
+  backups and tests.
 
 **What a signature says, and what it does not.** A valid signature says who signed which bytes, and the trust step says whether an anchor
 the installation chose knows that signer. It does not say that the content is safe: a trusted signer can sign malicious content, and a
@@ -59,6 +65,10 @@ guarantee ([H-1171](../security/artifact-signatures.md#h-1171--a-verified-signat
 | System roles and capabilities, the restricted visibility levels the switch is modelled on | [authorization.md](authorization.md) R-AUTHZ-010, R-AUTHZ-037 |
 | Usage and limits of system work | [usage-and-limits.md](usage-and-limits.md) R-LIM-001, R-LIM-015 |
 | The admin area, the security dashboard | [api-and-ui.md](api-and-ui.md) R-UI-002, R-UI-158 |
+| The client setup snippets, which gain the tab `verify` (stage 2) | [api-and-ui.md](api-and-ui.md) R-API-030 |
+| The key ring that seals an uploaded signing key (stage 2) | [architecture.md](architecture.md) R-ARCH-021; [developer/secrets.md](../developer/secrets.md) |
+| The chart's Secret or cert-manager Certificate of the signing identity (stage 2) | [ha-and-helm.md](ha-and-helm.md) R-HA-071 |
+| npm's document revisions and publish times, which signing moves and npm's client compares (stage 2) | [formats/npm.md](formats/npm.md) R-NPM-009, R-NPM-012 |
 | Audit storage, metrics, alerts | [operations-and-observability.md](operations-and-observability.md) R-OPS-008, R-OPS-016 |
 | The security perspective | [security/artifact-signatures.md](../security/artifact-signatures.md) |
 
@@ -71,6 +81,9 @@ Conventions on this page:
 - The *company CA*, the *company's Sigstore* and the *release key* are the three ways of the owner's CI to a signature
   ([Q-SIG-15](#q-sig-15--which-way-to-a-signature-the-ci-has)): a certificate chain of a company CA (Notation, NuGet, cosign with its own
   PKI), a Sigstore installation of the company whose certificate authority issues a certificate per CI job, and an OpenPGP key.
+- *The signing identity* (stage 2) is the installation's own key and certificate *(example)*: an ECDSA P-256 key, a leaf with the subject
+  `CN=Quader signing, O=Example GmbH, C=DE` and the alternative name `https://quader.example.com`, issued by `Example Code Signing CA`
+  under `Example Root CA`, the company CA's chain.
 
 ## Model
 
@@ -1048,7 +1061,8 @@ carry the tarball's SHA-512.
   a `Metadata` route:
   - a **remote** answers its upstream's keys document, fetched from the upstream's `-/npm/v1/keys` and kept for the metadata period, an
     upstream 404 as `{"keys": []}`;
-  - a **local** repository answers `{"keys": []}` in stage 1: Quader signs no npm package before stage 2 (d10, R-SIG-043);
+  - a **local** repository answers `{"keys": []}` in stage 1: Quader signs no npm package before stage 2 (d10, R-SIG-043); with stage 2
+    it lists the keys of the signing identity while one is current, and `{"keys": []}` while none is (R-SIG-050);
   - a **virtual** repository answers the union of its members' keys by `keyid`, whatever members the caller may read (public keys, the same
     document for every caller).
 - **The attestations endpoint** `GET <registry URL>-/npm/v1/attestations/<name>@<version>` (`Metadata`, decided as a read of the version's
@@ -1068,7 +1082,8 @@ carry the tarball's SHA-512.
   shipped `npmjs` anchor); the provenance as the badge's evidence with its builder, source repository, ref and workflow from the
   certificate.
 - **Through a virtual repository with a remote member, a local package reads as missing a registry signature** to `npm audit signatures`
-  until stage 2 signs local packages ([H-1176](#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature)).
+  until stage 2 signs local packages, and in an installation without a signing identity after it
+  ([H-1176](#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature)).
 
 Acceptance criteria:
 
@@ -1265,6 +1280,7 @@ Priority: **P1** · Covers: quader-only
      failure.
 - Under the title stands: "A signature tells who signed an artifact and whether a trust anchor knows the signer. It does not tell that the
   content is safe; the malware scan and the vulnerability scanning check that."
+- Stage 2 adds the section **Signing identity** before the four (R-SIG-056).
 - The page is rendered and looked at before it lands: both schemes, wide and narrow, with the shipped anchors only, with twelve anchors of
   all kinds and long titles, with the switch off and on, and with a block.
 
@@ -1434,14 +1450,17 @@ Acceptance criteria: the coverage generator lists every requirement of this page
 ### R-SIG-043 · What stage 1 keeps for stage 2 and stage 3
 Priority: **P1** · Covers: quader-only
 
-Nothing of stages 2 and 3 is specified here; stage 1's model already carries:
+Stage 3 is not specified here; stage 2 is specified in [Quader signs (stage 2)](#quader-signs-stage-2) and uses what stage 1's model
+carries:
 
 - **Stage 2, Quader signs** ([Q-SIG-10](#q-sig-10--quader-signs-as-a-registry), [Q-SIG-11](#q-sig-11--quader-issues-attestations),
-  [Q-SIG-13](#q-sig-13--the-signing-identity)): the keys endpoint of R-SIG-028 is where Quader's npm key joins (a local repository's
-  `{"keys": []}` becomes Quader's key, and the virtual union with it closes H-1176); `artifact_origins` (R-SIG-010), the integrity and trust
-  verdicts, the malware verdict and the vulnerability state are the facts of an attestation; an attestation Quader issues is a signature of
-  the role `attestation` attached with a new `source`, read by the same model. The signing identity of the Helm values or the UI (sealed by
-  the key ring like Debian's keys, Helm winning) has no place in this page's tables.
+  [Q-SIG-13](#q-sig-13--the-signing-identity)): the keys endpoint of R-SIG-028 is where Quader's npm key joins: a local repository's
+  `{"keys": []}` becomes the keys of the signing identity, and the virtual union with them closes H-1176 for an installation that has one
+  (R-SIG-050); `artifact_origins` (R-SIG-010), the integrity verdicts, the malware verdict and the vulnerability state are the facts of the
+  receipt attestation, the trust verdicts are left out of it because they are recomputed (R-SIG-051); Quader's npm signature and its
+  attestation are signatures of the roles `registry` and `attestation` in this page's store, attached with the new source `issued` and
+  marked with the identity that made them (R-SIG-054); the signing identity of the Helm values or of the admin area, sealed by the key ring
+  when uploaded and with the Helm values winning, is the table `signing_identities` (R-SIG-045 to R-SIG-048).
 - **Stage 3, the gate per repository** ([Q-SIG-9](#q-sig-9--display-or-gate)): `signature_trust` holds per signature and scope the state and
   every anchor that knows the signer (`anchor_ids`), so a gate "only artifacts with a verified signature, optionally of chosen anchors" is a
   join of the item's blob to its signatures, their attachments in the repository and the trust row of the addressed repository's scope, at
@@ -1450,6 +1469,771 @@ Nothing of stages 2 and 3 is specified here; stage 1's model already carries:
   each client's shape, the wait for a pending check, and the stale rows of H-1175.
 
 Acceptance criteria: none; the stages bring their own.
+
+## Quader signs (stage 2)
+
+Status: specified, not built. The owner asked for it in his request of 2026-11-21 ("Quader ist ebenso in der Lage Artefakte zu signieren,
+dafür muss aber erst ein Zertifikat in Quader über Helm oder das Frontend gepflegt werden. Hier müssen wir uns aber noch über den Umfang und
+Ziele unterhalten, ich erwarte, dass du mich hier proaktiv berätst.") and decided its frame the same morning: Quader signs as a registry
+where a client checks it with one command, which is Debian (built) and npm ([Q-SIG-10](#q-sig-10--quader-signs-as-a-registry)); it issues
+signed attestations of what it received and checked, for an image as a referrer ([Q-SIG-11](#q-sig-11--quader-issues-attestations)); it
+never signs in a publisher's name ([Q-SIG-12](#q-sig-12--quader-signs-in-a-publishers-name)); it holds one signing identity per
+installation from the company's CA, and OpenPGP keys per repository where a format needs them
+([Q-SIG-13](#q-sig-13--the-signing-identity)); the certificate comes through Helm (a Secret that cert-manager may issue) or an upload
+sealed by the key ring, and Helm wins (the reading r8 of [Q-SIG-16](#q-sig-16--the-eight-readings-of-the-request)). Before he left on
+2026-11-21 he was told that the second stage is specified and built after the first without asking him, its open points decided by the
+development agent and documented (the plan's standing rules); every decision below that is not his is the development agent's ([ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker)).
+
+**What a signature of Quader says, and what it does not.** Quader's npm signature says that this installation's local repository serves
+this version with this integrity. Its receipt attestation says that this installation received the artifact with this digest, when, from
+which uploader or upstream, and what its checks said at the time. Neither says who made the content: that is the publisher's signature
+and the provenance of stage 1, which Quader never makes
+([H-1187](../security/artifact-signatures.md#h-1187--a-holder-of-the-signing-key-can-make-clients-believe-anything-was-received-here)).
+
+### R-SIG-044 · What stage 2 signs, per format
+Priority: **P1** · Covers: quader-only
+
+Two kinds of signature, both made with the installation's one identity (R-SIG-045); Debian's indexes keep their own keys:
+
+- **A registry signature** where a client checks it with one command (Q-SIG-10).
+- **A receipt attestation** of every artifact a user's repository receives (R-SIG-051).
+- **Never a publisher's signature** (Q-SIG-12): Quader's signatures have the roles `registry` and `attestation` and never carry the badge
+  of R-SIG-009; who uploaded is shown as the origin (R-SIG-010).
+
+| Format | Registry signature | Receipt attestation of | How a client gets the attestation |
+|---|---|---|---|
+| OCI | none: no client checks a registry's own signature of an image with one command against that registry; the attestation is the evidence | every top-level manifest (one a tag names, or one pulled by digest that no stored index lists) that a push or a remote fill stores | a referrer of the manifest, where it hides no older signature (R-SIG-054, [Q-SIG-66](#q-sig-66--quaders-referrer-never-stands-where-cosign-would-stop-reading-an-older-signature)); `cosign verify-attestation` (R-SIG-052) |
+| npm | every version of a local repository: ECDSA P-256 over `<name>@<version>:<integrity>` in `dist.signatures`, the keys at `-/npm/v1/keys`; `npm audit signatures` (R-SIG-050) | every tarball | the API and a download at the version (R-SIG-054); not through npm's attestations endpoint ([Q-SIG-60](#q-sig-60--npm-quaders-attestations-are-not-served-through-npms-attestations-endpoint)) |
+| NuGet | none: a repository countersignature changes the package's bytes (Q-SIG-10); no `RepositorySignatures` resource ([Q-SIG-36](#q-sig-36--nuget-lists-no-repository-signatures-resource) stands) | every `.nupkg` and `.snupkg` | the API and a download |
+| Debian | the indexes of local and virtual repositories, signed with each repository's OpenPGP key as built ([formats/debian.md](formats/debian.md) R-DEB-016, R-DEB-025); `apt`; nothing changes ([Q-SIG-69](#q-sig-69--debian-the-repository-keys-get-no-certification-by-the-identity)) | every `.deb`; never an index | the API and a download |
+| Ansible Galaxy | none in stage 2 ([Q-SIG-68](#q-sig-68--ansible-galaxy-quader-does-not-sign-local-collections-in-stage-2)) | every collection archive | the API and a download |
+| generic | none: no scheme of a registry exists for a file | every file but one that R-SIG-032 reads as a signature of its sibling | the API and a download |
+| `clamav` (a system format) | none | none | — |
+
+- **System repositories** of `upstream` (`scanner-trivy`, `clamav`; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-070,
+  R-REPO-075) get no attestation: they hold what the product fetches for its own tools, `clamd` checks the publisher's signature of each
+  ClamAV container itself, and the company's ClamAV installations do the same through the definitions' endpoint; a receipt of Quader's own
+  tool data would be read by no one.
+- **The format names what is attested** ([Q-SIG-67](#q-sig-67--the-format-names-what-quader-attests-and-the-contract-rises-to-version-9)):
+  stage 2 adds a method to the adapter of R-SIG-022, and `ContractVersion` rises to 9 in the change that adds it:
+
+  ```go
+  // AttestationSubjects names the items of a commit that Quader attests: the artifacts a client fetches,
+  // never an item that carries a signature or an attestation. A format with no subject returns nil.
+  AttestationSubjects(ev SignatureEvent) []AttestationSubject
+
+  type AttestationSubject struct {
+      Item    int64  // the attested item
+      Name    string // the artifact's name in the format's words: an image, a package, a path
+      Version string // empty where the format has none
+  }
+  ```
+
+  The declaration (R-SIG-022) gains `Attests string`, what is attested in the format's words, or empty with the reason in `AttestsNone`.
+  A future format declares both and, where its clients check a registry's signature with one command, says so; that scheme comes back to
+  the owner as a decision of its own (the owner's rule of 2026-11-19).
+- **Without a signing identity Quader signs nothing:** a local npm repository's keys answer `{"keys": []}` as in stage 1, no version
+  carries `dist.signatures`, no attestation is made, and the admin page says so (R-SIG-056). Debian's index signing is not affected.
+
+Acceptance criteria:
+
+- Unit (the format contract's kit, check 18 amended, milliseconds per format): each format's `AttestationSubjects` over its fixture
+  cases equals the table: OCI names the top-level manifest and not its platform manifests, layers, referrers or attachment tags; npm the
+  tarball and not the provenance bundle; NuGet the `.nupkg` and the `.snupkg`; Debian the `.deb`; Ansible the archive; generic a file and
+  not its `.asc` sibling; `clamav` nothing, with `AttestsNone` set. The test format's defect `AttestsSignature` (a signature carrier named
+  as a subject) fails it.
+
+### R-SIG-045 · The signing identity: what it must be and its states
+Priority: **P1** · Covers: quader-only
+
+One per installation (Q-SIG-13): a private key and an X.509 certificate of the company's CA with its chain. The material is checked
+whenever it is loaded from the Helm values or uploaded ([Q-SIG-53](#q-sig-53--the-signing-key-is-ecdsa-p-256-with-a-code-signing-certificate)):
+
+| Part | Requirement | Why |
+|---|---|---|
+| Key | ECDSA on P-256 | npm's client accepts only `ecdsa-sha2-nistp256` registry keys (npm's documentation, read 2026-11-21); cosign, sigstore-go and the Notary Project's verifiers take it too, so one key serves every use |
+| Leaf | not a CA certificate; key usage `digitalSignature`; extended key usage `codeSigning` | sigstore-go's check of a certificate authority requires `codeSigning` on the leaf (`pkg/root/certificate_authority.go`, read 2026-11-21); a CA anchor of stage 1 requires it too (Q-SIG-30), so an installation whose company CA is an anchor knows Quader's own attestations |
+| Alternative name | at least one URI or e-mail address; the first URI is what the client setup names as the identity | cosign matches `--certificate-identity` against the alternative names, not the subject (cosign's source, read 2026-11-21) |
+| Validity | valid at the check, with at least 24 hours left; shown amber from 14 days before its end (R-SIG-057) | an attestation verifies only while its certificate is valid (R-SIG-052) |
+| Chain | the leaf, its intermediates and a self-signed root (the last certificate, or the separate `ca.crt` or `ca` field); the chain builds with Go's `crypto/x509` for `codeSigning`; at most 8 certificates of 16 KiB each (R-SIG-013's bound) | Quader serves the chain and a trusted root made of it (R-SIG-052) |
+| Pair | the key is the leaf's | |
+
+```sql
+CREATE TABLE signing_identities (
+  id              bigserial PRIMARY KEY,
+  source          text    NOT NULL CHECK (source IN ('configuration', 'upload')),
+  state           text    NOT NULL CHECK (state IN ('pending', 'announced', 'current', 'previous', 'retired')),
+  public_key      bytea   NOT NULL,                        -- DER SubjectPublicKeyInfo
+  key_sha256      bytea   NOT NULL CHECK (octet_length(key_sha256) = 32),
+  npm_keyid       text    NOT NULL,                        -- R-SIG-050
+  sealed_key      text    NULL,                            -- upload: the private key under the key ring (R-SIG-047); configuration: always NULL
+  csr             text    NULL CHECK (length(csr) <= 8192), -- pending: the PEM request
+  certificate     bytea   NULL,                            -- DER leaf; NULL while pending
+  cert_sha256     bytea   NULL CHECK (octet_length(cert_sha256) = 32),
+  chain           bytea[] NOT NULL DEFAULT '{}',           -- DER intermediates, then the root
+  subject         text    NULL CHECK (length(subject) <= 1024),
+  issuer          text    NULL CHECK (length(issuer) <= 1024),
+  names           text[]  NOT NULL DEFAULT '{}',           -- the alternative names
+  not_before      timestamptz NULL,
+  not_after       timestamptz NULL,
+  announced_at    timestamptz NULL,
+  current_at      timestamptz NULL,
+  expires_at      timestamptz NULL,                        -- previous: the moment it stopped signing (R-SIG-048)
+  retired_at      timestamptz NULL,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  created_by      uuid    NULL REFERENCES principal (id) ON DELETE SET NULL,
+  CHECK ((source = 'upload') = (sealed_key IS NOT NULL)),
+  CHECK ((state = 'pending') = (certificate IS NULL)),
+  UNIQUE (cert_sha256)
+);
+CREATE UNIQUE INDEX signing_identities_pending   ON signing_identities ((true)) WHERE state = 'pending';
+CREATE UNIQUE INDEX signing_identities_announced ON signing_identities ((true)) WHERE state = 'announced';
+CREATE UNIQUE INDEX signing_identities_current   ON signing_identities ((true)) WHERE state = 'current';
+```
+
+| State | Meaning | Signs | Listed at `-/npm/v1/keys` | Its signatures served |
+|---|---|---|---|---|
+| `pending` | an upload's key and request exist; no certificate yet (R-SIG-047) | no | no | — |
+| `announced` | the certificate is there; listed so that caches learn the key before it signs (R-SIG-048) | no | yes, `expires: null` | — |
+| `current` | the identity that signs | yes | yes, `expires: null` | yes |
+| `previous` | signed until `expires_at`; keeps its signatures valid | no | yes, `expires` = `expires_at` | yes |
+| `retired` | an administrator retired it (R-SIG-048) | no | no | no; the current identity makes them again |
+
+- **While no identity is current, nothing of Quader's is on npm's wire:** the keys endpoint answers `{"keys": []}` and no document carries
+  Quader's `dist.signatures`, whatever previous identities exist ([Q-SIG-57](#q-sig-57--a-new-key-is-announced-before-it-signs-old-npm-signatures-stay-attestations-are-made-again)):
+  npm reports every unsigned package of a registry that offers keys as missing.
+- **A renewal with the same key** (cert-manager's `rotationPolicy: Never`, or a company CA that reissues for the key) is a new row with
+  the same `npm_keyid`; the keys endpoint lists a key once, with the expiry of its newest row.
+- **What the database never holds:** the private key of the Helm values. Its row holds the public key, the chain and the state.
+- An identity whose certificate has expired signs nothing, also while `current`; it stays listed (R-SIG-057 alerts before).
+
+Acceptance criteria:
+
+- Unit (`internal/signing`, milliseconds, material made by the test with `crypto/x509`): each row of the table with a passing and a
+  failing sample (an RSA key, a P-384 key, a leaf without `codeSigning`, one without an alternative name, an expired one, one with 23 hours
+  left, a CA certificate as the leaf, a chain without its root, a chain that does not build, a key that is not the leaf's); the state
+  table as allowed and refused transitions.
+
+### R-SIG-046 · The identity from the Helm values
+Priority: **P1** · Covers: quader-only
+
+The owner's reading r8: through Helm, a Secret that cert-manager may issue; Helm wins
+([Q-SIG-54](#q-sig-54--where-the-key-lives-in-each-way-and-the-helm-values-win)).
+
+- **The files.** The chart mounts a Secret with `tls.crt` (the leaf and its intermediates), `tls.key` (the key) and `ca.crt` (the root),
+  the keys of a cert-manager TLS Secret, into the `worker` pods only, and sets `signing.identity.cert_file`, `key_file` and `ca_file`
+  ([ha-and-helm.md](ha-and-helm.md) R-HA-071). The Secret is an existing one, or the one of a cert-manager `Certificate` the chart renders.
+- **Loading without a restart.** A worker reads the files at start and compares their content every `signing.identity.reload_interval`
+  (default 1 minute), as the TLS reloader does (R-ARCH-035); the kubelet swaps the volume, nothing rolls. A pair that passes R-SIG-045 is
+  registered: a row of the source `configuration` is inserted when no row has its certificate, `announced` while another identity is
+  current, `current` when none is (R-SIG-048), and `signing.identity.installed` is recorded. A pair that fails is not used, the identity in
+  use keeps signing, `signing.identity.refused` is recorded once per content with the reason, and the admin page shows it.
+- **The key stays in the worker's memory**, in a type that renders nothing (`observability.Secret`), and in the file; it is written
+  nowhere else.
+- **Helm wins.** While `signing.identity.cert_file` is set, the identity of the files is the installation's: the admin page shows it with
+  "From the Helm values" and no controls, an upload or a key request answers `409 signing_identity_managed`, and an uploaded identity that
+  is stored stays unused and marked "Not in use: the Helm values name the signing identity". When the values stop naming one, the identity
+  of the files becomes `previous`, and a stored uploaded identity that passes R-SIG-045 is announced; without one Quader signs nothing from
+  then on.
+- `api` and `packages` read the public part from the database (the keys endpoint, the chain, the trusted root) and never the files.
+
+Acceptance criteria:
+
+- Integration (area `signing`, `TestR_SIG_046_…`, about 4 s, files written by the test into the stack worker's directory, announce period
+  1 s): a pair becomes current and signs an npm publish; replacing the files with a pair of a new key announces it, then makes it current and
+  the old one previous with its `expires_at`, without a restart; a pair with an RSA key is refused with `signing.identity.refused` and the
+  old pair keeps signing; a key request answers 409 `signing_identity_managed`.
+
+### R-SIG-047 · The identity uploaded in the admin area
+Priority: **P1** · Covers: quader-only
+
+The plain path is a certificate request: Quader makes the key, and it never leaves Quader
+([Q-SIG-55](#q-sig-55--the-upload-is-a-certificate-request-for-a-key-quader-makes-an-import-is-a-detail)).
+
+1. **Create signing key** (`POST /api/v1/signing/identity/key`): the `api` replica that answers generates an ECDSA P-256 key, seals it
+   under the key ring's active key into `signing_identities.sealed_key` (a registered sealed column, row key the identity's `id`,
+   [architecture.md](architecture.md) R-ARCH-021) in the transaction that writes the row `pending`, forgets it, and answers a PKCS#10
+   request (PEM) for the subject and alternative names the form names, asking for `digitalSignature` and `codeSigning`. The form's fields
+   hold the defaults: common name `Quader signing`, the URI `server.base_url`.
+2. **Upload certificate** (`PUT /api/v1/signing/identity/certificate`): the certificate the company's CA issued, with its chain (PEM, the
+   leaf first; the root last or in `ca`). It is checked by R-SIG-045 and against the pending key (`422 signing_key_mismatch`), and the
+   identity is announced, or current when none is (R-SIG-048).
+
+- **Import** (`POST /api/v1/signing/identity/import`), behind **More options**: a PEM private key (PKCS#8 or SEC 1, unencrypted, or an
+  encrypted PKCS#8 whose passphrase is used once and not kept, as Debian's import, [formats/debian.md](formats/debian.md) R-DEB-015) and
+  the chain, for a CA that hands out key and certificate together or a key moved from another installation. PKCS#12 is not taken; the
+  manual names `openssl pkcs12 -in <file> -nodes` to convert.
+- **Discard** (`DELETE /api/v1/signing/identity/pending`) removes a pending key and its request.
+- The plaintext key is held in a type that renders nothing, never logged, and in no answer, audit event, journal entry or error text. The
+  request, the certificate and the chain are public.
+- **Who opens it:** the job `signing` in the worker, for its signing calls (R-SIG-049). `api` never opens it after the generation or the
+  import: the check of a certificate against the pending key compares the stored public key.
+- **Re-sealing:** the task `secrets-reencrypt` walks the column like every registered column.
+
+Acceptance criteria:
+
+- Integration (area `signing`, `TestR_SIG_047_…`, about 3 s, a CA of the test): a key request answers a request that parses, holds a P-256
+  key, the base URL as its URI and the code-signing use; the CA's certificate for it is accepted, the identity becomes current and signs;
+  a certificate for another key answers 422 `signing_key_mismatch`; an import of a key and a chain becomes current; `sealed_key` does not
+  open under another row's key; no answer, audit event or captured log line of the test holds `PRIVATE KEY`.
+
+### R-SIG-048 · Rotation, removal, retirement, and what the old signatures do
+Priority: **P1** · Covers: quader-only
+
+- **Announce, then switch** ([Q-SIG-57](#q-sig-57--a-new-key-is-announced-before-it-signs-old-npm-signatures-stay-attestations-are-made-again)).
+  A new identity beside a current one is `announced`: listed at the keys endpoint for `signing.identity.announce_period` (default
+  10 minutes), so that a cache of the keys document (the Bastion, a remote of another registry in front of this one) holds the new key
+  before a signature made with it reaches that cache; the current one keeps signing meanwhile. The job `signing` then switches in one
+  transaction: the announced identity becomes `current`, the current one `previous` with `expires_at = clock_timestamp()`. An
+  installation's first identity, with none current, is current at once. With the Helm way the old key stays in the memory of the workers
+  that loaded it, after cert-manager has replaced the files; a worker that starts during the announce period holds only the new key and
+  signs nothing until the switch.
+- **No signature with a key after its switch.** A signing transaction holds a shared lock on the current identity's row and checks its
+  state before it writes; the switch locks the row exclusively; so every npm signature of an identity is on a version published before its
+  `expires_at`. That is what npm's client compares, `time[<version>]` against the key's `expires`, and an expired key aborts the whole run
+  with `EEXPIREDSIGNATUREKEY` (pacote 22.0.1 `lib/registry.js`, npm 12.2.3 `lib/utils/verify-signatures.js`, read 2026-11-21), so a
+  late signature would break every client's run, not one package. A worker whose loaded key is not the current identity's signs nothing and
+  leaves the work due.
+- **npm signatures of a previous identity stay valid and are not made again**: its key stays listed with its `expires`, and every version
+  it signed was published before.
+- **Attestations are made again** by the new current identity (R-SIG-053): a bundle carries the leaf certificate, and without a log or a
+  timestamp ([Q-SIG-63](#q-sig-63--no-transparency-log-and-no-timestamp-authority-in-stage-2)) a verifier checks it at the current time, so
+  an attestation stops verifying when its certificate expires. Cost: one ECDSA signature (tens of microseconds) and about 3 KiB written per
+  attestation; a million attestations take minutes of one worker and write about 3 GB (estimates); with cert-manager's 90-day certificate
+  renewed after 60 days, six times a year.
+- **Remove** (`DELETE /api/v1/signing/identity` for the current uploaded identity; an identity of the Helm values is removed by taking it
+  out of the values): it becomes `previous`. With no identity current, no key and no npm signature of Quader is on the wire (R-SIG-045); attestations already made
+  stay stored and served and verify until their certificate expires. A later identity brings the previous keys and their signatures back
+  and makes the attestations again.
+- **Retire** (`POST /api/v1/signing/identities/{id}/retire`, a previous identity; for a key believed taken): it leaves the keys list at
+  once, none of its signatures is served, and the job makes each of its npm signatures and attestations again with the current identity
+  (priority 2); until then those npm versions read as missing a signature. Retiring narrows trust and carries the journal flag
+  (R-SIG-057).
+- **Which signatures a document serves changes** with a removal, a retirement and the first current identity after none: the job raises
+  the revision of every npm package whose document changes (R-NPM-009), in batches of 1,000 packages.
+
+Acceptance criteria:
+
+- Unit (`internal/signing`, milliseconds): a signing transaction that began before a switch and commits after it is refused; the keys
+  document for each combination of states.
+- Integration (area `signing`, `TestR_SIG_048_…`, about 4 s, announce period 1 s): after a rotation, a version signed before carries the old
+  keyid and its `time` lies before the old key's `expires`; a version published after carries the new keyid; the old identity's
+  attestations are made again by the new one; retiring the old identity removes its key from the keys answer and its signatures from the
+  documents, and the job signs those versions again; removing the current identity makes the keys answer `{"keys": []}`.
+
+### R-SIG-049 · Where signing runs: the job `signing` in the worker
+Priority: **P1** · Covers: quader-only
+
+Only the worker holds and opens the key ([Q-SIG-56](#q-sig-56--only-the-worker-holds-the-key-and-a-job-signs)).
+
+- **The work** is a row per item and kind, written in the commit's transaction by the item store's commit hook (an npm version's tarball in
+  a local repository: `npm`; an attestation subject of R-SIG-044: `attestation`) and by the job's own steps:
+
+  ```sql
+  CREATE TABLE signing_work (
+    kind        text     NOT NULL CHECK (kind IN ('npm', 'attestation')),
+    item_id     bigint   NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    reason      text     NOT NULL CHECK (reason IN ('upload', 'fill', 'checks', 'malware', 'rotation', 'retired', 'discovery')),
+    priority    smallint NOT NULL CHECK (priority BETWEEN 0 AND 3),
+    not_before  timestamptz NOT NULL DEFAULT now(),
+    attempts    integer  NOT NULL DEFAULT 0,
+    failed      boolean  NOT NULL DEFAULT false,
+    PRIMARY KEY (kind, item_id)
+  );
+  CREATE INDEX signing_work_due ON signing_work (priority, not_before) WHERE NOT failed;
+  ```
+
+- **The job** `signing` (queue `signing`, `coalesce`; `jobs.workers.signing`, default 1; `signing.concurrency`, default 4, operations in
+  flight) takes due rows by priority: 0 an npm signature of a publish (a pipeline may run `npm audit signatures` next), 1 the attestation of
+  an upload, 2 the attestation of a fill and what a retirement left, 3 discovery and the attestations a rotation left. It is woken by the
+  commit, by the verdicts R-SIG-053 waits for, and by an identity's change.
+- **Discovery** (the job's first step and the task `signing`, default `*/10 * * * *`) finds, in batches of 10,000 in item order, the npm
+  versions of local repositories without a served signature and the attestation subjects without an attestation of the current identity:
+  what was stored before an identity existed, what a restore loaded, what a rotation or a retirement left.
+- **Attempts:** an operation that could not run (the object store for an OCI referrer, the database) spends one of `signing.max_attempts`
+  (default 5) and is due again after a doubling back-off from one minute; after the last it is `failed`, recorded once an hour per kind and
+  code (`signing.failed`), and discovery makes it due once a day.
+- **Replicas.** Every worker replica holds the same key; the job runs once in the installation (`coalesce`), so no two replicas sign the same
+  item. Should a lost lease ever let two sign, ECDSA's two signatures differ and both verify, npm checks every entry of `dist.signatures`
+  (verified in pacote) and both pass, and a second attestation replaces the first: no coordination is needed beyond the switch's lock of
+  R-SIG-048.
+- **No other role opens the key.** `api` and `packages` read public parts; the composition root wires the signer for the roles `worker`
+  and `all` only.
+
+Acceptance criteria:
+
+- Unit (`internal/signing/job`, under a second): the order by priority and time, the back-off, the attempts; `internal/archtest`
+  (milliseconds): only `internal/signing` opens `signing_identities.sealed_key` and reads `signing.identity.key_file`, and the wiring of
+  `api` and `packages` builds no signer.
+- Integration (area `signing`, `TestR_SIG_049_…`, about 2 s): a publish to `npm-local` carries `dist.signatures` within 2 s of its answer;
+  a version stored before the identity existed is signed by discovery.
+
+### R-SIG-050 · npm: registry signatures of local packages, and the keys endpoint
+Priority: **P1** · Covers: PKG-NPM-037
+
+What npm's client does, read on 2026-11-21 in npm 12.2.3's `lib/utils/verify-signatures.js` and pacote 22.0.1's `lib/registry.js`, and
+checked against npmjs's live key with `ssh-keygen` and `openssl`:
+
+- The signed message is `${_id}:${_integrity}`: `<name>@<version>:<dist.integrity>`; the check is `crypto.createVerify('SHA256')` with a
+  base64 DER ECDSA signature, and every entry of `dist.signatures` must verify.
+- The keys come first from the public Sigstore TUF repository (the target `<host><path>/keys.json`); for a registry that is not there,
+  npm warns ("Fetching verification keys using TUF failed. Fetching directly from …") and reads `<registry URL>-/npm/v1/keys`, once per
+  registry URL; 404 or 400 there means no keys. Any other failure of the TUF step aborts the run
+  ([H-1184](#h-1184--npm-audit-signatures-needs-the-public-sigstore-tuf-repository-before-it-asks-quader)).
+- `keyid` is looked up as a string and never checked against the key; `keytype` and `scheme` are not read, and the documentation names
+  only `ecdsa-sha2-nistp256`.
+- `expires` is compared with `time[<version>]` of the full document (2015-01-01 when `time` is absent); a signature of an expired key
+  aborts the run with `EEXPIREDSIGNATUREKEY`.
+- The outcomes: every package verified, exit 0, "N packages have verified registry signatures"; a registry with keys and a version without
+  a signature, "N packages have missing registry signatures but the registry is providing signing keys", exit 1; an invalid signature,
+  exit 1; a registry without keys, its packages not counted; a signature whose `keyid` the keys answer lacks, the run aborts.
+
+What Quader does ([Q-SIG-58](#q-sig-58--npm-quader-signs-the-versions-of-local-repositories-only),
+[Q-SIG-59](#q-sig-59--npm-signed-right-after-the-publish-and-what-was-stored-before-by-a-background-pass)):
+
+- **Signed:** every version of a local npm repository, by the current identity, as `{"keyid": "<npm_keyid>", "sig": "<base64 DER>"}`
+  over `<name>@<version>:<dist.integrity>`, stored as a signature of the role `registry` and the scheme `npm-registry` with `identity_id`
+  set, attached `issued` to the version's tarball (R-SIG-054). The full and the abbreviated documents render `dist.signatures` from the
+  stored signatures whose identity is listed (R-SIG-045); a client's own `dist.signatures` stays refused at the publish (R-NPM-007).
+- **Not signed:** a remote's versions keep their upstream's `dist.signatures` byte for byte (R-SIG-028, unchanged); a virtual repository's
+  version entry is its winning member's (R-NPM-030), with that member's signatures.
+- **When:** at priority 0, woken by the commit; within 2 s of the publish's answer on an idle installation (a target the package that
+  builds it measures). Until then the version has no signature and reads as missing
+  ([H-1183](#h-1183--npm-audit-signatures-reports-a-local-version-as-missing-until-quader-has-signed-it)). Signing raises the package's
+  revision and `modified_at` like a dist-tag change (R-NPM-009, R-NPM-012), once per package and job run, so every replica's rendition and
+  every virtual repository's merge carries it.
+- **What was published before the identity existed** is signed by discovery with the first current identity: a million versions are
+  about a minute of one worker's CPU and a revision per package (an estimate).
+- **The keys endpoint** of a local repository (R-SIG-028's `{"keys": []}` replaced while an identity is current) lists the announced and the
+  current identity with `expires: null` and each previous one with its `expires_at`, each keyid once:
+
+  ```json
+  {
+    "keys": [
+      {"keyid": "SHA256:Zq2b…", "keytype": "ecdsa-sha2-nistp256", "scheme": "ecdsa-sha2-nistp256", "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE…", "expires": null},
+      {"keyid": "SHA256:Kt1x…", "keytype": "ecdsa-sha2-nistp256", "scheme": "ecdsa-sha2-nistp256", "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE…", "expires": "2027-02-01T10:00:00.000Z"}
+    ]
+  }
+  ```
+
+  `key` is the base64 DER SubjectPublicKeyInfo on one line. `keyid` is `SHA256:` followed by the standard base64, without padding, of the
+  SHA-256 of the key's SSH wire form (`ecdsa-sha2-nistp256`, `nistp256`, the uncompressed point): the form npmjs publishes, verified on
+  2026-11-21 (`ssh-keygen -lf` of npmjs's current key gives its keyid `SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U`; the SHA-256 of
+  the DER key does not). Go computes it with `ssh.FingerprintSHA256` of `golang.org/x/crypto/ssh`, a module already in the build.
+  `expires` is ISO 8601 UTC with milliseconds. Every local npm repository of the installation lists the same keys.
+- **A virtual repository** answers the union of its members' keys by keyid (R-SIG-028, unchanged), which now holds Quader's keys for a
+  local member: [H-1176](#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature)
+  closes for an installation with a signing identity. A remote in front of another Quader's local repository receives that installation's
+  keys and signatures like any upstream's.
+- **What `npm audit signatures` then reports** for a project that installs `@acme/ui` of `npm-local` and `lodash` of npmjs through
+  `npm-all`: "2 packages have verified registry signatures", exit 0.
+
+Acceptance criteria:
+
+- Unit (`internal/signing`, `internal/formats/npm`, milliseconds): the keyid of npmjs's published key computed from its `key` equals
+  `SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U` (the vector read on 2026-11-21); a signature of the signer verifies with pacote's
+  check written in Go (SHA-256, DER); the keys document for each combination of states; `dist.signatures` rendered only for listed
+  identities, in the full and the abbreviated document.
+- Integration (area `signing`, `TestR_SIG_050_…`, about 3 s, bytes): a publish to `npm-local` carries the current keyid in the documents of
+  `npm-local` and `npm-all`; the keys of `npm-all` hold the npm stub's key and Quader's; the keys of `npm-remote` the stub's alone.
+- End to end (the set `e2e (npm)`, one case, about 6 s, a package of a few hundred bytes): `npm publish` to `npm-local`, a wait until its
+  document carries the signature, `npm install` through `npm-all` of it and of a package of the npm test upstream, and `npm audit
+  signatures` exits 0 and reports both verified. The case needs the client pod to reach the public Sigstore TUF repository, or the npm
+  clients image to carry a warm TUF cache; which one works without the network is not verified (H-1184), and the package that builds it
+  reads it.
+
+### R-SIG-051 · The receipt attestation: an in-toto statement with a predicate of Quader's own
+Priority: **P1** · Covers: quader-only
+
+The owner's decision Q-SIG-11 (a): "a signed statement per artifact: digest, origin, the signature check's result, the malware verdict
+with its database, the vulnerability scan's state". Each fact is weighed by whether it stays true once signed
+([Q-SIG-61](#q-sig-61--the-statement-in-toto-v1-with-a-receipt-predicate-of-quaders-own-without-trust-states)).
+
+#### Receipt attestation v1
+
+```json
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {"name": "quader.example.com/web/npm-local/@acme/ui/-/ui-1.2.0.tgz",
+     "digest": {"sha256": "5f1c…", "sha512": "9b0e…"}}
+  ],
+  "predicateType": "https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1",
+  "predicate": {
+    "installation": {"id": "6c3e…", "url": "https://quader.example.com"},
+    "repository": {"project": "web", "key": "npm-local", "format": "npm", "class": "local"},
+    "artifact": {"path": "@acme/ui/-/ui-1.2.0.tgz", "name": "@acme/ui", "version": "1.2.0", "size": 18342},
+    "receivedAt": "2026-11-21T10:02:03.456Z",
+    "origin": {
+      "kind": "upload",
+      "principal": {"kind": "ci_mapping", "name": "gitlab-platform"},
+      "ci": {"issuer": "gitlab", "project_path": "platform/ui", "pipeline_id": "48211", "job_id": "991204",
+             "ref": "main", "ref_type": "branch", "ref_protected": true, "pipeline_source": "push", "sha": "3e9d…"}
+    },
+    "signatures": [
+      {"role": "provenance", "scheme": "sigstore-bundle", "integrity": "valid",
+       "identity": "https://gitlab.example.com/platform/ui//.gitlab-ci.yml@refs/heads/main",
+       "issuer": "https://gitlab.example.com", "keyIds": ["9a41…"]}
+    ],
+    "malware": {"state": "clean", "database": "main-62.daily-27450.bytecode-339",
+                "databaseBuiltAt": "2026-11-21T06:10:00Z", "scannedAt": "2026-11-21T10:02:05.120Z"},
+    "vulnerabilities": {"state": "evaluated", "grade": "A",
+                        "counts": {"critical": 0, "high": 0, "medium": 0, "low": 2, "unknown": 0},
+                        "dataAt": "2026-11-21T04:00:00Z"},
+    "issuedAt": "2026-11-21T10:02:06.001Z"
+  }
+}
+```
+
+A remote's fill has `"origin": {"kind": "fill", "upstream": "https://registry.npmjs.org/", "fetchedAt": "…"}`; a repository without the
+malware scanning `"malware": {"state": "not_scanned"}`; an OCI subject is the manifest's digest under the name
+`<host>/<project>/<repository>/<image>`, and its `artifact` names the image, the tag that brought it and the media type.
+
+- **The statement** follows the in-toto attestation framework v1 (`spec/v1/statement.md`, read 2026-11-21): `_type`
+  `https://in-toto.io/Statement/v1`, subjects matched by digest, `name` informative. The subject carries the item's SHA-256, and for an npm
+  tarball also its SHA-512, npm's integrity.
+- **The predicate type** is a fixed URI of this repository with its version, resolving to this section (a type URI should resolve and
+  should carry a version, the framework's `field_types.md`). A change that removes or renames a field is `v2`; an added field keeps `v1`.
+- **What is in, and why each stays true:**
+
+  | Field | Source | Stays true because |
+  |---|---|---|
+  | `receivedAt`, `origin` | the item's commit; `artifact_origins` (R-SIG-010); for a fill the remote's upstream and the fill's time | facts of the receipt, which never change |
+  | `signatures` | stage 1's signatures attached to the subject in this repository at the issue: role, scheme, the integrity state, identity, issuer, key IDs | the integrity state is a fact of the bytes; the **trust state is left out**, because it depends on the anchors of a scope and is recomputed when they change (R-SIG-012), so a signed copy would contradict the screens after the next anchor change |
+  | `malware` | the blob's verdict (R-MAL-002): state, database version and date, scan time | a snapshot with its date; a change of the state makes the attestation again (R-SIG-053), a rescan that keeps the state does not |
+  | `vulnerabilities` | the version's evaluation state (R-VULN-001), its grade (R-VULN-038), its open findings per severity, the advisory data's date | a snapshot as of `dataAt`, named so; it is not made again when advisories change, which would sign most versions daily; whoever needs today's state asks the API |
+  | `issuedAt` | the signing time | Quader's claim; no log and no timestamp proves it (Q-SIG-63) |
+
+- **Left out:** the trust state, a project's anchors, the uploader's e-mail address (R-CI-020 keeps no `user_email`), any secret.
+- **One statement per attested item:** a NuGet version's `.nupkg` and `.snupkg` get one each; an OCI index gets one for the index.
+- **Bounds:** a statement of at most 16 KiB; the CI claims as R-SIG-010 bounds them; at most 32 entries in `signatures` (R-SIG-013).
+
+Acceptance criteria:
+
+- Unit (`internal/signing/statement`, milliseconds): the statements of an upload with CI claims, a remote fill, an OCI index, an item with
+  an `infected` verdict and one whose checks have not answered equal their golden files; no statement carries a trust state or an e-mail
+  address.
+
+### R-SIG-052 · The envelope, the trusted root, and how a client verifies
+Priority: **P1** · Covers: quader-only
+
+[Q-SIG-62](#q-sig-62--the-envelope-a-sigstore-bundle-with-a-dsse-envelope-and-the-leaf-certificate).
+
+- **The envelope.** The statement is signed as a DSSE envelope (payload type `application/vnd.in-toto+json`, its pre-authentication
+  encoding, one ECDSA P-256 signature over SHA-256) inside a Sigstore bundle of the media type `application/vnd.dev.sigstore.bundle.v0.3+json`
+  whose verification material is the identity's leaf certificate, with no transparency-log entry and no timestamp (Q-SIG-63). It is made
+  with sigstore-go v1.4.0's `sign.Bundle` over `sign.DSSEData`, a `Keypair` of the identity's key and a `CertificateProvider` that returns
+  the leaf (`pkg/sign`, read 2026-11-21); the library is in the build already (R-SIG-014), so stage 2 adds no module.
+- **The leaf alone**, because sigstore-go refuses a chain in a v0.3 bundle unless its verifier opts in, and cosign takes one only with
+  `--allow-certificate-chain` (cosign 3.1.3 and later); with the leaf alone, the intermediates and the root come from the verifier's
+  trusted root (the bundle's protobuf specification, sigstore-go's `pkg/bundle`, cosign's `options/verify.go`, read 2026-11-21).
+- **The trusted root Quader serves**, `GET /api/v1/signing/trusted-root.json`: a Sigstore trusted root
+  (`application/vnd.dev.sigstore.trustedroot+json;version=0.1`) with one certificate authority per distinct chain of the current and the
+  previous identities (its intermediates first, its root last, `validFor` from the earliest `not_before` to the latest `not_after` of the
+  identities under it) and no transparency logs, CT logs or timestamp authorities. `GET /api/v1/signing/chain.pem` answers the current
+  chain. Both are public material ([Q-SIG-72](#q-sig-72--the-trusted-root-and-the-chain-are-public)).
+- **How a client verifies an image's attestation** (cosign 3.1.4, read in its source on 2026-11-21, not run against Quader):
+
+  ```shell
+  curl -fsSo quader-trusted-root.json https://quader.example.com/api/v1/signing/trusted-root.json
+  cosign verify-attestation \
+    --trusted-root quader-trusted-root.json \
+    --certificate-identity https://quader.example.com \
+    --certificate-oidc-issuer-regexp '.*' \
+    --insecure-ignore-tlog --insecure-ignore-sct \
+    --type https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1 \
+    quader.example.com/web/docker-local/app@sha256:<digest>
+  ```
+
+  `--certificate-oidc-issuer-regexp '.*'` because a certificate of the company's CA carries no issuer extension of Sigstore's and cosign
+  then reads its issuer as empty; the two `--insecure-ignore-…` flags because the bundle has no log entry and no certificate-transparency
+  timestamp. A file's attestation: `cosign verify-blob-attestation --bundle <file>.quader.sigstore.json` with the same trust and identity
+  flags and `--type`, and the file (or `--digest` with `--digestAlg`), offline. What the predicate must say (`malware.state` `clean`, an
+  upload from a protected ref) is the consumer's policy: cosign's `--policy` (CUE or Rego) or a cluster's policy engine.
+- **Policy engines:** Kyverno's image validating policy documents a certificate chain with `insecureIgnoreTlog` and `insecureIgnoreSCT`
+  (its documentation, read 2026-11-21, not run against Quader); Sigstore's policy-controller in its bundle mode needs a timestamp
+  authority or a log and cannot verify Quader's attestations (its validator's source, read 2026-11-21;
+  [H-1186](#h-1186--a-policy-engine-that-demands-a-log-or-a-timestamp-cannot-verify-quaders-attestations)).
+- **Not used:** a Notary Project signature carries no predicate (its payload is a descriptor only, the Notary Project's signature
+  specification); the older cosign layout (an `.att` tag, the chain in annotations) is verified only through flags cosign has deprecated
+  and removed on its main branch.
+- **Size:** about 2.5 KiB a bundle: the statement about 1 KiB in base64, the leaf about 1.1 KiB, the signature 96 bytes (component sizes
+  from Sigstore's conformance examples, the total an estimate).
+
+Acceptance criteria:
+
+- Unit (`internal/signing/bundle`, milliseconds, a CA of the test): a bundle of the signer verifies with sigstore-go's verifier against the
+  trusted root Quader builds (`verify.WithCurrentTime`, no log, no timestamp), and does not with a flipped byte of the statement, under a
+  trusted root of another CA, or at a time outside the leaf's validity; the trusted root holds one authority per distinct chain.
+- End to end (the set `e2e (oci)`, one case, about 4 s, an image of a few hundred bytes pushed through the registry API): `cosign
+  verify-attestation` with the command above exits 0 for the image in the set's local repository, and non-zero with
+  `--certificate-identity https://other.example.com`. The cosign binary joins the OCI clients image, pinned once; what it adds to the image
+  and to the leg's load time is not measured, and the package that builds it writes the measured numbers here.
+
+### R-SIG-053 · When an attestation is made, made again and removed
+Priority: **P1** · Covers: quader-only
+
+[Q-SIG-64](#q-sig-64--an-attestation-is-made-after-the-first-verdicts-and-made-again-on-a-change-of-malware-state-or-identity).
+
+- **Made** once the item's checks have their first verdict: the malware scan where it applies (a state other than `pending`, R-MAL-002),
+  the image scanning or the version's evaluation where it applies (not `pending_scan` or `pending_data`, R-VULN-001), and stage 1's checks
+  of the signatures attached at the commit (none `pending`); or after `signing.attestations.wait_for_checks` (default 1 h) with what there
+  is, a `pending` state signed as such.
+- **Made again**, replacing the item's attestation in its repository: when the malware state changes (`clean` to `infected`, a release of
+  R-MAL-021), when the identity changes (R-SIG-048), and when the identity that made it is retired. Not when a rescan keeps the state, not
+  when advisories change the vulnerability state, not when anchors change (no trust state is in it).
+- **One attestation per item and repository:** a replaced one is removed in the transaction that stores its successor; for OCI the new
+  referrer is stored first and the old one removed after.
+- **Removed with the item:** a delete, an unpublish, the eviction of a remote's cache; the trash keeps it while it keeps the item, and a
+  restore from the trash brings it back. Quader attests no deletion.
+- **Off:** `signing.attestations.enabled: false` makes no attestation (npm signing goes on); `signing.attestations.fills: false` attests
+  uploads only, for an installation whose remotes cache more than it wants to sign.
+
+Acceptance criteria:
+
+- Integration (area `signing`, `TestR_SIG_053_…`, about 4 s, files of a kilobyte, the malware stub of the stack): a generic file's
+  attestation waits for the verdict and carries `clean`; when the stub's rescan flags the file, it is made again with `infected`; a second
+  rescan with the same verdict changes nothing; deleting the file removes the attestation; in a repository without the scanning it is made
+  at once with `not_scanned`.
+
+### R-SIG-054 · Where attestations are kept and served
+Priority: **P1** · Covers: quader-only
+
+[Q-SIG-65](#q-sig-65--attestations-live-in-the-store-of-stage-1-oci-as-a-referrer-every-other-format-through-the-api).
+
+- **The store.** Quader's npm signature and its attestation are signatures in the store of R-SIG-003: the roles `registry` and
+  `attestation`, the schemes `npm-registry` and `sigstore-bundle`, the predicate type of R-SIG-051, with `identity_id` set; attached with
+  the new source `issued` in their repository, `item_id` the signed or attested item, so they go with it (R-SIG-004). An attestation's bundle
+  is `signature_objects.raw` (about 2.5 KiB, within the bound of 256 KiB), except for OCI, where it is the referrer's layer blob
+  (`item_blob`). The job `signature-verify` does not check them and the trust job writes no row for them: Quader checks no signature it made
+  itself, as for Debian's indexes (Q-SIG-31).
+- **Schema changes of stage 1's tables:** `signature_attachments.source` gains `issued`; `signatures` gains `identity_id bigint NULL
+  REFERENCES signing_identities (id)` with the index `signatures_issued ON signatures (identity_id) WHERE identity_id IS NOT NULL`.
+- **OCI.** The job stores, through the item store as system work, a manifest `application/vnd.oci.image.manifest.v1+json` with
+  `artifactType` `application/vnd.dev.sigstore.bundle.v0.3+json`, the empty config `application/vnd.oci.empty.v1+json`, one layer of the
+  bundle's media type, `subject` the attested manifest, and the annotations `dev.sigstore.bundle.content: dsse-envelope`,
+  `dev.sigstore.bundle.predicateType: <type>` and `org.opencontainers.image.created`: the form cosign 3 writes and reads (cosign keeps a
+  referrer whose single layer's media type starts with `application/vnd.dev.sigstore.bundle`; read 2026-11-21). The writer inserts its rows
+  before the commit hook runs, so stage 1's detection finds them and adds nothing. It is a referrer without a version (R-SIG-024), in no
+  list and no count, and follows its image (R-SIG-025). A deleted attestation referrer is made again by discovery: it is Quader's
+  statement, not the user's.
+  - **Only where it hides nothing**
+    ([Q-SIG-66](#q-sig-66--quaders-referrer-never-stands-where-cosign-would-stop-reading-an-older-signature)). cosign 3.1.4 reads the
+    older tags `sha256-<hex>.sig` and `.att` only when it finds no bundle among the referrers, counted before verification and before
+    `--type`, so any bundle referrer makes a publisher's older signature unverifiable for stock cosign; and go-containerregistry falls
+    back to the referrers tag only when the referrers API answers 404, 400, 406 or a type that is no index (both read in their source on
+    2026-11-21). Quader's referrer is therefore written only where the repository's referrers answer for the digest is a real answer of
+    the API (a local repository; a remote whose upstream answers the API) and no `.sig` or `.att` tag stands for the digest in the
+    repository or, for a remote, upstream as the background fetch found it (R-SIG-026). When such a tag arrives later (a push, a fill, a
+    fetch), the job removes Quader's referrer. Such an image's attestation is served through the API alone, and its page says why
+    ([H-1185](#h-1185--an-image-with-an-older-cosign-signature-gets-quaders-attestation-only-through-the-api)). Notation is not affected:
+    it asks only for referrers of its own artifact type (notation-go's `ListSignatures`, read 2026-11-21).
+  - **local:** the referrers API lists it like any referrer (R-OCI-016).
+  - **remote:** it is stored in the remote's cache under the image's name, and the referrers answer is the upstream's with Quader's
+    referrers of the digest appended; an answer that is 404 stays 404 ([formats/oci.md](formats/oci.md) R-OCI-024), and the attestation
+    is then reached through the API.
+  - **virtual:** the union of its members' (R-SIG-027), leaving Quader's referrers out when a member that serves the digest holds a `.sig`
+    or `.att` tag for it, so that the union hides no older signature either.
+- **Every other format, and an image whose referrer would hide a signature:** the API, not the format's wire. `GET
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/attestation?path=<item path>` answers the bundle
+  (`application/vnd.dev.sigstore.bundle.v0.3+json`, `Content-Disposition: attachment; filename="<file>.quader.sigstore.json"`), with the
+  permission to read the item (R-STOR-016), and the version's and the file's pages offer **Download attestation**. Not a sibling file: it
+  would stand in a generic repository's tree, could take a user's name and would be read as a publisher's signature by R-SIG-032.
+- **npm:** not through npm's attestations endpoint and not in `dist.attestations` (Q-SIG-60); stage 1's serving of a local version's
+  provenance (R-SIG-028) is unchanged.
+- **The Bastion** serves an attestation referrer like any manifest (R-SIG-033); the API route is not in its URL space.
+
+Acceptance criteria:
+
+- Integration (area `signing`, `TestR_SIG_054_…`, about 4 s, bytes): an image pushed to `docker-local` lists Quader's referrer in its
+  referrers answer with the artifact type and the annotations above, not in `tags/list` and not as a version, and through `docker-all` in
+  the union; after a `.sig` tag of the image is pushed, Quader's referrer is gone and the API serves the bundle; through `docker-hub` (the
+  OCI stub with the referrers API) the answer holds the stub's referrer and Quader's, and against the stub without the API it stays 404
+  with no referrer of Quader's; a generic file's attestation answers the bundle with its file name; a local npm version's document carries
+  no `dist.attestations` of Quader's.
+
+### R-SIG-055 · The API of stage 2
+Priority: **P1** · Covers: quader-only
+
+In `api/openapi.yaml` under the tag `signatures`:
+
+| Method | Path | What | Permission |
+|---|---|---|---|
+| GET | `/api/v1/signing/identity` | `state` (`none`, `configuration`, `upload`), the current, announced, pending and previous identities, each with `id`, `source`, `state`, `subject`, `issuer`, `names`, `notBefore`, `notAfter`, `fingerprint` (the certificate's SHA-256), `npmKeyId` and its times; the pending one's `csr`; `refused` (the last refusal of the files with its reason and time); `backlog` per kind | `settings:read` |
+| POST | `/api/v1/signing/identity/key` | creates a pending key: `{"subject": {"CN", "O", "OU", "L", "ST", "C"}, "uris": [], "emails": []}`; answers the identity with its `csr`; `409 signing_identity_managed` while the Helm values name one, `409 signing_identity_pending` while one is pending | `security-settings:write` and a recent authentication |
+| PUT | `/api/v1/signing/identity/certificate` | `{"chain": "<PEM>", "ca": "<PEM>"}` for the pending key; `422 signing_key_mismatch`, `422 invalid_value` naming the check of R-SIG-045 | as above |
+| POST | `/api/v1/signing/identity/import` | `{"key", "passphrase", "chain", "ca"}` | as above |
+| DELETE | `/api/v1/signing/identity/pending` | discards the pending key | as above |
+| DELETE | `/api/v1/signing/identity` | removes the current uploaded identity (R-SIG-048); `409 signing_identity_managed` for one of the Helm values | as above |
+| POST | `/api/v1/signing/identities/{id}/retire` | retires a previous identity | as above |
+| GET | `/api/v1/signing/trusted-root.json`, `/api/v1/signing/chain.pem` | public material (R-SIG-052) | none: anonymous (Q-SIG-72) |
+| GET | `/api/v1/projects/{projectKey}/repositories/{repoKey}/attestation?path=` | the bundle of the item's attestation; 404 when it has none | as reading the item |
+
+- The signatures answers of R-SIG-034 list Quader's signatures with `source: "issued"`, `issuedBy` (`identity`, `subject`, `fingerprint`)
+  and, for an attestation, the decoded predicate in `attestation` and `servedAs` (`referrer` or `api`).
+- The client setup (R-API-030) gains the tab `verify` while an identity is current ([Q-SIG-71](#q-sig-71--the-client-setup-gains-a-tab-verify-while-an-identity-is-current)):
+  `npm.verify.signatures` (`npm audit signatures`), and for every client of every format but `clamav` `<client>.verify.attestation` (the
+  download of the trusted root and the cosign command of R-SIG-052, with the identity's first URI, the predicate type and, for a file, its
+  bundle's download).
+
+Acceptance criteria:
+
+- Integration (area `signing`, `TestR_SIG_055_…`, about 2 s): the operations for an administrator, a `security-admin`, an auditor (reads,
+  403 on writes) and an anonymous caller (the trusted root and the chain, 401 on the identity); the client setup of `npm-local` holds the
+  tab `verify` while an identity is current and not without one.
+
+### R-SIG-056 · The screens of stage 2
+Priority: **P1** · Covers: quader-only
+
+Simple by default ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details-on-demand)): nothing of signing is in a creation flow.
+
+- **Admin area › Settings › Signatures** (R-SIG-036) gains a first section **Signing identity**, open
+  ([Q-SIG-70](#q-sig-70--the-signing-identity-is-a-section-of-the-signatures-settings-page)):
+  - **None:** "No signing identity: Quader signs nothing. Packages of local npm repositories carry no registry signature, and no artifact
+    gets a receipt attestation." For the holder of `security-settings:write`: **Create signing key**, a form whose fields hold the defaults
+    (common name `Quader signing`, organization, country, the URI of the base URL; organizational unit, locality, state and an e-mail
+    address behind **More options**); then the request with **Copy** and **Download**, the sentence "Have your company's CA issue a
+    code-signing certificate for this request, then upload it with its chain.", and **Upload certificate**. **Import key and certificate**
+    behind the section's **More options**.
+  - **From the Helm values:** "From the Helm values" and the facts, no controls; a refused pair of the files as a line in red with its
+    reason.
+  - **Uploaded:** the facts, **Replace** (a new key request; the current identity signs until the new one is current) and **Remove**.
+  - **The facts:** subject, issuer, alternative names, valid from and until ("expires in 12 days" amber from 14 days, "expired" red), the
+    certificate's fingerprint, the npm key ID, the state; **Download chain** and **Download trusted root**.
+  - **Previous identities**, closed: each with its dates and **Retire**, which asks "Retire this identity? Its key leaves npm's keys at
+    once; Quader signs its packages and attestations again with the current identity."
+- **At a version and a file** (R-SIG-035): the details list Quader's npm signature as **Origin confirmed by registry · this installation**
+  with the key ID, and under **Attestations** **Receipt attestation by this installation** with its issue time, the malware state it names,
+  "served as a referrer" or "served through the API" (with the reason of R-SIG-054 for an image), and **Download attestation**. Neither
+  carries the badge (Q-SIG-1).
+- **The client setup dialog** shows the tab **Verify** while an identity is current.
+- The screens are rendered and looked at before they land (rule 11 of the plan): both schemes, wide and narrow; the section without an
+  identity, from the Helm values, uploaded with two previous identities and one that expires in 12 days, with a key request shown and with
+  a refused pair; a version with Quader's signature and attestation beside a publisher's provenance; an image whose attestation is served
+  through the API.
+
+Acceptance criteria:
+
+- Web unit (Vitest, under a second): the section in each state; controls only for the holder of `security-settings:write`; the amber and
+  red validity; the tab **Verify** hidden without an identity.
+
+### R-SIG-057 · Audit events, metrics and alerts of stage 2
+Priority: **P1** · Covers: quader-only
+
+**Audit events** ([operations-and-observability.md](operations-and-observability.md) R-OPS-016):
+
+| Event | Mode | Journal | Recorded when | Key fields in `details` |
+|---|---|---|---|---|
+| `signing.identity.key_created` | T | — | a pending key was made | `id`, `subject`, `names`, `keySha256` |
+| `signing.identity.installed` | T | — | an identity was announced or became current from an upload, an import or the files | `id`, `source`, `state`, `subject`, `issuer`, `notAfter`, `fingerprint`, `npmKeyId` |
+| `signing.identity.switched` | T | — | an announced identity became current | `id`, `previous` |
+| `signing.identity.removed` | T | yes | the current identity was removed | `id`, `fingerprint` |
+| `signing.identity.retired` | T | yes | a previous identity was retired | `id`, `fingerprint`, `signatures` (their count) |
+| `signing.identity.refused` | A | — | a pair of the files failed R-SIG-045, once per content | `reason`, `fingerprint` |
+| `signing.failed` | A | — | work reached its last attempt, at most once an hour per kind and code | `kind`, `code`, `count` |
+
+The actor of the job's and the files' events is `system:signing`. No event carries key material.
+
+**Metrics** ([operations-and-observability.md](operations-and-observability.md) R-OPS-008):
+
+| Metric | Type | Labels | Where |
+|---|---|---|---|
+| `quader_signing_identity_not_after_seconds` | gauge | `state` (`current`, `announced`) | worker: the Unix time of the certificate's end |
+| `quader_signing_identity_loaded` | gauge | — | worker: 1 when this worker holds the current identity's key |
+| `quader_signing_operations_total` | counter | `kind` (`npm`, `attestation`), `result` (`signed`, `failed`) | worker |
+| `quader_signing_backlog` | gauge | `kind`, `priority` | worker |
+| `quader_signing_oldest_due_seconds` | gauge | `kind` | worker |
+
+**Alerts** (the chart's rules, [ha-and-helm.md](ha-and-helm.md) R-HA-045):
+
+| Alert | Expression | For | Severity |
+|---|---|---|---|
+| `QuaderSigningIdentityExpiring` | `min(quader_signing_identity_not_after_seconds{state="current"}) - time() < 14 * 86400 unless on() count(quader_signing_identity_not_after_seconds{state="announced"}) > 0` | 1h | warning |
+| `QuaderSigningIdentityExpired` | `min(quader_signing_identity_not_after_seconds{state="current"}) - time() < 0` | 0m | critical |
+| `QuaderSigningIdentityNotLoaded` | `max(quader_signing_identity_loaded) == 0 and on() count(quader_signing_identity_not_after_seconds{state="current"}) > 0` | 15m | warning |
+| `QuaderSigningBacklog` | `max(quader_signing_oldest_due_seconds{kind="npm"}) > 300` | 15m | warning |
+
+Acceptance criteria:
+
+- Unit (`internal/audit`, under a second): the events are in the registry with their schemas and journal flags.
+- Chart test (`test/chart`, about 1 s): the four alerts render and `promtool` checks them.
+
+### R-SIG-058 · Configuration, defaults and what stage 2 costs
+Priority: **P1** · Covers: quader-only
+
+```yaml
+signing:
+  enabled: true                     # default; false: Quader signs nothing, also with an identity; what is stored stays and is served
+  identity:
+    cert_file: ""                   # default; the chart sets /var/run/secrets/quader/signing/tls.crt (R-HA-071)
+    key_file: ""                    # default; the chart sets /var/run/secrets/quader/signing/tls.key
+    ca_file: ""                     # default; the chart sets /var/run/secrets/quader/signing/ca.crt
+    reload_interval: 1m             # default
+    announce_period: 10m            # default; 0s: a new identity is current at once
+  attestations:
+    enabled: true                   # default; false: no receipt attestation; npm signing goes on
+    fills: true                     # default; false: only uploads are attested, not a remote's fills
+    wait_for_checks: 1h             # default
+  concurrency: 4                    # default; operations one job has in flight
+  max_attempts: 5                   # default
+jobs:
+  workers:
+    signing: 1                      # default
+```
+
+- **Validation** at start, with the key named: `cert_file` and `key_file` both or neither, `ca_file` only with them; `reload_interval`
+  from 10 s to 1 h; `announce_period` from 0 s to 24 h; `wait_for_checks` from 0 s to 7 days; `concurrency` from 1 to 64; `max_attempts`
+  from 1 to 20.
+- **The chart's values** are R-HA-071's (`signing.identity.existingSecret`, `signing.identity.certManager`).
+- **What it costs:** no Deployment, image or module more (sigstore-go and `golang.org/x/crypto` are in the build); in PostgreSQL about 150
+  bytes and a row per npm signature and about 2.5 KiB and a row per attestation, about 3 GB for a million attested artifacts (an
+  estimate), with as much written again per rotation (R-SIG-048); for OCI two small objects per attested image in the object store; tens of
+  microseconds of the worker's CPU per signature; a revision per npm package and signing run.
+
+Acceptance criteria: unit (`internal/config`, under a second): the defaults; each refusal of the validation, with the key named.
+
+### R-SIG-059 · Backups, restores and replicas of stage 2
+Priority: **P1** · Covers: quader-only
+
+- **Backups** ([backup-and-restore.md](backup-and-restore.md) R-BAK-004): `signing_identities` and `signing_work` are `data`. An uploaded
+  key travels sealed, so a restore needs the key ring, which the restore Job checks (R-BAK-020); the key of the Helm values is in no
+  backup, it is in its Secret.
+- **Restores:** the journal re-applies a removal and a retirement made after the restore point, so a withdrawn identity does not come back
+  ([authorization.md](authorization.md) R-AUTHZ-031's rule). An identity installed after the restore point is lost with its rows; a pair of
+  the files is registered again by the workers at their next look; discovery signs and attests what the restored rows lack.
+- **Into another installation** ([Q-SIG-74](#q-sig-74--a-restore-keeps-the-uploaded-identity-also-in-another-installation)): the restored
+  database keeps the installation's ID ([backup-and-restore.md](backup-and-restore.md) R-BAK-022) and the sealed uploaded identity, so a
+  restore with the same key ring signs as the installation it came from: the case of a recovery. A copy restored for a test signs as
+  production until an administrator removes the identity
+  ([H-1191](../security/artifact-signatures.md#h-1191--a-restore-carries-the-uploaded-identity-into-whichever-installation-restores-it)).
+- **Replicas:** every replica reads the identities from a snapshot that the change area `signing_identities` refreshes within R-ARCH-018's
+  bound, so every replica answers the same keys after that bound; the switch's lock is the one coordination (R-SIG-048, R-SIG-049).
+
+Acceptance criteria: integration (area `signing`, `TestR_SIG_059_…`, about 3 s): a backup with an uploaded identity, restored into a fresh
+installation with the same key ring, keeps signing with it; a retirement recorded after the backup is re-applied by the journal.
+
+### R-SIG-060 · The tests of stage 2 and what they cost
+Priority: **P1** · Covers: quader-only
+
+Each behaviour once, at the cheapest tier that shows it ("Tests stay runnable" in [CLAUDE.md](../../CLAUDE.md)). The tests make the
+installation's identity in process: a root, an intermediate and a code-signing leaf for a P-256 key with `crypto/x509`, as R-SIG-042 makes
+the company CA.
+
+| Tier | What | Run time | Data | Where |
+|---|---|---|---|---|
+| Unit | the identity's checks and states, the keyid, the npm signature against pacote's check, the statement, the bundle against sigstore-go's verifier and the trusted root, the switch's lock, the job's order, the configuration, the events | under 3 s together (an estimate) | bytes, built by the tests | `internal/signing/…`, `internal/config`, `internal/audit`, `internal/archtest` |
+| Format contract kit | check 18's attestation subjects for every format | milliseconds per format | the fixtures' cases | `internal/formats/formattest` |
+| Integration | the flows of R-SIG-046 to R-SIG-059 against the stack | about 30 s for the new area `signing` (nine tests of 2 to 4 s; estimates) | bytes to a kilobyte | `test/integration/signing` |
+| Chart | the Secret only in the worker pods, the rendered Certificate, the four alerts | about 1 s | rendered YAML | `test/chart` |
+| End to end | `npm audit signatures` in `e2e (npm)`; `cosign verify-attestation` in `e2e (oci)` | about 6 s and about 4 s, no new leg | a package and an image of a few hundred bytes | `test/e2e` |
+
+What every leg gains: the unit run under 3 s; the kit milliseconds per format; the integration shard that runs `signing` about 30 s; the
+chart leg about 1 s; `e2e (npm)` about 6 s; `e2e (oci)` about 4 s and the load of the cosign binary in its clients image (not measured).
+No other leg gains anything. With 25 formats: 25 kit cases of milliseconds more, nothing else; no leg loads another format's client.
+
+What only a real client shows and is not tested: `cosign verify-blob-attestation` against a file's bundle (the same verifier library as
+the unit test), Kyverno's and other policy engines' verification in a cluster. Each is measured once by hand when the package that builds
+it lands, and the result written into this requirement.
 
 ## Decisions
 
@@ -2077,15 +2861,342 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Applied in the spec:** R-SIG-010.
 
+### Q-SIG-53 · The signing key is ECDSA P-256 with a code-signing certificate
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner is asked
+whether his company CA issues ECDSA certificates (the plan's section "With the owner").
+
+Context, verified on 2026-11-21: npm's client accepts registry keys of the type `ecdsa-sha2-nistp256` only (npm's documentation); sigstore-go
+accepts a certificate authority's leaf only with the extended key use `codeSigning` (`pkg/root/certificate_authority.go`); cosign matches the
+identity against the alternative names; cert-manager issues ECDSA keys of 256 bits and the usage `code signing` (its API reference). The
+owner's Q-SIG-13 (a) names one identity "for attestations, OCI and the npm registry key".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An ECDSA P-256 key; a leaf with `codeSigning` and an alternative name (chosen) | One key for npm and for the attestations | Every verifier involved takes it; cert-manager issues it with two values | A company CA that issues RSA only must add an ECDSA profile, or the installation signs nothing |
+| (b) P-256, P-384 or RSA; npm signs only with P-256 | | Any profile of a company CA fits | With another key the local npm packages stay unsigned, against the purpose of Q-SIG-10; two behaviours to explain |
+| (c) The certificate for the attestations and a second key that Quader makes for npm | | Any algorithm for the certificate | Two identities, against Q-SIG-13 |
+
+**Choice:** (a). **Rationale:** one identity that every consumer can verify is the owner's frame; P-256 is the one algorithm npm leaves. The
+development agent would revisit it if the owner's CA issues RSA only. **Applied in the spec:** R-SIG-045, R-HA-071.
+
+### Q-SIG-54 · Where the key lives in each way, and the Helm values win
+
+Status: **Decided by the development agent** — selected from the options below, within the owner's reading r8 ("Helm wins"); the owner
+reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Helm way: a Secret, existing or issued by cert-manager, mounted into the worker pods only, the key never in the database; the upload: sealed in the database by the key ring; while the values name an identity it is the installation's, an upload is refused and a stored one unused (chosen) | | The Secret way keeps the key out of the database, the backups, `api` and `packages`; cert-manager renews it; declarative | An uploaded key can be opened by every role that holds the key ring and the database ([H-1188](../security/artifact-signatures.md#h-1188--an-uploaded-identity-can-be-opened-by-every-role-that-holds-the-key-ring-and-the-database)) |
+| (b) Both ways stored in the database: the chart's pair copied in, sealed | | One code path | The Secret's key lands in the database and in every backup |
+| (c) The upload wins over the values | | The administrator's latest word counts | Against r8; a value of the chart overridden without a trace in Git |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-046, R-SIG-047, R-HA-071.
+
+### Q-SIG-55 · The upload is a certificate request for a key Quader makes; an import is a detail
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Quader makes the key and a request; the administrator uploads the certificate the CA issued; an import of a key and its certificate behind **More options** (chosen) | | The plain path moves no secret through a browser or onto an administrator's disk; every CA takes a request | Two steps with the CA between them |
+| (b) Only an upload of key and certificate (PEM or PKCS#12) | | One step | The private key passes the browser and the `api` role; a key file lies somewhere |
+| (c) Only the request | | Simplest and safest | A CA that hands out key and certificate together, or a key from another installation, cannot be used |
+
+**Choice:** (a). **Rationale:** simple by default, details on demand ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details-on-demand));
+Debian's keys are generated by Quader the same way, with an import beside it. **Applied in the spec:** R-SIG-047, R-SIG-056.
+
+### Q-SIG-56 · Only the worker holds the key, and a job signs
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It refines Q-SIG-13
+(a), "the key only in worker pods".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The worker alone, by the job `signing` right after the commit (chosen) | | `packages`, which reads clients' uploads, and `api`, which serves the UI, never load the key; one place signs, as Debian's index build does | A just-published npm version is without its signature for about a second ([H-1183](#h-1183--npm-audit-signatures-reports-a-local-version-as-missing-until-quader-has-signed-it)) |
+| (b) The role that answers the upload signs at the publish | | No window | The key in every `packages` and `api` pod, the processes that read hostile uploads |
+| (c) Both | | | Both exposures |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-049.
+
+### Q-SIG-57 · A new key is announced before it signs, old npm signatures stay, attestations are made again
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context, verified on 2026-11-21 in pacote: npm compares a version's publish time with its key's `expires`, an expired key aborts the run, and a
+signature whose key the keys answer lacks aborts it too; a registry that offers keys makes every unsigned package "missing".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A new identity is listed for `announce_period` while the old one signs; the switch gives the old one its expiry; old npm signatures stay valid and are not made again; attestations are made again; no keys while none is current (chosen) | | No cache of the keys document meets a signature it cannot check; nothing of npm is re-signed; an installation that stops signing reads as one without keys, not as one with missing signatures | Ten minutes before a new key signs; attestations rewritten per rotation |
+| (b) The switch at once | | Simpler | A cache that holds the old keys document meets a new signature, and npm aborts the whole run |
+| (c) Re-sign every npm version and attestation on every rotation, one key listed | | One key in the answer | A revision of every package per rotation, for nothing: npm accepts the old key with its expiry |
+
+**Choice:** (a). The first identity of an installation is current at once: there is no other to sign meanwhile. **Applied in the spec:**
+R-SIG-045, R-SIG-048.
+
+### Q-SIG-58 · npm: Quader signs the versions of local repositories only
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Local versions; a remote's keep their upstream's signatures; a virtual's are its winning member's (chosen) | Stage 1's R-SIG-028 stands | Upstream signatures stay verifiable against the upstream's key; Quader vouches only for what it serves as its own | — |
+| (b) Re-sign a remote's versions with Quader's key too | | One key for everything | Hides the upstream's signature and binds npmjs's packages to Quader's key; Quader would vouch as a registry for what it fronts |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-050.
+
+### Q-SIG-59 · npm: signed right after the publish, and what was stored before by a background pass
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A job right after the commit; discovery signs what was published before the identity existed (chosen) | | Every local version ends signed; a publish is visible at once as R-NPM-010 requires | A second or so without a signature after a publish; minutes of backlog after the first identity |
+| (b) Hold a version out of the documents until it is signed | | No version reads missing | A pipeline that publishes and installs at once does not find its version |
+| (c) Sign new publishes only | | No backlog | Older local versions read missing for ever, through every virtual repository with a remote |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-049, R-SIG-050.
+
+### Q-SIG-60 · npm: Quader's attestations are not served through npm's attestations endpoint
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context, verified on 2026-11-21 in pacote 22.0.1 and sigstore-js: npm verifies attestations with sigstore-js's defaults, one transparency-log
+entry and, for a certificate, one certificate-transparency entry, against the public Sigstore trust root fetched from its own TUF mirror only;
+a keyed publish attestation's key expiry is compared with its first log entry's time, and a bundle without one fails outside npm's error
+handling.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Not in `dist.attestations` and not at npm's endpoint; through the API and a download, verified with cosign (chosen) | | No npm client fails on Quader's bundle | npm users verify the receipt with cosign, not with npm |
+| (b) As npm's publish attestation signed with the registry key | | `npm audit signatures` would read it | Needs an entry in the public log; npm's run fails without one |
+| (c) As a provenance attestation | | | npm verifies provenance only against the public Sigstore |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-044, R-SIG-054.
+
+### Q-SIG-61 · The statement: in-toto v1 with a receipt predicate of Quader's own, without trust states
+
+Status: **Decided by the development agent** — selected from the options below, within the owner's list of Q-SIG-11 (a); the owner reviews it
+at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An in-toto v1 statement with the predicate `receipt v1`: the receipt, the origin, the integrity states, the malware and the vulnerability snapshots with their dates (chosen) | | Every field stays true or carries its date; the owner's list | A predicate no tool knows; consumers write their policy against it |
+| (b) SLSA's Verification Summary Attestation (`https://slsa.dev/verification_summary/v1`, read 2026-11-21) | A known predicate for "a verifier checked this artifact against a policy": verifier, policy, `PASSED` or `FAILED`, verified levels | Tools know it | Its result needs a policy, which stage 3 brings; its levels are SLSA's; receipt and origin have no field |
+| (c) Also the trust states | | Complete | Recomputed on every anchor change; a signed copy contradicts the screens |
+
+**Choice:** (a). The development agent would revisit (b) at stage 3: a gate that passes an artifact may issue a verification summary beside
+the receipt. **Applied in the spec:** R-SIG-051.
+
+### Q-SIG-62 · The envelope: a Sigstore bundle with a DSSE envelope and the leaf certificate
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A Sigstore bundle v0.3 with a DSSE envelope and the leaf; the chain in the trusted root Quader serves (chosen) | cosign 3's own form | `cosign verify-attestation --trusted-root` verifies it offline (cosign 3.1.4's source); made by a library already in the build | A verifier needs Quader's trusted root file |
+| (b) The bundle with the chain | | Only the root to hand out | sigstore-go refuses it unless its verifier opts in; cosign takes it only with `--allow-certificate-chain` (3.1.3 and later) |
+| (c) The older cosign layout, an `.att` tag with the chain in annotations | | Older cosign reads it | Verified only through flags cosign deprecated and removed on its main branch |
+| (d) A Notary Project signature over an attestation artifact | | Notation users verify | Notation carries no predicate; two signatures per attestation |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-052.
+
+### Q-SIG-63 · No transparency log and no timestamp authority in stage 2
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Put to the owner as a
+question, because his own Sigstore (Q-SIG-15) could provide both.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Neither; attestations are made again when the identity changes (chosen) | | No outbound request per attestation; works without internet and without a further service | The time is Quader's claim ([H-1189](../security/artifact-signatures.md#h-1189--the-time-and-the-facts-of-an-attestation-are-quaders-own-claim)); Sigstore's policy-controller in bundle mode cannot verify ([H-1186](#h-1186--a-policy-engine-that-demands-a-log-or-a-timestamp-cannot-verify-quaders-attestations)) |
+| (b) An optional RFC 3161 timestamp authority of the company | | A proven time; policy-controller verifies; no rewrite on a renewal | A request per attestation to the authority, a million at the first identity |
+| (c) A log entry in the company's own Sigstore | | Evidence of the log | Needs the company's Sigstore in operation, which is asked back to the owner |
+
+**Choice:** (a). The development agent would revisit it when the owner's own Sigstore runs. **Applied in the spec:** R-SIG-048, R-SIG-052.
+
+### Q-SIG-64 · An attestation is made after the first verdicts, and made again on a change of malware state or identity
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) After the checks' first verdicts or a bound of an hour; again on a change of the malware state, of the identity, on a retirement; not on vulnerability or anchor changes (chosen) | | Most artifacts are signed once, with real verdicts | The vulnerability snapshot ages, named so |
+| (b) At once at the commit | | Fast | Almost every attestation says "pending" |
+| (c) Again on every change, vulnerabilities included | | Always current | Signs most versions every day |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-053.
+
+### Q-SIG-65 · Attestations live in the store of stage 1; OCI as a referrer, every other format through the API
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It widens the
+exception of [Q-SIG-22](#q-sig-22--the-original-of-a-signature-that-is-no-item-is-kept-in-postgresql-bounded) to INV-4.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The store of stage 1, the bundle bounded in PostgreSQL; OCI as a referrer; every other format through the API and a download (chosen) | | One model; attachments go with their items; nothing in a user's tree | About 2.5 KiB per artifact in PostgreSQL, 3 GB per million |
+| (b) A sibling file in the repository | | The format's client downloads it | Clutters a generic tree, may take a user's name, is read as a publisher's signature by R-SIG-032; npm and NuGet have no place for a file beside a version |
+| (c) Each bundle as a blob in the object store | | INV-4 to the letter | A million objects of 2.5 KiB, the reason Q-SIG-22 rejected it |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-054; [README.md](README.md) INV-4.
+
+### Q-SIG-66 · Quader's referrer never stands where cosign would stop reading an older signature
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Put to the owner as a
+question, because a client's limit decides it (his rule of 2026-11-19).
+
+Context, verified on 2026-11-21 in the source of cosign 3.1.4 and go-containerregistry 0.22.1: cosign lists every referrer, keeps each
+whose single layer is a Sigstore bundle whatever its predicate, and reads the older tags `sha256-<hex>.sig` and `.att` only when it found no
+bundle at all, counted before verification and before `--type`; go-containerregistry reads the referrers tag only when the referrers API
+answers 404, 400, 406 or something that is no index. A bundle of Quader's beside an older cosign signature therefore makes `cosign verify`
+of the publisher fail with "no matching attestations". Notation asks only for its own artifact type and is not affected.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Always a referrer | | cosign and cluster engines find every image's attestation | A publisher's older cosign signature or attestation becomes unverifiable for stock cosign, through every repository that holds the image, against r7 ("nothing breaks an upstream signature") |
+| (b) A referrer only where the referrers answer is the API's own and no `.sig` or `.att` tag stands for the digest; otherwise the API; removed when such a tag arrives (chosen) | | Nothing of a publisher's breaks; most images carry the referrer | An image with an older cosign signature gets the attestation through the API only, and a cluster policy that demands both cannot be met with stock cosign ([H-1185](#h-1185--an-image-with-an-older-cosign-signature-gets-quaders-attestation-only-through-the-api)) |
+| (c) Never a referrer; the API only | | Nothing can break | No cluster engine finds an attestation, against "for an image as a referrer" (Q-SIG-11) |
+| (d) A referrer of a media type of Quader's own, which cosign does not read | | Nothing breaks; always attached | No engine finds it; verifying needs a download and `cosign verify-blob-attestation --digest` |
+
+**Choice:** (b). **Applied in the spec:** R-SIG-044, R-SIG-054, R-SIG-056.
+
+### Q-SIG-67 · The format names what Quader attests, and the contract rises to version 9
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `AttestationSubjects` of the adapter and `Attests` of the declaration; check 18 holds them; `ContractVersion` 9 (chosen) | | A future format attests from its first day (the owner's r5); signature carriers stay out | Every format changes again |
+| (b) A core rule: every file item of a version | | No contract change | OCI's layers, npm's provenance bundle and every signature carrier would be attested; generic files have no version |
+| (c) Lead items only | | Simple | NuGet's `.snupkg` and an OCI image's tag-less manifests pulled by digest fall out; generic has no lead |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-044.
+
+### Q-SIG-68 · Ansible Galaxy: Quader does not sign local collections in stage 2
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Put to the owner as a
+question: by the measure of Q-SIG-10 a check by one command exists (`ansible-galaxy collection verify --keyring`), but he named Debian and npm.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No registry signature; the archives get the receipt attestation (chosen) | | No key lifecycle per Ansible repository; [Q-ANS-14](formats/ansible.md#q-ans-14--signatures-pass-through-quader-signs-nothing-and-verifies-nothing)'s revisit condition (a client of the owner sets `--keyring`) is not met | A team that sets `--keyring` gets no signature of Quader's |
+| (b) Sign with an OpenPGP key per repository as a signing service, entries with `signing_service` in `signatures[]`, as Debian keeps its keys | | One command checks it | Debian's key lifecycle a second time; `ansible-galaxy` checks only with a keyring the user sets, so no client asks by default |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-044.
+
+### Q-SIG-69 · Debian: the repository keys get no certification by the identity
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No certification; the per-repository keys stay as built (chosen) | | apt trusts a key by `Signed-By` or its keyrings and reads no certification on a key (apt's `sources.list(5)` and `apt-secure(8)`, read for stage 1's research); an X.509 identity cannot certify an OpenPGP key without an OpenPGP key of its own | — |
+| (b) An OpenPGP key of the installation certifies every repository key | | A chain of trust in OpenPGP's sense | No client reads it; a second installation key to rotate |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-044.
+
+### Q-SIG-70 · The signing identity is a section of the Signatures settings page
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first section of Admin area › Settings › Signatures (chosen) | | One page for an administrator's trust work: the company CA as an anchor and Quader's certificate of the same CA side by side | A longer page |
+| (b) A page of its own, **Signing** | | Shorter pages | One more entry for one card |
+| (c) Under System, beside the key ring | | Near the keys | Trust is a setting (Q-SIG-39) |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-056; [api-and-ui.md](api-and-ui.md) R-UI-002.
+
+### Q-SIG-71 · The client setup gains a tab Verify while an identity is current
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tab `verify` in the client setup, only while an identity is current (chosen) | | Where a user reads how to work with a repository; absent when there is nothing to check | One more tab |
+| (b) Text on the admin page only | | Fewer places | A plain user never sees it |
+| (c) The manual only | | | Not found where it is needed |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-055, R-SIG-056; [api-and-ui.md](api-and-ui.md) R-API-030.
+
+### Q-SIG-72 · The trusted root and the chain are public
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Anonymous (chosen) | | Admission controllers and pipelines fetch it without a credential; it is public material, like a CA certificate | It names the company CA's subject to whoever reaches the API |
+| (b) For readers of some repository | | Hidden | A cluster needs a token for a public certificate |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-052, R-SIG-055.
+
+### Q-SIG-73 · A hardware or cloud key store is not in scope
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Q-SIG-13 (c), a KMS
+or HSM, was not the owner's choice.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Not now: the key in memory and in a Secret or the database; sigstore-go's `Keypair` is an interface, so a store can join later (chosen) | | No integration per product | The key can be copied by whoever reads it ([H-1192](../security/artifact-signatures.md#h-1192--the-signing-key-is-in-memory-and-in-a-secret-or-the-database-not-in-hardware)) |
+| (b) PKCS#11 or a cloud KMS now | | The key never leaves hardware | One integration per product; npm's signature needs raw ECDSA from it too |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-045.
+
+### Q-SIG-74 · A restore keeps the uploaded identity, also in another installation
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Kept (chosen) | | A recovery signs on at once, as the installation's ID stays (R-BAK-022) | A copy restored for a test signs as production until removed ([H-1191](../security/artifact-signatures.md#h-1191--a-restore-carries-the-uploaded-identity-into-whichever-installation-restores-it)) |
+| (b) Set aside after every restore until an administrator confirms | | No copy signs unnoticed | A recovery stops signing, and npm packages read missing until someone confirms |
+| (c) Never in a backup | | | A recovery loses the identity; the backup is incomplete |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-059.
+
 ## What this does not cover
 
 The gaps of the mechanisms are on [security/artifact-signatures.md](../security/artifact-signatures.md#what-this-does-not-cover). This page
-records the one about a client's result.
+records those about a client's result.
 
 ### H-1176 · Through a virtual npm repository, `npm audit signatures` reports local packages as missing a registry signature
 
 Component: the keys endpoint of a virtual npm repository (R-SIG-028, Q-SIG-34). Subject: a project whose virtual npm repository lists a local
-repository and a remote of a registry with keys (npmjs). Live from stage 1. The union of the members' keys makes npm treat the virtual
-repository as a registry with keys, and a package of the local member carries no registry signature before stage 2, so `npm audit signatures`
-lists it as missing and exits 1; upstream packages verify. What makes it real: a pipeline that runs `npm audit signatures` against such a
-repository. Stage 2 closes it, when Quader signs local packages and its key joins the union (R-SIG-043).
+repository and a remote of a registry with keys (npmjs). Live from stage 1 until stage 2 is built, and after that in an installation without a
+signing identity. The union of the members' keys makes npm treat the virtual repository as a registry with keys, and a package of the local
+member carries no registry signature without stage 2's signing, so `npm audit signatures` lists it as missing and exits 1; upstream packages
+verify. What makes it real: a pipeline that runs `npm audit signatures` against such a repository. Stage 2 closes it for an installation with a
+signing identity: Quader signs every local version and its keys join the union (R-SIG-050); what remains of it there is the window of
+[H-1183](#h-1183--npm-audit-signatures-reports-a-local-version-as-missing-until-quader-has-signed-it).
+
+### H-1183 · `npm audit signatures` reports a local version as missing until Quader has signed it
+
+Component: the job `signing` (R-SIG-049, R-SIG-050, Q-SIG-56, Q-SIG-59). Subject: pipelines that run `npm audit signatures` against a local or
+virtual npm repository. Live from stage 2, in three windows: about a second after a publish, before the job has signed it; the minutes of the
+backlog after an installation's first identity, while discovery signs what was published before; and after an administrator retires an
+identity, until the job has signed its versions again. In each, the registry offers keys and the version carries no signature, so npm lists
+it as missing and exits 1. What makes it real: a pipeline that publishes and audits within a second, or an audit during the backlog.
+
+### H-1184 · `npm audit signatures` needs the public Sigstore TUF repository before it asks Quader
+
+Component: npm's client (npm 12.2.3 `lib/utils/verify-signatures.js`, read 2026-11-21), not Quader. Subject: clients without a way to
+`tuf-repo-cdn.sigstore.dev`. Live from stage 1 for remote packages and from stage 2 for local ones. npm asks the public TUF repository for a
+registry's keys first; only a missing target sends it to Quader's keys endpoint, and any other failure of that step, such as no route to the
+host, aborts the run. Whether a client with a warm TUF cache passes without the network was not verified. What makes it real: a build network
+without internet that runs `npm audit signatures`.
+
+### H-1185 · An image with an older cosign signature gets Quader's attestation only through the API
+
+Component: the OCI attestation referrer (R-SIG-054, Q-SIG-66). Subject: clusters and pipelines that demand Quader's attestation of an image
+that its publisher signed in the older cosign layout (`sha256-<hex>.sig`, `.att`), and every image of a remote whose upstream has no referrers
+API. Live from stage 2. Quader writes no referrer there, because cosign would then stop reading the older signature; the attestation is
+served by the API, and cosign's `verify-attestation` and a cluster engine that looks among the referrers do not find it. What makes it real:
+an admission policy that demands Quader's receipt for every image, and public images signed with cosign 2 or earlier.
+
+### H-1186 · A policy engine that demands a log or a timestamp cannot verify Quader's attestations
+
+Component: the envelope without a log entry and without a timestamp (R-SIG-052, Q-SIG-63). Subject: clusters that verify with Sigstore's
+policy-controller in its bundle mode, which turns the log off only with a timestamp authority (its validator's source, read 2026-11-21), and
+every verifier that insists on a log or a timestamp. Live from stage 2. Such a verifier refuses every attestation of Quader's. cosign with
+`--insecure-ignore-tlog` and `--insecure-ignore-sct`, and Kyverno's documented options, are the ways that work. What makes it real: a cluster
+that runs that engine.

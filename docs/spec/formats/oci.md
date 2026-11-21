@@ -692,6 +692,12 @@ Priority: **P1** · Covers: PKG-OCI-009, PKG-OCI-010, PKG-OCI-011
   `.sbom` are attachment tags of the digest they name: on the wire unchanged, without a version row (built: a push of such a tag
   writes no version, [hooks.go](../../../internal/formats/oci/hooks.go)), shown at their image and removed with it (R-SIG-025, not built;
   [Q-SIG-32](../signatures.md#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)).
+- **Quader's own referrer** (stage 2, [signatures.md](../signatures.md) R-SIG-054, specified, not built): while the installation has a
+  signing identity, Quader stores a receipt attestation of every top-level manifest as a referrer of it (a Sigstore bundle, the form cosign
+  writes), listed here like any referrer; a remote appends Quader's referrers of the digest to the upstream's answer. It is not written for
+  a digest that a `sha256-<hex>.sig` or `.att` tag names, nor in a remote whose upstream has no referrers API, and it is removed when such a
+  tag arrives, because cosign stops reading those tags once a bundle stands among the referrers
+  ([Q-SIG-66](../signatures.md#q-sig-66--quaders-referrer-never-stands-where-cosign-would-stop-reading-an-older-signature)).
 
 Acceptance criteria:
 
@@ -921,7 +927,9 @@ Priority: **P1** · Covers: PKG-DOCKER-022, PKG-OCI-009
   1,000 descriptors as the local class's page is and filtered for the caller (Q-OCI-123);
   an upstream 404 is answered 404, so that the client falls back to the tag schema through the same remote (Q-OCI-15), and so is an answer that
   cannot be had (offline, circuit open, a caller who may not fill, or an upstream that was asked and failed, [Q-OCI-204](#q-oci-204--the-referrers-of-a-remote-whose-upstream-was-asked-and-failed-are-404)): an empty index would say that nothing refers to the digest (Q-OCI-128). The
-  manifests a client then fetches by digest are cached like every manifest.
+  manifests a client then fetches by digest are cached like every manifest. Quader's own receipt referrers of the digest
+  ([signatures.md](../signatures.md) R-SIG-054, specified, not built) are appended to an upstream's answer that is an index; a 404 stays
+  a 404, so that no answer of Quader's own hides the upstream's tag schema.
 
 Acceptance criteria:
 

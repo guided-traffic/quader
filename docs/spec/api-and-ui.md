@@ -1717,7 +1717,8 @@ naming the clients the format serves, Q-UI-77),
 them), `scope` (an npm scope; adds the scoped registry variant). The answer holds `repository`, `format`,
 `client`, `credentials`, `registryUrl`, `endpointPath`, `username`, `publishTarget`, `tokenTtlSeconds` and
 `snippets` of `{id, tab, fileName, language, content, marks}`, `tab` being `configure`, `install` or `publish`
-(Q-API-160), `language` the syntax of the content (`ini`, `yaml`, `json`, `xml`, `text` for a file; `shell`, `powershell` or
+(Q-API-160), or `verify`, the checks of Quader's own signatures while the installation has a signing identity (specified, not built:
+[signatures.md](signatures.md) R-SIG-055, [Q-SIG-71](signatures.md#q-sig-71--the-client-setup-gains-a-tab-verify-while-an-identity-is-current)), `language` the syntax of the content (`ini`, `yaml`, `json`, `xml`, `text` for a file; `shell`, `powershell` or
 `cmd` for the command line a command is written for, [Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)). This page owns the endpoint; the format registry of R-ARCH-010 in
 [architecture.md](architecture.md) feeds it, and the format pages contribute the templates. Rules the UI relies
 on:
@@ -3549,7 +3550,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   (repositories, upstream registries (R-UI-187), endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
   log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on, then
-  Signatures, specified in [signatures.md](signatures.md) R-SIG-036 and not built;
+  Signatures, the trust anchors and Quader's signing identity, specified in [signatures.md](signatures.md) R-SIG-036 and R-SIG-056 and not built;
   Q-UI-326, [Q-UI-870](#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group), read once per page load,
   [Q-UI-874](#q-ui-874--the-screens-outside-the-settings-page-read-the-switch-once-per-page-load)). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.

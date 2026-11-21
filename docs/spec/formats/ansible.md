@@ -1989,7 +1989,9 @@ Status: **Decided by the development agent** — selected from the options below
 **Superseded in part** on 2026-11-21 by the owner's decisions on signatures: Quader verifies and shows the signatures, and a local
 version accepts them through the management API ([signatures.md](../signatures.md) R-SIG-031,
 [Q-SIG-37](../signatures.md#q-sig-37--ansible-signatures-of-a-local-version-arrive-through-the-management-api)); it still signs
-nothing.
+nothing. Stage 2 keeps that for the version document: no registry signature of a local collection
+([Q-SIG-68](../signatures.md#q-sig-68--ansible-galaxy-quader-does-not-sign-local-collections-in-stage-2)); an archive's receipt
+attestation is served by the management API (R-SIG-054, specified, not built).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

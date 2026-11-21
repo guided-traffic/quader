@@ -220,6 +220,7 @@ checked every earlier decision against them:
 | [ADR-224](#adr-224--a-scanner-reports-itself-through-the-scan-listener-and-packages-keeps-its-row) | A scanner reports itself through the scan listener, and `packages` keeps its row | Accepted (owner decision of 2026-11-21); the mechanism decided by the development agent — owner review at the walkthrough |
 | [ADR-225](#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format) | The ClamAV updater is a Deployment of its own, and ClamAV's definitions are a repository format | Accepted (owner decision of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough; the level of the endpoint put to the owner |
 | [ADR-229](#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image) | The scanner unit detects as well, and the analyser comes from its own image | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
+| [ADR-230](#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker) | Quader signs with one identity per installation: npm's registry signatures and a receipt attestation of every artifact, signed in the worker | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1877,6 +1878,56 @@ R-VULN-046, R-VULN-048, R-VULN-049, Q-VULN-196 to Q-VULN-206; [ha-and-helm.md](s
 R-HA-070, Q-HA-378 to Q-HA-383; [architecture.md](spec/architecture.md) R-ARCH-036, R-ARCH-037, Q-ARCH-563, Q-ARCH-564;
 [operations-and-observability.md](spec/operations-and-observability.md) R-OPS-048, Q-OPS-225; [security/image-scanning.md](security/image-scanning.md)
 H-1181, H-1182.
+
+### ADR-230 · Quader signs with one identity per installation: npm's registry signatures and a receipt attestation of every artifact, signed in the worker
+
+**Status:** Accepted (owner decisions of 2026-11-21, Q-SIG-10 to Q-SIG-13 and the reading r8 of Q-SIG-16: "Quader ist ebenso in der Lage
+Artefakte zu signieren, dafür muss aber erst ein Zertifikat in Quader über Helm oder das Frontend gepflegt werden."); the mechanisms
+decided by the development agent — owner review at the walkthrough. Stage 2 of three; stage 1 is ADR-226 to ADR-228, stage 3 (a gate per
+repository) gets its own specification.
+
+**Context.** Debian was the only format Quader signed, with a key per repository. A local npm package carried no registry signature, so
+`npm audit signatures` reported it as missing through a virtual repository with a remote member (H-1176), and nothing let a consumer check
+that an artifact went through Quader and what its checks said. Three facts of the clients, read in their source on 2026-11-21, bound the
+design: npm accepts only P-256 registry keys, compares a version's publish time with its key's expiry and aborts the whole run on an expired
+or unknown key; npm verifies attestations only with a public log entry against the public Sigstore root; cosign 3 stops reading an older
+`.sig` or `.att` tag as soon as any Sigstore bundle stands among an image's referrers.
+
+**Decision.**
+- One signing identity per installation: an ECDSA P-256 key and a code-signing certificate of the company's CA, from a Secret of the Helm
+  values (cert-manager may issue it; mounted into the worker pods only; the values win) or uploaded in the admin area as a certificate for a
+  key Quader makes and seals by the key ring; states pending, announced, current, previous, retired ([signatures.md](spec/signatures.md)
+  R-SIG-045 to R-SIG-047, [ha-and-helm.md](spec/ha-and-helm.md) R-HA-071).
+- Only the worker holds the key; the job `signing` signs right after a commit and signs what was stored before by discovery (R-SIG-049).
+- A new key is announced before it signs; a lock refuses a signature after its key's switch; npm signatures of a previous key stay valid
+  with its expiry; attestations are made again by the new identity; no keys are on npm's wire while no identity is current (R-SIG-048).
+- npm: every version of a local repository gets a registry signature, listed keys in the keyid form npmjs uses; remote and virtual
+  repositories keep their upstream's and their winning member's; H-1176 closes for an installation with an identity (R-SIG-050).
+- Every artifact a user's repository receives gets a receipt attestation: an in-toto statement with a predicate of Quader's own (receipt,
+  origin, integrity states, the malware and vulnerability snapshots with their dates, no trust state) in a Sigstore bundle with a DSSE
+  envelope and the leaf certificate, without a log or a timestamp, verifiable offline with `cosign verify-attestation --trusted-root`
+  against a trusted root Quader serves (R-SIG-051 to R-SIG-053).
+- Attestations are signatures of the store of stage 1 with the source `issued`; for OCI a referrer, but only where it hides no older cosign
+  signature; for every other format and for such an image through the API, never through npm's attestations endpoint (R-SIG-054).
+- The format contract gains `AttestationSubjects` and rises to version 9 (R-SIG-044).
+
+**Consequences.** `npm audit signatures` passes for local packages; a cluster can demand Quader's receipt of most images; the worker's key can
+make clients believe anything was received here (H-1187), an uploaded key can be opened by every role with the key ring (H-1188); the
+attestation's time is Quader's claim (H-1189); an image with an older cosign signature has its receipt only through the API (H-1185); about
+2.5 KiB of PostgreSQL per attested artifact, written again per rotation.
+
+**Alternatives considered.** RSA or a second key for npm; signing in the role that answers the upload; re-signing remote npm packages; npm's
+publish attestation; SLSA's verification summary; a bundle with the chain, the older cosign layout, a Notary Project signature; a timestamp
+authority or a log; a referrer on every image; a sibling file; a hardware key store.
+
+**Revisit condition:** the owner's company Sigstore in operation (a timestamp or a log); cosign reading older tags beside bundles; a company CA
+that issues RSA only; stage 3, where a passing gate may issue a verification summary.
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-044 to R-SIG-060, Q-SIG-53 to Q-SIG-74, H-1176, H-1183 to H-1186;
+[ha-and-helm.md](spec/ha-and-helm.md) R-HA-071, Q-HA-385; [formats/npm.md](spec/formats/npm.md) R-NPM-027, H-32;
+[formats/oci.md](spec/formats/oci.md) R-OCI-016; [api-and-ui.md](spec/api-and-ui.md) R-UI-002, R-API-030;
+[operations-and-observability.md](spec/operations-and-observability.md) R-OPS-016; [README.md](spec/README.md) INV-4;
+[security/artifact-signatures.md](security/artifact-signatures.md) H-1187 to H-1193.
 
 ## Design invariants
 

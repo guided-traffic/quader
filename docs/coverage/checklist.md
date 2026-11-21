@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,113 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,131 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 793 specified (509 of them implemented), 1,446 open.
-1,113 spec requirements: 728 cover catalog features, 385 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 794 specified (509 of them implemented), 1,445 open.
+1,131 spec requirements: 729 cover catalog features, 402 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -47,7 +47,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [Content API operation catalog](#content-api-operation-catalog-api) | `API` | 166 | 15 of 15 | 71 | 95 | 28 |
 | [Operation catalog: administration API](#operation-catalog-administration-api-admapi) | `ADMAPI` | 114 | 34 of 34 | 54 | 60 | 41 |
 | [Package formats: matrix and cross-format behavior](#package-formats-matrix-and-cross-format-behavior-fmt) | `FMT` | 14 | 8 of 8 | 9 | 5 | 8 |
-| [npm package format](#npm-package-format-pkg-npm) | `PKG-NPM` | 62 | 37 of 37 | 53 | 9 | 41 |
+| [npm package format](#npm-package-format-pkg-npm) | `PKG-NPM` | 62 | 37 of 37 | 54 | 8 | 41 |
 | [NuGet](#nuget-pkg-nuget) | `PKG-NUGET` | 56 | 35 of 35 | 42 | 14 | 35 |
 | [Docker image format](#docker-image-format-pkg-docker) | `PKG-DOCKER` | 52 | – | 33 | 19 | 33 |
 | [OCI images and artifacts](#oci-images-and-artifacts-pkg-oci) | `PKG-OCI` | 20 | – | 15 | 5 | 14 |
@@ -1761,10 +1761,10 @@ Catalog page: [formats/README.md](../features/formats/README.md) · specified by
 
 ## npm package format (PKG-NPM)
 
-Catalog page: [formats/npm.md](../features/formats/npm.md) · specified by priority: MVP 37 of 37 · P1 15 of 15 · P2 1 of 8 · Later 0 of 1 · Out of scope 0 of 1
+Catalog page: [formats/npm.md](../features/formats/npm.md) · specified by priority: MVP 37 of 37 · P1 15 of 15 · P2 2 of 8 · Later 0 of 1 · Out of scope 0 of 1
 
 <details>
-<summary>62 features: 53 specified, 9 open, 41 implemented</summary>
+<summary>62 features: 54 specified, 8 open, 41 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -1805,7 +1805,7 @@ Catalog page: [formats/npm.md](../features/formats/npm.md) · specified by prior
 | PKG-NPM-034 | Storage layout | MVP | implemented | [R-NPM-003](../spec/formats/npm.md) (implemented), [R-NPM-006](../spec/formats/npm.md) (implemented) |
 | PKG-NPM-035 | Strict layout enforcement per local repository | P2 | open | – |
 | PKG-NPM-036 | Strict-layout conversion of existing repositories | P2 | open | – |
-| PKG-NPM-037 | Registry signatures for `npm audit signatures` | P2 | open | – |
+| PKG-NPM-037 | Registry signatures for `npm audit signatures` | P2 | specified | [R-SIG-050](../spec/signatures.md) |
 | PKG-NPM-038 | Proxying an upstream npm registry | MVP | implemented | [R-AUTHZ-008](../spec/authorization.md) (implemented), [R-NPM-024](../spec/formats/npm.md) (implemented), [R-NPM-025](../spec/formats/npm.md) (implemented), [R-NPM-027](../spec/formats/npm.md) (implemented) |
 | PKG-NPM-039 | Remote metadata freshness and invalidation | MVP | implemented | [R-NPM-024](../spec/formats/npm.md) (implemented) |
 | PKG-NPM-040 | Credentials for a private upstream registry | P1 | specified | [R-NPM-023](../spec/formats/npm.md) |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>385 requirements</summary>
+<summary>402 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3220,6 +3220,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-CI-030 (implemented) | Background tasks of the CI exchange | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-069 (implemented) | The updater Deployment `malware-updater-freshclam` | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
+| R-HA-071 | The signing identity's Secret, in the worker pods only | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-056 | Valkey with Sentinel: connection and supported topologies | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-057 | Valkey failover, outage and degraded mode | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-054 (implemented) | Revocation journal in object storage | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
@@ -3334,6 +3335,22 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-SIG-041 | Backups, restores and replicas | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-042 | The tests and what they cost | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-043 | What stage 1 keeps for stage 2 and stage 3 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-044 | What stage 2 signs, per format | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-045 | The signing identity: what it must be and its states | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-046 | The identity from the Helm values | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-047 | The identity uploaded in the admin area | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-048 | Rotation, removal, retirement, and what the old signatures do | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-049 | Where signing runs: the job `signing` in the worker | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-051 | The receipt attestation: an in-toto statement with a predicate of Quader's own | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-052 | The envelope, the trusted root, and how a client verifies | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-053 | When an attestation is made, made again and removed | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-054 | Where attestations are kept and served | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-055 | The API of stage 2 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-056 | The screens of stage 2 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-057 | Audit events, metrics and alerts of stage 2 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-058 | Configuration, defaults and what stage 2 costs | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-059 | Backups, restores and replicas of stage 2 | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-060 | The tests of stage 2 and what they cost | P1 | [signatures.md](../spec/signatures.md) |
 | R-STOR-011 (implemented) | Multi-request upload sessions | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-013 (implemented) | Download integrity verification | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-048 | Client-side encryption of stored content | P2 | [storage.md](../spec/storage.md) |

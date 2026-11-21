@@ -804,6 +804,40 @@ Acceptance criteria:
   mounts as above (Q-HA-342).
 - Recorded once after the first release that carries it, on the owner's installation: the pull and the copy from the pod's events.
 
+### R-HA-071 · The signing identity's Secret, in the worker pods only
+Priority: **P1** · Covers: quader-only
+
+Specified, not built. The chart's side of Quader's signing identity ([signatures.md](signatures.md) R-SIG-045, R-SIG-046; the owner's
+reading r8 of [Q-SIG-16](signatures.md#q-sig-16--the-eight-readings-of-the-request): "through Helm, a Secret that cert-manager may issue";
+[Q-HA-385](#q-ha-385--the-signing-identitys-secret-reaches-the-worker-pods-only-and-the-chart-renders-its-certificate-on-request)).
+
+- **Two sources, at most one.** `signing.identity.existingSecret` names an existing Secret with `tls.crt` (the leaf and its intermediates),
+  `tls.key` (an ECDSA P-256 key) and `ca.crt` (the root), the keys of a cert-manager TLS Secret; the chart never creates it. Or, with
+  `signing.identity.certManager.issuerRef.name`, the chart renders a cert-manager `Certificate` `<fullname>-signing` into the Secret of the same
+  name: `commonName` and `subject` (organizations, countries, provinces, localities, organizational units) from the values, `uris` the base
+  URL (`config.server.base_url`, which the chart requires) and `signing.identity.certManager.uris`, `usages: [digital signature, code signing]`,
+  `privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Always}`, `duration` and `renewBefore` from the values, `issuerRef` (an `Issuer`
+  of the release namespace or a `ClusterIssuer`, group `cert-manager.io`). The values of cert-manager's API used here were read in its API
+  reference on 2026-11-21. The render fails with both sources set, naming the two keys. With neither, the chart sets nothing and an
+  identity comes from the admin area (R-SIG-047).
+- **Mounts.** The pods of the kind `worker` (its main Deployment and its pools) mount the Secret read-only at `/var/run/secrets/quader/signing/`,
+  as a directory volume with items and without `subPath`, mode `0440`, and the chart sets `signing.identity.cert_file`, `key_file` and
+  `ca_file` to its three files. The configuration file is shared, as it is for the login secrets that only `api` mounts; only the roles
+  `worker` and `all` read the three keys ([signatures.md](signatures.md) R-SIG-049). No pod of `api`, `packages`, a scanner, the updater or a Job mounts it.
+  The three keys join the chart's managed paths: set under `config`, they fail the render, as `secrets.encryption_key_files` does.
+- **Rotation without a restart.** cert-manager renews the certificate with a new key `renewBefore` its end; the kubelet swaps the volume, the
+  worker's reloader reads it (R-SIG-046), and the identity is announced and then switched (R-SIG-048). The pod's checksum follows the
+  Secret's name and the paths, not its content, so a renewal rolls nothing.
+- **The values** (R-HA-031, whose copy of the values file gains them with the change that builds them): `signing.identity.existingSecret`,
+  `signing.identity.certManager.issuerRef`, `commonName`, `subject`, `uris`, `duration`, `renewBefore`.
+
+Acceptance criteria:
+
+- Chart test (`test/chart`, about 1 s): with `existingSecret` the worker Deployment and its pools mount the Secret at the path above and the
+  rendered configuration names the three files, and no other Deployment or Job mounts it; with `certManager.issuerRef.name` the
+  `Certificate` renders with ECDSA 256, `rotationPolicy: Always`, the usages `digital signature` and `code signing` and the base URL as a URI;
+  with both the render fails and names both keys; with neither nothing of it renders.
+
 ### R-HA-003 · Replica registry as the coordination view
 Priority: **MVP** · Covers: HA-006, HA-009
 
@@ -4679,6 +4713,22 @@ tls:
   backendTLSPolicy:                     # Gateway API: how the Gateway verifies quader (needs the BackendTLSPolicy CRD)
     enabled: false
     caConfigMapName: ""                 # required when enabled; example: quader-tls-ca (a ConfigMap with ca.crt: Gateway API takes no Secret here); each policy verifies its Service's kind name
+
+# ── Quader's signing identity (R-HA-071, signatures.md R-SIG-045; specified, not built) ──────────
+# At most one source. The Secret reaches the worker pods only; without either, an administrator uploads the identity in the admin area.
+signing:
+  identity:
+    existingSecret: ""                  # example: quader-signing (tls.crt: leaf and intermediates, tls.key: ECDSA P-256, ca.crt: the root; code signing, a URI as alternative name)
+    certManager:                        # the Certificate <fullname>-signing the chart renders while issuerRef.name is set
+      issuerRef:
+        kind: ClusterIssuer             # ClusterIssuer | Issuer (an Issuer of the release namespace)
+        name: ""                        # empty = no Certificate; example: company-code-signing
+        group: cert-manager.io
+      commonName: Quader signing        # default
+      subject: {}                       # example: {organizations: [Example GmbH], countries: [DE]}
+      uris: []                          # besides config.server.base_url, which is always the first; example: [https://quader.example.com/signing]
+      duration: 2160h                   # default: 90 days
+      renewBefore: 720h                 # default: 30 days; the key is ECDSA P-256 with rotationPolicy Always, not a value
 
 # ── Existing Secrets (the chart never creates one) ──────────────────────────
 secrets:
@@ -12246,6 +12296,18 @@ Status: **Decided by the development agent** — selected from the options below
 only the registry's name differs. The development agent would revisit this if an operator's registry rewrites digests on copy.
 
 **Applied in the spec:** R-HA-070.
+
+### Q-HA-385 · The signing identity's Secret reaches the worker pods only, and the chart renders its Certificate on request
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An existing Secret or a cert-manager `Certificate` the chart renders, at most one; mounted into the worker pods only; the key fixed to ECDSA P-256 with `rotationPolicy: Always` (chosen) | The pattern of the TLS pairs (R-HA-063) | The key reaches the one kind of pod that signs ([signatures.md](signatures.md) Q-SIG-56); cert-manager renews it, with a new key, without a restart; P-256 is what npm needs (Q-SIG-53) | A key that a company CA can issue only as RSA cannot come this way |
+| (b) Mounted into every replica, as the key ring is | | One mount rule | The key in `api` and `packages`, which never sign |
+| (c) The existing Secret only; cert-manager left to the operator | | Less to render | Every operator writes the same `Certificate`, and the usages and the key type are easy to get wrong |
+
+**Choice:** (a). **Applied in the spec:** R-HA-071; [signatures.md](signatures.md) R-SIG-046.
 
 ## What this does not cover
 
