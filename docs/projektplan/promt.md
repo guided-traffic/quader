@@ -1298,7 +1298,7 @@ runs are in `git log`; this section holds the current state.
   of a new remote repository of every format, beside the well-known registries; migration 00093), with the
   renders for the development agent's look. It lands before the ClamAV change's UI package starts, which
   touches the same admin page.
-- **In work** (10:57): three builders, each from a specification that is on `main` (section "With the owner" holds
+- **In work** (10:57; of these three the chart's and the format's builder have reported, below): three builders, each from a specification that is on `main` (section "With the owner" holds
   what each builds): the format `clamav` with its repository and API (package 1 of the ClamAV change), the chart
   with the updater's Deployment (package 3 of it, without a cluster, because the binary does not know the updater's
   kind before package 2), and the format contract's declaration and the store of signatures (package 1 of the
@@ -1333,6 +1333,42 @@ runs are in `git log`; this section holds the current state.
   cluster denies egress by default and whether that label covers DNS). **Left to package 2:** the README's
   configuration reference still lists the three keys of the old container, and the operations manual has no
   row for the updater's readiness check. Nothing ran on a cluster.
+  **The builder of the format, the repository and the API (package 1) reported at 12:30** with one commit,
+  rebased by it onto `main`. What exists: the format `clamav` with the routes `<db>.cvd` (the version marked
+  in use) and `<db>-<version>.cvd.sign`, whose refusals answer 404, whose limits answer 503 with `Retry-After`
+  and whose 401 asks for Basic, so that no answer is a 403 or a 429; the package view, the client's snippet and
+  guide; the format contract's kit with six skips, each with its reason; the fact that a format is the
+  system's alone (a create in a project answers 422 `format_system_only`); the parser of a container's header
+  and members as a leaf package with a builder of test containers; the table of versions and the column of the
+  switch (migration 00091); `upstream/clamav` in place of `scanner-clamav` with the switch (off: as if missing,
+  level private; on: public, or internal with a warning where the installation allows no public level; off
+  again: back to private, journaled, so that a restore replays it); no deletion of a definition file by hand
+  (409), and the malware gate never asks about a system repository's items. **Decided by the builder:** a
+  version's row stays as history after the cleanup removed its files (Q-CLAMAV-15); the snippet writes the
+  address without its trailing slash, because `freshclam` would otherwise ask for `//daily.cvd`, which the
+  dispatcher refuses (Q-CLAMAV-16); a commit without its metadata is refused (Q-CLAMAV-17); switching the
+  clients off is a part of the journal of its own (Q-REPO-417). **Today's import** was left in the smallest
+  working state: it writes the new layout without verifying and marks nothing in use, so the endpoint answers
+  404 until package 2. **Its gates, each exit 0:** build, the full unit run, generate-check, the lint, the
+  complexity check (one function was over the threshold once and got a helper), links and check, the UI's
+  build, tests and lint, the integration areas `malware` and `upstream` under the lock. **Its tests cost:**
+  milliseconds of unit tests with containers of a few hundred bytes; about 2 s in the area `upstream`; about
+  7 s in the area `malware` for the replay of a stock client's requests, 5 s of which are two waits for the
+  replicas to read the switch (the specification had said 4 s); nothing in an end-to-end leg. **Not
+  verified:** the 503 at a request limit and an external user's 404 in an integration case (the unit test
+  covers the mapping); the replay of the switch's journal part after a restore; a real `freshclam` against
+  the endpoint. Not built, because specified after its start: what the client certificates add.
+  **The landing branch `clamav-landing` exists since 12:32:** package 1 and, rebased onto it, the chart's
+  commit (three conflicts in documentation merged by the development agent: the decision blocks of the chart
+  beside those of the analyser's move, the developer page's row, the security page's sentence); it builds,
+  links and check exit 0. Package 1's worktree and branch are removed, its commit is on the landing branch.
+  **In work since 12:33 on that branch, two builders:** package 2, the updater's process kind `freshclam` and
+  the worker's import with verification, marks and cleanup, the removal of the old container's keys, the three
+  chart tests green, and **one measurement on a cluster of its own** (the updater pod with the real databases,
+  the import, the scanners, and a stock `freshclam` with `PrivateMirror` against the endpoint; recorded, not a
+  test); and package 4, the screens (the switch and the section in the admin area, the packages per database
+  with the version in use first, the client setup with and without a token), with renders for the development
+  agent's look. The two commits are put onto the landing branch when they report, and the change lands as one.
 - **Landed on 2026-11-21 at 10:47: a system repository is set apart wherever it is shown** (R-UI-193, Q-UI-898 to
   Q-UI-902): the badge **System** in the admin list and in the search, no address, download or command that would
   answer 404 (the admin list, the file page with one sentence in the address's place, a folder's rows, an opened
