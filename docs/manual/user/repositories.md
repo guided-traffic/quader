@@ -44,7 +44,7 @@ language of the page.
 Below the registries, set apart and closed, **System repositories** with their number holds the two repositories Quader keeps for its
 own work: `scanner-trivy`, the database of the image scanning, and `scanner-clamav`, the signature database of the malware scan. Only
 Quader's scanners read them, and their addresses answer `404` to every client, so neither their rows nor their pages offer **Set up
-client**, and nothing can be uploaded to them. They are always Private: the section is there only if you may read them, normally as
+client**, and nothing can be uploaded to them or downloaded from them. They are always Private: the section is there only if you may read them, normally as
 an administrator. Select its heading to open it. The filter above the list covers it too: a text or a filter that matches one of them
 opens it and its number counts the matches; one that matches none of them leaves it closed, at 0.
 
@@ -145,4 +145,4 @@ format's settings (for example **npm settings**), **Details** and **API**. How a
 
 **Set up client** at the top of a repository's page opens the configuration of your client for this repository, with this installation's addresses, and below it the guide that explains what the repository's class allows, how the client signs in, installs and publishes, and what its errors mean. A guide never contains a token: snippets read it from an environment variable such as `QUADER_TOKEN`, and the page for an anonymous reader uses no credential at all.
 
-**Guides** in the start side bar and in the user menu shows the package types as tiles; a tile lists the repositories of that type you may use, each with **Set up client** but a system repository of **Upstream**, and the guide of each kind of repository for when you have none yet. See [Connecting a package client](client-setup.md).
+**Guides** in the start side bar and in the user menu shows the package types as tiles; a tile lists the repositories of that type you may use, each with **Set up client** (a system repository of **Upstream**, which no client can use, is not among them), and the guide of each kind of repository for when you have none yet. See [Connecting a package client](client-setup.md).

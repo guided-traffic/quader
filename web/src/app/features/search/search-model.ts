@@ -2,7 +2,7 @@ import { NavArea, NavItem, areaEntries, areaItems } from '../../core/navigation'
 import { SearchSuggestions, SuggestionKind } from '../../api/search-api';
 import { packageCommands } from '../packages/package-links';
 import { letterOf } from '../../shared/ui/project-mark';
-import { isUpstreamProject } from '../../core/upstream-project';
+import { isSystemRepository, isUpstreamProject } from '../../core/upstream-project';
 import { termsOf } from './highlight';
 
 /** The filter of the field (R-UI-095): **All**, a kind of the main area, or for an instance administrator users or groups. */
@@ -36,6 +36,8 @@ export interface SearchEntry {
   readonly avatar?: string;
   /** A disabled user. */
   readonly disabled?: boolean;
+  /** A system repository of the project `upstream`, marked **System** among the others (R-UI-193, Q-UI-902). */
+  readonly system?: boolean;
   /** Whether the label is a name the typed text matched (keys and names are `translate="no"`). */
   readonly literal: boolean;
   readonly commands: readonly string[];
@@ -176,6 +178,7 @@ export function repositoryEntry(project: string, key: string, format: string | u
     label: key,
     secondary: project,
     format,
+    ...(isSystemRepository(project, key) ? { system: true } : {}),
     literal: true,
     commands: ['/projects', project, 'repositories', key],
   };

@@ -145,6 +145,25 @@ describe('The page of a version (R-UI-111)', () => {
     await expectAccessible(r.root);
   });
 
+  it('R-UI-193 Q-UI-898 Q-UI-899 a version a system repository alone holds offers no Download and no command, and says why', async () => {
+    const r = await open({ tab: 'files' }, (fake) => {
+      fake.versionList = fake.versionList.map((v) =>
+        v.version !== '1.4.0'
+          ? v
+          : {
+              ...v,
+              repositories: [{ key: 'upstream/scanner-trivy', class: 'remote', publishedAt: v.publishedAt }],
+              files: v.files.map((f) => ({ ...f, contentUrl: f.contentUrl.replace('/projects/web/repositories/npm-local/', '/projects/upstream/repositories/scanner-trivy/') })),
+            },
+      );
+    });
+    expect([...r.root.querySelectorAll('a')].some((a) => a.textContent?.trim() === 'Download')).toBe(false);
+    expect([...r.root.querySelectorAll('.version-tabs thead th')].map((th) => text(th))).not.toContain('Download');
+    expect(text(r.root.querySelector('[data-testid="install-system"]')!)).toBe("Only Quader's image scanning reads this version; clients cannot install it.");
+    expect(command(r)).toBeUndefined();
+    await expectAccessible(r.root);
+  });
+
   it('R-UI-111 the open tab is a query parameter: selecting a tab navigates with ?tab=', async () => {
     const r = await open();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);

@@ -303,6 +303,24 @@ describe('Live suggestions (R-UI-097)', () => {
     expect(TestBed.inject(Router).url).toBe('/search?q=web&kind=repository');
   });
 
+  it('R-UI-193 Q-UI-902 a system repository is suggested with the badge System, heard in its name; a team\'s repository of the same key is not marked', async () => {
+    const { root, fixture } = await render('ada', {
+      setup: (get) => {
+        (get(SearchApi) as FakeSearchApi).repositories = [
+          { project: 'upstream', key: 'scanner-trivy', format: 'oci', class: 'remote' as const },
+          { project: 'web', key: 'scanner-trivy', format: 'oci', class: 'local' as const },
+        ];
+      },
+    });
+    await open(fixture, root);
+    typeText(root, 'scanner');
+    await sleep(fixture, 300);
+    const repos = options(root.querySelector('[role="group"]')!);
+    expect(said(repos.slice(0, 2))).toEqual(['scanner-trivy · upstream, System', 'scanner-trivy · web']);
+    expect(text(repos[0]!.querySelector('.badge')!)).toBe('System');
+    expect(repos[1]!.querySelector('.badge')).toBeNull();
+  });
+
   it('R-UI-097 a kind chosen asks for that kind alone with ten', async () => {
     const { root, fixture, search } = await render('sam');
     root.querySelector<HTMLButtonElement>('.search-filter')!.click();

@@ -101,7 +101,8 @@ export class RepositoryContent {
   /**
    * A system repository of the project `upstream` (R-REPO-070, R-REPO-075): Quader's own work fills and reads it, every client's
    * request and every deploy answers 404, and the management API lists and deletes its items. The page offers it no client
-   * action: no **Set up client**, no upload or new folder, no sentence about what clients fetch or publish (Q-UI-896).
+   * action: no **Set up client**, no upload or new folder, no sentence about what clients fetch or publish (Q-UI-896); no download of
+   * a file, no address for downloads by path, no address of a file to copy and no install command (Q-UI-898).
    */
   protected readonly system = computed(() => isSystemRepository(this.project(), this.key()));
   protected readonly loaded = resource({
@@ -176,7 +177,8 @@ export class RepositoryContent {
    * that no field stands without a name (Q-UI-320). Set up client does not show it, so it stays here (R-UI-169).
    */
   protected readonly otherAddresses = computed(() =>
-    this.addresses()
+    // A system repository answers every download by path 404: no address of it is offered (Q-UI-898).
+    (this.system() ? [] : this.addresses())
       .slice(1)
       .map((value) => {
         const label = $localize`:@@repo.content.files-address:Address for downloads by path (curl, wget)`;

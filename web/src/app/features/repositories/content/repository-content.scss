@@ -287,6 +287,11 @@ tr.expansion td {
   margin-block-end: var(--quader-space-4);
 }
 
+// Where a system repository's file has no address, the sentence that says why takes its place and its room (Q-UI-899).
+.file-view .system-note {
+  margin: 0 0 var(--quader-space-4);
+}
+
 .digest {
   display: flex;
   align-items: flex-start;

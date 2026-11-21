@@ -39,8 +39,13 @@ import {
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareStatusView } from '../../shared/malware/malware-status';
+import { contentPath } from '../../api/files-api';
+import { systemRepositoryNames } from '../../core/upstream-project';
 
 export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'details' | 'import-log';
+
+/** The content routes of the system repositories, `/api/v1/projects/upstream/repositories/<key>/content/` (R-API-025, Q-UI-898). */
+const SYSTEM_CONTENT = systemRepositoryNames().map((name) => contentPath(name, ''));
 
 interface TabEntry {
   readonly id: VersionTab;
@@ -336,8 +341,18 @@ export class PackageVersionPage {
       help: $localize`:@@pkg.help.sha256:The checksum of the file's content. Compare it with the output of sha256sum on the downloaded file.`,
     },
     ...(this.malwareShown() ? [{ id: 'malware', label: $localize`:@@pkg.file.malware:Malware scan`, width: '12rem' }] : []),
-    { id: 'download', label: $localize`:@@pkg.file.download:Download`, hideLabel: true },
+    ...(this.downloadable() ? [{ id: 'download', label: $localize`:@@pkg.file.download:Download`, hideLabel: true }] : []),
   ]);
+  /**
+   * Whether a file is held by a system repository of the project `upstream` (R-UI-193): its `contentUrl` is the content route of
+   * one, which answers every download 404 like its address for downloads by path (R-REPO-070, R-REPO-075), so it offers no download
+   * (Q-UI-898). The API names the holding repository in that route only.
+   */
+  protected inSystemRepository(f: { readonly contentUrl: string }): boolean {
+    return SYSTEM_CONTENT.some((prefix) => f.contentUrl.startsWith(prefix));
+  }
+  /** Some file of the version can be downloaded: the column of the downloads stands (Q-UI-898). */
+  protected readonly downloadable = computed(() => (this.detail()?.files ?? []).some((f) => !this.inSystemRepository(f)));
   protected readonly repositoryColumns: readonly TableColumn[] = [
     { id: 'repository', label: $localize`:@@pkg.repo.repository:Repository` },
     { id: 'class', label: $localize`:@@pkg.repo.class:Class` },

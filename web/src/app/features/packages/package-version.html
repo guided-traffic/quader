@@ -156,14 +156,19 @@
                         }
                       </td>
                     }
-                    <td>
-                      <!-- A file the malware scan's gate refuses offers no download; its fact says why (Q-UI-882). -->
-                      @if (f.malware?.refused === true) {
-                        <quader-no-value />
-                      } @else {
-                        <a class="btn btn-tertiary" [href]="f.contentUrl" download quaderDownload i18n="@@pkg.file.download-link">Download</a>
-                      }
-                    </td>
+                    <!-- No column where every file is held by a system repository of upstream, which answers every download 404
+                         (Q-UI-898); the install panel says why. -->
+                    @if (downloadable()) {
+                      <td>
+                        <!-- A file the malware scan's gate refuses offers no download; its fact says why (Q-UI-882). Nor does a file
+                             of a system repository (Q-UI-898). -->
+                        @if (f.malware?.refused === true || inSystemRepository(f)) {
+                          <quader-no-value />
+                        } @else {
+                          <a class="btn btn-tertiary" [href]="f.contentUrl" download quaderDownload i18n="@@pkg.file.download-link">Download</a>
+                        }
+                      </td>
+                    }
                   </tr>
                 }
               </quader-data-table>

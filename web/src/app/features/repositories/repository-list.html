@@ -149,6 +149,11 @@
             translate="no"
             >{{ row.key }}</a
           >
+          <!-- In the admin area a system repository of upstream carries its one word, so that it does not read as one more
+               repository of a project; on the project's page its section's heading says it (R-UI-193, Q-UI-902). -->
+          @if (!inProject() && system(row)) {
+            <span class="badge">{{ systemBadge }}</span>
+          }
           @if (wellKnownBadge(row); as b) {
             <span class="badge">{{ b }}</span>
           } @else if (row.disabled) {
@@ -201,7 +206,8 @@
         >
       }
       <!-- The administrator manages and copies the address now and then: a quiet copy button whose name and tooltip carry the
-           address, beside the menu, which has the same action (Q-UI-330). -->
+           address, beside the menu, which has the same action (Q-UI-330). A system repository's address answers every client 404:
+           it has neither (Q-UI-898). -->
       @if (!inProject() && address(row); as a) {
         <quader-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
       }

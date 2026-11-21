@@ -5,6 +5,7 @@ import { PackageSummary, PackageVersionSummary, PackagesApi } from '../../../api
 import { splitRef } from '../../../api/repositories-api';
 import { VulnerabilitiesApi, VulnerabilityGrade } from '../../../api/vulnerabilities-api';
 import { SessionStore } from '../../../core/session-store';
+import { isSystemRepositoryName } from '../../../core/upstream-project';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
@@ -20,26 +21,31 @@ const VERSIONS_PAGE = 20;
 /**
  * The versions of one item of a repository's content page, opened in its row (R-UI-052): for an image its tags with digest, size and
  * pushed time, for a package its versions; the grade of each in this repository (R-UI-094), and the install or pull command for the version chosen in the
- * list. The command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real address.
+ * list. The command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real address. A
+ * system repository of the project `upstream` has no command: it answers no client (Q-UI-898).
  */
 @Component({
   selector: 'quader-repository-item-versions',
   imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, InstallCommand, VersionSize],
   template: `
-    <div class="command-panel">
-      <p class="command-title">
-        {{ shape().commandLabel }}
-        @if (selected(); as v) {
-          &ngsp;<code translate="no">{{ pkg().name }} {{ v }}</code>
-        }
-      </p>
-      <quader-install-command
-        [format]="pkg().format"
-        [name]="pkg().name"
-        [version]="selected()"
-        [repository]="repository()"
-      />
-    </div>
+    <!-- A system repository answers every client's request 404: its versions have no install or pull command, and no row offers
+         Show command (Q-UI-898). -->
+    @if (!system()) {
+      <div class="command-panel">
+        <p class="command-title">
+          {{ shape().commandLabel }}
+          @if (selected(); as v) {
+            &ngsp;<code translate="no">{{ pkg().name }} {{ v }}</code>
+          }
+        </p>
+        <quader-install-command
+          [format]="pkg().format"
+          [name]="pkg().name"
+          [version]="selected()"
+          [repository]="repository()"
+        />
+      </div>
+    }
 
     <quader-data-table
       [caption]="caption()"
@@ -83,17 +89,19 @@ const VERSIONS_PAGE = 20;
               }
             </td>
           }
-          <td class="actions">
-            <button
-              type="button"
-              class="btn btn-tertiary"
-              [attr.aria-pressed]="v.version === selected()"
-              (click)="select(v.version)"
-            >
-              <span class="visually-hidden">{{ v.version }}: </span>
-              <span i18n="@@repo.content.show-command">Show command</span>
-            </button>
-          </td>
+          @if (!system()) {
+            <td class="actions">
+              <button
+                type="button"
+                class="btn btn-tertiary"
+                [attr.aria-pressed]="v.version === selected()"
+                (click)="select(v.version)"
+              >
+                <span class="visually-hidden">{{ v.version }}: </span>
+                <span i18n="@@repo.content.show-command">Show command</span>
+              </button>
+            </td>
+          }
         </tr>
       }
     </quader-data-table>
@@ -180,9 +188,11 @@ export class RepositoryItemVersions {
       { id: 'published', label: s.publishedLabel },
     );
     if (this.scanned()) columns.push({ id: 'vulnerabilities', label: $localize`:@@repo.content.col.vulnerabilities:Vulnerabilities` });
-    columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
+    if (!this.system()) columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
     return columns;
   });
+  /** A system repository of the project `upstream` (R-UI-193): no command for any of its versions (Q-UI-898). */
+  protected readonly system = computed(() => isSystemRepositoryName(this.repository()));
 
   constructor() {
     effect(() => {

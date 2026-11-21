@@ -40,7 +40,14 @@ async function open(url: string, options: { system?: boolean; capabilities?: str
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([{ path: 'projects/:project/repositories', component: RepositoryList }, { path: '**', children: [] }], withComponentInputBinding()),
+      provideRouter(
+        [
+          { path: 'projects/:project/repositories', component: RepositoryList },
+          { path: 'admin/repositories', component: RepositoryList },
+          { path: '**', children: [] },
+        ],
+        withComponentInputBinding(),
+      ),
       ...provideFakeApis(),
     ],
   });
@@ -144,6 +151,34 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     expect(docker.fake.listFilters.filter((f) => f.name?.length)).toEqual([
       { project: 'upstream', name: ['upstream/scanner-trivy', 'upstream/scanner-clamav'] },
     ]);
+  });
+
+  it('R-UI-193 Q-UI-898 Q-UI-902 the admin area lists the system repositories with the badge System, without the copy button and without Copy client address', async () => {
+    const { root, harness } = await open('/admin/repositories?project=upstream');
+    const row = (key: string) => [...root.querySelectorAll('tbody tr')].find((tr) => text(tr.querySelector('th a')!) === key)!;
+    const badges = (key: string) => [...row(key).querySelectorAll('th .badge')].map((b) => text(b));
+    expect(badges('scanner-trivy')).toEqual(['System']);
+    expect(badges('scanner-clamav')).toEqual(['System']);
+    expect(badges('npmjs')).toEqual([]);
+    expect(row('scanner-trivy').querySelector('quader-copy-button')).toBeNull();
+    expect(row('npmjs').querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe(
+      'Copy client address https://quader.example.net/files/upstream/npmjs/',
+    );
+    const menuOf = async (key: string): Promise<string[]> => {
+      row(key).querySelector<HTMLButtonElement>(`button[aria-label="Actions for ${key}"]`)!.click();
+      harness.detectChanges();
+      await harness.fixture.whenStable();
+      const menu = root.ownerDocument.body.querySelector('.menu')!;
+      const items = [...menu.querySelectorAll('[role="menuitem"]')].map((i) => text(i));
+      root.ownerDocument.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      menu.closest('.cdk-overlay-pane')?.remove();
+      return items;
+    };
+    expect(await menuOf('scanner-trivy')).toEqual(['Settings', 'Files', 'Vulnerabilities']);
+    expect(await menuOf('npmjs')).toContain('Copy client address');
+    // No section in the admin area: the badge sets them apart there (Q-UI-902).
+    expect(section(root)).toBeNull();
+    await expectAccessible(root);
   });
 
   it('R-UI-192 a caller who reads no system repository sees no section', async () => {

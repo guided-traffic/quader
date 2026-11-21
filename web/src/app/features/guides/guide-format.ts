@@ -2,6 +2,7 @@ import { Component, computed, inject, input, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
 import { repositoryCommands, setupCommands } from '../../core/project-links';
+import { isSystemRepository } from '../../core/upstream-project';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -62,9 +63,9 @@ import { classIcon, classLabel } from '../repositories/repository-class';
             <td class="class-cell">
               <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(r.class) }}</span>{{ classText(r.class) }}</span>
             </td>
-            <td class="actions" [class.with-setup]="setupLink(r) !== null">
-              <!-- The row's action (Q-UI-487): a quiet button, its accessible name ending with the key, as in a project's list. A
-                   system repository of upstream answers no client and offers none (Q-UI-896). -->
+            <td class="actions with-setup">
+              <!-- The row's action (Q-UI-487): a quiet button, its accessible name ending with the key, as in a project's list. Every
+                   row has one: a system repository of upstream, which answers no client, is not listed (Q-UI-901). -->
               @if (setupLink(r); as setup) {
                 <a class="btn btn-tertiary row-setup" [routerLink]="setup"
                   ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
@@ -128,10 +129,14 @@ export class GuideFormat {
     return $localize`:@@guides.format.heading:${name}:format: repositories`;
   });
   protected readonly caption = computed(() => this.heading());
-  /** The repositories of the format that clients can use: virtual first, then by name. */
+  /**
+   * The repositories of the format that clients can use: virtual first, then by name. A disabled repository refuses its clients and
+   * a system repository of the project `upstream` answers every client 404, so neither is listed (R-UI-193, Q-UI-901); the list is
+   * the whole one the browser read, so leaving them out breaks no paging.
+   */
   protected readonly rows = computed<readonly RepositorySummary[]>(() =>
     (valueOf(this.repositories) ?? [])
-      .filter((r) => r.format === this.format() && !r.disabled)
+      .filter((r) => r.format === this.format() && !r.disabled && !isSystemRepository(r.project, r.key))
       .sort((a, b) => Number(b.class === 'virtual') - Number(a.class === 'virtual') || refOf(a).localeCompare(refOf(b))),
   );
   protected readonly formatFailure = computed(() => {

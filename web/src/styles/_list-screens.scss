@@ -735,13 +735,19 @@ td.class-cell .material-icons {
       }
     }
 
-    // A row that only carries an expansion of the row above (one cell across the table) adds no block of its own.
+    // A row that only carries an expansion of the row above (one cell across the table) adds no block of its own, and its one
+    // cell takes the block's whole width: sized by its content, an opened image of a system repository, which has no command panel
+    // to hold it open, stood 0 px wide and broke every fact of its tags from its value (R-UI-193, 2026-11-21).
     tbody tr:has(> td[colspan]:only-child) {
       padding-block: 0;
       border-block-end-width: 0;
 
       &::before {
         display: none;
+      }
+
+      > td {
+        flex: 1 1 100%;
       }
     }
 

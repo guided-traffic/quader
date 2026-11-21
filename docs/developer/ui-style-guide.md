@@ -144,7 +144,8 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   and only there ([Q-UI-680](../spec/api-and-ui.md#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)):
   the name and its actions on the first line, then the other cells side by side, as many to a line as fit, each named by its
   column (the table sets `data-label`; `stackLabel: false` where the value says it), a cell without a value ("–") left out
-  ([Q-UI-681](../spec/api-and-ui.md#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)). So a column's least width decides
+  ([Q-UI-681](../spec/api-and-ui.md#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)); a row that only carries an expansion of
+  the row above (an opened image's tags, an opened malware find) takes the block's whole width, whatever its content. So a column's least width decides
   where its list stacks: a wrapping column without one is as narrow as its longest word (the start page's description, one word
   a line).
   The head of a stacked list is one row of its sort buttons above the blocks; a header that sorts nothing is for assistive
@@ -348,6 +349,10 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
   - A list has no field. The admin area's repository list has a quiet `<quader-copy-button [quiet]="true">` at the end of the row,
     beside the menu, its `label` **Copy client address** with the address, which is also the button's tooltip; the menu offers
     **Copy client address** too ([Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)).
+    A system repository of `upstream` has neither: its address answers every client 404, and no screen offers an address, a download
+    or a command of it ([Q-UI-898](../spec/api-and-ui.md#q-ui-898--nothing-offers-what-a-system-repository-refuses-no-address-no-download-no-command)).
+    Where it is listed among other repositories (that list, the search's suggestions and results) it carries the neutral badge
+    **System** after its key ([Q-UI-902](../spec/api-and-ui.md#q-ui-902--where-a-system-repository-is-listed-among-others-it-carries-the-badge-system)).
     A project's list and the repositories behind a format's tile offer **Set up client** in the row, as the quiet row action
     `btn btn-tertiary row-setup` whose accessible name ends with the key; on a page and in a header it is a default button, never
     blue ([Q-UI-487](../spec/api-and-ui.md#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)). The search results offer neither ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).

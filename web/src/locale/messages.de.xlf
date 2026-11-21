@@ -15686,6 +15686,51 @@
         <target>Kein System-Repository passt.</target>
       </segment>
     </unit>
+    <unit id="repo.badge.system">
+      <notes>
+        <note category="location">src/app/core/upstream-project.ts:70</note>
+      </notes>
+      <segment>
+        <source>System</source>
+        <target>System</target>
+      </segment>
+    </unit>
+    <unit id="repo.system.no-download-malware">
+      <notes>
+        <note category="location">src/app/core/upstream-project.ts:80</note>
+      </notes>
+      <segment>
+        <source>Only Quader&apos;s malware scan reads this file; clients cannot download it.</source>
+        <target>Nur die Malware-Prüfung von Quader liest diese Datei; Clients können sie nicht herunterladen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.system.no-install-malware">
+      <notes>
+        <note category="location">src/app/core/upstream-project.ts:81</note>
+      </notes>
+      <segment>
+        <source>Only Quader&apos;s malware scan reads this version; clients cannot install it.</source>
+        <target>Nur die Malware-Prüfung von Quader liest diese Version; Clients können sie nicht installieren.</target>
+      </segment>
+    </unit>
+    <unit id="repo.system.no-download">
+      <notes>
+        <note category="location">src/app/core/upstream-project.ts:84</note>
+      </notes>
+      <segment>
+        <source>Only Quader&apos;s image scanning reads this file; clients cannot download it.</source>
+        <target>Nur die Image-Analyse von Quader liest diese Datei; Clients können sie nicht herunterladen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.system.no-install">
+      <notes>
+        <note category="location">src/app/core/upstream-project.ts:85</note>
+      </notes>
+      <segment>
+        <source>Only Quader&apos;s image scanning reads this version; clients cannot install it.</source>
+        <target>Nur die Image-Analyse von Quader liest diese Version; Clients können sie nicht installieren.</target>
+      </segment>
+    </unit>
     <unit id="auth-settings.pat">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:41,42</note>
@@ -40469,16 +40514,6 @@
       <segment>
         <source>Details</source>
         <target>Details</target>
-      </segment>
-    </unit>
-    <unit id="wellknown.system.heading">
-      <notes>
-        <note category="location">src/app/features/upstream/upstream-registries.ts:162,163</note>
-        <note category="location">src/app/features/upstream/upstream-registries.ts:212</note>
-      </notes>
-      <segment>
-        <source>Used by Quader</source>
-        <target>Von Quader genutzt</target>
       </segment>
     </unit>
     <unit id="wellknown.system.hint">

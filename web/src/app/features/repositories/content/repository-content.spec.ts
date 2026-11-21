@@ -251,6 +251,73 @@ describe('Repository content page', () => {
     expect([...clamav.root.querySelectorAll('a, button')].some((b) => text(b) === 'Set up client')).toBe(false);
   });
 
+  it('R-UI-193 Q-UI-898 the images of a system repository have no pull command and no Show command, and its Details no address for downloads by path', async () => {
+    const trivy = 'https://quader.example.net/v2/upstream/scanner-trivy/';
+    const files = 'https://quader.example.net/files/upstream/scanner-trivy/';
+    const r = await open({ key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci', description: 'Image scanning database' }, ({ catalog, packages }) => {
+      ociFixture(packages);
+      packages.packages = packages.packages.map((p) => ({ ...p, repositories: ['upstream/scanner-trivy'] }));
+      // The consumer view lists the protocol address and the address for downloads by path, as for any OCI repository.
+      catalog.get = async () => ({
+        value: { key: 'scanner-trivy', class: 'remote', format: 'oci', description: 'Image scanning database', layout: 'oci', addresses: [trivy, files] },
+        etag: '"1"',
+      });
+    });
+    r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    const versions = r.root.querySelector('quader-repository-item-versions')!;
+    expect(versions.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
+    expect(versions.querySelector('.command-panel, quader-install-command')).toBeNull();
+    expect(text(versions)).not.toContain('Show command');
+    expect([...versions.querySelectorAll('thead th')].map((th) => text(th))).not.toContain('Actions');
+    expect((r.get(ClientSetupApi) as FakeClientSetupApi).calls).toEqual([]);
+    expect(r.root.querySelector('quader-address-field')).toBeNull();
+    expect(text(r.root)).not.toContain('Address for downloads by path');
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-193 Q-UI-898 Q-UI-899 a file of a system repository offers no Download, no download address and no download with curl, and says why in one sentence; its folder copies no address', async () => {
+    const at = async (filePath: string) => {
+      const r = await renderScreen(RepositoryContent, {
+        inputs: { project: 'upstream', key: 'scanner-clamav', filePath },
+        setup: (get) => {
+          const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
+          catalog.formatsResult = [GENERIC_FORMAT];
+          catalog.repositories = [
+            ...catalog.repositories,
+            { key: 'scanner-clamav', project: 'upstream', class: 'local', format: 'generic', description: 'Malware scan database' } as never,
+          ];
+          (get(FilesApi) as FakeFilesApi).tree.set('upstream/scanner-clamav', [
+            { path: 'main-63', kind: 'folder' },
+            { path: 'main-63/main.cvd', kind: 'file', size: 4096 },
+          ]);
+        },
+      });
+      await settle(r.fixture);
+      return r;
+    };
+    const file = await at('main-63/main.cvd');
+    // The management API deletes its items (R-REPO-075): Delete stays for its holder, Download goes.
+    expect(text(file.root.querySelector('.file-actions')!)).toContain('Delete');
+    expect(text(file.root.querySelector('.file-actions')!)).not.toContain('Download');
+    expect(file.root.querySelector('quader-address-field')).toBeNull();
+    expect(text(file.root.querySelector('[data-testid="file-system"]')!)).toBe("Only Quader's malware scan reads this file; clients cannot download it.");
+    const details = file.root.querySelector<HTMLElement>('quader-disclosure.details')!;
+    details.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
+    await settle(file.fixture);
+    // The item's request stays: the management API answers it; the download by path does not.
+    const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('curl'));
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toContain('/items?path=');
+    expect(text(details)).not.toContain('Download with curl');
+    await expectAccessible(file.root);
+
+    const folder = await at('main-63');
+    expect(folder.root.querySelectorAll('quader-data-table tbody tr')).toHaveLength(1);
+    expect(folder.root.querySelector('quader-data-table quader-copy-button')).toBeNull();
+    expect([...folder.root.querySelectorAll('quader-data-table thead th')].map((th) => text(th))).toEqual(['Name', 'Size', 'Last change']);
+  });
+
   it('R-UI-144 Q-UI-555 an empty package repository shows Set up client once, in its header, and its empty state says what fills it and for whom', async () => {
     const owner = await open(NPM_REPO, ({ packages }) => {
       packages.packages = [];

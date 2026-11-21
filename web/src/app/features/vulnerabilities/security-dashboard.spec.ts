@@ -90,6 +90,31 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     await expectAccessible(r.root);
   });
 
+  it('R-UI-193 Q-UI-901 the repository filter offers no system repository of upstream, whose scanning the product keeps off, unless the address names it', async () => {
+    const offered = async (inputs: Record<string, unknown>) => {
+      const r = await renderScreen(VulnerabilityReport, {
+        inputs,
+        capabilities: AUDITOR,
+        providers: [{ provide: VULN_CONTEXT, useValue: SECURITY_CONTEXT }],
+        setup: (get) => {
+          (get(RepositoriesApi) as FakeRepositoriesApi).repositories = [
+            ...NPM_REPOSITORIES,
+            { key: 'docker-hub', project: 'upstream', class: 'remote', format: 'oci' },
+            { key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci' },
+          ];
+        },
+      });
+      const drawer = await openFilters(r.fixture, r.root);
+      const group = [...drawer.querySelectorAll('fieldset')].find((f) => text(f.querySelector('legend')!) === 'Repository')!;
+      return [...group.querySelectorAll('label.check-row')].map((l) => text(l));
+    };
+    const all = await offered({});
+    expect(all).toContain('upstream/docker-hub');
+    expect(all).not.toContain('upstream/scanner-trivy');
+    // Its row menu on the project's page leads here with the filter set: it stays, so the reader can take it off in the drawer.
+    expect(await offered({ repository: 'upstream/scanner-trivy' })).toContain('upstream/scanner-trivy');
+  });
+
   it('R-UI-159 the page starts with its title, the counts and the trend: no form above them, no example texts, one search at the head of the list', async () => {
     const r = await openDashboard();
     expect(r.root.querySelector('form[role="search"]')).toBeNull();

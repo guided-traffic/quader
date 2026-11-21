@@ -1,13 +1,15 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { LimitsApi } from '../../api/limits-api';
+import { RepositoriesApi } from '../../api/repositories-api';
+import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
 import { FakeLimitsApi, sampleHistory } from '../../api/testing/fakes-limits';
 import { limitNotice, waitText } from '../../core/http/problem-messages-limits';
 import { Notifier } from '../../core/notifier';
 import { DownloadLink, probeDownload } from '../../shared/download-link';
 import { seriousViolations } from '../../testing/axe';
 import { buttonByText, renderScreen, settle, sleep, text, type } from '../../testing/screen';
-import { stepText } from './limit-explain';
+import { LimitExplain, stepText } from './limit-explain';
 import { ProfileUsage } from './profile-usage';
 import { accountLink } from './usage-detail';
 import { UsageDetailPage } from './usage-detail';
@@ -154,6 +156,20 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
     const steps = [...root.querySelectorAll('ol.steps li')].map((li) => text(li));
     expect(steps).toEqual(['web/npm-remote: no rule for Alice Example.', 'web/npm-remote: the rule for contractors applies.']);
     expect(text(root)).toContain('50 GB per hour from the upstream, upstream requests per hour: 2,000');
+  });
+
+  it('R-UI-193 Q-UI-901 Explain for a repository suggests no system repository of upstream, whose limits apply to no caller', async () => {
+    const { fixture, root } = await renderScreen(LimitExplain, {
+      setup: (get) => {
+        (get(RepositoriesApi) as FakeRepositoriesApi).repositories = [
+          { key: 'npm-remote', project: 'web', class: 'remote', format: 'npm' },
+          { key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci' },
+        ];
+      },
+    });
+    buttonByText(root, 'Explain for a repository').click();
+    await settle(fixture);
+    expect([...root.querySelectorAll('#explain-repositories option')].map((o) => o.getAttribute('value'))).toEqual(['web/npm-remote']);
   });
 
   it('R-UI-184 a blocked caller shows the block and Lift block for an administrator', async () => {

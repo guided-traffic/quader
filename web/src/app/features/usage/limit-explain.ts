@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, LOCALE_ID, effect, inject, input, s
 import { ExplainStep, Figure, LimitExplanation, LimitsApi, UsageSubjectKind } from '../../api/limits-api';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
+import { isSystemRepository } from '../../core/upstream-project';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { placeLabel, whoView } from '../limits/callers';
@@ -185,7 +186,10 @@ export class LimitExplain {
       return;
     }
     try {
-      this.repositories.set((await this.repositoriesApi.listAll()).map((r) => `${r.project}/${r.key}`));
+      // A system repository of the project upstream answers every client 404 and charges no caller's budget: no limit of it applies
+      // to anyone, so it is no suggestion (R-UI-193, Q-UI-901). The list is the whole one read.
+      const all = await this.repositoriesApi.listAll();
+      this.repositories.set(all.filter((r) => !isSystemRepository(r.project, r.key)).map((r) => `${r.project}/${r.key}`));
     } catch {
       this.repositories.set([]);
     }

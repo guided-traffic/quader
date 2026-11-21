@@ -104,6 +104,21 @@ describe('The results page of the search (R-UI-098)', () => {
     expect(short.repos.listFilters.filter((f) => f.q !== undefined)).toEqual([]);
   });
 
+  it('R-UI-193 Q-UI-902 a system repository is found and carries the badge System; a repository of upstream that clients use does not', async () => {
+    const r = await open('upstream', undefined, (get) => {
+      const repos = get(RepositoriesApi) as FakeRepositoriesApi;
+      repos.repositories = [
+        { key: 'npmjs', project: 'upstream', class: 'remote', format: 'npm', description: 'npm public registry' },
+        { key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci', description: 'Image scanning database' },
+      ];
+    });
+    const badges = [...r.root.querySelectorAll('tbody tr')].map((tr) => [text(tr.querySelector('th a')!), [...tr.querySelectorAll('th .badge')].map((b) => text(b))]);
+    expect(badges).toEqual([
+      ['npmjs', []],
+      ['scanner-trivy', ['System']],
+    ]);
+  });
+
   it('R-UI-098 R-UI-099 no link of the page leads into the admin area', async () => {
     for (const [kind, q] of [['repository', 'web'], ['package', 'ui'], ['project', 'web']] as const) {
       const r = await open(q, kind);

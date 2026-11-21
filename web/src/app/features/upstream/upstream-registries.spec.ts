@@ -29,7 +29,7 @@ function row(root: HTMLElement, name: string): HTMLTableRowElement {
 }
 
 describe('Upstream registries (R-UI-187)', () => {
-  it('R-UI-187 groups the twelve registries by format in catalog order and puts scanner-trivy under Used by Quader', async () => {
+  it('R-UI-187 Q-UI-900 groups the twelve registries by format in catalog order and puts scanner-trivy under System repositories, the name of the project\'s page', async () => {
     const { root } = await render();
     expect(text(root.querySelector('h1')!)).toBe('Upstream registries 12');
     const groups = [...root.querySelectorAll('tr.group-row .format-name > span')].map((name) => text(name));
@@ -39,7 +39,7 @@ describe('Upstream registries (R-UI-187)', () => {
     expect(oci.slice(at + 1, at + 5).map((tr) => text(tr.querySelector('th a')!))).toEqual(['Docker Hub', 'Quay', 'GitHub (ghcr.io)', 'GitLab']);
     expect(text(row(root, 'Docker Hub').querySelector('th')!)).toContain('upstream/docker-hub');
     const system = root.querySelector('#upstream-system')!;
-    expect(text(system)).toBe('Used by Quader');
+    expect(text(system)).toBe('System repositories');
     expect(text(row(root, 'Image scanning database'))).toContain('In use by the image scanning');
     expect(row(root, 'Image scanning database').querySelector('[role="switch"], select')).toBeNull();
     // R-REPO-075: scanner-clamav stands below it the same way, with the malware scan's words.

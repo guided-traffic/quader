@@ -232,6 +232,80 @@ async function* fileView(page: Page): AsyncGenerator<string> {
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
 }
 
+/** The file of `upstream/scanner-clamav` the file page of a system repository shows: a signature database as the task stores it. */
+const systemFile = 'main-63.daily-28189.bytecode-339/main.cvd';
+
+/**
+ * The page of a file of a system repository (R-UI-193, Q-UI-898, Q-UI-899): no Download, no download address and no download with
+ * curl, one sentence in the address's place; as it opens and with Details open. The profile runs no malware scanning, so
+ * `scanner-clamav` holds nothing: the item and its statistics are the answers the server gives for a stored version, routed in the
+ * browser; the repository, the session's checks and everything else are the server's.
+ */
+async function* systemFileView(page: Page): AsyncGenerator<string> {
+  const base = '**/api/v1/projects/upstream/repositories/scanner-clamav';
+  const at = '2026-11-21T06:30:12Z';
+  const item = {
+    repository: 'upstream/scanner-clamav',
+    path: systemFile,
+    kind: 'file',
+    size: 170_479_789,
+    mediaType: 'application/octet-stream',
+    created: { at, by: 'system:malware-database' },
+    modified: { at, by: 'system:malware-database' },
+    updatedAt: at,
+    digests: {
+      sha256: '6f1c0d7d9a9b3c1e5a0f7e2d4b8c9a1e3f5d7b9c1a3e5f7d9b1c3e5a7f9d1b3c',
+      sha512: '9e1b'.repeat(32),
+      sha1: '3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3b5d7f9a1c',
+      md5: '7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d',
+    },
+    declaredMismatch: false,
+    contentStatus: 'ok',
+    package: null,
+    upstreamUrl: null,
+    downloadUrl: `https://localhost:4200/files/upstream/scanner-clamav/${systemFile}`,
+    contentUrl: `/api/v1/projects/upstream/repositories/scanner-clamav/content/${systemFile}`,
+    itemUrl: `https://localhost:4200/api/v1/projects/upstream/repositories/scanner-clamav/items?path=${encodeURIComponent(systemFile)}`,
+  };
+  await page.route(`${base}/items?**`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(item) }));
+  await page.route(`${base}/stats?**`, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ downloads: 0, lastDownloadAt: null, lastDownloader: null }) }),
+  );
+  await page.reload();
+  await expect(page.locator('[data-testid="file-system"]')).toBeVisible();
+  yield '';
+  await page.getByRole('button', { name: /^Details/ }).click();
+  await expect(page.getByText('Counts reach the database within a minute of a download.')).toBeVisible();
+  yield 'details';
+  await page.unroute(`${base}/items?**`);
+  await page.unroute(`${base}/stats?**`);
+}
+
+/**
+ * The admin area's repositories of the project upstream (R-UI-193, Q-UI-898, Q-UI-902): every registry with its copy button and its
+ * menu, the two system repositories with the badge **System** and the menu alone; then the menu of `scanner-trivy`, without **Copy
+ * client address**.
+ */
+async function* systemRows(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main tbody th[scope="row"] .badge', { hasText: /^System$/ })).toHaveCount(2);
+  yield '';
+  await page.getByRole('button', { name: 'Actions for scanner-trivy' }).click();
+  await expect(page.locator('.menu').getByRole('menuitem', { name: 'Files' })).toBeVisible();
+  yield 'menu';
+  await page.keyboard.press('Escape');
+}
+
+/** The top bar's suggestions for a text that finds the two system repositories, each with the badge **System** (Q-UI-902). */
+async function* systemSuggestions(page: Page): AsyncGenerator<string> {
+  yield '';
+  const narrow = (page.viewportSize()?.width ?? 1440) < 576;
+  if (narrow) await page.getByRole('button', { name: 'Search', exact: true }).click();
+  else await page.locator('#global-search').click();
+  await page.locator('#global-search').fill('scanner');
+  await expect(page.locator('#search-suggestions [role=option]', { hasText: 'scanner-trivy' })).toContainText('System');
+  yield 'search-system';
+}
+
 /** A folder with more entries than a page holds, then filtered while a page is still to load, then with every page loaded. */
 async function* manyEntries(page: Page): AsyncGenerator<string> {
   yield '';
@@ -1229,7 +1303,8 @@ export const screens: readonly Screen[] = [
   // The built-in project with the registries the seed switched on: the administrator sees its two system repositories in their
   // section (R-UI-192); the plain user reads the registries that are on and no system repository, so no section.
   { id: 'repositories-upstream', path: '/ui/projects/upstream/repositories', kinds: ['admin'], walk: systemRepositories },
-  { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'] },  { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
+  { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'] },
+  { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
   { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
@@ -1291,6 +1366,19 @@ export const screens: readonly Screen[] = [
   { id: 'files-npm', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-`, kinds: all },
   { id: 'files-npm-file', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-/ui-kit-1.1.0.tgz`, kinds: owners },
   { id: 'files-oci', path: `${P}/repositories/images/files`, kinds: ['plain'] },
+  // A file of a system repository (R-UI-193): what only an administrator reaches.
+  {
+    id: 'files-system',
+    path: `/ui/projects/upstream/repositories/scanner-clamav/files/${systemFile}`,
+    kinds: admins,
+    walk: systemFileView,
+    expected: [
+      {
+        match: /^GET \/api\/v1\/projects\/upstream\/repositories\/scanner-clamav\/items\?path=\S+ answered 404$/,
+        why: 'the profile stores no signature database: the first load reads the file before the walk routes its answer',
+      },
+    ],
+  },
   // The malware scan's fact of a file and a version (R-MAL-024): what a plain user meets; the same for every kind.
   {
     id: 'files-malware',
@@ -1325,6 +1413,9 @@ export const screens: readonly Screen[] = [
   { id: 'setup-ansible-virtual', path: `${O}/repositories/ansible/setup`, kinds: all },
   // The top bar's search ends on a page of the main area, never in the admin area (Q-UI-390); the field shows the text.
   { id: 'search', path: '/ui/search?q=npm', kinds: all },
+  // The registries of upstream and its two system repositories, each of these with the badge System (R-UI-193, Q-UI-902).
+  { id: 'search-system', path: '/ui/search?q=upstream', kinds: admins },
+  { id: 'search-field-system', path: '/ui/projects', kinds: admins, walk: systemSuggestions },
   { id: 'search-none', path: '/ui/search?q=no-such-repository', kinds: ['admin'] },
   // Guides (R-UI-124): the formats as tiles, the repositories of a format, the guide of a class without a repository.
   { id: 'guides', path: '/ui/guides', kinds: ['anonymous', ...all], expected: noSession },
@@ -1396,6 +1487,8 @@ export const screens: readonly Screen[] = [
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins },
   { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: searched('web') },
   { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen(), widths: [1100, 1280] },
+  // The rows of upstream: the system repositories with their badge and without the copy button (R-UI-193).
+  { id: 'admin-repositories-upstream', path: '/ui/admin/repositories?project=upstream', kinds: admins, walk: systemRows },
   // The public registries Quader offers (R-UI-187, R-UI-188): the list grouped by format, and a Debian archive's page, the one with
   // the most to lay out (its archive keys). The member editor's placeholder is in repository-settings-oci-virtual.
   { id: 'admin-upstream', path: '/ui/admin/upstream', kinds: admins },

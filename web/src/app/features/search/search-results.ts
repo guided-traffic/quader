@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
-import { isUpstreamProject, projectDescription } from '../../core/upstream-project';
+import { isSystemRepository, isUpstreamProject, projectDescription, systemBadge } from '../../core/upstream-project';
 import { NoValue } from '../../shared/ui/no-value';
 import { Router, RouterLink } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../api/packages-api';
@@ -63,6 +63,11 @@ const PAGE = 25;
                     <quader-visibility-icon [level]="row.visibility.artifacts" />
                     <span class="icon-name-text">
                       <a [routerLink]="['/projects', row.project, 'repositories', row.key]" translate="no">{{ row.key }}</a>
+                      <!-- A system repository of upstream is found and marked, so that it does not read as one more repository of
+                           its project (R-UI-193, Q-UI-902). -->
+                      @if (system(row)) {
+                        &ngsp;<span class="badge">{{ systemText }}</span>
+                      }
                       @if (row.description) {
                         <span class="secondary">{{ row.description }}</span>
                       }
@@ -307,6 +312,11 @@ export class SearchResults {
   protected readonly classIcon = classIcon;
 
   protected readonly builtIn = isUpstreamProject;
+  /** A system repository of the project `upstream`, with its mark (R-UI-193, Q-UI-902). */
+  protected system(row: RepositorySummary): boolean {
+    return isSystemRepository(row.project, row.key);
+  }
+  protected readonly systemText = systemBadge();
   /** The built-in project's description is the UI's localized sentence (Q-UI-895). */
   protected readonly descriptionOf = projectDescription;
 

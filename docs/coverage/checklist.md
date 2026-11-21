@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,049 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,050 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (509 of them implemented), 1,451 open.
-1,049 spec requirements: 720 cover catalog features, 329 cover none (`quader-only`, [listed at the
+1,050 spec requirements: 720 cover catalog features, 330 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>329 requirements</summary>
+<summary>330 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3086,6 +3086,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-190 | The project `upstream` in the main area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-191 | A new remote repository names the central one | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-192 | The system repositories of the project `upstream` stand apart on its page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-193 | A system repository is set apart wherever it is shown, and nothing offers what it refuses | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |

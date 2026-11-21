@@ -9,13 +9,15 @@ import { TimeAgo } from '../../../shared/ui/time-ago';
 import { MalwareStatusView } from '../../../shared/malware/malware-status';
 import { formatSize } from '../../packages/format-size';
 import { nameOf } from './file-paths';
+import { isSystemRepositoryName, systemClientSentence, upstreamKeyOf } from '../../../core/upstream-project';
 
 /** A POSIX shell word for `value`: single quotes, with an embedded single quote closed and escaped. */
 const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
 
 /**
  * The page of one file of a repository (R-UI-010, Q-UI-514), below its path, which names it and holds **Download** and, for a
- * holder of `delete`, **Delete** (the page's): the download address to copy; the facts a reader needs (size, media type, created, last
+ * holder of `delete`, **Delete** (the page's): the download address to copy (for a file of a system repository the sentence why
+ * there is none, Q-UI-899); the facts a reader needs (size, media type, created, last
  * changed, the malware scan's verdict of R-MAL-024, SHA-256). The other checksums, the
  * download statistics and the item as the API describes it are the closed section **Details**: they are for who checks a file,
  * not for who fetches it.
@@ -30,7 +32,11 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
            the section is for assistive technology. -->
       <h2 id="file-name" class="visually-hidden" translate="no">{{ name() }}</h2>
 
-      @if (it.downloadUrl; as url) {
+      <!-- A file of a system repository has no address to copy: its downloads by path answer 404 to every caller. One sentence
+           says why where the address would stand (Q-UI-898, Q-UI-899). -->
+      @if (system()) {
+        <p class="content-note system-note" data-testid="file-system">{{ systemNote() }}</p>
+      } @else if (it.downloadUrl; as url) {
         <div class="file-address">
           <span class="field-label" i18n="@@files.download-address">Download address</span>
           <quader-address-field [value]="url" [label]="addressLabel" [copyLabel]="copyAddressLabel" />
@@ -160,10 +166,18 @@ export class RepositoryFile {
   });
   protected readonly itemJson = computed(() => JSON.stringify(this.item(), null, 2));
   protected readonly curl = computed(() => `curl -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(this.item().itemUrl)}`);
+  /** The download with curl; none for a file of a system repository, which answers it 404 (Q-UI-898). */
   protected readonly downloadCurl = computed(() => {
     const url = this.item().downloadUrl;
-    return url ? `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(url)}` : '';
+    return url && !this.system() ? `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(url)}` : '';
   });
+  /**
+   * A file of a system repository of the project `upstream` (R-UI-193): Quader's own work reads it, and every download, by its
+   * address for downloads by path and through the content route of the UI alike, answers 404 (R-REPO-070, R-REPO-075). The item's
+   * request with curl stays: the management API reads it (Q-UI-898).
+   */
+  protected readonly system = computed(() => isSystemRepositoryName(this.item().repository));
+  protected readonly systemNote = computed(() => systemClientSentence(upstreamKeyOf(this.item().repository), 'file'));
 
   protected readonly addressLabel = $localize`:@@files.download-address:Download address`;
   protected readonly copyAddressLabel = $localize`:@@files.copy-download-address:Copy download address`;

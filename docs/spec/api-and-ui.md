@@ -8205,7 +8205,7 @@ action that switches all on and one that sets the visibility of all
   5. One action, **Details** (R-UI-163), which opens R-UI-188.
   A note under the name, muted, where it applies: "Address differs from Quader's"; "The account was removed when Quader's address moved
   to another host; enter it again."
-- **Used by Quader.** Below the table a second table, **Used by Quader**, holds the system repositories: `scanner-trivy` with the
+- **System repositories.** Below the table a second table, **System repositories** (the name of the project's page, [Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)), holds the system repositories: `scanner-trivy` with the
   display name "Image scanning database", the state as a badge, **In use** (`ok`) "In use by the image scanning" or **Not in use**,
   the level as text (Private, with the lock icon) and **Details**; no switch and no select
   ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)). `scanner-clamav`
@@ -8342,8 +8342,10 @@ Priority: **MVP** · Covers: quader-only
   and shows no snippet; for `scanner-clamav` "Quader's malware scan keeps its signature database in this repository. Clients cannot use
   it." (Q-UI-883).
 - **Search, Recently opened and the guides** list well-known repositories like any repository the caller reads, with the project's
-  mark (R-UI-095, R-UI-167, R-UI-124); a system repository without **Set up client** (Q-UI-896).
-- **The admin area's repository list** (R-UI-020) shows them with their project and offers no **Delete** and no **Move** for them.
+  mark (R-UI-095, R-UI-167, R-UI-124); a system repository without **Set up client** (Q-UI-896), with the badge **System** in the
+  search, and not at all in the guides (R-UI-193).
+- **The admin area's repository list** (R-UI-020) shows them with their project and offers no **Delete** and no **Move** for them; a
+  system repository with the badge **System** and without its address to copy (R-UI-193).
 
 Acceptance criteria (Vitest, about 1 s; rendered under rule 11): the project list shows **Upstream** with **Built-in**, first, above a
 project whose name and key sort before it, also when the list is sorted the other way, and its mark holds an arrow and no letter; its side bar
@@ -8405,6 +8407,60 @@ Acceptance criteria (Vitest, `system-repositories.spec.ts`, about 0.4 s, and the
 - A caller who reads no system repository gets no section; `setupCommands` of `upstream/scanner-trivy` is null; the page of
   `upstream/scanner-trivy` has no **Set up client** and says "This repository has cached no images yet.", that of
   `upstream/scanner-clamav` offers no upload.
+
+### R-UI-193 · A system repository is set apart wherever it is shown, and nothing offers what it refuses
+Priority: **MVP** · Covers: quader-only
+
+The owner's word of 2026-11-21 to what the builder of R-UI-192 had reported and left: "Vom Builder gemeldet, nicht geändert: direkt
+nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system repository of the project `upstream` (`scanner-trivy`,
+`scanner-clamav`; R-REPO-066) answers every client's request, every download by path and every deploy with 404, for every caller
+(R-REPO-070, R-REPO-075); the management API reads it. The UI knows the two by their qualified names (`isSystemRepository`,
+`isSystemRepositoryName` of `upstream-project.ts`, Q-UI-893).
+
+- **No address, download or command** ([Q-UI-898](#q-ui-898--nothing-offers-what-a-system-repository-refuses-no-address-no-download-no-command)):
+  the admin area's row has no copy button and its menu no **Copy client address**; its content page's **Details** has no address for
+  downloads by path; a file's row in its folders has no copy button (and the folder's table no column for it); the page of one of its
+  files has no **Download**, no download address and no **Download with curl** (the item's own request with curl stays, which the
+  management API answers); the opened row of one of its images has no pull command and no **Show command**; a package's install panel
+  never offers it, and a version's **Files** tab offers no **Download** for a file it holds.
+- **Why, once** ([Q-UI-899](#q-ui-899--where-a-download-or-a-command-is-left-out-one-sentence-names-the-work-that-reads-it)): where the
+  download address of a file stood, and in the install panel of a version that only system repositories hold, one muted sentence:
+  "Only Quader's malware scan reads this file; clients cannot download it." (`scanner-clamav`), "Only Quader's image scanning reads this
+  version; clients cannot install it." (`scanner-trivy`), and the other two of the same form.
+- **One name** ([Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)): the admin
+  area's page **Upstream registries** heads its second table **System repositories**, as the project's page heads its section, in
+  German "System-Repositories".
+- **Not offered where a repository is picked to work with** ([Q-UI-901](#q-ui-901--a-system-repository-is-not-offered-where-a-repository-is-picked-to-work-with)):
+  the guides' list of a format, the repository select of the exposure rule editor, the repository filters of the security dashboard
+  (the findings and the view **Malware**), and the repository suggestions of **Explain for a repository**. A filter whose address names
+  one keeps it as an option, so that the reader can take it off.
+- **Still found, and marked** ([Q-UI-902](#q-ui-902--where-a-system-repository-is-listed-among-others-it-carries-the-badge-system)): the
+  admin area's list of repositories, the top bar's suggestions (also its frequently visited repositories) and the tab **Repositories** of
+  the search's results show them with the neutral badge **System** after the key, part of a suggestion's spoken name ("scanner-trivy ·
+  upstream, System"). The project's own section has its heading and no badge in its rows.
+- **Left as they are**: **Recently opened** in the side bar lists a system repository like any other repository the reader opened (a
+  visit is a visit); the row menus and the content page keep **Files**, **Settings** and, for `scanner-trivy`, **Vulnerabilities**
+  (R-UI-192); a project's package list lists what a system repository holds.
+
+Acceptance criteria (Vitest, about 1 s together: the R-UI-193 cases of `core/upstream-project.spec.ts`, `system-repositories.spec.ts`,
+`repository-content.spec.ts`, `install-panel.spec.ts`, `package-version.spec.ts`, `guides.spec.ts`, `endpoints.spec.ts`,
+`security-dashboard.spec.ts`, `malware-finds.spec.ts`, `usage.spec.ts`, `search-field.spec.ts`, `search-results.spec.ts`, and the
+Q-UI-900 case of `upstream-registries.spec.ts`; rendered under rule 11: `admin-repositories-upstream`, `files-system`, `admin-upstream`,
+`search-system`, `search-field-system`):
+
+- The admin list of `upstream` shows `scanner-trivy` and `scanner-clamav` with **System**, no copy button, and the menu of
+  `scanner-trivy` **Settings**, **Files**, **Vulnerabilities**; `npmjs` keeps its copy button and **Copy client address**.
+- The page of `upstream/scanner-clamav/main-63/main.cvd` has **Delete** and no **Download**, no address field, the sentence, and in
+  **Details** one curl command, the item's; its folder's table has the columns Name, Size and Last change.
+- The opened row of an image of `scanner-trivy` has its tags and no command, and the client setup is never asked; its **Details** has no
+  address field.
+- A version that only `upstream/scanner-trivy` holds: the install panel says the sentence and asks for no snippet, **Files** has no
+  **Download**; one held by `upstream/scanner-trivy` and `web/npm-local` installs through `web/npm-local` without a picker.
+- The guides of npm list `upstream/npmjs` and not `scanner-trivy`, each row with **Set up client**; the rule editor offers
+  `upstream/docker-hub` and not `upstream/scanner-trivy`; the dashboard's drawer offers it only with `?repository=upstream/scanner-trivy`;
+  the view **Malware** offers `web/files-internal` alone; **Explain for a repository** suggests `web/npm-remote` alone.
+- The suggestion of `upstream/scanner-trivy` is heard "scanner-trivy · upstream, System" and `web/scanner-trivy` without it; the results
+  mark `scanner-trivy` and not `npmjs`; the admin page's second heading is **System repositories**.
 
 ## Deferred
 
@@ -20106,7 +20162,9 @@ status form (the style guide's lists). The development agent sees no case for re
 
 ### Q-UI-834 · The system repositories stand in a table of their own, without a switch
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Superseded in
+part by [Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)**: the table is headed **System repositories**, as the project's page names them; the table, its columns and
+its hint stay as chosen here.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -20337,7 +20395,8 @@ development agent would revisit the room above it if the owner reads it as part 
 
 ### Q-UI-892 · The section is named System repositories
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Superseded in
+part by [Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)**: the admin page takes the name too, from the same unit of the catalogue.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -20417,7 +20476,8 @@ development agent would revisit it if the product ever lets an installation chan
 ### Q-UI-896 · No screen offers a client action for a system repository: one function decides the link
 
 Status: **Decided by the development agent** — selected from the options below, carrying the owner's "Ohne den client einrichten
-button" (Q-UI-891) to every screen; the owner reviews it at the walkthrough.
+button" (Q-UI-891) to every screen; the owner reviews it at the walkthrough. **Superseded in part by [Q-UI-901](#q-ui-901--a-system-repository-is-not-offered-where-a-repository-is-picked-to-work-with)**: the guides no
+longer list a system repository, so no row of theirs stands without an action.
 
 Context: a system repository answers every client's request and every deploy with 404, as a repository that does not exist; the
 management API reads its document and lists and deletes its items (R-REPO-070, R-REPO-075). **Set up client** was offered by its row,
@@ -20438,6 +20498,119 @@ repository today, R-UI-190).
 
 **Applied in the spec:** R-UI-190, R-UI-192. Code: [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts),
 [guide-format.ts](../../web/src/app/features/guides/guide-format.ts), [install-panel.html](../../web/src/app/features/packages/install-panel.html).
+
+### Q-UI-898 · Nothing offers what a system repository refuses: no address, no download, no command
+
+Status: **Decided by the development agent** — selected from the options below, carrying the owner's "Das ist alles wichtig und muss
+umgesetzt werden" (2026-11-21) to every place the builder of R-UI-192 had reported; the owner reviews it at the walkthrough.
+
+Context: verified in the code. Every protocol request to a system repository answers 404 as for a repository that does not exist
+(`target.resolved` of [files.go](../../internal/files/files.go) for `/files/`, and the content route of the UI shares it through `Stat`,
+[content.go](../../internal/api/rawfiles/content.go)); the client setup answers snippets for it all the same
+([packages_api.go](../../internal/api/v1/packages_api.go) `clientSetup` has no test for it), and the API answers its addresses, an item's
+`downloadUrl` and `contentUrl` and a version file's two members as for any repository. So the admin area's copy button, a file's
+**Download**, its download address and its curl command, the folder's copy buttons, the address for downloads by path of its **Details**,
+the pull command of an opened image and the install panel of its versions all handed out something that fails.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The UI leaves each of them out for a system repository, decided by its qualified name (`isSystemRepository`, `isSystemRepositoryName`) in the component that holds the name (chosen) | R-UI-193 | One test, the one of Q-UI-896 and Q-UI-893, in every place; nothing asked of the server that fails; the API stays one shape for every repository, as it is for a disabled one, whose addresses it answers and whose clients it refuses | The browser repeats a fact the server knows |
+| (b) The server leaves the addresses, `downloadUrl`, `contentUrl` and the snippets out for a system repository | The API answers what works | One source; a script against the API meets no dead address either | Two required members of `PackageFile` become optional for every repository; the client setup needs an answer for "no client"; the badge of Q-UI-902 and the lists of Q-UI-901 still need the key test, so the UI keeps it anyway |
+| (c) Only the four places the builder named | — | Smaller | The folder's copy buttons, the address of **Details**, the opened row's command and a version's **Download** would still lead to 404 |
+
+**Choice:** (a). A column that would be empty for every row goes with its content: the folder's actions, the opened row's actions and a
+version's **Download** when no file of it can be downloaded (the style guide's rule of a column without data). The admin area's row keeps
+its menu alone; the layout check that counts the ways the action cells of one table are built allows exactly that pair on the admin
+area's repository list (`allowed` of [layout.ts](../../web/e2e/renders/layout.ts), matched by its measured detail).
+
+**Rationale:** the rule of Q-UI-896 is a fact of the repository, and every client action is one more place of the same fact. The
+development agent would revisit (b) if the repository list ever carries the repository's kind (Q-UI-893's condition), which also makes the
+key test unnecessary.
+
+**Applied in the spec:** R-UI-193. Code: [repository-list.ts](../../web/src/app/features/repositories/repository-list.ts),
+[repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
+[repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
+[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
+[install-panel.ts](../../web/src/app/features/packages/install-panel.ts), [package-version.ts](../../web/src/app/features/packages/package-version.ts).
+
+### Q-UI-899 · Where a download or a command is left out, one sentence names the work that reads it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One muted sentence where the download address of a file stood and in place of the install command of a version only system repositories hold: "Only Quader's malware scan reads this file; clients cannot download it.", "Only Quader's image scanning reads this version; clients cannot install it." (chosen) | `systemClientSentence` of [upstream-project.ts](../../web/src/app/core/upstream-project.ts) | The form of the settings page's "only Quader's image scanning reads it" (Q-UI-883): who reads it and what that means for a client, in one sentence | Four sentences to translate |
+| (b) Nothing in their place | — | Shortest | The file's page and the install panel's heading **Install** would stand without the thing every other one shows, unexplained |
+| (c) The two sentences of the page `…/setup` | One wording | Already translated | Two sentences where the style guide allows one; "Clients cannot use it" says nothing of a download |
+
+**Choice:** (a). The opened row of an image on the repository's own page gets no sentence: that page offers no client action at all
+(Q-UI-896), so the missing command is no surprise there.
+
+**Rationale:** a reader who meets a file without **Download** needs the reason once, where the address would be. The development agent
+would revisit the wording if the product gains a system repository of another kind of work.
+
+**Applied in the spec:** R-UI-193.
+
+### Q-UI-900 · The admin page of the upstream registries names the same two System repositories
+
+Status: **Decided by the development agent** — selected from the options below, after the owner's "Das ist alles wichtig und muss
+umgesetzt werden" (2026-11-21) to the builder's report that the admin page calls them **Used by Quader**; the owner reviews it at the
+walkthrough. Supersedes the heading of Q-UI-834 and the open end of Q-UI-892.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **System repositories** on both pages, from one unit of the catalogue (`repo.system.heading`), German "System-Repositories" (chosen) | R-UI-193 | One name for one thing, held by the translation file: the two headings cannot drift apart | The admin page's heading no longer says why the rows have no switch; its hint under it still does |
+| (b) Keep **Used by Quader** | — | Says why they have no switch | Two names for the same two repositories, one of them a phrase (Q-UI-892) |
+| (c) **Used by Quader** on both | — | One name | Names no group on a team's page (Q-UI-892) |
+
+**Choice:** (a). The hint "Repositories Quader reads for its own work. They have no switch: the work that uses them decides." stays under
+the heading.
+
+**Rationale:** the spec, the API's `kind: system`, the project's page and the owner say system repositories. The development agent sees
+no case for revisiting this.
+
+**Applied in the spec:** R-UI-187, R-UI-193. Code: [upstream-registries.ts](../../web/src/app/features/upstream/upstream-registries.ts).
+
+### Q-UI-901 · A system repository is not offered where a repository is picked to work with
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the four places read the whole list of repositories the caller reads into the browser (`listAll`, and the project's list by
+`collectAll`), so a filter in the browser breaks no paging; nothing of the server has to change.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Left out of the guides' list, the exposure rule editor's select, the repository filters of the security dashboard (findings and **Malware**) and the suggestions of **Explain for a repository**; a filter or a stored rule that names one keeps it (chosen) | R-UI-193 | Nothing offered whose work cannot happen: no client, no exposure, no scan (R-REPO-070, R-MAL-001), no caller's budget (R-LIM-015); a reader who arrives with it set can still take it off | Four places repeat one filter |
+| (b) Shown, disabled, with the reason | — | The reader learns they exist | A select or a datalist cannot say why per option; the guides' row had an empty action cell (Q-UI-896's against) |
+| (c) A parameter of the list operation that leaves them out | The server filters | One place | A change of the API for two keys the UI knows; the admin list and the search must still show them |
+
+**Choice:** (a).
+
+**Rationale:** a picker offers what the work it starts can use. The development agent would revisit (c) if the list operation gains the
+repository's kind.
+
+**Applied in the spec:** R-UI-193, R-UI-190. Code: [guide-format.ts](../../web/src/app/features/guides/guide-format.ts),
+[exposure-rule-editor.ts](../../web/src/app/features/endpoints/exposure-rule-editor.ts),
+[vulnerability-report.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.ts),
+[malware-finds.ts](../../web/src/app/features/vulnerabilities/malware-finds.ts), [limit-explain.ts](../../web/src/app/features/usage/limit-explain.ts).
+
+### Q-UI-902 · Where a system repository is listed among others, it carries the badge System
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The neutral badge **System** after the key in the admin area's list, the top bar's suggestions and the search's results; not in the rows of the project's section (chosen) | `systemBadge` of [upstream-project.ts](../../web/src/app/core/upstream-project.ts), the badge **Built-in** marks the project the same way | Found where an administrator looks, and never read as one more registry of the project; one word in every place | One more badge in a row that may carry **disabled** |
+| (b) The badge in the project's section too | The same everywhere | — | Under the heading **System repositories** every row would repeat it: two statements of one fact on one screen |
+| (c) No badge: the project's mark says enough | — | Nothing new | The mark says **Upstream**, which holds twelve registries that clients use |
+
+**Choice:** (a). In a suggestion the badge is drawn for the eye and its word is part of the option's name, as **Disabled** of a user is.
+
+**Rationale:** the owner asked for them to be set apart "bewusst"; where they cannot stand apart in a section of their own, a word does
+it. The development agent would revisit the section's rows if the owner wants the badge there too.
+
+**Applied in the spec:** R-UI-193. Code: [repository-list.html](../../web/src/app/features/repositories/repository-list.html),
+[search-field.html](../../web/src/app/features/search/search-field.html), [search-results.ts](../../web/src/app/features/search/search-results.ts).
 
 ### Q-UI-850 · The sources screen names the database's repository, links it, and shows how to fill a local one
 

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { Child, FilesApi } from '../../../api/files-api';
 import { Notifier } from '../../../core/notifier';
 import { filesCommands } from '../../../core/project-links';
+import { isSystemRepositoryName } from '../../../core/upstream-project';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
@@ -22,8 +23,8 @@ export const FILES_PAGE = 200;
 /**
  * A folder of a repository's files (R-UI-010, R-UI-052): its entries as the shared data table, folders and files by name in the
  * order of their paths, in pages of 200 with **Load more** (R-API-025). A folder's name leads to the folder, a file's name to its
- * page; a file's row copies its download address. The filter narrows the entries loaded so far, because the server has no name
- * filter on children (Q-UI-513). Above the list, the operations the caller may use here (R-UI-011, Q-UI-512): **Upload files** and
+ * page; a file's row copies its download address, except in a system repository, which answers no client (Q-UI-898). The filter
+ * narrows the entries loaded so far, because the server has no name filter on children (Q-UI-513). Above the list, the operations the caller may use here (R-UI-011, Q-UI-512): **Upload files** and
  * **New folder** for a holder of `deploy` in a local repository that takes raw uploads, and **Delete folder**, which the page runs.
  */
 @Component({
@@ -85,7 +86,7 @@ export const FILES_PAGE = 200;
     }
     <quader-data-table
       [caption]="caption"
-      [columns]="columns"
+      [columns]="columns()"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
       [error]="list.error()"
@@ -117,11 +118,13 @@ export const FILES_PAGE = 200;
               –
             }
           </td>
-          <td class="actions">
-            @if (c.kind === 'file' && fileUrl(c); as url) {
-              <quader-copy-button [value]="url" [label]="copyUrlLabel(c)" [quiet]="true" />
-            }
-          </td>
+          @if (!system()) {
+            <td class="actions">
+              @if (c.kind === 'file' && fileUrl(c); as url) {
+                <quader-copy-button [value]="url" [label]="copyUrlLabel(c)" [quiet]="true" />
+              }
+            </td>
+          }
         </tr>
       }
     </quader-data-table>
@@ -177,12 +180,18 @@ export class RepositoryFiles {
    * as wide as their values (Q-UI-563). Their guessed widths kept 120 px empty beside them while a long file name stood in three
    * lines at 1,024 px (2026-11-18).
    */
-  protected readonly columns: readonly TableColumn[] = [
+  protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'name', label: $localize`:@@repo.content.col.name:Name`, width: '12rem' },
     { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true },
     { id: 'modified', label: $localize`:@@repo.content.col.modified:Last change` },
-    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
-  ];
+    // A system repository's files have no address to copy, so the column would stay empty (Q-UI-898).
+    ...(this.system() ? [] : [{ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true }]),
+  ]);
+  /**
+   * A system repository of the project `upstream` (R-UI-193): every download by path answers 404 to every caller (R-REPO-070,
+   * R-REPO-075), so no file's row offers its download address (Q-UI-898).
+   */
+  protected readonly system = computed(() => isSystemRepositoryName(this.repository()));
 
   constructor() {
     effect(() => {

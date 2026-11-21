@@ -48,6 +48,27 @@ describe('Guides', () => {
     await expectAccessible(r.root);
   });
 
+  it('R-UI-193 Q-UI-901 a system repository of upstream is not among the repositories clients can use; a registry of upstream is', async () => {
+    const r = await renderScreen(GuideFormat, {
+      inputs: { format: 'npm' },
+      setup: (get) => {
+        catalog(get);
+        const repos = get(RepositoriesApi) as FakeRepositoriesApi;
+        repos.repositories = [
+          ...repos.repositories,
+          { key: 'npmjs', project: 'upstream', class: 'remote', format: 'npm', description: 'npm public registry' },
+          // As the product declares it only for OCI and generic; npm here, so that the format's one list shows the rule.
+          { key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'npm', description: 'Image scanning database' },
+        ];
+      },
+    });
+    const keys = [...r.root.querySelectorAll('tbody tr')].map((row) => text(row.querySelector('th .icon-name-text > a')!));
+    expect(keys).toContain('npmjs');
+    expect(keys).not.toContain('scanner-trivy');
+    // Every row left has its Set up client.
+    expect(r.root.querySelectorAll('tbody td.actions.with-setup a.row-setup')).toHaveLength(keys.length);
+  });
+
   it('R-UI-124 a reader without a repository of the format is told so, and the class guides stay', async () => {
     const r = await renderScreen(GuideFormat, {
       inputs: { format: 'npm' },

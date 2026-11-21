@@ -38,7 +38,7 @@ The list has one search field, **Search by advisory, alias, package or summary**
 | A whole advisory identifier: `CVE-2021-23337`, `GHSA-35jh-r3h4-6jhm`, `MAL-2026-1234`, `PYSEC-…`, `GO-…`, `RUSTSEC-…`, `OSV-…` | The findings of that advisory, and of every advisory that names it as an alias | `CVE-2021-23337` finds the finding whose advisory is `GHSA-35jh-r3h4-6jhm`, because the GitHub advisory names that CVE as an alias. The identifier is written in its usual spelling as you type: `cve-2021-23337` becomes `CVE-2021-23337`, a `GHSA-` identifier keeps its lower-case groups. The search starts at the advisory and reaches its findings through an index, so it answers as fast on a large installation as on a small one |
 | Any other text, for example `lodash` or `prototype pollution` | The findings whose package name, advisory identifier, alias or summary contains the text, in any case | A part of an identifier (`CVE-2021`) is such a text. It reads every finding you may read and is slower on very large installations; a whole identifier is the fast way |
 
-**Filters** opens the drawer: **Project** (the projects as a list to tick, by mark and name), **Severity**, **Status**, **Kind**, **Repository**, **Format**, **Package** (the exact name and a version), **Exploit, fix and block**, and **Detected**. Every filter that is set shows as a chip beside **Filters**, with its value and a button that removes it. Everything is part of the address, so a link reproduces the list.
+**Filters** opens the drawer: **Project** (the projects as a list to tick, by mark and name), **Severity**, **Status**, **Kind**, **Repository** (every repository of a scanned format, but the system repositories of the project Upstream, which are never scanned), **Format**, **Package** (the exact name and a version), **Exploit, fix and block**, and **Detected**. Every filter that is set shows as a chip beside **Filters**, with its value and a button that removes it. Everything is part of the address, so a link reproduces the list.
 
 The advisory page's link to all of its findings opens the dashboard with that identifier in the search field.
 
@@ -68,7 +68,7 @@ vulnerability findings of the other view block known malicious packages by name.
 | **Found** | When the scan found it, the newest first |
 
 **Search by path or signature** finds a part of a file's path or of a signature. **Filters** offers **State**, **Release** (released or
-not) and **Repository**; each filter that is set is a chip beside **Filters**, and everything is part of the address. When nothing was
+not) and **Repository** (without the system repositories of the project Upstream, which are never scanned for malware); each filter that is set is a chip beside **Filters**, and everything is part of the address. When nothing was
 found, the list says **No malware found.** with the date of the signature database in use.
 
 **Release.** With `vulnerabilities:triage` together with `content:metadata-read` (the roles `auditor` and `admin`), each row offers

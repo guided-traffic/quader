@@ -392,6 +392,18 @@ describe('Exposure rule editor', () => {
     expect(select.options.length).toBeGreaterThan(1);
   });
 
+  it('R-UI-193 Q-UI-901 the repository select offers no system repository of upstream, whose clients every endpoint answers 404; a registry of upstream it offers', async () => {
+    const r = await create((_, repos) => {
+      repos.repositories.push(
+        { key: 'docker-hub', project: 'upstream', class: 'remote', format: 'oci' },
+        { key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci' },
+      );
+    });
+    const offered = [...r.root.querySelector<HTMLSelectElement>('#f-repository')!.options].map((o) => o.value);
+    expect(offered).toContain('upstream/docker-hub');
+    expect(offered).not.toContain('upstream/scanner-trivy');
+  });
+
   it('R-EP-017 name and repository of a stored rule cannot be edited', async () => {
     const r = await edit();
     expect(r.root.querySelector('input#f-name')).toBeNull();

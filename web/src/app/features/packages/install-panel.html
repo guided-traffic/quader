@@ -3,6 +3,10 @@
 
   @if (clients().length === 0) {
     <p i18n="@@pkg.install.no-clients">There are no install instructions for this package type yet.</p>
+  } @else if (systemNote(); as note) {
+    <!-- Held by system repositories of upstream alone, which answer every client 404: no command that would fail (Q-UI-898,
+         Q-UI-899). -->
+    <p class="system-note" data-testid="install-system">{{ note }}</p>
   } @else {
     <quader-install-command
       [format]="format()"
@@ -11,11 +15,11 @@
       [repository]="repository()"
       [(client)]="client"
     >
-      @if (version().repositories.length > 1) {
+      @if (repositories().length > 1) {
         <label class="picker">
           <span i18n="@@pkg.install.repository">Repository</span>
           <select class="select-input" (change)="pickRepository($event)">
-            @for (r of version().repositories; track r.key) {
+            @for (r of repositories(); track r.key) {
               <option [value]="r.key" [selected]="r.key === repository()" translate="no">{{ r.key }}</option>
             }
           </select>

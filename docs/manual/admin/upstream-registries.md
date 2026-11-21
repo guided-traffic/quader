@@ -41,6 +41,7 @@ the old host; the repository says so, and you enter the account again.
 
 **Admin area › Upstream registries** lists the registries grouped by format. Each row has the registry's name with `upstream/<key>`
 under it, its switch, its visibility level, **Listed by** (how many virtual repositories, in all projects, list it) and **Details**.
+Below them the table **System repositories** holds `scanner-trivy` and `scanner-clamav`, the same name the project's page gives them.
 Holders of the roles admin and repository-admin change them; security-admin and auditor read the page without the controls.
 
 ## Switching on and off
@@ -130,11 +131,12 @@ repository ([Download limits and usage](download-limits.md)).
 
 ## The image scanning's database
 
-**Used by Quader** under the list holds `scanner-trivy`, **Image scanning database**: the repository through which the image scanning
+**System repositories** under the list holds `scanner-trivy`, **Image scanning database**: the repository through which the image scanning
 reads the vulnerability database of its analyser, the image `aquasec/trivy-db`. It has no switch and its level is always Private: it is
 **In use by the image scanning** while the scanning is on and reads its database through it, else **Not in use**. It answers no client,
-administrators included: no screen offers **Set up client** for it, and its page `…/setup`, opened by its address, says so instead of
-showing snippets. Its page lets you change the address and store
+administrators included: no screen offers **Set up client** for it, nor its address, a download or a pull command, and its page
+`…/setup`, opened by its address, says so instead of showing snippets ([Where the system repositories show](#where-the-system-repositories-show)).
+Its page lets you change the address and store
 an account like any registry; the address must serve the image `aquasec/trivy-db`. For a registry that publishes the database under
 another name, set the image scanning's database setting instead ([Advisory sources](vulnerability-sources.md#container-images)).
 
@@ -150,6 +152,22 @@ It answers no client, administrators included, and nobody deploys to it, so its 
 its **Details** hold only the link to its settings page and its dates. Its files are listed on the repository's page; removing one
 makes the next run store its version again. An installation without internet names a repository of its own instead
 ([Monitoring and operations](operations.md#malware-scanning)).
+
+## Where the system repositories show
+
+Both system repositories answer `404` to every client, administrators included, so no screen offers what would fail:
+
+- **Admin area › Repositories** lists them with their project and the badge **System** after the key, without the copy button of the
+  address and without **Copy client address** in the row's menu; the menu keeps **Settings**, **Files** and, for `scanner-trivy`,
+  **Vulnerabilities**.
+- The search finds them, in the suggestions under the search field and on the tab **Repositories** of the results, with the same badge.
+- On their own pages there is no **Set up client**, no address for downloads by path in **Details**, no pull command in an opened image
+  and no copy button in a folder. The page of one of their files has no **Download** and no download address; one sentence says which of
+  Quader's work reads it. **Details** keeps the request of the file through the API with curl, which the API answers. A package's install
+  panel never offers them, and a version only they hold says why instead of showing a command.
+- They are not offered where you pick a repository to work with: the guides, the repository of an exposure rule, the repository filters
+  of the security dashboard and **Explain for a repository**.
+- **Recently opened** in the side bar lists them like any repository you opened.
 
 ## Permissions
 

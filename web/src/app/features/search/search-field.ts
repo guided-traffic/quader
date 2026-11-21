@@ -26,6 +26,7 @@ import { Navigation } from '../../core/navigation';
 import { PreferencesStore } from '../../core/preferences-store';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
+import { systemBadge } from '../../core/upstream-project';
 import { FormatIconView } from '../../shared/format-icon';
 import { ActiveOption, heldEnter, optionDomId } from '../../shared/ui/active-option';
 import { QuaderAvatar } from '../../shared/ui/avatar';
@@ -130,6 +131,8 @@ export class SearchField {
   protected readonly heading = headings();
   protected readonly adminText = $localize`:@@search.admin-mark:Admin area`;
   protected readonly disabledText = $localize`:@@search.user-disabled:Disabled`;
+  /** The mark of a system repository of upstream (R-UI-193, Q-UI-902). */
+  protected readonly systemText = systemBadge();
   protected readonly anonymous = computed(() => !this.session.authenticated());
   protected readonly instanceAdmin = this.session.isInstanceAdmin;
   /** `/` is on for a signed-in caller whose preference allows it (Q-UI-401). */
@@ -327,6 +330,7 @@ export class SearchField {
     let name = entry.label;
     if (entry.secondary) name += ` · ${entry.secondary}`;
     if (entry.disabled) name += `, ${this.disabledText}`;
+    if (entry.system) name += `, ${this.systemText}`;
     if (entry.area === 'admin') name += `, ${this.adminText}`;
     return name;
   }

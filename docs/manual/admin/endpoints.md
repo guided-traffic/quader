@@ -144,7 +144,7 @@ Select an endpoint to see its read-only **Configuration** (including **Accepted 
 Changing rules needs `endpoints:write` (roles `admin` and `security-admin`) and a recent sign-in: if your last interactive sign-in is older than `auth.sessions.recent_auth_window` (1 hour by default), Quader asks you to sign in again and keeps your draft.
 
 1. On the endpoint, select **New rule**, or select a rule's name or **Edit**.
-2. Choose the **Repository** and enter a **Name**. The form shows the dimensions of that repository's format.
+2. Choose the **Repository** and enter a **Name**. The form shows the dimensions of that repository's format. The system repositories of the project Upstream are not offered: they answer no client through any endpoint.
 3. Fill in the patterns, and for npm the range, pre-releases and tags.
 4. Watch the **Preview** on the right (see below).
 5. Select **Create rule**, or **Review and save** for an existing rule, which shows the difference to the stored rule before saving. If someone else changed the rule meanwhile, Quader shows both versions and lets you reload or overwrite.

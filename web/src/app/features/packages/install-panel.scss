@@ -45,3 +45,9 @@
 .setup-link {
   margin-block: var(--quader-space-2) 0;
 }
+
+// A version only a system repository holds: the sentence why there is no command, muted as a note (Q-UI-899).
+.system-note {
+  margin: 0;
+  color: var(--quader-text-muted);
+}

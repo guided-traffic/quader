@@ -668,16 +668,24 @@ export function emptyScroll(): { window: number; panel: number } {
 
 /**
  * Findings that are right as they are, each with its reason. A finding matches when its check is the same and every pattern
- * given matches (`screen` the screen's id, `what` the element's path, `text` its text). Keep this list short and exact: an
- * entry that allows a whole check, or a whole screen, hides the next defect of its kind.
+ * given matches (`screen` the screen's id, `what` the element's path, `text` its text, `detail` what was measured). Keep this
+ * list short and exact: an entry that allows a whole check, or a whole screen, hides the next defect of its kind.
  */
 export const allowed: readonly {
   readonly check: string;
   readonly screen?: RegExp;
   readonly what?: RegExp;
   readonly text?: RegExp;
+  readonly detail?: RegExp;
   readonly why: string;
 }[] = [
+  {
+    check: 'row-actions',
+    screen: /^admin-repositories/,
+    what: /td\.actions/,
+    detail: /^the action cells of one table are built 2 ways: (icon\+menu \(\d+\), menu \(\d+\)|menu \(\d+\), icon\+menu \(\d+\))$/,
+    why: "a system repository of upstream has no address to copy, so its row keeps the menu alone beside the copy button and menu of every other row (Q-UI-898)",
+  },
   {
     check: 'broken',
     screen: /policy-new$/,
@@ -703,7 +711,12 @@ export function judge(screen: string, findings: readonly LayoutFinding[]): { def
   const kept: (LayoutFinding & { why: string })[] = [];
   for (const f of findings) {
     const rule = allowed.find(
-      (a) => a.check === f.check && (!a.screen || a.screen.test(screen)) && (!a.what || a.what.test(f.what)) && (!a.text || a.text.test(f.text)),
+      (a) =>
+        a.check === f.check &&
+        (!a.screen || a.screen.test(screen)) &&
+        (!a.what || a.what.test(f.what)) &&
+        (!a.text || a.text.test(f.text)) &&
+        (!a.detail || a.detail.test(f.detail)),
     );
     if (rule) kept.push({ ...f, why: rule.why });
     else defects.push(f);

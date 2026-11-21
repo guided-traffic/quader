@@ -115,6 +115,11 @@
     @if (e.disabled) {
       <span class="badge" aria-hidden="true">{{ disabledText }}</span>
     }
+    <!-- A system repository of upstream is found and marked, so that it does not read as one more repository (Q-UI-902); the word
+         is part of the option's name. -->
+    @if (e.system) {
+      <span class="badge" aria-hidden="true">{{ systemText }}</span>
+    }
     @if (e.area === 'admin') {
       <ng-container *ngTemplateOutlet="adminMark" />
     }

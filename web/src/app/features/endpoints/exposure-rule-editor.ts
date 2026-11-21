@@ -22,6 +22,7 @@ import { ApiError, FieldProblem } from '../../api/problem';
 import { RepositoriesApi, refOf } from '../../api/repositories-api';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
+import { isSystemRepository } from '../../core/upstream-project';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { Confirm } from '../../shared/confirm-dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
@@ -144,6 +145,14 @@ export class ExposureRuleEditor implements HasUnsavedChanges {
   protected readonly formats = resource({ loader: () => this.repositories.formats() });
   protected readonly refOf = refOf;
   protected readonly repos = resource({ loader: () => this.repositories.listAll() });
+  /**
+   * The repositories the select offers: every one the caller reads but a system repository of the project `upstream`, whose client
+   * requests answer 404 through every endpoint (R-UI-193, Q-UI-901), unless a stored rule names it. The list is the whole one read,
+   * so leaving them out breaks no paging.
+   */
+  protected readonly repoOptions = computed(() =>
+    (valueOf(this.repos) ?? []).filter((r) => !isSystemRepository(r.project, r.key) || refOf(r) === this.form().repository),
+  );
   protected readonly loaded = resource({
     params: () => ({ endpoint: this.endpoint(), name: this.name() }),
     loader: ({ params }) =>

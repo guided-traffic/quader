@@ -137,4 +137,30 @@ describe('Install command panel', () => {
     });
     expect(text(r.root)).toContain('no install instructions for this package type yet');
   });
+
+  it('R-UI-193 Q-UI-898 Q-UI-899 a system repository is never offered: a version only it holds says why and asks for no command, one beside it is left out of the picker', async () => {
+    const at = '2026-11-21T06:30:12.000Z';
+    const only = await renderScreen(InstallPanel, {
+      inputs: {
+        format: 'oci',
+        name: 'aquasec/trivy-db',
+        version: { ...(await version()), version: '2', repositories: [{ key: 'upstream/scanner-trivy', class: 'remote', publishedAt: at }] },
+      },
+    });
+    expect(text(only.root.querySelector('[data-testid="install-system"]')!)).toBe("Only Quader's image scanning reads this version; clients cannot install it.");
+    expect(only.root.querySelector('quader-install-command, select, a')).toBeNull();
+    expect((only.get(ClientSetupApi) as FakeClientSetupApi).calls).toEqual([]);
+    await expectAccessible(only.root);
+
+    const beside = await open({
+      repositories: [
+        { key: 'upstream/scanner-trivy', class: 'remote', publishedAt: at },
+        { key: 'web/npm-local', class: 'local', publishedAt: at },
+      ],
+    });
+    // One repository a client can use: no picker, and the command and Set up client are that one's.
+    expect(beside.root.querySelectorAll('select')).toHaveLength(1);
+    expect(beside.fake.calls.map((c) => c.repository)).toEqual(['web/npm-local']);
+    expect(beside.root.querySelector('.setup-link a')?.getAttribute('href')).toContain('/projects/web/repositories/npm-local/setup');
+  });
 });

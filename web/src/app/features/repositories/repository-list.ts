@@ -23,6 +23,7 @@ import {
   isSystemRepository,
   isUpstreamProject,
   projectDescription,
+  systemBadge,
   systemRepositoryNames,
 } from '../../core/upstream-project';
 import { UpstreamApi } from '../../api/upstream-api';
@@ -359,10 +360,19 @@ export class RepositoryList {
   }
   protected readonly deleteLabel = $localize`:@@repo.delete.progress:Repository deletion`;
 
+  /**
+   * The client address of a row, copied by the admin area's copy button and its menu (Q-UI-330). The server serves absolute URLs
+   * (public base URL plus path): copied as they are. None for a system repository, whose address answers every client 404 (Q-UI-898).
+   */
   protected address(row: RepositorySummary): string {
-    // The server serves absolute URLs (public base URL plus path): shown and copied as they are.
-    return row.addresses[0] ?? '';
+    return this.system(row) ? '' : (row.addresses[0] ?? '');
   }
+
+  /** A system repository of the project `upstream` (R-UI-192, R-UI-193). */
+  protected system(row: RepositorySummary): boolean {
+    return isSystemRepository(row.project, row.key);
+  }
+  protected readonly systemBadge = systemBadge();
 
   protected actionsLabel(row: RepositorySummary): string {
     return $localize`:@@repo.actions-of:Actions for ${row.key}:key:`;

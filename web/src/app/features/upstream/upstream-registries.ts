@@ -31,8 +31,8 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
 /**
  * **Upstream registries** of the admin area (R-UI-187, Q-UI-830, the owner's page of 2026-11-20): every well-known repository of
  * the built-in project `upstream` in one list grouped by format in catalog order (`listUpstreamRepositories`), each row with its
- * switch, its level and the number of virtual repositories that list it, and the system repositories under **Used by Quader**
- * (Q-UI-834). **Switch all on** and **Set visibility of all** are the header's actions; a switch and a level are saved at once,
+ * switch, its level and the number of virtual repositories that list it, and the system repositories under **System repositories**
+ * (Q-UI-834, named as on the project's page by Q-UI-900). **Switch all on** and **Set visibility of all** are the header's actions; a switch and a level are saved at once,
  * with the questions of `UpstreamActions`. A reader (`repositories:read-config` without `repositories:write-config`) sees the
  * words, no control. The search filters by display name and key in the browser: the list is the catalog's and not paged.
  */
@@ -165,7 +165,8 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
     </quader-data-table>
 
     @if (system().length > 0) {
-      <h2 class="system-heading" id="upstream-system" i18n="@@wellknown.system.heading">Used by Quader</h2>
+      <!-- The name of the project's page for the same two, one unit of the catalogue for both (R-UI-193, Q-UI-900). -->
+      <h2 class="system-heading" id="upstream-system">{{ systemCaption }}</h2>
       <p class="hint system-hint" i18n="@@wellknown.system.hint">Repositories Quader reads for its own work. They have no switch: the work that uses them decides.</p>
       <quader-data-table [caption]="systemCaption" [columns]="systemColumns">
         @for (r of system(); track r.key) {
@@ -215,7 +216,8 @@ export class UpstreamRegistries {
   protected readonly searchLabel = $localize`:@@wellknown.search:Filter registries`;
   protected readonly noRegistry = $localize`:@@wellknown.empty:Quader offers no registry yet.`;
   protected readonly noMatch = $localize`:@@wellknown.empty-filtered:No registry matches.`;
-  protected readonly systemCaption = $localize`:@@wellknown.system.heading:Used by Quader`;
+  /** **System repositories**, as the project's page names its section of the same repositories (R-UI-192, Q-UI-900). */
+  protected readonly systemCaption = $localize`:@@repo.system.heading:System repositories`;
   protected readonly privateNote = privateRowNote();
   protected readonly levels = levelOptions();
   protected readonly levelText = levelName;
