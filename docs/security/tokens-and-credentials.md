@@ -18,6 +18,11 @@ invalid one is a 401 that never falls through to a lower source or to anonymous:
 | 3 | Session cookie `__Host-qdr_session` | Only where the endpoint's surface holds `ui` and the path allows it (`/api/v1/` all methods, `/files/` GET HEAD PUT DELETE, `/api/<format>/` GET HEAD), and never on a route that declares the API key, whatever its method; CSRF is the session validator's. A replica without a session validator ignores the cookie. |
 | 4 | none | Anonymous if the endpoint admits requests without a credential (`auth.anonymous`, R-EP-010), and never an unsafe method on `/api/v1/`; or a route that is always open or declared public. What the anonymous subject then reads is decided by the visibility levels ([visibility.md](visibility.md)), not by the stage. |
 
+Specified and not built: on a further endpoint with `auth.client_certificates: true`, the client certificate its listener verified is a
+source between orders 3 and 4, the certificate subject, which reads only `upstream/clamav` by a fixed rule; on every other endpoint a
+client certificate is no credential ([clamav-definitions.md](clamav-definitions.md#what-a-client-certificate-admits),
+[formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-010).
+
 The path rules read two forms of the path (`rulePaths` in [stage.go](../../internal/auth/stage.go)). The rules that limit a
 request - the hard limit on an unsafe anonymous request to `/api/v1/`, the cookie's path rule of order 3 and the challenge -
 read the unescaped path, the one `ServeMux` routes by: it unescapes each segment, so `POST /api/v%31/projects` reaches the

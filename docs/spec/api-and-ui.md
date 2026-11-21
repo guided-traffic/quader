@@ -8256,11 +8256,17 @@ Priority: **MVP** · Covers: quader-only
      page and its dates.") hold the link to its settings page and its dates only: no virtual repository lists it (Q-UI-883, Q-UI-884).
      For `clamav` the first section is **ClamAV definition updates**, open: the switch of R-UI-187 with the sentence "Serves these
      definitions to the ClamAV installations of your company. Quader's own malware scan uses them either way."; while it is on, the
-     address of the endpoint as a name with a copy button, the level (Public; Internal and Private behind the fold **Visibility**, with
-     the sentence "A ClamAV installation can authenticate only with a token in the address, which freshclam writes into its log.",
+     address of the endpoint as a name with a copy button, the level (Public; Internal and Private behind the fold **Visibility**,
      [repositories-and-proxy.md](repositories-and-proxy.md#q-repo-415--who-reads-the-clamav-definitions-when-they-are-switched-on)
-     Q-REPO-415), and the client setup of [formats/clamav.md](formats/clamav.md) R-CLAMAV-006 (the one line, the note on the CA, the token
-     line where the level is below Public). Its second section, **Updater**, open, holds the replicas of `malware-updater-freshclam` in the
+     Q-REPO-415, decided by the owner), and the client setup of [formats/clamav.md](formats/clamav.md) R-CLAMAV-006 (the one line, the
+     note on the CA; the token and the certificate behind its disclosure **Authenticate**; the plain download behind **Without
+     freshclam**). The fold **Visibility** says what each level needs, one muted line under each choice: Public "Every ClamAV that reaches
+     this address updates, without credentials."; Internal "A ClamAV authenticates with a token in its address, which freshclam writes
+     into its log, or with a client certificate."; Private "Only tokens of members. Client certificates are not admitted." While an endpoint
+     admits client certificates (the item's `clients.certificateAddresses`, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010), the fold
+     also shows "With a client certificate:" and each of those addresses as a name with a copy button; while none does, Internal's line
+     ends with "Client certificates need an endpoint your operator sets up." and a link to the manual's page of R-CLAMAV-010. Nothing of
+     the certificates is a step of switching on or a field of the section ([Q-UI-905](#q-ui-905--the-client-certificates-are-a-line-of-the-visibility-fold-not-a-field)). Its second section, **Updater**, open, holds the replicas of `malware-updater-freshclam` in the
      shared table of the scanner replicas (Q-UI-897), each with its state, freshclam's version and the newest daily it holds with its age;
      without a row the sentence says why: "No updater runs: this installation takes its definitions from ops/clamav-db." for the source
      `repository`, "The malware scan is off, so the definitions are not updated." while it is off, and "No updater reports: the
@@ -21086,7 +21092,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `PUT /api/v1/upstream-repositories/{key}/clients` with `enabled` and `level`, and the item's member `clients` (`enabled`, `address`), `null` for every other repository (chosen) | The well-known repositories' shape: a value, no `If-Match` (as the state and the level, Q-AUTHZ-280) | One request switches on at a level, so no window is open at an unintended level; the item tells the page the address to show | One operation more |
+| (a) `PUT /api/v1/upstream-repositories/{key}/clients` with `enabled` and `level`, and the item's member `clients` (`enabled`, `address`, and `certificateAddresses`, the addresses on the endpoints that admit client certificates, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010), `null` for every other repository (chosen) | The well-known repositories' shape: a value, no `If-Match` (as the state and the level, Q-AUTHZ-280) | One request switches on at a level, so no window is open at an unintended level; the item tells the page the address to show | One operation more |
 | (b) `state` on/off for `clamav` | Reuse | No operation | `state` means `disabled`, which Quader's own reads need off |
 | (c) A member of the repository document | A merge patch | No operation | A member the product refuses for every other repository, and a widening in a general patch |
 
@@ -21141,6 +21147,20 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A page of its own on the admin side | A table of sets | All in one place | An administrator-only view of what a reader of the endpoint may see too, and a second set of screens |
 
 **Choice:** (a). **Applied in the spec:** R-UI-194.
+
+### Q-UI-905 · The client certificates are a line of the visibility fold, not a field
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It applies
+CLAUDE.md "simple by default, details on demand" to the client certificates of the ClamAV installations
+([formats/clamav.md](formats/clamav.md) R-CLAMAV-010).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fold **Visibility** says under each level what a ClamAV needs and shows the addresses of the endpoints that admit certificates; the certificate's setup is a variant of the guide behind **Authenticate** (chosen) | Read-only lines; the CA is the operator's | The plain path (switch on, Public, one line) is unchanged; whoever chooses a lower level reads at the choice what it costs the clients | An administrator cannot see the CA's subject or expiry here (the TLS metrics carry the expiry) |
+| (b) A section **Client certificates** with the CAs, their subjects and expiry | A detail view of its own | Everything in one place | A section for material no screen can change, in front of every administrator who never uses it |
+| (c) Nothing on the page; the manual only | — | Least | An administrator who chooses Internal does not learn that a certificate would do |
+
+**Choice:** (a). **Applied in the spec:** R-UI-188; [formats/clamav.md](formats/clamav.md) R-CLAMAV-006.
 ## What this does not cover
 
 

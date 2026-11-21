@@ -1454,7 +1454,7 @@ The field set is fixed. A field that does not apply is `null`, and an unknown le
 consumers can rely on every key being present.
 
 <details>
-<summary>Fields of the request log record (31)</summary>
+<summary>Fields of the request log record (33)</summary>
 
 | Field | Content |
 |---|---|
@@ -1473,17 +1473,19 @@ consumers can rely on every key being present.
 | `response_bytes` | Body bytes sent, `-1` if unknown |
 | `duration_ms` | Processing time, with microsecond fraction |
 | `user_agent` | Client user agent |
-| `principal` | User name, service-account name, `ci:<CI issuer name>/<mapping name>` ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-009) or `anonymous` |
-| `principal_type` | `user`, `service_account`, `ci`, `breakglass`, `anonymous` |
+| `principal` | User name, service-account name, `ci:<CI issuer name>/<mapping name>` ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-009), a client certificate's subject as an RFC 4514 string of at most 255 bytes ([formats/clamav.md](formats/clamav.md) R-CLAMAV-010) or `anonymous` |
+| `principal_type` | `user`, `service_account`, `ci`, `breakglass`, `certificate`, `anonymous` |
 | `principal_id` | Opaque principal ID, `null` for anonymous callers |
 | `token_id` | ID of the token used (never the token), `null` if none |
-| `auth_method` | `bearer`, `basic`, `nuget_apikey`, `session`, `none` |
+| `auth_method` | `bearer`, `basic`, `nuget_apikey`, `session`, `client_certificate`, `none` |
+| `client_cert_serial` | The serial of the client certificate of a certificate subject, lowercase hexadecimal; `null` for every other request |
+| `client_cert_issuer` | The issuer of that certificate as an RFC 4514 string of at most 255 bytes; `null` for every other request |
 | `project`, `repo`, `format` | Project key, repository as its qualified name `<projectKey>/<repoKey>`, and format, if the request addressed one; filled for every request on a protocol path ([usage-and-limits.md](usage-and-limits.md) R-LIM-030) |
 | `cache` | `hit`, `miss`, `stale`, `negative_hit` or `null` (remote and virtual reads) |
 | `deny_reason` | Short code for `401`/`403` responses (`no_credentials`, `invalid_token`, `not_permitted`, …), else `null` |
 | `limiter` | For a `429`: the name of the rate limiter that refused the request ([architecture.md](architecture.md) R-ARCH-034); else `null` |
 | `limit_mode` | For a `429`: `cluster` (the cluster-wide counter in Valkey), `fallback` (the per-replica share while Valkey is unavailable) or `replica` (a limit that protects this replica); else `null` |
-| `limits_subject` | The subject a request on a protocol path is charged to ([usage-and-limits.md](usage-and-limits.md) R-LIM-001): `user:<id>`, `technical_token:<id>`, `ci:<issuer>:<project ID>`, `anonymous:<prefix>`, `system`; else `null` |
+| `limits_subject` | The subject a request on a protocol path is charged to ([usage-and-limits.md](usage-and-limits.md) R-LIM-001): `user:<id>`, `technical_token:<id>`, `ci:<issuer>:<project ID>`, `certificate:<subject>`, `anonymous:<prefix>`, `system`; else `null` |
 | `limits_place` | The place whose rule applied: `instance`, `project:<key>`, `repository:<projectKey>/<repoKey>`; else `null` |
 | `limits_rule` | The ID of the rule that applied, or `builtin:<kind>`; else `null` |
 | `limits_outcome` | `admitted`, `limited:<figure>`, `would_limit:<figure>` (mode `audit`), `paced`, `blocked`; else `null` |

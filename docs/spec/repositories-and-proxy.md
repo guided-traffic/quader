@@ -2088,7 +2088,8 @@ ClamAV-Definition-Updates einschalten, wodurch ein unternehmens-Endpunkt für al
   - **On** (`setUpstreamRepositoryClients` with `{"enabled": true, "level": "public"}`, R-REPO-073): the endpoint and `/files/` serve it at
     its level, `public` unless the request names a lower one or the installation does not allow `public` (then the highest level it allows,
     and the answer's `warnings` says so); the level is then changed with `setUpstreamRepositoryVisibility`
-    ([Q-REPO-415](#q-repo-415--who-reads-the-clamav-definitions-when-they-are-switched-on), put to the owner). Switching on raises
+    ([Q-REPO-415](#q-repo-415--who-reads-the-clamav-definitions-when-they-are-switched-on), decided by the owner: Public by default,
+    the levels below it a detail, and client certificates in addition, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010). Switching on raises
     `config_version`, records `repository.updated` with `changes.clients` and `reason: clients_on`, needs recent authentication (it widens,
     R-API-007), and notifies `repo_config`, so every replica serves it within 2 s (R-REPO-049).
   - **Off again** sets the levels back to `private`, records `repository.updated` with `reason: clients_off` and `repository.narrowed`,
@@ -2103,7 +2104,8 @@ ClamAV-Definition-Updates einschalten, wodurch ein unternehmens-Endpunkt für al
 - **Who reads it.** The malware scanners and the updater's seed through the scan listener's database routes (R-MAL-006), the management API
   (its document for `repositories:read-config`, its items and packages for `content:metadata-read`, and, while it is on, for whoever its
   level admits), and the company's ClamAV installations through its endpoint while it is on
-  ([formats/clamav.md](formats/clamav.md) R-CLAMAV-004).
+  ([formats/clamav.md](formats/clamav.md) R-CLAMAV-004), at `internal` and `public` also by a client certificate on an endpoint that
+  admits certificates: it is the one repository that admits certificate readers, exactly while the switch is on (R-CLAMAV-010).
 - **In use exactly while** the malware scanning is on; the admin page of the upstream registries shows "In use by the malware scan" or "Not
   in use", and the switch (R-UI-187).
 - **Never a member** of a virtual repository (the format has no virtual class, and a system repository is none, R-REPO-071).
@@ -2290,8 +2292,10 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
 ```
 
   `clients` is `null` but for a repository whose declaration lets clients in (`clamav`, R-REPO-075), and there `{"enabled": false,
-  "address": "https://quader.example.com/api/clamav/upstream/clamav"}`, the address being the protocol base on the default endpoint's base
-  URL ([api-and-ui.md](api-and-ui.md#q-api-382--the-clients-of-the-clamav-definitions-are-an-operation-and-a-member-of-the-item) Q-API-382);
+  "address": "https://quader.example.com/api/clamav/upstream/clamav", "certificateAddresses": []}`, the address being the protocol base on
+  the default endpoint's base URL ([api-and-ui.md](api-and-ui.md#q-api-382--the-clients-of-the-clamav-definitions-are-an-operation-and-a-member-of-the-item) Q-API-382)
+  and `certificateAddresses` the protocol base on the base URL of every endpoint with `auth.client_certificates`, by endpoint name
+  (`["https://clamav.quader.example.com/api/clamav/upstream/clamav"]` *(example)*; [formats/clamav.md](formats/clamav.md) R-CLAMAV-010);
   `state` is `null` and `inUse` a boolean for a system repository; `fixed` names what the product holds beyond the table of R-REPO-069
   (`["state", "visibility"]` for `scanner-trivy`); `upstreamKeys` lists the fingerprints of the keys of an APT archive
   (`[{"fingerprint", "userId"}]`), `null` for another format; `password` is `{"set": true}`, a `secretRef` as stored, or `null`;
@@ -10140,9 +10144,12 @@ Status: **Decided by the development agent** — selected from the options below
 
 ### Q-REPO-415 · Who reads the ClamAV definitions when they are switched on
 
-Status: **Open: put to the owner on 2026-11-21** — the specification follows the development agent's recommendation (a) until he answers.
-His question: "Kann ein ClamAV sich gegenüber einem Endpunkt authentifizieren? Falls nein, macht eine Visibility außerhalb von public dann
-überhaupt einen Sinn?"
+Status: **Decided by the owner on 2026-11-21:** "Visibility des Endpunkts: b + zusätzlich Client-Zertifikate." His (b) is the option
+(a) of the table below as the options were put to him: Public by default when switched on, the levels below it selectable as a detail
+with a token in the client's URL and the plain note that `freshclam` logs it; client certificates in addition are
+[formats/clamav.md](formats/clamav.md) R-CLAMAV-010. His goal in his words: Quader is the company's central endpoint for ClamAV, and
+nothing further stands in front of a ClamAV installation. His question that opened it: "Kann ein ClamAV sich gegenüber einem Endpunkt
+authentifizieren? Falls nein, macht eine Visibility außerhalb von public dann überhaupt einen Sinn?"
 
 Context, read in ClamAV 1.5.5's source on 2026-11-21: a stock `freshclam` can present a TLS client certificate (from 1.2, through environment
 variables only), which Quader maps to no principal on the package surface; it sends no token and no header of its own; credentials in the
@@ -10152,16 +10159,18 @@ installation's bandwidth and the knowledge of which version it uses.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Public when switched on; Internal and Private selectable as a detail, with a token in the URL and the plain note that `freshclam` logs it (recommended) | The plain path needs no credential on any client | Every ClamAV of the company works with one line; nothing secret is served; an installation that allows no anonymous access still has a way | A public endpoint can be read by anyone who reaches it ([H-1162](../security/clamav-definitions.md#h-1162--a-public-endpoint-serves-the-definitions-to-anyone-who-reaches-it)); the lower levels rest on an undocumented way |
+| (a) Public when switched on; Internal and Private selectable as a detail, with a token in the URL and the plain note that `freshclam` logs it (chosen, with client certificates in addition) | The plain path needs no credential on any client | Every ClamAV of the company works with one line; nothing secret is served; an installation that allows no anonymous access still has a way | A public endpoint can be read by anyone who reaches it ([H-1162](../security/clamav-definitions.md#h-1162--a-public-endpoint-serves-the-definitions-to-anyone-who-reaches-it)); the lower levels rest on an undocumented way |
 | (b) Internal by default, Public selectable | A token on every client by default | Nobody outside reads them | Every client carries a token in its configuration and its log |
 | (c) Public only | No level to choose | Simplest | An installation whose default endpoint allows no anonymous access cannot switch it on |
 
-**What another answer changes:** (b) makes `internal` the default of `setUpstreamRepositoryClients` and puts the token line first in the
-setup (R-CLAMAV-006); (c) removes the level from the operation and the screens and refuses the switch where `public` is not allowed. Either is
-a change of a default and of one screen section; the measurement of R-CLAMAV-009 then runs the token way once.
+**Choice:** (a), and a ClamAV installation is also admitted by a TLS client certificate, which a stock `freshclam` 1.2 or later presents:
+at `internal` and `public`, on an endpoint of its own whose TLS ends at Quader, as the certificate subject of
+[formats/clamav.md](formats/clamav.md) R-CLAMAV-010 (Q-CLAMAV-8 to Q-CLAMAV-13). The client setup names, beside the one line of the
+updater, the token, the certificate and the plain download of the three files under fixed addresses for an installation that runs no
+updater (R-CLAMAV-006, Q-CLAMAV-14). The measurement of R-CLAMAV-009 runs the token way and the certificate way once.
 
-**Applied in the spec:** R-REPO-075; [formats/clamav.md](formats/clamav.md) R-CLAMAV-006, R-CLAMAV-009; [api-and-ui.md](api-and-ui.md)
-R-UI-188.
+**Applied in the spec:** R-REPO-075; [formats/clamav.md](formats/clamav.md) R-CLAMAV-006, R-CLAMAV-009, R-CLAMAV-010;
+[api-and-ui.md](api-and-ui.md) R-UI-188.
 
 ### Q-REPO-416 · No one deletes a definition file by hand
 

@@ -82,6 +82,9 @@ handler. The stage yields exactly one of three results:
 - the anonymous principal (R-AUTH-037);
 - a rejection.
 
+The certificate subject of item 4 below is an authenticated result without a principal row (kind `certificate`, its subject, issuer
+and serial in place of an ID; [formats/clamav.md](formats/clamav.md) R-CLAMAV-010).
+
 Handlers and [authorization.md](authorization.md) receive only this result. They never parse
 credentials themselves.
 
@@ -114,7 +117,11 @@ The stage MUST select the credential in this order and MUST evaluate only the fi
    Everywhere else it is ignored, below `/v2/` for every method included (registry clients hold no
    session, [formats/oci.md](formats/oci.md) R-OCI-004), and so is it on
    `GET /api/v1/auth/login-options`, which the sign-in screen reads (Q-AUTH-177).
-4. **No credential.** The request becomes anonymous if R-AUTH-037 allows it; otherwise it is
+4. **Client certificate.** Only on an endpoint with `auth.client_certificates: true`, whose listener verified the connection's
+   certificate against its `tls.client_ca_file` ([endpoints.md](endpoints.md) R-EP-010): the certificate subject, which has no
+   principal row and is decided by a fixed rule ([authorization.md](authorization.md) R-AUTHZ-002,
+   [formats/clamav.md](formats/clamav.md) R-CLAMAV-010). On every other endpoint a client certificate is no credential.
+5. **No credential.** The request becomes anonymous if R-AUTH-037 allows it; otherwise it is
    unauthenticated.
 
 Normative rules:

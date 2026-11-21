@@ -150,6 +150,7 @@ place that counts.
 | Technical token (`qdr_sat_`) of a service account of the instance, a project or a repository | `technicalToken` | the technical token's ID (`technical_token.id`, R-AUTH-045) | Not the account and not the secret: rotation and a new secret keep the subject, its budget and its consumption (owner, decisions 6 and 13). |
 | CI token (`qdr_cit_`) | `ci` | `<issuer ID>:<project ID>`: the CI issuer's immutable ID and the `ProjectID` of the token's frozen bundle (the verified pin claim, `project_id` for GitLab) | Every job of a pipeline's project shares one budget, whatever job, pipeline or mapping issued it ([Q-LIM-1](#q-lim-1--a-ci-token-is-charged-to-its-issuer-and-the-project-of-its-bundle)). |
 | Registry token of the OCI token service (`qdr_rgt_`) | the subject of the Quader token it was issued for | as that token's row above | `Credential.TokenID` is the underlying token ([formats/oci.md](formats/oci.md) R-OCI-005); a registry token issued without a Quader token is anonymous and charged to the address. |
+| A client certificate on an endpoint that takes it as a credential (the certificate subject, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010) | `certificate` | the certificate's subject, an RFC 4514 string of at most 255 bytes | The usage store records the certificate's serial as the credential, so a renewed certificate of the same subject keeps the subject's budget; certificates of the same subject from two CAs share it ([Q-CLAMAV-12](formats/clamav.md#q-clamav-12--the-certificates-subject-stands-where-a-user-stands-and-its-serial-where-a-token-stands)). |
 | No credential | `anonymous` | the client address prefix of R-LIM-002 | |
 | A credential that failed (unknown, revoked, expired, wrong checksum, refused by an endpoint's credential rules) | `anonymous` | the client address prefix | R-LIM-003. |
 | Break-glass administrator | `user` | its principal ID | An administrator (R-LIM-012). |
@@ -1175,10 +1176,11 @@ Priority: **MVP** · Covers: BEYOND-030
 - **Buckets** ([Q-LIM-20](#q-lim-20--buckets-of-five-minutes-for-a-day-of-an-hour-for-30-days-then-daily-sums-per-repository-and-caller-kind)):
   five minutes, kept 25 hours (the 24-hour history and the periods `hour` and `day`); one hour, kept 30 days (the period `30d`).
 - **After 30 days** the hourly rows of a day are folded into **daily sums without a person**: per day, repository (or none) and
-  kind of caller (`user`, `technicalToken`, `ci`, `anonymous`, `system`): the number of distinct subjects, requests, refused
+  kind of caller (`user`, `technicalToken`, `ci`, `certificate`, `anonymous`, `system`): the number of distinct subjects, requests, refused
   requests, cached bytes, uncached bytes, upstream requests, background downloads, limited and would-limit events. Kept
   `limits.usage.summary_retention` (400 days by default, an estimate), then deleted.
-- **Credentials**: for a user, the credential column holds `session` or the personal token's ID; empty for every other subject.
+- **Credentials**: for a user, the credential column holds `session` or the personal token's ID; for a certificate subject the
+  certificate's serial in lowercase hexadecimal; empty for every other subject.
 - **Scale** (an estimate for the reader, not a bound): 2,000 subjects active in an hour, each in three repositories, write 6,000
   hourly rows an hour (4.3 million in 30 days) and up to 72,000 five-minute rows an hour (1.7 million kept).
 
@@ -1188,7 +1190,7 @@ Data model (migration of work package 2):
 CREATE TABLE usage_bucket (
   granularity          text NOT NULL CHECK (granularity IN ('5m', '1h')),
   bucket_start         timestamptz NOT NULL,
-  subject_kind         text NOT NULL CHECK (subject_kind IN ('user', 'technical_token', 'ci', 'anonymous', 'system')),
+  subject_kind         text NOT NULL CHECK (subject_kind IN ('user', 'technical_token', 'ci', 'certificate', 'anonymous', 'system')),  -- 'certificate': R-CLAMAV-010, a migration of its package
   subject_ref          text NOT NULL,
   credential_ref       text NOT NULL DEFAULT '',
   place                text NOT NULL,
@@ -1324,7 +1326,7 @@ Priority: **MVP** · Covers: BEYOND-030
   The label `figure` (the API figure names and `ceiling`) joins the enumerations of R-OPS-007.
 - **The request log** (R-OPS-010) of a request on a protocol path fills `project`, `repo`, `format`, `cache`, `limiter` and
   `limit_mode` (until now filled by the Bastion only) and gains `limits_subject` (`user:<id>`, `technical_token:<id>`,
-  `ci:<issuer>:<project ID>`, `anonymous:<prefix>`), `limits_place` (`instance`, `project:<key>`, `repository:<projectKey>/<repoKey>`),
+  `ci:<issuer>:<project ID>`, `certificate:<subject>`, `anonymous:<prefix>`), `limits_place` (`instance`, `project:<key>`, `repository:<projectKey>/<repoKey>`),
   `limits_rule` (the assignment's ID or `builtin:<kind>`), `limits_outcome` (`admitted`, `limited:<figure>`, `would_limit:<figure>`,
   `paced`, `blocked`), `bytes_cached` and `bytes_uncached`.
 - **Audit events** (R-OPS-016, all transactional unless marked):

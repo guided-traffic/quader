@@ -2,7 +2,8 @@
 
 Status: specified on 2026-11-21, not built ([malware-scanning.md](../spec/malware-scanning.md) R-MAL-010, R-MAL-012, R-MAL-032 to
 R-MAL-034; [formats/clamav.md](../spec/formats/clamav.md); [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-075;
-[ha-and-helm.md](../spec/ha-and-helm.md) R-HA-069;
+[ha-and-helm.md](../spec/ha-and-helm.md) R-HA-069; the client certificates of [formats/clamav.md](../spec/formats/clamav.md)
+R-CLAMAV-010 and [endpoints.md](../spec/endpoints.md) R-EP-008, R-EP-010;
 [ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format)). Every
 statement below says what the specification requires; none is enforced by code yet, and the test column names the tests the specification
 asks for.
@@ -26,7 +27,9 @@ lets anyone who reaches it do. What the scanners do with a set once it is in use
    then stores into upstream/clamav and records the set in use
       │
       ├──▶ scan listener of packages ──▶ malware scanners (by digest, R-MAL-006)
-      └──▶ endpoint /api/clamav/upstream/clamav, while "ClamAV definition updates" is on, at its level ──▶ every ClamAV of the company
+      ├──▶ endpoint /api/clamav/upstream/clamav, while "ClamAV definition updates" is on, at its level ──▶ every ClamAV of the company
+      └──▶ the same routes on an endpoint whose TLS ends at Quader and requires a certificate of the company's CAs
+           (TLS passthrough at the ingress, or a Service of its own) ──▶ a ClamAV with a client certificate, at internal or public
 ```
 
 ## What the updater holds, and what a taken-over `freshclam` reaches
@@ -65,17 +68,50 @@ more, so it no longer stands in the network position of the pod that holds the i
 
 - **Off by default.** While **ClamAV definition updates** is off, every protocol request to `upstream/clamav` answers 404, for every
   caller (R-REPO-075).
-- **On, at a level.** Public by the recommendation the owner has to confirm
+- **On, at a level.** Public by default, by the owner's decision of 2026-11-21
   ([Q-REPO-415](../spec/repositories-and-proxy.md#q-repo-415--who-reads-the-clamav-definitions-when-they-are-switched-on)): anyone who
   reaches the endpoint downloads the databases ([H-1162](#h-1162--a-public-endpoint-serves-the-definitions-to-anyone-who-reaches-it)). They
   are ClamAV's public files; what they tell a reader is which version the installation uses. At a lower level a client authenticates with a
-  token in its URL, which `freshclam` writes into its log ([H-1164](#h-1164--a-clients-token-is-in-its-freshclam-configuration-and-its-log)).
+  token in its URL, which `freshclam` writes into its log ([H-1164](#h-1164--a-clients-token-is-in-its-freshclam-configuration-and-its-log)),
+  or, at `internal`, with a client certificate ([below](#what-a-client-certificate-admits)).
 - **Read only.** The format has no route that writes, `/files/` deploys nothing into it, and a delete by hand is refused for every caller
   (R-CLAMAV-008, R-REPO-075, Q-REPO-416).
 - **No refusal stops a client for long.** The format renders a refusal as `401`, `404` or `503`, never `403` or `429`, which would make every
   stock `freshclam` stop updating for 24 or 4 hours (R-CLAMAV-005). A client that a limit refuses retries at its next check.
 - **What a client gets is what the scanners use.** The endpoint serves the set in use, byte for byte as ClamAV signed it, with its detached
   signature; every client's `freshclam` checks it again (Q-MAL-99).
+
+## What a client certificate admits
+
+The owner's decision of 2026-11-21 adds client certificates, so that a ClamAV installation needs no token and nothing stands in front
+of it ([formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-010, Q-CLAMAV-8 to Q-CLAMAV-13).
+
+- **Where the certificate is checked.** Only on a further endpoint with `tls.client_ca_file` and `auth.client_certificates: true`, whose
+  TLS ends at Quader: the ingress passes the connection through (HAProxy Ingress's `ssl-passthrough`, rendered by
+  `endpoints.<name>.ingress.tlsPassthrough`) or a Service of its own carries it. Go's TLS verifies the chain against the endpoint's CA
+  bundle and the validity period in the handshake (`RequireAndVerifyClientCert`, `httpserver.NewListenerTLS`); a connection without a
+  certificate that verifies is closed before a request is read. Quader reads no certificate and no outcome of a check from a header, so a
+  forwarded header cannot claim a subject. On every other endpoint a client certificate is no credential.
+- **Who decides who is in.** The CAs of the bundle, which the operator puts in the Secret `tls.clientCaSecret`; the listener's reloader
+  reads the bundle every `server.tls.reload_interval` and takes a CA in or out from the next handshake, without a restart
+  ([architecture.md](../spec/architecture.md) R-ARCH-035). No screen and no API of Quader changes it. Every certificate a CA of the
+  bundle issued, for whatever purpose, is admitted ([H-1177](#h-1177--every-certificate-the-endpoints-cas-issued-is-admitted)), and a
+  revoked one until it expires ([H-1178](#h-1178--a-revoked-certificate-is-admitted-until-it-expires)).
+- **What the holder reads.** The certificate subject has no principal, no group, no grant and no role, and is neither internal nor
+  external; one fixed rule of the decision point lets it `read` the repositories that admit certificate readers while their artifacts are
+  `internal` or `public`, which is `upstream/clamav` while its clients are switched on and nothing else
+  ([authorization.md](../spec/authorization.md) R-AUTHZ-002). It never fills, writes or holds a capability; no binding, policy or level of
+  another repository widens it; at `private` and while the switch is off it reads nothing; the endpoint's exposure bounds it. A token on
+  the same request is decided as a token and never falls through to the certificate.
+- **No refusal stops a client for long.** A refused handshake is a failed attempt for `freshclam`; on the HTTP level the format's
+  answers stay `404` and `503` (R-CLAMAV-005).
+- **What is recorded.** The subject and serial in the request log and the usage store, the issuer in the request log (R-CLAMAV-010); a
+  refused handshake only as a line of the process log ([H-1180](#h-1180--a-refused-handshake-leaves-only-a-line-of-the-process-log));
+  behind a passthrough the client's address is the controller's
+  ([H-1179](#h-1179--behind-a-tls-passthrough-the-clients-address-is-the-ingress-controllers)).
+- **The client's key** lies on the ClamAV host in the file `FRESHCLAM_CLIENT_KEY` names; an encrypted key's password is in the unit's
+  environment (`FRESHCLAM_CLIENT_KEY_PASSWD`). Nothing of it reaches `freshclam`'s log, unlike a token in the URL (H-1164). Whoever reads the
+  key on that host reads the definitions as that host until the certificate expires (H-1178).
 
 | Guarantee | Enforced by | Test |
 |---|---|---|
@@ -85,6 +121,9 @@ more, so it no longer stands in the network position of the pod that holds the i
 | the endpoint answers 404 for every caller while the switch is off, and no route of the format writes | the system repository's rule and the format's routes (R-REPO-075, R-CLAMAV-008) | `TestR_REPO_075_*`, the format's kit run |
 | no answer of the endpoint is a `403` or a `429` | the format's `WriteError` and the chain's error shape (R-CLAMAV-005) | `TestR_CLAMAV_005_*` |
 | no caller deletes a definition file | the system repository's refusal (R-REPO-075) | `TestR_REPO_075_*` |
+| a client certificate is a credential only on an endpoint with `auth.client_certificates` and `tls.client_ca_file`, never on the default endpoint, and only one that verifies against the endpoint's CAs reaches a request | the configuration's validation and the listener's TLS (R-EP-001, R-EP-004, R-EP-010) | `TestR_CLAMAV_010_*` (`internal/config`, area `malware`) |
+| the certificate subject reads only repositories that admit certificate readers, at `internal` or `public`, never writes or fills, and is refused at `private` and while the switch is off | the fixed rule of the decision point (R-AUTHZ-002) | `TestR_CLAMAV_010_*` (`internal/authz`) |
+| a token on a request of that endpoint is decided as the token, and a refused one does not fall through to the certificate | the authentication stage's order (R-AUTH-001) | `TestR_CLAMAV_010_*` (`internal/auth`) |
 
 ## What this does not cover
 
@@ -98,8 +137,8 @@ more, so it no longer stands in the network position of the pod that holds the i
 
 Component: the endpoint of `upstream/clamav` ([formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-004). Subject: the installation's
 bandwidth and the knowledge of its signature version. Dormant until an administrator switches **ClamAV definition updates** on at `public`,
-the recommended level (Q-REPO-415). Anyone who reaches the default endpoint downloads the three databases, about 110 MiB at the first
-fetch and 22 MiB per new daily, without a credential; the request figures of the anonymous subject bound how often per address
+the default level (Q-REPO-415). Anyone who reaches the default endpoint downloads the three databases, about 110 MiB at the first
+fetch and 22 MiB per new daily, without a credential (the default level, by the owner's decision of 2026-11-21); the request figures of the anonymous subject bound how often per address
 ([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-002), and no byte figure refuses a document route. The files are ClamAV's public
 databases; the version served tells which signatures the installation's own scanning uses. What makes it real: a default endpoint that is
 reachable from the internet, where many addresses can each fetch the set.
@@ -120,7 +159,8 @@ ClamAV installation uses. Dormant while the level is Public; live for every clie
 has no option for a credential; it sends the user information of its `PrivateMirror` URL as Basic and writes the whole URL into its log at
 the level `INFO`, so the token is in `freshclam.conf` and in every log `freshclam` writes, and in whatever collects those logs. ClamAV
 documents none of it. What makes it real: logs of the ClamAV hosts that are shipped to a central place readable by more people than the
-repository; a token with grants beyond reading `upstream/clamav`.
+repository; a token with grants beyond reading `upstream/clamav`. A client that authenticates with a client certificate instead carries no
+token (R-CLAMAV-010).
 
 ### H-1165 · A taken-over updater can hold back newer definitions until the age alarm
 
@@ -130,3 +170,41 @@ lower than the set in use, so a taken-over `freshclam` or `quader` container of 
 set; it can stop offering newer ones. The set in use then ages: `QuaderMalwareDatabaseStale` fires after `stale_after` (48 hours), the
 repository's page marks a database older than 7 days as outdated, and the clients' `clamd` warns at 7 days. What makes it real: a flaw in
 `freshclam`'s download path exploited by a hostile answer of the network or of the mirror an installation names.
+
+### H-1177 · Every certificate the endpoint's CAs issued is admitted
+
+Component: the endpoint that takes client certificates ([formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-010,
+[endpoints.md](../spec/endpoints.md) R-EP-010). Subject: `upstream/clamav` at `internal`. Dormant until an operator configures an endpoint
+with `auth.client_certificates`. The listener admits any certificate that chains to a CA of `tls.client_ca_file` and is in its validity
+period; nothing narrows it by subject, by extended key usage or by issuing policy. A company CA that also issues laptops, users' e-mail
+certificates or other services' certificates admits all of their holders as ClamAV installations: each can download the definitions and
+spend its subject's budget. Certificates of the same subject from two CAs of the bundle share one subject in the usage store. What makes it
+real: a broad CA in the bundle instead of one that issues only to the hosts that run ClamAV.
+
+### H-1178 · A revoked certificate is admitted until it expires
+
+Component: the TLS of the endpoint that takes client certificates (`httpserver.NewListenerTLS`). Subject: `upstream/clamav` at
+`internal`. Dormant until such an endpoint is configured. Go's handshake checks the chain and the validity period, not a CRL or OCSP, and
+Quader keeps no list of refused certificates or serials: a certificate whose key was stolen from a ClamAV host, or of a host taken out of
+service, keeps reading the definitions until it expires or its CA leaves the bundle, which refuses every certificate of that CA. What makes
+it real: long-lived client certificates and a key that leaves its host.
+
+### H-1179 · Behind a TLS passthrough the client's address is the ingress controller's
+
+Component: the endpoint that takes client certificates, reached through `ingress.tlsPassthrough`
+([endpoints.md](../spec/endpoints.md) R-EP-008). Subject: the request log's `remote_addr`, an endpoint rate-limit class keyed `address`,
+and every rule that reads the client's address. Dormant until such an endpoint is reached through a passthrough. In TCP mode the
+controller sends no forwarded header and Quader reads no PROXY protocol, so every connection comes from the controller's pod: the request
+log names the controller, and a class keyed `address` puts every ClamAV installation into one bucket. The certificate subject's budget and
+an endpoint class keyed `principal` key on the certificate's subject and are not affected. A Service of its own (`service.type:
+LoadBalancer`) keeps the client's address where the load balancer does. What makes it real: an operator who needs the hosts' addresses in
+the log, or a class keyed `address` on that endpoint.
+
+### H-1180 · A refused handshake leaves only a line of the process log
+
+Component: the TLS of the endpoint that takes client certificates. Subject: the record of who tried to reach the definitions without a
+certificate the endpoint admits. Dormant until such an endpoint is configured. A connection refused in the handshake reaches no request
+log, no usage row, no audit event and no metric of Quader; Go's server writes `http: TLS handshake error from <address>: <reason>` to the
+process log at `WARN` (`httpserver.Server`'s `ErrorLog`), with the TCP peer's address, which behind a passthrough is the controller's
+(H-1179). A ClamAV whose certificate expired is therefore noticed by its own log or by the age of its databases, not by Quader. What makes
+it real: a fleet of ClamAV hosts whose certificates expire unnoticed, or probing of the endpoint that nobody reads in the process log.

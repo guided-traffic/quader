@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,106 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,107 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 793 specified (509 of them implemented), 1,446 open.
-1,106 spec requirements: 725 cover catalog features, 381 cover none (`quader-only`, [listed at the
+1,107 spec requirements: 725 cover catalog features, 382 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>381 requirements</summary>
+<summary>382 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3183,6 +3183,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-CLAMAV-004 | The routes a stock `freshclam` asks | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-005 | Answers a `freshclam` can live with: never `403` and never `429` | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-006 | Setting up a ClamAV installation | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-010 | A ClamAV installation admitted by its client certificate | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-007 | The package view | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-008 | What the format leaves out | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-009 | The tests and what they cost | P1 | [formats/clamav.md](../spec/formats/clamav.md) |

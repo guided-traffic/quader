@@ -151,6 +151,8 @@ runtime, live in PostgreSQL (R-EP-012).
   - a `rate_limit_class` that names no entry of `server.endpoint_rate_limits` (R-EP-015);
   - an empty `auth.token_types` list (R-EP-010,
     [Q-EP-23](#q-ep-23--an-empty-list-of-accepted-token-types));
+  - `auth.client_certificates: true` on the default endpoint, on a further endpoint without `tls.client_ca_file`, or with
+    `auth.anonymous: true` (R-EP-010, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010);
   - an invalid wildcard host or host-root binding (R-EP-003, R-EP-006);
   - a `pool` that does not match the endpoint name syntax.
 
@@ -177,6 +179,7 @@ server:
   #       token_types: [sat]              # default (proposed) for a further endpoint (R-EP-010)
   #       bound_tokens_only: true         # default (proposed) for a further endpoint (R-EP-010, R-EP-011)
   #       anonymous: false                # default (proposed) for a further endpoint (R-EP-010)
+  #       client_certificates: false      # default (proposed): a verified client certificate is no credential; true needs tls.client_ca_file (R-EP-010)
   #     exposure: rules                   # default (proposed) for a further endpoint: rules | all (R-EP-012)
   #     cache_fill: false                 # default (proposed) for a further endpoint (R-EP-019)
   #     rate_limit_class: external        # default (proposed) for a further endpoint (R-EP-015)
@@ -368,7 +371,9 @@ Every endpoint listener uses the TLS machinery of [architecture.md](architecture
 - **Client certificates.** `tls.client_ca_file` of a further endpoint, when set, requires and
   verifies a client certificate on that listener ([architecture.md](architecture.md) Q-ARCH-32).
   A further endpoint does not inherit `server.tls.client_ca_file`, because its clients are usually
-  not the proxy that the default endpoint pins.
+  not the proxy that the default endpoint pins. The bundle is a CA file of the reloader (R-ARCH-035): a changed bundle admits
+  and refuses from the next handshake, without a restart. With `auth.client_certificates: true` the verified certificate is
+  also a credential (R-EP-010); without it the certificate only opens the connection, as for an edge proxy that presents one.
 - TLS 1.2 is the minimum, TLS 1.3 is preferred, and HTTP/2 is negotiated with ALPN, as on the
   default endpoint.
 
@@ -569,7 +574,7 @@ endpoints: {}                             # default (proposed): only the default
 #    wildcardHost: ""                     # default (proposed); example "*.packages.example.com"
 #    hostRoots: {}                        # default (proposed); example {mirror.example.com: web/docker-hub}
 #    surface: [packages]                  # default (proposed)
-#    auth: {tokenTypes: [sat], boundTokensOnly: true, anonymous: false}   # default (proposed)
+#    auth: {tokenTypes: [sat], boundTokensOnly: true, anonymous: false, clientCertificates: false}   # default (proposed); clientCertificates: true needs tls.clientCaSecret (R-EP-010)
 #    exposure: rules                      # default (proposed)
 #    cacheFill: false                     # default (proposed)
 #    rateLimitClass: external             # default (proposed)
@@ -592,6 +597,7 @@ endpoints: {}                             # default (proposed): only the default
 #      className: ""                      # default (proposed): cluster default IngressClass; example traefik-external
 #      annotations: {}                    # default (proposed); controller settings of R-HA-039
 #      tls: []                            # default (proposed); example [{secretName: packages-tls, hosts: [packages.example.com, "*.packages.example.com"]}]
+#      tlsPassthrough: false              # default (proposed): the controller ends TLS; true passes the client's TLS through to quader (Q-EP-96)
 #    gateway:
 #      enabled: false                     # default (proposed)
 #      parentRefs: []                     # default (proposed); example [{name: external, namespace: gateway-system, sectionName: https}]
@@ -607,7 +613,7 @@ endpoints: {}                             # default (proposed): only the default
 | Ingress | `<fullname>-ep-<name>`: `ingressClassName`, one rule per host of the endpoint (the base URL's host, every exact host, the wildcard host) with the paths of [ha-and-helm.md](ha-and-helm.md) R-HA-037's table whose families the surface holds, each `pathType: Prefix` to the Service of its role on `<port>` (path `/` to the one Service when the surface lies within one role), over TLS as R-HA-063 wires it, with the endpoint's own `ingress.backendTLS` keys overriding the global block key by key ([Q-EP-17](#q-ep-17--backend-tls-of-a-further-endpoints-ingress)), and the `tls` entries | `ingress.enabled` |
 | HTTPRoute, BackendTLSPolicy | `<fullname>-ep-<name>`: `parentRefs`, `hostnames` with the same hosts (a wildcard as a leading `*.` label), the same path rules as `PathPrefix` matches; a BackendTLSPolicy per Service it names | `gateway.enabled` |
 | NetworkPolicy | none of its own: the rule for `<port>`, from `networkPolicy.from` only, is part of the policy of every Deployment that opens the port ([ha-and-helm.md](ha-and-helm.md) R-HA-042, Q-HA-76; before phase 6a a policy `<fullname>-ep-<name>`) | `networkPolicy.enabled` |
-| Secret mounts | `tls.existingSecret` and each of `extraSecrets` at `/var/run/secrets/quader/endpoints/<name>/<n>/` (keys `tls.crt`, `tls.key`), rendered as `tls.certificates`; `clientCaSecret` (`ca.crt`) as `tls.client_ca_file` | per entry that names them |
+| Secret mounts | `tls.existingSecret` and each of `extraSecrets` at `/var/run/secrets/quader/endpoints/<name>/<n>/` (keys `tls.crt`, `tls.key`), rendered as `tls.certificates`; `clientCaSecret` (`ca.crt`) as `tls.client_ca_file`, mounted as a volume (no `subPath`), so a changed Secret reaches the reloader | per entry that names them |
 
 - **Pods and ports.** The pods that serve an endpoint (the main Deployments of the roles its surface holds, or the
   endpoint's pools) get its container port; no other pod listens on it (R-EP-002). An endpoint pool follows
@@ -623,12 +629,28 @@ endpoints: {}                             # default (proposed): only the default
 - **One edge per audience.** `ingress.className` and `gateway.parentRefs` let a further endpoint use
   another ingress controller or Gateway than the default endpoint, so external traffic can enter
   through its own load balancer.
+- **TLS passthrough** ([Q-EP-96](#q-ep-96--an-endpoints-ingress-passes-tls-through-by-one-key-that-the-chart-renders-per-controller)).
+  With `ingress.tlsPassthrough: true` the endpoint's Ingress leaves TLS to Quader, so a client certificate reaches the endpoint's
+  listener ([formats/clamav.md](formats/clamav.md) R-CLAMAV-010). The Ingress then has one rule per host with the path `/` to the
+  endpoint's Service, no `tls` entries and no backend-TLS settings of R-HA-063 (on the Ingress and on its Service); per
+  `ingress.backendTLS.controller` (the endpoint's own key first): `haproxy` renders `haproxy-ingress.github.io/ssl-passthrough: "true"`
+  (a key of the host in HAProxy Ingress, which then proxies the host in TCP mode); `ingress-nginx` renders
+  `nginx.ingress.kubernetes.io/ssl-passthrough: "true"`, which works only where the controller runs with `--enable-ssl-passthrough`
+  (NOTES.txt says so); `traefik` is refused, because Traefik passes TLS through only with its own TCP route (the operator writes one, or
+  uses `service.type: LoadBalancer`); `manual` renders nothing, and the operator sets the controller's key in `ingress.annotations`. The
+  endpoint's pair (`tls.existingSecret`) is what the clients see: it must hold the endpoint's public hosts and chain to a CA the clients
+  trust. Without passthrough an endpoint with `clientCaSecret` behind HAProxy Ingress keeps the rule below, that the controller presents a
+  certificate of its own.
 - **Validation** ([ha-and-helm.md](ha-and-helm.md) R-HA-029): rendering fails and names the value
   for a `port` equal to 8080, 8081 or another endpoint's port; an invalid name or a name for which
   `<fullname>-api-ep-<name>` (a surface with families of both roles) or, with a pool, `<fullname>-packages-ep-<name>`
   exceeds 63 characters; a missing `baseUrl`; a host in two endpoints;
   `config.server.endpoints` set inside `config`; `extraSecrets` or `clientCaSecret` with
-  `tls.enabled: false`; and an endpoint pool below two replicas with `highAvailability.enforce`.
+  `tls.enabled: false`; an endpoint pool below two replicas with `highAvailability.enforce`;
+  `auth.clientCertificates: true` without `tls.clientCaSecret`, or on the entry `default`; and `ingress.tlsPassthrough: true` with
+  `tls.enabled: false`, without `tls.existingSecret`, with `ingress.tls` entries, with a surface that holds families of both roles (no
+  path inspection), or with the controller `traefik`. With `tlsPassthrough` the rule that `clientCaSecret` needs
+  `ingress.backendTLS.clientCertSecret` for `haproxy` does not apply.
 - **NOTES.txt** lists each endpoint with its Service and hosts, and warns when an endpoint with
   `exposure: rules` has no pool or an empty `networkPolicy.from`.
 - **Local profile** ([ha-and-helm.md](ha-and-helm.md) R-HA-051): `values-dev.yaml` renders an
@@ -654,6 +676,13 @@ Acceptance criteria:
   surface holds no `api` family.
 - `--set endpoints.customers.port=8080` and `--set config.server.endpoints.x.listen=:9000` each fail
   and name the value.
+- The `clamav` example of [formats/clamav.md](formats/clamav.md) R-CLAMAV-010 renders: the Ingress `quader-ep-clamav` with
+  `haproxy-ingress.github.io/ssl-passthrough: "true"`, one rule for `clamav.quader.example.com` with the path `/` to `quader-ep-clamav:8444`,
+  no `tls` entry and none of the `secure-*` keys on the Ingress or the Service; `quader.yaml` with
+  `server.endpoints.clamav.auth.client_certificates: true` and `tls.client_ca_file` naming the mounted `ca.crt`. With
+  `ingress.backendTLS.controller: ingress-nginx` the annotation is `nginx.ingress.kubernetes.io/ssl-passthrough: "true"`; with
+  `traefik`, without `existingSecret`, with `clientCertificates: true` and no `clientCaSecret`, and with `surface: [packages, api]`
+  rendering fails and names the value.
 
 ### R-EP-009 · Endpoint observability
 Priority: **MVP** · Covers: OPS-012, OPS-019
@@ -723,6 +752,13 @@ lookup that a rule makes unnecessary:
    is the anonymous subject and reads what a `public` level admits ([authorization.md](authorization.md) R-AUTHZ-003), within
    the endpoint's exposure. The default endpoint's value is also the operator's ceiling of `public` content: while it is `false`
    no level can be set to `public` (R-AUTH-037, [Q-EP-86](#q-ep-86--an-endpoints-anonymous-flag-is-the-door-the-levels-are-the-content-and-internal-is-not-bound-to-an-endpoint)).
+5. **Client certificate.** With `auth.client_certificates: true` (a further endpoint with `tls.client_ca_file` only), a request that
+   carries none of the credentials of R-AUTH-001 items 1 to 3 is the certificate subject: the leaf of the chain the listener verified,
+   with its subject, issuer and serial ([formats/clamav.md](formats/clamav.md) R-CLAMAV-010). It is decided by the fixed rule of
+   [authorization.md](authorization.md) R-AUTHZ-002, which admits `read` of the repositories that admit certificate readers only
+   (`upstream/clamav` while its clients are switched on), within the endpoint's exposure. A token on the same request is the
+   credential, and a refused token never falls through to the certificate. Since the listener requires a verified certificate, no
+   request on the endpoint is anonymous. On every endpoint without the key a client certificate is no credential.
 
 - A rejection never falls through to a lower-ranked credential or to anonymous (R-AUTH-001). Its
   answer is the `401` `invalid_token` of an unknown token, so it does not tell that the token is
@@ -732,7 +768,7 @@ lookup that a rule makes unnecessary:
   token is known, and the type refusal happens before any lookup.
 - The endpoint never adds a principal and never changes a principal set (R-AUTHZ-002).
 - Defaults: the default endpoint accepts sessions, PATs, SATs and CI tokens, unbound, and admits requests without a credential
-  for the levels to decide, so R-AUTH-001 is unchanged there. A further endpoint accepts only
+  for the levels to decide, so R-AUTH-001 is unchanged there; no endpoint takes a client certificate as a credential. A further endpoint accepts only
   service-account tokens bound to it, and no anonymous request (Q-EP-10).
 - **The endpoint `scan`** (R-EP-002) accepts exactly one credential, a scan token ([formats/oci.md](formats/oci.md) R-OCI-037), whose
   endpoint claim is `scan`. Every other credential, a session cookie, a Quader token of any type, a client's registry token and a request
@@ -758,6 +794,7 @@ Acceptance criteria:
 - With project `web` and the artifacts of `web/npm-customers` `public` and an exposure rule of `customers` on it: an anonymous
   `npm view @acme/sdk` succeeds on `default` and gets `E401` on `customers`, whose `auth.anonymous` is `false`.
 - Each case increments `quader_endpoint_credentials_refused_total` with its reason.
+- The cases of the certificate subject are [formats/clamav.md](formats/clamav.md) R-CLAMAV-010's.
 
 ### R-EP-011 · Endpoint-bound tokens
 Priority: **MVP** · Covers: TOK-007
@@ -2637,6 +2674,24 @@ per kind of pod.
 | (c) The blob token on the database routes too | One credential | — | A new pod cannot load its database before its first call ([malware-scanning.md](malware-scanning.md) Q-MAL-27) |
 
 **Choice:** (a). **Applied in the spec:** R-EP-010; [architecture.md](architecture.md) R-ARCH-037.
+
+### Q-EP-96 · An endpoint's Ingress passes TLS through by one key that the chart renders per controller
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It serves
+the client certificates of the ClamAV installations ([formats/clamav.md](formats/clamav.md) Q-CLAMAV-8).
+
+Context: the chart already knows the controller of an Ingress (`ingress.backendTLS.controller`: `haproxy`, `traefik`, `ingress-nginx`,
+`manual`) and renders its backend keys per controller (R-HA-063). HAProxy Ingress's `ssl-passthrough` is a key of a host (read in its
+documentation on 2026-11-21); ingress-nginx has the annotation of the same name behind a flag of the controller; Traefik's Ingress has
+none.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `endpoints.<name>.ingress.tlsPassthrough`, rendered per controller, refused for `traefik`, nothing for `manual` (chosen) | One key; the chart drops what passthrough contradicts (the `tls` entries, the backend-TLS keys, the path rules) | The operator says what they want, not how their controller spells it; the validation catches the combinations that cannot work | One more key of the endpoint |
+| (b) The operator sets the controller's annotation in `ingress.annotations` | Nothing new | No chart change | The chart keeps rendering backend-TLS keys and path rules that contradict a passthrough, and refuses `clientCaSecret` without `clientCertSecret` for `haproxy` |
+| (c) Only a Service of its own (`service.type: LoadBalancer`) | No Ingress | Works with every controller | A load balancer and an address of its own per endpoint, which the owner's installations route through HAProxy Ingress |
+
+**Choice:** (a); (c) stays possible with the keys there are. **Applied in the spec:** R-EP-008.
 
 ## What this does not cover
 

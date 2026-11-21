@@ -170,6 +170,7 @@ Principal kinds and their reference syntax in this page's API:
 | Personal access token (`qdr_pat_`) of `u` | the same, resolved when the token is used; carries the project roles of `u` within its scope |
 | Service-account token (`qdr_sat_`) of `s` | `sa:s` plus every group of `s` (a project's account has none). Internal (R-AUTHZ-030); never a project role. |
 | CI token (`qdr_cit_`) | `ci:<issuer>/<m>` for every mapping `m` recorded as the token's mapping at exchange, plus the groups those mappings list (R-CI-013); the token additionally carries its frozen inline grants and, from P1, the service accounts of R-CI-024. For a cross-project subject token, a matched mapping without the `read_only` opt-in contributes nothing and is not recorded ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-012), so policies naming it never reach that token. Internal (R-AUTHZ-030). |
+| Client certificate on an endpoint with `auth.client_certificates` ([endpoints.md](endpoints.md) R-EP-010) | none: the certificate subject below, which reads by its fixed rule only |
 | No credential | none: the subject `anonymous`, which reads only what a `public` level admits, on an endpoint that admits requests without a credential (R-AUTHZ-003) |
 
 - "Every group of `u`" means the local groups `u` belongs to plus the groups synchronized from
@@ -207,6 +208,18 @@ Principal kinds and their reference syntax in this page's API:
   refuses every reader whatever its level or grant; and it holds no credential of its own, so what it reads must be what the worker
   decided for this one call. A principal with a grant over every repository would read every image for as long as its credential
   lived; the scan token reads one image for minutes, and the fixed rule cannot be widened by a binding.
+- **The certificate subject** (kind `certificate`, [formats/clamav.md](formats/clamav.md) R-CLAMAV-010,
+  [Q-CLAMAV-9](formats/clamav.md#q-clamav-9--a-certificate-holder-is-a-subject-of-its-own-that-reads-at-internal-the-repositories-that-admit-certificates)):
+  a request without a token on an endpoint that takes a verified client certificate as a credential. Like a system subject it is
+  never a principal row, a grant, a role, a membership or an owner record (a reference to one answers 422 `principal_not_allowed`),
+  never internal or external (R-AUTHZ-030), and the decision point decides it by a fixed rule of its own, which no binding or policy
+  widens: `read` of a repository that admits certificate readers while that repository's artifacts are `internal` or `public`; never
+  `populate`, a write or a capability; the endpoint's exposure bounds it (R-EP-013); a refusal is the `404` of a repository the caller
+  cannot see. A repository admits certificate readers when the grant index says so (`repoInfo.certificateReaders`), which is true for
+  `upstream/clamav` while its clients are switched on ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-075) and for no
+  other repository. Unlike a system subject, the level and the switch apply: at `private` and while the switch is off it reads nothing.
+  It is recorded with the certificate's subject and serial (the request log's `principal` and `client_cert_serial`, the actor of an
+  audit event).
 - A job that continues a request after it ended (the delete job of [storage.md](storage.md) R-STOR-018) carries the
   principal, the credential and the endpoint of the request and no principal set: before each step it reads the
   principal's status and groups, and the token's scope and bundle, as they are then, and stops when the principal is no
@@ -281,6 +294,7 @@ caller, and writing needs a permission of its own. The level `internal` admits e
 | A CI token | yes |
 | The anonymous subject | no |
 | A Bastion registration (`bastion:<name>`) | no: it reads nothing on its own credential ([Q-AUTHZ-320](#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)) |
+| The certificate subject (R-AUTHZ-002) | no: its fixed rule reads `internal` content only of the repositories that admit certificate readers ([formats/clamav.md](formats/clamav.md) R-CLAMAV-010) |
 
 - **The channel plays no part.** A request a Bastion forwards, and the caller a Bastion check decides, is decided on the
   caller's own subject, as the same request at the main installation's own door ([bastion.md](bastion.md) R-BAS-008,
