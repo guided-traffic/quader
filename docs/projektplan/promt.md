@@ -1285,6 +1285,12 @@ runs are in `git log`; this section holds the current state.
   its amendment is on `main` since 11:40 (rebased, links and check exit 0, the count test at 1,107
   requirements; "With the owner" holds what it says), its worktree and branch are removed; its one package is
   built after the ClamAV change's packages 1 to 4.
+- **Planner in work since 12:09: the second stage of the signatures, Quader signs** (the owner's decisions 10 to
+  13 of the working paper, "With the owner"): the signing identity through the chart or the admin area, npm's
+  registry signatures of local packages, the attestations of what Quader received and checked, the screens,
+  the operations and the security page, with a build plan of at most four packages. Started before the first
+  stage is built, because the first stage's specification holds what the second needs and a planner touches
+  no code; its open points are decided by the development agent and documented for the owner's walkthrough.
 - **In work since 11:41: the presets of the installation's own registries** (decided by the owner on 2026-11-20,
   "With the owner"; taken up in the slot the chart's builder left, because it is decided, small and apart
   from the ClamAV change and the signatures): one builder writes its specification and builds it in one commit
