@@ -1249,7 +1249,30 @@ runs are in `git log`; this section holds the current state.
   every builder's brief from now on:** a builder stops its own processes by process ID or by a pattern that
   holds its worktree's path, never by a pattern that can match the main checkout. **The pipeline of the 09:05
   landing (run 44883240572) ended green on every job at 09:55.**
-- **In work** (09:22): two builders: the scanner replicas on the screens (since 08:08; reported, entry above), and **a system repository
+- **In work** (10:57): three builders, each from a specification that is on `main` (section "With the owner" holds
+  what each builds): the format `clamav` with its repository and API (package 1 of the ClamAV change), the chart
+  with the updater's Deployment (package 3 of it, without a cluster, because the binary does not know the updater's
+  kind before package 2), and the format contract's declaration and the store of signatures (package 1 of the
+  signatures' first stage). **The ClamAV change lands as one:** packages 1, 2 and 3 are collected on one branch,
+  because the chart's updater cannot start before the binary knows its kind and the import must not stop between
+  two releases on the owner's installation; package 2 (the updater process and the import) starts on package 1's
+  branch when that reports, the UI packages after their APIs exist. One builder's worktree was created at the
+  pushed tip and lacked the two specification commits; it was told to fast-forward before reading.
+- **Landed on 2026-11-21 at 10:47: a system repository is set apart wherever it is shown** (R-UI-193, Q-UI-898 to
+  Q-UI-902): the badge **System** in the admin list and in the search, no address, download or command that would
+  answer 404 (the admin list, the file page with one sentence in the address's place, a folder's rows, an opened
+  image row, a version's files, the install panel), the heading **System repositories** on the admin page of the
+  upstream registries too, and no system repository where someone picks a repository to work with. On the commit
+  as rebased, each exit 0: build, the full unit run, generate-check, links and check, the UI tests (1,837), the UI
+  lint; the renders looked at (admin list with its menu, the file page, the search field; light and dark, wide and
+  narrow); no change of the chart; the owner's UI backend started with it from the main checkout before the push.
+  Its worktree and branch are removed. **Its release was cut at 11:00;** the image, the chart and the owner's installation are
+  followed by the development agent, as after every release. **Found by its builder and left (section 8):** a disabled
+  repository's file page offers **Download**, which answers 404; the version page's header shows the format's key
+  instead of its name; the decisions' index stops at Q-UI-844; one stylesheet is 227 bytes over its warning
+  budget. **Not verified:** the German screens in a browser; the pipeline's layout job for the four new render
+  cases.
+- **The two builders of 09:22** (both landed, entries above): the scanner replicas on the screens (since 08:08), and **a system repository
   set apart everywhere** (since 09:20; what the builder of the project page's section had reported and left, taken up
   at once by the owner's word of that morning to such reports): no action that leads to a 404 (the admin list's
   **Copy client address**, **Download** and the curl command on a system repository's file page, install commands
@@ -1887,13 +1910,32 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   certificate of the company's CA, an OpenPGP key). All three are therefore first-class in the first stage and
   each is exercised by a real signature in the tests. What "betrieben" covers beyond Quader (the signing services
   on his cluster and his CI, or the tests alone) is asked back to him; the specification does not wait for it.
-  **In work since 10:10:** a planner writes the specification of the first stage for all six formats (detect, read,
-  verify, show; the anchors with the switch for project Owners; the presentation and the lifecycle of OCI's
-  signatures; the gaps of passing signatures through), finds out what stayed unverified (the libraries and what
-  they add to the binary, the older tag scheme, whether a pipeline's claims stay at a version, what the extra
-  requests cost) and returns a build plan of at most four packages. The second and the third stage are specified
-  when their turn comes; the first stage's model carries what they need (a verdict a gate can read where the
-  malware gate sits, a store that can hold signatures Quader made itself).
+  **The first stage is specified** (planner's report of 10:52; on `main` after the main session renumbered the
+  decisions and gaps that collided with the ClamAV specification): [signatures.md](../spec/signatures.md), R-SIG-001
+  to R-SIG-043, Q-SIG-1 to Q-SIG-16 (the owner's answers) and Q-SIG-20 to Q-SIG-46 (the planner's), ADR-226 to
+  ADR-228, the gaps H-1166 to H-1176 on [artifact-signatures.md](../security/artifact-signatures.md); the
+  contrary statements of the format pages are superseded in place. **What it settles beyond his answers:** a
+  signature is checked once per signature object and content for the whole installation and shown only where it
+  is attached, and trust is computed per scope (the installation's, a project's), so an anchor change reads no
+  artifact; "no anchor" and "blocked" both show as signed by a signer not trusted; the best signature wins the
+  badge; a CA anchor must be one for code signing; Debian's upstream keys stay what they are and are no anchors;
+  a pipeline's claims do not stay at a version today (read), so an origin is stored at the upload; the keys of
+  npm and the public root of the signing service refresh through that service's update repository, and without
+  internet the release's snapshot holds. **Measured by the planner:** the libraries add 4.76 MiB (6.6 %) and 52
+  modules to the binary; NuGet's signature needs no further module; the older tag scheme was read in its tool's
+  source; the tests can sign in process for all three of his ways, a signing service of its own included. **Not
+  verified:** whether Docker Hub serves the referrers and how it counts them; which timestamp roots nuget.org's
+  countersignatures use; the cost of a trust recomputation. **Build plan, four packages:** (1) the contract's
+  declaration, check 18 of the kit, the store, the origin, each format's detector; (2) verification and trust,
+  the anchors, the API, events and metrics; (3) the formats' wire behaviour (OCI's attachment tags out of the
+  lists and following their image, mirror, the background fetch, npm's keys and attestations endpoints, Ansible's
+  upload of signatures); (4) the UI. **Package 1 is in work since 10:57** (run record); 2 and 3 follow it in
+  parallel, 4 after 2's operations. **One question of the planner for the owner (Q-SIG-34), not put to him yet:**
+  what a virtual npm repository's keys endpoint serves before Quader signs local packages: (a) the union of its
+  members' keys, with `npm audit signatures` reporting every local package as unsigned until the second stage
+  (the planner's recommendation, H-1176); (b) no keys; (c) signing of local npm packages pulled into the first
+  stage. Built as (a) meanwhile; it concerns package 3. The second and the third stage are specified when their
+  turn comes.
 
 **Questions he has not answered**
 
@@ -1953,11 +1995,33 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   default and the levels below it as a detail, with the token in the client's URL and a note that the client
   logs it, proven once by a test with a real updater (the development agent's recommendation: the levels exist,
   the server side costs next to nothing, and an installation that allows no anonymous access can still offer the
-  endpoint); (c) client certificates as well. **In work since 10:14:** a planner writes the specification (the
-  unit, proposed name `malware-updater-freshclam`, told to him; the format of its own; the endpoint, the switch,
-  the metadata, the cleanup; whole signed databases against patches for the updater; the findings of the import
-  task and of the updater's notify line along the way) with recommendation (b) and that paragraph marked as
-  waiting for him, and returns a build plan. Then the builders. **The unit's name follows the
+  endpoint); (c) client certificates as well. **Specified** (planner's report of 10:51, on `main`): R-CLAMAV-001 to R-CLAMAV-009 on
+  [formats/clamav.md](../spec/formats/clamav.md), R-MAL-032 to R-MAL-034 and the rewritten R-MAL-010 to R-MAL-012,
+  R-HA-069, R-REPO-075, R-UI-194, ADR-225, the gaps H-1162 to H-1165 on
+  [clamav-definitions.md](../security/clamav-definitions.md). **What it says:** the Deployment
+  `malware-updater-freshclam`, one replica, exempt from the rule of two; the updater's tool with whole signed
+  containers beside a Quader container without a secret (a kind of the role `scanner`) that seeds the directory
+  from the set in use and lists it on a link with mutual TLS; the worker asks it every 30 minutes, fetches only
+  what it does not hold and verifies each container's signature against the project's public key before storing
+  it; the task is idle where no updater is configured and waits until a first set exists (the finding of the task
+  that failed every 30 minutes); the format `clamav`, system only, with the one repository `upstream/clamav` in
+  place of `scanner-clamav`, one package per database, every header field, how a file verified, its signature file
+  and its member files shown; the switch **ClamAV definition updates** in the system repositories' table and on
+  the repository's page, off by default; the endpoint serves the set in use to a stock client with one line of
+  configuration and answers a refusal with 401, 404 or 503, never 403 or 429; the set in use and the one before
+  it stay, the rest goes at once, the history stays as metadata; a definition file cannot be deleted by hand; a
+  chart value points the updater at another mirror, and the repository as a source stays for an installation
+  without internet. **Decided by the planner against the main session's leaning:** no real client in an
+  end-to-end test, because the client accepts only containers the project signed and no test may download them;
+  the integration tier replays the client's request sequence, and one measurement with a real client against the
+  owner's installation is recorded once. **Not verified:** a real client against the endpoint; credentials in the
+  URL end to end; the legacy signature's algorithm in the tool's source (the builder reads it); whether the tool
+  writes its files atomically. **Build plan, four packages:** (1) the format, the repository, the API; (2) the
+  updater process and the import; (3) the chart; (4) the UI. **In work since 10:57:** packages 1 and 3 (run
+  record); 1, 2 and 3 land as one. **The owner's installation at that landing:** the way to the internet as a
+  label of the new pod (`malwareUpdaterFreshclam.podLabels`), which the development agent commits there; the
+  first set is fetched whole once. **His decision on the endpoint's level (Q-REPO-415) is open**; built as
+  recommended meanwhile. **The unit's name follows the
   naming rule** (the tool in the name); it is fixed with the specification. **His installation:** the new kind of
   pod needs the way to the internet in his values, which the worker carries today for the updater; the
   development agent brings that with the landing (standing rules).
