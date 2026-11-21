@@ -2448,6 +2448,32 @@ Acceptance criteria:
 - `listFormatUpstreamRepositories` answers an anonymous caller 401, a reader of a project 403 and the Owner of a project who holds no
   capability of the instance the preset repositories of the format with `state` and `visibility` and without address and account.
 
+### R-API-084 · The operations of the installation's registry presets
+Priority: **MVP** · Covers: quader-only
+
+Owned by [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-076 (what a preset is, the validation, who), under the
+OpenAPI tag `upstream`
+([Q-API-383](#q-api-383--the-registry-presets-are-one-document-read-and-replaced-whole-under-if-match)):
+
+| Method | Path | operationId | Declaration |
+|---|---|---|---|
+| GET | `/api/v1/settings/registry-presets` | `getRegistryPresets` | `repositories:read-config` |
+| PUT | `/api/v1/settings/registry-presets` | `setRegistryPresets` | `repositories:write-config`; `If-Match` |
+
+- Schemas: `RegistryPresets` (`presets`), `RegistryPreset` (`format`, `displayName`, `url`, `extraHosts` of `RemoteExtraHost`), both with
+  `additionalProperties: false`, so a body with a credential member is `400 malformed_request`; `RepositoryDefaults` gains
+  `registryPresets`, an array of `RegistryPresetChoice` (`displayName`, `url`, `extraHosts`).
+- No recent authentication: a preset carries no credential and grants nothing a holder of `repositories:write-config` cannot do to
+  a repository directly.
+- The audit event `settings.registry_presets.changed` (category `config`, transactional, not journaled), with `before` and `after`,
+  each the list of presets.
+
+Acceptance criteria:
+
+- `api/openapi.yaml` holds both operations with their declarations; the declaration test of R-API-008 and the `If-Match` test of
+  R-API-012 pass.
+- The `auditor` reads the list (200) and gets 403 on `setRegistryPresets`; a `repository-admin` replaces it (200).
+
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
 
@@ -6155,6 +6181,16 @@ Priority: **MVP** · Covers: UI-031, RMT-004
   (R-REPO-062), in the format's order, labelled with its display name (`translate="no"`). A button sets the URL to its preset's.
   The button whose URL equals the field, compared as the server normalizes it, is pressed (`aria-pressed="true"`); any other URL
   presses none. A format without presets has no group, and its URL field starts empty and is required ([Q-UI-345](#q-ui-345--the-presets-are-buttons-with-names-and-the-pressed-one-follows-the-url)).
+- After it, in the creation form, the group **Registries of this installation** has one button per registry preset of the installation
+  for the format (`registryPresets` of R-REPO-063, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-076), in the
+  administrator's order, labelled with its display name (`translate="no"`) and pressed by the same comparison. A button sets the URL
+  to its preset's, and the further hosts follow it until they are edited, as they follow a well-known preset (the test of the connection
+  sends them too); it never sets a credential, and the create names `extraHosts` for it
+  ([Q-REPO-418](repositories-and-proxy.md#q-repo-418--a-registry-preset-is-a-value-put-into-the-form-and-nothing-follows-it)). The
+  settings page of a stored repository shows the well-known registries only
+  ([Q-UI-907](#q-ui-907--the-registries-of-this-installation-are-a-group-of-their-own-after-the-well-known-ones-in-the-creation-form)).
+  A format without well-known presets shows this group alone; its URL field still starts empty and is required, and the hint under it
+  reads "Choose a registry of this installation or enter the address of another."
 - The URL field starts with the default preset's URL. **Authentication** (None, Username and password, Bearer token), **Username**
   and **Password or token** follow (write-only, Q-UI-123). Under the password one muted line names where the credential goes: the
   URL's host and every further host that receives it ("The credential is sent to registry.gitlab.com and gitlab.com.").
@@ -6182,6 +6218,10 @@ Acceptance criteria:
   offers **Allow**; after it, the test runs again and the token service accepts the typed credential.
 - **New npm repository**, class Remote: one button, pressed; the cache periods read 7200 and 1800; a create that changes nothing
   sends no `remote` member.
+- With the installation's preset Harbor for OCI (`https://harbor.example.com/`, `harbor.example.com` receiving the credential), **New OCI
+  (Docker) repository**, class Remote, shows **Registries of this installation** with Harbor after the four well-known buttons; pressing
+  it presses Harbor alone, shows `harbor.example.com` under Further hosts, and the create sends `remote: {url: "https://harbor.example.com/",
+  extraHosts: [{pattern: "harbor.example.com", sendCredentials: true}]}`.
 
 ### R-UI-083 · Details on demand
 Priority: **MVP** · Covers: UI-031
@@ -8212,7 +8252,9 @@ action that switches all on and one that sets the visibility of all
   5. One action, **Details** (R-UI-163), which opens R-UI-188.
   A note under the name, muted, where it applies: "Address differs from Quader's"; "The account was removed when Quader's address moved
   to another host; enter it again."
-- **System repositories.** Below the table a second table, **System repositories** (the name of the project's page, [Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)), holds the system repositories: `scanner-trivy` with the
+- **Registries of this installation.** Below the table, the section of R-UI-195 with the presets an administrator keeps for the form
+  of a new remote repository.
+- **System repositories.** Below them a second table, **System repositories** (the name of the project's page, [Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)), holds the system repositories: `scanner-trivy` with the
   display name "Image scanning database", the state as a badge, **In use** (`ok`) "In use by the image scanning" or **Not in use**,
   the level as text (Private, with the lock icon) and **Details**; no switch and no select
   ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)). `clamav`
@@ -8529,6 +8571,45 @@ Q-UI-900 case of `upstream-registries.spec.ts`; rendered under rule 11: `admin-r
   the view **Malware** offers `web/files-internal` alone; **Explain for a repository** suggests `web/npm-remote` alone.
 - The suggestion of `upstream/scanner-trivy` is heard "scanner-trivy · upstream, System" and `web/scanner-trivy` without it; the results
   mark `scanner-trivy` and not `npmjs`; the admin page's second heading is **System repositories**.
+
+### R-UI-195 · The registries of this installation in the admin area
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision of 2026-11-20 ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-076): an administrator keeps the
+installation's own registries, which the form of a new remote repository offers as buttons in every project (R-UI-082).
+
+- **Where.** On the page **Upstream registries** (R-UI-187), below the table of the public registries and above **System
+  repositories**, the section **Registries of this installation** (`<h2>`) with the sentence "Your organization's own registries. The
+  form of a new remote repository offers them as buttons in every project, after the well-known registries. A preset holds no
+  credential: each project enters its own." The page reads `getRegistryPresets` beside `listUpstreamRepositories`; the header's count
+  and the filter of the page stay the public registries'
+  ([Q-UI-906](#q-ui-906--the-registries-of-this-installation-are-kept-in-a-section-of-the-page-upstream-registries)).
+- **The table**: rows grouped by format in catalog order, each group headed by the format's icon and display name as in the table
+  above. Columns: **Registry** (the display name, and the URL muted under it as a name), **Further hosts** (each pattern as a name,
+  followed by the muted words "receives the credential" where it does; the en dash for none) and, for a writer, the row's menu
+  ("Actions for Harbor") with **Edit** and **Remove** (R-UI-163).
+- **Add registry** (`btn btn-default`) under the sentence, for a holder of `repositories:write-config`.
+- **Empty.** "No registry of this installation yet." and, for a writer, "Add one to offer it as a button in every project."
+- **The dialog** of **Add registry** ("Add a registry") and of **Edit** ("Edit Harbor"): **Format** (a select of the formats with the
+  remote class by display name; the first on Add), **Name** (as wide as a name), **Upstream URL** (full width) and **Further hosts** (the
+  editor of R-UI-082: a row per pattern with **Receives the credential**, **Remove**, **Add host**) with the hint "Name the registry's
+  token service here and let it receive the credential, so that the credential a project enters reaches it." No credential field.
+  **Save** sends the whole list with the entry added or replaced, with `If-Match` (`setRegistryPresets`, R-API-084). A field error of the
+  entry (`/presets/<n>/…`) stands at its field in the dialog, which stays open; a `412` shows the conflict of R-UI-042 and reads the
+  list again; any other refusal stands in the dialog.
+- **Remove** asks "Remove Harbor? Remote repositories created from it keep their address and hosts." with **Remove**, then sends the
+  list without it.
+- After a save the section shows the list the server answered and a `role="status"` line "Harbor is saved." or "Harbor is removed."
+- A reader (`repositories:read-config` without `repositories:write-config`) sees the table without the button and the actions.
+
+Acceptance criteria (Vitest, `registry-presets.spec.ts`, about 1 s; rendered under rule 11 of promt.md, light and dark, wide and narrow,
+with presets of two formats and the empty state):
+
+- With Harbor (OCI) and Verdaccio (npm) stored, the section shows the groups npm and OCI (Docker) with one row each; an auditor sees no
+  **Add registry** and no row menu.
+- Adding a registry sends `PUT /api/v1/settings/registry-presets` with `If-Match` and the list with the new entry last; a `422` at
+  `/presets/2/url` shows its message under **Upstream URL** of the dialog.
+- **Remove** of Harbor asks first and sends the list without it.
 
 ## Deferred
 
@@ -21165,6 +21246,52 @@ CLAUDE.md "simple by default, details on demand" to the client certificates of t
 | (c) Nothing on the page; the manual only | — | Least | An administrator who chooses Internal does not learn that a certificate would do |
 
 **Choice:** (a). **Applied in the spec:** R-UI-188; [formats/clamav.md](formats/clamav.md) R-CLAMAV-006.
+
+### Q-API-383 · The registry presets are one document, read and replaced whole under `If-Match`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET` and `PUT /api/v1/settings/registry-presets`: the whole list with one `ETag` (chosen) | A settings document of the installation (R-API-037) | Two operations; the order, the limit per format and the uniqueness are checked on the whole list in one place; an edit made on another screen meanwhile is a 412, never a lost entry | A save sends every preset, a few kilobytes at the limit of 10 per format |
+| (b) A collection: list, create, update and delete per preset, each with an identifier | The shape of a keyed resource (R-API-010) | A change sends one preset | Five operations, an identifier nobody reads, and an order that needs an operation of its own |
+| (c) One list per format, `/api/v1/formats/{format}/registry-presets` | A document per format | A save touches one format | The admin page reads one request per format; the formats without the remote class need a refusal of their own |
+
+**Choice:** (a). **Rationale:** the list is short and written by one or two people; one document keeps it consistent with the least
+API. The development agent would revisit (b) if a preset ever gains state of its own.
+
+**Applied in the spec:** R-API-084; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-076.
+
+### Q-UI-906 · The registries of this installation are kept in a section of the page Upstream registries
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A section **Registries of this installation** on `/admin/upstream`, between the public registries and the system repositories, with a dialog per entry (chosen) | The page where an administrator already decides which registries every project gets | One place for every registry offered to all projects; no new entry in the side bar; the page says in one sentence how the two kinds differ | The page grows by a section; its count and filter stay the public registries' |
+| (b) A page of its own in the admin side bar, **Registry presets** | `/admin/registry-presets` | A page per concept | A third entry about upstreams; an administrator looks for the company's registry where the public ones are |
+| (c) In **Settings** | Beside the installation's other settings | Close to a settings document | Nothing there is about registries |
+
+**Choice:** (a). The list has no reordering on the page: a new preset is the last of its format; the API keeps any order it is sent.
+**Rationale:** "keep it simple": the plain path gains buttons, and keeping them is one section an administrator finds beside what it
+resembles. The development agent would revisit (b) if the list ever needs filters or more than a dialog.
+
+**Applied in the spec:** R-UI-195, R-UI-187.
+
+### Q-UI-907 · The registries of this installation are a group of their own after the well-known ones, in the creation form
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A second group **Registries of this installation** after **Well-known registries**, in the form of a new remote repository only (chosen) | Two labelled rows of buttons | A team sees which buttons are its company's and which the public ones; the owner's words name the form of a new remote repository; the settings page needs no second read | A team that moves a stored remote to a company registry types the address on the settings page |
+| (b) The installation's buttons inside **Well-known registries**, after the format's | One row of buttons | Shorter | A private registry named "well-known"; a team cannot tell a company registry from a public one |
+| (c) Also on the settings page | Both forms | The same buttons everywhere | The settings page reads the defaults operation of a create for it; a stored remote's address is changed rarely |
+
+**Choice:** (a). **Rationale:** the plain path of creating gains one row of buttons with a name that says whose they are. The development
+agent would revisit (c) if teams move their remotes between company registries.
+
+**Applied in the spec:** R-UI-082.
 ## What this does not cover
 
 

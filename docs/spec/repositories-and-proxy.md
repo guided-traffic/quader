@@ -577,7 +577,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: UI-031, REPO-010
 
 - `GET /api/v1/projects/{projectKey}/repository-defaults?format=<format>&class=<class>` (`getRepositoryDefaults`) answers
-  `{"suggestedKey", "repository"}` ([Q-REPO-324](#q-repo-324--a-new-repositorys-defaults-come-from-one-operation)):
+  `{"suggestedKey", "repository", "registryPresets"}` ([Q-REPO-324](#q-repo-324--a-new-repositorys-defaults-come-from-one-operation)):
   - `repository` is the document that a create of only `key`, `class` and `format` in that project would store, without `key`:
     `visibility` (the lower of the installation's default and the project's level, R-REPO-004; for a caller who is not an
     administrator the highest level at or below it that the caller may choose, [authorization.md](authorization.md) R-AUTHZ-037
@@ -587,6 +587,8 @@ Priority: **MVP** · Covers: UI-031, REPO-010
     `packageOwnership`), and no format member, whose defaults are the `default`s of `settingsSchema`.
   - `suggestedKey` is `<format>-<class>`, or the first of `<format>-<class>-2` to `<format>-<class>-9` that is free in the project;
     `null` when all are taken.
+  - `registryPresets` is, for the class `remote`, the installation's registry presets of the format in the administrator's order, each
+    `{"displayName", "url", "extraHosts"}` (R-REPO-076); `[]` for another class or a format without any.
 - Permission: that of a create (`repositories:write-config`, or Owner of the project); `404` for an unknown project; the `422
   validation_failed` of a create for an unknown format (`unknown_format` at `/format`) or a class the format lacks
   (`unsupported_class` at `/class`). It writes nothing and records no audit event, and it answers during maintenance.
@@ -2628,6 +2630,62 @@ Acceptance criteria:
   second host saw no request; with `{pattern: <host>, sendCredentials: true}` and the right password, `authenticated: true` and the
   host saw one request without `scope`; with a wrong password `false`; with `sendCredentials: false`, `null` and no request.
 - The saved test of a stored repository answers the same with its stored credential.
+
+### R-REPO-076 · The installation's registry presets
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision of 2026-11-20 ("Auf jeden Fall b"): an administrator keeps a list per format of the installation's own
+registries (name, address, token service), and the form of a new remote repository offers them as buttons in every project. A
+preset holds no credential: each project enters its own. With the project `upstream` holding the public registries (R-REPO-066), a
+project's own remote repositories are mostly the company's private registries, and every team would type the same address and
+token service again.
+
+- **A preset** is `format`, `displayName`, `url` and `extraHosts`, and nothing else
+  ([Q-REPO-417](#q-repo-417--a-registry-preset-holds-a-name-an-address-and-its-hosts-and-no-credential)):
+  - `format`: a registered format with the remote class (`unknown_format`, `unsupported_class` otherwise). A format without the remote
+    class has no presets.
+  - `displayName`: the button's label, shown as typed and not translated; 1 to 64 characters after trimming, unique among the
+    format's presets compared without case (`invalid_value`).
+  - `url`: an upstream URL of R-REPO-024, checked and stored as R-REPO-024 normalizes it (`invalid_upstream_url` with its reason);
+    unique among the format's presets, and none of the format's upstream presets of R-REPO-062 (`invalid_value`: that registry has
+    its button already).
+  - `extraHosts`: the further hosts of R-REPO-024 (`pattern`, `sendCredentials`), at most 20, each pattern once, stored in lower case
+    (`invalid_pattern`, `out_of_range`, `invalid_value`). The registry's token service is one of them, with `sendCredentials: true`
+    where it is to receive a project's credential.
+  A member that is not one of the four (`authMode`, `username`, `password`, a cache period, a format setting) is refused by the
+  strict reading of the body: `400 malformed_request` (R-API-003). No credential can be stored in a preset.
+- **The list** is one document of the installation, `{"presets": […]}`, in the administrator's order; at most 10 presets per format
+  (`out_of_range` at `/presets`). Each problem is a member of one `422 validation_failed` at its pointer
+  (`/presets/<n>/url`, …); nothing is stored while one is left.
+- **Who.** Only a holder of `repositories:write-config` writes the list; a holder of `repositories:read-config` reads it (the
+  administrator, the repository administrator and the auditor, [authorization.md](authorization.md) R-AUTHZ-010). Whoever may
+  create a remote repository in a project, an Owner of the project or a holder of `repositories:write-config`, reads the presets of
+  one format through `getRepositoryDefaults` (R-REPO-063); nobody else gets them
+  ([Q-REPO-419](#q-repo-419--the-repository-administrators-write-the-presets-and-a-creator-reads-them-with-the-forms-defaults)).
+- **The operations** ([api-and-ui.md](api-and-ui.md) R-API-084): `GET /api/v1/settings/registry-presets` answers the document with an
+  `ETag`; `PUT` replaces the whole list under `If-Match` (428 without it, 412 for a stale one) and answers the list as stored. Both read
+  PostgreSQL; no replica caches the list. A `PUT` that changes the list records `settings.registry_presets.changed` with the list
+  before and after in its transaction; one that changes nothing records nothing and keeps the `ETag`.
+- **Nothing follows a preset**
+  ([Q-REPO-418](#q-repo-418--a-registry-preset-is-a-value-put-into-the-form-and-nothing-follows-it)). A preset is a value the form puts
+  into its fields: the create of a remote repository sends the URL and the further hosts as if they were typed, the repository holds
+  them as its own, and no repository records which preset it came from. Changing or removing a preset changes no repository. The
+  server applies no installation preset to a create by its URL: Q-REPO-322 holds for the upstream presets of R-REPO-062 only, so the
+  form names `extraHosts` for an installation preset's URL (R-UI-082), and a client of the API names them as for any other address.
+- A later release whose catalog adds an upstream preset with the URL of an installation preset changes nothing stored; the form then
+  presses both buttons, and the next `PUT` of the list refuses the entry until the administrator removes it.
+
+Acceptance criteria (unit tests of `internal/repository` and `internal/api/v1`, about 1 s, no stack; one integration case of the stored
+row, R-REPO-076 in `test/integration/repository`):
+
+- A `PUT` with the current `ETag` of `{"presets": [{"format": "oci", "displayName": "Harbor", "url": "https://Harbor.Example.com",
+  "extraHosts": [{"pattern": "Harbor.Example.com", "sendCredentials": true}]}]}` stores and answers `url: "https://harbor.example.com/"`
+  and the pattern `harbor.example.com`; a second `PUT` with the first `ETag` answers 412; the audit event names the list before
+  (`[]`) and after.
+- A preset with `password` answers 400 `malformed_request`; `url: "https://registry-1.docker.io/"` for `oci` answers 422 at
+  `/presets/0/url`; an eleventh `npm` preset answers 422 at `/presets`; `format: "generic"` answers `unsupported_class` at
+  `/presets/0/format`.
+- `getRepositoryDefaults` with `format=oci&class=remote` answers `registryPresets` with Harbor; with `class=local` it answers `[]`.
 
 ### R-REPO-025 · Remote request path
 Priority: **MVP** · Covers: RMT-001, RMT-033
@@ -10184,6 +10242,56 @@ finding that a system repository's file page offered **Delete** to an administra
 
 **Choice:** (a). `scanner-trivy` keeps what R-REPO-070 says: its items are a remote's cache, and a delete there makes the next pull fetch
 the layer again. **Applied in the spec:** R-REPO-075; [api-and-ui.md](api-and-ui.md) R-UI-192.
+
+### Q-REPO-417 · A registry preset holds a name, an address and its hosts, and no credential
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a
+preset holds no credential is the owner's (2026-11-20, "Auf jeden Fall b": "each project enters its own"); what else it holds is the
+development agent's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `format`, `displayName`, `url`, `extraHosts`; any other member is refused by the strict body (chosen) | The owner's three facts (name, address, token service) and the format | A button puts exactly what the well-known buttons put: the URL and the hosts; nothing in it can be secret, so the list can be read by every creator; the strict body makes "no credential" a property of the schema, not a rule to remember | A company registry that needs a cache period or a format setting of its own still has it typed |
+| (b) Also the authentication mode (None, Username and password, Bearer token) | A button also chooses the mode | One choice less for a team | The mode follows from the credential each project enters; a preset that sets Bearer for a project that has a username is wrong for it |
+| (c) Also the cache periods and the format's settings (Debian archive keys, the OCI platforms) | A preset is a template of a whole remote | Everything of a company registry once | A second editor of the format settings in the admin area; what a team sees in Advanced settings no longer comes from one place |
+
+**Choice:** (a). **Rationale:** the plain path of creating a remote gains buttons and nothing else (CLAUDE.md, "simple by default"). The
+development agent would revisit (c) for the Debian archive keys once a company's own archive needs them in every project.
+
+**Applied in the spec:** R-REPO-076; [api-and-ui.md](api-and-ui.md) R-API-084.
+
+### Q-REPO-418 · A registry preset is a value put into the form, and nothing follows it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The form copies the URL and the hosts into its fields; the create sends them; the repository holds them as its own; a changed or removed preset reaches no repository (chosen) | The behaviour of the well-known buttons: Q-REPO-322 copies a preset's hosts at the create, and [H-970](../security/remote-repositories.md#h-970--a-presets-credential-host-is-fixed-in-the-repository-when-it-is-created) says a later correction does not follow | One rule for both kinds of preset; an administrator's edit cannot send a project's stored credential to a new host the project never saw; nothing to store per repository | A preset moved to a new address leaves the repositories made from it at the old one, until each project edits its own |
+| (b) A repository remembers its preset and follows its URL and hosts | A link from the repository to the list | One edit moves every repository of a moved registry | The credential a project entered for one host goes to the host an administrator names later, unseen by the project; a removed preset needs a rule for its repositories; the repository document gains a member |
+| (c) As (a), and the server also applies an installation preset's hosts to a create of its URL that omits `extraHosts`, as Q-REPO-322 does for the upstream presets | The list read in the transaction of every create | A `curl` create of a company registry's URL gets its token service like the form | The repository service reads the administrator's list in its create path; the API client reads the hosts from the same answer the form reads (`registryPresets`) and names them, as for any other private registry |
+
+**Choice:** (a). **Rationale:** the owner's own words make a preset a convenience of the form ("offers them as buttons"), and a credential
+should go only where the project that entered it has seen it go. The development agent would revisit (c) if API clients of an
+installation create many remotes of its presets by URL alone.
+
+**Applied in the spec:** R-REPO-076; [api-and-ui.md](api-and-ui.md) R-UI-082.
+
+### Q-REPO-419 · The repository administrators write the presets, and a creator reads them with the form's defaults
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That an
+administrator keeps the list is the owner's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `repositories:write-config` writes, `repositories:read-config` reads the list; a creator reads the format's presets in `getRepositoryDefaults` (chosen) | The capabilities of the admin page of the upstream registries (R-API-083), and the read that the form makes anyway | The same people keep the public and the company's registries; an Owner, who may create remotes, reads them without a new capability; a reader of a project who may create nothing learns no internal registry address | A creator outside the form (a script) reads one format per call |
+| (b) `settings:read` and `settings:write` | The installation's settings | The capability of the other settings documents | The repository administrator, who keeps the upstream registries, could not keep these; the auditor's read of repositories is split |
+| (c) Every signed-in caller reads the whole list | A read of its own for everyone | Simple | Internal registry addresses go to people who cannot use them (R-REPO-010 keeps an upstream URL from a consumer for this reason) |
+
+**Choice:** (a). **Rationale:** the list is configuration of remote repositories, and R-REPO-010 already treats an internal registry
+address as information. The development agent would revisit (c) if a screen outside the creation form needs the list.
+
+**Applied in the spec:** R-REPO-076, R-REPO-063; [api-and-ui.md](api-and-ui.md) R-API-084.
+
 ## What this does not cover
 
 ### H-4 · Malicious content from a legitimate upstream

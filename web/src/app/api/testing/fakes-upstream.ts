@@ -2,7 +2,9 @@ import { Injectable, Provider } from '@angular/core';
 import { ApiError } from '../problem';
 import { UpstreamPreset, UpstreamTestResult } from '../repositories-api';
 import {
+  LoadedRegistryPresets,
   LoadedUpstreamRepository,
+  RegistryPreset,
   UpstreamApi,
   UpstreamRepository,
   UpstreamRepositoryAccount,
@@ -139,6 +141,10 @@ export class FakeUpstreamApi extends UpstreamApi {
   listedByNames: Record<string, string[]> = {};
   readonly calls: { op: string; key?: string; body?: unknown; etag?: string; removeAccount?: boolean }[] = [];
   testResult: UpstreamTestResult = REACHED;
+  /** The installation's registry presets (R-REPO-076) and their version, the `ETag`. */
+  presets: RegistryPreset[] = [];
+  presetsVersion = 1;
+  presetsFailure: ApiError | null = null;
 
   /** Replaces one repository of the fixture by its key. */
   set(key: string, over: Partial<UpstreamRepository>): void {
@@ -283,6 +289,41 @@ export class FakeUpstreamApi extends UpstreamApi {
   override async testUnsaved(format: string, remote: Readonly<Record<string, unknown>>): Promise<UpstreamTestResult> {
     this.calls.push({ op: 'test-unsaved', body: structuredClone({ format, remote }) });
     return structuredClone(this.testResult);
+  }
+
+  override async registryPresets(): Promise<LoadedRegistryPresets> {
+    if (this.presetsFailure) throw this.presetsFailure;
+    return { presets: structuredClone(this.presets), etag: `"${this.presetsVersion}"` };
+  }
+
+  /**
+   * Replaces the list as the server does (R-REPO-076): `If-Match` must be the current version (412 otherwise), and a URL of a
+   * well-known preset of the format is refused at its pointer; `failure` makes the next call fail.
+   */
+  override async setRegistryPresets(presets: readonly RegistryPreset[], etag: string): Promise<LoadedRegistryPresets> {
+    this.calls.push({ op: 'registry-presets', body: structuredClone(presets), etag });
+    this.fail();
+    if (etag !== `"${this.presetsVersion}"`) {
+      throw new ApiError(412, { code: 'precondition_failed', detail: 'The registry presets changed.', requestId: 'rid-412' }, 'rid-412');
+    }
+    const taken = presets.findIndex((p) =>
+      CATALOG.some(([format, list]) => format === p.format && list.some((w) => w.url === p.url)),
+    );
+    if (taken >= 0) {
+      throw new ApiError(
+        422,
+        {
+          code: 'validation_failed',
+          detail: 'The registry presets are invalid.',
+          requestId: 'rid-422',
+          errors: [{ pointer: `/presets/${taken}/url`, code: 'invalid_value', detail: 'is the address of a well-known registry, which has its button already' }],
+        },
+        'rid-422',
+      );
+    }
+    this.presets = structuredClone([...presets]);
+    this.presetsVersion++;
+    return this.registryPresets();
   }
 
   private accountOf(a: UpstreamRepositoryAccount): UpstreamRepository['account'] {

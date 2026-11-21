@@ -255,6 +255,8 @@ export class RepositoryCreate implements HasUnsavedChanges {
   protected readonly defaultDocument = computed<Readonly<Record<string, unknown>> | null>(
     () => (valueOf(this.defaults)?.repository as Readonly<Record<string, unknown>> | undefined) ?? null,
   );
+  /** The installation's registry presets of the format (R-REPO-076): the buttons of **Registries of this installation** (R-UI-082). */
+  protected readonly ownPresets = computed(() => valueOf(this.defaults)?.registryPresets ?? []);
   /** The server's defaults of `remote.mirror` (R-REPO-063): the values of the Mirror group's fields. */
   protected readonly mirrorDefaults = computed(() => mirrorDefaultsOf(this.defaultDocument()));
   private readonly remoteDefaults = computed(() => {
@@ -391,7 +393,7 @@ export class RepositoryCreate implements HasUnsavedChanges {
             remote: 'sparse' as const,
             mirror: this.mirrorGroup(),
             mirrorDefaults: this.mirrorDefaults(),
-            upstream: upstreamDefaultsOf(f, this.remoteDefaults()),
+            upstream: upstreamDefaultsOf(f, this.remoteDefaults(), this.ownPresets()),
           }
         : {}),
     };

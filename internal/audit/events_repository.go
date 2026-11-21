@@ -143,3 +143,19 @@ func init() {
 }
 
 // <<< M2 npm
+
+// EventRegistryPresetsChanged is a change of the installation's registry presets (R-REPO-076, R-API-084): the list before and after,
+// each preset with its format, display name, URL and further hosts. A preset holds no credential, so nothing in it is secret. It
+// decides only the buttons of the form of a new remote repository and no access, so it is not journaled.
+const EventRegistryPresetsChanged = "settings.registry_presets.changed"
+
+func init() {
+	preset := `{"type":"object","properties":{"format":{"type":"string"},"displayName":{"type":"string"},"url":{"type":"string"},` +
+		`"extraHosts":{"type":"array","maxItems":20,"items":{"type":"object","properties":{"pattern":{"type":"string"},` +
+		`"sendCredentials":{"type":"boolean"}}}}}}`
+	list := `{"type":"array","maxItems":1000,"items":` + preset + `}`
+	Register(EventType{
+		Name: EventRegistryPresetsChanged, Category: CategoryConfig, Mode: Transactional,
+		Schema: `{"type":"object","properties":{"before":` + list + `,"after":` + list + `},"required":["before","after"],"additionalProperties":false}`,
+	})
+}

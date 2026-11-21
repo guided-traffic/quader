@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
@@ -16,10 +17,12 @@ const maxSuggestion = 9
 
 // Defaults is the answer of getRepositoryDefaults (R-REPO-063, Q-REPO-324): a key that no repository of the project holds, or
 // nil when the ten suggestions are taken, and the document a create of only key, class and format in the project would store.
-// Document.Key is empty: the document is the defaults, not a repository.
+// Document.Key is empty: the document is the defaults, not a repository. RegistryPresets are the installation's presets of the format
+// for the class remote, in the list's order, and empty for another class (R-REPO-076).
 type Defaults struct {
-	SuggestedKey *string
-	Document     Document
+	SuggestedKey    *string
+	Document        Document
+	RegistryPresets []RegistryPreset
 }
 
 // Defaults resolves what a create of only key, class and format in project would store, by the rules of that create (the
@@ -75,6 +78,12 @@ func (s *Service) Defaults(ctx context.Context, c Caller, project, format string
 		doc.Project = project
 		doc.renderVirtual(nil)
 		out.Document = doc
+		out.RegistryPresets = []RegistryPreset{}
+		if class == catalog.Remote {
+			if out.RegistryPresets, err = registryPresetsOf(ctx, qs, format); err != nil {
+				return err
+			}
+		}
 		out.SuggestedKey, err = freeKey(ctx, qs, project, key)
 		return err
 	})

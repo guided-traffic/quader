@@ -1122,6 +1122,14 @@ type ProjectMember struct {
 	Role        string
 }
 
+type RegistryPreset struct {
+	Singleton bool
+	Presets   json.RawMessage
+	Version   int64
+	UpdatedAt pgtype.Timestamptz
+	UpdatedBy pgtype.UUID
+}
+
 type RemoteCacheEntry struct {
 	ID                   pgtype.Int8
 	RepoID               int64

@@ -10643,6 +10643,35 @@ type PublicObjects struct {
 	Truncated bool `json:"truncated"`
 }
 
+// RegistryPreset One registry of the installation (R-REPO-076, Q-REPO-417): its format, the label of its button, its address and the further
+// hosts a repository of it needs, the registry's token service among them. No credential: each project enters its own.
+type RegistryPreset struct {
+	// DisplayName The label of the button, shown as typed and not translated.
+	DisplayName string               `json:"displayName"`
+	ExtraHosts  []UpstreamPresetHost `json:"extraHosts"`
+
+	// Format A format of `GET /api/v1/formats` with the remote class.
+	Format string `json:"format"`
+
+	// Url The upstream URL; the answer holds it as R-REPO-024 normalizes it.
+	Url string `json:"url"`
+}
+
+// RegistryPresetChoice defines model for RegistryPresetChoice.
+type RegistryPresetChoice struct {
+	DisplayName string               `json:"displayName"`
+	ExtraHosts  []UpstreamPresetHost `json:"extraHosts"`
+
+	// Url The upstream URL as R-REPO-024 normalizes it.
+	Url string `json:"url"`
+}
+
+// RegistryPresets defines model for RegistryPresets.
+type RegistryPresets struct {
+	// Presets The installation's registry presets in the administrator's order, at most 10 per format (R-REPO-076).
+	Presets []RegistryPreset `json:"presets"`
+}
+
 // RemoteExtraHost defines model for RemoteExtraHost.
 type RemoteExtraHost struct {
 	// Pattern A host name pattern in lower case with the wildcards `*` and `?`, for example `*.nuget.org`. No port, no path.
@@ -11058,6 +11087,10 @@ type RepositoryConsumerViewClass string
 
 // RepositoryDefaults defines model for RepositoryDefaults.
 type RepositoryDefaults struct {
+	// RegistryPresets For the class `remote`, the installation's registry presets of the format in the administrator's order (R-REPO-076); empty
+	// for another class. The form offers them as buttons after the format's well-known registries (R-UI-082).
+	RegistryPresets []RegistryPresetChoice `json:"registryPresets"`
+
 	// Repository The document a create of only `key`, `class` and `format` in the project would store, without `key` (R-REPO-063): the
 	// members of `Repository` that apply to the class, at their defaults. `visibility` is the lower of the installation's
 	// default and the project's level; a remote's section is canonical, with the default preset's `url` and `extraHosts` and
@@ -14875,6 +14908,18 @@ type UpdateAuthSettingsParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// GetRegistryPresetsParams defines parameters for GetRegistryPresets.
+type GetRegistryPresetsParams struct {
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// SetRegistryPresetsParams defines parameters for SetRegistryPresets.
+type SetRegistryPresetsParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // GetVisibilitySettingsParams defines parameters for GetVisibilitySettings.
 type GetVisibilitySettingsParams struct {
 	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
@@ -15616,6 +15661,9 @@ type CreateServiceAccountTechnicalTokenSecretJSONRequestBody = NewTechnicalToken
 
 // UpdateAuthSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateAuthSettings for application/merge-patch+json ContentType.
 type UpdateAuthSettingsApplicationMergePatchPlusJSONRequestBody = AuthSettingsPatch
+
+// SetRegistryPresetsJSONRequestBody defines body for SetRegistryPresets for application/json ContentType.
+type SetRegistryPresetsJSONRequestBody = RegistryPresets
 
 // UpdateVisibilitySettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateVisibilitySettings for application/merge-patch+json ContentType.
 type UpdateVisibilitySettingsApplicationMergePatchPlusJSONRequestBody = VisibilitySettingsPatch
@@ -17097,6 +17145,12 @@ type ServerInterface interface {
 	// UpdateAuthSettings Change the runtime authentication settings
 	// (PATCH /api/v1/settings/auth)
 	UpdateAuthSettings(w http.ResponseWriter, r *http.Request, params UpdateAuthSettingsParams)
+	// GetRegistryPresets Read the installation's registry presets
+	// (GET /api/v1/settings/registry-presets)
+	GetRegistryPresets(w http.ResponseWriter, r *http.Request, params GetRegistryPresetsParams)
+	// SetRegistryPresets Replace the installation's registry presets
+	// (PUT /api/v1/settings/registry-presets)
+	SetRegistryPresets(w http.ResponseWriter, r *http.Request, params SetRegistryPresetsParams)
 	// GetVisibilitySettings Read the installation's visibility settings
 	// (GET /api/v1/settings/visibility)
 	GetVisibilitySettings(w http.ResponseWriter, r *http.Request, params GetVisibilitySettingsParams)
@@ -29457,6 +29511,92 @@ func (siw *ServerInterfaceWrapper) UpdateAuthSettings(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetRegistryPresets operation middleware
+func (siw *ServerInterfaceWrapper) GetRegistryPresets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRegistryPresetsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRegistryPresets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetRegistryPresets operation middleware
+func (siw *ServerInterfaceWrapper) SetRegistryPresets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetRegistryPresetsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetRegistryPresets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetVisibilitySettings operation middleware
 func (siw *ServerInterfaceWrapper) GetVisibilitySettings(w http.ResponseWriter, r *http.Request) {
 
@@ -33189,6 +33329,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/cache/entries", wrapper.ListCacheEntries)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream-test", wrapper.TestRepositoryUpstream)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/upstream-tests", wrapper.TestUpstream)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/settings/registry-presets", wrapper.GetRegistryPresets)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/settings/registry-presets", wrapper.SetRegistryPresets)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/upstream-repositories", wrapper.ListUpstreamRepositories)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}", wrapper.GetUpstreamRepository)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/upstream-repositories/{key}/state", wrapper.SetUpstreamRepositoryState)

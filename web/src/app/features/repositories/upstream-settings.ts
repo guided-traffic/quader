@@ -5,6 +5,7 @@ import { upstreamName } from '../../core/upstream-project';
 import { ApiError, FieldProblem } from '../../api/problem';
 import {
   FormatDescriptor,
+  RegistryPresetChoice,
   RepositoriesApi,
   UpstreamPreset,
   UpstreamTestResult,
@@ -122,6 +123,27 @@ export function upstreamPointerLabel(pointer: string): string | null {
           </div>
         }
 
+        <!-- The installation's own registries, after the public ones (R-UI-082, R-REPO-076, Q-UI-907): a button sets the URL, the
+             further hosts follow it until they are edited, and no button sets a credential. -->
+        @if (own().length > 0) {
+          <div class="field" role="group" aria-labelledby="upstream-own-label">
+            <span id="upstream-own-label" class="field-label" i18n="@@upstream.own-presets">Registries of this installation</span>
+            <div class="presets">
+              @for (p of own(); track p.url) {
+                <button
+                  class="btn btn-default preset"
+                  type="button"
+                  translate="no"
+                  [attr.aria-pressed]="pressed(p)"
+                  (click)="choose(p)"
+                >
+                  {{ p.displayName }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
         <div class="field">
           <label class="field-label" for="f-remote-url" i18n="@@upstream.url">Upstream URL</label>
           <input
@@ -140,6 +162,8 @@ export function upstreamPointerLabel(pointer: string): string | null {
           <p id="d-remote-url" class="hint">
             @if (presets().length > 0) {
               <ng-container i18n="@@upstream.url.hint-presets">Choose a well-known registry or enter the address of another.</ng-container>
+            } @else if (own().length > 0) {
+              <ng-container i18n="@@upstream.url.hint-own">Choose a registry of this installation or enter the address of another.</ng-container>
             } @else {
               <ng-container i18n="@@upstream.url.hint-required"
                 >This format has no well-known upstream: enter the address of the registry.</ng-container
@@ -565,6 +589,11 @@ export class UpstreamSettings {
    * While the chosen preset's is one of them, a line under the presets names it and leads to a new virtual repository.
    */
   readonly central = input<ReadonlySet<string>>(new Set());
+  /**
+   * The creation form's: the installation's registry presets of the format (`registryPresets` of R-REPO-063, R-REPO-076), offered as
+   * the group **Registries of this installation** after the well-known ones (Q-UI-907). The settings page passes none.
+   */
+  readonly own = input<readonly RegistryPresetChoice[]>([]);
   /** The router commands and the query of the form of a new virtual repository of the same format. */
   readonly virtualLink = input<readonly string[]>([]);
   readonly virtualQuery = input<Readonly<Record<string, string>>>({});
@@ -583,7 +612,7 @@ export class UpstreamSettings {
   private readonly urlLeft = signal(false);
 
   protected readonly upstream = computed(() => this.form().upstream);
-  protected readonly proposed = computed(() => upstreamDefaultsOf(this.format(), this.remoteDefaults()));
+  protected readonly proposed = computed(() => upstreamDefaultsOf(this.format(), this.remoteDefaults(), this.own()));
   /** A cache period's field has the focus. */
   protected readonly periodFocused = signal(false);
   /** The defaults the period fields show: one that arrives while the person is in one of them waits until it is left (Q-UI-702). */
@@ -655,12 +684,12 @@ export class UpstreamSettings {
   });
 
   /** A preset is pressed while the URL the repository would use is its URL, compared as the server stores URLs (Q-UI-345). */
-  protected pressed(p: UpstreamPreset): boolean {
+  protected pressed(p: Pick<UpstreamPreset, 'url'>): boolean {
     const url = effectiveUrl(this.upstream(), this.proposed());
     return url !== null && normalizedUrl(url.trim()) === normalizedUrl(p.url);
   }
 
-  protected choose(p: UpstreamPreset): void {
+  protected choose(p: Pick<UpstreamPreset, 'url'>): void {
     this.set({ url: p.url });
   }
 
@@ -759,7 +788,7 @@ export class UpstreamSettings {
     this.result.set(null);
     this.failure.set(null);
     try {
-      this.result.set(await this.api.testUpstream(this.project(), upstreamTestBody(this.upstream(), this.format())));
+      this.result.set(await this.api.testUpstream(this.project(), upstreamTestBody(this.upstream(), this.format(), this.own())));
     } catch (e) {
       this.failure.set(asApiError(e));
     } finally {

@@ -128,6 +128,9 @@ A remote repository has an **Upstream** group in the creation form and an open s
   | Debian | **Debian** (`https://deb.debian.org/debian/`), **Debian security updates**, **Ubuntu**, **Ubuntu security updates**, **Ubuntu ports** (arm64 and the other ports of Ubuntu) |
   | Ansible | **Ansible Galaxy** (`https://galaxy.ansible.com/api/`) |
 
+- **Registries of this installation**, in the creation form only: one button per registry an administrator keeps for the format on the
+  page **Upstream registries** ([upstream-registries.md](upstream-registries.md#registries-of-this-installation)). A button sets its
+  address, and its further hosts follow it until you edit them; it never fills in a credential, which you enter for your project.
 - **Upstream URL**, **Authentication**, **Username** and **Password or token**, described in the table below. Under the password one line names every host the credential is sent to: the registry's host and each further host that receives it ("The credential is sent to registry.gitlab.com and gitlab.com.").
 - **Test connection**, described below.
 - **Upstream details**, closed at first: the further hosts, the two cache periods, **Start the download when a version is asked for** and, on the repository's page, **Offline**.

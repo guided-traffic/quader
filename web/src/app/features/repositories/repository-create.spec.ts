@@ -316,6 +316,58 @@ describe('The creation form of a repository', () => {
     expect(r.root.querySelector('[data-testid="upstream-test-result"]')).toBeNull();
   });
 
+  it('R-UI-082 R-REPO-076 an OCI remote offers the registries of this installation after the well-known ones; one sets the URL, its hosts follow it, and the create names them', async () => {
+    const harbor = { displayName: 'Harbor', url: 'https://harbor.example.com/', extraHosts: [{ pattern: 'harbor.example.com', sendCredentials: true }] };
+    const r = await openForm('oci', {
+      setup: (fake) => {
+        fake.defaultsFor = (project, format, cls) => ({
+          ...sampleRepositoryDefaults(OCI_FORMAT, cls),
+          registryPresets: cls === 'remote' ? [harbor] : [],
+        });
+      },
+    });
+    stayOnPage();
+    await chooseClass(r, 'remote');
+    const groups = [...r.root.querySelectorAll('quader-upstream-settings [role="group"] > .field-label')].map((l) => text(l));
+    expect(groups.slice(0, 2)).toEqual(['Well-known registries', 'Registries of this installation']);
+    const presets = [...r.root.querySelectorAll<HTMLButtonElement>('[aria-pressed]')];
+    expect(presets.map((b) => text(b))).toEqual(['Docker Hub', 'Quay', 'GitHub (ghcr.io)', 'GitLab', 'Harbor']);
+    presets[4]!.click();
+    await settle(r.fixture);
+    expect($(r, '#f-remote-url').value).toBe('https://harbor.example.com/');
+    expect(presets.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'false', 'false', 'true']);
+    expect($(r, '#f-remote-extraHosts-0').value).toBe('harbor.example.com');
+    type($<HTMLSelectElement>(r, '#f-remote-authMode'), 'basic');
+    await settle(r.fixture);
+    expect($(r, '#f-remote-password').value).toBe('');
+    expect(text($(r, '#d-remote-credential-hosts'))).toBe('The credential is sent to harbor.example.com.');
+    type($<HTMLSelectElement>(r, '#f-remote-authMode'), 'none');
+    await settle(r.fixture);
+    await create(r);
+    expect(created(r.fake, 'oci-remote').remote).toEqual({
+      url: 'https://harbor.example.com/',
+      extraHosts: [{ pattern: 'harbor.example.com', sendCredentials: true }],
+    });
+  });
+
+  it('R-UI-082 R-REPO-076 the form of a format without well-known registries offers the registries of this installation alone', async () => {
+    const r = await openForm('nuget', {
+      formats: [NO_PRESETS],
+      setup: (fake) => {
+        fake.defaultsFor = (project, format, cls) => ({
+          ...sampleRepositoryDefaults(NO_PRESETS, cls),
+          registryPresets: [{ displayName: 'Feed', url: 'https://nuget.example.com/v3/index.json', extraHosts: [] }],
+        });
+      },
+    });
+    await chooseClass(r, 'remote');
+    const presets = [...r.root.querySelectorAll<HTMLButtonElement>('[aria-pressed]')];
+    expect(presets.map((b) => [text(b), b.getAttribute('aria-pressed')])).toEqual([['Feed', 'false']]);
+    expect($(r, '#f-remote-url').value).toBe('');
+    expect(text($(r, '#d-remote-url'))).toBe('Choose a registry of this installation or enter the address of another.');
+    await expectAccessible(r.root);
+  });
+
   it('R-UI-082 R-UI-086 a format without presets starts with an empty URL that a create asks for', async () => {
     const r = await openForm('nuget', { formats: [NO_PRESETS] });
     await chooseClass(r, 'remote');

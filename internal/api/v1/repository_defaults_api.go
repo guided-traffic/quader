@@ -33,10 +33,15 @@ func (s *Server) GetRepositoryDefaults(w http.ResponseWriter, r *http.Request, p
 		httpserver.Problem(w, r, err)
 		return
 	}
+	choices := make([]gen.RegistryPresetChoice, 0, len(def.RegistryPresets))
+	for _, p := range def.RegistryPresets {
+		choices = append(choices, gen.RegistryPresetChoice{DisplayName: p.DisplayName, Url: p.URL, ExtraHosts: presetHostsOf(p.ExtraHosts)})
+	}
 	writeJSON(w, r, http.StatusOK, struct {
-		SuggestedKey *string                    `json:"suggestedKey"`
-		Repository   map[string]json.RawMessage `json:"repository"`
-	}{def.SuggestedKey, doc})
+		SuggestedKey    *string                    `json:"suggestedKey"`
+		Repository      map[string]json.RawMessage `json:"repository"`
+		RegistryPresets []gen.RegistryPresetChoice `json:"registryPresets"`
+	}{def.SuggestedKey, doc, choices})
 }
 
 // withoutKey renders a document as a read shows it, without its key: the defaults are no repository yet.

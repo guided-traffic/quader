@@ -1142,6 +1142,50 @@ function upstreamWalk(preset: string | null, full: boolean): Screen['walk'] {
   };
 }
 
+/**
+ * The page Upstream registries with the section of the installation's registries (R-UI-195): as it opens, scrolled to the section,
+ * and, for an administrator, the dialog of **Add registry** with a further host, the row's menu and the dialog of **Edit** of the
+ * long-named one.
+ * Nothing is saved.
+ */
+async function* registryPresetsWalk(page: Page): AsyncGenerator<string> {
+  const section = page.locator('quader-registry-presets');
+  await expect(section.locator('tbody tr').first()).toBeVisible();
+  yield 'page';
+  await section.scrollIntoViewIfNeeded();
+  yield 'presets';
+  const add = section.getByRole('button', { name: 'Add registry' });
+  if ((await add.count()) === 0) return;
+  await add.click();
+  const dialog = page.locator('quader-registry-preset-dialog');
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel('Name').fill('Artifacts of the platform team');
+  await dialog.getByLabel('Upstream URL').fill('https://registry.platform.example-company.com/');
+  await dialog.getByRole('button', { name: 'Add host' }).click();
+  await dialog.locator('.host-row input[type="text"]').first().fill('login.platform.example-company.com');
+  yield 'add-dialog';
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await section.getByRole('button', { name: 'Actions for Registry of the build farm in Frankfurt' }).click();
+  yield 'row-menu';
+  await page.getByRole('menuitem', { name: 'Edit' }).click();
+  await expect(dialog).toBeVisible();
+  yield 'edit-dialog';
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+}
+
+/** The section without a registry of the installation: the list answered empty (R-UI-195). */
+async function* registryPresetsEmpty(page: Page): AsyncGenerator<string> {
+  await page.route('**/api/v1/settings/registry-presets', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', headers: { ETag: '"1"' }, body: JSON.stringify({ presets: [] }) }),
+  );
+  await page.reload();
+  const section = page.locator('quader-registry-presets');
+  await expect(section).toContainText('No registry of this installation yet.');
+  await section.scrollIntoViewIfNeeded();
+  yield 'empty';
+  await page.unroute('**/api/v1/settings/registry-presets');
+}
+
 const upstreams: Screen[] = [
   { id: 'upstream-oci', path: `/ui/projects/${mainProject}/repositories/new/oci`, kinds: ['power'], walk: upstreamWalk('GitLab', true) },
   { id: 'upstream-npm', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: upstreamWalk(null, false) },
@@ -1491,7 +1535,9 @@ export const screens: readonly Screen[] = [
   { id: 'admin-repositories-upstream', path: '/ui/admin/repositories?project=upstream', kinds: admins, walk: systemRows },
   // The public registries Quader offers (R-UI-187, R-UI-188): the list grouped by format, and a Debian archive's page, the one with
   // the most to lay out (its archive keys). The member editor's placeholder is in repository-settings-oci-virtual.
-  { id: 'admin-upstream', path: '/ui/admin/upstream', kinds: admins },
+  { id: 'admin-upstream', path: '/ui/admin/upstream', kinds: admins, walk: registryPresetsWalk },
+  // The section of the installation's registries without any (R-UI-195): the list answered empty by the route.
+  { id: 'admin-upstream-presets-empty', path: '/ui/admin/upstream', kinds: ['admin'], walk: registryPresetsEmpty },
   { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
   // The system repository of the image scanning's database: in use while the scanning reads through it (R-REPO-070, R-VULN-044).
   { id: 'admin-upstream-scanner-trivy', path: '/ui/admin/upstream/scanner-trivy', kinds: admins },

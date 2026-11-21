@@ -293,6 +293,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.technicaltoken.deleted:Technical token deleted`;
     case 'settings.visibility.changed':
       return $localize`:@@audit.action.settings.visibility.changed:Default visibility changed`;
+    case 'settings.registry_presets.changed':
+      return $localize`:@@audit.action.settings.registry_presets.changed:Registries of this installation changed`;
     case 'settings.auth.changed':
       return $localize`:@@audit.action.settings.auth.changed:Authentication settings changed`;
     case 'system.backup.completed':

@@ -7167,6 +7167,10 @@ paths:
                     cache: {metadataTtlSeconds: 300, notFoundTtlSeconds: 300}
                     mode: pullThrough
                     mirror: {intervalSeconds: 3600, concurrency: 4}
+                registryPresets:
+                  - displayName: Harbor
+                    url: https://harbor.example.com/
+                    extraHosts: [{pattern: harbor.example.com, sendCredentials: true}]
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -11674,6 +11678,107 @@ paths:
   # <<< M2 proxy
   #
   # >>> upstream
+  /api/v1/settings/registry-presets:
+    get:
+      operationId: getRegistryPresets
+      tags: [upstream]
+      summary: Read the installation's registry presets
+      description: |
+        The list an administrator keeps of the installation's own registries, which the form of a new remote repository offers as
+        buttons in every project (R-REPO-076, R-API-084), in the administrator's order, with its `ETag`. A preset holds no credential.
+        Read from PostgreSQL, so an answer shows a change another replica committed.
+      x-quader-permission:
+        permission: repositories:read-config
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+      responses:
+        "200":
+          description: The list.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPresets"
+              example:
+                presets:
+                  - format: oci
+                    displayName: Harbor
+                    url: https://harbor.example.com/
+                    extraHosts: [{pattern: harbor.example.com, sendCredentials: true}]
+        "304":
+          $ref: "#/components/responses/NotModified"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: setRegistryPresets
+      tags: [upstream]
+      summary: Replace the installation's registry presets
+      description: |
+        Replaces the whole list (R-REPO-076, Q-API-383); `If-Match` is required. Each preset is checked: a format with the remote class,
+        a display name of 1 to 64 characters unique in its format, an upstream URL of R-REPO-024 (stored normalized) that no other preset
+        of the format and none of the format's upstream presets has, and at most 20 further hosts, each once; at most 10 presets per
+        format. A member that is not one of the four of a preset, a credential included, answers `400 malformed_request`. A change records
+        `settings.registry_presets.changed` with the list before and after; a list equal to the stored one records nothing and keeps the
+        `ETag`. No repository changes: nothing follows a preset (Q-REPO-418). The answer is the list as stored.
+      x-quader-permission:
+        permission: repositories:write-config
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryPresets"
+            example:
+              presets:
+                - format: oci
+                  displayName: Harbor
+                  url: https://harbor.example.com/
+                  extraHosts: [{pattern: harbor.example.com, sendCredentials: true}]
+      responses:
+        "200":
+          description: The list after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPresets"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/upstream-repositories:
     get:
       operationId: listUpstreamRepositories
@@ -20970,7 +21075,7 @@ components:
           type: boolean
     RepositoryDefaults:
       type: object
-      required: [suggestedKey, repository]
+      required: [suggestedKey, repository, registryPresets]
       properties:
         suggestedKey:
           type: [string, "null"]
@@ -20986,6 +21091,61 @@ components:
             default and the project's level; a remote's section is canonical, with the default preset's `url` and `extraHosts` and
             every member of `RemoteSettings`; a virtual's has no members and no deploy target; a local's `packageOwnership` is the
             format's. The format's own member is absent: its defaults are the `default`s of the format's `settingsSchema`.
+        registryPresets:
+          type: array
+          description: |
+            For the class `remote`, the installation's registry presets of the format in the administrator's order (R-REPO-076); empty
+            for another class. The form offers them as buttons after the format's well-known registries (R-UI-082).
+          items:
+            $ref: "#/components/schemas/RegistryPresetChoice"
+    RegistryPresetChoice:
+      type: object
+      required: [displayName, url, extraHosts]
+      properties:
+        displayName:
+          type: string
+        url:
+          type: string
+          description: The upstream URL as R-REPO-024 normalizes it.
+        extraHosts:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamPresetHost"
+    RegistryPresets:
+      type: object
+      additionalProperties: false
+      required: [presets]
+      properties:
+        presets:
+          type: array
+          description: The installation's registry presets in the administrator's order, at most 10 per format (R-REPO-076).
+          items:
+            $ref: "#/components/schemas/RegistryPreset"
+    RegistryPreset:
+      type: object
+      additionalProperties: false
+      description: |
+        One registry of the installation (R-REPO-076, Q-REPO-417): its format, the label of its button, its address and the further
+        hosts a repository of it needs, the registry's token service among them. No credential: each project enters its own.
+      required: [format, displayName, url, extraHosts]
+      properties:
+        format:
+          type: string
+          description: A format of `GET /api/v1/formats` with the remote class.
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: The label of the button, shown as typed and not translated.
+        url:
+          type: string
+          maxLength: 2048
+          description: The upstream URL; the answer holds it as R-REPO-024 normalizes it.
+        extraHosts:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/UpstreamPresetHost"
     # <<< T-21b presets
     #
     # >>> upstream

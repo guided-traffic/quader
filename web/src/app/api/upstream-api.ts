@@ -17,6 +17,15 @@ export type UpstreamVisibilityLevel = Schema<'VisibilityLevel'>;
 /** What a writer of a virtual repository learns of a well-known repository of a format: its state and its level (Q-API-364). */
 export type UpstreamRepositorySummary = Schema<'UpstreamRepositorySummary'>;
 
+/** One of the installation's own registries, which the form of a new remote repository offers as a button (R-REPO-076). */
+export type RegistryPreset = Schema<'RegistryPreset'>;
+
+/** The installation's registry presets with the `ETag` they were read with, which their replacement takes in `If-Match`. */
+export interface LoadedRegistryPresets {
+  readonly presets: readonly RegistryPreset[];
+  readonly etag: string;
+}
+
 /** A well-known repository with the `ETag` it was read with: the address and the account take it in `If-Match`. */
 export interface LoadedUpstreamRepository {
   readonly value: UpstreamRepository;
@@ -56,9 +65,14 @@ export abstract class UpstreamApi {
   abstract testSaved(key: string): Promise<UpstreamTestResult>;
   /** An address and an account that are not saved yet (R-REPO-024); a typed password is used once and stored nowhere. */
   abstract testUnsaved(format: string, remote: Readonly<Record<string, unknown>>): Promise<UpstreamTestResult>;
+  /** `GET /api/v1/settings/registry-presets`: the installation's own registries with their `ETag` (R-API-084). */
+  abstract registryPresets(): Promise<LoadedRegistryPresets>;
+  /** `PUT /api/v1/settings/registry-presets` with `If-Match`: the whole list replaced; the answer is the list as stored. */
+  abstract setRegistryPresets(presets: readonly RegistryPreset[], etag: string): Promise<LoadedRegistryPresets>;
 }
 
 const BASE = '/api/v1/upstream-repositories';
+const PRESETS = '/api/v1/settings/registry-presets';
 const item = (key: string): string => `${BASE}/${encodeURIComponent(key)}`;
 
 @Injectable()
@@ -127,5 +141,15 @@ export class HttpUpstreamApi extends UpstreamApi {
 
   override async testUnsaved(format: string, remote: Readonly<Record<string, unknown>>): Promise<UpstreamTestResult> {
     return (await this.client.post<UpstreamTestResult>(`/api/v1/projects/${UPSTREAM_PROJECT}/upstream-tests`, { format, remote })).body;
+  }
+
+  override async registryPresets(): Promise<LoadedRegistryPresets> {
+    const r = await this.client.getJson<Schema<'RegistryPresets'>>(PRESETS);
+    return { presets: r.body.presets, etag: r.etag ?? '' };
+  }
+
+  override async setRegistryPresets(presets: readonly RegistryPreset[], etag: string): Promise<LoadedRegistryPresets> {
+    const r = await this.client.put<Schema<'RegistryPresets'>>(PRESETS, { presets }, etag);
+    return { presets: r.body.presets, etag: r.etag ?? '' };
   }
 }

@@ -13,6 +13,7 @@ import { NoValue } from '../../shared/ui/no-value';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Switch } from '../../shared/ui/switch';
 import { VisibilityIcon, installationReasons, levelName } from '../../shared/ui/visibility-level';
+import { RegistryPresets } from './registry-presets';
 import { UpstreamActions } from './upstream-actions';
 import { inUseBadge, levelOptions, onOffWord, privateRowNote, rowBadge, rowNotes, switchLabel } from './upstream-words';
 
@@ -38,7 +39,7 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
  */
 @Component({
   selector: 'quader-upstream-registries',
-  imports: [DataTable, ErrorNotice, FormatIconView, ListHead, NoValue, PageHeader, RouterLink, Switch, VisibilityIcon],
+  imports: [DataTable, ErrorNotice, FormatIconView, ListHead, NoValue, PageHeader, RegistryPresets, RouterLink, Switch, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [count]="items() === null ? null : presets().length" [description]="description">
       @if (canWrite()) {
@@ -164,6 +165,9 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
       }
     </quader-data-table>
 
+    <!-- The installation's own registries, offered as buttons in the form of a new remote repository (R-UI-195, Q-UI-906). -->
+    <quader-registry-presets [formats]="formatList()" [canWrite]="canWrite()" />
+
     @if (system().length > 0) {
       <!-- The name of the project's page for the same two, one unit of the catalogue for both (R-UI-193, Q-UI-900). -->
       <h2 class="system-heading" id="upstream-system">{{ systemCaption }}</h2>
@@ -239,6 +243,8 @@ export class UpstreamRegistries {
 
   protected readonly search = linkedSignal(() => this.q() ?? '');
   private readonly formats = resource({ loader: () => this.repositories.formats() });
+  /** The catalog's formats, for the section of the installation's registries; empty while they load. */
+  protected readonly formatList = computed(() => valueOf(this.formats) ?? []);
   private readonly choices = resource({ loader: () => this.actions.choices() });
   /** The levels the caller may not choose, by level (R-UI-141); a row keeps the level it has. */
   protected readonly reasons = computed(() => installationReasons(valueOf(this.choices) ?? null));

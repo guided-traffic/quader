@@ -11,6 +11,7 @@ import {
   seedGrants,
   seedLimits,
   seedProjectsAndRepositories,
+  seedRegistryPresets,
   seedUpstreamRegistries,
   seedUsage,
   syncAdvisories,
@@ -38,6 +39,7 @@ export default async function setup(): Promise<void> {
   await seedAuditMode(admin);
   await seedProjectsAndRepositories(admin);
   await seedUpstreamRegistries(admin);
+  await seedRegistryPresets(admin);
 
   const browser = await chromium.launch();
   try {

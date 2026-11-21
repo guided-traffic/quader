@@ -1,4 +1,4 @@
-import { FormatDescriptor, UpstreamPreset } from '../../api/repositories-api';
+import { FormatDescriptor, RegistryPresetChoice, UpstreamPreset } from '../../api/repositories-api';
 import { JsonObject } from '../../shared/merge-patch';
 
 /*
@@ -72,6 +72,11 @@ export interface UpstreamDefaults {
   readonly notFoundTtlSeconds: number | null;
   /** The format's presets, whose hosts a create of a preset's URL stores without being told (R-REPO-062). */
   readonly presets: readonly UpstreamPreset[];
+  /**
+   * The installation's registry presets of the format (R-REPO-076): their hosts follow their URL in the form as a well-known preset's
+   * do, but the server stores none of them without being told, so a create names them (Q-REPO-418).
+   */
+  readonly own: readonly RegistryPresetChoice[];
 }
 
 /** The format's default upstream preset (R-REPO-062), or null for a format without presets. */
@@ -86,6 +91,7 @@ export function defaultPreset(format: FormatDescriptor | null | undefined): Upst
 export function upstreamDefaultsOf(
   format: FormatDescriptor | null | undefined,
   remote?: Readonly<Record<string, unknown>> | null,
+  own: readonly RegistryPresetChoice[] = [],
 ): UpstreamDefaults {
   const cache = (remote?.['cache'] ?? null) as { metadataTtlSeconds?: number; notFoundTtlSeconds?: number } | null;
   return {
@@ -93,22 +99,38 @@ export function upstreamDefaultsOf(
     metadataTtlSeconds: cache?.metadataTtlSeconds ?? format?.defaultMetadataTtlSeconds ?? null,
     notFoundTtlSeconds: cache?.notFoundTtlSeconds ?? format?.defaultNotFoundTtlSeconds ?? null,
     presets: format?.upstreamPresets ?? [],
+    own,
   };
 }
 
+/** A preset of either kind: an address and the hosts that come with it. */
+interface PresetAddress {
+  readonly url: string;
+  readonly extraHosts: readonly { readonly pattern: string; readonly sendCredentials: boolean }[];
+}
+
 /** The preset whose URL is url, compared as the server stores URLs; null for any other URL (R-REPO-062). */
-export function presetOf(presets: readonly UpstreamPreset[], url: string | null): UpstreamPreset | null {
+export function presetOf<P extends PresetAddress>(presets: readonly P[], url: string | null): P | null {
   if (url === null || url.trim() === '') return null;
   const n = normalizedUrl(url.trim());
   return presets.find((p) => normalizedUrl(p.url) === n) ?? null;
 }
 
-/** The hosts the server stores for url when a create names no extraHosts: its preset's, else none (Q-REPO-322). */
+function hostsOf(preset: PresetAddress | null): readonly UpstreamHost[] {
+  return (preset?.extraHosts ?? []).map((h) => ({ pattern: h.pattern, sendCredentials: h.sendCredentials }));
+}
+
+/** The hosts the server stores for url when a create names no extraHosts: its well-known preset's, else none (Q-REPO-322). */
+export function storedHostsOfUrl(defaults: UpstreamDefaults, url: string | null): readonly UpstreamHost[] {
+  return hostsOf(presetOf(defaults.presets, url));
+}
+
+/**
+ * The hosts that follow url in the form until they are edited (R-UI-082): a well-known preset's, else an installation preset's
+ * (R-REPO-076), else none.
+ */
 export function hostsOfUrl(defaults: UpstreamDefaults, url: string | null): readonly UpstreamHost[] {
-  return (presetOf(defaults.presets, url)?.extraHosts ?? []).map((h) => ({
-    pattern: h.pattern,
-    sendCredentials: h.sendCredentials,
-  }));
+  return hostsOf(presetOf(defaults.presets, url) ?? presetOf(defaults.own, url));
 }
 
 /** The further hosts the form shows and a test or an edit sends: the edited list, else the hosts that follow the URL. */
@@ -190,9 +212,10 @@ export function upstreamOf(
     out['url'] = url;
   }
   // A create names the further hosts only where they differ from what the server stores for the URL without them (R-UI-082,
-  // Q-REPO-322); the settings page names them always, so that its patch keeps the list as shown.
+  // Q-REPO-322): an installation preset's hosts are named, because the server stores none for its URL (Q-REPO-418). The settings
+  // page names them always, so that its patch keeps the list as shown.
   const hosts = shownHosts(form, defaults);
-  if (write === 'structural' || !sameHosts(hosts, hostsOfUrl(defaults, effectiveUrl(form, defaults)))) {
+  if (write === 'structural' || !sameHosts(hosts, storedHostsOfUrl(defaults, effectiveUrl(form, defaults)))) {
     out['extraHosts'] = hostsJson(hosts);
   }
   if (form.authMode !== 'none') {
@@ -224,8 +247,9 @@ export function upstreamOf(
 export function upstreamTestBody(
   form: UpstreamForm,
   format: FormatDescriptor,
+  own: readonly RegistryPresetChoice[] = [],
 ): { format: string; remote: JsonObject } {
-  const defaults = upstreamDefaultsOf(format);
+  const defaults = upstreamDefaultsOf(format, null, own);
   const remote = upstreamOf(form, defaults, 'structural');
   const url = effectiveUrl(form, defaults);
   if (url !== null) remote['url'] = url;

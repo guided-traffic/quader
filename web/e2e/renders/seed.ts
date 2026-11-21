@@ -365,6 +365,35 @@ export async function seedUpstreamRegistries(admin: Api): Promise<void> {
   }
 }
 
+/**
+ * The registries of this installation (R-REPO-076, R-UI-195): two of OCI, one with a long name and a token service that receives the
+ * credential, and one of npm, so that the admin page shows two groups and the forms of a new OCI and npm remote show their buttons
+ * after the well-known ones. The list is replaced whole; `*` makes the seed a blind write on a database the render reuses.
+ */
+export const registryPresets = [
+  {
+    format: 'oci',
+    displayName: 'Harbor',
+    url: 'https://harbor.example-company.com/',
+    extraHosts: [{ pattern: 'harbor.example-company.com', sendCredentials: true }],
+  },
+  {
+    format: 'oci',
+    displayName: 'Registry of the build farm in Frankfurt',
+    url: 'https://registry.build-farm.eu-central.example-company.com/',
+    extraHosts: [
+      { pattern: 'auth.build-farm.eu-central.example-company.com', sendCredentials: true },
+      { pattern: 'cdn.example-company.com', sendCredentials: false },
+    ],
+  },
+  { format: 'npm', displayName: 'Verdaccio', url: 'https://npm.example-company.com/', extraHosts: [] },
+] as const;
+
+export async function seedRegistryPresets(admin: Api): Promise<void> {
+  const res = await admin.put('/api/v1/settings/registry-presets', { presets: registryPresets }, { 'If-Match': '*' });
+  await expectStatus(res, [200], 'the registries of this installation');
+}
+
 /** The memberships and the administrator's role; the users exist from their first sign-in (R-AUTH-007). */
 export async function seedGrants(admin: Api): Promise<void> {
   for (const m of memberships) {

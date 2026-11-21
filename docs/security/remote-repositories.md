@@ -279,6 +279,23 @@ checked at registration ([catalog.go](../../internal/formats/catalog/catalog.go)
 for GitLab). Any other URL stores no host, so a private upstream never gets a credential host it did not ask for. The hosts are copied
 into the stored document, not looked up later ([H-970](#h-970--a-presets-credential-host-is-fixed-in-the-repository-when-it-is-created)).
 
+**The installation's registry presets.** An administrator's list of the company's own registries
+([R-REPO-076](../spec/repositories-and-proxy.md#r-repo-076--the-installations-registry-presets)) names, per registry, an address and
+the further hosts a repository of it needs, each with whether it receives the credential. What it can do and what it cannot:
+
+| Question | Answer | Where |
+|---|---|---|
+| Who writes it | Only a holder of `repositories:write-config` (`admin`, `repository-admin`) | `setRegistryPresets`, declaration in [api/openapi.yaml](../../api/openapi.yaml) |
+| Who reads it | A holder of `repositories:read-config`; for one format, whoever may create a remote repository in a project (its Owner), through `getRepositoryDefaults`. A reader who may create nothing never sees an internal registry's address | [defaults.go](../../internal/repository/defaults.go) |
+| Can it carry a credential | No: a preset has four members, and the body is read strictly, so `password`, `authMode` or `username` is `400 malformed_request` before anything is stored | [registry_presets_api.go](../../internal/api/v1/registry_presets_api.go), `TestR_REPO_076_APresetCarriesNoCredential` |
+| Where can it send a project's credential | Nowhere by itself. A button puts the address and the hosts into the form; the project member sees them under **Further hosts** and in the line that names every host the credential goes to before the create, and enters the credential. The server applies no installation preset to a create by its URL ([Q-REPO-418](../spec/repositories-and-proxy.md#q-repo-418--a-registry-preset-is-a-value-put-into-the-form-and-nothing-follows-it)) | [upstream-model.ts](../../web/src/app/features/repositories/upstream-model.ts) |
+| Does an edit reach existing repositories | No. A repository holds its address and hosts as its own; an administrator who changes or removes a preset changes no stored repository, so a later edit cannot redirect a credential a project entered for another host | `SetRegistryPresets` writes the one row of `registry_presets` |
+| Does it widen what its writer can do | No. A holder of `repositories:write-config` can already change any repository's address and hosts directly (R-REPO-011); the preset only proposes the same to the project | |
+
+A wrong `sendCredentials` host in a preset reaches the repositories created from it while it stood, and a corrected preset does not
+reach them: the same case as the catalog's presets, under
+[H-970](#h-970--a-presets-credential-host-is-fixed-in-the-repository-when-it-is-created).
+
 **Revalidation.** A format that gives its own revalidation request ([revalidate.go](../../internal/proxy/revalidate.go)) has that request
 sent like any other (the host check, the hop policy, the handshake on a `401`). A `404` or `410` to it marks the document gone and a `429` or
 `5xx` follows the stale rules and the circuit, as for a conditional `GET`; only a `2xx` goes to the format, whose verdict renews the
@@ -426,3 +443,10 @@ that moves its token service to another host makes the remote fail closed (`fore
 new host; but a preset corrected in a later release does not reach repositories created earlier, which keep the stored hosts, so a
 wrong `sendCredentials` host stays until an administrator edits the repository. What makes it real: a preset whose credential host
 is not run by the registry's operator, which the table of R-REPO-062 rules out for the presets listed.
+
+The installation's registry presets ([R-REPO-076](../spec/repositories-and-proxy.md#r-repo-076--the-installations-registry-presets))
+are the same case: a form copies an administrator's preset into the repository it creates
+([Q-REPO-418](../spec/repositories-and-proxy.md#q-repo-418--a-registry-preset-is-a-value-put-into-the-form-and-nothing-follows-it)), so a
+`sendCredentials` host the administrator corrects later stays in the repositories made from it until each project edits its own. What
+makes it real there: an administrator who names a host that is not the company registry's token service; the project member sees the
+host before the create, in the line that names where the credential goes.

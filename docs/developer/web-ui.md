@@ -602,6 +602,10 @@ order:
 - *Well-known registries.* A `btn btn-default` per entry of the format's `upstreamPresets`, the display name with `translate="no"`, `aria-pressed` while the
   URL the repository would use (`effectiveUrl`) equals the preset's as the server normalizes it (`normalizedUrl`); a click sets the URL. No group for a format
   without presets, whose URL starts empty and says what to type once it was left empty (`urlError`).
+- *Registries of this installation.* The input `own` (the creation form passes `registryPresets` of `getRepositoryDefaults`, R-REPO-076; the settings page
+  none, Q-UI-907) gives a second group of the same buttons after the well-known ones. Their hosts follow their URL like a well-known preset's
+  (`hostsOfUrl` looks in `UpstreamDefaults.own` after `presets`), but the server stores none of them, so a create compares the shown hosts with
+  `storedHostsOfUrl` (the well-known presets only) and names them (Q-REPO-418); `upstreamTestBody` takes `own` for the same reason.
 - *URL, authentication, credentials.* The URL is `field-w-full`, the authentication select, the username and the password `field-w-name`. Under the password
   `credentialLine` names every host the credential goes to (`credentialHosts`: the URL's host and the further hosts with `sendCredentials`), joined with
   `Intl.ListFormat` of `LOCALE_ID`. An emptied URL of a format with presets shows the default preset's again once left (`leaveUrl`, R-UI-084).
@@ -1360,6 +1364,7 @@ repositories, every other answer also their names (`listedByNames`, Q-API-363).
 | File | Responsibility |
 |---|---|
 | [features/upstream/upstream.routes.ts](../../web/src/app/features/upstream/upstream.routes.ts) | `/admin/upstream` and `/admin/upstream/:key`, the entry **Upstream registries** after **Repositories** of `NAV_AREAS` (`repositories:read-config`, icon `cloud_download`, Q-UI-838) and the manual page `admin/upstream-registries` of `HELP_TOPICS` |
+| [registry-presets.ts](../../web/src/app/features/upstream/registry-presets.ts), [registry-preset-dialog.ts](../../web/src/app/features/upstream/registry-preset-dialog.ts) | **Registries of this installation** between the two tables of the list (R-UI-195, Q-UI-906): `UpstreamApi.registryPresets` with its `ETag`, a group row per format in the catalog's order, the address under the name and the further hosts; for `repositories:write-config` **Add registry**, **Edit** and **Remove**, each sending the whole list with `If-Match` (`setRegistryPresets`); the dialog has the format, the name, the URL and the hosts editor and no credential field, shows a field error of `/presets/<index>/…` at its field and stays open; a 412 reads the list again |
 | [upstream-registries.ts](../../web/src/app/features/upstream/upstream-registries.ts) | The list: the header with the number of the presets, **Set visibility of all** and **Switch all on** (disabled with "Every registry is on."), the search `?q=` in the browser, one data table with a group row per format (`tr.group-row`, a `th scope="rowgroup"`) in the API's catalog order, a row's switch (`[role="switch"]` named "Switch on <name>"), its level (an inline select named "Visibility of <name>", Q-UI-839) with a refusal under it, **Listed by** and **Details**; **System repositories** under it, the unit `repo.system.heading` of the project's page (Q-UI-900). A reader sees words |
 | [upstream-registry.ts](../../web/src/app/features/upstream/upstream-registry.ts), `.html`, `.scss` | One registry: the header with the format, `upstream/<key>`, the badge **Upstream registry** and **Open repository**; **State and visibility**, **Address** (the URL, the further hosts, a Debian archive's keys with the fold **Replace the keys**, **Differs from Quader's** and the reset), **Account** (with **Test connection**: the saved repository while nothing changed, else the typed values) and the closed **Details**, with **Listed by** (the count in projects, each named virtual repository as a link to its settings and the number of the others) and the repository's document, read for its dates when Details is first opened. The address and the account take the loaded `ETag` |
 | [upstream-actions.ts](../../web/src/app/features/upstream/upstream-actions.ts) | The writes of both pages and their questions: switching off a listed registry ("3 virtual repositories in 2 projects list it."), Public (the owner's sentence), Switch all on with the names it switches on, and the dialog **Set visibility of all** |
@@ -1382,6 +1387,7 @@ the server for no snippet (`data-testid="setup-system"`). Beyond the project's p
 (`data-testid="upstream-central"`, R-UI-191), with a link to the creation form at `?class=virtual` (Q-UI-843).
 
 *Tests.* [upstream-registries.spec.ts](../../web/src/app/features/upstream/upstream-registries.spec.ts) (R-UI-187),
+[registry-presets.spec.ts](../../web/src/app/features/upstream/registry-presets.spec.ts) (R-UI-195),
 [upstream-registry.spec.ts](../../web/src/app/features/upstream/upstream-registry.spec.ts) (R-UI-188),
 [upstream-project.spec.ts](../../web/src/app/features/upstream/upstream-project.spec.ts) (R-UI-190, R-UI-191, Q-UI-837), the R-UI-189
 block of [virtual-members.spec.ts](../../web/src/app/features/repositories/virtual-members.spec.ts),

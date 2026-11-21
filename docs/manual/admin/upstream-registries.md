@@ -41,7 +41,8 @@ the old host; the repository says so, and you enter the account again.
 
 **Admin area › Upstream registries** lists the registries grouped by format. Each row has the registry's name with `upstream/<key>`
 under it, its switch, its visibility level, **Listed by** (how many virtual repositories, in all projects, list it) and **Details**.
-Below them the table **System repositories** holds `scanner-trivy` and `scanner-clamav`, the same name the project's page gives them.
+Below them the section **Registries of this installation** holds your organization's own registries ([below](#registries-of-this-installation)),
+and the table **System repositories** holds `scanner-trivy` and `scanner-clamav`, the same name the project's page gives them.
 Holders of the roles admin and repository-admin change them; security-admin and auditor read the page without the controls.
 
 ## Switching on and off
@@ -169,10 +170,29 @@ Both system repositories answer `404` to every client, administrators included, 
   of the security dashboard and **Explain for a repository**.
 - **Recently opened** in the side bar lists them like any repository you opened.
 
+## Registries of this installation
+
+Your organization's own registries (a company Harbor, a Verdaccio, a GitLab registry of your own instance) are kept in the section
+**Registries of this installation** of the same page, between the public registries and the system repositories. The form of a new
+remote repository offers each one as a button in every project, after the format's well-known registries, so a team presses it instead
+of typing the address and its token service again.
+
+- **Add registry** asks for the format (every format with remote repositories), the name of the button, the upstream URL and the
+  further hosts. Name the registry's token service there and tick **Receives the credential**, so that the credential a project enters
+  reaches it; a container registry whose login is on another host needs this.
+- A preset holds no credential: there is no field for one. Each project enters its own account in its remote repository.
+- At most 10 registries per format. A well-known registry's address is refused, because it has its button already.
+- A preset is only a value the form puts into its fields. A remote repository created from it keeps its address and hosts when you edit
+  or remove the preset; nothing follows a preset afterwards.
+- `GET` and `PUT /api/v1/settings/registry-presets` read and replace the whole list (the `PUT` with `If-Match`); a change is audited as
+  `settings.registry_presets.changed`.
+
 ## Permissions
 
 Reading the registries needs `repositories:read-config` (the roles `admin`, `security-admin`, `auditor`, `repository-admin`); changing
 them `repositories:write-config` (`admin`, `repository-admin`); a level the installation restricts needs `security-settings:write`. The
 project **Upstream** has no Owner and is listed only to holders of `projects:read` and to people who read one of its registries; it
 stands first in every list of projects. A project's Owner who adds a registry to a virtual repository sees each registry of the format
-with its state and level (`GET /api/v1/formats/<format>/upstream-repositories`), never its address or account.
+with its state and level (`GET /api/v1/formats/<format>/upstream-repositories`), never its address or account. The registries of this
+installation are kept with `repositories:write-config` and read with `repositories:read-config`; whoever may create a remote repository
+in a project (its Owner) sees the presets of one format as buttons in the form, and no one else.

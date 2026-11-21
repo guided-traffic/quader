@@ -41852,5 +41852,143 @@
         <target>{VAR_PLURAL, plural, =1 {1 bereit} other {<ph id="0" equiv="INTERPOLATION"/> bereit}}</target>
       </segment>
     </unit>
+    <unit id="audit.action.settings.registry_presets.changed">
+      <segment>
+        <source>Registries of this installation changed</source>
+        <target>Registrys dieser Installation geändert</target>
+      </segment>
+    </unit>
+    <unit id="upstream.own-presets">
+      <segment>
+        <source>Registries of this installation</source>
+        <target>Registrys dieser Installation</target>
+      </segment>
+    </unit>
+    <unit id="upstream.url.hint-own">
+      <segment>
+        <source>Choose a registry of this installation or enter the address of another.</source>
+        <target>Wählen Sie eine Registry dieser Installation oder geben Sie die Adresse einer anderen ein.</target>
+      </segment>
+    </unit>
+    <unit id="presets.field.format">
+      <segment>
+        <source>Format</source>
+        <target>Format</target>
+      </segment>
+    </unit>
+    <unit id="presets.field.name">
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="presets.field.name.hint">
+      <segment>
+        <source>The label of the button in the form of a new remote repository.</source>
+        <target>Die Beschriftung der Schaltfläche im Formular eines neuen Remote-Repositorys.</target>
+      </segment>
+    </unit>
+    <unit id="presets.hosts.hint">
+      <segment>
+        <source> Name the registry&apos;s token service here and let it receive the credential, so that the credential a project enters reaches it. </source>
+        <target> Nennen Sie hier den Token-Dienst der Registry und lassen Sie ihn die Zugangsdaten erhalten, damit die Zugangsdaten, die ein Projekt eingibt, ihn erreichen. </target>
+      </segment>
+    </unit>
+    <unit id="presets.save">
+      <segment>
+        <source>Save</source>
+        <target>Speichern</target>
+      </segment>
+    </unit>
+    <unit id="presets.edit.title">
+      <segment>
+        <source>Edit <ph id="0" equiv="name" disp="this.data.preset.displayName"/></source>
+        <target><ph id="0" equiv="name" disp="this.data.preset.displayName"/> bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="presets.add.title">
+      <segment>
+        <source>Add a registry</source>
+        <target>Registry hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="presets.hint">
+      <segment>
+        <source> Your organization&apos;s own registries. The form of a new remote repository offers them as buttons in every project, after the well-known registries. A preset holds no credential: each project enters its own. </source>
+        <target> Die eigenen Registrys Ihrer Organisation. Das Formular eines neuen Remote-Repositorys bietet sie in jedem Projekt als Schaltflächen an, nach den bekannten Registrys. Eine Vorgabe enthält keine Zugangsdaten: Jedes Projekt gibt seine eigenen ein. </target>
+      </segment>
+    </unit>
+    <unit id="presets.add">
+      <segment>
+        <source> Add registry </source>
+        <target> Registry hinzufügen </target>
+      </segment>
+    </unit>
+    <unit id="presets.receives">
+      <segment>
+        <source>receives the credential</source>
+        <target>erhält die Zugangsdaten</target>
+      </segment>
+    </unit>
+    <unit id="presets.edit">
+      <segment>
+        <source>Edit</source>
+        <target>Bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="presets.remove">
+      <segment>
+        <source>Remove</source>
+        <target>Entfernen</target>
+      </segment>
+    </unit>
+    <unit id="presets.heading">
+      <segment>
+        <source>Registries of this installation</source>
+        <target>Registrys dieser Installation</target>
+      </segment>
+    </unit>
+    <unit id="presets.empty">
+      <segment>
+        <source>No registry of this installation yet.</source>
+        <target>Noch keine Registry dieser Installation.</target>
+      </segment>
+    </unit>
+    <unit id="presets.empty-writer">
+      <segment>
+        <source>No registry of this installation yet. Add one to offer it as a button in every project.</source>
+        <target>Noch keine Registry dieser Installation. Fügen Sie eine hinzu, um sie in jedem Projekt als Schaltfläche anzubieten.</target>
+      </segment>
+    </unit>
+    <unit id="presets.remove.title">
+      <segment>
+        <source>Remove <ph id="0" equiv="name" disp="current.displayName"/>?</source>
+        <target><ph id="0" equiv="name" disp="current.displayName"/> entfernen?</target>
+      </segment>
+    </unit>
+    <unit id="presets.remove.text">
+      <segment>
+        <source>Remote repositories created from it keep their address and hosts.</source>
+        <target>Remote-Repositorys, die daraus erstellt wurden, behalten ihre Adresse und ihre Hosts.</target>
+      </segment>
+    </unit>
+    <unit id="presets.removed">
+      <segment>
+        <source><ph id="0" equiv="name" disp="current.displayName"/> is removed.</source>
+        <target><ph id="0" equiv="name" disp="current.displayName"/> ist entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="presets.saved">
+      <segment>
+        <source><ph id="0" equiv="name" disp="saved.displayName"/> is saved.</source>
+        <target><ph id="0" equiv="name" disp="saved.displayName"/> ist gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="presets.actions-of">
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="p.displayName"/></source>
+        <target>Aktionen für <ph id="0" equiv="name" disp="p.displayName"/></target>
+      </segment>
+    </unit>
   </file>
 </xliff>

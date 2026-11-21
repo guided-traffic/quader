@@ -103,6 +103,7 @@ before using a new term in a German text.
 | import log (tab of a version), docs site (link) | Import-Protokoll, Dokumentations-Website |
 | visibility, visibility level (Private, Internal, Public), wiki visibility | Sichtbarkeit, Sichtbarkeitsstufe (Privat, Intern, Öffentlich), Sichtbarkeit des Wikis |
 | upstream registry (a well-known repository of the project upstream), built-in (project), listed by (virtual repositories) | Upstream-Registry (Plural Upstream-Registrys), integriert, aufgenommen von |
+| registries of this installation (an administrator's registry presets, R-REPO-076), preset | Registrys dieser Installation, Vorgabe |
 | switch on, switch off, on, off, switch all on | einschalten, ausschalten, an, aus, alle einschalten |
 | not switched on, switched off, no longer offered, placeholder (member), take no part, skipped | nicht eingeschaltet, ausgeschaltet, nicht mehr angeboten, Platzhalter, wirkt nicht mit, übersprungen |
 | account (of an upstream), archive keys, image scanning | Konto, Archivschlüssel, Image-Analyse |

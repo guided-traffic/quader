@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,110 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,113 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 793 specified (509 of them implemented), 1,446 open.
-1,110 spec requirements: 728 cover catalog features, 382 cover none (`quader-only`, [listed at the
+1,113 spec requirements: 728 cover catalog features, 385 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>382 requirements</summary>
+<summary>385 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -2998,6 +2998,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-API-077 | The principal lookup of a project answers what a member's row shows | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-078 | The admin area's principal search: service accounts and avatars in the suggestions | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-083 | The operations of the well-known repositories | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-084 | The operations of the installation's registry presets | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-058 | Operations that serve wiki content | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-060 | One operation answers the suggestions of the search field | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-061 | A suggestion names only what the caller may read | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
@@ -3088,6 +3089,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-192 | The system repositories of the project `upstream` stand apart on its page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-194 | The ClamAV definitions: databases, versions and what each holds | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-193 | A system repository is set apart wherever it is shown, and nothing offers what it refuses | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-195 | The registries of this installation in the admin area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |
@@ -3278,6 +3280,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-REPO-072 | A placeholder member: resolution, the explanation and the 404 | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-073 | The operations of the well-known repositories | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-074 | The tests of the built-in project, their tier and their cost | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
+| R-REPO-076 | The installation's registry presets | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-026 (implemented) | Collapsing concurrent misses (single-flight and Valkey flight lock) | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-038 (implemented) | Egress address rules for remote repositories | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-040 (implemented) | Size and concurrency limits | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |

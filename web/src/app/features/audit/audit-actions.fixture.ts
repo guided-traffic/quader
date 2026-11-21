@@ -145,6 +145,7 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'serviceaccount.disabled',
   'serviceaccount.updated',
   'settings.auth.changed',
+  'settings.registry_presets.changed',
   'settings.visibility.changed',
   'system.backup.completed',
   'system.backup.deleted',

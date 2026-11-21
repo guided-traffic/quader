@@ -4098,6 +4098,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings/registry-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the installation's registry presets
+         * @description The list an administrator keeps of the installation's own registries, which the form of a new remote repository offers as
+         *     buttons in every project (R-REPO-076, R-API-084), in the administrator's order, with its `ETag`. A preset holds no credential.
+         *     Read from PostgreSQL, so an answer shows a change another replica committed.
+         */
+        get: operations["getRegistryPresets"];
+        /**
+         * Replace the installation's registry presets
+         * @description Replaces the whole list (R-REPO-076, Q-API-383); `If-Match` is required. Each preset is checked: a format with the remote class,
+         *     a display name of 1 to 64 characters unique in its format, an upstream URL of R-REPO-024 (stored normalized) that no other preset
+         *     of the format and none of the format's upstream presets has, and at most 20 further hosts, each once; at most 10 presets per
+         *     format. A member that is not one of the four of a preset, a credential included, answers `400 malformed_request`. A change records
+         *     `settings.registry_presets.changed` with the list before and after; a list equal to the stored one records nothing and keeps the
+         *     `ETag`. No repository changes: nothing follows a preset (Q-REPO-418). The answer is the list as stored.
+         */
+        put: operations["setRegistryPresets"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/upstream-repositories": {
         parameters: {
             query?: never;
@@ -8975,6 +9006,34 @@ export interface components {
             repository: {
                 [key: string]: unknown;
             };
+            /**
+             * @description For the class `remote`, the installation's registry presets of the format in the administrator's order (R-REPO-076); empty
+             *     for another class. The form offers them as buttons after the format's well-known registries (R-UI-082).
+             */
+            registryPresets: components["schemas"]["RegistryPresetChoice"][];
+        };
+        RegistryPresetChoice: {
+            displayName: string;
+            /** @description The upstream URL as R-REPO-024 normalizes it. */
+            url: string;
+            extraHosts: components["schemas"]["UpstreamPresetHost"][];
+        };
+        RegistryPresets: {
+            /** @description The installation's registry presets in the administrator's order, at most 10 per format (R-REPO-076). */
+            presets: components["schemas"]["RegistryPreset"][];
+        };
+        /**
+         * @description One registry of the installation (R-REPO-076, Q-REPO-417): its format, the label of its button, its address and the further
+         *     hosts a repository of it needs, the registry's token service among them. No credential: each project enters its own.
+         */
+        RegistryPreset: {
+            /** @description A format of `GET /api/v1/formats` with the remote class. */
+            format: string;
+            /** @description The label of the button, shown as typed and not translated. */
+            displayName: string;
+            /** @description The upstream URL; the answer holds it as R-REPO-024 normalizes it. */
+            url: string;
+            extraHosts: components["schemas"]["UpstreamPresetHost"][];
         };
         /**
          * @description The state of a preset repository of the project `upstream`, derived from what is stored (R-REPO-068, Q-REPO-375):
@@ -18611,7 +18670,19 @@ export interface operations {
                      *             "concurrency": 4
                      *           }
                      *         }
-                     *       }
+                     *       },
+                     *       "registryPresets": [
+                     *         {
+                     *           "displayName": "Harbor",
+                     *           "url": "https://harbor.example.com/",
+                     *           "extraHosts": [
+                     *             {
+                     *               "pattern": "harbor.example.com",
+                     *               "sendCredentials": true
+                     *             }
+                     *           ]
+                     *         }
+                     *       ]
                      *     }
                      */
                     "application/json": components["schemas"]["RepositoryDefaults"];
@@ -22179,6 +22250,109 @@ export interface operations {
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getRegistryPresets: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The list. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "presets": [
+                     *         {
+                     *           "format": "oci",
+                     *           "displayName": "Harbor",
+                     *           "url": "https://harbor.example.com/",
+                     *           "extraHosts": [
+                     *             {
+                     *               "pattern": "harbor.example.com",
+                     *               "sendCredentials": true
+                     *             }
+                     *           ]
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["RegistryPresets"];
+                };
+            };
+            304: components["responses"]["NotModified"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setRegistryPresets: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "presets": [
+                 *         {
+                 *           "format": "oci",
+                 *           "displayName": "Harbor",
+                 *           "url": "https://harbor.example.com/",
+                 *           "extraHosts": [
+                 *             {
+                 *               "pattern": "harbor.example.com",
+                 *               "sendCredentials": true
+                 *             }
+                 *           ]
+                 *         }
+                 *       ]
+                 *     }
+                 */
+                "application/json": components["schemas"]["RegistryPresets"];
+            };
+        };
+        responses: {
+            /** @description The list after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistryPresets"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

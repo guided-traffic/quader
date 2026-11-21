@@ -24,7 +24,12 @@ export type UpstreamPreset = Schema<'UpstreamPreset'>;
 export interface RepositoryDefaults {
   readonly suggestedKey: string | null;
   readonly repository: Omit<Repository, 'key'>;
+  /** For the class remote, the installation's registry presets of the format in the administrator's order (R-REPO-076). */
+  readonly registryPresets?: readonly RegistryPresetChoice[];
 }
+
+/** One of the installation's registries as the form of a new remote repository offers it (R-REPO-076, R-UI-082). */
+export type RegistryPresetChoice = Schema<'RegistryPresetChoice'>;
 
 /**
  * The body of `POST /api/v1/projects/{projectKey}/upstream-tests`: the format and an unsaved `remote` section. Secret values in
