@@ -265,7 +265,7 @@ func TestMigrateFailure(t *testing.T) {
 		}()
 		deadline := time.Now().Add(20 * time.Second)
 		for {
-			n := scalar[int](t, admin, "SELECT count(*) FROM pg_stat_activity WHERE application_name = 'quader:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%' AND state = 'active'")
+			n := scalar[int](t, admin, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND application_name = 'quader:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%' AND state = 'active'")
 			if n > 0 {
 				break
 			}
@@ -274,7 +274,7 @@ func TestMigrateFailure(t *testing.T) {
 			}
 			time.Sleep(50 * time.Millisecond)
 		}
-		scalar[bool](t, admin, "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'quader:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%'")
+		scalar[bool](t, admin, "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND application_name = 'quader:it-migrate:migrate' AND query LIKE '%pg_sleep(30)%'")
 		if err := <-errc; err == nil {
 			t.Fatal("a killed runner must report an error")
 		}

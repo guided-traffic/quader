@@ -38,8 +38,11 @@ func TestScheduler(t *testing.T) {
 	}
 	web := e.newReplica("sched-web", replicaOpts{role: "web", kinds: kinds})
 
+	// Advisory locks belong to a database and pg_locks lists the whole server, where every other test process holds its own
+	// scheduler lease under the same key: only this test's database counts.
 	holders := func() []int64 {
-		rows, err := e.admin.Query(context.Background(), `SELECT pid FROM pg_locks WHERE locktype = 'advisory' AND objsubid = 2 AND classid = 1 AND objid = $1 AND granted`, cluster.LeaseScheduler.Number())
+		rows, err := e.admin.Query(context.Background(), `SELECT pid FROM pg_locks WHERE locktype = 'advisory' AND objsubid = 2 AND classid = 1 AND objid = $1 AND granted
+		    AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`, cluster.LeaseScheduler.Number())
 		if err != nil {
 			t.Fatal(err)
 		}

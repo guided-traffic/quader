@@ -106,7 +106,9 @@ func TestLeases(t *testing.T) {
 				maxValid.Store(n)
 			}
 			var n int64
-			err := sampleConn.QueryRow(context.Background(), `SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND objsubid = 2 AND classid = 1 AND objid = $1 AND granted`, itLease.Number()).Scan(&n)
+			// Only this test's database: another test process holds the same key in its own database on the shared server.
+			err := sampleConn.QueryRow(context.Background(), `SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND objsubid = 2 AND classid = 1 AND objid = $1 AND granted
+			    AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`, itLease.Number()).Scan(&n)
 			if err == nil && n > maxLocks.Load() {
 				maxLocks.Store(n)
 			}
@@ -135,14 +137,15 @@ func TestLeases(t *testing.T) {
 		}
 		_ = web.db.Main().Ping(context.Background())
 		// The patterns match what they should: the web replica has main sessions and a worker has lease sessions.
-		if e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:lease-web:main'`) == 0 ||
-			e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:lease-a:lease' OR application_name LIKE 'quader:lease-b:lease'`) == 0 {
+		// The replicas' names are the same in every run of this test on the shared server: only this test's database counts.
+		if e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'quader:lease-web:main'`) == 0 ||
+			e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND (application_name LIKE 'quader:lease-a:lease' OR application_name LIKE 'quader:lease-b:lease')`) == 0 {
 			t.Fatal("the application_name pattern of this test does not match the sessions it looks for")
 		}
-		if n := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:lease-web:lease%'`); n != 0 {
+		if n := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'quader:lease-web:lease%'`); n != 0 {
 			t.Fatalf("the web replica has %d lease sessions", n)
 		}
-		total := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:%:lease'`)
+		total := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'quader:%:lease'`)
 		if limit := int64(2 * e.cfg.LeasePoolSize); total > limit {
 			t.Fatalf("%d lease sessions, above 2 x lease_pool_size = %d", total, limit)
 		}

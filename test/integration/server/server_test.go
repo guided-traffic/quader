@@ -416,7 +416,7 @@ func TestReplicas(t *testing.T) {
 	t.Run("R-ARCH-024 after the exit the web replica's database sessions and Valkey connections are gone", func(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 		var n int
-		if err := in.conn.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:quader-web-it:%'`).Scan(&n); err != nil {
+		if err := in.conn.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'quader:quader-web-it:%'`).Scan(&n); err != nil {
 			t.Fatal(err)
 		}
 		if n != 0 {

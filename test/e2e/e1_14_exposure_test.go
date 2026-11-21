@@ -273,7 +273,7 @@ func TestE1_14Exposure(t *testing.T) {
 			lockDone <- err
 		}()
 		waitFor(t, "the lock on api_token", 20*time.Second, 200*time.Millisecond, func() bool {
-			return sql(t, `SELECT count(*) FROM pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE c.relname = 'api_token' AND l.mode = 'AccessExclusiveLock' AND l.granted`) == "1"
+			return sql(t, `SELECT count(*) FROM pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE l.database = (SELECT oid FROM pg_database WHERE datname = current_database()) AND c.relname = 'api_token' AND l.mode = 'AccessExclusiveLock' AND l.granted`) == "1"
 		})
 		lockedAt := time.Now()
 		control := make(chan reply, 1)

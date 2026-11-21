@@ -15,9 +15,11 @@ import (
 
 // schedulerHolders asks PostgreSQL, the authority of the lease: the session advisory lock
 // (class 1 = LockLease, object 1 = the scheduler lease, internal/cluster/locks.go) joined to the
-// connection that holds it. The connection's application_name is quader:<pod>:lease.
+// connection that holds it. The connection's application_name is quader:<pod>:lease. An advisory
+// lock belongs to a database and pg_locks lists the whole server: only the database sql() connects to counts.
 const schedulerHoldersSQL = `SELECT a.application_name FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid
- WHERE l.locktype = 'advisory' AND l.classid = 1 AND l.objid = 1 AND l.objsubid = 2 AND l.granted ORDER BY 1`
+ WHERE l.locktype = 'advisory' AND l.classid = 1 AND l.objid = 1 AND l.objsubid = 2 AND l.granted
+   AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database()) ORDER BY 1`
 
 func schedulerHolders(t testing.TB) []string {
 	t.Helper()
@@ -49,7 +51,7 @@ func TestE06Lease(t *testing.T) {
 		if len(h) != 1 || !workers[h[0]] {
 			t.Fatalf("scheduler lease holders %v, want exactly one worker pod of %v", h, workers)
 		}
-		for _, line := range strings.Split(sql(t, `SELECT DISTINCT application_name FROM pg_stat_activity WHERE application_name LIKE 'quader:%:lease'`), "\n") {
+		for _, line := range strings.Split(sql(t, `SELECT DISTINCT application_name FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'quader:%:lease'`), "\n") {
 			if line = strings.TrimSpace(line); line != "" && webs[strings.Split(line, ":")[1]] {
 				t.Errorf("api or packages replica holds a lease connection: %s", line)
 			}
@@ -241,7 +243,8 @@ type holderWatch struct {
 func startHolderWatch(t testing.TB) *holderWatch {
 	w := &holderWatch{end: make(chan struct{})}
 	query := `SELECT clock_timestamp(), count(*), coalesce(string_agg(a.pid::text, ',' ORDER BY a.pid), ''), coalesce(string_agg(split_part(a.application_name, ':', 2), ',' ORDER BY a.pid), '')
- FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid WHERE l.locktype = 'advisory' AND l.classid = 1 AND l.objid = 1 AND l.objsubid = 2 AND l.granted;
+ FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid WHERE l.locktype = 'advisory' AND l.classid = 1 AND l.objid = 1 AND l.objsubid = 2 AND l.granted
+   AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database());
 \watch 0.2
 `
 	w.cmd = exec.Command("kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "exec", "-i", pgPrimary(t), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|")

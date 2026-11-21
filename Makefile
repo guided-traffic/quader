@@ -48,7 +48,9 @@ IMAGE_MARKED ?= guidedtraffic/quader:dev-marked
 UI_BUNDLE_MARK ?=
 IMAGE_ARCH  ?= $(shell go env GOARCH)
 
-INTEGRATION_ENV := .dev/integration/env
+# The integration stack belongs to the checkout that started it; a worktree uses the main checkout's (the parent of git's common
+# directory), as test/integration/locked.sh does.
+INTEGRATION_ENV := $(abspath $(dir $(abspath $(shell git rev-parse --git-common-dir 2>/dev/null || echo .git))))/.dev/integration/env
 COVERAGE_DIR := .out/coverage
 
 # Cyclomatic complexity: no function of the module's own code above CYCLO_THRESHOLD. Tests and

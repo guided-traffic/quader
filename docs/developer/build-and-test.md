@@ -42,7 +42,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `versions-check` | the E0.2 checks listed above |
 | `test` | `go test -race ./...` with a coverage profile of the unit tier (`.out/coverage/unit.out`); the `go test -json` stream goes to `.out/test-unit.json`, which the coverage generator reads. It runs without the host's AWS configuration (`UNIT_ENV` in the Makefile: no `AWS_*` region, profile or keys, no `~/.aws` files), as on the CI runner; a bare `go test` reads them and can pass where CI fails |
 | `integration-up`, `integration-down` | start and stop the integration stack, see below |
-| `test-integration` | `go test -tags integration ./test/integration/...` with the environment of `.dev/integration/env`; the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c` runs one third of the packages (the three CI legs, by a rule that places a new package without a list being edited, Q-ARCH-544: `a` the areas `ci`, `coordination`, `mirror`, `npm`, `nuget` and `proxy` and every `<format>local`, `c` the areas `api`, `backup` and `valkey`, the vulnerability and Bastion areas and every `<format>remote`, `b` everything else, every `<format>virtual` and every new platform area among them) and adds `-<shard>` to both names |
+| `test-integration` | `go test -tags integration ./test/integration/...` with the environment of the main checkout's `.dev/integration/env` (a worktree uses the stack the main checkout started; run it as `test/integration/locked.sh make test-integration`, see [Integration stack](#integration-stack)); the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c` runs one third of the packages (the three CI legs, by a rule that places a new package without a list being edited, Q-ARCH-544: `a` the areas `ci`, `coordination`, `mirror`, `npm`, `nuget` and `proxy` and every `<format>local`, `c` the areas `api`, `backup` and `valkey`, the vulnerability and Bastion areas and every `<format>remote`, `b` everything else, every `<format>virtual` and every new platform area among them) and adds `-<shard>` to both names |
 | `test-performance` | the P-13 and P-14 latency tests of the integration tier, the Debian delay bound `TestR_DEB_010_DelayBound` (R-DEB-010, Q-DEB-59) and `TestR_EP_013_CeilingPerformance` of `internal/authz` and the takeover bound of `TestFlightLockWait` (R-ARCH-033) of `internal/cluster` and the decode time of the slowest accepted avatars (`TestR_API_055_TheWorstCaseInputsAreAccepted` and `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` of `internal/avatar`, Q-UI-173; both skip under `-race`, so only this target runs them) with `QUADER_PERF_GATE=1`, which enforces their p99 bounds (for the avatar tests only the least CPU time of seven decodes: the wall time of a decode on a shared runner is the runner's load, so it is logged and not judged) (with Valkey for the first; `test-integration` and `make test` log them only); the JSON stream goes to `.out/test-performance.json`. Run by the nightly workflow "HA and Performance (nightly)" ([releasing.md](releasing.md#ha-and-performance-nightly)) |
 | `silo-up`, `silo-down`, `s3-conformance` | Silo at `SILO_IMAGE`, served over TLS, and the conformance tests against it ([test/integration/silo.sh](../../test/integration/silo.sh)) |
 | `coverage-report` | merges `.out/coverage` into `coverage.txt`, `summary.md` and the badge `coverage.json` ([test/coverage/report.sh](../../test/coverage/report.sh)) |
@@ -142,6 +142,29 @@ they are real Go modules, so `go list` and the type loader run on them unchanged
 2. starts [test/integration/compose.yaml](../../test/integration/compose.yaml) with `docker compose up --wait`;
 3. creates the buckets (`go run ./test/integration/cmd/seed`);
 4. writes `.dev/integration/env`.
+
+**One stack, shared, under one lock.** The stack runs once per machine, started in the main checkout; every worktree of the
+repository uses it. [locked.sh](../../test/integration/locked.sh) runs a command under the stack's lock and with its
+environment, from the main checkout and from any worktree alike (it finds the main checkout as the parent of
+`git rev-parse --git-common-dir`):
+
+```sh
+test/integration/locked.sh go test -count=1 -tags integration ./test/integration/coordination/                           # one area
+test/integration/locked.sh go test -count=1 -p 1 -tags integration ./test/integration/npm/ ./test/integration/nuget/      # several
+test/integration/locked.sh make test-integration                                                                           # all
+```
+
+It waits for the lock without a timeout and says so on stderr, with the time, when it starts waiting and when it holds the
+lock. The lock is an flock on `<main checkout>/.dev/integration.lock` (flock(1) on Linux, lockf(1) on the descriptor on
+macOS); the file is never removed. The command inherits the locked descriptor, so the lock is held until the command and
+every process that kept the descriptor (the test binaries and the quader processes they start) have ended, also when the wrapper is killed. A bare
+`lockf <file> <command>` is not a substitute: it removes the file when its command ends, so a process still waiting on the
+removed file and one that creates it anew both run, and a killed `lockf` leaves its command running without the lock.
+`make test-integration` reads the main checkout's `.dev/integration/env` by itself, also from a worktree, but takes no lock.
+The script's own variables carry the suite's prefix, because the tests start quader processes with the environment they
+inherited and a quader process refuses every other `QUADER_` variable that is not a setting: it exports
+`QUADER_TEST_LOCK_HELD` (the lock file, so that a command it runs can call it again without waiting on itself) and reads
+`QUADER_TEST_STACK_ROOT` (another checkout whose stack and lock to use instead of the main checkout's).
 
 **Every connection is TLS (INV-20, R-HA-063).** PostgreSQL runs with `ssl=on` and a
 [pg_hba.conf](../../test/integration/conf/pg_hba.conf) that has `hostssl` lines only, so a client without TLS is

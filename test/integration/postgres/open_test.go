@@ -107,7 +107,7 @@ func TestOpenConnectionClasses(t *testing.T) {
 		if _, hasLease := got["lease"]; hasLease || got["main"] < 2 {
 			t.Fatalf("classes = %v", got)
 		}
-		if n := scalar[int](t, admin, `SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:pod-web-%:lease'`); n != 0 {
+		if n := scalar[int](t, admin, `SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND application_name LIKE 'quader:pod-web-%:lease'`); n != 0 {
 			t.Fatalf("lease connections of web replicas: %d", n)
 		}
 	})
@@ -785,7 +785,7 @@ func TestTransactionPooler(t *testing.T) {
 		// The lease connection bypasses the pooler: the session host is PostgreSQL itself.
 		var port int
 		if err := admin.QueryRow(context.Background(),
-			`SELECT count(*) FROM pg_stat_activity WHERE application_name = 'quader:pod-named:lease' AND client_port > 0`).Scan(&port); err != nil || port != 1 {
+			`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND application_name = 'quader:pod-named:lease' AND client_port > 0`).Scan(&port); err != nil || port != 1 {
 			t.Fatalf("lease connections: %d, %v", port, err)
 		}
 	})

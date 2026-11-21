@@ -253,7 +253,7 @@ func TestNPMCollapse(t *testing.T) {
 		// counts. The advisory locks the installation holds by itself (the lease sessions of the replicas) are the
 		// baseline; the flight must add none.
 		advisory := func() string {
-			return strings.TrimSpace(sql(t, `SELECT count(*) FILTER (WHERE state LIKE 'idle in transaction%' AND now() - state_change > interval '700 ms') || ' ' || (SELECT count(*) FROM pg_locks WHERE locktype = 'advisory') FROM pg_stat_activity WHERE datname = current_database()`))
+			return strings.TrimSpace(sql(t, `SELECT count(*) FILTER (WHERE state LIKE 'idle in transaction%' AND now() - state_change > interval '700 ms') || ' ' || (SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND database = (SELECT oid FROM pg_database WHERE datname = current_database())) FROM pg_stat_activity WHERE datname = current_database()`))
 		}
 		baseline := advisory()
 		if !strings.HasPrefix(baseline, "0 ") {

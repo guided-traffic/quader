@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-const hint = "run `make integration-up`, then `make test-integration` (it sources .dev/integration/env)"
+const hint = "run `make integration-up` in the main checkout, then `test/integration/locked.sh go test ...` or `test/integration/locked.sh make test-integration` (it takes the stack's lock and loads .dev/integration/env)"
 
 // Get returns the value of a QUADER_TEST_* variable, failing the test if it is unset.
 func Get(tb testing.TB, name string) string {
