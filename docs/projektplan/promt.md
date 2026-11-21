@@ -1283,6 +1283,13 @@ runs are in `git log`; this section holds the current state.
   its amendment is on `main` since 11:40 (rebased, links and check exit 0, the count test at 1,107
   requirements; "With the owner" holds what it says), its worktree and branch are removed; its one package is
   built after the ClamAV change's packages 1 to 4.
+- **In work since 11:44: the presets of the installation's own registries** (decided by the owner on 2026-11-20,
+  "With the owner"; taken up in the slot the chart's builder left, because it is decided, small and apart
+  from the ClamAV change and the signatures): one builder writes its specification and builds it in one commit
+  (an administrator's list per format with name, address and further hosts, no credential; buttons in the form
+  of a new remote repository of every format, beside the well-known registries; migration 00093), with the
+  renders for the development agent's look. It lands before the ClamAV change's UI package starts, which
+  touches the same admin page.
 - **In work** (10:57): three builders, each from a specification that is on `main` (section "With the owner" holds
   what each builds): the format `clamav` with its repository and API (package 1 of the ClamAV change), the chart
   with the updater's Deployment (package 3 of it, without a cluster, because the binary does not know the updater's
@@ -1891,7 +1898,8 @@ runs are in `git log`; this section holds the current state.
   27. Built on 2026-11-20 (Q-UI-860 to 862); in the dark scheme a very thin Critical band at 390 px is one faint row of
   pixels, which the designer had named.
 - **Decided, not built now:** W-12, an invitation by e-mail, later; the logos of npm and Ansible Galaxy, he asks their
-  owners later; presets of the installation's own registries, after the project `upstream`.
+  owners later; presets of the installation's own registries, after the project `upstream` (in work since
+  2026-11-21, run record).
 - **Housekeeping:** nine worktrees are locked by another session of 2026-11-18 that still runs and were left alone.
 - **To check first:** the pipelines from 17:00; F-165 in the next full nightly; then section 12.
 
