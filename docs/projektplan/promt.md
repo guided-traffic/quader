@@ -1674,8 +1674,11 @@ runs are in `git log`; this section holds the current state.
   generate-check, the evidence regenerated without a difference, links and check, the complexity check, the
   chart's lint and tests, the UI tests and lint, the lint (with a stated limit). Under the lock on the stack, each exit 0, the two packages' combination that neither builder had run: the areas `postgres`, `signatures`, `signing`, `upstream`, `ocilocal` and `packages` (23:23 to 23:46, most of it the wait for the lock the builders share). The three diffs hold no
   name the white-label rule forbids; the chart is untouched, so the owner's values render as before. The
-  owner's UI backend started with it before the push (both schema steps applied). **Their run stood in the queue for 17 minutes** with no job offered to the runners (section 8); cancelled and started again on the same commit at 00:01 of 2026-11-22, it ran at once. **Their release was cut at 00:13**; the unit job took 9.9 minutes. Their worktrees and
-  branches are removed.
+  owner's UI backend started with it before the push (both schema steps applied). **Their run stood in the queue for 17 minutes** with no job offered to the runners (section 8); cancelled and started again on the same commit at 00:01 of 2026-11-22, it ran at once. **Their release was cut at 00:13**; the unit job took 9.9 minutes. Image and chart were
+  published at 00:19, and **the owner's installation runs it since 00:22.** Read on the cluster at 00:23:
+  every Deployment ready, no restart, the migration job applied both schema steps, no error line of `api`,
+  `packages` or the workers. No signing identity is configured there, so npm's signatures are not made, and
+  no repository has the gate switched on. Their worktrees and branches are removed.
 - **The measurement with real clients ended at 22:42 and landed at 22:43** (one commit of documentation; its
   builder worked from 21:48 to 22:42 with a Quader and a compose project of its own, the clients from the
   end-to-end sets' images, and a kind cluster of one node for the kubelet's lines; nothing of it is left
