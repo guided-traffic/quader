@@ -1309,6 +1309,43 @@ runs are in `git log`; this section holds the current state.
   owner; rebased without a conflict, links and check exit 0, the count test at 1,149 requirements; it does not
   touch the chart's page); its worktree and branch are removed. Its three packages follow the first stage's.
   **Found by it and left (section 8):** the decisions' index has no rows for the second stage's decisions.
+- **Landed on 2026-11-21 at 14:46 in one push of four commits: ClamAV's definitions are a repository of their
+  own, the updater is a Deployment of its own, and an administrator can serve the definitions to every ClamAV
+  of the company** (the owner's request of that morning, "With the owner"; R-CLAMAV-001 to R-CLAMAV-009,
+  R-MAL-010 to R-MAL-012, R-MAL-032 to R-MAL-034, R-HA-069, R-REPO-075, R-UI-188, R-UI-194; the reports of the
+  four builders are in the entry "In work (10:57)" below). The commits: the format `clamav` with the
+  repository `upstream/clamav` and its switch; the chart with the Deployment `malware-updater-freshclam`; the
+  updater's process and the worker's import with ClamAV's signature checked before anything is stored; the
+  screens. **The assembly** (13:44 to 14:27, by package 2's builder): the three commits of the Go side and the
+  chart onto `main` behind the presets, the signatures' first package and the purge's repair, the migrations
+  as 00094 and 00095, package 1's decision as Q-REPO-420, the copy of the values file equal to the chart's
+  values again; then the screens' commit onto that tip by its builder (14:27 to 14:41), which merged the
+  presets' and its own blocks and screens and built the section **Updater** the API can feed now. **Decided at
+  the assembly, for the owner's walkthrough:** the format `clamav` declares no signatures (Q-SIG-96): ClamAV's
+  signature of a container is part of its file format, signs an MD5 with a key of 1,024 bits, is checked by the
+  import and shown as the version's verification; as a publisher's signature in the store every version would
+  have shown "signer not trusted" beside a verification that passed. While no set is in use the import asks
+  the updater again every 30 seconds (Q-MAL-104, the development agent's, after the builder's finding). The
+  updater's rows have a section **Updater** on the registry's page and a fold of their own in the malware
+  scanning settings, without slots (Q-UI-913). **On the four commits as rebased onto `main`, each exit 0:**
+  build, the full unit run, generate-check, the lint, the complexity check, links and check, the chart's lint
+  and tests (113 s), the UI tests and the UI lint; by the builders on the same tree the layout checks and,
+  under the lock, the whole integration areas `malware` and `upstream`. **The renders looked at by the
+  development agent:** the registry's page with the switch on and the section **Updater**, the list of
+  databases with and without an outdated `daily`, a version's details, the malware scanning settings with both
+  folds (light and dark, wide and narrow). **The owner's values** render against the chart as they are (39
+  objects; none of the removed keys is set) and with the updater's label. **Read on his cluster before the
+  landing** (what had been unverified): a cluster-wide policy denies every pod the way out of the cluster by
+  default, the label `gnp/internet-https` opens TCP 80 and 443 to addresses outside the private ranges, and
+  names are resolved by the cluster's resolver, so that one label on the updater's pods is enough. The
+  released chart's schema refuses a values key it does not know, so the label is committed under `apps/quader`
+  when the new chart is published, not before. The owner's UI backend started with the four commits from the
+  main checkout before the push and answers ready (both schema steps applied). The worktrees and branches of
+  the four builders and the landing branch are removed. **Its release was cut at 15:02**; the image and the chart are being published, the label under `apps/quader` follows them, and the upgrade of the owner's installation is watched (the old repository of the definitions is retired by it and the first set is fetched whole). **Not verified:** the German
+  screens in a browser; the updater's rows on the screens against a running updater (the renders used rows
+  written by hand); the 503 at a request limit and an external user's 404 in an integration case; a token in
+  the client's URL and the plain download with a real client; a new `daily` arriving while the updater runs.
+  **Next of this change:** the client certificates of the endpoint (one package, specified).
 - **In work since 12:56, two builders on `main` with package 1: the signatures' packages 2 and 3.** Package 2:
   the read, the integrity check of each scheme, time, the trust step, the job `signature-verify`, the four kinds
   of anchor in their scopes with the chart's declared ones, the switch for project Owners, the block of a
@@ -1317,6 +1354,14 @@ runs are in `git log`; this section holds the current state.
   npm's keys and attestations endpoints with Q-SIG-34 as option (a), NuGet, Debian, Ansible's upload of
   signatures, generic, the Bastion). Each names the files it touched outside its area, so that the landing
   orders the two commits; package 4 (the screens) follows package 2's operations.
+  **Package 3 reported at 14:43** with one commit on the base of 12:55, its gates exit 0 but the area
+  `upstream`, red there by package 1's table alone (repaired on `main` meanwhile). Since 14:47 its builder
+  brings the commit onto today's `main`: its migration behind the ClamAV change's (and its replacement of the
+  purge's function with the repair's line in it), its decisions behind those the two later stages took, the
+  format `clamav` under what it added to the contract, one shape of the fetch's state table for it and for
+  the third stage's text, and three small things by the development agent's decision (an audit event for a
+  posted or removed Ansible signature; the manual not promising a switch that is not settable yet; a fetch's
+  state row going with its target). What it built is recorded at its landing.
   **Asked back by package 2 at 14:21 and decided by the development agent:** the store's interface carried a
   project's ID as a number, and the specification named a column of that type on a table that does not
   exist; a project's ID is a uuid (read in the schema and the code), so the fields and columns carry the uuid
@@ -1340,7 +1385,9 @@ runs are in `git log`; this section holds the current state.
   and the database's developer page tells the next builder to run the area `upstream` for a table with such a
   key. On the commit as rebased, each exit 0: build, the full unit run, generate-check, the lint, the complexity
   check, links and check; by its builder under the lock the areas `upstream` and `signatures`. The owner's UI
-  backend started with it before the push (the schema step applied). **Its release was cut at 14:25**; the image, the chart and the owner's installation are being followed. **Left by it:** nothing calls
+  backend started with it before the push (the schema step applied). **Its release was cut at 14:25**, image and chart were published at 14:31, and the owner's installation runs it
+  since 14:34 (read on the cluster at 14:42: five Deployments with two ready pods each on the new image, the
+  schema job complete, the ingress answers, no error line of `api` or the worker). **Left by it:** nothing calls
   the cleanup of orphaned signatures before the signatures' package 2 is built, so signatures and objects that
   a purge or a deletion leaves without an attachment stay in the database until then; only the function was
   tested, not the whole purge job with attachments that the real hooks recorded. **Caught beside it:** the
@@ -1543,7 +1590,8 @@ runs are in `git log`; this section holds the current state.
   built at the assembly: while no set is in use the import asks again every 30 seconds. Inside a cluster a
   ClamAV must name one of the endpoint's accepted hosts, another name answers 421, which `freshclam` counts as
   a failed attempt (section 8).
-  **The assembly is in work since 13:44** by package 2's builder: the three commits of the Go side and the
+  **The assembly is done (13:44 to 14:27; the screens' commit onto it by 14:41) and the change landed at 14:46
+  (the entry above).** It was planned as follows, by package 2's builder: the three commits of the Go side and the
   chart onto today's `main` (the migrations renumbered behind those of the presets and the signatures, the
   decision of package 1 renumbered, the format's declaration of signatures for the contract's version 8 with
   its row in the signatures' table, the copy of the values file equal to the chart's again, the 30 seconds
@@ -2439,6 +2487,22 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   naming rule** (the tool in the name); it is fixed with the specification. **His installation:** the new kind of
   pod needs the way to the internet in his values, which the worker carries today for the updater; the
   development agent brings that with the landing (standing rules).
+  **Built and landed on 2026-11-21 at 14:46** (run record), all of it but the client certificates, which are
+  the next package. **Decisions of the builders and the development agent in it, for his walkthrough:** a
+  version's row stays as history after its files are removed (Q-CLAMAV-15); the client's line is written
+  without a trailing slash (Q-CLAMAV-16); a commit without its metadata is refused (Q-CLAMAV-17); switching the
+  clients off is a journal part of its own (Q-REPO-420); the mirror's and the proxy's values are checked so
+  that none adds a line to `freshclam.conf` (Q-HA-384); a put-back keeps the refused version until the next
+  set (Q-MAL-102); every new file of a set is checked before any is stored (Q-MAL-103); while no set is in use
+  the import asks again every 30 seconds (Q-MAL-104); the updater's report carries its `daily`'s build time and
+  no slots (Q-OPS-226); the format declares no signatures of its own, the import's check is its verification
+  (Q-SIG-96); while the switch is on the repository is offered like any readable one (Q-UI-908); the admin
+  page builds the client's line from the address the API gives (Q-UI-909); a database's versions take their
+  state from the version list (Q-UI-910, Q-API-384); the install panel leads to the client setup (Q-UI-911);
+  **Outdated** holds for `daily` alone, as ClamAV's own warning does (Q-UI-912); the updater's rows have a
+  section and a fold of their own (Q-UI-913). **His question whether another source of signatures makes
+  sense** is answered in the build as told to him: one official origin, a private mirror or a proxy by a
+  value of the chart. **The measurement with a real client** is recorded (run record, package 2).
 - **The detection moves into the scanner unit, and the analyser leaves every other image** (2026-11-21, after he saw
   no Trivy container in the scanner pod and asked why the worker runs the analyser too and why the scanner's answer
   counts as untrusted): "Option B, nach der umbenennung. Trivy dann aus den anderen Images entfernen." Option B as put
