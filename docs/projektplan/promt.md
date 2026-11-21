@@ -374,7 +374,14 @@ records the recorder that tells such a stall apart).
   eviction until two minutes after the drain was 1.48 s over 35,826 requests against a warm-up of 532 ms, the limit being twice
   the warm-up (npm alone 551 ms to 1.698 s, NuGet alone 326 to 737 ms). Held: 449 `npm ci`, 43 publishes, 330 restores and 45
   pushes all exit 0, no SIGKILL, `gc-full` handed over; one upload probe got a 502 once and passed on its second attempt (the
-  pattern of H-795). Not reproduced in the two runs after it (warm-up 345 ms, drain 483 ms on 2026-11-20). Cause not known.
+  pattern of H-795). Not reproduced in the two runs after it (warm-up 345 ms, drain 483 ms on 2026-11-20). **Cause
+  found on 2026-11-21 from the run's kept artifacts: neighbours on the runner.** No kill of the database (the primary
+  peaked at 938 MiB), but 40 s of slow tarballs from 21:12:20 on, spread over the three replicas, while other pods on
+  the runner node went from about 2 to 10 to 16 cores at that second, the host ran at 31 of 32 cores (CPU pressure
+  about 70 %) and the leg's own pod fell from 23 to 14 to 17 cores. That was before the change of the runners'
+  cgroups (F-133). **The nightly of 2026-11-20 (run 44828435420) failed `drain-load-e` for another reason:** the
+  development profile's PostgreSQL primary was killed at its 1 GiB, 5 s into the drain (one stall of about 6 s on
+  every replica, one 503, p99 4.8 s), the cause of that night's drain per role, which the profile's 3 GiB address.
 - **F-153 · `Set up Go` ran into its bound of five minutes in a gating job** (2026-11-19, Test and Release 44453761606 of
   6cd1cb09, job `Cyclomatic Complexity`; a full nightly ran beside it on purpose). The step takes 10 to 20 s; what held it for
   five minutes is not read. Open: whether five minutes are too few for a download on a loaded pool; one occurrence is not a
@@ -969,7 +976,10 @@ runs are in `git log`; this section holds the current state.
   `test`, held for the end of the nightly:** the profile's PostgreSQL may use 3 GiB, sized for the connection budget
   the server admits (323 connections at about 7.75 MiB and the shared buffers, 2.6 GiB); a limit reserves nothing.
   No limit of the product was touched. **Not proven until a run uses it.** No local reproduction: the machine's
-  load was 30 on 20 CPUs and the evidence settled the cause. **The third red leg, at 01:18, cause not known yet:**
+  load was 30 on 20 CPUs and the evidence settled the cause. **The same kill failed a second leg, `e2e (drain-load-e)`,
+  at 03:37** (the primary at 948 MiB before the drain, killed 5 s into it, one stall of 6 s, one request answered 503,
+  p99 4.8 s against 660 ms; the runner ruled out: 18.6 of 32 cores, nearly all the leg's own); it is not the older
+  finding F-160, whose own run shows neighbours on the runner (section 8). **The third red leg, at 01:18, cause not known yet:**
   `e2e (ansible)`, the case of `TestAnsibleLimits` for `cachedBytesPerHour`: the install that should cross the hour's
   limit and be served was itself refused with 429 ("Failed to download collection tar … HTTP Error 429"), where the
   case expects the refusal at the next install. The set runs only on a change of Ansible's own code and in the
@@ -1233,11 +1243,20 @@ runs are in `git log`; this section holds the current state.
     overwrite.
   **The run of every integration area on the landing branch** (the development agent's, 01:49 to 03:23, on the tip
   with the screens, the gate, the scanning side and the first stage of the database and the chart): 65 areas
-  passing, two failing. **`querybudget`, a defect of the feature that no package's own areas had shown:** the
-  download of a Debian index at its plain path costs two statements on the branch, `GetLiveItem` and an inserted
-  job, where R-ARCH-027 gives a download one and `main` has one; `Packages.gz` is a generated item that is not
-  scanned at all (Q-MAL-22). The builder of package 3 finds who inserts it and fixes it on the branch (since 03:10),
-  with the whole area run with the scanning on. **`coordination`, not the feature's:** `TestLeases` saw two holders
+  passing, two failing. **`querybudget`, which looked like a defect of the feature and was the test's harness:** the
+  download of a Debian index at its plain path seemed to cost two statements on the branch, `GetLiveItem` and an
+  inserted job. Read by package 3's builder (03:42): the download costs one statement on every path with the
+  scanning on; the inserted job is the scheduler, which every 10 s offers the due slot of every task at once, 27
+  inserts on the branch (25 on `main` and the malware scan's two tasks); the harness counted a statement as the
+  requests' when it ran 27 times in a window of 30 downloads, so a scheduler run inside the window looked like a
+  statement of each download (and moved from one index path to another between two runs). Neither the gate nor
+  the commit hook runs there: an index by its suite's path is a route of the kind Metadata, and a generated item is
+  served without a verdict. The harness now counts a statement as the requests' when it ran for nine requests in
+  ten and its runs spread over half the window (Q-MAL-92); each budget window first checks that the scanning is on
+  and nothing strict, so the budget is shown for a default installation; R-ARCH-027 names the verdict as part of
+  the one lookup and the budget of a download that waits. One commit of the type `test` on the branch; the area
+  passes, with `malware`, `files`, `packages`, `deblocal` and `debvirtual`. The second place that counts by the old
+  rule (`vulnblock`, three inserts under its threshold) follows in the same commit. **`coordination`, not the feature's:** `TestLeases` saw two holders
   of a lease at once while another builder ran the same area on the same stack; rerun at 03:24 it failed another
   case (`TestScheduler`, no single holder of the scheduler's lease within 10 s) while two other builders' test
   processes were on the stack, each "under the lock". Both read `pg_locks` for an advisory lock by its key without
