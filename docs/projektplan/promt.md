@@ -1404,6 +1404,47 @@ runs are in `git log`; this section holds the current state.
   purge test, the formats' client list, now this): each time a test that holds a list or a convention sat in
   an area the builder had no reason to run; the briefs name the three now, and section 12 gets the question
   whether such checks can run without the stack, in the unit job.
+- **Landed on 2026-11-21 at 18:33: package 1 of the image analyser's move, the scanner unit detects as well**
+  (R-VULN-048, R-VULN-049 and its part of R-HA-070; what it built, measured and found is in the entry of the
+  two builders of 15:16 below, as reported at 17:43; its builder brought it onto `main` from 17:43 to 18:06).
+  **Decided at the landing by the development agent, written by the builder (Q-VULN-214), for the owner's
+  walkthrough:** the upgrade removes the stored analyses and every image is analysed afresh by the scanner,
+  because the stored ones are the worker's rewrite without a count of packages and each image would have
+  shown 0 packages. The builder kept one point apart from the brief, with its reason: an image already scanned
+  keeps its findings and is analysed afresh at its next detection, not queued at once, because a scanned row
+  without its database would count as not detected and its pulls would wait under the switch that admits only
+  checked artifacts. The price is one pull per image after the upgrade. **On the commit as rebased onto
+  `main`, each exit 0:** build, the full unit run, generate-check, the lint, the complexity check, links and
+  check, the chart's lint and tests, the UI tests and the UI lint; by its builder under the lock the areas
+  `vulnimage`, `malware`, `coordination`, `signatures` and `ociremote`, and before the rebase the end-to-end
+  set `vuln` on a fresh cluster. **The owner's values** render against its chart unchanged in number (39
+  objects): each scanner pod gains the container `database` and the volume of the database (5 Gi). **Read on
+  his cluster before the landing** (what the specification had left open): the three nodes that carry
+  workloads have about 222 GiB of allocatable ephemeral storage each, so two scanner pods with up to 3.4 GiB
+  of database each fit. The owner's UI backend started with it before the push (the schema step applied). **Not released yet:** the job `unit tests` of its run went red at 18:48 (the entry above), and that job holds the release back; the run of the repair releases it. **Not verified:** a detection against the real database in a pod; the worker's transaction that applies a
+  detection; amd64; the migration's removal on a table that holds rows (the integration stack's are empty).
+  **Left for package 3 of the move:** the analyser from its own image through an init container and out of
+  the release image, the pin, the workflows, the development profiles; **package 2,** the database per
+  scanner pod on the screens, builds on its report. Its worktree and branch are removed.
+- **The pipeline of the analyser's move (run 44930739304) went red at 18:48 on the job `unit tests`, which holds
+  the release back; its repair is in work since 18:51.** No test hangs: the unit run of the API's package as a
+  whole passed the limit of ten minutes per test binary that the tool sets when none is given. Its time in
+  that job (race detector and coverage over every package), read from the day's runs: 476 s in the morning,
+  487 s at 17:06, 585 s with the signatures' second package (98 s more for tests its builder had measured at
+  about 5 s without the race detector), and over 600 s now. The next slowest package takes 156 s. One builder
+  repairs it in two commits: first a stated limit for the unit run with room, so that the gate is green and
+  the analyser's move is released; then where the package's time goes, what the signatures' tests added, and
+  the cheap part of the cure (shared fixtures, parallel tests, waits replaced by signals), with the rest named
+  as a refactor with an estimate. **This is the owner's rule "Tests stay runnable" at work:** a builder's
+  measured seconds were taken on the development machine without the race detector, and the job multiplies
+  them. **For every builder's brief from now on:** the cost of a unit test is measured in the job's mode
+  (race detector, coverage over every package) for the package it joins, and the API's package gets no test
+  that builds a server of its own where a shared one serves.
+- **In work since 18:11: package 2 of the image analyser's move, the screens** (on `main` with package 1): what
+  each pod of `vuln-scanner-trivy` holds of the analyser's database (the one in use with its build time, an
+  older one, none yet) on the System page and the advisory sources, beside the rows of the ClamAV updater and
+  the malware scanners and in their words; rendered at every width of the pipeline's job. With the three
+  builders below that makes four.
 - **In work since 17:37, three builders on `main` with the signatures' package 2** (with package 1 of the analyser's
   move that makes four): **package 4 of the signatures' first stage, the screens** (the badge and the details at a
   version, a file and an image with the origin of an upload, the settings page of the signatures with the anchors,
