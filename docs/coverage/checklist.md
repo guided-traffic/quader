@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,050 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,063 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (509 of them implemented), 1,451 open.
-1,050 spec requirements: 720 cover catalog features, 330 cover none (`quader-only`, [listed at the
+1,063 spec requirements: 720 cover catalog features, 343 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>330 requirements</summary>
+<summary>343 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3086,6 +3086,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-190 | The project `upstream` in the main area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-191 | A new remote repository names the central one | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-192 | The system repositories of the project `upstream` stand apart on its page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-194 | The ClamAV definitions: databases, versions and what each holds | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-193 | A system repository is set apart wherever it is shown, and nothing offers what it refuses | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
@@ -3176,6 +3177,15 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ANS-044 | Reindex, restore and the generator version | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-045 | Metrics and audit of the documentation | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-046 | End-to-end rows per class | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-CLAMAV-001 | The format `clamav` and its descriptor | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-002 | Packages, versions and the layout | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-003 | What a version shows | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-004 | The routes a stock `freshclam` asks | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-005 | Answers a `freshclam` can live with: never `403` and never `429` | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-006 | Setting up a ClamAV installation | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-007 | The package view | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-008 | What the format leaves out | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
+| R-CLAMAV-009 | The tests and what they cost | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-DEB-004 (implemented) | Permissions per operation | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-005 | Errors and response headers | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-024 (implemented) | Mirror settings of a Debian remote | P2 | [formats/debian.md](../spec/formats/debian.md) |
@@ -3206,7 +3216,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-CI-029 (implemented) | CI state across replicas, Valkey outages and restores | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-CI-030 (implemented) | Background tasks of the CI exchange | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
-| R-HA-069 (implemented) | The `freshclam` container of the worker | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
+| R-HA-069 (implemented) | The updater Deployment `malware-updater-freshclam` | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-056 | Valkey with Sentinel: connection and supported topologies | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-057 | Valkey failover, outage and degraded mode | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-054 (implemented) | Revocation journal in object storage | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
@@ -3231,9 +3241,12 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-006 (implemented) | The scanner's read of a blob: the route on the scan listener and its token | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-007 (implemented) | The malware scanner: what it unpacks and what it hands to `clamd` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-008 (implemented) | Limits | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-010 (implemented) | `freshclam` beside the worker, and the task `malware-sync-db` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-011 (implemented) | `upstream/scanner-clamav` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-012 (implemented) | An installation without internet | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-010 (implemented) | The updater `malware-updater-freshclam`, and the task `malware-sync-db` that asks it | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-032 | The updater's `quader` container: the seed, the listing and the files | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-033 | Verifying a container before it is stored | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-034 | The cleanup: the set in use and the one before it, and the history | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-011 (implemented) | `upstream/clamav` keeps every set the scanning uses | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-012 (implemented) | An installation without a way to ClamAV's network | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-016 (implemented) | The answer each format's client gets | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-018 (implemented) | Virtual repositories, the cache view and the Bastion | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-020 (implemented) | The repository's stricter-only setting | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
@@ -3259,7 +3272,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-REPO-068 | Switching a well-known repository on and off | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-069 | What the product manages and what an administrator changes | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-070 | `scanner-trivy`: the database of the image scanning | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
-| R-REPO-075 (implemented) | `scanner-clamav`: the database of the malware scanning | P1 | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
+| R-REPO-075 (implemented) | `clamav`: ClamAV's definitions for the malware scanning and, switched on, for the company's ClamAV installations | P1 | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-071 | Members of `upstream` in a virtual repository | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-072 | A placeholder member: resolution, the explanation and the 404 | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-073 | The operations of the well-known repositories | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |

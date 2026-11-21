@@ -2423,6 +2423,7 @@ Owned by [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073 (sema
 | POST | `/api/v1/upstream-repositories/set-visibility` | `setAllUpstreamRepositoriesVisibility` | as the one above; `Idempotency-Key` accepted |
 | PUT, DELETE | `/api/v1/upstream-repositories/{key}/address` | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` | `repositories:write-config`; `x-quader-recent-auth: true`; `If-Match` |
 | PUT, DELETE | `/api/v1/upstream-repositories/{key}/account` | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount` | `repositories:write-config`; `x-quader-recent-auth: true`; `If-Match` |
+| PUT | `/api/v1/upstream-repositories/{key}/clients` | `setUpstreamRepositoryClients` | `repositories:write-config`; recent authentication inside the write when it switches on ([Q-API-382](#q-api-382--the-clients-of-the-clamav-definitions-are-an-operation-and-a-member-of-the-item)) |
 | GET | `/api/v1/formats/{format}/upstream-repositories` | `listFormatUpstreamRepositories` | `repositories:write-config` or an Owner of any project (`projectRole: owner` without `project`, [Q-API-364](#q-api-364--a-writer-of-a-virtual-repository-reads-the-state-and-the-level-of-a-formats-well-known-repositories-through-an-operation-of-its-own)) |
 
 - `switch-on-all` and `set-visibility` are reserved names of the collection (R-API-004) and listed in the `key` schema's
@@ -8208,9 +8209,16 @@ action that switches all on and one that sets the visibility of all
 - **System repositories.** Below the table a second table, **System repositories** (the name of the project's page, [Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)), holds the system repositories: `scanner-trivy` with the
   display name "Image scanning database", the state as a badge, **In use** (`ok`) "In use by the image scanning" or **Not in use**,
   the level as text (Private, with the lock icon) and **Details**; no switch and no select
-  ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)). `scanner-clamav`
-  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-075) stands below it the same way, with the display name "Malware
-  scan database" and "In use by the malware scan" ([Q-UI-883](#q-ui-883--a-system-repository-names-the-work-it-serves-and-a-local-one-has-no-address-and-no-account)).
+  ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)). `clamav`
+  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-075) stands below it the same way, with the display name "ClamAV
+  definitions" and "In use by the malware scan" ([Q-UI-883](#q-ui-883--a-system-repository-names-the-work-it-serves-and-a-local-one-has-no-address-and-no-account)),
+  and it is the one row of the table with a switch: **ClamAV definition updates**, the shared `<quader-switch>` with its accessible name
+  "ClamAV definition updates" and **On** or **Off** after it, and, while on, the level as text; read-only callers see the word only
+  ([Q-UI-903](#q-ui-903--clamav-definition-updates-is-a-switch-in-the-row-and-a-section-of-the-registrys-page)). Switching it on opens a
+  dialog: "Offer the ClamAV definitions to your ClamAV installations? They update from https://quader.example.com/api/clamav/upstream/clamav.
+  Public: anyone who reaches this address can download them, without a credential." with **Switch on** (the request asks for a recent
+  sign-in where the session needs one); switching off asks "Stop serving the ClamAV definitions? ClamAV installations that update from
+  Quader get 404 until they are on again. Quader's own malware scan is not affected." with **Switch off**.
 - **Switching** sends `setUpstreamRepositoryState` at once, without a dialog; the switch shows the server's answer and a `role="status"`
   line "Docker Hub is on." Switching off a repository that virtual repositories list asks first: "Switch off Docker Hub? 3 virtual
   repositories in 2 projects list it. They skip it until it is on again; nothing of theirs changes." with **Switch off** (`listedBy`
@@ -8240,11 +8248,21 @@ Priority: **MVP** · Covers: quader-only
   as a name, the format's icon), with **Open repository** (`btn btn-default`, to `/projects/upstream/repositories/docker-hub`). No tabs.
 - Sections, one column (the style guide's settings pages, Q-UI-351):
   1. **State and visibility**, open: the switch and the level of R-UI-187, with the same dialogs; for a system repository the use and
-     the fixed level as text ("In use by the image scanning. Its visibility is always Private.", for `scanner-clamav` "In use by the
-     malware scan. Its visibility is always Private."). A repository whose item names `address` as fixed (`scanner-clamav`, a local
+     the fixed level as text ("In use by the image scanning. Its visibility is always Private.", for `clamav` the section of
+     [Q-UI-903](#q-ui-903--clamav-definition-updates-is-a-switch-in-the-row-and-a-section-of-the-registrys-page), below). A repository whose item names `address` as fixed (`clamav`, a local
      repository) has neither **Address** nor **Account**, its header's badge is **Local repository**, and its **Details** ("Its settings
-     page and its dates.") hold the link to its settings page and its dates only: no virtual repository lists it and no client
-     downloads from it (Q-UI-883, Q-UI-884).
+     page and its dates.") hold the link to its settings page and its dates only: no virtual repository lists it (Q-UI-883, Q-UI-884).
+     For `clamav` the first section is **ClamAV definition updates**, open: the switch of R-UI-187 with the sentence "Serves these
+     definitions to the ClamAV installations of your company. Quader's own malware scan uses them either way."; while it is on, the
+     address of the endpoint as a name with a copy button, the level (Public; Internal and Private behind the fold **Visibility**, with
+     the sentence "A ClamAV installation can authenticate only with a token in the address, which freshclam writes into its log.",
+     [repositories-and-proxy.md](repositories-and-proxy.md#q-repo-415--who-reads-the-clamav-definitions-when-they-are-switched-on)
+     Q-REPO-415), and the client setup of [formats/clamav.md](formats/clamav.md) R-CLAMAV-006 (the one line, the note on the CA, the token
+     line where the level is below Public). Its second section, **Updater**, open, holds the replicas of `malware-updater-freshclam` in the
+     shared table of the scanner replicas (Q-UI-897), each with its state, freshclam's version and the newest daily it holds with its age;
+     without a row the sentence says why: "No updater runs: this installation takes its definitions from ops/clamav-db." for the source
+     `repository`, "The malware scan is off, so the definitions are not updated." while it is off, and "No updater reports: the
+     definitions are not updated." otherwise; the link **Versions** leads to the repository's page of R-UI-194.
   2. **Address**, open ([Q-UI-831](#q-ui-831--the-address-the-archive-keys-and-the-account-are-on-the-registrys-own-page)):
      **Upstream URL** (a URL field), **Further hosts** (the editor of R-UI-082) and, for a Debian or Ubuntu archive, **Archive keys**
      (the fingerprints of the keys and a text area for an armored block, behind the fold **Replace the keys**). While the address is
@@ -8330,8 +8348,9 @@ Priority: **MVP** · Covers: quader-only
   patterns), the vulnerability settings, **Offline** and the cache-fill action editable for `repositories:write-config`; no
   **Mirror**, no **Disable repository**, no **Move to another project**, no **Delete repository**. `scanner-trivy` shows everything
   read-only, its level as one statement in place of the group of levels, "Its visibility is always Private: only Quader's image
-  scanning reads it.", without the line "Managed in …", which stays under **Upstream**, where its address is managed; `scanner-clamav`
-  the same with "Its visibility is always Private: only Quader's malware scan reads it." (Q-UI-883). The format's settings are read-only, **Hide existence** and **Service accounts** are absent, **Administrator notes**
+  scanning reads it.", without the line "Managed in …", which stays under **Upstream**, where its address is managed; `clamav`
+  the same with "Its visibility is Private while ClamAV definition updates is off.", or its level while it is on, with the line "Managed in
+  Admin area › Upstream registries." (Q-UI-883, Q-UI-903). The format's settings are read-only, **Hide existence** and **Service accounts** are absent, **Administrator notes**
   stays editable; the vulnerability settings and the cache-fill action have no field on the settings page of any repository and
   are set through the API ([Q-UI-842](#q-ui-842--the-settings-page-of-a-well-known-repository-reads-what-the-product-holds-and-edits-what-an-administrator-narrows)).
 - **Set up client** of a preset repository is the page of R-UI-120, as for any remote. A system repository has none: no screen offers
@@ -8339,8 +8358,11 @@ Priority: **MVP** · Covers: quader-only
   [Q-UI-891](#q-ui-891--the-system-repositories-of-upstream-stand-apart-below-the-list-closed-and-without-set-up-client),
   [Q-UI-896](#q-ui-896--no-screen-offers-a-client-action-for-a-system-repository-one-function-decides-the-link)). Its page `…/setup`, opened
   by its address, says for `scanner-trivy` "Quader's image scanning reads its database through this repository. Clients cannot use it."
-  and shows no snippet; for `scanner-clamav` "Quader's malware scan keeps its signature database in this repository. Clients cannot use
-  it." (Q-UI-883).
+  and shows no snippet; for `clamav` while ClamAV definition updates is off "Quader's malware scan keeps its signature database in this
+  repository. An administrator can offer it to your ClamAV installations." and no snippet; while it is on, the page is the client setup of
+  [formats/clamav.md](formats/clamav.md) R-CLAMAV-006, the one exception to the rule of no client action for a system repository
+  ([Q-UI-896](#q-ui-896--no-screen-offers-a-client-action-for-a-system-repository-one-function-decides-the-link): the one function now
+  answers yes for a system repository whose clients are on) (Q-UI-883).
 - **Search, Recently opened and the guides** list well-known repositories like any repository the caller reads, with the project's
   mark (R-UI-095, R-UI-167, R-UI-124); a system repository without **Set up client** (Q-UI-896), with the badge **System** in the
   search, and not at all in the guides (R-UI-193).
@@ -8370,19 +8392,22 @@ Priority: **MVP** · Covers: quader-only
 The owner's decision of 2026-11-21 ([Q-UI-891](#q-ui-891--the-system-repositories-of-upstream-stand-apart-below-the-list-closed-and-without-set-up-client)).
 
 - **The list** of the project's page **Repositories** (`/projects/upstream/repositories`, R-UI-020) holds the preset repositories only.
-  A system repository (`scanner-trivy`, `scanner-clamav`; R-REPO-066) is none of its rows, on any of its pages.
+  A system repository (`scanner-trivy`, `clamav`; R-REPO-066) is none of its rows, on any of its pages.
 - **Below it**, set apart by room of its own over a hairline, the section **System repositories** (German "System-Repositories",
   [Q-UI-892](#q-ui-892--the-section-is-named-system-repositories)): the one collapsible section of every screen (`<quader-disclosure>`,
   Q-UI-322) with the number of its repositories after its heading as the neutral badge of a count, and one muted sentence under it,
-  "Quader keeps these repositories for itself: only its scanners read them, and no client is set up for them." It is closed at every
+  "Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV
+  installations." It is closed at every
   visit; nothing of its state is stored. Opened, it holds a table of the list's columns (Repository, Format, Class and the row's
   actions) with the system repositories the caller reads, by key.
-- **No Set up client.** A row of the section has no **Set up client**; its menu offers what the API lets the caller do with the
-  repository: **Settings** (to whoever reads the configuration, as every row), **Files** (the management API lists its items) and, for
-  `scanner-trivy`, **Vulnerabilities** (the report, which the product leaves empty: the repository's scanning is off, R-REPO-070). No
-  **Delete** (R-UI-190) and nothing a client does.
-- **Who sees it.** The section stands only for a caller who reads a system repository; they are always Private, so a plain user, who
-  reads the registries that are on, sees the list alone. The rows are read by name once per visit
+- **No Set up client**, but for `clamav` while ClamAV definition updates is on (R-UI-190). A row's menu offers what the API lets the
+  caller do with the repository: **Settings** (to whoever reads the configuration, as every row), **Files** (the management API lists its
+  items), for `clamav` **Versions** (its packages, R-UI-194) and, for `scanner-trivy`, **Vulnerabilities** (the report, which the product
+  leaves empty: the repository's scanning is off, R-REPO-070). No **Delete**, neither of the repository (R-UI-190) nor of a file of
+  `clamav` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-075), and nothing else a client does.
+- **Who sees it.** The section stands only for a caller who reads a system repository. `scanner-trivy` is always Private, `clamav`
+  Private while ClamAV definition updates is off; a plain user sees the list alone, and, once the definitions are on at a level the user
+  reads, the section with `clamav` as its one row. The rows are read by name once per visit
   ([Q-UI-893](#q-ui-893--the-section-reads-its-rows-by-name-once-per-visit-and-filters-them-in-the-browser)); a read that fails shows
   its error and **Retry** inside the section.
 - **The filter** of the list's head (the search and the drawer's format, class and state) covers both tables
@@ -8400,13 +8425,44 @@ Acceptance criteria (Vitest, `system-repositories.spec.ts`, about 0.4 s, and the
 `repositories-upstream-plain`):
 
 - The page of `upstream` lists `debian`, `docker-hub` and `npmjs` with **Set up client** each and no system repository; below it
-  **System repositories 2**, closed, with the sentence; opened, `scanner-clamav` and `scanner-trivy` with the same columns, no **Set up
-  client**; the row menu of `scanner-trivy` is **Settings**, **Files**, **Vulnerabilities**, of `scanner-clamav` **Settings**, **Files**.
+  **System repositories 2**, closed, with the sentence; opened, `clamav` and `scanner-trivy` with the same columns, no **Set up
+  client**; the row menu of `scanner-trivy` is **Settings**, **Files**, **Vulnerabilities**, of `clamav` **Settings**, **Files**,
+  **Versions**; with ClamAV definition updates on, the row of `clamav` has **Set up client**.
 - `?q=TRIVY` shows "No repository matches." above and the section open with **1**; `?format=oci` opens it with `scanner-trivy`;
   `?q=docker` leaves it closed with **0**; the rows are asked for once, by name.
 - A caller who reads no system repository gets no section; `setupCommands` of `upstream/scanner-trivy` is null; the page of
   `upstream/scanner-trivy` has no **Set up client** and says "This repository has cached no images yet.", that of
-  `upstream/scanner-clamav` offers no upload.
+  `upstream/clamav` offers no upload and no **Delete** on a file.
+
+### R-UI-194 · The ClamAV definitions: databases, versions and what each holds
+Priority: **P1** · Covers: quader-only
+
+The owner's words of 2026-11-21: "wir ziehen alle verfügbaren Metadaten aus dem ClamAV-Definitionen"
+([formats/clamav.md](formats/clamav.md) R-CLAMAV-003, R-CLAMAV-007;
+[Q-UI-904](#q-ui-904--the-definitions-show-as-the-repositorys-packages-the-version-in-use-first)).
+
+- **Where.** The repository's **Packages** of `upstream/clamav` (`/projects/upstream/repositories/clamav/packages`, R-UI-111's screens), opened
+  from **Versions** of R-UI-188 and R-UI-192, for whoever reads the repository: an auditor and an administrator always, every reader of its
+  level while ClamAV definition updates is on.
+- **The list**: three rows, `bytecode`, `daily`, `main`, each with the version in use, its build time and its age; an age of 7 days or more
+  carries the `warn` badge **Outdated** with "ClamAV warns about a database older than 7 days." in its tooltip and as the row's note. Above
+  the list one muted line names the set in use (`main-63.daily-28190.bytecode-339`) and, where it differs, the set before it.
+- **A database's page**: its versions newest first, the version in use first with the badge **In use** (`ok`), then **Previous**,
+  **Superseded** and, muted, **Files removed** for the history (R-MAL-034); per version the build time and age, the signatures, the
+  functionality level with "ClamAV 0.103 or later" *(example)*, the builder, and **Verification** ("ClamAV's signature verified", "Not
+  verified: from the repository ops/clamav-db", "Unsigned container") with the header's MD5 and the computed one in a closed fold.
+- **A version's Files tab**: the container and its detached signature with size, SHA-256 and **Download** (a reader downloads a stored
+  container through `/files/` while the switch is on; an auditor through the content route), no **Delete**; the **Detached signature** fact
+  (present, its number of signatures, "Quader passes it on; ClamAV checks it"); and **Members**: a table of the container's member files
+  (name, size, lines, SHA-256 in a closed fold), sorted by name, with the sentence "The signature count of the header is the total; lines
+  of a member are not always signatures." A version whose members were not read says so.
+- **No install panel** while the switch is off; while it is on, the panel shows the client setup of R-CLAMAV-006 instead of a command per
+  version: a ClamAV installation always takes the version in use.
+- The texts of a header (the builder, the build time's text) are shown as text, never as markup.
+
+Acceptance criteria (Vitest, the package screens' specs with a fixture of the three databases, about 1 s; rendered under rule 11, light and
+dark, wide and narrow, with a daily in use, a previous one, a history row and a version 8 days old): the list's rows and the **Outdated**
+badge at 7 days and not at 6; the page's badges in order; the members table and the sentence; no **Delete** on a file.
 
 ### R-UI-193 · A system repository is set apart wherever it is shown, and nothing offers what it refuses
 Priority: **MVP** · Covers: quader-only
@@ -21021,6 +21077,18 @@ new permission. **Applied in the spec:** R-UI-038; [operations-and-observability
 [scanners_api.go](../../internal/api/v1/scanners_api.go), [wire_scanner_report.go](../../internal/app/wire_scanner_report.go), the schemas
 `ScannerList`, `ScannerKind`, `ScannerReplica` of [openapi.yaml](../../api/openapi.yaml), whose `ReplicaState` both lists share.
 
+
+### Q-API-382 · The clients of the ClamAV definitions are an operation and a member of the item
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `PUT /api/v1/upstream-repositories/{key}/clients` with `enabled` and `level`, and the item's member `clients` (`enabled`, `address`), `null` for every other repository (chosen) | The well-known repositories' shape: a value, no `If-Match` (as the state and the level, Q-AUTHZ-280) | One request switches on at a level, so no window is open at an unintended level; the item tells the page the address to show | One operation more |
+| (b) `state` on/off for `clamav` | Reuse | No operation | `state` means `disabled`, which Quader's own reads need off |
+| (c) A member of the repository document | A merge patch | No operation | A member the product refuses for every other repository, and a widening in a general patch |
+
+**Choice:** (a). **Applied in the spec:** R-API-083; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073, R-REPO-075.
 ### Q-UI-897 · A scanner replica is one more kind of row: one table for the System page and the settings of both scannings
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner's
@@ -21047,6 +21115,30 @@ running"). **Applied in the spec:** R-UI-038; [malware-scanning.md](malware-scan
 [malware-settings.html](../../web/src/app/features/settings/malware-settings.html),
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts).
 
+
+### Q-UI-903 · ClamAV definition updates is a switch in the row and a section of the registry's page
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Where the switch
+sits is the owner's ("Ein Admin kann in den Upstream-Repos ClamAV-Definition-Updates einschalten"); how it looks is the development agent's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The switch in the row of `clamav` in **System repositories** and as the first section of its registry page, with the endpoint, the level and the client setup there while on (chosen) | One switch, two places, as every registry has | The administrator finds it where the owner said; the plain path is one switch; the level and the setup are on the page, the levels below Public behind a fold | The table of system repositories gets its one switch |
+| (b) A page of its own under **Settings** | Next to **Malware scanning** | Near the scanning | Not among the upstream repositories, where the owner put it |
+| (c) Only on the registry's page | One place | Less in the table | One click more than every other registry's switch |
+
+**Choice:** (a). **Applied in the spec:** R-UI-187, R-UI-188, R-UI-190.
+
+### Q-UI-904 · The definitions show as the repository's packages, the version in use first
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The package screens of every repository, fed by the format's view adapter: three databases, their versions, the metadata in the version's page and Files tab (chosen) | No screen of its own | Every reader knows the screens; nothing in the UI knows the format but the words it gets | The members table is a section the package screens show only for this format's metadata |
+| (b) A page of its own on the admin side | A table of sets | All in one place | An administrator-only view of what a reader of the endpoint may see too, and a second set of screens |
+
+**Choice:** (a). **Applied in the spec:** R-UI-194.
 ## What this does not cover
 
 

@@ -641,18 +641,22 @@ already reaches with the certificate of its kind ([ha-and-helm.md](ha-and-helm.m
   per process, in a UUID's canonical form) with its pod name (`QUADER_POD_NAME`, else the host's name and the process ID), its node
   (`QUADER_NODE_NAME`), its build of Quader, its state in the vocabulary of R-OPS-003 (`starting`, `ready`, `unready`, `draining`) with the
   reason of the readiness check that fails (`database` for a malware scanner that has no signature database loaded yet, `clamd`, `analyser`,
-  `certificate`, `spool`, `starting`, or the check's name where it gave none), the version of its tool (the analyser's version that Trivy
-  answered at the start; `clamd`'s from its answer to `VERSION`, asked until it answered once), its slots in use and in all, and for
-  ClamAV the signature database `clamd` scans with. At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
+  `certificate`, `spool`, `starting`, `seed` for the updater before its seed ended, or the check's name where it gave none), the version of
+  its tool (the analyser's version that Trivy answered at the start; `clamd`'s from its answer to `VERSION`, asked until it answered once;
+  `freshclam`'s from the first line of `freshclam --version` that its container wrote, [malware-scanning.md](malware-scanning.md)
+  R-MAL-032), its slots in use and in all (none for the updater), and for ClamAV the signature database `clamd` scans with, for the updater
+  the set its directory holds and the build time of its newest daily. At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
   `DELETE` on the same path.
 - **The kind is the certificate's.** The route takes no token and admits a request whose verified client certificate lists the name of a
-  kind exactly: `vulnerabilities.images.registry.client_name` is the kind `trivy`, `malware.scan_listener.client_name` the kind `clamav` (the
-  chart sets both, [ha-and-helm.md](ha-and-helm.md) R-HA-066, R-HA-068). A certificate of neither, of both, and a request without TLS are
-  refused with `401`; the body names no kind, and a member it does not know is refused. The two names must differ and each must be one of
-  `server.scan_clients` (the configuration refuses otherwise).
+  kind exactly: `vulnerabilities.images.registry.client_name` is the kind `trivy`, `malware.scan_listener.client_name` the kind `clamav`,
+  `malware.scan_listener.updater_client_name` the kind `freshclam` (the chart sets them, [ha-and-helm.md](ha-and-helm.md) R-HA-066, R-HA-068,
+  R-HA-069; [Q-OPS-224](#q-ops-224--the-updater-reports-as-the-kind-freshclam-with-the-newest-daily-it-holds)). A certificate of none, of
+  more than one, and a request without TLS are refused with `401`; the body names no kind, and a member it does not know is refused. The
+  names must differ and each must be one of `server.scan_clients` (the configuration refuses otherwise).
 - **Nothing beyond its size and shape.** A body of at most 4 KiB, decoded strictly; the pod's and the node's name 1 to 253 letters, digits,
   dots, hyphens or underscores; a version, a revision, a tool's version and a database's version of letters, digits and `. + _ ~ -`; a
-  reason of at most 32 letters, digits and underscores; slots 1 to 64, in use 0 to all; a database only from the kind `clamav`. Anything
+  reason of at most 32 letters, digits and underscores; slots 1 to 64, in use 0 to all, and none from the kind `freshclam`; a database only
+  from the kinds `clamav` and `freshclam`, the latter with the daily's build time. Anything
   else is `400`. The table checks the same bounds.
 - **The row.** `packages` writes it with PostgreSQL's clock: `heartbeat_at` at every report, `started_at` at the first, `state_since` when
   the state or its reason changes. `draining` is the last state of a row, as in R-OPS-003. A kind has at most 64 live rows: the report of a
@@ -669,7 +673,8 @@ API: `GET /api/v1/system/scanners` → `200`. Requires `settings:read`, the perm
 {
   "kinds": [
     {"kind": "trivy", "deployment": "vuln-scanner-trivy", "purpose": "vuln", "tool": "Trivy", "replicas": "reporting"},
-    {"kind": "clamav", "deployment": "malware-scanner-clamav", "purpose": "malware", "tool": "ClamAV", "replicas": "reporting"}
+    {"kind": "clamav", "deployment": "malware-scanner-clamav", "purpose": "malware", "tool": "ClamAV", "replicas": "reporting"},
+    {"kind": "freshclam", "deployment": "malware-updater-freshclam", "purpose": "malware", "tool": "freshclam", "replicas": "reporting"}
   ],
   "items": [
     {
@@ -6507,6 +6512,18 @@ R-HA-068; [architecture.md](architecture.md) R-ARCH-036, R-ARCH-037; [api-and-ui
 [replicas.go](../../internal/api/scanlisten/replicas.go), [wire_scanner_report.go](../../internal/app/wire_scanner_report.go),
 [scanner_replicas.go](../../internal/cluster/scanner_replicas.go).
 
+
+### Q-OPS-224 · The updater reports as the kind `freshclam`, with the newest daily it holds
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The updater's `quader` container reports through R-OPS-048 as a third kind, `freshclam`, with `freshclam`'s version and the set its directory holds; its readiness check is `malwareUpdaterFreshclam`, reported in the worker too with the reason `no_updater` where `malware.updater.url` is empty (chosen) | One table for every tool unit | The System page, the malware settings and the registry's page list the updater with its tool, its version, its state and how old its newest daily is, by the owner's rule that a unit is seen with its tool; no new route | The report learns of `freshclam` only what its directory and a file its container writes say: a failing download shows as an aging daily, its reason in `freshclam`'s log |
+| (b) The worker records what the updater's listing said | No report | The worker sees it anyway | A down updater would show its last state; two workers would race |
+| (c) `freshclam`'s own outcome through `OnErrorExecute` and `OnUpdateExecute` | Hooks of `freshclam.conf` | `freshclam`'s own verdict | Runs a shell line at each update, whose exact behaviour was not checked |
+
+**Choice:** (a). **Applied in the spec:** R-OPS-048; [malware-scanning.md](malware-scanning.md) R-MAL-010, R-MAL-032.
 ## What this does not cover
 
 ### H-53 · Span export bypasses the egress address policy

@@ -1774,13 +1774,14 @@ Priority: **MVP** · Covers: quader-only
     `debian-security`, `ubuntu`, `ubuntu-security`, `ubuntu-ports` (Debian), `galaxy` (Ansible Galaxy). A new format's presets
     appear with the release that brings the format (R-REPO-067);
   - the **system repositories** the product declares for its own work, today two: `scanner-trivy` (R-REPO-070), a remote of the
-    format `oci`, and `scanner-clamav` (R-REPO-075), a local repository of the format `generic`. A system repository's class is the
+    format `oci`, and `clamav` (R-REPO-075), a local repository of the format `clamav`, which an administrator may also offer to the
+    company's ClamAV installations. A system repository's class is the
     declaration's ([Q-REPO-411](#q-repo-411--a-declaration-names-its-class)); a preset repository is always `remote`.
 - **Nothing else.** No caller creates, moves, renames or deletes a repository in it (R-REPO-069): its repositories are maintained by
   the product and cannot be deleted (owner).
 - **Off until switched on.** A preset repository is created switched off and stays off until an administrator switches it on
   (R-REPO-068): nothing a new installation or a new release declares contacts an upstream unasked. `scanner-trivy` is in use only
-  while the image scanning reads its database through it (R-REPO-070), `scanner-clamav` while the malware scanning keeps its database
+  while the image scanning reads its database through it (R-REPO-070), `clamav` while the malware scanning keeps its database
   in it (R-REPO-075).
 - **What a preset repository is created with**: the document a create of only `key`, `class: remote` and `format` would store
   (R-REPO-063), with the preset's `url`, `extraHosts` and format settings, the preset's display name as `description` ("Docker
@@ -1829,7 +1830,7 @@ Acceptance criteria:
 
 - A fresh installation after `quader migrate` lists the project `upstream` to an administrator with 14 repositories: the twelve
   preset repositories of the table of R-REPO-062, each `disabled` with the state `not-switched-on` and both levels `internal`, and
-  `scanner-trivy` and `scanner-clamav`, `private` (integration area `upstream`, part of `TestR_REPO_067_Reconcile`).
+  `scanner-trivy` and `clamav`, `private` (integration area `upstream`, part of `TestR_REPO_067_Reconcile`).
 - `POST /api/v1/projects` with the key `upstream` answers 409 `already_exists`; `DELETE /api/v1/projects/upstream` answers 409
   `managed_by_product`; a direct `DELETE FROM project` of its row fails with SQLSTATE `AI010` (integration, area `upstream`).
 
@@ -1939,7 +1940,7 @@ Acceptance criteria (integration area `upstream`, about 5 s, the stub npm upstre
 - Switching `npmjs` off records `repository.disabled` with `listedBy: ["web/npm-all"]` while `web/npm-all` lists it; the document of
   `web/npm-all` keeps its `config_version`.
 - After **Switch all on**, every preset repository that was off reads `internal/internal` and `active`; `npmjs`, which was `active`
-  and `private` before, stays `private`; `scanner-trivy` and `scanner-clamav` are unchanged.
+  and `private` before, stays `private`; `scanner-trivy` and `clamav` are unchanged.
 - A Quader backup taken while `npmjs` is `active`, then `npmjs` switched off: after the restore (`journal.Replay` in process)
   `npmjs` is `switched-off`.
 
@@ -2061,44 +2062,66 @@ Acceptance criteria (integration area `upstream`, about 2 s, a stub registry ser
 - Two layers of `aquasec/trivy-db` stored three days ago, the older one replaced, the newer one the digest in use: a run of
   `remote-cache-cleanup` removes the older one and keeps the one in use (integration area `upstream`, about 2 s, items of bytes).
 
-### R-REPO-075 · `scanner-clamav`: the database of the malware scanning
+### R-REPO-075 · `clamav`: ClamAV's definitions for the malware scanning and, switched on, for the company's ClamAV installations
 Priority: **P1** · Covers: quader-only
 
-The owner's decision of 2026-11-20 ([malware-scanning.md](malware-scanning.md) Q-MAL-8): `freshclam` fetches ClamAV's signature database
-beside the worker, and Quader keeps each version in a system repository of `upstream`, `scanner-clamav`, generic, local and private, from
-which the malware scanners load it. Built ([wellknown.go](../../internal/wellknown/wellknown.go) `scannerClamav`, the repository
-service's [upstream_store.go](../../internal/repository/upstream_store.go) and [upstream_ops.go](../../internal/repository/upstream_ops.go),
-the task of [internal/malware/database](../../internal/malware/database/task.go)).
+The owner's decision of 2026-11-21 ("ClamAV wird also ein eigenständiges Artefakt-Repo … Ein Admin kann in den Upstream-Repos
+ClamAV-Definition-Updates einschalten, wodurch ein unternehmens-Endpunkt für alle ClamAV Instanzen bereitgestellt wird"), which replaces
+`scanner-clamav` of the format `generic` ([malware-scanning.md](malware-scanning.md) Q-MAL-8 as amended, R-MAL-010, R-MAL-011;
+[formats/clamav.md](formats/clamav.md)).
 
-- **Declaration** (`wellknown.Declared`, kind `system`, [Q-REPO-410](#q-repo-410--scanner-clamav-is-a-local-generic-system-repository)):
-  the key `scanner-clamav`, the format `generic`, the class `local`, no upstream, both levels `private`, the member `malware` at its
-  default (it is never scanned, [malware-scanning.md](malware-scanning.md) R-MAL-001), `disabled: false`. Its levels and its `malware`
-  member are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422 `managed_by_product` for them. It has no
-  address and no account, so `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress`, `setUpstreamRepositoryAccount` and
-  `removeUpstreamRepositoryAccount` answer 409 `managed_by_product`, and its item carries `fixed: [state, visibility, address, account]`
-  with an empty address and the account `none`
-  ([Q-REPO-412](#q-repo-412--a-local-system-repository-names-its-address-and-account-as-fixed-and-refuses-their-operations)).
-- **No client.** Every protocol request addressed to it (`/files/upstream/scanner-clamav/…`, a host bound to it) answers 404 as for a
-  repository that does not exist, for every caller, administrators included; it is never a member of a virtual repository (422
-  `invalid_member`, R-REPO-071), and no deploy reaches it. The management API reads its document and lists its items as for any
-  repository (`repositories:read-config`, `content:metadata-read`); a holder of `delete` may remove an item.
-- **Who writes and reads it.** The malware scanning's task `malware-sync-db` commits each database version into it at `<version>/<file>`
-  in process, as system work with the actor `system:malware-database`; the worker seeds `freshclam` from it, and the malware scanners read
-  the version in use through the database route of the scan listener of `packages` ([malware-scanning.md](malware-scanning.md) R-MAL-006,
-  R-MAL-010). The task removes versions older than 48 hours that are not in use.
-- **In use exactly while** the malware scanning is on and `malware.database.repository` names it (its default). It has no switch and no
-  state of its own, and Switch all on never touches it. The admin page of the upstream registries shows "In use by the malware scan" or
-  "Not in use" (R-UI-187).
+- **Declaration** (`wellknown.Declared`, kind `system`, [Q-REPO-413](#q-repo-413--the-definitions-repository-is-clamav-a-system-repository-that-may-serve-clients)):
+  the key `clamav`, the display name "ClamAV definitions", the format `clamav`, the class `local`, no upstream, the member `malware` at its
+  default (its items are never scanned, [malware-scanning.md](malware-scanning.md) R-MAL-001), `disabled: false`, and the declaration's
+  flag that clients may be switched on (`Clients: true`; no other declaration has it). It is declared while the format `clamav` is
+  registered. Its `malware` member and its state are the product's; it has no address and no account, so the address and account
+  operations of R-REPO-073 answer 409 `managed_by_product` and its item carries `fixed: [state, address, account]`
+  ([Q-REPO-412](#q-repo-412--a-local-system-repository-names-its-address-and-account-as-fixed-and-refuses-their-operations)), and
+  `visibility` too while the switch is off.
+- **The switch "ClamAV definition updates"** ([Q-REPO-414](#q-repo-414--clamav-definition-updates-is-a-switch-of-its-own-off-by-default-and-the-level-is-private-while-it-is-off)),
+  stored as `upstream_repository.clients_enabled` (migration 00091; a row of another kind or of a declaration without the flag cannot set
+  it):
+  - **Off** (the default, and after every create): the repository is Quader's own. Every protocol request addressed to it
+    (`/api/clamav/upstream/clamav/…`, `/files/upstream/clamav/…`, a host bound to it) answers 404 as for a repository that does not exist,
+    for every caller, administrators included; both levels are `private` and fixed.
+  - **On** (`setUpstreamRepositoryClients` with `{"enabled": true, "level": "public"}`, R-REPO-073): the endpoint and `/files/` serve it at
+    its level, `public` unless the request names a lower one or the installation does not allow `public` (then the highest level it allows,
+    and the answer's `warnings` says so); the level is then changed with `setUpstreamRepositoryVisibility`
+    ([Q-REPO-415](#q-repo-415--who-reads-the-clamav-definitions-when-they-are-switched-on), put to the owner). Switching on raises
+    `config_version`, records `repository.updated` with `changes.clients` and `reason: clients_on`, needs recent authentication (it widens,
+    R-API-007), and notifies `repo_config`, so every replica serves it within 2 s (R-REPO-049).
+  - **Off again** sets the levels back to `private`, records `repository.updated` with `reason: clients_off` and `repository.narrowed`,
+    journaled ([authorization.md](authorization.md) R-AUTHZ-031), so a restore keeps it off.
+  - The switch changes nothing for Quader: the database task writes the repository and the scanners load from it either way, and **Switch
+    all on** never touches it.
+- **Who writes it.** Only the malware scanning's task `malware-sync-db`, in process, as system work with the actor `system:malware-database`
+  ([malware-scanning.md](malware-scanning.md) R-MAL-010), and its cleanup (R-MAL-034). No route of the format writes, `/files/` deploys
+  nothing into it, and **no delete by hand** ([Q-REPO-416](#q-repo-416--no-one-deletes-a-definition-file-by-hand)): `DELETE` of an item
+  through `/files/` or the items API, and every batch removal that names its items, answer 409 `managed_by_product` for every caller,
+  administrators and holders of `content:bypass` included; no screen offers **Delete** for its files.
+- **Who reads it.** The malware scanners and the updater's seed through the scan listener's database routes (R-MAL-006), the management API
+  (its document for `repositories:read-config`, its items and packages for `content:metadata-read`, and, while it is on, for whoever its
+  level admits), and the company's ClamAV installations through its endpoint while it is on
+  ([formats/clamav.md](formats/clamav.md) R-CLAMAV-004).
+- **In use exactly while** the malware scanning is on; the admin page of the upstream registries shows "In use by the malware scan" or "Not
+  in use", and the switch (R-UI-187).
+- **Never a member** of a virtual repository (the format has no virtual class, and a system repository is none, R-REPO-071).
 - **The guards of R-REPO-066** hold for it as for every repository of `upstream`: its key, class and format do not change, and it is not
-  deleted.
+  deleted. Its key is one of `wellknown.ReservedKeys`, so no preset takes it. `scanner-clamav` is not declared any more: where an
+  installation still has it (the owner's), the reconcile retires it as any repository the product no longer declares (R-REPO-067 step 5),
+  its items are purged and its row stays as a tombstone; nothing migrates its sets, and the updater's first download fills `clamav`.
 
-Acceptance criteria (integration area `upstream`, about 2 s):
+Acceptance criteria (integration area `upstream`, about 3 s):
 
-- A fresh installation lists `scanner-clamav` with the format `generic`, the class `local` and the level `private`; an administrator's
-  `GET /files/upstream/scanner-clamav/x` and `PUT` of a file there answer 404; `setUpstreamRepositoryVisibility` answers 409
-  `managed_by_product`.
-- A system caller's commit of a file at `main-1.daily-1.bytecode-1/main.cvd` through the item store succeeds and the items API lists it to
-  an auditor.
+- A fresh installation lists `clamav` with the format `clamav`, the class `local`, the level `private`, `clients.enabled: false`; an
+  administrator's `GET /api/clamav/upstream/clamav/daily.cvd` and `GET /files/upstream/clamav/x` answer 404; `setUpstreamRepositoryVisibility`
+  answers 409 `managed_by_product`.
+- `setUpstreamRepositoryClients` with `{"enabled": true}` by an administrator with a recent sign-in answers 200 with the level `public`;
+  an anonymous `GET /api/clamav/upstream/clamav/daily.cvd` of a stored set then answers 200 on every replica within 2 s; with the default
+  endpoint's `auth.anonymous: false` the same request turns it on at `internal` with a warning; switching off answers 200, records the
+  journaled `repository.narrowed`, and the anonymous request answers 404 again.
+- An administrator's `DELETE /files/upstream/clamav/daily/1/daily.cvd` answers 409 `managed_by_product`; a system caller's commit at
+  `daily/1/daily.cvd` through the item store succeeds and the items API lists it to an auditor.
 
 ### R-REPO-071 · Members of `upstream` in a virtual repository
 Priority: **MVP** · Covers: quader-only
@@ -2219,6 +2242,7 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
 | `resetUpstreamRepositoryAddress` | `DELETE /api/v1/upstream-repositories/{key}/address` | `If-Match` | 200 the item | 404; 412; 422 `secret_value_required` (the product's hosts differ from the override's while an account is stored: the reset carries `?removeAccount=true`); 428 |
 | `setUpstreamRepositoryAccount` | `PUT /api/v1/upstream-repositories/{key}/account` | `{"authMode", "username", "password"}`, `If-Match` | 200 the item | 404; 412; 422 (`invalid_secret`, R-REPO-033); 428 |
 | `removeUpstreamRepositoryAccount` | `DELETE /api/v1/upstream-repositories/{key}/account` | `If-Match` | 200 the item | 404; 412; 428 |
+| `setUpstreamRepositoryClients` | `PUT /api/v1/upstream-repositories/{key}/clients` | `{"enabled": true \| false, "level": "public" \| "internal" \| "private"}` (`level` only with `enabled: true`, default `public`) | 200 the item, with `warnings` (`public_not_allowed_lowered`) | 404; 409 `managed_by_product` (a repository whose declaration lets no client in); the refusals of R-AUTHZ-038 for the level; 401 `reauthentication_required` when switching on without a recent sign-in |
 
 - **Permission.** The reads need `repositories:read-config` (`admin`, `security-admin`, `auditor`, `repository-admin`); every write
   `repositories:write-config` (`admin`, `repository-admin`); a level the installation restricts is chosen only by whoever holds
@@ -2242,6 +2266,7 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
   "displayName": "Docker Hub",
   "state": "not-switched-on",
   "inUse": null,
+  "clients": null,
   "visibility": "private",
   "fixed": [],
   "address": {
@@ -2263,6 +2288,9 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
 }
 ```
 
+  `clients` is `null` but for a repository whose declaration lets clients in (`clamav`, R-REPO-075), and there `{"enabled": false,
+  "address": "https://quader.example.com/api/clamav/upstream/clamav"}`, the address being the protocol base on the default endpoint's base
+  URL ([api-and-ui.md](api-and-ui.md#q-api-382--the-clients-of-the-clamav-definitions-are-an-operation-and-a-member-of-the-item) Q-API-382);
   `state` is `null` and `inUse` a boolean for a system repository; `fixed` names what the product holds beyond the table of R-REPO-069
   (`["state", "visibility"]` for `scanner-trivy`); `upstreamKeys` lists the fingerprints of the keys of an APT archive
   (`[{"fingerprint", "userId"}]`), `null` for another format; `password` is `{"set": true}`, a `secretRef` as stored, or `null`;
@@ -10039,7 +10067,7 @@ central one in one virtual repository under the same key.
 
 Status: **Decided by the owner on 2026-11-20** in its frame ([malware-scanning.md](malware-scanning.md) Q-MAL-8: "a system repository,
 generic, local, private"); the mechanisms decided by the development agent — selected from the options below; the owner reviews them at
-the walkthrough.
+the walkthrough. Superseded by the owner on 2026-11-21: the repository is `clamav` of the format `clamav` ([Q-REPO-413](#q-repo-413--the-definitions-repository-is-clamav-a-system-repository-that-may-serve-clients), R-REPO-075).
 
 Context: `scanner-trivy` is a remote, because the analyser's database is an OCI artifact a registry serves. ClamAV's database is plain files
 that ClamAV's network serves to `freshclam` and `cvdupdate` only ([malware-scanning.md](malware-scanning.md) R-MAL-010); the generic
@@ -10082,6 +10110,70 @@ of the project and has neither.
 
 **Choice:** (a). **Applied in the spec:** R-REPO-075; [api-and-ui.md](api-and-ui.md) R-UI-188 (Q-UI-883).
 
+
+### Q-REPO-413 · The definitions repository is `clamav`, a system repository that may serve clients
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It builds the
+owner's decision of 2026-11-21 that ClamAV's definitions become a repository of their own in `upstream`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The key `clamav`, the kind `system`, with a declared flag that lets an administrator switch clients on (chosen) | One repository, written by the product, served when switched on | The endpoint reads plainly (`/api/clamav/upstream/clamav`); the product keeps writing it whatever the switch says; nothing about `system` changes for `scanner-trivy` | A system repository that may answer clients is a case the kind did not have |
+| (b) Keep `scanner-clamav` | The old key | No rename | "Scanner" names one of its readers; the company's ClamAV installations are the others |
+| (c) A preset repository (kind `preset`) | Switched on like a registry | The switch exists already | A preset is a remote the administrator switches off, which would stop Quader's own scanning; its state is the product's here |
+| (d) `clamav-definitions` | Long and exact | Self-explanatory | A longer address for every client, for what the format already says |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-066, R-REPO-075; [formats/clamav.md](formats/clamav.md).
+
+### Q-REPO-414 · "ClamAV definition updates" is a switch of its own, off by default, and the level is private while it is off
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A column `clients_enabled` and an operation `setUpstreamRepositoryClients`, off by default; switching on opens the repository at a level, switching off closes it and sets the level back to `private` (chosen) | One switch for one decision | Off means exactly what a system repository meant before; nothing is readable by accident while off; the switch is journaled when it narrows | An operation more |
+| (b) The state operation (`disabled`) | Reuse `on`/`off` | No new operation | `disabled` would stop Quader's own reads; the scanners need it on |
+| (c) The level alone (private means off) | No switch | Fewer moving parts | `private` would still serve administrators and globally named principals through the endpoint, and the page would have no "on" for the owner's switch |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-073, R-REPO-075; [api-and-ui.md](api-and-ui.md) R-API-083, R-UI-187, R-UI-188.
+
+### Q-REPO-415 · Who reads the ClamAV definitions when they are switched on
+
+Status: **Open: put to the owner on 2026-11-21** — the specification follows the development agent's recommendation (a) until he answers.
+His question: "Kann ein ClamAV sich gegenüber einem Endpunkt authentifizieren? Falls nein, macht eine Visibility außerhalb von public dann
+überhaupt einen Sinn?"
+
+Context, read in ClamAV 1.5.5's source on 2026-11-21: a stock `freshclam` can present a TLS client certificate (from 1.2, through environment
+variables only), which Quader maps to no principal on the package surface; it sends no token and no header of its own; credentials in the
+URL (`https://user:password@host/…`) reach libcurl, which sends them as Basic, but ClamAV documents nothing of it, nobody has run it against
+Quader, and `freshclam` logs the whole URL at the level `INFO`. The definitions are ClamAV's public databases; what a level protects is the
+installation's bandwidth and the knowledge of which version it uses.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Public when switched on; Internal and Private selectable as a detail, with a token in the URL and the plain note that `freshclam` logs it (recommended) | The plain path needs no credential on any client | Every ClamAV of the company works with one line; nothing secret is served; an installation that allows no anonymous access still has a way | A public endpoint can be read by anyone who reaches it ([H-1162](../security/clamav-definitions.md#h-1162--a-public-endpoint-serves-the-definitions-to-anyone-who-reaches-it)); the lower levels rest on an undocumented way |
+| (b) Internal by default, Public selectable | A token on every client by default | Nobody outside reads them | Every client carries a token in its configuration and its log |
+| (c) Public only | No level to choose | Simplest | An installation whose default endpoint allows no anonymous access cannot switch it on |
+
+**What another answer changes:** (b) makes `internal` the default of `setUpstreamRepositoryClients` and puts the token line first in the
+setup (R-CLAMAV-006); (c) removes the level from the operation and the screens and refuses the switch where `public` is not allowed. Either is
+a change of a default and of one screen section; the measurement of R-CLAMAV-009 then runs the token way once.
+
+**Applied in the spec:** R-REPO-075; [formats/clamav.md](formats/clamav.md) R-CLAMAV-006, R-CLAMAV-009; [api-and-ui.md](api-and-ui.md)
+R-UI-188.
+
+### Q-REPO-416 · No one deletes a definition file by hand
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It settles the
+finding that a system repository's file page offered **Delete** to an administrator.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every delete of an item of `upstream/clamav` by a caller answers 409 `managed_by_product`; the cleanup removes what goes (chosen) | One writer and one remover | A file of the set in use or the previous set cannot vanish under the scanners, a put-back and the company's clients; nothing is gained by a hand delete that the cleanup does not do | A broken container cannot be removed by hand; the next set replaces it, and a refusal by `clamd` puts the previous set back |
+| (b) Deletes for holders of `delete`, as before | | An escape | A deleted file of the set in use makes its blob collectable and the scanners' load and the endpoint answer 404 until the next set |
+
+**Choice:** (a). `scanner-trivy` keeps what R-REPO-070 says: its items are a remote's cache, and a delete there makes the next pull fetch
+the layer again. **Applied in the spec:** R-REPO-075; [api-and-ui.md](api-and-ui.md) R-UI-192.
 ## What this does not cover
 
 ### H-4 · Malicious content from a legitimate upstream

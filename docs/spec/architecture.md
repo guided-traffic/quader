@@ -599,6 +599,12 @@ nothing worth taking.
   `malwareScannerClamav` ([operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) Q-OPS-221), waits for its first database ("no database loaded yet") and for `clamd` (R-MAL-007). The role `all` builds no malware scanner. It holds what an image scanner holds, a call's blob
   token instead of a scan token, and the loaded database. The chart renders it as a Deployment of its own with a container `clamd`
   beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-068).
+  The third kind, `freshclam`, is the malware scanning's updater ([malware-scanning.md](malware-scanning.md) R-MAL-032,
+  [Q-ARCH-562](#q-arch-562--the-updater-is-a-kind-of-the-role-scanner)): it builds the area with the updater's parts only (the seed from the
+  scan listener's database routes, the listing and the files of its directory on `GET /updater/v1/database` and
+  `GET /updater/v1/database/{name}`, which admit the worker's name), reads `malware.updater` and `malware.scan_listener`, holds its TLS pair,
+  the CA and the directory `freshclam` writes, and its readiness, the check `malwareUpdaterFreshclam`, waits for its seed. It serves no scan.
+  The chart renders it as a Deployment of its own with a container `freshclam` beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-069).
 - **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's
   `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. In the role `all` both are empty and mean the
   process's own listeners over loopback (Q-ARCH-531).
@@ -11449,6 +11455,25 @@ malware scanner with `clamd` beside it (ClamAV). After Q-HA-372 the Deployments 
 the default when a second tool for images is built. **Applied in the spec:** R-ARCH-036 (Kinds); [ha-and-helm.md](ha-and-helm.md) R-HA-030,
 R-HA-068; [malware-scanning.md](malware-scanning.md)'s configuration. Code: [process.go](../../internal/config/process.go).
 
+
+### Q-ARCH-562 · The updater is a kind of the role `scanner`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows the
+owner's decision of 2026-11-21 that `freshclam` runs in a Deployment of its own.
+
+Context: the updater's pod needs a process beside `freshclam` that seeds its directory from Quader and serves it to the worker over mutual
+TLS; ClamAV's image has no HTTP server, and `freshclam` cannot seed itself from Quader.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A third kind of the role `scanner`, `process.scanner_kind: freshclam` (chosen) | The role of a third-party tool's wrapper without secrets | Reuses what the role is: no secret, its kind's certificate, the scan listener's admission by name, the report of R-OPS-048, the readiness and the drain; no new role in INV-2's list of values | The role's name says "scanner" for a unit that scans nothing, and `scanner_kind` names a kind that is no scanner |
+| (b) A role `updater` | A sixth value of `process.role` | Honest name | A role, its configuration schema, its start plan and its checks for one process whose shape is the scanner role's |
+| (c) No Quader process: a web server image beside `freshclam` | Another image | Smaller | A fifth image to pin, its own TLS and name checks, and no seed |
+
+**Choice:** (a), with INV-2 reading the role as the wrapper of a third-party tool. **Rationale:** the boundary that the role draws (no
+secret, a certificate of its kind, reached only over links) is exactly the updater's. The development agent would revisit this when a third
+unit that is no scanner needs the role, and then rename the role. **Applied in the spec:** R-ARCH-036; [README.md](README.md) INV-2;
+[malware-scanning.md](malware-scanning.md) R-MAL-032.
 ## What this does not cover
 
 

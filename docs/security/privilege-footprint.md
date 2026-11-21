@@ -143,10 +143,11 @@ the network: [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of
 
 The malware scanner (specified, not built; [R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) has the same
 footprint, with a read of one blob instead of one image, and a second container `clamd` of ClamAV's official image that mounts no TLS
-pair and no configuration of Quader and opens no network listener. The `freshclam` container of the worker pods that claim `malware`
-([R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-freshclam-container-of-the-worker)) holds no credential and mounts no Secret; it shares
-the worker pod's network ([H-1113](malware-scanning.md#h-1113--a-taken-over-freshclam-has-the-worker-pods-network-position)). What
-`clamd` and `freshclam` can do when taken over is on [malware-scanning.md](malware-scanning.md).
+pair and no configuration of Quader and opens no network listener. `freshclam` runs in the updater, a Deployment of its own
+(specified 2026-11-21, [R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-updater-deployment-malware-updater-freshclam); built today as a container of the worker pods that claim `malware`): its
+`quader` container has the scanners' footprint, its `freshclam` container holds no credential and mounts no Secret, and it is the only pod
+that reaches ClamAV's network ([H-1113](malware-scanning.md#h-1113--a-taken-over-freshclam-has-the-updater-pods-network-position)). What
+`clamd` and `freshclam` can do when taken over is on [malware-scanning.md](malware-scanning.md) and [clamav-definitions.md](clamav-definitions.md).
 
 ## Network
 

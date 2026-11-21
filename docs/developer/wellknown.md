@@ -2,7 +2,7 @@
 
 Every installation has the project `upstream`, which holds the product's well-known repositories: one remote repository per upstream
 preset of the format catalog and the system repositories of Quader's own work, today `scanner-trivy` (a remote) and `scanner-clamav` (a
-local generic repository, [R-REPO-075](../spec/repositories-and-proxy.md#r-repo-075--scanner-clamav-the-database-of-the-malware-scanning))
+local generic repository, [R-REPO-075](../spec/repositories-and-proxy.md#r-repo-075--clamav-clamavs-definitions-for-the-malware-scanning-and-switched-on-for-the-companys-clamav-installations))
 ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, [authorization.md](../spec/authorization.md)
 R-AUTHZ-041, [ADR-209](../decisions.md#adr-209--the-built-in-project-upstream-holds-the-products-well-known-repositories-and-a-virtual-repository-may-list-them),
 [ADR-211](../decisions.md#adr-211--scanner-trivy-is-a-system-repository-of-upstream-that-only-the-image-scanning-reads)). The security

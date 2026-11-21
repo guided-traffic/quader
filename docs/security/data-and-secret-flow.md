@@ -43,8 +43,9 @@ The chart mounts each Secret into the pods that need it and nowhere else ([_secr
   ([R-HA-063](../spec/ha-and-helm.md#r-ha-063--chart-tls-wiring)); a pod holds no other kind's pair;
 - in the `vuln-scanner-trivy` pods, the scanner's own pair and the internal CA, and nothing else: no key ring, no database, Valkey or object-store file, no shared `extraEnvFrom` or
   `extraVolumes` ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml)); the same in the container `quader` of the `malware-scanner-clamav` pods, and nothing
-  of the installation in its container `clamd` or in the worker's container `freshclam`, which hold no credential at all
-  ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment), [R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-freshclam-container-of-the-worker));
+  of the installation in its container `clamd` or in the container `freshclam` (the worker's today, the updater's as specified on
+  2026-11-21, whose `quader` container holds its own pair and the CA and nothing else), which hold no credential at all
+  ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment), [R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-updater-deployment-malware-updater-freshclam));
 - in the `worker` pods while the image scanning is on, the worker's pair as the identity they present to the scanner, and the internal
   CA; in the main `packages` pods, the internal CA for the scan listener ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart));
 - the object-store credentials only with `credentials.source: static`;
