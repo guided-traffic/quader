@@ -1321,6 +1321,47 @@ runs are in `git log`; this section holds the current state.
   every width of the pipeline's job). It lands with or before the signatures' third package. **For every
   builder's brief from now on:** a UI change is rendered at every width the pipeline's job renders, and a new
   format runs the integration area `packages`.
+- **Landed on 2026-11-21 at 15:45: package 3 of the signatures' first stage, the formats' wire behaviour**
+  (R-SIG-023 to R-SIG-033; its builder worked from 12:56 to 14:43 and brought the commit onto `main` from 14:47
+  to 15:40). **OCI:** deleting an image's manifest removes its referrers, its signature tags and the manifests
+  only those tags name (one that another tag names stays; deleting a tag alone leaves image and signatures);
+  evicting a remote's cached manifest takes the cached items of its signatures; for a remote repository a
+  job of the worker fetches the signatures itself when a tag's manifest is stored (the referrers API once,
+  then a HEAD of the two signature tags; the referrers tag only where the API answers 404 or 405; at most four
+  signature manifests with eight layers each, never an SBOM's; again after 24 hours when a client revalidates
+  the tag; at most 600 requests per remote, hour and worker); a mirror pass asks the same for each kept tag and
+  mirrors no signature tag as a version; the image scanning leaves signature and attestation manifests out.
+  **npm:** the keys endpoint for every class (a remote serves its upstream's keys, a local repository an empty
+  list, a virtual one the union of its remote members' keys, which is Q-SIG-34 as option (a)); the attestations
+  endpoint (a remote serves its upstream's document, a virtual one the first member that has it, a local one
+  answers 404 until package 2 vouches for a bundle). **Ansible Galaxy:** a signature of a version can be posted
+  and removed, checked without a key against the version's manifest, served in `signatures[]`, at most sixteen.
+  **Debian:** which stored releases of a remote cover a package, for package 2's API. **NuGet and generic:**
+  nothing beyond package 1. Not built, because the features do not exist yet: the trash, copy, retention.
+  **Decided by its builder:** the fetch is a job of the worker, queued in the storing transaction, with a state
+  row per target and an hourly budget per remote (Q-SIG-97); how it asks an upstream (Q-SIG-98); a mirror asks
+  on every pass (Q-SIG-99); a client's revalidated tag queues the refresh (Q-SIG-100); an eviction takes the
+  signatures' items (Q-SIG-101); a posted Ansible signature is checked without a key, and the permission is
+  the collection's deploy and delete (Q-SIG-102); a local npm document names no attestations in this stage
+  (Q-SIG-103); the image scanning's exclusion (Q-SIG-104); Debian's coverage is an optional interface of the
+  format (Q-SIG-105). **Decided at the landing by the development agent, written by the builder:** one shape of
+  the fetch's state table for this stage and for the third stage's text, with the subject, an attempt count
+  and a failure time added, and the third stage's requirement rewritten to it; a row goes with its target for
+  OCI (Q-SIG-106); posting and removing an Ansible signature writes an audit event each (Q-SIG-107); the
+  manual promises no switch for a remote's fetch until package 2 makes the member settable (Q-SIG-108). **On
+  the commit as rebased onto `main`, each exit 0:** build, the full unit run, generate-check, the lint, the
+  complexity check, links and check, the UI tests and the UI lint (two labels of audit events); by its builder
+  under the lock the areas `upstream`, `signatures`, `ocilocal`, `ociremote`, `npm`, `ansiblelocal` and
+  `malware`. The owner's UI backend started with it before the push (the schema step applied). **Its release was cut at 16:00**; the image, the chart and the owner's installation are being followed. **Its tests cost** under 1 s more in the unit job and, in the integration shards, about 4 s (`ocilocal`), 9 s
+  (`ociremote`), 2 to 15 s (`ansiblelocal`) and 2 s (`npm`); no end-to-end case. **Open by its text (H-1201):**
+  for npm a fetch's state row does not go with its target, so a tarball filled again is not asked again, and
+  only the keys are refreshed, not a version's attestations. **Not verified:** a real `cosign`, `notation`,
+  `npm audit signatures` or `ansible-galaxy` with a keyring against Quader; whether Docker Hub serves the
+  referrers API and how it counts the requests; a registry that answers 400 for the missing referrers route;
+  the path that counts a failed fetch has no test. **Left for package 2 to wire** (on the signatures'
+  developer page): the verdicts that let a local npm bundle be served, the counter of requests to remotes, the
+  configuration of the fetch and the repository member that switches it off. Its worktree and branch are
+  removed.
 - **In work since 15:16, two builders on `main` with the ClamAV change:** **the client certificates of the
   definitions' endpoint** (R-CLAMAV-010; the endpoint key, the certificate subject and its one rule, usage and
   request log, the chart's passthrough per ingress controller, the read-only lines on the registry's page, the
@@ -1403,7 +1444,7 @@ runs are in `git log`; this section holds the current state.
   format `clamav` under what it added to the contract, one shape of the fetch's state table for it and for
   the third stage's text, and three small things by the development agent's decision (an audit event for a
   posted or removed Ansible signature; the manual not promising a switch that is not settable yet; a fetch's
-  state row going with its target). What it built is recorded at its landing.
+  state row going with its target). It reported again at 15:40 and landed (the entry above).
   **Asked back by package 2 at 14:21 and decided by the development agent:** the store's interface carried a
   project's ID as a number, and the specification named a column of that type on a table that does not
   exist; a project's ID is a uuid (read in the schema and the code), so the fields and columns carry the uuid
@@ -1412,6 +1453,35 @@ runs are in `git log`; this section holds the current state.
   told to keep it at those three and to report how the work was split; they were not stopped, because two
   other builders were about to finish. **For every builder's brief from now on:** a builder starts no agents
   of its own.
+  **Package 2 reported at 15:50** with one commit on the base of 12:55; since 15:50 its builder brings it onto
+  today's `main`, alone. **What it built:** the job `signature-verify` reads and checks every due signature in
+  the worker under the bounds, a deadline of five seconds and a recovery from a panic (bundles of the signing
+  service and cosign's older layout, the two envelopes of Notation, NuGet's signature with its
+  countersignatures and timestamps, OpenPGP, npm's registry signatures, raw public keys), stores the result
+  with its evidence, and a pass of discovery picks up what was stored before this stage; the trust step judges
+  from that evidence alone, in the installation's scope and in every project that has anchors of its own, and
+  a job recomputes trust on every change of anchors, blocks or the switch; the four kinds of anchor in the
+  scopes shipped (the signing service's public root and npm's keys, refreshed daily, the keyrings of Debian
+  and Ubuntu, nuget.org's certificates and timestamping roots; each can be switched off), configuration (the
+  chart's values, applied by the migration, read-only in the API), installation and project; the switch for
+  project Owners; blocks; the API (the signatures of a version and of a file, the original bytes, settings,
+  anchors, blocks, findings, the member with state on an item, a version and a version's files); nine audit
+  events, metrics, three alerts, the configuration. **All three of the owner's ways to a signature are
+  exercised with real signatures made in the tests:** a signing service of the company's own with its
+  certificate authority, log and timestamp authority, a code-signing certificate of the company's CA, and an
+  OpenPGP key. **Measured:** the binary grows by 6.30 MiB (8.8 %) and 52 modules for the whole package; a
+  trust judgement costs about 0.19 ms with a CA and 0.10 ms with OpenPGP. **Its tests cost** about 15 s in the
+  unit job, 13 s in the integration shard and 2 s in the chart's job; no end-to-end case. **How it worked:**
+  six helpers in all, at most three at a time, no two on the same file; it wrote the contracts first and the
+  corrections after. **Not built by its report:** the badge on the version list (its rows carry no file
+  digests), the restore's test, one variant of a test. **Sent back at 15:50 with:** the rebase (its migration
+  and its decision and gap numbers behind those `main` holds), the wiring package 3 left for it (the verdicts
+  that let a local npm bundle be served, the counter of requests to remotes, the fetch's configuration and
+  the repository member that switches it off, Debian's coverage in the API), the badge on the version list if
+  it can be had without a query per row, the restore's case if it costs seconds, the chart's tests green with
+  the values' copy. **Not verified by its report:** signatures made by real clients; a live refresh of the
+  shipped root; real timestamp authorities beyond the chains read from twelve nuget.org packages; the heap
+  bound of the read is asserted by no test.
 - **The pipeline of the correcting push (run 44902596352) ended at 13:52 with one red job, `integration (shard
   b)`, which holds no release back; its repair landed at 14:10.** One test of the area `upstream` holds
   every table that references a repository by a cascading key in one of two lists, purged with a retired
@@ -2312,8 +2382,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   declaration, check 18 of the kit, the store, the origin, each format's detector; (2) verification and trust,
   the anchors, the API, events and metrics; (3) the formats' wire behaviour (OCI's attachment tags out of the
   lists and following their image, mirror, the background fetch, npm's keys and attestations endpoints, Ansible's
-  upload of signatures); (4) the UI. **Package 1 is landed (2026-11-21, 12:55, run record); 2 and 3 are in work
-  since 12:56** in parallel, 4 follows 2's operations. **One question of the planner for the owner (Q-SIG-34), told to him at 11:20 with its default, unanswered when he left:**
+  upload of signatures); (4) the UI. **Package 1 is landed (2026-11-21, 12:55, run record), package 3 is landed
+  (the same day, run record), package 2 is in work since 12:56,** 4 follows 2's operations. **One question of the planner for the owner (Q-SIG-34), told to him at 11:20 with its default, unanswered when he left:**
   what a virtual npm repository's keys endpoint serves before Quader signs local packages: (a) the union of its
   members' keys, with `npm audit signatures` reporting every local package as unsigned until the second stage
   (the planner's recommendation, H-1176); (b) no keys; (c) signing of local npm packages pulled into the first
