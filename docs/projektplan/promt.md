@@ -564,6 +564,9 @@ records the recorder that tells such a stall apart).
 - `TestJobs`, the case of 100 coalesced enqueues (integration, area `coordination`), made three executions where
   one or two are allowed, on a loaded machine where enqueues 8 ms apart took 2.6 s; alone it passes (2026-11-21).
   A test whose bound depends on the machine's speed.
+- The clients' cases for the download limits (five formats, end to end) wait a fixed three seconds for a new rule
+  to reach every replica; a replica that takes longer counts the first document against the instance and the
+  archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -939,7 +942,22 @@ runs are in `git log`; this section holds the current state.
   client asks for the archive, or the second usage dimension of `upstream` counts a row twice. A builder reads the
   leg's artifacts and the two specifications for it (since 01:19). If the two features meet in a case neither page
   decides (who pays for the bytes of a background download a probe started), that goes to the owner as a decision
-  with what every format does today, and is not picked in code. **The fourth red leg, at 01:28, cause not known
+  with what every format does today, and is not picked in code. **Cause found (01:33): a race in the test, no
+  defect of the product, and both suspicions were wrong.** The case's repository is a local one, so no probe starts
+  a download in it; and the second usage dimension is written to the usage store alone, never to the counters that
+  enforce a limit. What happened: the rule allows one cached byte an hour; the first install sent four documents
+  (2,411 bytes) and asked for the archive 20 to 60 ms later; each replica adds its bytes to the shared counter at
+  its own flush once a second, and the archive's check reads that counter; when one of the three replicas flushed
+  inside those milliseconds, the hour was used up and the archive was refused, as R-LIM-017, R-LIM-018 and R-LIM-021
+  decide. The case expected the other outcome of the race; by the builder's estimate from the timings it loses one
+  run in eight to ten, and the leg had passed eight times on 2026-11-20. The cases of npm, NuGet, OCI and Debian
+  read a document, wait two seconds and then run the client, which R-LIM-039 describes; Ansible's now does the same
+  (one commit of the type `test`, one install fewer, held for the end of the nightly; compiled and linted, not run
+  on a cluster yet). **The question of who pays for a background download a probe starts is decided already**
+  (R-LIM-037, Q-LIM-54: the client that probed, as uncached bytes and one upstream request; nothing of
+  `cachedBytesPerHour`), so nothing goes to the owner. The other formats' limits cases passed tonight in `oci`,
+  `deb` and `nuget`. Left as it is, for every format: the cases wait a fixed three seconds for a new rule to reach
+  every replica (section 8). **The fourth red leg, at 01:28, cause not known
   yet:** `e2e (ha-faults)`, `TestHAFaults_ValkeySlow` (Valkey answers every command up to 2 s late for three minutes
   under the npm load). Every npm command exited 0 and `/readyz` stayed 200; but 176 of 37,217 requests of the load,
   all tarballs, were answered 429 after almost exactly 10 s, and the p99 while Valkey was slow was 4.07 s against the
@@ -971,7 +989,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (01:30), four builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnoses of the nightly's Ansible leg and of its slow-Valkey leg); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
+- **In work** (01:33), three builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's slow-Valkey leg); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case):
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
