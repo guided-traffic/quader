@@ -1309,6 +1309,18 @@ runs are in `git log`; this section holds the current state.
   owner; rebased without a conflict, links and check exit 0, the count test at 1,149 requirements; it does not
   touch the chart's page); its worktree and branch are removed. Its three packages follow the first stage's.
   **Found by it and left (section 8):** the decisions' index has no rows for the second stage's decisions.
+- **The pipeline of the ClamAV change's push (run 44910514928) ended at 15:29 with two red jobs, neither of
+  which holds a release back; their repair is in work since 15:30.** `integration (shard b)`: the area
+  `packages` holds the clients the formats list names per format, and the new format `clamav` with its client
+  `freshclam` was not in what the test expects (the ClamAV builders had run the areas `malware` and
+  `upstream`). `UI layout checks`: the admin area's list of repositories scrolls 7 px sideways at 1,280 px in
+  one state; the builders had rendered at 1,440 and 390 px, the job renders more widths, and the run before
+  was green there. The purge test of the run before is green in this run (the repair of 14:10 holds). One
+  builder repairs both in two commits, looks for further lists of formats that a new format must join, and
+  writes both lessons onto the developer pages (the area to run for a new format; a screen is rendered at
+  every width of the pipeline's job). It lands with or before the signatures' third package. **For every
+  builder's brief from now on:** a UI change is rendered at every width the pipeline's job renders, and a new
+  format runs the integration area `packages`.
 - **In work since 15:16, two builders on `main` with the ClamAV change:** **the client certificates of the
   definitions' endpoint** (R-CLAMAV-010; the endpoint key, the certificate subject and its one rule, usage and
   request log, the chart's passthrough per ingress controller, the read-only lines on the registry's page, the
