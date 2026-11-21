@@ -584,12 +584,6 @@ records the recorder that tells such a stall apart).
   deadlock check picks; not fixed.
 - The settings answer of the malware scanning counts the unchecked blobs over all items at every read
   (`backlog.unchecked`), costly on a large installation (its builder's note, 2026-11-20; not measured).
-- **The check `scanner` on the System page says only its name** (seen on 2026-11-20): Object store and Valkey have a
-  sentence that says what a failing check costs, `scanner` has none, so the header says "Degraded" and the row
-  "scanner", and a reader cannot tell an analyser that broke from one that was never installed, which is the state
-  of every local stack and every render since the scanner role. The specification still names two checks that can be
-  degraded; `scanner` is the third. Open: a sentence for it, or the server reporting "not installed" apart from
-  "failing".
 - On the System page at 1024 and 390 px the header's time wraps when two replicas are lost (the layout check's
   "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
   breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
@@ -661,10 +655,6 @@ records the recorder that tells such a stall apart).
   (`deploy/helm/quader/templates/_malware.tpl`, named so in R-HA-069), and the option takes the path of `clamd`'s
   configuration, not a switch: `no` is read as a file name. The update itself succeeds. The line has to go from the
   rendered configuration and from the requirement's list; not fixed.
-- **The chart checks no name's length**: `quader.fullname` cuts at 50 characters, and the longest name built from it,
-  the Service `<fullname>-malware-scanner-clamav`, is a valid DNS label only up to 40 (before the rename of
-  2026-11-21 the limit was 47, with `-packages-scan` at 49). A release name between 41 and 50 characters fails at
-  the API server and not at the render. Written down in Q-HA-372 and the developer page of the chart; not fixed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -1236,9 +1226,36 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (08:37): two builders (the names an operator reads, the scanner replicas on the screens); the system
-  repositories' commit passes the full unit run since its builder corrected the count (08:27) and lands when the
-  rename's pipeline has ended. **What the rename's builder reported and left is
+- **In work** (09:07): one builder (the scanner replicas on the screens). **Landed on 2026-11-21 at 09:05 in one
+  push, after the rename's pipeline had ended green on every job (09:04):** the system repositories' section, the
+  names an operator or an auditor reads of a scanner, and the rule's extension in `CLAUDE.md` (pipeline
+  44883240572). The two builders' commits were collected on a landing branch without a conflict; on its tip, each
+  exit 0: build, the full unit run, generate-check, the UI tests (1,811), the UI lint, links and check; the
+  owner's values rendered against its chart (35 objects, his release name passes the new check of the names'
+  length); the owner's UI backend started with it from the main checkout and answers ready, its two scanner checks
+  under the new names. **The names, as built** (builder from 08:08 to 09:00, one commit of 63 files): the label
+  `listener` of a link carries the unit's name at both ends (`vuln-scanner-trivy`, `malware-scanner-clamav`; `scan`
+  stays, the scan listener of `packages` runs no tool); the log field `component` of both scanner processes and of
+  the signature database's loader, which is a part of its unit; the readiness checks `vulnScannerTrivy` and
+  `malwareScannerClamav`, one name per unit on both sides, with a sentence each on the System page that names the
+  tool (the image scanner's had none); the system subjects and the usage records' credential
+  (`vuln-scanner-trivy`, `malware-scanner-clamav`); the components' names in start, stop and drain messages. The
+  chart computes the longest name it builds from its table of kinds and its other suffixes and fails the render
+  with the name, its length and what fits (today a `<fullname>` of 40 characters); `quader.fullname` is cut no
+  more. Kept on purpose: the error codes `scanner_busy`, `scanner_draining`, `scanner_unavailable` and
+  `scanner_lost` (they answer for whichever scanner is called), the worker's task subjects, the table
+  `malware_scanners`. **Its decisions:** Q-HA-373 (the owner's sentence, which moves the boundary of Q-HA-372),
+  Q-HA-374, Q-OPS-221, Q-OPS-222. **Gates of the builder, each exit 0:** build, the full unit run, generate-check,
+  chart lint and tests, lint, links and check, the UI tests and lint, the areas `vulnimage`, `malware`, `limits`,
+  `authz`, `server` and `tls`, and the set `vuln` on a cluster of its own with an image tag of its own, the commit
+  of a pod read before and after. **Looked at by the development agent** (rule 11, the System page at 1440 px dark,
+  rendered from the main checkout): the ready replica shows both warnings with their sentences, "Malware scan: this
+  worker has no ClamAV scanner to call …" and "Image scanning: the Trivy scanner of this replica cannot analyse
+  images …"; a lost replica's row of before the change still shows the bare old name until the registry drops it.
+  **What an installation sees at the upgrade:** dashboards, alert rules and log queries that select the old values
+  match nothing and are edited by hand; usage rows written before keep the old credential; a release whose
+  `<fullname>` is longer than 40 characters fails the render. **Not verified:** a rollout with both versions at
+  once (a token signed by one should be refused by the other: read, not tested); the German sentences in a browser. **What the rename's builder reported and left is
   built at once** (the owner, 2026-11-21, to that report: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten.
   Das ist alles wichtig und muss umgesetzt werden"), in two packages on top of the rename's commit, both since
   08:08. (1) **No name of a scanner unit that an operator reads is left without its tool:** the label `listener` of
@@ -1256,8 +1273,7 @@ runs are in `git log`; this section holds the current state.
   itself, a gone pod's row goes as the other replicas' rows go, what a scanner reports is bounded, and no end-to-end
   set or leg is added. Both builders run the set `vuln` on a cluster of their own; the image tag of the development
   profile is shared on the machine, so they build and load it under one lock and check the commit a pod runs.
-  **The system repositories of `upstream` stand apart on the project's page Repositories: built, sent back once for
-  a unit test, not landed yet** (builder from 07:53 to 08:21, one commit of 29 files; the owner, 2026-11-21, with a
+  **The system repositories of `upstream` stand apart on the project's page Repositories, landed at 09:05** (builder from 07:53 to 08:21, one commit of 29 files; the owner, 2026-11-21, with a
   picture of the page on his installation: "Bitte die internen Repos wie: scanner-trivy und scanner-clamav unter die
   Liste packen, am besten als seperate Tabelle die standardmäßig eingeklappt ist. Sowas wie system repositories, oder
   etwas besseres. Ohne den client einrichten button. Einfach bewusst abgesetzt."). **As built:** the list holds the
@@ -1284,7 +1300,7 @@ runs are in `git log`; this section holds the current state.
   the list's, because its table is indented and its action column holds the menu alone. **The development agent's
   full unit run on the commit failed in one test**, the count of requirements in the coverage tool's test (1,048
   against the expected 1,047: the builder had run the manual's Go packages only); corrected by the builder at 08:27,
-  the full unit run of 176 packages then exit 0. **What it costs:** four component tests (0.3 s), two render cases with 24 pictures, about 19 s of the job
+  the full unit run of 176 packages then exit 0. **Landed at 09:05** (the entry "In work" above). **What it costs:** four component tests (0.3 s), two render cases with 24 pictures, about 19 s of the job
   `UI layout checks`. **A change of shared state, by the documented way of rendering from a worktree:** the render
   seed switched four registries on (`ghcr`, `quay`, `ubuntu`, `debian-security`) in the database of the owner's UI
   stack. **Where a system repository still stands among the repositories a user works with, reported and unchanged,
