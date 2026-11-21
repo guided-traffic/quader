@@ -591,9 +591,20 @@ records the recorder that tells such a stall apart).
   (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
   updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
   analyser's move, left.)
+- In the integration stack a global read policy seeded for an OCI repository answered `deny.no-grant` to a token of the
+  default scope; the test of the gate's releases uses a project's reader instead (found on 2026-11-21 by that package's
+  builder, the cause not looked into: a fault of the setup or of the policy's evaluation).
+- One subtest of the integration area `npm` that stops Valkey got 503 `database_unavailable` at a host load above 30
+  while the replica's readiness checks timed out, and passed alone (seen once on 2026-11-21 by the builder of npm's
+  signatures; the same area's migrations had timed out for the gate's builder at a load of 80 that day).
 - The developer page on secrets (`docs/developer/secrets.md`) still lists the task `secrets-reencrypt` under what is
   deliberately not there and calls the API's steps work of a later milestone; both exist (found on 2026-11-21 by the builder
   that repaired the task's test, left).
+- A run of Test and Release stood in the queue for 17 minutes with no job offered to the runners (the push of 2026-11-21,
+  23:44): both scale sets' listeners polled without an error and were told of no job, the hosting service's status page
+  showed no incident, and one listener had logged a retried request to the service's broker in the minute of the push.
+  Cancelled and started again on the same commit at 00:01, the run got 24 runners within seconds. Not looked into
+  further; nothing in the runners' cluster was touched. If it recurs: the listeners' logs of the push's minute.
 - `make lint` states no time limit, so the linter stops at its own ten minutes on a loaded machine after it has printed its
   result (seen twice on 2026-11-21 at host loads of about 70, by a builder and at a landing; both passed with
   `--timeout 40m`). The cure is a stated limit in the target, as the unit run got one.
@@ -1533,6 +1544,107 @@ runs are in `git log`; this section holds the current state.
   the integration tests build a validator per stack and could share the parse the same way (about an hour,
   the gain not measured). **On the pipeline's runner** (run 44937450926): the package took 76.6 s where it had
   taken 599.5 s, and the unit job 8.9 minutes where it had taken 14.4.
+- **In work: the receipt attestations (since 21:40; reported at 23:43, since 23:44 brought onto `main`), the
+  repair of three defects of the first stage (since 22:44), and the screens of the gate (since 23:46).**
+  **The attestations' report** (stage 2, package 3; one commit on the base of 21:47): an in-toto statement
+  with a predicate of Quader's own in a bundle with the leaf certificate, made by a kind of the job `signing`
+  for every stored file of a format that attests something, after the checks' first verdicts or the bound,
+  made again on a malware verdict, a rotation or a retirement, gone with its item; kept in PostgreSQL for
+  every format and served by a route of the API, for an image of a local repository also as a referrer in
+  the current cosign's form, which a stored older signature tag of the same digest removes in its own
+  transaction; the format contract's method for all seven formats and its kit check (contract version 10);
+  the client setup's step **Verify**. **The real client:** `cosign verify-attestation` on a cluster of the
+  builder's own printed "The cosign claims were validated" for Quader's receipt of a pushed image and
+  refused another identity with the mismatch named. **Found out, which the specification had left open:**
+  the verifier library takes the trusted root Quader builds, without logs; beside Quader's referrer the
+  current cosign fails to verify an older signature tag of the same digest, and one deprecated flag that
+  its help does not list gives the older reading back. The cosign binary adds 136 MB to the OCI clients'
+  image. **Sent back at 23:44 with:** the rebase onto npm's signatures (one mechanism for the rows Quader
+  issues, not two), the gate's second package and the fourth shard; its migration as 00105; npm's line of
+  the step **Verify**, which npm's builder had left to it; one more end-to-end case, the real `cosign sign`
+  in a gated repository (the read the gate's repair opened); a check that the gate's new readers count no
+  receipt as a publisher's signature; and whether cosign reaches the leg in a smaller way than 136 MB in
+  the image every case loads. **The screens of the gate** (stage 3, package 3, R-SIG-074): the repository's
+  setting with its preview and its warning, a refused artifact with the reason and the release, the
+  confirmation with the impact count, the dashboard's lists; rendered at every width, with eight pictures
+  named for the development agent.
+- **Landed on 2026-11-21 at 23:44, with the two packages below: a fourth integration shard** (a commit of the
+  type `ci`; its builder worked from 23:23 to 23:42; decision Q-ARCH-565). **The rule,** in place of a list:
+  the suffix decides first (every `<format>local` in a, every `<format>remote` in c, every
+  `<format>virtual` in d, so a format's three areas stay on three shards), then the name (a: coordination,
+  mirror, npm, NuGet, proxy; c: api, backup, restore, storage, postgres, blob, valkey, the Bastion's areas
+  and the OCI conformance suite; d: `ci`, the vulnerability scanning's areas, `malware`, `signatures`,
+  `signing`; b: everything else, so every new platform area). **By the packages' times of the day's last
+  whole run** (72 packages; the table is on the test-cost page) the four shards take about 32, 31, 33 and 31
+  minutes where three took 38, 43 and 42; the development agent's own candidate (the virtual areas and the
+  signatures alone in d) would have left a at 38 and c at 42 and was dropped by the numbers. **What it
+  costs:** about 3.5 runner minutes more per push on the small runners (a shard's fixed part is about three
+  minutes of checkout, build and stack); the layout job (42 minutes) is then the push's longest job. A new
+  test of the pipeline's files asks the Makefile for each shard of the workflow's matrix and fails when a
+  package runs in none or in two (about 3 s of the unit job). **Checked at the landing:** that test, the
+  check of the workflow files and the evidence on the stack, each exit 0. **Not verified until its first
+  run ends:** the real minutes. Its worktree and branch are removed.
+- **Landed on 2026-11-21 at 23:44, two packages in one push: npm's registry signatures (stage 2, package 2) and
+  the gate's releases, previews and API (stage 3, package 2), with the repair of three findings of the
+  measurement.** Both builders reported at 23:21; the three commits were stacked (npm's, then the gate's
+  feature and its repair). **Done at the landing by the development agent:** one sentence of the user manual
+  merged from both sides (npm's new behaviour and the measured output without an identity), two developer
+  pages with both sides kept, and the gate's migration renumbered from 00103 to 00104 behind npm's (the
+  file, three pages, one comment in Go, the commit message; no logic).
+  **npm's signatures** (R-SIG-050 and the npm half of R-SIG-048 and R-SIG-049; decisions Q-SIG-156 to
+  Q-SIG-163, gaps H-1204 and H-1205, migration 00103; what it built and the real client's proof are in the
+  entry of its report below). Its builder brought it onto `main` from 22:11 to 23:21; only documentation
+  conflicted. **Asked at the send-back and answered:** Quader's own signature never passes the gate, for
+  three reasons at once (its role is a registry's, its subject is the signed message and not the tarball,
+  and it carries the identity), shown by one more step of its integration test (a gated local repository
+  refuses the signed tarball with the reason `missing` while the document still shows Quader's signature;
+  0.13 s); the version's tab had shown Quader's signature under "Origin confirmed by registry" but with a
+  badge "signer not trusted" of its own, corrected in one line (no badge on an entry Quader issued) with a
+  UI test of 22 ms; the sentence "No trust anchor knows this signer" stays on that entry until the screens'
+  second half gives it its line. **Its gates on the rebased commit, each exit 0:** build, the full unit run,
+  generate-check, the evidence, the complexity check, the lint (484 s), the chart's lint and tests, the UI's
+  install, lint and tests (the tests on the second run: one of the person-search tests failed at a load of
+  27, section 8); under the lock the areas `signing`, `signatures`, `upstream`, `packages`, `repository`,
+  `ansiblelocal`, `ocilocal`, `ociremote`, `postgres` and `backup` green, and **the area `npm` red once:**
+  one subtest that stops Valkey got 503 `database_unavailable` while the replica's readiness checks timed
+  out at a load above 30 (the area took 959 s where it had taken 364), and passed alone in 15 s; the
+  changed publish path writes nothing without an identity.
+  **The gate's second package** (R-SIG-070 to R-SIG-073, R-SIG-075, R-SIG-076; decisions Q-SIG-196 to
+  Q-SIG-205, gaps H-1223 to H-1225, migration 00104; its builder worked from 21:40 to 23:21): a holder of the
+  triage right who may read the repository releases one artifact for that repository's gate with a reason
+  and withdraws it (a release can be granted before the gate is switched on and for a pending artifact; it
+  is read only where the signatures do not pass, so a passing download costs nothing more; a released index
+  passes its platform manifests; the purge of a retired repository keeps releases); the impact of a change
+  of an anchor, a block or the switch runs the gate's own decision twice and is bounded, with the bound said
+  in the answer; the preview of a repository reads its stored items in batches and answers counts per
+  reason with up to twenty examples; the API's lists of refusals and releases and the members `refused` and
+  `gate` on the answers the screens need; the events of a release, the Bastion's feed for every change that
+  narrows what a gated repository serves; the table in backups and the withdrawal in the journal. **Gaps it
+  names:** a release keeps passing its artifact after the signer is blocked later (H-1223); a virtual
+  repository's `refused` and the version list show one gate each (H-1224); the impact of blocking an
+  identity of a signing service is a lower bound beyond the preview's limit (H-1225). **Its tests cost**
+  about 6 s in the integration area `signatures`, nothing measurable elsewhere.
+  **The repair of the measurement's findings 2, 6 and 7** (a commit of the type `fix`; decisions Q-SIG-211 to
+  Q-SIG-214, gap H-1229, ADR-237): a principal with the right to deploy to the repository reads through the
+  signature gate where a format declares that its signing tools read the artifact first, which OCI alone
+  does; the right is asked only after a decision that is no pass, the malware gate and the vulnerability
+  block are untouched, and the user manual has "Sign an image"; every reason's text speaks of "the
+  signature of its publisher or its build"; the answers name the artifact as its client does (`name:tag` or
+  the digest reference, `name@version`, an id and a version, a collection and a version, a file's path). The
+  format's signature declaration gained two members for it, so the contract's surface changed and its
+  version stays 9 (ADR-237). The header NuGet's client might print was not tried (not cheap), and nothing
+  is sent in it (Q-SIG-214). **Not verified by its report:** `cosign sign` and `notation sign` were not run
+  again after the repair, only the reads they make, with the pusher's token (200) and a reader's (403); the
+  new texts were not looked at in a real client; the feed's statement that lists gated repositories runs in
+  no test; a preview of a virtual repository and of a remote's fetch state at the unit tier only. **The
+  real `cosign sign` in a gated repository** becomes a case of the end-to-end set `oci`, asked of the
+  attestations' builder, who brings the cosign binary into that leg.
+  **By the development agent on the stack as it landed, each exit 0:** build, the full unit run,
+  generate-check, the evidence regenerated without a difference, links and check, the complexity check, the
+  chart's lint and tests, the UI tests and lint, the lint (with a stated limit). Under the lock on the stack, each exit 0, the two packages' combination that neither builder had run: the areas `postgres`, `signatures`, `signing`, `upstream`, `ocilocal` and `packages` (23:23 to 23:46, most of it the wait for the lock the builders share). The three diffs hold no
+  name the white-label rule forbids; the chart is untouched, so the owner's values render as before. The
+  owner's UI backend started with it before the push (both schema steps applied). **Their run stood in the queue for 17 minutes** with no job offered to the runners (section 8); cancelled and started again on the same commit at 00:01 of 2026-11-22, it ran at once. **Their release was cut at 00:13**; the unit job took 9.9 minutes. Their worktrees and
+  branches are removed.
 - **The measurement with real clients ended at 22:42 and landed at 22:43** (one commit of documentation; its
   builder worked from 21:48 to 22:42 with a Quader and a compose project of its own, the clients from the
   end-to-end sets' images, and a kind cluster of one node for the kubelet's lines; nothing of it is left
@@ -1567,7 +1679,9 @@ runs are in `git log`; this section holds the current state.
   development agent for (2), put to the owner ("With the owner"):** who may write to the repository reads
   through the signature gate where a format's signing tools read the artifact from the repository, which is
   OCI (Q-SIG-211). Its worktree and branch are removed.
-- **In work since 21:40 and 21:48, three builders on the stack of 21:47** (with npm's signatures that makes four):
+- **Started at 21:40 and 21:48, three builders on the stack of 21:47; the gate's second package landed at 23:44 and
+  the measurement at 22:43 (the entries above), the attestations are in work** (with npm's signatures that made
+  four):
   **package 3 of the signatures' second stage, the receipt attestations** (R-SIG-051 to R-SIG-054: the statement
   and its predicate, the bundle with the trusted root and the chain, the kind of the job `signing` that makes,
   renews and removes them, the API route and an image's referrer where it hides no older signature, the format
@@ -1680,7 +1794,8 @@ runs are in `git log`; this section holds the current state.
   b green again with the repaired test. **Shard b stands six seconds under the mark of 43.5 minutes** at
   which a fourth shard is cut (section 12 A), and the packages in work add to it; the fourth shard is
   started as a change of the pipeline as soon as one of the four builders has ended.
-- **In work since 21:01 on `main` with the signing identity: package 2 of the second stage, npm's signatures; the
+- **Landed at 23:44 (the entry of the two landings above; in work since 21:01 on `main` with the signing identity):
+  package 2 of the second stage, npm's signatures; the
   section started with it landed at 21:47 (the entry above)** (two builders, with the gate's rebase and package 3
   of the analyser's move that made four): **package 2 of the signatures' second stage, npm's registry
   signatures and the local keys endpoint** (R-SIG-050 and the npm half of R-SIG-048 and R-SIG-049: a signature
@@ -3114,7 +3229,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   **The second stage, Quader signs, is specified on `main` since 2026-11-21, 13:10** (R-SIG-044 to R-SIG-060,
   Q-SIG-53 to Q-SIG-74, R-HA-071, Q-HA-385, ADR-230, H-1183 to H-1193; **package 1, the signing identity, is
   landed since 20:58 the same day and nothing signs with it yet; its section of the settings page is landed
-  since 21:47; npm's signatures are in work since 21:01 (run record)**). **One signing
+  since 21:47; npm's registry signatures are landed since 23:44, proven with the real `npm audit signatures`;
+  the attestations are in work (run record)**). **One signing
   identity per installation:** an ECDSA P-256 key with a code-signing certificate of the company's CA. By the
   chart it is an existing Secret or a certificate the chart asks cert-manager for, mounted into the worker pods
   alone and read again without a restart, never in the database; by the admin area Quader makes the key, seals
@@ -3165,8 +3281,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   CPU, storage and duration, which are estimates.
   **The third stage, the gate per repository, is specified on `main` since 2026-11-21, 14:02** (R-SIG-061 to
   R-SIG-078, Q-SIG-75 to Q-SIG-95, ADR-231, H-1194 to H-1200; **package 1, the gate at the download, is landed
-  since 21:47 the same day (run record); releases, the preview and the screens are not built, so the setting
-  is reachable through the API alone**). **The setting:** a
+  since 21:47 the same day and package 2, the releases, the previews and the API, since 23:44 (run record); the
+  screens are not built, so the setting is reachable through the API alone**). **The setting:** a
   repository's detail section **Signatures** gets "only artifacts with a verified signature" (off by default)
   and optionally the anchors that count; never in a creation flow; narrowing it is any settings writer's,
   weakening it needs the right that weakening the malware gate needs. **What passes:** an artifact with one
@@ -3820,8 +3936,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
   with the signing identity: 37.8, 41.0 and 42.2 minutes (the new area `signing` adds 11.5 s to shard b). The run of
   21:47 to 22:34 with the gate: 38.2, 43.4 and 42.1 minutes. Shard b is the bucket of every package the Makefile's rule
   names in neither of the others, so every new area of the day fell into it; with npm's signatures (about 5 s), the
-  attestations and the gate's releases it passes the mark. **The fourth shard is being cut** (run record); what it
-  costs is read from its first run and told to the owner.
+  attestations and the gate's releases it passes the mark. **The fourth shard is cut since 2026-11-21, 23:44** (run
+  record, Q-ARCH-565): about 31 to 33 minutes each by the model, about 3.5 runner minutes more per push; the real
+  minutes are read from its first run.
 - **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, four red jobs in one
   day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
   revision columns (area `postgres`), the count of sealed columns the re-encryption task walks (area `repository`).
