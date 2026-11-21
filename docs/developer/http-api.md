@@ -529,11 +529,12 @@ share one database and one Valkey.
   At start-up `verifyKeyRingCanaries` ([wire_api.go](../../internal/app/wire_api.go)) refuses a ring that lacks a key that sealed
   values reference, seeds the canary of every key ID that has none, and refuses a ring that cannot open an existing canary.
   The job body of `secrets-reencrypt` ([wire_api.go](../../internal/app/wire_api.go), `registerSecretsReencrypt`) calls
-  `repository.ResealSecrets` for the one registered sealed column (`repository_secrets.sealed`) and records
-  `columns`, `resealed`, `current` and `failed` as its result; it fails permanently when `failed` is above zero (a value the
-  ring of this replica cannot open is left as it is), and fails permanently, naming the column, for a column registered later
-  without a walk of its own. The first feature that registers another column writes its walk (the sealed counter in `listq`
-  is the pattern).
+  the walks of the three registered sealed columns (`repository.ResealSecrets` for `repository_secrets.sealed`,
+  `debdata.ResealSigningKeys` for `deb_signing_keys.private_key`, `signingkey.Reseal` for `signing_identities.sealed_key`) and
+  records `columns` (the number of registered columns), `resealed`, `current` and `failed` as its result; it fails permanently
+  when `failed` is above zero (a value the ring of this replica cannot open is left as it is), and fails permanently, naming the
+  column, for a column registered later without a walk of its own. A feature that registers another column writes its walk
+  and adds it to the handler (the sealed counter in `listq` is the pattern).
 
 ## System overview (R-OPS-004, Q-OPS-175)
 

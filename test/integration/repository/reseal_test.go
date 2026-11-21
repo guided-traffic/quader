@@ -9,9 +9,9 @@ import (
 )
 
 // TestSecretsReencryptTask runs the task on a worker of the harness: the
-// registered sealed columns in this process are the repository secrets and the private keys of the Debian signing keys, so the job
-// walks them with repository.ResealSecrets and debdata.ResealSigningKeys and records what it did (R-ARCH-021
-// rotation step 3, R-OPS-019). The remote settings themselves are tested with the
+// registered sealed columns in this process are the repository secrets, the private keys of the Debian signing keys and the
+// uploaded key of the signing identity, so the job walks them with repository.ResealSecrets, debdata.ResealSigningKeys and
+// signingkey.Reseal and records what it did (R-ARCH-021 rotation step 3, R-OPS-019, R-SIG-047). The remote settings themselves are tested with the
 // component environment (remote_test.go: TestRemoteSecrets).
 func TestSecretsReencryptTask(t *testing.T) {
 	e := newStackEnv(t)
@@ -31,7 +31,8 @@ func TestSecretsReencryptTask(t *testing.T) {
 		t.Fatalf("job = %+v", job)
 	}
 	got := e.stack.Do(web.Replica, "GET", "/api/v1/system/jobs/"+id, tok, nil).JSON(t)["result"].(map[string]any)
-	if got["columns"] != float64(2) || got["failed"] != float64(0) || got["resealed"] != float64(0) {
+	// The three sealed columns: repository_secrets.sealed, deb_signing_keys.private_key and signing_identities.sealed_key.
+	if got["columns"] != float64(3) || got["failed"] != float64(0) || got["resealed"] != float64(0) {
 		t.Fatalf("result = %v", got)
 	}
 }
