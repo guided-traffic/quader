@@ -654,7 +654,20 @@ records the recorder that tells such a stall apart).
   the owner's installation on 2026-11-21). The chart's configuration says `NotifyClamd no`
   (`deploy/helm/quader/templates/_malware.tpl`, named so in R-HA-069), and the option takes the path of `clamd`'s
   configuration, not a switch: `no` is read as a file name. The update itself succeeds. The line has to go from the
-  rendered configuration and from the requirement's list; not fixed.
+  rendered configuration and from the requirement's list; not fixed. **Taken up by the ClamAV change** (the
+  specification of 2026-11-21 renders no such line; its chart package is in work), as is the finding above of the
+  task that fails where nothing fetches a database (the task is idle there and waits for a first set).
+- **A disabled repository's file page offers Download, which answers 404** through the content route (found on
+  2026-11-21 by the builder who removed the same for system repositories; the same kind of defect, not fixed).
+- **A version page's header shows the format's key (`oci`) instead of its name** (OCI (Docker)), on every version
+  page (seen in the renders of 2026-11-21; not fixed).
+- **The index of decisions in `docs/decisions.md` stops at Q-UI-844;** the UI decisions taken since are in the
+  specification but not in the index (noticed on 2026-11-21; not fixed).
+- **`repository-content.scss` is 227 bytes over its 4 kB warning budget** (a warning of the build, not its 8 kB
+  error; 170 bytes of it older than the change of 2026-11-21 that added 57).
+- **The server still hands out addresses and client setup for a system repository** (the content and download
+  addresses of the API's answers, the client setup operation); the UI leaves them out by the repository's name
+  (Q-UI-898, whose other option is the server's answer carrying the repository's kind). Read, not fixed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
