@@ -69,12 +69,16 @@ config:
       anonymous:
         requests_per_second: 1000
         burst: 10000
+  # The image scanning is off, as in values-dev.yaml (Q-HA-382): the drills judge no image's scan, so the restored installation starts
+  # no scanner pod and no node pulls the analyser's image (R-HA-070).
   vulnerabilities:
     sources:
       osv:
         mode: "off"
       kev:
         mode: "off"
+    images:
+      enabled: false
   # The image scanning's database is not fetched on a schedule either, as in values-dev.yaml (R-VULN-044).
   maintenance:
     tasks:

@@ -37,8 +37,12 @@ OSV_SCANNER_BIN := .bin/osv-scanner-$(OSV_SCANNER_VERSION)-$(GOVERSION)
 PROMTOOL_BIN   := .bin/promtool-$(PROMTOOL_VERSION)
 PROMTOOL_OS    := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 PROMTOOL_ARCH  := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
-# Trivy is a release binary too; its directory carries the pin, and the container scan job puts it on PATH.
-TRIVY_DIR      := .bin/trivy-$(TRIVY_VERSION)
+# Trivy is the binary of the analyser's image TRIVY_IMAGE (tools/versions.env, R-HA-070): `make trivy` takes it out of that image, so
+# the container scan runs the scanner's own analyser. Its directory carries the image's tag and the start of its index digest, so a new
+# digest of the same version is taken out again; the container scan job puts the directory on PATH (make trivy-dir).
+TRIVY_TAG      := $(lastword $(subst :, ,$(firstword $(subst @, ,$(TRIVY_IMAGE)))))
+TRIVY_DIGEST   := $(patsubst sha256:%,%,$(word 2,$(subst @, ,$(TRIVY_IMAGE))))
+TRIVY_DIR      := .bin/trivy-$(TRIVY_TAG)-$(shell printf '%.12s' '$(TRIVY_DIGEST)')
 TRIVY_BIN      := $(TRIVY_DIR)/trivy
 
 IMAGE       ?= guidedtraffic/quader:dev
@@ -133,9 +137,6 @@ image: ## Build the release image (IMAGE, VERSION, IMAGE_ARCH) for linux/IMAGE_A
 		--build-arg NODE_VERSION=$(NODE_VERSION) \
 		--build-arg GO_VERSION=$(GO_MOD_GO) \
 		--build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
-		--build-arg TRIVY_VERSION=$(TRIVY_VERSION) \
-		--build-arg TRIVY_SHA256_LINUX_AMD64=$(TRIVY_SHA256_LINUX_AMD64) \
-		--build-arg TRIVY_SHA256_LINUX_ARM64=$(TRIVY_SHA256_LINUX_ARM64) \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg DATE=$(DATE) \
@@ -286,8 +287,14 @@ versions-check: ## One version per tool (E0.2): go, Node, sqlc, oapi-codegen, th
 	  if [ "$$have" != "$(PROMTOOL_VERSION)" ]; then echo "promtool: $(PROMTOOL_BIN) is $$have, pin is $(PROMTOOL_VERSION)"; fail=1; fi; fi; \
 	if command -v promtool >/dev/null; then have="$$(promtool --version | sed -n 's/^promtool, version \([^ ]*\) .*/v\1/p')"; \
 	  if [ "$$have" != "$(PROMTOOL_VERSION)" ]; then echo "promtool: installed $$have, pin is $(PROMTOOL_VERSION)"; fail=1; fi; fi; \
-	if [ -x "$(TRIVY_BIN)" ]; then have="$$($(TRIVY_BIN) --version | sed -n 's/^Version: \(.*\)/v\1/p')"; \
-	  if [ "$$have" != "$(TRIVY_VERSION)" ]; then echo "trivy: $(TRIVY_BIN) is $$have, pin is $(TRIVY_VERSION)"; fail=1; fi; fi; \
+	if ! printf '%s' '$(TRIVY_IMAGE)' | grep -Eq '^[a-z0-9][a-z0-9./_-]*:[A-Za-z0-9._-]+@sha256:[a-f0-9]{64}$$'; then \
+	  echo "trivy: TRIVY_IMAGE '$(TRIVY_IMAGE)' is not <repository>:<tag>@sha256:<digest>"; fail=1; fi; \
+	if grep -Eq '^TRIVY_(VERSION|SHA256_[A-Z0-9_]*)=' tools/versions.env; then echo "trivy: tools/versions.env pins the release archive beside TRIVY_IMAGE"; fail=1; fi; \
+	if grep -Eiq '^FROM[[:space:]].*[[:space:]]AS[[:space:]]+trivy([[:space:]]|$$)|^ARG[[:space:]]+TRIVY_' Containerfile; then echo "trivy: the Containerfile builds the analyser or takes a pin of it, which only TRIVY_IMAGE carries"; fail=1; fi; \
+	if [ "$(PROMTOOL_OS)" = linux ] && [ -x "$(TRIVY_BIN)" ]; then have="$$($(TRIVY_BIN) --version | sed -n 's/^Version: \(.*\)/\1/p')"; \
+	  if [ "$$have" != "$(TRIVY_TAG)" ]; then echo "trivy: $(TRIVY_BIN) is $$have, TRIVY_IMAGE is $(TRIVY_TAG)"; fail=1; fi; fi; \
+	if command -v trivy >/dev/null; then have="$$(trivy --version | sed -n 's/^Version: \(.*\)/\1/p')"; \
+	  if [ "$$have" != "$(TRIVY_TAG)" ]; then echo "trivy: $$(command -v trivy) is $$have, TRIVY_IMAGE is $(TRIVY_TAG)"; fail=1; fi; fi; \
 	if command -v k6 >/dev/null; then have="$$(k6 version | sed -n 's/^k6 v\([^ ]*\).*/v\1/p')"; \
 	  if [ "$$have" != "$(K6_VERSION)" ]; then echo "k6: installed $$have, pin is $(K6_VERSION)"; fail=1; fi; fi; \
 	if docker buildx version >/dev/null 2>&1; then have="$$(docker buildx version | awk '{print $$2}')"; \
@@ -452,26 +459,29 @@ $(PROMTOOL_BIN):
 .PHONY: promtool
 promtool: $(PROMTOOL_BIN) ## Fetch promtool at its pin into .bin (the rule tests of the charts use it)
 
-# The release archive of Trivy at its pin, verified against the SHA-256 of the platform in tools/versions.env. The download
-# is tools/github-download.sh: with the job's token (GITHUB_TOKEN) when there is one, bounded retries, and a named HTTP error.
+# The analyser's binary out of TRIVY_IMAGE, by its index digest, for the host's architecture (R-HA-070): the binary every scanner pod
+# runs, so the container scan of the release image runs the scanner's own analyser, one version in the repository. Linux only: the
+# image's binary is a Linux one; on another system the analyser runs as the image itself. Docker pulls the image (CI: logged in to
+# Docker Hub); `docker create` starts nothing, `docker cp` copies the file out, and the copy must name the tag of the pin.
 $(TRIVY_BIN):
-	@mkdir -p $(TRIVY_DIR)
 	@set -euo pipefail; \
-	  want="$$(printenv "TRIVY_SHA256_$$(echo '$(PROMTOOL_OS)_$(PROMTOOL_ARCH)' | tr '[:lower:]' '[:upper:]')" || true)"; \
-	  if [ -z "$$want" ]; then echo "trivy: tools/versions.env has no digest for $(PROMTOOL_OS)/$(PROMTOOL_ARCH)"; exit 1; fi; \
-	  case "$(PROMTOOL_OS)" in linux) os=Linux ;; darwin) os=macOS ;; *) echo "trivy: no archive for $(PROMTOOL_OS)"; exit 1 ;; esac; \
-	  case "$(PROMTOOL_ARCH)" in amd64) arch=64bit ;; arm64) arch=ARM64 ;; *) echo "trivy: no archive for $(PROMTOOL_ARCH)"; exit 1 ;; esac; \
-	  name="trivy_$(TRIVY_VERSION:v%=%)_$${os}-$${arch}.tar.gz"; \
-	  tmp="$$(mktemp -d)"; trap 'rm -rf "$$tmp"' EXIT; \
-	  tools/github-download.sh "https://github.com/aquasecurity/trivy/releases/download/$(TRIVY_VERSION)/$$name" "$$tmp/$$name"; \
-	  if command -v sha256sum >/dev/null; then got="$$(sha256sum "$$tmp/$$name" | awk '{print $$1}')"; \
-	  else got="$$(shasum -a 256 "$$tmp/$$name" | awk '{print $$1}')"; fi; \
-	  if [ "$$got" != "$$want" ]; then echo "trivy: $$name has SHA-256 $$got, tools/versions.env pins $$want"; exit 1; fi; \
-	  tar -xzf "$$tmp/$$name" -C "$$tmp" trivy; \
-	  mv "$$tmp/trivy" $@
+	  if [ "$(PROMTOOL_OS)" != "linux" ]; then \
+	    echo "trivy: make trivy takes the Linux binary out of $(TRIVY_IMAGE) and runs on Linux only, not on $(PROMTOOL_OS); run the image instead: docker run --rm $(TRIVY_IMAGE) --version"; exit 1; fi; \
+	  case "$(PROMTOOL_ARCH)" in amd64|arm64) ;; *) echo "trivy: $(TRIVY_IMAGE) is not taken out for $(PROMTOOL_ARCH)"; exit 1 ;; esac; \
+	  mkdir -p $(TRIVY_DIR); id=""; \
+	  trap '[ -z "$$id" ] || docker rm -f "$$id" >/dev/null 2>&1 || true; rm -f "$@.part"' EXIT; \
+	  id="$$(docker create --platform linux/$(PROMTOOL_ARCH) $(TRIVY_IMAGE))"; \
+	  docker cp "$$id:/usr/local/bin/trivy" "$@.part"; \
+	  have="$$("./$@.part" --version | sed -n 's/^Version: \(.*\)/\1/p')"; \
+	  if [ "$$have" != "$(TRIVY_TAG)" ]; then echo "trivy: the binary of $(TRIVY_IMAGE) says $$have, the tag is $(TRIVY_TAG)"; exit 1; fi; \
+	  mv "$@.part" $@
 
 .PHONY: trivy
-trivy: $(TRIVY_BIN) ## Fetch Trivy at its pin into .bin/trivy-<version> (CI: container-scan puts the directory on PATH)
+trivy: $(TRIVY_BIN) ## Take the analyser's binary out of TRIVY_IMAGE into .bin/trivy-<tag>-<digest> (Linux only; CI: container-scan puts the directory on PATH)
+
+.PHONY: trivy-dir
+trivy-dir: ## Print the directory of make trivy's binary, relative to the repository (CI: container-scan appends it to GITHUB_PATH)
+	@echo $(TRIVY_DIR)
 
 .PHONY: chart-test
 chart-test: $(PROMTOOL_BIN) ## Chart render assertions of E0.7 and the promtool rule tests of the PrometheusRule (test/chart/test.sh); .out/test-chart.json

@@ -105,7 +105,7 @@ which bounds the install in time ([OS packages in the jobs](#os-packages-in-the-
 | chart | `make chart-lint`, `make chart-test` | `helm lint` and `helm template` over every value set of both charts (`deploy/helm/quader/ci`, `deploy/helm/quader-bastion/ci`, the dev profile), the render assertions of [test/chart](../../test/chart) for both charts, and the `promtool check rules` / `promtool test rules` run over the Bastion's PrometheusRule ([rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml)); `make chart-test` fetches promtool into `.bin` at `PROMTOOL_VERSION` of [tools/versions.env](../../tools/versions.env), checked against the SHA-256 of the platform; uploads `.out/test-chart.json` (`test-chart`) |
 | image | `make image IMAGE=guidedtraffic/quader:dev VERSION=dev` | the [Containerfile](../../Containerfile) for the runner's architecture, loaded into Docker; the image must run as `65532:65532` (R-HA-033); then `docker save` and the artifact `quader-image` (one day), which every kind leg of the run loads instead of building the image itself ([Q-ARCH-522](../spec/architecture.md#q-arch-522--the-kind-legs-load-the-quader-image-the-job-image-of-their-run-built-and-need-that-job)) |
 | SBOM generator (pinned syft, test image) | `make sbom-generator-check` | builds the SBOM generator of the release image and a two-platform test image with it, and asserts that both attestations name the pinned syft; needed by Semantic Release ([below](#sbom-generator)) |
-| Container Scan (Trivy, built image) | `make image IMAGE=quader:scan`, `make trivy`, then Trivy | Trivy (pinned `TRIVY_VERSION`) on the built image: fixed OS and library vulnerabilities of CRITICAL or HIGH, secrets and misconfigurations, less the findings accepted for a time ([below](#accepted-findings-of-the-container-scan)); SARIF uploaded as `trivy-container-report` |
+| Container Scan (Trivy, built image) | `make image IMAGE=quader:scan`, `make trivy`, then Trivy | Trivy (the binary `make trivy` takes out of `TRIVY_IMAGE`, the scanner pods' own analyser, one version in the repository, Q-HA-381) on the built image, which carries no analyser: fixed OS and library vulnerabilities of CRITICAL or HIGH, secrets and misconfigurations, less the findings accepted for a time ([below](#accepted-findings-of-the-container-scan)); SARIF uploaded as `trivy-container-report` |
 | integration (shard a, b, c) | `make integration-up`, `make test-integration SHARD=<a\|b\|c>`, `make integration-down` | the integration tier against the compose stack on TLS, on Valkey 9.1 only (no older line is guaranteed while Quader is in development); three legs with a stack each, by a rule that places a new package without anyone editing it ([Q-ARCH-544](../spec/architecture.md#q-arch-544--the-integration-shards-are-cut-by-a-rule-that-spreads-a-formats-areas-over-all-three)): shard `a` the packages `ci`, `coordination`, `mirror`, `npm`, `nuget` and `proxy` and every `<format>local`, shard `c` the packages `api`, `backup`, `valkey`, `vuln*` and `bastion*` and every `<format>remote`, and the OCI conformance suite, shard `b` every other one (every `<format>virtual` and every new platform area among them). From the package times of run 44693590111 about 37, 38 and 39 of the 45 minutes (a, b, c); an average format adds about 2 minutes to each. Uploads `test-integration-<shard>` and `profile-integration-<shard>` |
 | S3 conformance | `make silo-up`, `make s3-conformance`, `make silo-down` | the conformance tests of R-STOR-035 against Silo (the image `SILO_IMAGE`), served over TLS only; the server log is uploaded on failure |
 | which e2e legs the change runs (`e2e-scope`) | [.github/scripts/e2e-legs.sh](../../.github/scripts/e2e-legs.sh) | reads the changed paths of the push once and outputs, per leg (`npm`, `nuget`, `oci`, `deb`, `ansible`, `bastion`, `vuln`), whether it runs ([below](#which-e2e-legs-a-change-runs)); on `self-hosted`, about a quarter of a minute (a checkout of the whole history and the script); the legs it decides need it and run unless it said `false` |
@@ -286,10 +286,13 @@ cloudnative-pg after about 5 minutes). Their digests are pinned ([Q-ARCH-356](..
 
 ### Accepted findings of the container scan
 
-The container scan gates the release, and it scans everything in the image: Quader's own binary and the analyser of the image
-scanning, which is the upstream release archive at its pin. When the vulnerability database learns of a finding in a binary
-Quader does not build, the gate turns red on a commit that changed nothing, and stays red until upstream releases a new build.
-[.trivyignore.yaml](../../.trivyignore.yaml) is the place for such a finding, and only for it:
+The container scan gates the release, and it scans everything in the image: Quader's own binary on the distroless base. Until
+2026-11-21 the image also carried the analyser of the image scanning, the upstream release archive at its pin, a binary Quader does
+not build; since R-HA-070 the scanner pods copy the analyser from its own image (`TRIVY_IMAGE`), which this job does not scan
+([H-1003](../security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day)). When the
+vulnerability database learns of a finding in a binary of the image Quader does not build, the gate turns red on a commit that changed
+nothing, and stays red until upstream releases a new build. [.trivyignore.yaml](../../.trivyignore.yaml) is the place for such a
+finding, and only for it:
 
 - an entry names **one identifier**, the **path or paths in the image** it is accepted at (never the whole image), the **day it
   ends** (`expired_at`) and, in `statement` and the comment above it, **why the finding does not apply** where it is accepted;
@@ -301,8 +304,9 @@ Quader does not build, the gate turns red on a commit that changed nothing, and 
   base image's pin);
 - the entry goes in the commit that raises the pin of the binary it names.
 
-The first entry (2026-11-19) is CVE-2026-97054, a finding of `net/http`'s server in the analyser built upstream with Go 1.27.3;
-Quader runs the analyser as a command for one scan and never as a server
+The file holds no entry since 2026-11-21. Its first entry (2026-11-19 to 2026-11-21) was CVE-2026-97054, a finding of `net/http`'s
+server in the analyser built upstream with Go 1.27.3, at `usr/local/bin/trivy`, which the release image no longer has; Quader runs the
+analyser as a command for one scan and never as a server, and the finding stays with the pinned analyser
 ([image-scanning.md](../security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day)).
 
 ## OS packages in the jobs
@@ -446,7 +450,7 @@ inputs determine, from where, and what caches it; the development agent read it 
 | Go build cache | the same | – | the code | in setup-go's entry, partly | not cached (Q-ARCH-523) |
 | golangci-lint, govulncheck, gocyclo | lint, gosec, govulncheck, cyclomatic-complexity (all gating) | proxy.golang.org, inside the make target | pin and Go version | `lint` only | [go-tool](../../.github/actions/go-tool/action.yml) ([Q-ARCH-525](../spec/architecture.md#q-arch-525--the-go-tools-built-with-go-install-come-from-the-cache-keyed-by-their-pin-and-the-go-version)) |
 | kind, actionlint | versions, every kind leg, the platform matrix; workflows | proxy.golang.org | pin and Go version | none | go-tool |
-| The Quader image (`make image`) | every kind leg (10 per push of Test and Release, 25 in a scheduled nightly) | Docker Hub (`node`, `golang`, `alpine`), the npm registry and proxy.golang.org inside the build, github.com (the analyser), gcr.io | the commit | none: built in every leg | built once per run by the job `image`, loaded from the artifact `quader-image` ([Q-ARCH-522](../spec/architecture.md#q-arch-522--the-kind-legs-load-the-quader-image-the-job-image-of-their-run-built-and-need-that-job)); `image` and `container-scan` (gating) still build it, each once |
+| The Quader image (`make image`) | every kind leg (10 per push of Test and Release, 25 in a scheduled nightly) | Docker Hub (`node`, `golang`, `alpine`), the npm registry and proxy.golang.org inside the build, gcr.io (since 2026-11-21 no analyser: the image is 163 MB smaller) | the commit | none: built in every leg | built once per run by the job `image`, loaded from the artifact `quader-image` ([Q-ARCH-522](../spec/architecture.md#q-arch-522--the-kind-legs-load-the-quader-image-the-job-image-of-their-run-built-and-need-that-job)); `image` and `container-scan` (gating) still build it, each once |
 | The clients images (npm, NuGet, OCI, APT, Ansible) | the legs whose sets start client pods ([deploy/dev/e2e.sh](../../deploy/dev/e2e.sh)) | the Ubuntu and Debian archives, the npm registry, PyPI, dist.nuget.org, mcr.microsoft.com, Docker Hub, quay.io (F-158: archive.ubuntu.com) | the build context, the pins, the forwarder | none: built in every leg, no layer cache | [client-images](../../.github/actions/client-images/action.yml) ([Q-ARCH-520](../spec/architecture.md#q-arch-520--the-client-images-of-the-acceptance-suites-come-from-the-github-actions-cache-as-the-tar-of-docker-save-keyed-by-their-inputs)) |
 | npm packages of `web/` | web and ui-layout; the kind legs with browser journeys (access-long, ansible, bastion, vuln; nightly e2e, bastion, vuln, upgrade) | registry.npmjs.org | `web/package-lock.json` | setup-node's npm cache in web and ui-layout | the same cache in those legs too |
 | npm packages of the release tooling | Release Tooling, Semantic Release | registry.npmjs.org | `package-lock.json` | none | setup-node's npm cache in Release Tooling; Semantic Release unchanged (it holds the release secrets) |
@@ -459,7 +463,8 @@ inputs determine, from where, and what caches it; the development agent read it 
 | Go toolchain | every job with Go | github.com (`actions/go-versions` release asset) | the `go` line of `go.mod` | none (the pods are new) | unchanged; 5-minute step bound in gating jobs (F-153) |
 | Node.js, Helm, kubectl | the jobs that use them | the actions' own hosts (Helm: get.helm.sh, kubectl: dl.k8s.io) | the pins | none | unchanged; 5-minute step bounds in gating jobs |
 | Docker Buildx | every job that builds an image | the runner's copy, else github.com | the pin | the archive cached by pin and digest | unchanged ([Pinned tools in the jobs](#pinned-tools-in-the-jobs)) |
-| promtool, Trivy | chart; container-scan | github.com release assets | the pins | none | unchanged ([tools/github-download.sh](../../tools/github-download.sh), bounded) |
+| promtool | chart | github.com release assets | the pin | none | unchanged ([tools/github-download.sh](../../tools/github-download.sh), bounded) |
+| Trivy (`make trivy`) | container-scan; the `vuln` legs load the same image into kind | Docker Hub (`TRIVY_IMAGE`, by digest; 58.5 MB for arm64, 63.4 MB for amd64) | the pin | none | the binary out of the analyser's image since 2026-11-21 (R-HA-070), no GitHub download |
 | Playwright's browser | ui-layout, the kind legs with browser journeys | Playwright's download host | the locked Playwright | none | unchanged (Q-ARCH-526) |
 | OS packages | through [apt-install.sh](../../.github/scripts/apt-install.sh) | the Ubuntu archive | the runner image | the runner image carries them since 2026-11-19 | unchanged ([OS packages in the jobs](#os-packages-in-the-jobs)) |
 
@@ -891,6 +896,10 @@ number of branches is bounded (owner, 2026-10-31):
 - The Containerfile has no literal image or toolchain version; its build arguments come from
   `go.mod`, [web/.nvmrc](../../web/.nvmrc) and `tools/versions.env`, so there is nothing for the
   dockerfile manager to update.
+- Trivy (`TRIVY_IMAGE` of `tools/versions.env` and `trivy.image` of the chart, held equal by a chart test) is the group `trivy`: a new
+  digest of the same version merges by itself, a new version (patch, minor or major) is a pull request labelled `trivy-version` to
+  review, because it makes the scanners analyse every stored image again and may read another database schema
+  ([Q-HA-381](../spec/ha-and-helm.md#q-ha-381--one-pin-by-digest-the-charts-value-held-equal-by-a-chart-test-and-one-renovate-group-that-reviews-a-new-version)).
 
 ## Release flow
 
@@ -958,8 +967,8 @@ job checks out the tag.
 **The Containerfile** has three stages. `web` runs `npm ci` and `npm run build:embed` on the Node.js of
 `web/.nvmrc`; `build` cross-compiles the binary for the target platform on the build platform
 (`CGO_ENABLED=0`), so neither architecture is emulated; the final stage is the distroless base of
-`RUNTIME_BASE_IMAGE`, the binary and nothing else, as UID 65532. `make image` builds the same file for the
-host architecture.
+`RUNTIME_BASE_IMAGE`, the binary and nothing else, as UID 65532 (83.3 MB on arm64; 246.5 MB with the analyser it carried until
+2026-11-21, which the scanner pods now copy from `TRIVY_IMAGE`, R-HA-070). `make image` builds the same file for the host architecture.
 
 **The chart repository** is `https://guided-traffic.github.io/quader/`, served from the `gh-pages`
 branch: every release adds the packages of both charts and the merged `index.yaml`. The release's assets are the

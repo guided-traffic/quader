@@ -779,12 +779,12 @@ worker: CheckAnalysis ── store.Images.PutSBOM (gzip as answered, the version
 | The exemptions | [formathost/system_read.go](../../internal/formathost/system_read.go), [limits/subject.go](../../internal/limits/subject.go) | No block gate, no download, no probe; the subject `system`, limited by nothing (Q-OCI-230, Q-LIM-66) |
 | The links' TLS | [httpserver/link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go) | A listener that requires a client certificate of the internal CA listing the one kind's name it admits; the client side that presents the first pair of `server.tls`, checks its `client auth` usage and requires the server's kind name (R-ARCH-038, Q-ARCH-552); the link names (`LinkVulnScannerTrivy`, `LinkMalwareScannerClamav`, `LinkScan`) are the label `listener` of the material at both ends (Q-HA-373) |
 | The report of itself | [wire_scanner_report.go](../../internal/app/wire_scanner_report.go), [internal/scanreport](../../internal/scanreport/report.go), [scanlisten/replicas.go](../../internal/api/scanlisten/replicas.go), [cluster/scanner_replicas.go](../../internal/cluster/scanner_replicas.go) | Every `system.heartbeat_interval` the scanner puts its state, reason, Trivy's version (`Service.AnalyserVersion`), its slots and the newest database its directory holds (`Service.Database`) to `/scan/v1/replicas/{uid}` on the scan listener, `draining` at `SIGTERM`, `DELETE` at its end; `packages` takes the kind from the client certificate (`vulnerabilities.images.registry.client_name` is `trivy`), checks the shape and writes `scanner_replica`; `GET /api/v1/system/scanners` lists it (R-OPS-048, Q-OPS-223, Q-OPS-225). The loader reports nothing |
-| The chart | [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml), [_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl) | The Deployment `<fullname>-vuln-scanner-trivy` with its containers `quader` and `database` and the volume `trivy-db`, its two Services, its policy, the managed keys, the checks of Q-HA-318 and Q-HA-380 ([helm-chart.md](helm-chart.md)) |
+| The chart | [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml), [_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl) | The Deployment `<fullname>-vuln-scanner-trivy` with its init container `trivy` (the analyser from `trivy.image`, [below](#the-analyser-from-its-own-image-r-ha-070)), its containers `quader` and `database` and the volumes `trivy-bin` and `trivy-db`, its two Services, its policy, the managed keys, the checks of Q-HA-318 and Q-HA-380 ([helm-chart.md](helm-chart.md)) |
 
 **Run it locally.** `make ui-dev-backend` runs the role `all`, which builds no image scanner: with `vulnerabilities.images.scanner.url`
 empty the job ends at once with the result "no image scanner is configured" and touches no row, the images show `pending_scan` and
 `GET /api/v1/system/scanners` answers `replicas: "none"` for `trivy` (Q-ARCH-563). The image scanning runs on the kind profile `vuln`
-([e2e.md](e2e.md)). The integration stack starts a scanner replica beside `web` and `worker` with `StackOptions{TLS: true}`
+alone ([e2e.md](e2e.md)), which loads the analyser's image into the nodes; every other profile switches it off (Q-HA-382). The integration stack starts a scanner replica beside `web` and `worker` with `StackOptions{TLS: true}`
 ([test/integration/vulnimage](../../test/integration/vulnimage)), with the analyser replaced at the seam for both steps
 (`app.VulnOverride.ImageAnalyser`), and, where a test needs the loader, a replica of the kind `trivy-db` beside it with the same pair and
 database directory (`flow.startLoader`, `app.VulnOverride.LoaderPoll` for a poll of 200 ms). Elsewhere the flow writes the database
@@ -869,6 +869,58 @@ process namespace, could not read `/proc/1/environ` or `/proc/1/maps` of `quader
 It could read those of a `sleep` it started itself. `/metrics` of both containers answered 200 with the `process_*` series (57 to 61 MB
 resident while idle). Not measured: a detection against the real database in a pod (the planner measured 0.06 to 0.32 s per detection in
 containers, R-VULN-046), the worker's transaction that applies one, anything on amd64 or on the runners.
+
+### The analyser from its own image (R-HA-070)
+
+The release image holds the binary of Quader alone. The analyser reaches a scanner pod through its init container `trivy`, which runs the
+publisher's image `trivy.image` (the pin `TRIVY_IMAGE` of [tools/versions.env](../../tools/versions.env), by its index digest) with the
+image's own `cp` and copies `/usr/local/bin/trivy` into the volume `trivy-bin`; the container `quader` mounts it read-only at `/opt/trivy`,
+where `vulnerabilities.images.binary` points by default ([vulnerabilities.go](../../internal/config/vulnerabilities.go)). One version of the
+analyser in the repository ([Q-HA-381](../spec/ha-and-helm.md#q-ha-381--one-pin-by-digest-the-charts-value-held-equal-by-a-chart-test-and-one-renovate-group-that-reviews-a-new-version)):
+
+```text
+tools/versions.env  TRIVY_IMAGE=docker.io/aquasec/trivy:<tag>@sha256:<index digest>
+  ├─ deploy/helm/quader/values.yaml  trivy.image (the same line; TestR_HA_070_* holds them equal; Renovate group trivy moves both)
+  │    └─ init container trivy: cp /usr/local/bin/trivy /opt/trivy/trivy ──▶ trivy-bin ──(read-only)──▶ quader: /opt/trivy/trivy
+  ├─ make trivy: docker create --platform linux/<arch> + docker cp ──▶ .bin/trivy-<tag>-<12 hex>/trivy ──▶ the job container-scan (PATH)
+  ├─ deploy/dev/up.sh (profile vuln): docker pull, tag quader-e2e-trivy:dev, kind load ──▶ values-vuln.yaml trivy.image
+  └─ make versions-check: the digest, no TRIVY_VERSION or TRIVY_SHA256_* pin, no trivy stage, the binary and a trivy on PATH say <tag>
+```
+
+| Part | File | What it does |
+|---|---|---|
+| The init container and the volume | [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml) | `trivy` with the restricted security context of every container, `trivy.resources`, the one mount `trivy-bin` read-write; `trivy-bin` an `emptyDir` of 256Mi; `quader` requests 1280Mi of ephemeral storage, 256 MiB of it for the copy (Q-HA-378) |
+| The values | [values.yaml](../../deploy/helm/quader/values.yaml), [values.schema.json](../../deploy/helm/quader/values.schema.json) | `trivy.image`, `trivy.pullPolicy`, `trivy.resources` |
+| The pin and its updates | [tools/versions.env](../../tools/versions.env), [renovate.json](../../renovate.json) | `TRIVY_IMAGE`; the group `trivy`, a digest merges by itself, a version is a pull request labelled `trivy-version` |
+| The release image | [Containerfile](../../Containerfile), `make image`, [build.yml](../../.github/workflows/build.yml) | no stage and no build argument of the analyser |
+| The binary on a developer's or a runner's machine | [Makefile](../../Makefile) `trivy`, `trivy-dir`, `versions-check` | out of `TRIVY_IMAGE` on Linux; on macOS `make trivy` refuses and names the image, which runs as `docker run --rm <TRIVY_IMAGE> …` (Q-HA-388) |
+| The container scan | [release.yml](../../.github/workflows/release.yml) job `container-scan` | `make trivy`, then the directory of `make trivy-dir` on `PATH` for `aquasecurity/trivy-action` with `skip-setup-trivy` |
+| The test profiles | [values-dev.yaml](../../deploy/dev/values-dev.yaml), [values-vuln.yaml](../../deploy/dev/values-vuln.yaml), [values-restore.yaml](../../deploy/dev/values-restore.yaml), [up.sh](../../deploy/dev/up.sh), [k8s-matrix.sh](../../deploy/dev/k8s-matrix.sh) | the image scanning off but in `vuln`, which loads the image into the nodes; the platform matrix reads the init container back and loads nothing (Q-HA-382, Q-HA-386, Q-HA-387) |
+
+Tests, one tier each: the chart test `TestR_HA_070_TheLoaderWritesTheDatabaseThatTheScannerReadsReadOnly` (the init container, its command,
+security context, resources and mount, `trivy.image` equal to `TRIVY_IMAGE`, a mirrored image with `global.imagePullSecrets`, nothing of it
+in another pod); `make versions-check`; and the end-to-end case of the set `vuln`, which reads the live pod's init container and its exit
+code, the mounts, and the analyser version every image scanner reports, which only the copied binary can answer.
+
+**Measured on the kind cluster** (2026-11-21, a cluster of this machine, an Apple M1 Ultra of 20 cores, arm64, under a load of 30 to 80 from
+other builders, so every figure is an upper bound; a measurement, not a test). The release image is 83,309,810 bytes, 246,494,610 with the
+analyser before, and its file list (`docker create` and `docker export`) has `usr/local/bin/quader` alone. Two scanner pods on nodes that
+had never held the analyser's image, with the image scanning switched on in the default profile and the image of the pin from Docker Hub:
+
+| Step | Pod 1 | Pod 2 | From |
+|---|---|---|---|
+| The pull of `TRIVY_IMAGE` by the node (58,556,870 bytes as the kubelet counts them) | 15.6 s | 13.5 s | the kubelet's event `Pulled` |
+| The copy: the init container's process from its start to its end | 0.33 s | 0.95 s | containerd's `startedAt` and `finishedAt` of the container |
+| The scanner's start: the container `quader` started to its log line `scanner listener bound`, which follows the analyser's answer of its version | 1.69 s | 0.59 s | containerd and the scanner's log |
+| The container `quader` started to the pod `Ready` | about 2.6 s | about 2.0 s | the pod's condition (seconds) |
+| Scheduled to `Ready` | 21 s | 19 s | the pod's conditions |
+
+The copy belongs to `65532:65532` with mode 0755 and 163,184,800 bytes; the init container ran as user and group 65532 with a read-only root
+file system, no capability, no new privileges and the runtime's seccomp profile, with `trivy-bin` its one writable mount; `quader` mounts
+`trivy-bin` and `trivy-db` read-only (containerd's runtime spec of each container, read with `crictl inspect` on the node). The load of the
+Quader image into the four kind nodes took 41 s for the image without the analyser (`up.sh`, under a load of about 60) and 85.7 s for the
+image with it (`kind load docker-image`, under a load of 35 to 52), so a leg that loads the image alone gains tens of seconds on this machine;
+the runners were not measured.
 
 ## Tests that pass now
 

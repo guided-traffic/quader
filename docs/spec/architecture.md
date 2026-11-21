@@ -610,7 +610,7 @@ nothing worth taking.
   `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. The role `all` builds no scanner; with the
   first empty its image scanning's job ends at once (Q-ARCH-563).
 - **With the detection in the scanner** (owner, 2026-11-21, [ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image);
-  built on 2026-11-21 but for the analyser's path, which stays the release image's until R-HA-070's init container is built). A scanner of
+  built on 2026-11-21, the analyser's path with R-HA-070's init container included: the release image carries no analyser). A scanner of
   the kind `trivy` serves `POST /scan/v1/detections` beside `POST /scan/v1/analyses`
   ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-048), runs its analyser from `/opt/trivy/trivy`, which an init container
   copied from the analyser's own image ([ha-and-helm.md](ha-and-helm.md) R-HA-070), and holds, read-only, the database it detects with
@@ -622,7 +622,9 @@ nothing worth taking.
   The process of every kind of the role is made not dumpable at the entry of `quader serve` (Q-VULN-211). Built:
   [wire_vuln_loader.go](../../internal/app/wire_vuln_loader.go), [internal/vuln/dbloader](../../internal/vuln/dbloader/loader.go),
   [scanner/detect.go](../../internal/vuln/scanner/detect.go), [wire_scanner.go](../../internal/app/wire_scanner.go) (no scanner in `all`),
-  [cmd/quader/serve.go](../../cmd/quader/serve.go).
+  [cmd/quader/serve.go](../../cmd/quader/serve.go), the default of `vulnerabilities.images.binary` in
+  [vulnerabilities.go](../../internal/config/vulnerabilities.go) and the init container in
+  [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml).
 
 Acceptance criteria:
 

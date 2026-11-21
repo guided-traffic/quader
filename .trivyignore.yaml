@@ -2,17 +2,8 @@
 # Every entry names one identifier, the paths in the image it is accepted at, the day it stops being accepted and why it
 # does not apply; internal/tools/ciworkflows refuses an entry without one of them. An entry past its day fails the scan again.
 # docs/developer/releasing.md#accepted-findings-of-the-container-scan
-vulnerabilities:
-  # The analyser of the image scanning is the upstream release archive of tools/versions.env, built upstream with Go 1.27.3.
-  # The finding is in net/http's server (the connection of an HTTP/1 request whose body exceeds MaxBytesReader's limit).
-  # Quader starts the analyser as a command for one scan ("image --input … --offline-scan", then "sbom …",
-  # internal/vuln/imagescan/analyser.go) and never as a server, so it accepts no request. Quader's own binary is built with
-  # the fixed Go and is not covered by this entry: the path is the analyser's alone.
-  # Goes when the analyser's pin is raised to a release built with Go 1.27.4 or later (none existed on 2026-11-19).
-  - id: CVE-2026-97054
-    paths:
-      - "usr/local/bin/trivy"
-    expired_at: 2026-12-19
-    statement: >-
-      Server-side finding of net/http in the bundled image analyser, which Quader runs as a one-shot command and never as a
-      server; no fixed upstream build on 2026-11-19.
+#
+# None today. The one entry until 2026-11-21 was at usr/local/bin/trivy, the analyser's path, which the release image no longer has:
+# the analyser comes from its own image into the scanner pods (R-HA-070), and what is known of it is H-1003 of
+# docs/security/image-scanning.md.
+vulnerabilities: []

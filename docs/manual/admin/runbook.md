@@ -166,7 +166,7 @@ The image scanning works in the scanner pods. Their spool holds the analyses and
 
 | Code | Usual cause |
 |---|---|
-| `scanner_unavailable` | No ready scanner pod; or the worker's certificate lacks the usage `client auth` (the worker logs "does not allow client authentication") or does not list `<fullname>-worker.<namespace>.svc`, so the scanner refuses the handshake and logs the names it found |
+| `scanner_unavailable` | No ready scanner pod: one that stays `Init:ErrImagePull` or `Init:ImagePullBackOff` cannot pull the analyser's image `trivy.image` (from Docker Hub by default; `kubectl describe pod` names the registry's answer; a mirror or images loaded on the nodes avoid it, [Operations](operations.md#vulnerability-scanning)); or the worker's certificate lacks the usage `client auth` (the worker logs "does not allow client authentication") or does not list `<fullname>-worker.<namespace>.svc`, so the scanner refuses the handshake and logs the names it found |
 | `registry_unavailable` | The scanner cannot reach port 8082 of the `packages` pods: a NetworkPolicy of the cluster that drops it, the `packages` pods not ready, or the scanner's certificate refused there because it does not list `<fullname>-vuln-scanner-trivy.<namespace>.svc` |
 | `pull_refused` | The scan listener refused the scan token: the worker and `packages` read different key rings, or their clocks differ by more than a minute |
 | `scanner_busy` | Every slot is taken; not an error, but a backlog: raise `vulnScannerTrivy.replicaCount` |
@@ -175,7 +175,7 @@ The image scanning works in the scanner pods. Their spool holds the analyses and
 
 **What to do.**
 
-1. `kubectl get pods -l app.kubernetes.io/component=vuln-scanner-trivy` and `/readyz?verbose=1` on a scanner pod's port 8081: the check `vulnScannerTrivy` names the reason: `certificate` (the pair or the internal CA did not load, or the pair does not allow client authentication), `analyser` (the binary does not answer its version), `spool` (the working directory is not writable) or `draining`. **System** lists each scanner pod with the database it holds; a pod that names "an older database" for long has a loader that cannot read the new one: `kubectl logs <pod> -c database`.
+1. `kubectl get pods -l app.kubernetes.io/component=vuln-scanner-trivy` and `/readyz?verbose=1` on a scanner pod's port 8081: the check `vulnScannerTrivy` names the reason: `certificate` (the pair or the internal CA did not load, or the pair does not allow client authentication), `analyser` (the binary at `/opt/trivy/trivy`, which the init container `trivy` copied from `trivy.image`, does not answer its version), `spool` (the working directory is not writable) or `draining`. **System** lists each scanner pod with the database it holds; a pod that names "an older database" for long has a loader that cannot read the new one: `kubectl logs <pod> -c database`.
 2. For a certificate refused on a link, check its usages: `openssl x509 -in tls.crt -noout -ext extendedKeyUsage` must list `TLS Web Client Authentication` beside `TLS Web Server Authentication`, or name no usage at all. With cert-manager add `client auth` to `usages` ([TLS and certificates](tls-and-certificates.md#the-links-of-the-image-scanning)).
 3. For `pull_refused`, compare the key ring Secret of the worker and `packages` Deployments and the nodes' clocks.
 

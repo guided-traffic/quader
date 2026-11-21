@@ -984,7 +984,7 @@ jobs:
         with:
           cache-binary: false
 
-      - name: Log in to Docker Hub (base image pulls)
+      - name: Log in to Docker Hub (base and analyser image pulls)
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
@@ -993,17 +993,16 @@ jobs:
       - name: make image (for the scan)
         run: make image IMAGE=quader:scan
 
-      # Trivy at its pin from tools/versions.env, checked against its digest; trivy-action then installs nothing
-      # (skip-setup-trivy), so the scan does not depend on setup-trivy's cache or its silent download.
+      # The scanner's own analyser: make trivy takes the binary out of TRIVY_IMAGE of tools/versions.env by its index digest (the
+      # image the chart's init container copies into every scanner pod, R-HA-070) and checks that it names the pin's tag; trivy-action
+      # then installs nothing (skip-setup-trivy), so the scan does not depend on setup-trivy's cache or its silent download.
       - name: Install the pinned Trivy
         timeout-minutes: 16
         id: trivy_install
-        env:
-          # Read by tools/github-download.sh (the Trivy archive): sent to github.com only (Q-ARCH-356).
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           make trivy
-          echo "$PWD/.bin/trivy-${TRIVY_VERSION}" >> "$GITHUB_PATH"
+          echo "$PWD/$(make -s trivy-dir)" >> "$GITHUB_PATH"
 
       # .trivyignore.yaml: the findings accepted for a time, each with its path in the image and the day it ends.
       - name: Run Trivy vulnerability scan

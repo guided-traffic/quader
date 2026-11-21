@@ -212,6 +212,17 @@ worker:
   extraEnv: []
   pools: []                             # example: [{name: vuln, queues: [vuln], replicaCount: 2}]; the main worker claims every queue no pool lists
 
+# ── Trivy: the init container trivy of vuln-scanner-trivy, which copies the analyser into the pod (R-HA-070) ────
+trivy:
+  image: docker.io/aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb  # the TRIVY_IMAGE of tools/versions.env, which a chart test holds it to: the publisher's multi-arch image; a mirror keeps the digest
+  pullPolicy: IfNotPresent
+  resources:                            # the copy of one binary of 163 MB (not measured)
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
 # ── vuln-scanner-trivy Deployment: quader serve --role scanner, Trivy (R-HA-065, Q-HA-372) ────
 # The analysis of container images for the worker's image scanning, <fullname>-vuln-scanner-trivy; rendered while
 # config.vulnerabilities.enabled and config.vulnerabilities.images.enabled are true. No secret of PostgreSQL, the object store or Valkey
@@ -232,7 +243,7 @@ vulnScannerTrivy:
     requests:
       cpu: 500m
       memory: 1Gi
-      ephemeral-storage: 1Gi
+      ephemeral-storage: 1280Mi         # 1 GiB and 256 MiB for the analyser's copy in trivy-bin (R-HA-070)
     limits:
       memory: 2Gi                       # one analyser per slot (config.vulnerabilities.images.memory_limit is its soft limit); an image that needs more ends this pod's analysis, never a worker
   database:                             # the container database, the loader of Trivy's database (R-HA-070, R-VULN-049)

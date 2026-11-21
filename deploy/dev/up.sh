@@ -355,15 +355,19 @@ else
   log "loading $IMAGE into the kind cluster"
   kind load docker-image "$IMAGE" --name "$CLUSTER" > "$LOGS/image-load.log" 2>&1 \
     || { tail -20 "$LOGS/image-load.log" >&2; die "kind load docker-image failed"; }
-  # The malware scanning is on in the `vuln` profile only (values-vuln.yaml): ClamAV's image of the pin, pulled by the host's Docker
-  # (logged in to Docker Hub in CI) and loaded into the nodes under a local tag, as the test upstreams are (Q-MAL-90).
+  # The malware scanning and the image scanning are on in the `vuln` profile only (values-vuln.yaml, Q-HA-382): ClamAV's image and the
+  # analyser's image of their pins, pulled by the host's Docker (logged in to Docker Hub in CI) and loaded into the nodes under a local
+  # tag, as the test upstreams are (Q-MAL-90, R-HA-070). No other profile starts a scanner pod or loads either image.
   if [ "$PROFILE" = "vuln" ]; then
-    docker image inspect "$CLAMAV_IMAGE" >/dev/null 2>&1 || docker pull -q "$CLAMAV_IMAGE" > "$LOGS/clamav-pull.log" 2>&1 \
-      || { tail -20 "$LOGS/clamav-pull.log" >&2; die "the pull of $CLAMAV_IMAGE failed"; }
-    docker tag "$CLAMAV_IMAGE" quader-e2e-clamav:dev
-    log "loading ClamAV ($CLAMAV_IMAGE) into the kind cluster as quader-e2e-clamav:dev"
-    kind load docker-image quader-e2e-clamav:dev --name "$CLUSTER" > "$LOGS/clamav-load.log" 2>&1 \
-      || { tail -20 "$LOGS/clamav-load.log" >&2; die "kind load of the ClamAV image failed"; }
+    for tool in clamav trivy; do
+      case $tool in clamav) pin="$CLAMAV_IMAGE" ;; trivy) pin="$TRIVY_IMAGE" ;; esac
+      docker image inspect "$pin" >/dev/null 2>&1 || docker pull -q "$pin" > "$LOGS/$tool-pull.log" 2>&1 \
+        || { tail -20 "$LOGS/$tool-pull.log" >&2; die "the pull of $pin failed"; }
+      docker tag "$pin" "quader-e2e-$tool:dev"
+      log "loading $pin into the kind cluster as quader-e2e-$tool:dev"
+      kind load docker-image "quader-e2e-$tool:dev" --name "$CLUSTER" > "$LOGS/$tool-load.log" 2>&1 \
+        || { tail -20 "$LOGS/$tool-load.log" >&2; die "kind load of quader-e2e-$tool:dev failed"; }
+    done
   fi
   chart="$REPO_ROOT/deploy/helm/quader"
   release_values "$DEV_DIR" "$PROFILE" 1

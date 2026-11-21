@@ -6,10 +6,11 @@ package e2e
 // repository the profile names as aquasec/trivy-db:2 and the task vuln-sync-trivy-db records it; the loader of every scanner pod (the
 // container database, the kind trivy-db) reads it through the scan listener with the pod's certificate into the volume trivy-db. Then an
 // image of about a kilobyte (Alpine 3.12 with four packages, two of which the fixture database names), pushed through the registry API by
-// the test's own client, is analysed and detected by the pinned analyser in a scanner pod. The finding shows the whole way over the
-// chart's links - the worker's calls to <fullname>-vuln-scanner-trivy and the scanner's pull from <fullname>-packages-scan, both mutual
-// TLS with the profile's certificate and admitted by the policies of R-HA-042 - and the live pod's spec shows its containers and mounts
-// (R-HA-065, R-HA-070). Every scanner pod of both kinds is listed under its kind by its report of itself, an image scanner with the
+// the test's own client, is analysed and detected by the pinned analyser in a scanner pod, the binary its init container copied from the
+// analyser's own image (the release image has none). The finding shows the whole way over the chart's links - the worker's calls to
+// <fullname>-vuln-scanner-trivy and the scanner's pull from <fullname>-packages-scan, both mutual TLS with the profile's certificate and
+// admitted by the policies of R-HA-042 - and the live pod's spec and status show its init container, containers and mounts (R-HA-065,
+// R-HA-070). Every scanner pod of both kinds is listed under its kind by its report of itself, an image scanner with the
 // database it holds (R-OPS-048, Q-OPS-225).
 
 import (
@@ -83,14 +84,25 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedAndDetectedByA
 		t.Errorf("the image's packages: %s, want the four of its package database", got)
 	}
 
-	// R-HA-065, R-HA-070: a scanner pod holds the TLS pair and the internal CA, and nothing else of the installation; its container quader
-	// mounts the database read-only and its container database writes it. The image has no shell and no ls (distroless), so the running
-	// pod's own spec says what the kubelet put where (Q-HA-342).
+	// R-HA-065, R-HA-070: a scanner pod holds the TLS pair and the internal CA, and nothing else of the installation; its init container
+	// trivy copied the analyser from its own image into trivy-bin, which quader mounts read-only; its container quader mounts the database
+	// read-only and its container database writes it. The image has no shell and no ls (distroless), so the running pod's own spec and
+	// status say what the kubelet put where (Q-HA-342).
 	pods := livePods(t, "app.kubernetes.io/component=vuln-scanner-trivy")
 	if len(pods) < 2 {
 		t.Fatalf("%d scanner pods are running, the profile runs two", len(pods))
 	}
 	raw := kn(t, "get", "pod", pods[0].Name, "-o", "json")
+	type container struct {
+		Name         string   `json:"name"`
+		Image        string   `json:"image"`
+		Command      []string `json:"command"`
+		VolumeMounts []struct {
+			Name      string `json:"name"`
+			MountPath string `json:"mountPath"`
+			ReadOnly  bool   `json:"readOnly"`
+		} `json:"volumeMounts"`
+	}
 	var p struct {
 		Spec struct {
 			AutomountServiceAccountToken *bool `json:"automountServiceAccountToken"`
@@ -105,15 +117,20 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedAndDetectedByA
 				} `json:"secret"`
 				Projected *json.RawMessage `json:"projected"`
 			} `json:"volumes"`
-			Containers []struct {
-				Name         string `json:"name"`
-				VolumeMounts []struct {
-					Name      string `json:"name"`
-					MountPath string `json:"mountPath"`
-					ReadOnly  bool   `json:"readOnly"`
-				} `json:"volumeMounts"`
-			} `json:"containers"`
+			InitContainers []container `json:"initContainers"`
+			Containers     []container `json:"containers"`
 		} `json:"spec"`
+		Status struct {
+			InitContainerStatuses []struct {
+				Name  string `json:"name"`
+				State struct {
+					Terminated *struct {
+						ExitCode int    `json:"exitCode"`
+						Reason   string `json:"reason"`
+					} `json:"terminated"`
+				} `json:"state"`
+			} `json:"initContainerStatuses"`
+		} `json:"status"`
 	}
 	if err := json.Unmarshal([]byte(raw), &p); err != nil {
 		t.Fatal(err)
@@ -136,14 +153,27 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedAndDetectedByA
 			}
 		}
 	}
+	// The copy: one init container trivy, the image's cp of its binary into trivy-bin and nothing else, ended with exit code 0.
+	if len(p.Spec.InitContainers) != 1 || p.Spec.InitContainers[0].Name != "trivy" ||
+		strings.Join(p.Spec.InitContainers[0].Command, " ") != "cp /usr/local/bin/trivy /opt/trivy/trivy" ||
+		len(p.Spec.InitContainers[0].VolumeMounts) != 1 || p.Spec.InitContainers[0].VolumeMounts[0].Name != "trivy-bin" ||
+		p.Spec.InitContainers[0].VolumeMounts[0].MountPath != "/opt/trivy" || p.Spec.InitContainers[0].VolumeMounts[0].ReadOnly {
+		t.Errorf("the scanner pod's init containers %+v, want trivy copying the analyser into trivy-bin alone", p.Spec.InitContainers)
+	}
+	if s := p.Status.InitContainerStatuses; len(s) != 1 || s[0].State.Terminated == nil || s[0].State.Terminated.ExitCode != 0 {
+		t.Errorf("the init container's status %+v, want trivy terminated with exit code 0", s)
+	}
 	var containers []string
-	databaseMount := map[string]string{}
+	databaseMount, binaryMount := map[string]string{}, map[string]string{}
 	for _, c := range p.Spec.Containers {
 		containers = append(containers, c.Name)
 		var files []string
 		for _, m := range c.VolumeMounts {
 			if m.Name == "trivy-db" {
 				databaseMount[c.Name] = map[bool]string{true: "ro", false: "rw"}[m.ReadOnly] + " " + m.MountPath
+			}
+			if m.Name == "trivy-bin" {
+				binaryMount[c.Name] = map[bool]string{true: "ro", false: "rw"}[m.ReadOnly] + " " + m.MountPath
 			}
 			if strings.HasPrefix(m.MountPath, "/var/run/secrets/kubernetes.io") {
 				t.Errorf("the container %s mounts %s", c.Name, m.MountPath)
@@ -164,11 +194,17 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedAndDetectedByA
 		databaseMount["database"] != "rw /var/lib/quader/trivy-db" {
 		t.Errorf("the scanner pod's containers %v mount trivy-db as %v, want quader read-only and database read-write", containers, databaseMount)
 	}
+	if len(binaryMount) != 1 || binaryMount["quader"] != "ro /opt/trivy" {
+		t.Errorf("the scanner pod's containers mount trivy-bin as %v, want quader alone, read-only at /opt/trivy", binaryMount)
+	}
 
 	// R-OPS-048, Q-OPS-223, Q-OPS-225: every scanner pod of both kinds reports itself to the scan listener with the certificate of its kind,
 	// and the API lists it by its pod name under that kind; an image scanner that detected the image is ready, names its Trivy's version
 	// and the database its pod holds, with its build time. The malware scanners are listed whatever their state: they wait for a database
-	// until the malware case deployed one.
+	// until the malware case deployed one. The version is the tag of TRIVY_IMAGE: the release image carries no analyser, so the binary that
+	// answered it, analysed and detected the image is the one the init container copied (R-HA-070).
+	ref, _, _ := strings.Cut(readVersionPin(t, "TRIVY_IMAGE"), "@")
+	tag := strings.TrimPrefix(ref[strings.LastIndex(ref, ":")+1:], "v")
 	want := map[string]string{}
 	for _, p := range pods {
 		want[p.Name] = "trivy"
@@ -191,7 +227,8 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedAndDetectedByA
 		listed := 0
 		for _, r := range list.Items {
 			kind, ok := want[r.Name]
-			trivyOK := r.State == "ready" && r.ToolVersion != nil && r.Database != nil && "sha256:"+r.Database.Version == layer && r.Database.BuiltAt != nil
+			trivyOK := r.State == "ready" && r.ToolVersion != nil && strings.TrimPrefix(*r.ToolVersion, "v") == tag && r.Database != nil &&
+				"sha256:"+r.Database.Version == layer && r.Database.BuiltAt != nil
 			if ok && r.Kind == kind && (kind != "trivy" || trivyOK) {
 				listed++
 			}

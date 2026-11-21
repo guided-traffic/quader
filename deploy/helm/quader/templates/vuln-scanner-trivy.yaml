@@ -3,10 +3,12 @@ The image scanning's scanner, the kind vuln-scanner-trivy of the role scanner (R
 <fullname>-vuln-scanner-trivy runs "quader serve --role scanner" and analyses container images and detects their stored analyses with
 Trivy for the worker. Its second container, database, runs the same image as the loader of Trivy's database (the kind trivy-db,
 R-VULN-049, Q-HA-379): it reads the database in use from the scan listener with the pod's pair into the volume trivy-db, which the
-container quader mounts read-only, so no analysis and no detection can change what judges the next image (Q-VULN-196). The pod holds no
-secret of PostgreSQL, the object store or Valkey and no key of the key ring: its volumes are the spool, a /tmp per container, the
-configuration file, its own Secret (R-HA-063: the pair it serves and presents, and the internal CA in the same volume) and trivy-db, and
-nothing else; none of the shared extras (extraEnv, extraEnvFrom, extraVolumes, extraVolumeMounts) reaches it (Q-HA-321). It uses no
+container quader mounts read-only, so no analysis and no detection can change what judges the next image (Q-VULN-196). The analyser
+itself comes from its own image (trivy.image, the pin TRIVY_IMAGE): the init container trivy copies its binary into the volume trivy-bin,
+which quader mounts read-only at /opt/trivy, where vulnerabilities.images.binary points (R-HA-070, Q-HA-378); the release image holds
+none. The pod holds no secret of PostgreSQL, the object store or Valkey and no key of the key ring: its volumes are the spool, a /tmp per
+container, the configuration file, its own Secret (R-HA-063: the pair it serves and presents, and the internal CA in the same volume),
+trivy-db and trivy-bin, and nothing else; none of the shared extras (extraEnv, extraEnvFrom, extraVolumes, extraVolumeMounts) reaches it (Q-HA-321). It uses no
 service account of the chart: that one may carry a cloud identity of the object store, and the scanner calls no API
 (automountServiceAccountToken false, no RBAC).
 
@@ -97,6 +99,23 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- include "quader.topologySpread" $ctx | nindent 6 }}
+      {{- /* The analyser from its own image (R-HA-070, Q-HA-378): the image's own cp copies its binary into trivy-bin as the pod's user and
+      ends; the release image holds no analyser. One volume, no Secret, no configuration, no token. */}}
+      initContainers:
+        - name: trivy
+          image: {{ $.Values.trivy.image | quote }}
+          imagePullPolicy: {{ $.Values.trivy.pullPolicy }}
+          command:
+            - cp
+            - /usr/local/bin/trivy
+            - /opt/trivy/trivy
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml $.Values.trivy.resources | nindent 12 }}
+          volumeMounts:
+            - name: trivy-bin
+              mountPath: /opt/trivy
       containers:
         {{- /* The scanner is the first process of its container: no shell, no init, which the reaper of Q-ARCH-530 relies on. */}}
         - name: quader
@@ -153,6 +172,11 @@ spec:
             {{- /* The database, read-only: the analysers this container starts can read it and change nothing of it (Q-VULN-196). */}}
             - name: trivy-db
               mountPath: /var/lib/quader/trivy-db
+              readOnly: true
+            {{- /* The analyser the init container copied, read-only: the copy belongs to the pod's user, the user of every analyser, so only
+            this mount keeps one analysis from replacing the binary of the next (Q-HA-378); vulnerabilities.images.binary points here. */}}
+            - name: trivy-bin
+              mountPath: /opt/trivy
               readOnly: true
             {{- if $.Values.tls.enabled }}
             - name: secret-tls
@@ -264,6 +288,10 @@ spec:
         - name: database-tmp
           emptyDir:
             sizeLimit: {{ $.Values.tmp.sizeLimit }}
+        {{- /* The analyser's binary (163,184,800 bytes at the pin), written once by the init container and read-only in quader (R-HA-070). */}}
+        - name: trivy-bin
+          emptyDir:
+            sizeLimit: 256Mi
         {{- /* The database, written by the container database and read-only in quader (R-HA-070, Q-HA-380): it follows spool.type as the spool does,
         vulnScannerTrivy.database.sizeLimit, room for the newest database and the one before it. */}}
         - name: trivy-db

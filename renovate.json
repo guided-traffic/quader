@@ -489,6 +489,30 @@
         "dependencies",
         "clamav-feature-line"
       ]
+    },
+    {
+      "description": "Trivy, the analyser of the image scanning (TRIVY_IMAGE of tools/versions.env and trivy.image of the chart, which a chart test holds equal, R-HA-070, Q-HA-381): both lines move in one pull request; a new digest of the same version merges by itself (the publisher's rebuild of that release reaches the installations)",
+      "matchDepNames": [
+        "docker.io/aquasec/trivy"
+      ],
+      "groupName": "trivy",
+      "groupSlug": "trivy"
+    },
+    {
+      "description": "Trivy: a new version is reviewed by hand (Q-HA-381): it makes the scanners analyse every stored image again, because the analyses of another version are refused, and it may read another database schema than the 2 the loader and the task name",
+      "matchDepNames": [
+        "docker.io/aquasec/trivy"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor",
+        "major"
+      ],
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "trivy-version"
+      ]
     }
   ],
   "customManagers": [
@@ -516,13 +540,13 @@
       "versioningTemplate": "docker"
     },
     {
-      "description": "The ClamAV image of the chart (deploy/helm/quader/values.yaml clamav.image), which a chart test holds to CLAMAV_IMAGE of tools/versions.env: both lines move in one pull request (the group clamav below)",
+      "description": "The tool images of the chart (deploy/helm/quader/values.yaml clamav.image and trivy.image), which chart tests hold to CLAMAV_IMAGE and TRIVY_IMAGE of tools/versions.env: each moves with its pin in one pull request (the groups clamav and trivy above)",
       "customType": "regex",
       "managerFilePatterns": [
         "/^deploy/helm/quader/values\\.yaml$/"
       ],
       "matchStrings": [
-        "\\n  image: (?<depName>docker\\.io/clamav/clamav-debian):(?<currentValue>[A-Za-z0-9._-]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+        "\\n  image: (?<depName>docker\\.io/(?:clamav/clamav-debian|aquasec/trivy)):(?<currentValue>[A-Za-z0-9._-]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"

@@ -50,15 +50,15 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 	if got := containerArgs(pod); !slices.Equal(got, []string{"serve", "--role", "scanner"}) {
 		t.Fatalf("args %v", got)
 	}
-	// The four volumes of R-HA-065, and the database volume and the loader's /tmp of R-HA-070.
-	if got := volumeNames(pod); !slices.Equal(got, []string{"config", "database-tmp", "secret-tls", "spool", "tmp", "trivy-db"}) {
+	// The four volumes of R-HA-065, and the database volume, the loader's /tmp and the analyser's binary of R-HA-070.
+	if got := volumeNames(pod); !slices.Equal(got, []string{"config", "database-tmp", "secret-tls", "spool", "tmp", "trivy-bin", "trivy-db"}) {
 		t.Fatalf("the scanner mounts %v, the volumes of R-HA-065 and R-HA-070 only", got)
 	}
 	if at(pod, "automountServiceAccountToken") != false || str(pod, "serviceAccountName") != "" || at(pod, "shareProcessNamespace") != nil {
 		t.Fatalf("service account %q, automount %v, shareProcessNamespace %v", str(pod, "serviceAccountName"), at(pod, "automountServiceAccountToken"), at(pod, "shareProcessNamespace"))
 	}
-	if len(list(pod, "initContainers")) != 0 || len(list(pod, "containers")) != 2 || str(pod, "containers", "0", "name") != "quader" {
-		t.Fatal("the scanner is not the first process of its container quader, beside the loader database")
+	if len(list(pod, "initContainers")) != 1 || len(list(pod, "containers")) != 2 || str(pod, "containers", "0", "name") != "quader" {
+		t.Fatal("the scanner is not the first process of its container quader, beside the loader database and after the copy of the analyser")
 	}
 	secrets := secretVolumes(pod)
 	if secrets["secret-tls"] != "quader-tls-vuln-scanner-trivy" || len(secrets) != 1 {
@@ -243,17 +243,18 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		if str(cfg, "vulnerabilities", "images", "scanner", "url") != "http://quader-vuln-scanner-trivy.default.svc:8080" || at(cfg, "server", "internal_tls") != nil {
 			t.Fatalf("%v", at(cfg, "vulnerabilities"))
 		}
-		if got := volumeNames(scannerPod(t, docs)); !slices.Equal(got, []string{"config", "database-tmp", "spool", "tmp", "trivy-db"}) {
+		if got := volumeNames(scannerPod(t, docs)); !slices.Equal(got, []string{"config", "database-tmp", "spool", "tmp", "trivy-bin", "trivy-db"}) {
 			t.Fatalf("volumes %v", got)
 		}
 	})
 }
 
-// R-HA-070 (the container database and the volume trivy-db; the init container trivy and the volume trivy-bin are not built yet), Q-HA-379,
-// Q-HA-380, Q-VULN-196: the loader is a container of the Quader image of the kind trivy-db with its operations listener on :8083, a
-// liveness probe and no readiness probe; it mounts trivy-db read-write, the scanner's Secret and a /tmp of its own; the container quader
-// mounts trivy-db read-only; the volume follows spool.type at vulnScannerTrivy.database.sizeLimit, which the chart refuses below 4Gi and
-// hands the loader as its budget; no other Deployment carries any of it.
+// R-HA-070, Q-HA-378, Q-HA-379, Q-HA-380, Q-HA-381, Q-VULN-196: the init container trivy runs trivy.image, which equals TRIVY_IMAGE of
+// tools/versions.env, copies the binary with the image's cp under the restricted security context and mounts the one volume trivy-bin,
+// read-write; the loader is a container of the Quader image of the kind trivy-db with its operations listener on :8083, a liveness probe
+// and no readiness probe; it mounts trivy-db read-write, the scanner's Secret and a /tmp of its own; the container quader mounts trivy-bin
+// and trivy-db read-only and requests the copy's room; the database volume follows spool.type at vulnScannerTrivy.database.sizeLimit, which
+// the chart refuses below 4Gi and hands the loader as its budget; global.imagePullSecrets reaches the pod; no other pod carries any of it.
 func TestR_HA_070_TheLoaderWritesTheDatabaseThatTheScannerReadsReadOnly(t *testing.T) {
 	_, docs := render(t, required())
 	pod := scannerPod(t, docs)
@@ -278,6 +279,44 @@ func TestR_HA_070_TheLoaderWritesTheDatabaseThatTheScannerReadsReadOnly(t *testi
 	}
 	if got := mounts(quader)["trivy-db"]; got != "/var/lib/quader/trivy-db ro" {
 		t.Fatalf("quader mounts trivy-db as %q, want read-only", got)
+	}
+	// The analyser from its own image (Q-HA-378): the copy by the image's cp into trivy-bin, read-only where quader runs it.
+	if got := mounts(quader)["trivy-bin"]; got != "/opt/trivy ro" {
+		t.Fatalf("quader mounts trivy-bin as %q, want read-only at /opt/trivy", got)
+	}
+	inits := list(pod, "initContainers")
+	if len(inits) != 1 || str(inits[0], "name") != "trivy" {
+		t.Fatalf("init containers %v, want trivy alone", inits)
+	}
+	cp := inits[0]
+	if str(cp, "image") != versionsPin(t, "TRIVY_IMAGE") || str(cp, "imagePullPolicy") != "IfNotPresent" {
+		t.Fatalf("Q-HA-381 the init container's image %q (%s) is not TRIVY_IMAGE %q", str(cp, "image"), str(cp, "imagePullPolicy"), versionsPin(t, "TRIVY_IMAGE"))
+	}
+	var command []string
+	for _, a := range list(cp, "command") {
+		command = append(command, a.(string))
+	}
+	if !slices.Equal(command, []string{"cp", "/usr/local/bin/trivy", "/opt/trivy/trivy"}) || list(cp, "args") != nil {
+		t.Fatalf("the init container runs %v %v, want the image's cp of its binary into trivy-bin", command, list(cp, "args"))
+	}
+	if got := mounts(cp); len(got) != 1 || got["trivy-bin"] != "/opt/trivy rw" {
+		t.Fatalf("the init container mounts %v, want trivy-bin read-write and nothing else", got)
+	}
+	if list(cp, "env") != nil || list(cp, "envFrom") != nil || at(cp, "ports") != nil {
+		t.Fatalf("the init container has an environment or ports: %v", cp)
+	}
+	sc := at(cp, "securityContext")
+	if at(sc, "readOnlyRootFilesystem") != true || at(sc, "allowPrivilegeEscalation") != false || at(sc, "runAsNonRoot") != true ||
+		!slices.Equal(list(sc, "capabilities", "drop"), []any{"ALL"}) || str(sc, "seccompProfile", "type") != "RuntimeDefault" ||
+		at(pod, "securityContext", "runAsUser") != 65532 {
+		t.Fatalf("the init container's security context %v (pod %v)", sc, at(pod, "securityContext"))
+	}
+	if str(cp, "resources", "requests", "cpu") != "10m" || str(cp, "resources", "requests", "memory") != "32Mi" ||
+		str(cp, "resources", "limits", "memory") != "128Mi" {
+		t.Fatalf("the init container's resources %v", at(cp, "resources"))
+	}
+	if str(quader, "resources", "requests", "ephemeral-storage") != "1280Mi" {
+		t.Fatalf("quader requests %v of ephemeral storage, want 1 GiB and the copy's 256 MiB", at(quader, "resources", "requests"))
 	}
 	want := map[string]string{
 		"config": "/etc/quader/quader.yaml ro", "trivy-db": "/var/lib/quader/trivy-db rw", "database-tmp": "/tmp rw", "secret-tls": "/var/run/secrets/quader/tls ro",
@@ -320,7 +359,19 @@ func TestR_HA_070_TheLoaderWritesTheDatabaseThatTheScannerReadsReadOnly(t *testi
 		if str(v, "name") == "trivy-db" && str(v, "emptyDir", "sizeLimit") != "5Gi" {
 			t.Fatalf("trivy-db %v", v)
 		}
+		if str(v, "name") == "trivy-bin" && (str(v, "emptyDir", "sizeLimit") != "256Mi" || str(v, "emptyDir", "medium") != "") {
+			t.Fatalf("trivy-bin %v, want an emptyDir on the node's disk of 256Mi", v)
+		}
 	}
+	// A mirror changes the image and keeps the digest; the pull secrets of the release reach the init container with the pod (Q-HA-383).
+	_, mirrored := render(t, required(), "trivy.image=registry.example.com/mirror/aquasec/trivy:0.76.2@sha256:"+strings.Repeat("a", 64),
+		"trivy.pullPolicy=Always", "global.imagePullSecrets[0].name=registry-pull")
+	mp := scannerPod(t, mirrored)
+	if str(mp, "initContainers", "0", "image") != "registry.example.com/mirror/aquasec/trivy:0.76.2@sha256:"+strings.Repeat("a", 64) ||
+		str(mp, "initContainers", "0", "imagePullPolicy") != "Always" || str(mp, "imagePullSecrets", "0", "name") != "registry-pull" {
+		t.Fatalf("with a mirror the init container is %v and the pull secrets %v", at(mp, "initContainers", "0"), at(mp, "imagePullSecrets"))
+	}
+	renderFails(t, required(), []string{"trivy.image=aquasec/trivy@sha256:" + strings.Repeat("a", 64)}, "trivy")
 	// R-HA-061: the volume follows spool.type like the spool.
 	_, eph := render(t, required(), "spool.type=ephemeral", "spool.ephemeral.size=20Gi", "vulnScannerTrivy.database.sizeLimit=6Gi")
 	for _, v := range list(scannerPod(t, eph), "volumes") {
@@ -334,9 +385,12 @@ func TestR_HA_070_TheLoaderWritesTheDatabaseThatTheScannerReadsReadOnly(t *testi
 		if name == "quader-vuln-scanner-trivy" {
 			continue
 		}
+		if len(list(p, "initContainers")) != 0 {
+			t.Errorf("%s has an init container", name)
+		}
 		for _, v := range list(p, "volumes") {
-			if str(v, "name") == "trivy-db" {
-				t.Errorf("%s carries trivy-db", name)
+			if str(v, "name") == "trivy-db" || str(v, "name") == "trivy-bin" {
+				t.Errorf("%s carries %s", name, str(v, "name"))
 			}
 		}
 	}

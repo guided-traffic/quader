@@ -289,6 +289,25 @@ The scanning needs the `worker` role: the sync of the advisory data and the eval
 
 A name in `disabledAlerts` that is no alert of the chart fails the install. If you set `stale_after` only through an environment variable (`extraEnv`), set it in `config.vulnerabilities.stale_after` as well, or the alert keeps the 24-hour default.
 
+**The analyser's image.** The image scanning runs in the pods of `<fullname>-vuln-scanner-trivy`. The Quader image carries no analyser:
+each scanner pod starts with an init container `trivy` that copies the analyser from its own image, `trivy.image` (by default
+`docker.io/aquasec/trivy:0.76.2` by its digest), into a volume the scanner reads but cannot change, and ends. A node that has not run a
+scanner pod before pulls that image from Docker Hub first (about 60 MB). What to look at:
+
+- A scanner pod that stays `Init:0/1`, `Init:ErrImagePull` or `Init:ImagePullBackOff` cannot pull the image: `kubectl describe pod` shows
+  the registry's answer in the events. Meanwhile the images wait as `scanner_unavailable` and `QuaderVulnerabilityImageScannerUnavailable`
+  fires; nothing else of Quader depends on it.
+- If your nodes pull from a mirror of your own, copy the image by its digest (`skopeo copy --all` or `crane copy` keep it) and set
+  `trivy.image` to the mirror's name with the same digest; `global.imagePullSecrets` reaches the init container as every container. Do the
+  same for `clamav.image` while the malware scanning is on, and for the Quader image. If your nodes reach no registry, load the images into
+  each node's container runtime beforehand and keep `trivy.pullPolicy: IfNotPresent`, or switch the image scanning off
+  (`config.vulnerabilities.images.enabled: false`). A kubelet that pulled the image under one name pulls it again when it is asked for
+  under another name, to check that name (seen with Kubernetes 1.37), so the name you set must be one the node can pull, even where the
+  same digest is already on the node.
+- The version each scanner runs is on the System page (the analyser's version per scanner pod). A new version of the analyser makes the
+  scanners analyse every stored image again; its first detections after the rollout may report `scanner_versions_differ` until every pod
+  runs the new one.
+
 **Worker spool.** A sync downloads one archive into the worker's spool. While `vulnerabilities.sources.osv.mode` is `online` or `repository`, the chart refuses an install in which the worker's spool budget (`worker.spool.sizeLimit`, else `spool.sizeLimit`, minus `spool.headroom`) is smaller than `vulnerabilities.sources.osv.max_archive_size` (default `1GiB`; the default worker spool is `5Gi` with `2GiB` headroom). The message names both values.
 
 **After a restore.** The findings and their history are part of a backup; the advisory data is not, because the next sync fetches it again. A restored installation therefore starts with every ecosystem empty:

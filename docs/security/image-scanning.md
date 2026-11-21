@@ -8,9 +8,10 @@ The database in a repository of Quader ([R-VULN-044, R-VULN-045](../spec/vulnera
 ([R-VULN-048, R-VULN-049](../spec/vulnerability-scanning.md#r-vuln-048--the-detection-in-the-scanner-a-call-that-carries-the-stored-analysis),
 [ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)) is built: both steps run
 in the scanner, the worker runs no tool, and each scanner pod holds the database read-only. The analyser from its own image
-([R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)) is not built yet: the
-analyser is still the release image's, in every pod of Quader, and run by the scanner only. The perspective of this page is what an
-attacker who can push an image, or influence the database, can do to the pods that analyse and detect it.
+([R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)) is built: the release
+image of Quader carries no analyser, and only the scanner pods hold one, copied by their init container into a volume they mount
+read-only. The perspective of this page is what an attacker who can push an image, or influence the database, can do to the pods that
+analyse and detect it.
 
 ## The boundary
 
@@ -39,7 +40,7 @@ killed with the call; its output is bounded before it is answered.
 ## What the scanner holds, and what a taken-over analyser can do with it
 
 The scanner's pod mounts its own Secret (the scanner's pair, which it serves and presents, and the internal CA), the configuration file, a
-spool and `/tmp`, and nothing else; no pod of another kind holds the scanner's pair, and the scanner holds no other kind's: no database, object-store or Valkey credential or CA, no key of the key ring, no
+spool and `/tmp`, the database and the analyser's binary (both read-only in the container `quader`), and nothing else; no pod of another kind holds the scanner's pair, and the scanner holds no other kind's: no database, object-store or Valkey credential or CA, no key of the key ring, no
 login secret, no trusted CA bundle, no service-account token, and none of the chart's shared extras
 ([R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), [R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds)).
 Its process opens no connection but the one to the scan listener and keeps nothing between two calls.
@@ -64,8 +65,9 @@ read or change the scanner process's memory, which holds the same pair and the t
 dumpable at its start, so the kernel requires `CAP_SYS_PTRACE`, which the pod drops, whatever the node's ptrace scope
 ([Q-VULN-203](../spec/vulnerability-scanning.md#q-vuln-203--the-scanners-process-is-not-dumpable-so-its-analysers-can-neither-read-nor-change-it);
 shown by a unit test on Linux and looked at in a pod of the kind cluster, [developer page](../developer/vulnerabilities.md#the-detection-in-the-scanner-and-the-loader-r-vuln-048-r-vuln-049)).
-No analyser runs in a pod with secrets: the worker runs none. The analyser's binary is the release image's, on the container's read-only
-root file system, until R-HA-070's copy from the analyser's own image puts it on a read-only mount.
+No analyser runs in a pod with secrets: the worker runs none, and no image but the scanner pod's init container holds one. The analyser's
+binary lies on the read-only mount `/opt/trivy` of the volume `trivy-bin`, which the init container `trivy` wrote as the pod's user before
+the scanner started; an analyser cannot replace the binary the next call runs.
 
 ## Who may call the scanner, and how the pull is authorised
 
@@ -136,15 +138,16 @@ What this does not do is bound what the analyser itself writes ([H-871](#h-871--
 
 The owner's decision of 2026-11-21 moves the detection into the scanner unit and the analyser out of every other image
 ([ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)). The detection, the
-loader and the process that is not dumpable are built (the picture above); the init container `trivy` that copies the analyser from its own
-image into a read-only volume is not, and until it is the release image of every pod carries the analyser, which only the scanner runs.
+loader and the process that is not dumpable are built (the picture above), and so is the init container `trivy` that copies the analyser
+from its own image into a volume the scanner mounts read-only (2026-11-21); the release image of every other pod carries no analyser.
 
 - **No analyser in a pod with secrets.** The worker sends the stored analysis to `POST /scan/v1/detections` and decodes the report in Go
   under the limits of an advisory (schema version 2, 50,000 advisories of 256 components, texts cleaned and cut), after it has checked that
   the answer names the database and the analyser version of the call
   ([R-VULN-048](../spec/vulnerability-scanning.md#r-vuln-048--the-detection-in-the-scanner-a-call-that-carries-the-stored-analysis)). The
-  release image of Quader will carry no analyser at all once [R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)'s
-  init container is built. H-1038 (the detection ran the analyser in the worker) is closed.
+  release image of Quader carries no analyser at all
+  ([R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod): the image holds the
+  binary of Quader alone, checked by listing the image's files). H-1038 (the detection ran the analyser in the worker) is closed.
 - **What judges the next image cannot be changed by this one.** The database lies in a volume that the container `database` writes and the
   container `quader`, which starts the analysers, mounts read-only; so does the analyser's binary, which the init container copied as the
   pod's user (measured: the copy belongs to user 65532, the user of every analyser, so only the read-only mount protects it)
@@ -166,13 +169,16 @@ image into a read-only volume is not, and until it is the release image of every
   ([R-VULN-049](../spec/vulnerability-scanning.md#r-vuln-049--the-database-in-the-scanner-pod)). Who decides the database is unchanged
   ([H-813](#h-813--the-integrity-of-the-database-is-that-of-its-repository)); every holder of the scanner's pair can read it, which is
   public data.
-- **The init container** runs the publisher's image by its digest with the pod's security context, mounts one volume and nothing else, and
-  ends after the copy; a node pulls the image when a pod starts without it
-  ([H-1182](#h-1182--a-node-pulls-the-analysers-image-from-a-third-partys-registry-when-a-scanner-pod-starts)).
+- **The init container** runs the publisher's image by its digest with the pod's security context (user 65532, a read-only root file
+  system, no privilege escalation, every capability dropped, seccomp `RuntimeDefault`), runs the image's own `cp` and nothing else, mounts
+  one volume, holds no Secret, configuration or token, and ends after the copy; a node pulls the image when a pod starts without it
+  ([H-1182](#h-1182--a-node-pulls-the-analysers-image-from-a-third-partys-registry-when-a-scanner-pod-starts)). Shown in a pod of the kind
+  cluster on 2026-11-21: the copy as user 65532 under these restrictions, and the scanner's analysis and detection with the copied binary
+  ([developer page](../developer/vulnerabilities.md#the-analyser-from-its-own-image-r-ha-070)).
 - **What the other gaps become.** [H-1003](#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day) stays, with the
   publisher's image of the pin in place of the release archive: the release's container scan no longer sees the analyser, which Renovate
-  raises by digest and, for a new version, by a reviewed pull request (Q-HA-381); its accepted finding at `usr/local/bin/trivy` goes with
-  the path. [H-871](#h-871--the-analysers-own-files-are-bounded-by-a-margin-not-enforced) holds for a detection's 64 MiB too.
+  raises by digest and, for a new version, by a reviewed pull request (Q-HA-381); its accepted finding at `usr/local/bin/trivy` went with
+  the path (2026-11-21), the finding itself stays with the analyser. [H-871](#h-871--the-analysers-own-files-are-bounded-by-a-margin-not-enforced) holds for a detection's 64 MiB too.
   [H-872](#h-872--the-database-allowance-of-the-chart-is-a-constant) moves to the scanner's database volume, whose check is 2 × 2 GiB; a
   database that outgrows two copies replaces the newest instead of failing. [H-817](#h-817--one-job-scans-at-a-time) holds, and a new
   database now costs detections in the scanners' slots (R-VULN-048 says how long).
@@ -253,15 +259,22 @@ makes it real: the first install of a scanner or a pool with a spool that is too
 
 ### H-1003 · The analyser is an upstream build with the vulnerabilities of its day
 
-The analyser in the image is the upstream release archive at the pin of `tools/versions.env`, checked against its SHA-256; Quader does not
-build it. A vulnerability of the Go release or of a library it was built with stays in the image until upstream releases a new build and the
-pin is raised, whatever Quader's own toolchain is. The release's container scan reports such a finding, and a finding that does not apply to
-how Quader runs the analyser (as a command for one analysis or one detection, with an empty environment, no listener and no network use of its
-own, see above) can be accepted for a time in [.trivyignore.yaml](../../.trivyignore.yaml), at the analyser's path only and with a day it ends
-([releasing.md](../developer/releasing.md#accepted-findings-of-the-container-scan)). Accepted on 2026-11-19 until 2026-12-19:
-CVE-2026-97054, in the HTTP/1 server of `net/http`. What is not covered: a finding in the analyser's parsers, which read the image an attacker
-pushed, applies in full and is bounded only by the limits outside the analyser that this page describes and by what the scanner's pod holds;
-and nothing tells an installation that already runs an image which analyser build it carries, beyond the image's SBOM.
+Component: the analyser every scanner pod runs, the binary of the publisher's image `TRIVY_IMAGE` of `tools/versions.env` by its index
+digest, copied by the init container `trivy` ([R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)).
+Subject: the scanner pods and what they hold (above). Live. Quader does not build the analyser: a vulnerability of the Go release or of a
+library it was built with stays in every scanner pod until the publisher releases a new build and the pin is raised, whatever Quader's
+own toolchain is. Renovate raises a new digest of the same version by itself and opens a new version for review
+([Q-HA-381](../spec/ha-and-helm.md#q-ha-381--one-pin-by-digest-the-charts-value-held-equal-by-a-chart-test-and-one-renovate-group-that-reviews-a-new-version)).
+Since 2026-11-21 the release image carries no analyser, so the release's container scan, which scans that image, no longer sees one, and
+nothing in the pipeline scans `TRIVY_IMAGE`: a finding in the analyser is not reported by Quader's own checks. Known on 2026-11-19 and
+still in the pinned build: CVE-2026-97054, in the HTTP/1 server of `net/http` (the build of upstream is Go 1.27.3); Quader runs the
+analyser as a command for one analysis or one detection, with an empty environment, no listener and no network use of its own (see
+above), so a server-side finding does not apply; until 2026-11-21 it was accepted in [.trivyignore.yaml](../../.trivyignore.yaml) at the
+analyser's path of the release image, which no longer exists. What is not covered: a finding in the analyser's parsers, which read the
+image an attacker pushed, applies in full and is bounded only by the limits outside the analyser that this page describes and by what the
+scanner's pod holds; and nothing tells an installation which analyser build its scanner pods run beyond the image's digest in the pod's
+spec and the version each scanner reports on the System page. What makes it real: a parser flaw of the pinned build that an image reaches,
+before the publisher fixes it and the pin follows.
 
 ### H-1035 · A taken-over analyser holds the scanner's pair
 
@@ -357,7 +370,7 @@ its bounds; it cannot tell a true report from one that leaves findings out. A sc
 those findings resolve at the next re-detection, and a block set in triage on such a finding lifts (R-VULN-012) until a true detection
 finds the match again and restores it, for every image the Service sends to that pod until the pod restarts. Today the same process could falsify only new analyses; with the detection there, every
 re-detection after every new database passes through it. What stands between an analyser and the process: the read-only database, the binary
-(on the read-only root file system, a read-only mount once R-HA-070's copy is built), the reaper with one slot, and the process not dumpable (Q-VULN-203). What makes it real: a flaw in the scanner's own code that a hostile
+(on the read-only mount of the init container's copy, R-HA-070), the reaper with one slot, and the process not dumpable (Q-VULN-203). What makes it real: a flaw in the scanner's own code that a hostile
 image or registry answer reaches (its pull, the checks and the walk of R-VULN-036 are part of the boundary, Q-VULN-167), or a kernel flaw
 that lets a process of the same user past the non-dumpable flag; with `slots` above 1, a taken-over analyser reaches the detections of the
 same moment without either (H-1037). Nothing compares the detections of two pods.
@@ -365,11 +378,11 @@ same moment without either (H-1037). Nothing compares the detections of two pods
 ### H-1182 · A node pulls the analyser's image from a third party's registry when a scanner pod starts
 
 Component: the init container `trivy` of [R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod).
-Subject: the availability of the image scanning, and the integrity of the analyser every scanner pod runs. Dormant: specified, not built;
-live with the defaults once built. The image is the publisher's, `docker.io/aquasec/trivy` by its index digest, so the bytes a node runs
+Subject: the availability of the image scanning, and the integrity of the analyser every scanner pod runs. Live with the defaults since
+2026-11-21 (the init container is built); dormant where the image scanning is off or the image comes from a mirror of the installation. The image is the publisher's, `docker.io/aquasec/trivy` by its index digest, so the bytes a node runs
 are the pinned ones whatever the registry serves (a tag that was replaced, as the publisher's malicious releases of 2026-03 were, does not
 reach a digest pin); the risk left is availability. A node without the image pulls it when a scanner pod is scheduled there (58.5 MB on
-arm64, 63.4 MB on amd64): a registry outage, a limit of anonymous pulls per address, or a node without a way to the registry keeps the pod in
+arm64, 63.4 MB on amd64; 13.5 and 15.6 s by the nodes of a kind cluster of the development machine, measured 2026-11-21): a registry outage, a limit of anonymous pulls per address, or a node without a way to the registry keeps the pod in
 its init phase, and the images wait as `scanner_unavailable` (the alert of R-VULN-024). The pull is the node's, outside every egress rule of
 the chart, as the pull of ClamAV's image is. What makes it real: rescheduled scanner pods on nodes that never ran one, during an outage or
 behind a registry's limit; a mirror or images loaded on the nodes beforehand avoids it (Q-HA-383).

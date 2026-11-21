@@ -165,7 +165,7 @@ Built (M4b, vulnerability scanning, beta phase 6; [spec](docs/spec/vulnerability
 
 - 🗄️ **Own advisory mirror and offline import.** The `worker` role copies the OSV archives of npm and NuGet (GitHub Advisory Database, OpenSSF malicious packages) and the CISA KEV catalog into PostgreSQL, incrementally every 15 minutes and in full weekly, behind guards for digest, size, shrink and invalid records; an installation without internet access imports the same files from a generic local repository (`mode: repository`). See [advisory sources](docs/manual/admin/vulnerability-sources.md).
 - 🔍 **Matching and findings with triage.** A stored version is matched by name and version, never by its bytes, in its commit and again when the data changes; public advisories never apply to a claimed internal name. A finding is `needs_triage`, `confirmed`, `blocked`, `dismissed` or `resolved`, changed one by one or in bulk by holders of `vulnerabilities:triage`, with history and audit. See [vulnerabilities](docs/manual/user/vulnerabilities.md).
-- 🔬 **Container images analysed in pods without secrets.** The pinned analyser reads an image's layers in the pods of the role `scanner`, which hold no database, object-store, Valkey or key-ring credential; the worker calls them over mutual TLS with a scan token for one manifest, keeps their package list written anew, and detects against the database itself. See [image scanning](docs/security/image-scanning.md).
+- 🔬 **Container images analysed in pods without secrets.** The pinned analyser, copied from its own image into the pods of the role `scanner` (the release image carries none), analyses an image's layers and detects its stored analysis against the database each pod holds read-only; the pods hold no database, object-store, Valkey or key-ring credential, and the worker calls them over mutual TLS and runs no tool. See [image scanning](docs/security/image-scanning.md).
 - ⛔ **Download blocking.** An open malicious finding blocks its version (`blockMalicious`, on by default); any other finding blocks only when a triager blocks it, and `onMissingData: block` refuses what cannot be evaluated yet (`vulnerability_data_missing`); `403 vulnerability_blocked` on the format routes, `/files/`, the cache view and every virtual tier, and a blocked remote miss is never fetched. `vulnerabilities.enforcement: report` only counts. See [download block](docs/security/vulnerability-scanning.md#download-block).
 - 🧾 **NuGet audit warnings from Quader's data.** `nuget.vulnerabilityInfo` (local by default while scanning is on) lists `VulnerabilityInfo/6.7.0` in the service index and serves `vulnerabilities/index.json` and `quader.json`, so `dotnet restore` reports NU1901 to NU1904; internal names are left out. See [client audits](docs/security/vulnerability-scanning.md#client-audits).
 - 📊 **Vulnerability report and package-page tab.** The Vulnerabilities screen (counts, trend, filters, CSV export, finding, advisory and advisory-source pages), the API under `/api/v1/vulnerabilities/`, and a Vulnerabilities tab on the page of a version, each narrowed to the findings the caller can read. See [vulnerabilities](docs/manual/user/vulnerabilities.md).
@@ -652,7 +652,8 @@ of at most 30, or 37 if it contains `quader`); the message names that name and w
 |---|---|---|
 | Chart | `deploy/helm/quader` | yes |
 | Sizing profiles | `deploy/helm/quader/profiles/small.yaml`, `medium.yaml`, `large.yaml` (R-HA-050), layered before your own values file | yes |
-| Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`), `<fullname>-vuln-scanner-trivy` (`--role scanner` of the kind `trivy`, while the image scanning is on), `<fullname>-malware-scanner-clamav` (`--role scanner` of the kind `clamav`, containers `quader` and `clamd`, while the malware scanning is on), `<fullname>-malware-updater-freshclam` (`--role scanner` of the kind `freshclam`, containers `quader` and `freshclam`, one replica, while the malware scanning takes its signatures from the updater); a Deployment that runs one third-party tool is named `<fullname>-<purpose>-scanner-<tool>`, or `<fullname>-<purpose>-<function>-<tool>` when it scans nothing | yes |
+| Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`), `<fullname>-vuln-scanner-trivy` (`--role scanner` of the kind `trivy`, init container `trivy`, containers `quader` and `database`, while the image scanning is on), `<fullname>-malware-scanner-clamav` (`--role scanner` of the kind `clamav`, containers `quader` and `clamd`, while the malware scanning is on), `<fullname>-malware-updater-freshclam` (`--role scanner` of the kind `freshclam`, containers `quader` and `freshclam`, one replica, while the malware scanning takes its signatures from the updater); a Deployment that runs one third-party tool is named `<fullname>-<purpose>-scanner-<tool>`, or `<fullname>-<purpose>-<function>-<tool>` when it scans nothing | yes |
+| Trivy containers and files | the init container `trivy` of the image scanner, which runs the image's own `cp /usr/local/bin/trivy /opt/trivy/trivy` into the volume `trivy-bin` (an `emptyDir` of 256Mi, read-only at `/opt/trivy` in the container `quader`, where `vulnerabilities.images.binary` points); the container `database`, which writes the volume `trivy-db` (`/var/lib/quader/trivy-db`, read-only in `quader`); the image `trivy.image` = `TRIVY_IMAGE` of `tools/versions.env`; the release image `guidedtraffic/quader` carries no analyser | yes (`vuln-scanner-trivy.yaml`) |
 | ClamAV containers and files | `clamd` beside the malware scanner (socket `/run/clamd/clamd.sock`, database `/var/lib/clamav`, which the scanner loads before it writes the marker `.quader-loaded`), `freshclam` beside the updater's `quader` container (the shared directory `/var/lib/clamav`, which `quader` seeds before it writes the marker `.quader-seeded`; `freshclam` writes its version to `.quader-tool-version`); ConfigMaps `<fullname>-clamd` (`clamd.conf`) and `<fullname>-malware-updater-freshclam` (`freshclam.conf`); the image `clamav.image` = `CLAMAV_IMAGE` of `tools/versions.env` | yes (`_malware.tpl`, `malware-scanner-clamav.yaml`, `malware-updater-freshclam.yaml`) |
 | Pools | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>` (path pools, with a Service of the same name), `<fullname>-worker-<pool>` (label `quader/pool: <pool>`) | yes (`_units.tpl`) |
 | Endpoint pools | `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>`, label `quader/pool: ep-<name>`, for an endpoint with `endpoints.<name>.pool.enabled` (one per role its surface holds) | yes (`_units.tpl`) |
@@ -1999,7 +2000,7 @@ vulnerabilities:
     max_rows: 100000                    # default; at least 1: a larger export answers 422 export_too_large before anything is streamed
   images:                               # the scanning of container images (R-VULN-033 to R-VULN-049); both steps run in vuln-scanner-trivy, the worker runs no tool
     enabled: true                       # default; false: no scanner, no scan listener, no image scans
-    binary: /usr/local/bin/trivy        # default: the pinned analyser of the image; read by the scanner only, for the analysis and the detection
+    binary: /opt/trivy/trivy            # default: the analyser the chart's init container copies from trivy.image into the read-only volume trivy-bin; read by the scanner only, for the analysis and the detection
     scan_dir: ""                        # default: <storage.spool.dir>/imagescan; the scanner's analyses and detections; the worker writes nothing of a scan
     concurrency: 2                      # default; 1 to 64: calls one job has in flight; should not exceed the scanners' capacity (replicas x scanner.slots)
     run_slice: 10m                      # default; 10s to 24h
@@ -2435,6 +2436,7 @@ an identity whose key is believed taken (`POST /api/v1/signing/identities/{id}/r
 | `malware.scan_listener.updater_client_name`, `malware.updater.client_name` | empty; the chart sets the updater's and the worker's names | The first admits the updater, the pod that talks to the internet, on the database routes only (the public signature set, for its seed) and never on the blob route; it must differ from the malware scanner's name. The second is the one name the updater's listener admits; the updater with TLS refuses to start without it. Whatever reaches the updater, the worker stores only containers whose header's signature verifies against ClamAV's key. | [R-MAL-032](docs/spec/malware-scanning.md#r-mal-032--the-updaters-quader-container-the-seed-the-listing-and-the-files), [R-MAL-033](docs/spec/malware-scanning.md#r-mal-033--verifying-a-container-before-it-is-stored), [H-1165](docs/security/clamav-definitions.md#h-1165--a-taken-over-updater-can-hold-back-newer-definitions-until-the-age-alarm) |
 | `vulnerabilities.images.registry.client_name` | empty; the chart sets the image scanner's name | The name by which the scan listener records an image scanner's report of itself; with the malware scanner's `malware.scan_listener.client_name` it decides the kind a scanner pod is listed under, never the pod's own word. Empty lists no image scanner. | [H-1161](docs/security/scanner-replicas.md#h-1161--a-taken-over-scanner-can-make-an-administrator-read-made-up-replicas-of-its-kind) |
 | `vulnerabilities.images.scanner.slots` | `1` | Above 1, the analyses of one scanner pod share its user: one hostile image can read the others' images and tokens. Raise the scanner's replicas instead. | [H-1037](docs/security/image-scanning.md#h-1037--analyses-that-share-a-scanner-share-its-user) |
+| Helm `trivy.image` | `docker.io/aquasec/trivy:0.76.2@sha256:8f6b…68fb` (`TRIVY_IMAGE`) | The analyser every scanner pod runs, copied by the init container `trivy` into a volume the scanner mounts read-only. The digest fixes the bytes whatever the registry serves; a node without the image pulls it from Docker Hub when a scanner pod starts there, outside every egress rule of the chart, so a registry outage or a pull limit keeps the scanner in its init phase. A mirror keeps the digest. | [H-1182](docs/security/image-scanning.md#h-1182--a-node-pulls-the-analysers-image-from-a-third-partys-registry-when-a-scanner-pod-starts), [H-1003](docs/security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day) |
 | `system.bootstrap_anonymous_read` | `false` | `true` lets anonymous callers read the installation facts and the replica list on the client port. Startup refuses it with an `https` base URL that is not localhost. | [H-63](docs/security/roles-and-trust-boundaries.md), [Q-API-14](docs/spec/api-and-ui.md) |
 | `metrics.auth` | `none` | With `none`, whoever reaches port 8081 reads the metrics; the chart's NetworkPolicy limits that. `static` requires a bearer token file. | [H-41](docs/spec/operations-and-observability.md), [R-OPS-006](docs/spec/operations-and-observability.md) |
 | `storage.s3.allow_insecure_endpoint`, `storage.s3.ca_file` | `false`, empty | An `http://` object-store endpoint is refused without the first; the second replaces the system roots for the object-store client. | [transport encryption](docs/security/transport-encryption.md), [Q-STOR-14](docs/spec/storage.md) |
@@ -2973,12 +2975,16 @@ worker:
     sizeLimit: 5Gi                      # default
   autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
   pools: []                             # default; example: [{name: vuln, queues: [vuln], replicaCount: 2}]; the main worker claims every queue no pool lists (queues: default, maintenance, index, delivery, mirror, vuln)
+trivy:                                  # the init container trivy of <fullname>-vuln-scanner-trivy, which copies the analyser's binary from its own image into the pod (R-HA-070); the release image carries no analyser
+  image: docker.io/aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb   # default: TRIVY_IMAGE of tools/versions.env, which a chart test holds it to; a node pulls it when a scanner pod starts there (H-1182); a mirror sets its own name with the same digest
+  pullPolicy: IfNotPresent              # default
+  resources: {requests: {cpu: 10m, memory: 32Mi}, limits: {memory: 128Mi}}   # default (not measured); the copy of one binary of 163 MB
 vulnScannerTrivy:                       # <fullname>-vuln-scanner-trivy, the analysis and the detection of container images with Trivy and the loader of its database, rendered while config.vulnerabilities.enabled and .images.enabled (both default true)
   replicaCount: 2                       # default; at least 1, 2 with highAvailability.enforce; the capacity is replicas × config.vulnerabilities.images.scanner.slots
   terminationGracePeriodSeconds: 60     # default; an analysis still running at the shutdown timeout is ended and put off without an attempt
   spool:
     sizeLimit: 6Gi                      # default; its budget (minus spool.headroom) must hold slots × (max_image_size + 64 MiB), validated
-  resources: {requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 1Gi}, limits: {memory: 2Gi}}   # default; no CPU limit
+  resources: {requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 1280Mi}, limits: {memory: 2Gi}}   # default; no CPU limit; the 256 MiB above 1 GiB are the analyser's copy in trivy-bin
   database:                             # the container database, the loader of Trivy's database (the kind trivy-db, R-HA-070)
     sizeLimit: 5Gi                      # default; the volume trivy-db (follows spool.type) and the loader's budget: the newest database and the one before it; at least 4Gi, validated
     resources: {requests: {cpu: 50m, memory: 64Mi, ephemeral-storage: 2Gi}, limits: {memory: 256Mi}}   # default; no CPU limit
@@ -3059,6 +3065,28 @@ migrations:
   activeDeadlineSeconds: 1800           # default
   ttlSecondsAfterFinished: 86400        # default
 ```
+
+**Images from a mirror of your own, or nodes without a registry** ([Q-HA-383](docs/spec/ha-and-helm.md#q-ha-383--a-private-mirror-changes-one-value-per-image-and-nodes-without-a-registry-load-the-images-beforehand)).
+The chart runs up to three images: the Quader image, `trivy.image` while the image scanning is on and `clamav.image` while the malware
+scanning is on; the defaults are the pins `TRIVY_IMAGE` and `CLAMAV_IMAGE` of [tools/versions.env](tools/versions.env). Copy each by its
+index digest, so that the digest stays (for example `skopeo copy --all docker://docker.io/aquasec/trivy@sha256:<digest> docker://registry.example.com/mirror/aquasec/trivy:0.76.2`
+or `crane copy`), and set the mirror's names with the same digests:
+
+```yaml
+image:
+  registry: registry.example.com        # example
+  repository: mirror/guidedtraffic/quader   # example
+trivy:
+  image: registry.example.com/mirror/aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb   # example: the default's digest under the mirror's name
+clamav:
+  image: registry.example.com/mirror/clamav/clamav-debian:1.5.5_base@sha256:739c5ec70212e2d3e0c7719af2fba8776fb435f9932d7d3a3de2a95fcd6adde7   # example
+global:
+  imagePullSecrets: [{name: registry-pull}]   # example; reaches every container of every pod, the init container trivy included
+```
+
+Nodes that reach no registry get the three images loaded into each node's container runtime beforehand and keep `pullPolicy: IfNotPresent`;
+or the installation switches the image scanning off (`config.vulnerabilities.images.enabled: false`) and pulls nothing of the analyser. The
+analyser's database is not an image of a node: it stays in a repository of the installation (`vulnerabilities.images.database.repository`).
 
 </details>
 

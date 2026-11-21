@@ -105,7 +105,8 @@ jobs:
             org.opencontainers.image.source=https://github.com/guided-traffic/quader
 
       # The build arguments read the same pins as the Makefile: the Go line of go.mod, web/.nvmrc for the
-      # Node.js of the web stage, and tools/versions.env for the base image.
+      # Node.js of the web stage, and tools/versions.env for the base image. The image holds no analyser: the
+      # chart's init container copies it from TRIVY_IMAGE into the scanner pods (R-HA-070).
       - name: Name the toolchain pins of the build
         id: pins
         run: |
@@ -147,9 +148,6 @@ jobs:
             NODE_VERSION=${{ steps.pins.outputs.node }}
             GO_VERSION=${{ steps.pins.outputs.go }}
             RUNTIME_BASE_IMAGE=${{ env.RUNTIME_BASE_IMAGE }}
-            TRIVY_VERSION=${{ env.TRIVY_VERSION }}
-            TRIVY_SHA256_LINUX_AMD64=${{ env.TRIVY_SHA256_LINUX_AMD64 }}
-            TRIVY_SHA256_LINUX_ARM64=${{ env.TRIVY_SHA256_LINUX_ARM64 }}
             VERSION=${{ steps.version.outputs.version }}
             COMMIT=${{ github.sha }}
             DATE=${{ steps.time.outputs.date }}

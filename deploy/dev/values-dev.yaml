@@ -87,12 +87,16 @@ config:
   # No test cluster reaches the public advisory hosts: the scanning's sources are off in every profile but `vuln` (values-vuln.yaml, which
   # points them at the test advisory source). With the OSV source off the audit default of an npm repository is the one of R-NPM-038
   # again (`forward` on remote and virtual repositories, R-VULN-017), which the npm matrix expects.
+  # The image scanning is off in every profile but `vuln` as well (values-vuln.yaml switches it on, Q-HA-382): no other leg starts the two
+  # pods of vuln-scanner-trivy or pulls the analyser's image (R-HA-070); an image pushed in another leg shows not_covered.
   vulnerabilities:
     sources:
       osv:
         mode: "off"
       kev:
         mode: "off"
+    images:
+      enabled: false
   # Nor does a test cluster fetch the image scanning's database on a schedule: about 142 MB from mirror.gcr.io through
   # upstream/scanner-trivy at minute 23 of every sixth hour (R-VULN-044), which a leg that runs across that minute would pull. No test
   # needs it (the scanner's case asserts the analysis, Q-VULN-168); a disabled task still runs when it is triggered.

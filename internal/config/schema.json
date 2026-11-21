@@ -5169,8 +5169,8 @@
           "additionalProperties": false,
           "properties": {
             "binary": {
-              "default": "/usr/local/bin/trivy",
-              "description": "The analyser, the one the release image carries at the version of tools/versions.env: the scanner runs the analysis and the detection with it (R-VULN-048). Read by the scanner only; the worker runs no tool.",
+              "default": "/opt/trivy/trivy",
+              "description": "The analyser: the scanner runs the analysis and the detection with it (R-VULN-048). The default is where the chart's init container copies the binary of the analyser's own image (trivy.image, TRIVY_IMAGE of tools/versions.env) into the read-only volume trivy-bin of each scanner pod (R-HA-070); the release image carries no analyser. Read by the scanner only; the worker runs no tool.",
               "type": "string",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_BINARY"
             },

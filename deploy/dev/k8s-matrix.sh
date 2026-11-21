@@ -112,6 +112,11 @@ expect "autoscaling/v2 metric" '{.spec.metrics[*].type}' Resource hpa "$RELEASE-
 for kind in api packages worker vuln-scanner-trivy; do
   expect "the issuer of the Certificate of $kind" '{.spec.issuerRef.name}' cluster-ca certificate "$RELEASE-tls-$kind"
 done
+# The image scanning is on with the chart's defaults here: the API server stored the init container that copies the analyser and the
+# read-only mount of its volume (R-HA-070). No pod starts, so no image is loaded, the analyser's neither (Q-HA-386).
+expect "the init container of the image scanner" '{.spec.template.spec.initContainers[*].name}' trivy deployment "$RELEASE-vuln-scanner-trivy"
+expect "the analyser's volume in the scanner, read-only" '{.spec.template.spec.containers[0].volumeMounts[?(@.name=="trivy-bin")].readOnly}' true \
+  deployment "$RELEASE-vuln-scanner-trivy"
 
 log "helm upgrade to the small profile"
 hm upgrade "$RELEASE" "$CHART" -n "$NAMESPACE" -f "$CHART/profiles/small.yaml" -f "$OPERATOR" \

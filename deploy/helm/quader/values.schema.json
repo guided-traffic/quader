@@ -1675,6 +1675,52 @@
       },
       "additionalProperties": false
     },
+    "trivy": {
+      "type": "object",
+      "description": "The init container trivy of vuln-scanner-trivy, which copies the analyser's binary from its own image into the pod (R-HA-070)",
+      "properties": {
+        "image": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9./_-]*:[A-Za-z0-9._-]+(@sha256:[a-f0-9]{64})?$",
+          "description": "the analyser's image, <repository>:<tag>@sha256:<digest>; its binary must be at /usr/local/bin/trivy and the image must have cp"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "description": "Kubernetes quantity"
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "description": "Kubernetes quantity"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "vulnScannerTrivy": {
       "type": "object",
       "properties": {

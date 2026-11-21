@@ -112,7 +112,7 @@ built in phase 6a). Roles:
   [ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format)): the
   role is the wrapper of a third-party tool, whether it scans or not ([architecture.md](architecture.md) Q-ARCH-562).
   A unit that runs a tool carries the tool's name (owner, 2026-11-21, [ADR-223](../decisions.md#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name)).
-  Specified, not built (owner, 2026-11-21, [ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)):
+  Built on 2026-11-21 (owner, 2026-11-21, [ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)):
   `vuln-scanner-trivy` detects as well, with the database in its pod read-only, written by a second container of the kind `trivy-db`, and its
   analyser comes from the analyser's own image through an init container, so the one image of Quader carries no analyser and no other role
   runs one;

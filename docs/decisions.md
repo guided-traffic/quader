@@ -1878,12 +1878,13 @@ Kubernetes the chart supports; detections wait visibly behind analyses.
 
 **Built (2026-11-21):** the detection in the scanner, the loader of the kind `trivy-db` with the container `database` and the volume
 `trivy-db`, the check of the kept analysis, one analysis per digest, the process not dumpable, the order of work, the role `all` without a
-scanner. **Not built yet:** the analyser from its own image (the init container, `trivy-bin`, `TRIVY_IMAGE`, the release image without the
-analyser, the test profiles), so the release image still carries the analyser, which only the scanner runs.
+scanner; then the analyser from its own image: the init container `trivy`, the volume `trivy-bin`, the pin `TRIVY_IMAGE` with its chart
+test and Renovate group, the release image without the analyser (246.5 MB to 83.3 MB on arm64), `make trivy` out of the image, and the test
+profiles that start the scanner units in `vuln` alone (Q-HA-382, Q-HA-386, Q-HA-387).
 
 **Spec:** [vulnerability-scanning.md](spec/vulnerability-scanning.md) R-VULN-033 to R-VULN-036, R-VULN-041, R-VULN-043, R-VULN-044,
 R-VULN-046, R-VULN-048, R-VULN-049, Q-VULN-196 to Q-VULN-206; [ha-and-helm.md](spec/ha-and-helm.md) R-HA-002, R-HA-065 to R-HA-067,
-R-HA-070, Q-HA-378 to Q-HA-383; [architecture.md](spec/architecture.md) R-ARCH-036, R-ARCH-037, Q-ARCH-563, Q-ARCH-564;
+R-HA-070, Q-HA-378 to Q-HA-383, Q-HA-386 to Q-HA-388; [architecture.md](spec/architecture.md) R-ARCH-036, R-ARCH-037, Q-ARCH-563, Q-ARCH-564;
 [operations-and-observability.md](spec/operations-and-observability.md) R-OPS-048, Q-OPS-225; [security/image-scanning.md](security/image-scanning.md)
 H-1181, H-1182.
 

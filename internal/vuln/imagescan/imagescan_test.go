@@ -283,7 +283,7 @@ func TestR_VULN_035_AnArchiveOfAnotherSchemaIsRefused(t *testing.T) {
 // TestRealTrivyScansTheFixture is the end-to-end proof of the command line of the pinned binary: analysis to an SBOM, then detection against
 // a real database from that SBOM. It needs three things the unit tier does not ship, so it runs when they are named:
 //
-//	QUADER_TEST_TRIVY_BIN     the binary of .bin/trivy-<version>
+//	QUADER_TEST_TRIVY_BIN     the binary `make trivy` takes out of TRIVY_IMAGE (the path `make trivy-dir` prints, on Linux)
 //	QUADER_TEST_TRIVY_CACHE   a cache directory holding db/trivy.db
 //	QUADER_TEST_IMAGE_LAYOUT  an OCI layout directory of a vulnerable image
 func TestRealTrivyScansTheFixture(t *testing.T) {

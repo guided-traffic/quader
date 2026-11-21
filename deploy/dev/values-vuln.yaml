@@ -19,7 +19,9 @@ config:
     # and the case of the scanner (vuln_scanner_test.go) pushes to a local repository and asks within a minute (R-HA-066).
     # The image scanning's database is the fixture database of 128 KiB that the case pushes to e2e/scanner-db as aquasec/trivy-db:2, an
     # installation without the internet as R-VULN-044 describes it: no leg fetches the real database of 142.6 MB (Q-VULN-195, Q-VULN-205).
+    # The image scanning is on in this profile only (values-dev.yaml switches it off, Q-HA-382), with the analyser's image loaded below.
     images:
+      enabled: true
       scan_delay: 0s
       database:
         repository: e2e/scanner-db
@@ -53,6 +55,11 @@ worker:
       queues: [vuln]
       replicaCount: 2
       terminationGracePeriodSeconds: 30
+# The analyser's image of the pin TRIVY_IMAGE, tagged quader-e2e-trivy:dev and loaded into the nodes by up.sh as ClamAV's is (the nodes
+# pull nothing from Docker Hub for it): the init container trivy of every scanner pod copies its binary (R-HA-070).
+trivy:
+  image: quader-e2e-trivy:dev
+  pullPolicy: IfNotPresent
 # ClamAV of the pin CLAMAV_IMAGE, tagged quader-e2e-clamav:dev and loaded into the nodes by up.sh (the nodes pull nothing from Docker
 # Hub for it). clamd holds a database of a few signatures here: its request is the measured one of that database (Q-HA-361); the limit
 # stays the chart's floor.
