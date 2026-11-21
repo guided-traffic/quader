@@ -413,6 +413,210 @@ once per page load and after each write, and decides every state from that answe
 What follows with packages 2 and 3: Quader's npm signature and its attestation in the details of a version and a file, and the client
 setup's tab **Verify** (R-SIG-056, the second and third bullets).
 
+## Measured with real clients
+
+A measurement, run once on 2026-11-21 against `main` at 452cd31f5 (stage 1, the signing identity of stage 2, package 1 of stage 3), as
+R-SIG-042 and R-SIG-078 of the [specification](../spec/signatures.md) owe it ([Q-SIG-95](../spec/signatures.md#q-sig-95--no-end-to-end-case-one-measurement-by-hand)).
+Every signature below was made by the real tool, every download was made by the real client, and what Quader showed was read from
+`GET /api/v1/packages/{id}/versions/{version}/signatures` and `GET /api/v1/projects/{project}/repositories/{repo}/signatures?path=`. It
+adds no test: nothing here runs in seconds. The defects it found are listed at the end of this section, most serious first.
+
+### The setup, and how to repeat it
+
+- **Quader:** one replica of the role `all`, built from the worktree (`go build ./cmd/quader`), on the host at `127.0.0.1:27443`, with
+  `server.base_url: https://host.docker.internal:27443`; PostgreSQL, Valkey and SeaweedFS in a compose project of their own (the
+  services of [deploy/ui-dev/compose.yaml](../../deploy/ui-dev/compose.yaml) with other names and ports, the certificates of
+  [test/integration/certs.sh](../../test/integration/certs.sh)). `malware.enabled` and `vulnerabilities.enabled` were false, so that the
+  signature gate alone decided. Quader's own listener had a certificate of a second CA with `keyUsage`: Python 3.13 refuses the
+  integration stack's CA, which has none (`CA cert does not include key usage extension`), and `ansible-galaxy` runs on Python.
+- **The token:** a user with the binding `admin` and a personal access token inserted the way `testenv.Stack.Token` writes one, with
+  `admin: true` in its scope (without it the token has the user's rights without the administrator's).
+- **The clients** ran in containers and reached Quader as `host.docker.internal`: Debian 13 with cosign, notation, crane, gpg and curl;
+  the pinned images of the end-to-end sets for npm (`E2E_CLIENTS_NODE_IMAGE`), the .NET SDK (`E2E_NUGETCLIENTS_SDK_IMAGE`), Docker
+  (`E2E_OCICLIENTS_DOCKER_IMAGE`, Docker in Docker with Quader's CA under `/etc/docker/certs.d/host.docker.internal:27443/ca.crt`), Ansible
+  (`E2E_ANSIBLECLIENTS_CORE221_IMAGE` with `pip install ansible-core==2.21.6`) and apt (`E2E_APTCLIENTS_DEBIAN13_IMAGE`).
+- **Kubernetes:** a kind cluster of one node (`DEV_KIND_NODE_IMAGE`) with a kubeconfig file of its own, whose containerd reads
+  `/etc/containerd/certs.d/host.docker.internal:27443/hosts.toml` (an `extraMounts` of the CA and a `containerdConfigPatches` setting
+  `config_path`), and an `imagePullSecret` with the token.
+- **The test material**, made for the run and thrown away: a company CA (an ECDSA root and intermediate, an ECDSA code-signing leaf for
+  cosign and Notation), a second hierarchy of RSA for NuGet (`dotnet nuget sign` refuses a leaf an ECDSA CA issued: `NU3013: The signing
+  certificate has an unsupported signature algorithm`), a cosign key pair, a second cosign key pair no anchor knows, and an Ed25519
+  OpenPGP release key. The anchors: the cosign public key (kind `public-key`), the two roots (kind `ca`) and the release key (kind
+  `openpgp`).
+- **What the client side needed** that Quader does not decide: cosign 3 signs without a transparency log only through a signing
+  configuration without one (`cosign signing-config create --out nolog.json`, then `--signing-config nolog.json`; `--tlog-upload=false`
+  alone is refused); `dotnet nuget sign` on Linux builds the chain against the SDK's own bundle, so the company root was appended to
+  `/usr/share/dotnet/sdk/*/trustedroots/codesignctl.pem` and the intermediate added to the system store (without both:
+  `NU3018: PartialChain: unable to get local issuer certificate`).
+
+| Tool | Version |
+|---|---|
+| cosign | 3.1.4 (`cosign-linux-arm64`, checksum checked) |
+| notation | 1.3.2 |
+| crane (pushes of the test images) | 0.22.1 |
+| npm | 11.20.0 on Node 26.13.0 |
+| .NET SDK (NuGet client) | 10.0.403 (NuGet 7.9.0) |
+| ansible-core | 2.21.6 on Python 3.13.18 |
+| GnuPG | 2.4.7 |
+| Docker | 29.9.3 (containerd client 2.4.2) |
+| Kubernetes | kind 0.33.0, node image v1.37.0 |
+| curl | 8.14.1 |
+
+### Stage 1: what Quader showed for signatures the real tools made
+
+"Before" is the state without the matching anchor (or with it switched off), "after" with it.
+
+| Case | Tool | Quader before → after | Client through Quader | Judgement |
+|---|---|---|---|---|
+| OCI, key pair, default format | `cosign sign --key` | publisher · `sigstore-bundle` (cosign 3 writes a DSSE envelope with the predicate type `https://sigstore.dev/cosign/sign/v1` as a referrer) · `no_key`, untrusted → `valid`, **Verified · internal** | `cosign verify --key` exit 0 | works |
+| OCI, key pair, the older tag scheme | `cosign sign --new-bundle-format=false --use-signing-config=false --tlog-upload=false` (all three deprecated) writes `sha256-<hex>.sig` | publisher · `cosign-legacy` · `cosign_tag` → `valid`, internal | `cosign verify --new-bundle-format=false` exit 0 | works |
+| OCI, company CA chain, default format | `cosign sign --key --certificate --certificate-chain` | `malformed`, `content_unreadable`: "the Sigstore bundle is not valid: verification material cannot be X.509 certificate chain (for bundle v0.3)"; **Scheme not supported** with and without the CA anchor | `cosign verify --ca-roots --ca-intermediates` and `--trusted-root` both: `Error: no signatures found`, exit 10 | cosign 3.1.4 writes a bundle v0.3 with `x509CertificateChain`, which the bundle format forbids and neither cosign nor Quader reads; not a defect of Quader |
+| OCI, company CA chain, the older format | the same with `--new-bundle-format=false` | `cosign-legacy` → `valid`, internal by the CA anchor | `cosign verify --ca-roots … --new-bundle-format=false` exit 0 | works |
+| OCI, attestation | `cosign attest --key --type slsaprovenance1` | provenance · `sigstore-bundle` · predicate `https://slsa.dev/provenance/v1` → `valid`, internal | `cosign verify-attestation` exit 0 | works |
+| OCI, Notation | `notation sign` (company CA) | publisher · `notation-jws` · `valid`, untrusted, signer `ci@example.com`, issuer `CN=Example Code Signing CA` → internal by the CA anchor | `notation verify` exit 0 | works |
+| OCI, multi-platform index | `cosign sign` of the index digest, no `--recursive` | `valid`, internal | `cosign verify` exit 0 | works |
+| OCI, remote of a local repository | crane through `docker-remote` (upstream `https://127.0.0.1:27443`) | the background fetch stored the referrers and the `.sig` (`signature_fetches.fetched_at` set, attachments in the remote); the version's view answers **none**, the manifest's file view **Verified · internal** | cosign and notation verify through the remote: the same exits as local | **defect 4** (the version's view) |
+| npm, local | `npm audit signatures` | none (Quader signs nothing yet; `-/npm/v1/keys` answers `{"keys":[]}`) | `found no dependencies to audit that were installed from a supported registry`, exit 1 | as expected until stage 2 |
+| npm, remote of registry.npmjs.org | `npm audit signatures` after `npm install sigstore@3.1.0` | provenance `valid`, **Verified · public** (identity of sigstore-js's release workflow); two registry signatures `valid`, public by `npm registry signing keys` | `97 packages have verified registry signatures`, `24 packages have verified attestations`, exit 0 | works |
+| NuGet, author signature | `dotnet nuget sign` (company RSA CA), push | `nuget-cms` · `malformed`, `content_unreadable`: "the .signature.p7s is no CMS SignedData", with and without the CA anchor | `dotnet nuget verify --all` on the package downloaded from Quader (bytes identical): `Signature type: Author`, exit 0 | **defect 1** |
+| NuGet, nuget.org through a remote | `Microsoft.Extensions.Primitives` 8.0.0 | author and repository signature both `malformed`, the same detail | — | **defect 1** |
+| Ansible Galaxy | detached `gpg --armor` over `MANIFEST.json`, posted as the user manual's "Sign a collection" says (`201`) | posted right after the publish: no row in the signature store, **No signature**; posted again minutes later: publisher · `openpgp` · `upload` → `valid`, untrusted → internal by the release key | `ansible-galaxy collection install --keyring … --required-valid-signature-count +1` exit 0, `collection verify` exit 0 | **defect 3** |
+| Generic, OpenPGP | `gpg --detach-sign --armor`, `tool-gpg.bin.asc` | `openpgp` · `sibling` → `valid`, untrusted → internal | the sibling with curl, then `gpg --verify`: `Good signature` | works |
+| Generic, cosign | `cosign sign-blob --key --bundle tool-cosign.bin.sigstore.json` (cosign 3 has no `--output-signature` any more) | `sigstore-bundle` · `sibling` → `valid`, untrusted → internal | `cosign verify-blob --bundle` on the fetched files: `Verified OK` | works |
+| Debian | `apt-get update` against `deb-local` with `signing-key.asc` as `Signed-By` | — | `Get:1 … stable InRelease [1560 B]`, exit 0 | works |
+
+### Stage 3: real clients against the gate
+
+Every repository but `deb-local` had `{"signatures":{"onlyVerified":true}}` with any anchor. Pending was provoked by running Quader as the
+role `web` (no worker), pushing signed content, and downloading it; the same downloads were repeated after the role `all` came back.
+
+| Case | Client | Quader answered | Client output, in short | Exit (time) | Judgement |
+|---|---|---|---|---|---|
+| OCI refused, unsigned | `docker pull` | 403 `DENIED`, reason `missing` | `Error response from daemon: error from registry: Quader refused unsigned/_tags/1.0 of web/docker-local: it has no signature, …` | 1 | readable; no `denied:` prefix (below) |
+| OCI refused, untrusted signer | `docker pull` | 403, `untrusted` | `… no trust anchor this repository accepts knows its signer. …` | 1 | readable |
+| OCI refused, unreadable signature | `docker pull` of `chain` | 403, `not_checked` | `… its signature could not be checked. …` | 1 | readable; a reader cannot tell that cosign wrote an invalid bundle |
+| OCI passing | `docker pull` of `key`, `notation`, `tagscheme`, `att`, `chainlegacy` | 200 | `Status: Downloaded newer image` | 0 | works |
+| OCI multi-platform, signed at its index | `docker pull multi:1.0` | the index and then `GET …/manifests/sha256:be6f…` (the arm64 child) 200 | pulled, `arm64` | 0 | works: the child passes on the index's signature (R-SIG-063) |
+| OCI remote | `docker pull` through `docker-remote` | signed image served, unsigned refused with the remote's name in the text; a signed image's first pull through the remote waited for the fetch and was served | as local | 0 / 1 (1 s) | works |
+| OCI pending | `docker pull pend:1.0` | `HEAD` 503 after 25 s, retried once | `Error response from daemon: unknown: failed to resolve reference …: unexpected status from HEAD request to …: 503 Service Unavailable` | 1 (50 s) | **unclear to a reader** (defect 5) |
+| OCI, verify a refused image | `cosign verify --key` of `blobs` (signed by a key no anchor knows) | by tag: 403 on the tag; by digest: the referrers served | by tag: the `DENIED` text, exit 1; by digest: `The signatures were verified against the specified public key`, exit 0 | 1 / 0 | works: the signatures stay fetchable; the digest is needed |
+| OCI, sign in a gated repository | `cosign sign`, `notation sign` of a pushed, unsigned image by digest | 403 on the client's read of the manifest before it signs | cosign: `accessing image: GET …: DENIED: Quader refused …`; notation: `failed to get manifest descriptor: HEAD …: response status code 403: Forbidden` | 1 | **defect 2** |
+| Kubernetes refused | kubelet (containerd 2) | 403 | event `Failed`: `failed to resolve reference "…/unsigned:1.0": unexpected status from HEAD request to …: 403 Forbidden` then `denied: Quader refused unsigned/_tags/1.0 of web/docker-local: it has no signature, …`; pod `ImagePullBackOff` | — | readable |
+| Kubernetes passing | kubelet | 200 | `Successfully pulled image "…/key:1.0"` | — | works |
+| npm refused | `npm install sigm-unsigned@1.0.0` (npm-local) | 403 | `npm error code E403` … `- Quader refused sigm-unsigned/-/sigm-unsigned-1.0.0.tgz of web/npm-local: it has no signature, …` | 1 | readable |
+| npm refused, a dependency of the public registry | `npm install sigstore@3.1.0` through `npm-remote` | 403 for `color-name-1.1.4.tgz` | `… it has no signature, …` although Quader itself shows npm's registry signature of that version | 1 | **misleading** (defect 6) |
+| npm pending | `npm install @sigstore/protobuf-specs@0.3.2` through `npm-remote` (fetch not run) | 503 three times, 25 s each | `npm error code E503` … `Quader is checking the signatures of … Try again in a minute.` | 1 (146 s) | readable; npm retries twice |
+| npm after the decision | the same | 200 | `added 1 package in 5s` | 0 | works |
+| NuGet refused | `dotnet restore` of `Sigm.Unsigned` | 403 | `Response status code does not indicate success: 403 (Forbidden).` five times, then `error : Failed to download package 'Sigm.Unsigned.1.0.2'` | 1 (7 s) | **unclear to a reader** (defect 5) |
+| NuGet with an author's signature | `dotnet restore` of `Sigm.Signed` (signed, CA anchor present) | 403, `not_checked` | as refused | 1 | **defect 1**: cannot pass |
+| NuGet pending | `dotnet restore` of `Sigm.Pend` | 503 six times, 25 s each | `503 (Service Unavailable)` five times, then `The feed … lists package 'Sigm.Pend.1.0.0' but multiple attempts to download the nupkg have failed. The feed is either invalid or required packages were removed …` | 1 (160 s) | **misleading** (defect 5); NuGet retried at once each time, not after `Retry-After: 30` |
+| Ansible refused | `ansible-galaxy collection install sigm.unsigned` | 403 | `[ERROR]: Failed to download collection tar from 'quader': HTTP Error 403: Forbidden` | 1 | **unclear to a reader** (defect 5) |
+| Ansible passing | `sigm.signed:1.0.0` (the signature posted the second time) | 200 | `sigm.signed:1.0.0 was installed successfully` | 0 | works |
+| Ansible, signature posted right after the publish | `sigm.signed:1.0.1`, `sigm.pend:1.0.0` | 403, `missing` | `HTTP Error 403: Forbidden`, while the version document still lists the signature | 1 | **defect 3** |
+| Ansible pending | `sigm.pend:1.0.0` while no worker ran | 503 once | `HTTP Error 503: Service Unavailable`, no retry | 1 (25 s) | **unclear to a reader** (defect 5) |
+| Generic | `curl` | 200 for `tool-gpg.bin`, its `.asc` and `tool-cosign.bin`; 403 and 503 below | — | 0 / 22 | readable |
+| Debian | `PATCH` of `deb-local` | 422 `validation_failed`, pointer `/signatures/onlyVerified`, `not_applicable`: "apt checks the signature of a Debian repository's index, not of a package: the gate is not offered" | — | — | readable |
+
+The answers of `/files/`, as curl prints them:
+
+```text
+HTTP/2 403
+cache-control: no-store
+content-type: application/problem+json
+{"code":"signature_not_verified","detail":"Quader refused tool-unsigned.bin of web/files-internal: it has no signature, and this
+repository serves only artifacts with a verified signature. Details: https://host.docker.internal:27443/ui/projects/web/repositories/
+files-internal/files/tool-unsigned.bin","instance":"/files/web/files-internal/tool-unsigned.bin","reason":"missing","requestId":"…",
+"sha256":"6020ef54…","status":403,"title":"Signature not verified","type":"/api/v1/problems/signature_not_verified"}
+
+HTTP/2 503
+cache-control: no-store
+content-type: application/problem+json
+retry-after: 30
+{"code":"signature_check_pending","detail":"Quader is checking the signatures of tool-pend.bin. Try again in a minute.",
+"instance":"/files/web/files-internal/tool-pend.bin","requestId":"…","sha256":"8662a944…","status":503,"title":"Signature check pending",
+"type":"/api/v1/problems/signature_check_pending"}
+```
+
+Docker and the kubelet on the same refusal:
+
+```text
+$ docker pull host.docker.internal:27443/web/docker-local/unsigned:1.0
+Error response from daemon: error from registry: Quader refused unsigned/_tags/1.0 of web/docker-local: it has no signature, and this
+repository serves only artifacts with a verified signature. Details: https://host.docker.internal:27443/ui/projects/web/repositories/
+docker-local/files/unsigned/_tags/1.0
+
+Failed  Failed to pull image "host.docker.internal:27443/web/docker-local/unsigned:1.0": failed to pull and unpack image "…": failed to
+        resolve reference "…": unexpected status from HEAD request to https://host.docker.internal:27443/v2/web/docker-local/unsigned/
+        manifests/1.0: 403 Forbidden
+        denied: Quader refused unsigned/_tags/1.0 of web/docker-local: it has no signature, …
+```
+
+The details link answers `302` to `/ui/en/projects/…`; whether the page there shows the file was not looked at in a browser.
+
+### Defects found
+
+1. **No real NuGet signature is readable.** Reproduce: `dotnet nuget sign <pkg> --certificate-path <pfx>` with SDK 10.0.403, push to a
+   local NuGet repository; or fetch `Microsoft.Extensions.Primitives` 8.0.0 through a remote of nuget.org. Expected: the author's signature
+   `valid`, trusted by the CA anchor (nuget.org's by the shipped anchors), and a gated repository serves the package. Actual: every
+   signature, the countersignature of nuget.org included, is `malformed` with "the .signature.p7s is no CMS SignedData"; the badge reads
+   **Scheme not supported**, and a gated repository refuses every signed package with `not_checked`. Cause, confirmed with a probe of
+   `pkcs7.Parse` on both files: their `SignerInfo` is of version 3 and names its signer by `subjectKeyIdentifier` (RFC 5652, section
+   5.3), and `github.com/digitorus/pkcs7` parses only `issuerAndSerialNumber` (`asn1: structure error: tags don't match … issuerAndSerial
+   @5`). The place: `parse` in [nugetcms/cms.go](../../internal/signatures/scheme/nugetcms/cms.go) and the `signerInfo` it fills; the
+   unit tests sign with `issuerAndSerialNumber` only, which is why they pass.
+2. **In a gated OCI repository no client can sign an image after the push.** Reproduce: gate on `docker-local`, push an unsigned image,
+   `cosign sign --key k <repo>/<image>@<digest>` or `notation sign` of the same. Expected (R-SIG-064: "OCI's signatures arrive after the
+   push"): the signature is pushed and the image passes. Actual: cosign `GET`s and notation `HEAD`s the manifest before signing, the gate
+   refuses that read (`missing`), and both exit 1; the image can only be signed while the gate is off. The place: the gate judges every
+   manifest read alike, whoever asks ([formathost/signature_gate.go](../../internal/formathost/signature_gate.go) `serveChecks`, OCI's
+   [handlers_manifest.go](../../internal/formats/oci/handlers_manifest.go)); what should pass (a writer's read of a manifest by digest, any
+   `HEAD`, or a writer's read at all) is a decision of the specification.
+3. **A signature posted for a new Ansible version disappears from the signature store.** Reproduce: publish a collection, post its
+   `MANIFEST.json.asc` at once (the manual's CI flow), wait for the worker. Expected: the posted signature is checked and stays attached.
+   Actual: the post answers `201` and the version document keeps serving it to `ansible-galaxy`, but its attachment, signature row and
+   object are gone within seconds: the version shows **No signature** and a gated repository refuses it with `missing`. A signature posted
+   after the worker's discovery passed the archive stays (seen for `sigm.signed` 1.0.0). Cause, read in the code and matching what was
+   seen: discovery ([formathost/discover.go](../../internal/formathost/discover.go), `recordAt` with `fresh` false) records an empty
+   batch for the archive's item, and `SignatureReplaceAttachments` ([queries/signatures.sql](../../internal/meta/postgres/queries/signatures.sql))
+   deletes every attachment whose `item_id` is that item, the posted one included, which
+   [ansible/signatures_store.go](../../internal/formatdata/ansible/signatures_store.go) `record` attaches with the archive's `ItemID`;
+   `RemoveOrphans` then removes the row and the object. Since discovery starts again from the first item once a day
+   ([Q-SIG-111](../spec/signatures.md#q-sig-111--discovery-walks-the-items-by-a-cursor-and-starts-a-new-pass-once-a-day)), every
+   posted signature is lost at the latest at the next pass (inferred, not waited for).
+4. **A remote OCI image's version lists no signature.** Reproduce: pull a signed image through an OCI remote and read
+   `GET /api/v1/packages/{id}/versions/1.0/signatures?repository=web/docker-remote`. Expected: the fetched signatures and **Verified ·
+   internal**. Actual: `"state":"none"` with no signature, while the manifest's file view of the same repository shows them verified. The
+   place: `versionSubjects` in [signatures_views.go](../../internal/api/v1/signatures_views.go) adds the tag's digest only when the
+   repository holds the tag as a file, and a remote holds its tags as documents (R-OCI-022), so the version has no files and no subject.
+5. **NuGet and `ansible-galaxy` never show the gate's text, and Docker does not show it for a pending image.** `dotnet restore` prints
+   `Response status code does not indicate success: 403 (Forbidden).` (also with `-v detailed`, where the body never appears), retries a
+   403 and a 503 five times, and after the 503s ends with "The feed is either invalid or required packages were removed"; `ansible-galaxy`
+   prints `HTTP Error 403: Forbidden` or `HTTP Error 503: Service Unavailable`; Docker asks a tag with `HEAD`, whose 503 has no body. A
+   reader learns that the download failed, not why, and the NuGet text points the wrong way. Expected (R-SIG-068): the client shows the
+   text. A way for NuGet that was not tried: the header `X-NuGet-Warning`, which NuGet's client prints for nuget.org's notices (whether it
+   prints it on an error answer is not verified). Docker 29.9.3 also retries the pending `HEAD` once, so its pull waits twice the bound
+   (50 s) before it fails without the text.
+6. **The text of `missing` is wrong where a registry signature exists.** `color-name` 1.1.4 through `npm-remote` is refused with "it has
+   no signature" while Quader's own view of it shows npm's registry signature verified (and `npm audit signatures` counts it verified). The
+   same holds for a nuget.org package without an author's signature. Expected: the text says what is missing, "no signature of its
+   publisher or its build". The place: the texts of `gate.Gate.refusal` ([gate/gate.go](../../internal/signatures/gate/gate.go)).
+7. **The texts name Quader's storage paths**, not what the client asked for: `unsigned/_tags/1.0` for `unsigned:1.0`,
+   `chain/_manifests/sha256:…` for a digest. Readable, but `_tags` and `_manifests` are words of Quader's file view, not of the client.
+
+### Not measured, and why
+
+- **Keyless signing** (cosign with Fulcio and an OIDC token, npm provenance): it needs an interactive sign-in or a signing service of its
+  own; no way around either was found. npm's passing case under the gate rests on the public provenance of `sigstore` and
+  `@sigstore/protobuf-specs`, which the public registry serves.
+- **Symbol packages of NuGet, a virtual repository's gate, chosen anchors, a blocked signer and a narrowing at the gate** with a real
+  client: the gate's decision is the same for every client and is tested at the unit and integration tiers; only the answers' shapes were
+  in question here.
+- **Notation's COSE envelope** (`--signature-format cose`) and Notation's plugins; **Podman**; **APT under the gate** (not offered).
+- The malware gate's refusals: not provoked (the scanning was off). The user manual's line on Docker for them was changed with this
+  measurement because the OCI error body is the same writer's (R-SIG-068); that line is inferred, not seen.
+- Verified, not only read: every row of both tables. Read, not run: the cause of defect 3 (the code path), the daily repetition of
+  discovery, and whether `X-NuGet-Warning` would reach a NuGet user.
+
 ## What this page does not cover
 
 - A project that starts to reach a checked signature gets its own trust row only at the next recomputation

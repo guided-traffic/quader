@@ -559,6 +559,16 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **The signatures, measured with real clients on 2026-11-21** (confirmed by reproduction; commands and outputs in
+  [developer/signatures.md](../developer/signatures.md#defects-found)): (1) no real NuGet signature is readable, neither of `dotnet nuget sign`
+  nor of nuget.org, because both name the signer by `subjectKeyIdentifier` and the parser of `nugetcms` takes only issuer and serial; every
+  NuGet signature reads **Scheme not supported** and a gated repository refuses every signed package; (2) in a gated OCI repository
+  `cosign sign` and `notation sign` are refused on their read of the manifest, so an image pushed there cannot be signed there (needs a
+  decision of what passes); (3) a signature posted for a new Ansible version is deleted from the store by the worker's discovery, which
+  replaces the attachments of the archive's item, while the version document keeps serving it; (4) a remote OCI image's version view lists
+  none of the signatures its fetch stored; (5) `dotnet restore` and `ansible-galaxy` never show the gate's text, and Docker's pending pull
+  shows none either; (6) the text of `missing` says "it has no signature" for a package that carries a registry signature; (7) the texts
+  name storage paths such as `unsigned/_tags/1.0`.
 - Three narrow lists of the signatures' screens (the security dashboard's view, the admin page's project section, a
   project's anchors) stand as blocks even at 1,440 px, as other narrow lists do; the layout checks accept it (found on
   2026-11-21 by the builder of the signatures' screens, left for the owner's look).
@@ -3148,6 +3158,14 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   the index of a multi-platform tag unless told otherwise (its source); what a symbol package of NuGet is
   signed with (documentation). **Not verified:** whether authors or nuget.org sign symbol packages in
   practice; the clients' behaviour on 403 and 503 was taken from the malware gate's record, not read again.
+  **Measured with real clients on 2026-11-21, evening** (R-SIG-042, R-SIG-078, [the table](../developer/signatures.md#measured-with-real-clients)):
+  cosign 3.1.4 (key pair, attestation, the older `.sig` tag through deprecated flags), Notation 1.3.2, GnuPG and `cosign sign-blob`
+  siblings, npm's public registry signatures and provenance are read, verified and trusted when their anchor is added, and every client
+  verifies through Quader; Docker pulls a multi-platform image on its index's signature; the kubelet shows `denied: <text>`, Docker 29
+  `error from registry: <text>`, npm the text, `dotnet restore` and `ansible-galaxy` the status only. Found (section 8, Product): no real
+  NuGet signature is readable; no client can sign an image in a gated repository; a posted Ansible signature leaves the store at the next
+  discovery; a remote image's version lists no signature; `missing` says "no signature" beside a registry signature. Not measured: keyless
+  signing (it needs a sign-in or a signing service of its own).
 
 **Questions he has not answered**
 

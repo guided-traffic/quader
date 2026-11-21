@@ -1225,6 +1225,10 @@ Priority: **P1** · Covers: quader-only
   certificates. A client checks author and nuget.org signatures through its own trust and `trustedSigners`, as against Quader today.
 - **Shown:** the author's signature as the badge's evidence; nuget.org's countersignature as **Origin confirmed by registry**.
 
+Measured on 2026-11-21 (R-SIG-042): an author's signature of `dotnet nuget sign` (SDK 10.0.403) and the signatures of a nuget.org package
+both read `malformed`, "the .signature.p7s is no CMS SignedData": their signer is named by `subjectKeyIdentifier`, which the built parser
+does not take. `dotnet nuget verify` passes on the same bytes downloaded from Quader.
+
 Acceptance criteria:
 
 - Unit (`internal/signatures/scheme/nugetcms`, milliseconds, packages signed by the test with digitorus/pkcs7 and a test timestamp authority):
@@ -1282,6 +1286,11 @@ Priority: **P1** · Covers: quader-only
   `fingerprint`), never the signature itself ([Q-SIG-107](#q-sig-107--posting-and-removing-an-ansible-signature-are-audit-events-of-the-format)).
   `ansible-galaxy` has no command to upload a signature; a CI job uses its token on this operation. Q-ANS-14 is superseded in part.
 - A virtual version document carries the signatures of the member whose document it serves (R-ANS-013, unchanged).
+
+Measured on 2026-11-21 (R-SIG-042): `ansible-galaxy collection install --keyring … --required-valid-signature-count +1` and `collection
+verify` pass on a posted signature, and refuse an unsigned version (`Signature verification failed for 'sigm.unsigned': no successful
+signatures`); without the `+` an unsigned version installs. A signature posted right after the publish stays in `signatures[]` but leaves
+the signature store when the worker's discovery reaches the archive, so the version reads **No signature**.
 
 Acceptance criteria:
 
@@ -1630,8 +1639,19 @@ unit tier against a TUF repository the test builds (`shipped/tuftest`), not in t
 tested in the area `backup` against a restored database (`TestR_SIG_041_WhatNarrowedTrustIsReplayedIntoARestore`, about 2 s, rows); a
 whole backup and restore of the signature tables is not, nor R-SIG-012's variant with the object store stopped.
 
-What only a real client shows and is not tested: cosign, Notation, `dotnet nuget verify` and `ansible-galaxy --keyring` against Quader. Each
-is measured once by hand when its format's part is built, and the result written into this requirement.
+What only a real client shows and is not tested: cosign, Notation, `dotnet nuget verify` and `ansible-galaxy --keyring` against Quader.
+**Measured once on 2026-11-21** with the real tools ([developer/signatures.md](../developer/signatures.md#measured-with-real-clients)):
+cosign 3.1.4 with a key pair (its default, a DSSE envelope of the predicate type `https://sigstore.dev/cosign/sign/v1` as a referrer, and
+the older `.sig` tag through three deprecated flags), cosign's attestation, Notation 1.3.2 with the company CA, a generic file's `.asc` of
+GnuPG and `.sigstore.json` of `cosign sign-blob`, and npm's registry signatures and provenance of the public registry are read and verified,
+and turn **Verified · internal** or **· public** when the anchor is added; `cosign verify`, `notation verify`, `npm audit signatures`,
+`dotnet nuget verify` and `ansible-galaxy … --keyring` pass through Quader, also through an OCI remote. Falsified: **no real NuGet
+signature is readable** (`dotnet nuget sign` of SDK 10.0.403 and nuget.org's both name the signer by `subjectKeyIdentifier`, which the
+CMS parser of `nugetcms` does not take; every one reads **Scheme not supported**); a signature posted for a new Ansible version is
+removed from the store by the worker's discovery; a remote OCI image's version lists none of the signatures its fetch stored. cosign 3.1.4
+with `--certificate-chain` writes a bundle that neither cosign nor Quader reads (bundle v0.3 with a certificate chain); the company CA's
+way through cosign works with `--new-bundle-format=false`. Keyless signing was not measured: it needs an interactive sign-in or a signing
+service of its own.
 
 Acceptance criteria: the coverage generator lists every requirement of this page with a test of the tier this table names.
 
@@ -2674,7 +2694,8 @@ An item Quader generated (`items.generated`) is never asked about and passes, as
 - **An index covers its platform manifests.** A signature over an index commits to the digests of its children, and `cosign sign` of a tag
   signs the digest the tag names, the index of a multi-platform image, and its children only with `--recursive` (cosign's
   `cmd/cosign/cli/sign/sign.go`, read 2026-11-21: the walk skips the children unless `--recursive` is set). A client pulls the index by tag
-  and then its platform's manifest by digest; the second request passes on the index's signature.
+  and then its platform's manifest by digest; the second request passes on the index's signature (measured with Docker 29.9.3 on
+  2026-11-21, R-SIG-078).
 - **NuGet:** a `.snupkg` has the id and the version of its `.nupkg` ([NuGet's documentation on symbol
   packages](https://learn.microsoft.com/en-us/nuget/create-packages/symbol-packages-snupkg), read 2026-11-21) and passes on the `.nupkg`'s
   signature or its own; whether authors or nuget.org sign symbol packages was not verified (nuget.org admits a `.p7s` in them, the same page).
@@ -2731,6 +2752,8 @@ Built (package 1): the format host's `itemStore.Serve` (`serveChecks`, [signatur
 `files.Service.Stat`, and the remote OCI tag through `Host.Signatures().Refuse` after `refuseBlockedImage`. Where no gate applies the
 download reads no row: `Gate.Applies` reads the snapshot alone. Where one applies the gate reads its rows in a statement of its own after
 the item lookup, not joined into it ([Q-SIG-131](#q-sig-131--the-gate-reads-its-rows-in-a-statement-of-its-own-where-a-gate-applies)).
+Measured on 2026-11-21 (R-SIG-078): while the gate is on, `cosign sign` (`GET`) and `notation sign` (`HEAD`) read the image's manifest
+before they sign it and are refused, so an image pushed into a gated repository cannot be signed there.
 
 Acceptance criteria:
 
@@ -2903,13 +2926,15 @@ as it writes the malware gate's and the vulnerability block's:
 |---|---|---|
 | npm | `403`, `{"error": <text>, "message": <text>, "code": "signature_not_verified"}`; npm prints `E403` and the text | `503` with `Retry-After`; npm retries |
 | NuGet | `403`, one line `signature_not_verified: <text>` | `503` with `Retry-After`; the client retries and reads it |
-| OCI | `403`, `{"errors": [{"code": "DENIED", "message": <text>, "detail": null}]}`; Docker prints `denied: <text>` | `503`, `{"errors": [{"code": "UNAVAILABLE", …}]}` with `Retry-After`; Docker does not retry |
+| OCI | `403`, `{"errors": [{"code": "DENIED", "message": <text>, "detail": null}]}`; Docker 29 prints `error from registry: <text>`, the kubelet `denied: <text>` | `503`, `{"errors": [{"code": "UNAVAILABLE", …}]}` with `Retry-After`; Docker asks by `HEAD`, retries it once and shows no text |
 | Ansible Galaxy | `403`, `{"errors": [{"status": "403", "code": "signature_not_verified", "title": …, "detail": <text>}]}` | `503` with `Retry-After`; `ansible-galaxy` does not retry |
 | generic (`/files/`) | `403` problem with `code`, `reason` and `sha256` | `503` problem with `Retry-After` |
 
 What each client prints and whether it retries is the malware gate's record of the same shapes ([malware-scanning.md](malware-scanning.md)
-R-MAL-016, Q-MAL-3, read in the clients' sources on 2026-11-20); this stage adds no shape and no client behaviour to verify. Debian answers
-none of them: its repositories have no gate (R-SIG-061).
+R-MAL-016, Q-MAL-3, read in the clients' sources on 2026-11-20); this stage adds no shape. Measured with the real clients on 2026-11-21
+(R-SIG-078): npm and curl show the text; Docker 29.9.3 shows it for a refusal without the `denied:` prefix the table of R-MAL-016 names;
+`dotnet restore` (NuGet 7.9.0) and `ansible-galaxy` 2.21.6 show only the status, NuGet retries a 403 and a 503 five times without waiting for
+`Retry-After`, and `ansible-galaxy` does not retry. Debian answers none of them: its repositories have no gate (R-SIG-061).
 
 - **The texts** name the addressed repository by its qualified name, never another repository, and no signer (a signer's name is text an
   uploader chose; the screens show it as text):
@@ -3275,12 +3300,27 @@ cases of milliseconds more, nothing else; no leg loads another format's client.
 Measured for package 1 (2026-11-21): the gate's unit tests about 0.8 s (`internal/signatures/gate`), the setting's 0.3 s, the repository's
 member 0.3 s, the kit's gate cases milliseconds per format; the integration area `signatures` gains two tests,
 `TestR_SIG_061_TheGateIsARepositorySettingAnOwnerMayNarrow` and `TestR_SIG_064_TheGateAtTheServePointOfFiles` (R-SIG-064, R-SIG-066 to
-R-SIG-068 as subtests; the second web replica and a worker stopped and started again), about 11 s together with files of a kilobyte. The
-manual measurement with real clients below is not made yet.
+R-SIG-068 as subtests; the second web replica and a worker stopped and started again), about 11 s together with files of a kilobyte.
 
 What only a real client shows and is not tested: `docker pull` of a multi-platform image signed at its index through a gated repository, a
-refused image's `denied:` line in Docker and Kubernetes, and `cosign verify` of a refused image, whose signatures stay fetchable. Each is
-measured once by hand when the package that builds the gate lands, and the result written into this requirement.
+refused image's `denied:` line in Docker and Kubernetes, and `cosign verify` of a refused image, whose signatures stay fetchable.
+**Measured once on 2026-11-21**, after package 1 landed, with Docker 29.9.3, a kind node v1.37.0, npm 11.20.0, the .NET SDK 10.0.403,
+ansible-core 2.21.6, cosign 3.1.4, Notation 1.3.2 and curl 8.14.1 (the commands, the outputs and the exit codes are in
+[developer/signatures.md](../developer/signatures.md#measured-with-real-clients)):
+
+- **Verified:** Docker pulls a multi-platform image signed at its index only (cosign without `--recursive`): the platform manifest by digest
+  passes on the index's signature. A refused image's signatures stay fetchable: `cosign verify` by digest passes, by tag it is refused,
+  because the tag is the artifact. Docker prints `Error response from daemon: error from registry: <text>`, without `denied:`; the kubelet's
+  event carries `unexpected status from HEAD request to …: 403 Forbidden` and then `denied: <text>`, and the pod stays in
+  `ImagePullBackOff`. npm prints the text after `E403`, and after `E503` once it has retried twice (146 s); curl gets the problem documents
+  with `reason`, `Cache-Control: no-store` and `Retry-After: 30`. A remote's first pull waits for the fetch and is served. Debian's
+  repository refuses the member with `422 not_applicable`.
+- **Falsified:** `dotnet restore` and `ansible-galaxy` print the status and never the text (NuGet also with `-v detailed`, and after six
+  503s it blames the feed); Docker's pending pull asks by `HEAD`, whose 503 has no body, and waits 50 s; NuGet retries at once, not after
+  `Retry-After`. No client can sign an image in a gated repository: cosign and Notation read the manifest before they sign, and the gate
+  refuses that read, so R-SIG-064's "OCI's signatures arrive after the push" does not hold while the gate is on. A NuGet package with an
+  author's signature cannot pass (R-SIG-042's NuGet finding), nor an Ansible version whose signature was posted right after the publish. The
+  text of `missing` says "it has no signature" for an npm package that carries npm's registry signature.
 
 Acceptance criteria: the coverage generator lists every requirement of stage 3 with a test of the tier this table names.
 

@@ -80,6 +80,10 @@ refused.
 | **Public key** | A raw key, such as the key of `cosign sign-blob --key` or a registry's npm key | **Public key (PEM)**, with npm's **Key ID** and an **Expires** date where they apply |
 | **Sigstore identity** | A CI job's keyless signature, from the public Sigstore or your company's own | **OIDC issuer** (your GitLab's address), the **Identity** exact or as a pattern of the whole identity (for example `^https://gitlab.example.com/platform/.+//\.gitlab-ci\.yml@refs/heads/main$`), and the **Trust root**: the public Sigstore, or your own with its `trusted_root.json` |
 
+cosign 3 with a certificate of your CA (`cosign sign --certificate … --certificate-chain …`) writes, in its default format, a signature
+that neither `cosign verify` nor Quader can read (Quader shows **Scheme not supported**); sign with `--new-bundle-format=false`, or use
+Notation for your CA's certificates.
+
 The server checks the material on save: a CA certificate must be a CA or a pinned signer, RSA of 2048 bits or more, ECDSA or Ed25519,
 not expired; an OpenPGP key must have a signing key and be neither revoked nor expired; a Sigstore pattern must compile and an own trust
 root must hold a certificate authority and a log or a timestamp authority. A refusal stands under the field.

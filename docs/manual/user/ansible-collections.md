@@ -115,7 +115,9 @@ jq -n --rawfile s MANIFEST.json.asc '{signature: $s}' | curl -fsS -X POST -H "Au
 
 You need the permission **Deploy** on the repository. Quader checks that the signature is one OpenPGP signature that names its key's
 fingerprint and that it was made over this version's `MANIFEST.json` (otherwise `422 signature_invalid`), and serves it in `signatures[]` of
-the version, where `ansible-galaxy collection install --keyring` and `collection verify` find it. A version takes up to 16 signatures; a new
+the version, where `ansible-galaxy collection install --keyring` and `collection verify` find it. To refuse a version without a valid
+signature, give the count with a plus: `--required-valid-signature-count +1`; with `1` alone `ansible-galaxy` installs a version that has no
+signature at all and says nothing. A version takes up to 16 signatures; a new
 signature of the same key replaces the old one; `DELETE …/signatures/<fingerprint>` removes one.
 
 ## Read the documentation of a collection
