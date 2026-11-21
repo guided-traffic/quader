@@ -1677,6 +1677,27 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 - **What frees a release once the full gate returns** with the first stable release, when a format's client runs only on its
   own change and in the nightly (said to him on 2026-11-20 as a question for later; a green nightly on the commit is one way).
 
+**Decided by the owner on 2026-11-21, waiting to be built**
+
+- **The detection moves into the scanner unit, and the analyser leaves every other image** (2026-11-21, after he saw
+  no Trivy container in the scanner pod and asked why the worker runs the analyser too and why the scanner's answer
+  counts as untrusted): "Option B, nach der umbenennung. Trivy dann aus den anderen Images entfernen." Option B as put
+  to him: the unit `vuln-scanner-trivy` does both steps, the analysis of an image and the detection of a stored
+  package list against the database, and the worker only calls it. The worker then runs no tool (H-1038 goes: no
+  analyser parses an image's values in the pod with secrets), a second tool with a database format of its own would
+  be a unit beside the first and nothing in the worker, and the analyser lives only in the unit that carries its
+  name. What it needs, named to him: the scanner unit reads the database (a route of the scan listener, as the malware
+  scanner reads its signatures), every detection after a new database is a call that carries the stored package list
+  (no layer is read again: the analysis stays once per manifest digest and analyser version, R-VULN-033), and the
+  report comes back as untrusted input that the worker reads in Go under limits. **Order:** after the two scanner
+  units have their tool's names (run record); first the detection in the unit, then the analyser out of the images of
+  `api`, `packages`, `worker` and the malware scanner. **Not measured, to be measured by its planner:** how long the
+  detection of every stored image takes through the scanner's slots after a new database, and what the database
+  costs each scanner pod in disk. **To bring to him when it is planned, one question:** where the scanner unit's
+  analyser comes from once it is out of the common image (an image of its own built with the release, or the
+  analyser's own image copied in at the pod's start); it decides what a release publishes and what an installation
+  without internet mirrors.
+
 **Decided by the owner on 2026-11-20, in work or waiting to be built**
 
 - **A malware scan of every artifact with ClamAV** (2026-11-20, his words): "Kannst du gleich mal mit mir einen ClamAV
