@@ -9,7 +9,7 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 654 of 1,047 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,047 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
@@ -3241,7 +3241,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-027 (implemented) | Configuration, the chart's defaults and what the scanning costs | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-028 (implemented) | Backups, restores and replicas | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-029 (implemented) | What a format brings | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-030 | The tests and what they cost | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-030 (implemented) | The tests and what they cost | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-031 (implemented) | The source tree's malware scan runs the product's ClamAV | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-OPS-045 (implemented) | Valkey and coordination observability | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-046 | Operational signals for availability, horizontal scale and backup | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |

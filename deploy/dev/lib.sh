@@ -274,6 +274,8 @@ release_values() {
     RELEASE_VALUES+=(--set-string "api.podAnnotations.quader-dev/image-id=$image_id" --set-string "packages.podAnnotations.quader-dev/image-id=$image_id" --set-string "worker.podAnnotations.quader-dev/image-id=$image_id")
     # The scanner runs the same image (R-HA-065); annotate is set only for the working tree's own chart, which has the key.
     RELEASE_VALUES+=(--set-string "scanner.podAnnotations.quader-dev/image-id=$image_id")
+    # So does the malware scanner (R-HA-068), rendered in the `vuln` profile; the key is ignored where it is not.
+    RELEASE_VALUES+=(--set-string "malwareScanner.podAnnotations.quader-dev/image-id=$image_id")
   fi
   [ "$POOLER" = "1" ] && RELEASE_VALUES+=(-f "$dir/values-pooler.yaml")
   [ "$profile" = "scatter" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml")

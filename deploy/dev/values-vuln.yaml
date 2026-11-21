@@ -23,6 +23,14 @@ config:
       public_upstreams:
         npm: [registry.npmjs.org, npmstub.quader.svc]
         nuget: [api.nuget.org, www.nuget.org, nugetstub.quader.svc]
+  # The malware scanning, on in this profile only (values-dev.yaml): as an installation without internet (R-MAL-012), without
+  # freshclam, its database the files of a few signatures that the end-to-end case deploys to e2e/clamav-db (vuln_malware_test.go).
+  # Until they are there the malware scanners are not ready, and up.sh waits for every other Deployment (Q-MAL-90).
+  malware:
+    enabled: true
+    database:
+      freshclam: false
+      repository: e2e/clamav-db
   # The three scheduled syncs are off: the tests start every sync through the task API, and a scheduled one that fires inside a
   # test's window is a request to the test advisory source that no test caused (the KEV sync fires at minute 41 of hours 0, 6, 12
   # and 18 UTC, the OSV sync every 15 minutes). A disabled task still runs when it is triggered.
@@ -40,3 +48,21 @@ worker:
       queues: [vuln]
       replicaCount: 2
       terminationGracePeriodSeconds: 30
+# ClamAV of the pin CLAMAV_IMAGE, tagged quader-e2e-clamav:dev and loaded into the nodes by up.sh (the nodes pull nothing from Docker
+# Hub for it). clamd holds a database of a few signatures here: its request is the measured one of that database (Q-HA-361); the limit
+# stays the chart's floor.
+clamav:
+  image: quader-e2e-clamav:dev
+  pullPolicy: IfNotPresent
+malwareScanner:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  clamd:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1536Mi

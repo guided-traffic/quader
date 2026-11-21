@@ -355,15 +355,35 @@ else
   log "loading $IMAGE into the kind cluster"
   kind load docker-image "$IMAGE" --name "$CLUSTER" > "$LOGS/image-load.log" 2>&1 \
     || { tail -20 "$LOGS/image-load.log" >&2; die "kind load docker-image failed"; }
+  # The malware scanning is on in the `vuln` profile only (values-vuln.yaml): ClamAV's image of the pin, pulled by the host's Docker
+  # (logged in to Docker Hub in CI) and loaded into the nodes under a local tag, as the test upstreams are (Q-MAL-90).
+  if [ "$PROFILE" = "vuln" ]; then
+    docker image inspect "$CLAMAV_IMAGE" >/dev/null 2>&1 || docker pull -q "$CLAMAV_IMAGE" > "$LOGS/clamav-pull.log" 2>&1 \
+      || { tail -20 "$LOGS/clamav-pull.log" >&2; die "the pull of $CLAMAV_IMAGE failed"; }
+    docker tag "$CLAMAV_IMAGE" quader-e2e-clamav:dev
+    log "loading ClamAV ($CLAMAV_IMAGE) into the kind cluster as quader-e2e-clamav:dev"
+    kind load docker-image quader-e2e-clamav:dev --name "$CLUSTER" > "$LOGS/clamav-load.log" 2>&1 \
+      || { tail -20 "$LOGS/clamav-load.log" >&2; die "kind load of the ClamAV image failed"; }
+  fi
   chart="$REPO_ROOT/deploy/helm/quader"
   release_values "$DEV_DIR" "$PROFILE" 1
   values=("${RELEASE_VALUES[@]}")
   log "installing the quader release (helm upgrade --install quader, migration Job first)"
+  # The malware scanners are ready only once the database the end-to-end case deploys is loaded (values-vuln.yaml, R-MAL-012): in
+  # the `vuln` profile helm waits for its hooks, and the rollout of every other Deployment is waited for below.
+  wait=(--wait)
+  [ "$PROFILE" = "vuln" ] && wait=(--wait=hookOnly)
   # --force-conflicts: helm applies server-side, and on a cluster that tests have used a `kubectl scale` is the field manager of
   # spec.replicas of a Deployment; the profile's values own the replica count again (Q-HA-289).
   # shellcheck disable=SC2086
   helm --kube-context "$CTX" upgrade --install quader "$chart" -n "$NS" --force-conflicts \
-    "${values[@]}" --wait --timeout 10m ${QUADER_HELM_EXTRA:-}
+    "${values[@]}" "${wait[@]}" --timeout 10m ${QUADER_HELM_EXTRA:-}
+  if [ "$PROFILE" = "vuln" ]; then
+    for d in $(kn get deploy -l app.kubernetes.io/instance=quader -o name); do
+      [ "$d" = "deployment.apps/quader-malware-scanner" ] && continue
+      kn rollout status "$d" --timeout=10m >/dev/null || die "$d did not roll out"
+    done
+  fi
   kn get deploy,pods -l app.kubernetes.io/instance=quader -o wide
   log "check: curl -s --cacert $STATE_DIR/pki/ca.crt https://localhost:$EDGE_PORT/api/v1/system/ping"
 fi

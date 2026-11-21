@@ -99,6 +99,10 @@ config:
   maintenance:
     tasks:
       vuln-sync-trivy-db: {enabled: false, schedule: "23 */6 * * *"}
+  # The malware scanning is off in every profile but `vuln` (values-vuln.yaml): no other leg pulls the ClamAV image or runs clamd,
+  # and no test cluster runs freshclam, which would fetch ClamAV's real database from ClamAV's network (R-MAL-030, Q-MAL-90).
+  malware:
+    enabled: false
   system:
     bootstrap_anonymous_read: true         # until authentication ships nobody holds system.read; the E0.13 load reads /system/replicas
   # Login against the test IdP (E1.1, deploy/dev/keycloak.yaml) and the break-glass account (R-AUTH-014). The client
