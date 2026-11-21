@@ -1352,7 +1352,9 @@ runs are in `git log`; this section holds the current state.
   the commit as rebased onto `main`, each exit 0:** build, the full unit run, generate-check, the lint, the
   complexity check, links and check, the UI tests and the UI lint (two labels of audit events); by its builder
   under the lock the areas `upstream`, `signatures`, `ocilocal`, `ociremote`, `npm`, `ansiblelocal` and
-  `malware`. The owner's UI backend started with it before the push (the schema step applied). **Its release was cut at 16:00**; the image, the chart and the owner's installation are being followed. **Its tests cost** under 1 s more in the unit job and, in the integration shards, about 4 s (`ocilocal`), 9 s
+  `malware`. The owner's UI backend started with it before the push (the schema step applied). **Its release was cut at 16:00**, image and chart were published at 16:06, and the owner's installation runs it
+  since 16:09 (read on the cluster at 16:15: two ready pods each of `api`, `packages`, the worker and both
+  scanners and the updater's one, no restart, no error line of `api`, `packages` or the worker). **Its tests cost** under 1 s more in the unit job and, in the integration shards, about 4 s (`ocilocal`), 9 s
   (`ociremote`), 2 to 15 s (`ansiblelocal`) and 2 s (`npm`); no end-to-end case. **Open by its text (H-1201):**
   for npm a fetch's state row does not go with its target, so a tarball filled again is not asked again, and
   only the keys are refreshed, not a version's attestations. **Not verified:** a real `cosign`, `notation`,
