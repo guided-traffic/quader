@@ -14,14 +14,14 @@ import (
 )
 
 // Scan tokens (R-OCI-037, ADR-213): the registry token of the image scanning's pull. A worker signs one in process for each call
-// of the scanner, with the key of every registry token; it names the system subject image-scanner, the scan's ID, the endpoint
+// of the scanner, with the key of every registry token; it names the system subject vuln-scanner-trivy, the scan's ID, the endpoint
 // scan, one grant entry of the repository and image name with pull, and the manifest's digest. No quader token stands behind it,
 // so its verification costs no query, and it is good on the scan listener only, for that one manifest and the blobs of its name,
 // for vulnerabilities.images.pull_timeout.
 
 // ScanSubject is the system subject of a scan token (R-AUTHZ-002): the claim s, and the name of the principal of kind system the
-// stage of the scan listener yields.
-const ScanSubject = "image-scanner"
+// stage of the scan listener yields. It is the name of the unit that reads, vuln-scanner-trivy (ha-and-helm.md Q-HA-373).
+const ScanSubject = "vuln-scanner-trivy"
 
 // ScanEndpoint is the endpoint claim of a scan token: the reserved endpoint of the scan listener (R-EP-001, R-ARCH-037).
 const ScanEndpoint = "scan"
@@ -110,7 +110,7 @@ func (s *Signer) IssueScan(repo qname.Repo, name, digest string, now time.Time) 
 	return ScanToken{v: &tok}, sid, nil
 }
 
-// checkScan holds the rule both sides apply to a scan token (R-OCI-037 "Claims"): the system subject image-scanner, no principal,
+// checkScan holds the rule both sides apply to a scan token (R-OCI-037 "Claims"): the system subject vuln-scanner-trivy, no principal,
 // no quader token, not anonymous, exactly one entry with pull alone, a digest, a scan ID, no catalog and the endpoint scan.
 func (c Claims) checkScan() error {
 	switch {

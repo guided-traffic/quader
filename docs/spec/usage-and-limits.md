@@ -156,8 +156,8 @@ place that counts.
 | A request a Bastion forwards to the main installation with the caller's credential | the subject of that credential | as above | The address is the forwarded client's ([bastion.md](bastion.md) R-BAS-017). What the Bastion serves from its own cache never reaches the main installation and is not counted here (Later). |
 | The Bastion's own interface requests (principal kind `bastion`) | none | — | They are not protocol paths; R-API-016 and R-BAS-016 bound them. |
 | System work: mirror passes, the Debian index parse, the Ansible documentation job, every background request of the engine (`proxy.PriorityBackground`) | `system` | `system` | Recorded per repository, limited by nothing of this page ([Q-LIM-19](#q-lim-19--mirror-passes-and-other-system-work-are-recorded-and-not-limited)). |
-| A scan token of the image scanning's pull on the scan listener (principal kind `system`, name `image-scanner`; [formats/oci.md](formats/oci.md) R-OCI-037) | `system` | `system` | Recorded under the repository with the credential `image-scanner`; checked against no figure, no ceiling and no block, and it takes no parallel lease ([Q-LIM-66](#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing)). |
-| A blob token of the malware scanning's read on the scan listener (principal kind `system`, name `malware-scanner`; [malware-scanning.md](malware-scanning.md) R-MAL-006) | `system` | `system` | Recorded under the repository the token names, with the credential `malware-scanner`; checked against nothing ([Q-LIM-80](#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names)) |
+| A scan token of the image scanning's pull on the scan listener (principal kind `system`, name `vuln-scanner-trivy`, the unit that reads, [ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373; [formats/oci.md](formats/oci.md) R-OCI-037) | `system` | `system` | Recorded under the repository with the credential `vuln-scanner-trivy`; checked against no figure, no ceiling and no block, and it takes no parallel lease ([Q-LIM-66](#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing)). |
+| A blob token of the malware scanning's read on the scan listener (principal kind `system`, name `malware-scanner-clamav`, the unit that reads; [malware-scanning.md](malware-scanning.md) R-MAL-006) | `system` | `system` | Recorded under the repository the token names, with the credential `malware-scanner-clamav`; checked against nothing ([Q-LIM-80](#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names)) |
 
 - A subject identifier never contains a token secret or a hash of one.
 - A request on a protocol path whose principal kind is none of the above (a future kind) is charged to the client address until
@@ -2784,7 +2784,8 @@ grows the hourly rows (one virtual repository per team and format adds none in t
 ### Q-LIM-66 · A scan token's request is system work: recorded under its repository and limited by nothing
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner named
-it as a point to settle first (2026-11-20): the scanner's pull is not charged to the download limits.
+it as a point to settle first (2026-11-20): the scanner's pull is not charged to the download limits. The credential is
+`vuln-scanner-trivy` since [ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373 (2026-11-21); the text below keeps the name of its day.
 
 Context: the scanner pulls each image it analyses through the scan listener of `packages` with a scan token
 ([formats/oci.md](formats/oci.md) R-OCI-037), whose principal is of the kind `system`, a kind the table of R-LIM-001 did not name.
@@ -2827,7 +2828,8 @@ if Owners ask for the limits their callers met at a central repository.
 
 ### Q-LIM-80 · The malware scanner's reads are recorded under the repository its token names
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The credential is
+`malware-scanner-clamav` since [ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373 (2026-11-21); the text below keeps the name of its day.
 
 Context: a blob token reads a blob by its digest through one repository that holds it ([malware-scanning.md](malware-scanning.md) R-MAL-006);
 the same bytes may be in many repositories, and the usage store records per repository.

@@ -7,18 +7,19 @@ Name of the chart (app.kubernetes.io/name).
 
 {{/*
 <fullname> (R-HA-028): the release name, or <release>-quader when the release name does not
-contain the chart name; fullnameOverride wins. Cut at 50 characters so that every derived name
-(<fullname>-worker, <fullname>-migrate) stays a valid DNS label.
+contain the chart name; fullnameOverride wins. Never cut (Q-HA-374): a cut would change the names
+without a word and could give two releases the same objects; quader.validateNames refuses a
+<fullname> too long for the names the chart builds from it instead.
 */}}
 {{- define "quader.fullname" -}}
 {{- if .Values.fullnameOverride -}}
-{{- .Values.fullnameOverride | trunc 50 | trimSuffix "-" -}}
+{{- .Values.fullnameOverride | trimSuffix "-" -}}
 {{- else -}}
 {{- $name := default .Chart.Name .Values.nameOverride -}}
 {{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 50 | trimSuffix "-" -}}
+{{- .Release.Name -}}
 {{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 50 | trimSuffix "-" -}}
+{{- printf "%s-%s" .Release.Name $name -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

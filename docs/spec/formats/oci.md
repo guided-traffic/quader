@@ -1306,7 +1306,7 @@ token is a scan token, a second kind of the registry token of R-OCI-005
 
   | Member | Content |
   |---|---|
-  | `s` | `image-scanner`: the system subject of the token; its presence makes the token a scan token |
+  | `s` | `vuln-scanner-trivy`: the system subject of the token, the name of the unit that reads ([ha-and-helm.md](../ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373); its presence makes the token a scan token |
   | `sid` | the scan's ID, 128 random bits in base64url: what joins the worker's log line, the scanner's and the scan listener's request log; it is no secret |
   | `e` | `scan`, the endpoint of the scan listener ([architecture.md](../architecture.md) R-ARCH-037) |
   | `iat`, `exp` | the issue time and `iat + vulnerabilities.images.pull_timeout` (10 minutes by default, 1 minute to 1 hour) |
@@ -1318,7 +1318,7 @@ token is a scan token, a second kind of the registry token of R-OCI-005
 - **Verification** (the stage, steps 1 to 4 of R-OCI-005): the length, the form, the key, the MAC, the strict claims, the expiry, the issue
   time at most one minute ahead, the span at most `vulnerabilities.images.pull_timeout` (Q-OCI-229; not `oci.token_lifetime`), and the endpoint.
   There is no step through the token cache, because no Quader token stands behind it: a scan token costs no query. The result is the
-  principal of the kind `system` with the name `image-scanner` and no ID, and the grant with its digest pin and the scan ID.
+  principal of the kind `system` with the name `vuln-scanner-trivy` and no ID, and the grant with its digest pin and the scan ID.
 - **Where it is used.** Only on the scan listener, whose endpoint is `scan`; every other listener refuses it at the endpoint check with
   `401` `invalid_token`, and the scan listener refuses every other credential (R-ARCH-037). The scan listener applies no failed-credential
   throttle (R-AUTH-038): a refused scan token costs one HMAC and no query.
@@ -1326,7 +1326,7 @@ token is a scan token, a second kind of the registry token of R-OCI-005
   digest under the entry's name, and `GET` and `HEAD` of `oci.blob.get` under the entry's name. A manifest by tag or by another digest, the
   tags list, referrers, the catalog and every write answer `401` with `error="insufficient_scope"`. A blob under the name is reachable by its
   digest, as the image's layers must be; its manifest is not.
-- **How the request is decided** (Q-OCI-228). The decision point decides a request of the subject `system:image-scanner` by one fixed rule,
+- **How the request is decided** (Q-OCI-228). The decision point decides a request of the subject `system:vuln-scanner-trivy` by one fixed rule,
   without grants, policies, visibility levels or exposure rules: `read` on the repository the grant names, while that repository exists, is
   of the format `oci`, is local or remote and is not disabled; never `populate`, so a remote answers from what it holds, a layer it lacks
   with `403` `populate_not_permitted`, and starts no fetch and no background download; never a write and never a capability. A refusal is
@@ -1342,7 +1342,7 @@ token is a scan token, a second kind of the registry token of R-OCI-005
 - **Where it is never written.** The worker holds the token in a type whose `String`, `GoString` and `LogValue` render nothing of it; it is
   no member of a job's arguments or result, of a scan row, of an error text or of an audit event. The call carries it in its body
   (R-VULN-041), which neither side logs; the scanner sends it as `Authorization: Bearer`, which every log redacts (R-AUTH-001); the request
-  log of the scan listener records the principal `system:image-scanner` and the scan ID.
+  log of the scan listener records the principal `system:vuln-scanner-trivy` and the scan ID.
 - **Audit.** No event per token or per request: a read is not audited per request, and the scan row and the job record the scan. A scan
   token that is refused counts in `quader_auth_attempts_total` with its reason, as every refused registry token does.
 
@@ -3785,7 +3785,8 @@ one comparison. The development agent would revisit this if the blobs of a name 
 
 ### Q-OCI-228 · The scan subject is decided by one fixed rule: read, never fill
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The subject is
+named `vuln-scanner-trivy` since [ha-and-helm.md](../ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373 (2026-11-21); the text below keeps the name of its day.
 
 Context: every request below `/v2/` is decided by the decision point after the grant (R-OCI-005); a scan token has no principal whose grants
 the decision point could read, and the scanner must read private repositories and blocked images (Q-VULN-166).

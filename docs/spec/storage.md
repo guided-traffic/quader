@@ -1405,7 +1405,7 @@ Priority: **P1** · Covers: ART-029
 - A download counts when Quader answers `200` with the full content, `206` for a range starting
   at byte 0, or issues a presigned redirect; `HEAD`, `304`, sidecars and requests with
   `?stats=false` do not count.
-- A request of the system subject `system:image-scanner` (a scan token on the scan listener, [formats/oci.md](formats/oci.md) R-OCI-037)
+- A request of the system subject `system:vuln-scanner-trivy` (a scan token on the scan listener, [formats/oci.md](formats/oci.md) R-OCI-037)
   counts no download and moves no `last_download_at`: the image scanning reads the image for the installation's findings and delivers
   nothing to a consumer ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-042). Neither do the worker's reads of the image
   scanning's database through the item store (R-VULN-044), which are no requests.

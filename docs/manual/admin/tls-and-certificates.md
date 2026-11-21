@@ -257,7 +257,7 @@ Each step applies to the next connection or handshake.
 | `quader_tls_reloads_total` | changed files that loaded and replaced the previous content |
 | `quader_tls_reload_errors_total` | changed files that did not load; the old material stays in service |
 
-The labels are `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, empty for outgoing connections) and `name` (the file). Alert on `quader_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400` and on `increase(quader_tls_reload_errors_total[15m]) > 0`. Quader keeps serving a loaded certificate after it has expired, and the probes do not notice, so the expiry alert is the only warning before clients start refusing the connection.
+The labels are `kind` (`listener`, `client` for the pair a pod presents on a link between Quader's pods, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`; on a link the scanner unit or listener it reaches, at both ends: `vuln-scanner-trivy`, `malware-scanner-clamav` or `scan`; empty for other outgoing connections) and `name` (the file). Alert on `quader_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400` and on `increase(quader_tls_reload_errors_total[15m]) > 0`. Quader keeps serving a loaded certificate after it has expired, and the probes do not notice, so the expiry alert is the only warning before clients start refusing the connection.
 
 ## cert-manager example
 

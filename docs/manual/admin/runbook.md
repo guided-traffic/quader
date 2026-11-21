@@ -178,7 +178,7 @@ The image scanning works in two spools. The scanner's holds the analyses: per an
 
 **What to do.**
 
-1. `kubectl get pods -l app.kubernetes.io/component=vuln-scanner-trivy` and `/readyz?verbose=1` on a scanner pod's port 8081: the check `scanner` names the reason: `certificate` (the pair or the internal CA did not load, or the pair does not allow client authentication), `analyser` (the binary does not answer its version), `spool` (the working directory is not writable) or `draining`.
+1. `kubectl get pods -l app.kubernetes.io/component=vuln-scanner-trivy` and `/readyz?verbose=1` on a scanner pod's port 8081: the check `vulnScannerTrivy` names the reason: `certificate` (the pair or the internal CA did not load, or the pair does not allow client authentication), `analyser` (the binary does not answer its version), `spool` (the working directory is not writable) or `draining`.
 2. For a certificate refused on a link, check its usages: `openssl x509 -in tls.crt -noout -ext extendedKeyUsage` must list `TLS Web Client Authentication` beside `TLS Web Server Authentication`, or name no usage at all. With cert-manager add `client auth` to `usages` ([TLS and certificates](tls-and-certificates.md#the-links-of-the-image-scanning)).
 3. For `pull_refused`, compare the key ring Secret of the worker and `packages` Deployments and the nodes' clocks.
 

@@ -52,7 +52,7 @@ func pinnedMount(t *testing.T) http.Handler {
 	must(e.Mount(router, []string{"GET /v2/{$}", "GET /v2"}, ok200, registry.Route{Name: route.NameVersion, Kind: registry.RouteVersion, Method: "GET", Example: "/v2/"}))
 	must(e.Mount(router, []string{"GET /v2/_catalog"}, ok200, registry.Route{Name: route.NameCatalog, Kind: registry.RouteCatalog, Method: "GET", Example: "/v2/_catalog"}))
 	p := httpserver.Principal{
-		Kind: httpserver.KindSystem, Name: "image-scanner",
+		Kind: httpserver.KindSystem, Name: "vuln-scanner-trivy",
 		Credential: httpserver.Credential{Method: httpserver.MethodBearer, ScanID: "sid", Registry: &httpserver.RegistryGrant{
 			Digest: pinned, Entries: []httpserver.RegistryEntry{{Repo: local, Name: "app", Pull: true}},
 		}},

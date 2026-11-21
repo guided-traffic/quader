@@ -29,7 +29,7 @@ func blobClaims() Claims {
 	}
 }
 
-// R-MAL-006, Q-MAL-26: a blob token names the subject malware-scanner, the endpoint scan, one digest, one repository and a scan ID,
+// R-MAL-006, Q-MAL-26: a blob token names the subject malware-scanner-clamav, the endpoint scan, one digest, one repository and a scan ID,
 // and no grant entry; it lives malware.read_timeout, checked against that bound alone, and is refused on every other endpoint and once
 // it has expired.
 func TestR_MAL_006_ABlobTokenIsIssuedAndVerifiedWithItsClaims(t *testing.T) {

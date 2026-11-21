@@ -37,7 +37,7 @@ func TestR_EP_010_TheScanListenerAcceptsAScanTokenAndNothingElse(t *testing.T) {
 	}
 	manifest := "/v2/web/docker-local/app/manifests/" + scanManifestDigest
 
-	t.Run("R-OCI-037 a scan token is the principal system:image-scanner with its grant, its digest pin and its scan ID", func(t *testing.T) {
+	t.Run("R-OCI-037 a scan token is the principal system:vuln-scanner-trivy with its grant, its digest pin and its scan ID", func(t *testing.T) {
 		res, err := s.Authenticate(req("GET", manifest, "Authorization", "Bearer "+tok.Reveal()), rules)
 		if err != nil {
 			t.Fatal(err)

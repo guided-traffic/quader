@@ -125,7 +125,7 @@ export function failingChecks(replica: Replica): string[] {
     .map(([name]) => name);
 }
 
-/** Reported checks that fail on a ready replica: `objectStore`, `valkey` (shown as a warning). */
+/** Reported checks that fail on a ready replica: `objectStore`, `valkey`, `vulnScannerTrivy`, `malwareScannerClamav` (shown as a warning). */
 export function degradedChecks(replica: Replica): string[] {
   const named = Object.entries(replica.checks)
     .filter(([, c]) => c.status === 'degraded')
@@ -159,7 +159,7 @@ export type StatusCondition =
       readonly replicas: readonly string[];
       readonly lastSeenAt: string;
     }
-  /** Ready replicas whose reported check fails (`objectStore`, `valkey`). */
+  /** Ready replicas whose reported check fails (`objectStore`, `valkey`, `vulnScannerTrivy`, `malwareScannerClamav`). */
   | { readonly kind: 'degraded'; readonly level: 'warning' }
   /** Replicas that drain or start: a rolling update, a restart or a change of scale (Q-UI-600). */
   | { readonly kind: 'replacing'; readonly level: 'info'; readonly draining: number; readonly starting: number }

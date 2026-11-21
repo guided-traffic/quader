@@ -38,7 +38,7 @@ func (a *App) scannerCall(ctx context.Context, in infra, log *slog.Logger) (*ima
 	if serverName == "" {
 		serverName = hostOf(images.Scanner.URL)
 	}
-	link, err := httpserver.NewLinkTLS(httpserver.LinkScanner, cfg.Server, serverName, log, a.tlsOptions(httpserver.LinkScanner)...)
+	link, err := httpserver.NewLinkTLS(httpserver.LinkVulnScannerTrivy, cfg.Server, serverName, log, a.tlsOptions(httpserver.LinkVulnScannerTrivy)...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -53,7 +53,7 @@ func (a *App) scannerCall(ctx context.Context, in infra, log *slog.Logger) (*ima
 			_ = link.Fit()
 			return link.Config()
 		}
-		if err := a.startComponent(ctx, &linkComponent{name: "link-scanner", link: link}); err != nil {
+		if err := a.startComponent(ctx, &linkComponent{name: "link-" + unitVulnScannerTrivy, link: link}); err != nil {
 			return nil, nil, err
 		}
 		// The pair loaded with the link: a pair without client authentication is named at start (R-HA-063), not first at a call.

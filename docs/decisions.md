@@ -216,7 +216,7 @@ checked every earlier decision against them:
 | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) | Every downloaded artifact is scanned for malware, and one switch lets only checked artifacts through | Accepted (owner decisions of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) | The malware scanner is a kind of the role `scanner`, with `clamd` beside it, and reads one blob by its digest | Accepted (owner decisions of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-222](#adr-222--freshclam-fetches-the-clamav-database-and-quader-keeps-it-in-upstreamscanner-clamav) | `freshclam` fetches the ClamAV database, and Quader keeps it in `upstream/scanner-clamav` | Accepted (owner decision of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
-| [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) | A unit that runs a tool carries the tool's name | Accepted (owner decision of 2026-11-21); the boundary decided by the development agent — owner review at the walkthrough |
+| [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) | A unit that runs a tool carries the tool's name | Accepted (owner decisions of 2026-11-21, the second moving the boundary); the forms decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1378,7 +1378,8 @@ Q-VULN-161 to Q-VULN-170; [architecture.md](spec/architecture.md) R-ARCH-001, R-
 ### ADR-213 · A scan token is a registry token a worker issues for one manifest, used only on the scan listener
 
 **Status:** Accepted in its frame (owner decision of 2026-11-20: a registry token, pull only, that one repository, valid for minutes); the
-mechanisms decided by the development agent — owner review at the walkthrough
+mechanisms decided by the development agent — owner review at the walkthrough. The system subject is named `vuln-scanner-trivy` since
+[ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) (2026-11-21); the text below keeps the name of its day.
 
 **Context.** The scanner must read the image it analyses and nothing else, and it may hold no key with which it could make a credential
 itself. Quader's registry tokens (R-OCI-005) are self-contained, signed with a key derived from the key ring, and verified without a query;
@@ -1598,7 +1599,10 @@ R-REPO-066, R-REPO-075, Q-REPO-410, Q-REPO-411; [ha-and-helm.md](spec/ha-and-hel
 später evtl mal mehrere Tools nebeneinander laufen lassen kann."); the boundary decided by the development agent — owner review at the
 walkthrough. Supersedes the names of the kinds `scanner` and `malware-scanner` in [ADR-215](#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues)
 and [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest), and the
-values `image` and `malware` of `process.scanner_kind`.
+values `image` and `malware` of `process.scanner_kind`, and the system subjects of [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener)
+and ADR-221. The boundary was moved by the owner later the same day ("Vom Builder gemeldet, nicht geändert: direkt nacharbeiten. Das ist
+alles wichtig und muss umgesetzt werden.", [ha-and-helm.md](spec/ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373): the system subjects, the readiness checks, the link labels and
+the log components carry the unit's name too.
 
 **Context.** The owner looked at his cluster: "Die Deployments quader-scanner und quader-malware-scanner sind mir nicht differenziert genug.
 quader-scanner ist trivy? Dann quader-vuln-scanner-trivy. quader-malware-scanner hätte ich auch lieber quader-malware-scanner-calmav
@@ -1612,21 +1616,30 @@ wraps, and neither left room for a second tool of the same purpose.
   ([ha-and-helm.md](spec/ha-and-helm.md) Q-HA-372).
 - The chart's value blocks are `vulnScannerTrivy` and `malwareScannerClamav`, one per unit; `process.scanner_kind` takes `trivy` or
   `clamav`, default `trivy` ([architecture.md](spec/architecture.md) Q-ARCH-561).
-- What is the same whichever tool does the work keeps its purpose's name: the role `scanner`, the jobs and queues, the configuration keys
-  `vulnerabilities.images.scanner.*` and `malware.scanner.*`, the system subjects, the readiness checks, the metrics and the link labels.
+- Every name an operator or an auditor reads of a unit carries it too (the owner's decision, Q-HA-373): the label `listener` of its link
+  and its listener, the log field `component` of its process, the system subject of its reads (`system:vuln-scanner-trivy`,
+  `system:malware-scanner-clamav`, also the usage records' credential) and its readiness check in camel case, `vulnScannerTrivy` and
+  `malwareScannerClamav`, in its own process and in the one that calls it ([operations-and-observability.md](spec/operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) Q-OPS-221,
+  [Q-OPS-222](spec/operations-and-observability.md#q-ops-222--the-loader-of-the-signature-database-logs-as-its-unit)).
+- What is the same whichever tool does the work keeps its purpose's name: the role `scanner`, the jobs, queues and tasks, the configuration
+  keys `vulnerabilities.images.scanner.*` and `malware.scanner.*`, the metric names, the error codes and the subjects of the worker's own
+  tasks.
 
 **Consequences.** A second tool for a purpose is a unit beside the first. An installation upgraded from the old names loses the old
 objects and gets new ones; the Secrets cert-manager wrote for the old kinds stay behind. The Service `<fullname>-malware-scanner-clamav`
-is a DNS label only for a `<fullname>` of at most 40 characters, which the chart does not check. The rule stands in the repository's
-`CLAUDE.md`.
+is a DNS label only for a `<fullname>` of at most 40 characters; the chart refuses a longer one and no longer cuts `<fullname>`
+([ha-and-helm.md](spec/ha-and-helm.md#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it) Q-HA-374). Dashboards, alert rules and log queries that select the old link labels, check names, components or
+credentials are changed by hand. The rule stands in the repository's `CLAUDE.md`.
 
 **Alternatives considered.** The tool's name on everything a scanner touches; the tool's name on the Deployment only; the values of
 `process.scanner_kind` kept as purposes, or without a default.
 
 **Revisit condition:** a second tool for one purpose, which needs the worker's link per purpose to become a list.
 
-**Spec:** [ha-and-helm.md](spec/ha-and-helm.md) R-HA-002, R-HA-063, R-HA-065 to R-HA-068, Q-HA-372; [architecture.md](spec/architecture.md)
-R-ARCH-001, R-ARCH-036, Q-ARCH-561.
+**Spec:** [ha-and-helm.md](spec/ha-and-helm.md) R-HA-002, R-HA-028, R-HA-029, R-HA-063, R-HA-065 to R-HA-068, Q-HA-372 to Q-HA-374;
+[architecture.md](spec/architecture.md) R-ARCH-001, R-ARCH-036, R-ARCH-038, Q-ARCH-561; [operations-and-observability.md](spec/operations-and-observability.md)
+R-OPS-001, R-OPS-008, Q-OPS-221, Q-OPS-222; [authorization.md](spec/authorization.md) R-AUTHZ-002; [usage-and-limits.md](spec/usage-and-limits.md)
+R-LIM-001; [formats/oci.md](spec/formats/oci.md) R-OCI-037; [malware-scanning.md](spec/malware-scanning.md) R-MAL-006.
 
 ## Design invariants
 
@@ -9101,7 +9114,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-OCI-166](spec/formats/oci.md#q-oci-166--a-write-through-a-virtual-repository-without-a-deploy-target-is-refused-by-the-decision-point-before-the-handler) | What does a write to a virtual repository without a deploy target answer? | (a) The decision point's 403; the handler's 405 behind it | [ADR-180](#adr-180--the-oci-write-routes-serve-the-class-virtual-and-the-handler-resolves-the-deployment-target) |
 | [Q-OCI-226](spec/formats/oci.md#q-oci-226--the-worker-issues-the-scan-token-in-process-with-the-registry-key) | Who issues the scan token? | (a) the worker, in process, with the registry key | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-OCI-227](spec/formats/oci.md#q-oci-227--a-scan-token-reaches-one-manifest-by-its-digest-and-the-blobs-of-its-name) | What does a scan token reach? | (a) one manifest by digest and the blobs of its name | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
-| [Q-OCI-228](spec/formats/oci.md#q-oci-228--the-scan-subject-is-decided-by-one-fixed-rule-read-never-fill) | How is a scan token's request decided? | (a) the subject `system:image-scanner` by one fixed rule: read, never fill | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
+| [Q-OCI-228](spec/formats/oci.md#q-oci-228--the-scan-subject-is-decided-by-one-fixed-rule-read-never-fill) | How is a scan token's request decided? | (a) the subject `system:image-scanner` by one fixed rule: read, never fill; the subject renamed by Q-HA-373 | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-OCI-229](spec/formats/oci.md#q-oci-229--a-scan-token-lives-as-long-as-the-pull-may-checked-against-its-own-bound) | How long does a scan token live? | (a) `pull_timeout`, checked against its own bound | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-OCI-230](spec/formats/oci.md#q-oci-230--a-scan-tokens-request-is-no-delivery-no-block-gate-no-download-no-probe) | Is the scanner's pull a delivery? | (a) no: no block gate, no download, no probe | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-OCI-240](spec/formats/oci.md#q-oci-240--a-block-of-a-member-ends-the-walk) | Does a blocked member end the OCI walk? | (a) a block's `403` and the pending `503` end it; other `Forbidden` stay misses | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
@@ -9298,7 +9311,9 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-HA-360](spec/ha-and-helm.md#q-ha-360--clamd-runs-in-a-container-of-the-official-image-beside-the-scanner) | How does `clamd` run in the chart? | (a) a second container of the official `_base` image, a Unix socket | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-HA-361](spec/ha-and-helm.md#q-ha-361--the-malware-scanners-default-size) | How large is the malware scanner by default? | (a) 2 replicas of 2 slots, `clamd` 2 GiB, no concurrent reload | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-HA-362](spec/ha-and-helm.md#q-ha-362--freshclam-runs-beside-the-worker-without-a-credential) | Where does `freshclam` run? | (a) a container of each worker pod that claims `malware` | [ADR-222](#adr-222--freshclam-fetches-the-clamav-database-and-quader-keeps-it-in-upstreamscanner-clamav) |
-| [Q-HA-372](spec/ha-and-helm.md#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name) | What are the scanner units named? Decided by the owner, the boundary by the development agent | (a) `<purpose>-scanner-<tool>` on what runs the tool, the purpose's name on what a second tool would share | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
+| [Q-HA-372](spec/ha-and-helm.md#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name) | What are the scanner units named? Decided by the owner, the boundary by the development agent | (a) `<purpose>-scanner-<tool>` on what runs the tool, the purpose's name on what a second tool would share; the boundary moved by Q-HA-373 | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
+| [Q-HA-373](spec/ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) | Which names that an operator or an auditor reads carry the unit? Decided by the owner | the link labels, the log components, the readiness checks and the system subjects of the two scanner units | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
+| [Q-HA-374](spec/ha-and-helm.md#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it) | How does the chart keep the names it builds valid? | (a) one check over every name built from `<fullname>` alone, computed from the kinds; `<fullname>` never cut | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
 | [Q-OPS-1](spec/operations-and-observability.md#q-ops-1--couple-liveness-to-prolonged-unreadiness) | Couple liveness to prolonged unreadiness? | (d) never; liveness is a watchdog over Quader's own loops | [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
 | [Q-OPS-2](spec/operations-and-observability.md#q-ops-2--should-object-storage-reachability-gate-readiness) | Should object-storage reachability gate readiness? | (d) gate only the first readiness, then report and degrade; continuous gating as an opt-in; changes INV-12; same choice as Q-STOR-1 and Q-HA-1 | [ADR-023](#adr-023--high-availability-and-horizontal-scale-on-ha-postgresql-ha-valkey-and-s3-inv-12) |
 | [Q-OPS-3](spec/operations-and-observability.md#q-ops-3--anonymous-access-to-the-version-endpoint) | Anonymous access to the version endpoint? | (b) authenticated by default; `system.public_version: true` opens it | — |
@@ -9378,10 +9393,12 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-OPS-188](spec/operations-and-observability.md#q-ops-188--the-statement-metrics-label-by-the-sqlc-query-name-and-are-recorded-by-the-pools-query-tracer) | How are `quader_db_slow_queries_total` and `quader_db_query_duration_seconds` recorded and labelled? | (a) by the pool's statement tracer, labelled with the sqlc query name (`begin`, `commit`, `rollback` for pgx's transaction statements, `unnamed` for other inline SQL, `pipeline` for a batch); the histogram exists only with the flag; a threshold of 0 counts none | — |
 | [Q-OPS-211](spec/operations-and-observability.md#q-ops-211--configuration-as-code-declares-no-part-of-the-project-upstream-and-managed-by-the-product-is-a-mechanism-of-its-own) | Is the product's ownership configuration as code? | (a) a mechanism of its own; documents refuse `upstream` | — |
 | [Q-OPS-215](spec/operations-and-observability.md#q-ops-215--the-scanner-has-no-row-in-the-replica-registry-and-shows-through-its-metrics-and-the-workers-codes) | Is the scanner in the replica registry? | (a) no; its metrics and the worker's codes show it | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-OPS-221](spec/operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) | How is a scanner unit's readiness check named? | (a) the unit's name in camel case, the same in the process that calls it | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
+| [Q-OPS-222](spec/operations-and-observability.md#q-ops-222--the-loader-of-the-signature-database-logs-as-its-unit) | Under which component does the signature database's loader log? | (a) its unit's, `malware-scanner-clamav` | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
 | [Q-LIM-62](spec/usage-and-limits.md#q-lim-62--a-request-through-a-virtual-repository-to-a-well-known-member-is-decided-at-the-addressed-repository-and-the-members-ceilings-bound-it) | Which limits apply through a virtual repository to a central member? | (a) Q-LIM-2 unchanged; the member's ceilings | — |
 | [Q-LIM-63](spec/usage-and-limits.md#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository) | Does a team see its traffic through a central member? | (a) `via_repository_id`; the Owner sees those rows | — |
-| [Q-LIM-66](spec/usage-and-limits.md#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing) | How is the scanner's pull charged? | (a) the subject `system`, recorded, limited by nothing | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
-| [Q-LIM-80](spec/usage-and-limits.md#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names) | Where are the malware scanner's reads recorded? | (a) `system`, under the token's repository | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
+| [Q-LIM-66](spec/usage-and-limits.md#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing) | How is the scanner's pull charged? | (a) the subject `system`, recorded, limited by nothing; the credential renamed by Q-HA-373 | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
+| [Q-LIM-80](spec/usage-and-limits.md#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names) | Where are the malware scanner's reads recorded? | (a) `system`, under the token's repository; the credential renamed by Q-HA-373 | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-API-1](spec/api-and-ui.md#q-api-1--openapi-generation-approach) | How is the OpenAPI document produced? | (a) spec-first: oapi-codegen models and `net/http` server interface, openapi-typescript types, thin hand-written Angular clients | [ADR-083](#adr-083--the-openapi-31-document-is-the-api-contract) |
 | [Q-API-2](spec/api-and-ui.md#q-api-2--is-if-match-mandatory-on-writes) | Is `If-Match` mandatory on writes? | (b) required on PUT and PATCH of revisioned resources; `If-Match: *` is the explicit blind write | [ADR-084](#adr-084--uniform-api-conventions-problem-details-cursors-merge-patch-etags-idempotency-keys) |
 | [Q-API-3](spec/api-and-ui.md#q-api-3--cluster-wide-rate-limiting) | Cluster-wide rate limiting? | (e) cluster-wide sliding-window counters in Valkey (R-ARCH-034) with a per-replica fallback; revisited 2026-10-28; H-43 narrowed; same choice as Q-ARCH-17 | [ADR-102](#adr-102--cluster-wide-rate-limits-in-valkey-with-a-per-replica-fallback) |

@@ -735,12 +735,12 @@ scanner: scanner.Service.Handler ── a slot, the room (image + 64 MiB), the p
    │  GET /v2/<project>/<repo>/<name>/manifests/<digest>, then the blobs by digest, Authorization: Bearer <scan token>
    ▼  vulnerabilities.images.registry.url, :8082                       the scanner's pair as client certificate
 packages: the scan listener (endpoint scan) ── auth.byScanToken ── registry enforcement point, digest pin ── authz decideSystem
-   ── formathost: no block gate, no download count, no probe; usage under the subject system (credential image-scanner)
+   ── formathost: no block gate, no download count, no probe; usage under the subject system (credential vuln-scanner-trivy)
 ```
 
 | Part | File | What it does |
 |---|---|---|
-| The role and its area | [wire_scanner.go](../../internal/app/wire_scanner.go), [roles.go](../../internal/app/roles.go), [steps.go](../../internal/app/steps.go) | The role builds the area `scanner` alone and the operations listener; `all` builds it too and listens on loopback (Q-ARCH-531) |
+| The role and its area | [wire_scanner.go](../../internal/app/wire_scanner.go), [roles.go](../../internal/app/roles.go), [steps.go](../../internal/app/steps.go) | The role builds the area `scanner` alone and the operations listener; `all` builds it too and listens on loopback (Q-ARCH-531). The unit's names (`unitVulnScannerTrivy`, `checkVulnScannerTrivy`): the log component, the listener's and the component's name `vuln-scanner-trivy`, the check `vulnScannerTrivy` (Q-HA-373, Q-OPS-221) |
 | The scanner | [internal/vuln/scanner](../../internal/vuln/scanner/scanner.go) | The handler (body of 16 KiB, decoded strictly), the slots, the drain, the answers with `terminal`, the reaper of Q-ARCH-530 ([reaper.go](../../internal/vuln/scanner/reaper.go)), the metrics `quader_scanner_*` |
 | The pull | [pull.go](../../internal/vuln/scanner/pull.go) | The manifest and the blobs by digest from the scan listener, the checks of R-VULN-036 on what it brings; `404` or `403` with `Quader-Error-Code: populate_not_permitted` is `layer_missing` (Q-VULN-180), every other `401`/`403` the refused token |
 | The worker's call | [wire_vuln_scanner_call.go](../../internal/app/wire_vuln_scanner_call.go), [client.go](../../internal/vuln/imagescan/client.go) | The scan signer (`ForScans(pull_timeout)`), the link's TLS, the client |
@@ -748,11 +748,11 @@ packages: the scan listener (endpoint scan) ── auth.byScanToken ── regis
 | The scan token | [registrytoken/scan.go](../../internal/auth/registrytoken/scan.go), [auth/scan.go](../../internal/auth/scan.go) | Claims `s`, `sid`, `d`; the endpoint `scan`; the lifetime `pull_timeout`; the stage that accepts nothing else (R-EP-010) |
 | The digest pin and the decision | [registry/scan_pin.go](../../internal/api/registry/scan_pin.go), [authz/system.go](../../internal/authz/system.go) | The manifest of the token's digest and the blobs of its name only; one fixed rule: `read` of the named repository while it is active and not disabled, never `populate` |
 | The exemptions | [formathost/system_read.go](../../internal/formathost/system_read.go), [limits/subject.go](../../internal/limits/subject.go) | No block gate, no download, no probe; the subject `system`, limited by nothing (Q-OCI-230, Q-LIM-66) |
-| The links' TLS | [httpserver/link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go) | A listener that requires a client certificate of the internal CA listing the one kind's name it admits; the client side that presents the first pair of `server.tls`, checks its `client auth` usage and requires the server's kind name (R-ARCH-038, Q-ARCH-552) |
+| The links' TLS | [httpserver/link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go) | A listener that requires a client certificate of the internal CA listing the one kind's name it admits; the client side that presents the first pair of `server.tls`, checks its `client auth` usage and requires the server's kind name (R-ARCH-038, Q-ARCH-552); the link names (`LinkVulnScannerTrivy`, `LinkMalwareScannerClamav`, `LinkScan`) are the label `listener` of the material at both ends (Q-HA-373) |
 | The chart | [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml), [_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl) | The Deployment `<fullname>-vuln-scanner-trivy`, its two Services, its policy, the managed keys, the checks of Q-HA-318 ([helm-chart.md](helm-chart.md)) |
 
 **Run it locally.** `make ui-dev-backend` runs the role `all`, whose worker calls its own scanner over loopback through the same client,
-token and checks; without the analyser binary the process stays ready and `/readyz?verbose=1` shows `scanner` degraded (Q-ARCH-551). The integration stack starts a scanner replica beside `web` and `worker` with `StackOptions{TLS: true}`
+token and checks; without the analyser binary the process stays ready and `/readyz?verbose=1` shows `vulnScannerTrivy` degraded (Q-ARCH-551, Q-OPS-221). The integration stack starts a scanner replica beside `web` and `worker` with `StackOptions{TLS: true}`
 ([test/integration/vulnimage](../../test/integration/vulnimage)), with the analyser replaced at the seam (`app.VulnOverride.ImageAnalyser`).
 With TLS the harness issues each role a pair of its own from the stack's CA (`rolePairs` in [testenv/tls.go](../../test/integration/testenv/tls.go):
 the names `<kind>.quader.test`, `web` carrying `api`'s and `packages`', and `localhost`, `127.0.0.1`) and sets the four names of the links,

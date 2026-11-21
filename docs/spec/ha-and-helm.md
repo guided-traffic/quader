@@ -203,7 +203,10 @@ from the list of Deployments in [_units.tpl](../../deploy/helm/quader/templates/
   `config.vulnerabilities.images.enabled`, both `true` by default) it renders a fourth, `<fullname>-vuln-scanner-trivy`, whose container
   runs `quader serve --role scanner` (R-HA-065), and while the malware scanning is on (`config.malware.enabled`, `true` by default) a
   fifth, `<fullname>-malware-scanner-clamav`, of the same role (R-HA-068). A Deployment that exists to run one third-party tool is named
-  `<purpose>-scanner-<tool>` (the owner's decision [Q-HA-372](#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name)). Each has
+  `<purpose>-scanner-<tool>` (the owner's decision [Q-HA-372](#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name)), and every name
+  an operator or an auditor reads of it carries that name too: the label `listener` of its link and its listener, the log field
+  `component` of its process, the system subject of its reads, and its readiness check in camel case, `vulnScannerTrivy` and
+  `malwareScannerClamav` (the owner's decision [Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)). Each has
   its own replica count, resources, autoscaler, disruption budget, termination grace period, spool size, scheduling settings and ingress
   policy (R-HA-031, R-HA-032, R-HA-042). There is no single-Deployment
   mode, and no value renders `--role all` or `--role web`.
@@ -439,8 +442,8 @@ database, the object store or Valkey. What it serves and holds is [architecture.
 - **Replicas and placement**: 2 replicas (at least 2 with `highAvailability.enforce`), a PodDisruptionBudget with `maxUnavailable: 1`, the
   two spread constraints and the tolerations of R-HA-032, an optional autoscaler on CPU (80 %). The capacity is replicas ×
   `config.vulnerabilities.images.scanner.slots`; `config.vulnerabilities.images.concurrency` should not exceed it (R-VULN-041, Q-VULN-170).
-- **Probes** (R-HA-034): `/healthz` and `/readyz` on `:8081`. Readiness holds while the listener's pair and the internal CA have loaded, the
-  pair allows client authentication (the chart issues it so, R-HA-063), the analyser answers its version, the spool directory is writable, and the process is not
+- **Probes** (R-HA-034): `/healthz` and `/readyz` on `:8081`. Readiness, the check `vulnScannerTrivy` ([operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) Q-OPS-221), holds while the listener's pair
+  and the internal CA have loaded, the pair allows client authentication (the chart issues it so, R-HA-063), the analyser answers its version, the spool directory is writable, and the process is not
   draining. It does not depend on `packages`: a scan listener that cannot be reached is the call's answer (`registry_unavailable`), not the
   pod's state. Nor on Valkey: the scanner has no Valkey client and no wait for its first answer (Q-HA-330 does not apply,
   [architecture.md](architecture.md) R-ARCH-036).
@@ -491,7 +494,9 @@ Priority: **P1** · Covers: HA-018
   that lists the scanner's name; the worker verifies the scanner's name and the scanner verifies the name of `packages`. A certificate of the
   same CA with the name of another kind, or with a wildcard, is refused in the handshake on each side. Each kind's Secret rotates on its own
   and reaches its pods through the kubelet and the reloader, without a restart, for the next handshake; the worker opens a connection per
-  call (R-VULN-041), so no call outlives two rotations on one connection.
+  call (R-VULN-041), so no call outlives two rotations on one connection. The TLS series of a link carry the label `listener` of the unit
+  or listener it reaches, at both ends: `vuln-scanner-trivy` on the worker's call and the scanner's listener, `scan` on the scanner's pull
+  and the scan listener ([Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)).
 - **With `tls.enabled: false`** the chart renders both links in plain HTTP, like every other link of such an installation (H-38): no client
   certificate is asked, and the scan token and the NetworkPolicy are what remain (Q-HA-322,
   [H-1043](../security/image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)).
@@ -582,8 +587,9 @@ leaves their text to them.
 - **Replicas and placement**: 2 replicas (at least 2 with `highAvailability.enforce`), a PodDisruptionBudget with `maxUnavailable: 1`, the
   spread constraints and tolerations of R-HA-032, an optional autoscaler on CPU. The capacity is replicas × `config.malware.scanner.slots`
   (2); `config.malware.concurrency` (4) should not exceed it.
-- **Probes and drain.** Readiness holds while the TLS material is loaded, the first database is loaded and `clamd` answers `PING`, and the
-  process is not draining; liveness is the scanner's `/healthz`. `terminationGracePeriodSeconds: 60`; at `SIGTERM` new calls are answered
+- **Probes and drain.** Readiness, the check `malwareScannerClamav` ([operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) Q-OPS-221), holds while the TLS material is loaded, the first database is
+  loaded and `clamd` answers `PING`, and the process is not draining; the label `listener` of its listener and of the worker's link to it is
+  `malware-scanner-clamav` ([Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)); liveness is the scanner's `/healthz`. `terminationGracePeriodSeconds: 60`; at `SIGTERM` new calls are answered
   `503 scanner_draining`.
 - **Service and policies.** `<fullname>-malware-scanner-clamav`: `ClusterIP`, port `https` 8080, no `service.type`, no Ingress. NetworkPolicy
   (R-HA-042): `:8080` from the pods of the worker Deployments that claim the queue `malware`; `:8081` from the ops sources; the scan listener
@@ -3685,7 +3691,8 @@ Priority: **MVP** · Covers: HA-029, HA-032, HA-038, HA-021
   can change on re-render.
 
 Rendered resources (`<fullname>` is the release name, or `<release>-quader` when the release name
-does not contain `quader`, overridable by `fullnameOverride`):
+does not contain `quader`, overridable by `fullnameOverride`; it is never cut, and the render fails when it is too long for a name built
+from it, R-HA-029 and [Q-HA-374](#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)):
 
 | Kind | Name | Rendered when |
 |---|---|---|
@@ -3774,6 +3781,7 @@ The chart MUST refuse to render, naming the offending value, before anything is 
 | Two pools of a role with the same name, two pools with the same path prefix or queue, a pool path outside the families of its role or equal to one of the role's own prefixes of R-HA-037, a worker pool queue that does not exist, or a pool whose name starts with `ep-` (R-HA-062) | the pools |
 | Worker pools that claim every queue; a worker pool without a replica; an `endpoints.default.surface` without a family of a role that no further endpoint is served by (R-HA-062) | the pool or the surface |
 | A provider of `config.auth.oidc.providers` with a `client_auth_method` other than `none` and no entry in `secrets.oidc` (R-HA-030, Q-HA-93) | the provider |
+| A `<fullname>` too long for a name built from it alone: the Service and the certificate name `<fullname>-<kind>` of every kind of `quader.tlsKindTable`, rendered or not, `<fullname>-ops` and `<fullname>-packages-scan` (DNS labels of at most 63 characters), the Jobs `<fullname>-migrate`, `-restore` and `-post-restore-<8 hex>` (at most 63) and the CronJob `<fullname>-backup` (at most 52); the tightest decides, today `<fullname>-malware-scanner-clamav`, so `<fullname>` has at most 40 characters ([Q-HA-374](#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)) | the name that is too long, its length, and the longest release name and `fullnameOverride` that fit |
 | An endpoint whose `port` equals 8080, 8081 or another endpoint's port; an invalid endpoint name or one for which `<fullname>-api-ep-<name>` (a surface with families of both roles) or `<fullname>-packages-ep-<name>` (a pool) exceeds 63 characters; a missing `baseUrl`; a host in two endpoints; `extraSecrets` or `clientCaSecret` with `tls.enabled: false`; an endpoint pool below two replicas with `highAvailability.enforce` ([endpoints.md](endpoints.md) R-EP-008) | the endpoint and the value |
 | `gateway.enabled` without `gateway.parentRefs` and without `gateway.create.enabled` | `gateway.parentRefs` |
 | `gateway.enabled` and `.Capabilities.APIVersions` lacks `gateway.networking.k8s.io/v1/HTTPRoute` | the missing API |
@@ -3932,7 +3940,7 @@ global:
   imagePullSecrets: []                  # example: [{name: registry-pull}]
 
 nameOverride: ""
-fullnameOverride: ""
+fullnameOverride: ""                    # empty = the release name, or <release>-quader; never cut: the render fails when a name built from it would be too long (at most 40 characters with the chart's kinds)
 commonLabels: {}
 commonAnnotations: {}
 
@@ -11761,7 +11769,9 @@ Status: **Decided by the owner on 2026-11-21**, on his own initiative after he s
 is the development agent's, told to him the same morning. Supersedes the names of the kinds `scanner`
 ([Q-HA-346](#q-ha-346--four-kinds-hold-a-pair-each-names-its-kind-and-the-operations-service), R-HA-065) and `malware-scanner` (R-HA-068)
 and of their value blocks, and, through [architecture.md](architecture.md#q-arch-561--processscanner_kind-names-the-tool-trivy-or-clamav)
-Q-ARCH-561, the values of `process.scanner_kind`; what those decisions decided stands.
+Q-ARCH-561, the values of `process.scanner_kind`; what those decisions decided stands. Its boundary was moved by the owner the same day
+([Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)): the system subjects, the readiness checks, the label `listener` of the worker's links and the log components of the two units
+carry the unit's name too; the table below keeps the boundary of its morning. The length of the names it built is checked since [Q-HA-374](#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it).
 
 The owner's words: "Die Deployments quader-scanner und quader-malware-scanner sind mir nicht differenziert genug. quader-scanner ist
 trivy? Dann quader-vuln-scanner-trivy. quader-malware-scanner hätte ich auch lieber quader-malware-scanner-calmav genannt. Also immer so
@@ -11798,8 +11808,9 @@ Certificates `<fullname>-scanner` and `<fullname>-malware-scanner` and gets the 
 Certificate goes unless it runs with `--enable-certificate-owner-ref`, and may be deleted by hand; an installation that names its Secrets
 renames the keys of `tls.existingSecrets`, and one that set `scanner:` or `malwareScanner:` renames the blocks (the schema refuses the old
 keys). The longest name derived from a kind, the Service `<fullname>-malware-scanner-clamav`, is a DNS label only while `<fullname>` has at
-most 40 characters; `quader.fullname` cuts at 50 and the chart does not check the sum, as it did not for `<fullname>-malware-scanner` (47)
-and `<fullname>-packages-scan` (49).
+most 40 characters; `quader.fullname` cut at 50 and the chart did not check the sum that morning, as it had not for
+`<fullname>-malware-scanner` (47) and `<fullname>-packages-scan` (49); [Q-HA-374](#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)
+checks it since.
 
 **Applied in the spec:** R-HA-002, R-HA-011, R-HA-030 to R-HA-032, R-HA-035, R-HA-036, R-HA-042, R-HA-045, R-HA-061, R-HA-063, R-HA-065 to
 R-HA-068; [architecture.md](architecture.md) R-ARCH-001, R-ARCH-036, Q-ARCH-561. Chart:
@@ -11807,6 +11818,93 @@ R-HA-068; [architecture.md](architecture.md) R-ARCH-001, R-ARCH-036, Q-ARCH-561.
 [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml),
 [malware-scanner-clamav.yaml](../../deploy/helm/quader/templates/malware-scanner-clamav.yaml); the rule in the repository's
 [CLAUDE.md](../../CLAUDE.md).
+
+### Q-HA-373 · Every name an operator or an auditor reads of a scanner unit carries its tool
+
+Status: **Decided by the owner on 2026-11-21**, on the builder's report of the names Q-HA-372 had left with the purpose's: "Vom Builder
+gemeldet, nicht geändert: direkt nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." It moves the boundary of
+[Q-HA-372](#q-ha-372--a-unit-that-runs-a-tool-carries-the-tools-name) for the names below; how they are written is the development
+agent's ([operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it)
+Q-OPS-221, [Q-OPS-222](operations-and-observability.md#q-ops-222--the-loader-of-the-signature-database-logs-as-its-unit)).
+
+Context: Q-HA-372 renamed the two scanner units and every object named after them, and kept the purpose's name on what a second tool
+would share. Four kinds of name stayed that an operator or an auditor reads and that name a unit, not a purpose: the label `listener` of the
+TLS series of the worker's links (`scanner`, `malware-scanner`); the log field `component` of the two scanner processes (`scanner`,
+`malware-scanner`, and `malware-database-loader` for the malware scanner's loader); the readiness checks (`scanner` in both kinds of scanner
+and in the role `all`, `malware_scanner` on a worker without a malware scanner); and the system subjects of the scanners' reads
+(`image-scanner`, `malware-scanner`), which the scan listener's request log, the decision point's allow and the usage records' credential
+column show. The owner's rule of Q-HA-372 is "immer so benennen, dass man sieht um welches Tool es sich handelt".
+
+Decision, the owner's sentence applied:
+
+- **The label `listener` of a link's TLS series** names the unit the link reaches, at both of its ends: `vuln-scanner-trivy` on the
+  worker's call of the image scanner and on that scanner's listener, `malware-scanner-clamav` on the worker's call of the malware scanner and
+  on its listener. The listener's HTTP server and the reloader of its material log under the same name. The scanner's pull keeps `scan`:
+  it reaches the scan listener of `packages`, which runs no tool.
+- **The log field `component` of a scanner's process** is the unit's name, `vuln-scanner-trivy` or `malware-scanner-clamav`, the loader of
+  the signature database included (Q-OPS-222). The process's components are named after the unit too, which a failed start or stop
+  names: the scanner `vuln-scanner-trivy` or `malware-scanner-clamav`, the worker's links `link-vuln-scanner-trivy` and
+  `link-malware-scanner-clamav`, the loader `malware-scanner-clamav-database-loader`.
+- **The readiness check of a scanner unit** is the unit's name in camel case, in the scanner's process and in the process that would call
+  it: `vulnScannerTrivy` (the image scanner's own, and the reported check of the role `all`), `malwareScannerClamav` (the malware scanner's
+  own, and the reported check of a worker without `malware.scanner.url`) (Q-OPS-221). The System page has a sentence for each.
+- **The system subject of a scanner's reads** is the unit's name: `system:vuln-scanner-trivy`, the claim `s` of a scan token, the principal
+  of the scan listener's request log and the source of the decision point's allow; `system:malware-scanner-clamav`, the claim `s` of a blob
+  token and the principal of the malware routes. The usage records' credential column of their reads carries the same names. The
+  authorization model holds no reason to keep a purpose's name here: the decision point finds a system subject's fixed rule by its name
+  ([system.go](../../internal/authz/system.go)), so a second tool for a purpose would be a second name with the same rule, one case more,
+  and an auditor reads which tool read.
+
+What keeps its purpose's name: the role `scanner` and its area; the jobs, queues and tasks; the configuration keys
+`vulnerabilities.images.scanner.*` and `malware.scanner.*`; the repositories `upstream/scanner-trivy` and `upstream/scanner-clamav`; the
+metric names; the error codes `scanner_busy`, `scanner_draining`, `scanner_unavailable` and `scanner_lost`, which answer for whichever
+scanner is called; the subjects of the worker's own tasks (`system:image-database`, `system:malware-database`, `system:malware-scan`); and
+the table `malware_scanners`, what the worker saw of the scanners it calls.
+
+Consequences: dashboards, alert rules and log queries of an installation that select `listener="scanner"` or `listener="malware-scanner"`,
+`quader_health_check_passing{name="scanner"}` or `{name="malware_scanner"}`, the field `component` `scanner`, `malware-scanner` or
+`malware-database-loader`, or the credential `image-scanner` or `malware-scanner` of the usage records match nothing after the upgrade and
+are changed by hand (pre-alpha, no alias, [architecture.md](architecture.md) Q-ARCH-340); the chart's own rules and the runbooks select none
+of them. Usage rows written before the upgrade keep their old credential. While a rollout runs replicas of both versions, a scan or blob
+token signed by one is refused by the scan listener of the other.
+
+**Applied in the spec:** R-HA-002, R-HA-065, R-HA-066, R-HA-068; [operations-and-observability.md](operations-and-observability.md) R-OPS-001,
+R-OPS-008; [architecture.md](architecture.md) R-ARCH-038; [authorization.md](authorization.md) R-AUTHZ-002;
+[usage-and-limits.md](usage-and-limits.md) R-LIM-001; [formats/oci.md](formats/oci.md) R-OCI-037; [malware-scanning.md](malware-scanning.md)
+R-MAL-006. Code: [link_tls.go](../../internal/httpserver/link_tls.go), [wire_scanner.go](../../internal/app/wire_scanner.go),
+[scan.go](../../internal/auth/registrytoken/scan.go), [blob.go](../../internal/auth/registrytoken/blob.go),
+[system.go](../../internal/authz/system.go), [subject.go](../../internal/limits/subject.go); the System page's sentences in
+[system-status.ts](../../web/src/app/features/system/system-status.ts).
+
+### Q-HA-374 · The chart refuses a fullname too long for the names it builds, and never cuts it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The task is the
+owner's, with [Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool): the chart checks the
+length of the names it builds.
+
+Context: `quader.fullname` cut at 50 characters "so that every derived name stays a valid DNS label". Since Q-HA-372 the longest name
+built from `<fullname>` alone is the Service `<fullname>-malware-scanner-clamav`, 23 characters more, a DNS label only for a `<fullname>` of
+at most 40; a release name between that and the cut rendered and failed at the API server, not at the render. The names that carry a
+value of the installation (a path pool, an endpoint and its pool) were checked already, each with its value (R-HA-029, R-HA-062), and so was
+the backup CronJob's limit of 52.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One check over every name built from `<fullname>` alone, computed from `quader.tlsKindTable` and the fixed suffixes; `quader.fullname` never cut (chosen) | The tightest name decides; the render fails naming it, its length, and the longest release name and `fullnameOverride` that fit | Fails before anything is applied, with what to do; a kind added to the table moves the bound by itself; no name changes without a word | A `<fullname>` of 41 to 50 characters that rendered before now fails (pre-alpha, no installation has one) |
+| (b) The same check, and the cut lowered to the computed bound | Names always fit | Never a failure for the name | A cut renames without a word; two releases whose names agree in their first 40 characters render the same objects into one namespace; the check never fires |
+| (c) The cut kept at 50, the check over the kinds the release renders only | A release without the malware scanning may keep a longer name | More room for some releases | Switching the malware scanning on later fails the upgrade for a name chosen long before; the bound moves with values |
+| (d) The cut lowered to 40, no check | Smallest change | One line | A hard-coded number that goes stale with the next kind, and (b)'s faults |
+
+**Choice:** (a) ([_validate.tpl](../../deploy/helm/quader/templates/_validate.tpl) `quader.validateNames`, [_helpers.tpl](../../deploy/helm/quader/templates/_helpers.tpl)
+`quader.fullname`). The names checked: the Service and the certificate name `<fullname>-<kind>` of every kind of the table, whether the
+release renders it or not, so that switching a kind on never fails for its name; the Services `<fullname>-ops` and
+`<fullname>-packages-scan`; the Jobs `<fullname>-migrate`, `<fullname>-restore` and `<fullname>-post-restore-<8 hex>`, whose names are label
+values of their pods (63 each); the CronJob `<fullname>-backup` (52). With today's table `<fullname>` has at most 40 characters: a release
+name of at most 33 (`<release>-quader`), one of at most 40 that contains `quader`, or a `fullnameOverride` of at most 40. The CronJob's own
+check became a row of this one: every `<fullname>` it accepts leaves `<fullname>-backup` at 47 at most. Certificates and Secrets
+(`<fullname>-tls-<kind>`), ConfigMaps, NetworkPolicies, disruption budgets and autoscalers are DNS subdomains of up to 253 characters and
+are not checked. The chart test renders the boundary: 40 renders, 41 fails, a release name of 33 renders and one of 34 fails, and the bound
+holds with both scannings off. **Applied in the spec:** R-HA-028, R-HA-029, Q-HA-372's consequence.
 
 ## What this does not cover
 

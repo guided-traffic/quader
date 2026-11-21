@@ -60,7 +60,7 @@ func SubjectOf(ctx context.Context) authz.Subject {
 		s.Groups = append(s.Groups, principal.GroupRef{ID: g.ID, Name: g.Name})
 	}
 	if p.Kind == httpserver.KindSystem && p.Credential.Registry != nil && len(p.Credential.Registry.Entries) == 1 {
-		// The one repository a scan token names, which the fixed rule of system:image-scanner reads (R-OCI-037, Q-OCI-228).
+		// The one repository a scan token names, which the fixed rule of system:vuln-scanner-trivy reads (R-OCI-037, Q-OCI-228).
 		s.SystemRepo = p.Credential.Registry.Entries[0].Repo
 	}
 	if ep := httpserver.EndpointFrom(ctx); ep != nil {

@@ -21,10 +21,60 @@ fixes the form, so every term is a number and a unit.
 {{- $ms -}}
 {{- end -}}
 
+{{/*
+The names the chart builds from <fullname> alone that Kubernetes limits (R-HA-029, Q-HA-374): the Service of every kind of pod of
+quader.tlsKindTable and the kind's name in its certificate, DNS labels of at most 63 characters, for every kind of the table whether
+this release renders it or not, so that switching a kind on never fails for its name; the Services <fullname>-ops and
+<fullname>-packages-scan; the Jobs <fullname>-migrate, <fullname>-restore and <fullname>-post-restore-<8 hex>, whose name is a label
+value of their pods; and the CronJob <fullname>-backup, at most 52, because its controller names a Job <CronJob>-<10 digits>. The
+tightest of them decides how long <fullname> may be: the render fails naming that name and the longest release name and
+fullnameOverride that fit. A name that carries a value of the installation (a pool, an endpoint) is checked with that value
+(quader.validatePools, quader.validateEndpoints). Argument: the root context.
+*/}}
+{{- define "quader.validateNames" -}}
+{{- $fullname := include "quader.fullname" . -}}
+{{- $names := list -}}
+{{- range $e := include "quader.tlsKindTable" . | fromYamlArray -}}
+{{- $names = append $names (dict "object" "Service" "suffix" $e.kind "len" (len $e.kind) "max" 63) -}}
+{{- end -}}
+{{- range $s := list "ops" "packages-scan" -}}
+{{- $names = append $names (dict "object" "Service" "suffix" $s "len" (len $s) "max" 63) -}}
+{{- end -}}
+{{- range $s := list "migrate" "restore" -}}
+{{- $names = append $names (dict "object" "Job" "suffix" $s "len" (len $s) "max" 63) -}}
+{{- end -}}
+{{- $names = append $names (dict "object" "Job" "suffix" "post-restore-<8 hex>" "len" (add (len "post-restore-") 8) "max" 63) -}}
+{{- $names = append $names (dict "object" "CronJob" "suffix" "backup" "len" (len "backup") "max" 52) -}}
+{{- $room := -1 -}}
+{{- $tight := dict -}}
+{{- range $n := $names -}}
+{{- $r := sub (sub $n.max 1) $n.len -}}
+{{- if or (lt $room 0) (lt $r $room) -}}
+{{- $room = $r -}}
+{{- $tight = $n -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $fullname) $room -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- $fits := printf "set fullnameOverride to at most %d characters" $room -}}
+{{- if not .Values.fullnameOverride -}}
+{{- $alone := sub (sub $room 1) (len $name) -}}
+{{- if gt $alone 0 -}}
+{{- $fits = printf "choose a release name of at most %d characters, or one of at most %d that contains %s (then <fullname> is the release name), or %s" $alone $room $name $fits -}}
+{{- else -}}
+{{- $fits = printf "choose a release name of at most %d characters that contains %s, or %s" $room $name $fits -}}
+{{- end -}}
+{{- end -}}
+{{- fail (printf "quader: the %s name %s-%s has %d characters, at most %d are allowed. Every name the chart builds from <fullname> has to fit, which leaves <fullname> (%s, %d characters) at most %d: %s" $tight.object $fullname $tight.suffix (add (len $fullname) 1 $tight.len) $tight.max $fullname (len $fullname) $room $fits) -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "quader.validate" -}}
 {{- $v := .Values -}}
 {{- $cfg := $v.config -}}
 {{- $ns := .Release.Namespace -}}
+
+{{- include "quader.validateNames" . -}}
 
 {{- if not (dig "server" "base_url" "" $cfg) -}}
 {{- fail "quader: config.server.base_url is required (example: https://quader.example.com)" -}}

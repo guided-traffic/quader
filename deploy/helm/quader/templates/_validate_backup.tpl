@@ -75,11 +75,7 @@ the day of week 7 is not supported; Sunday is 0
 {{- end -}}
 
 {{- if $b.enabled -}}
-{{- /* The CronJob controller names a Job <CronJob>-<10 digits>, and a name of a CronJob over 52 characters leaves it no room (the UI's manual run, Q-API-10, adds its own suffix to the same limit). */ -}}
-{{- $cronJobName := printf "%s-backup" (include "quader.fullname" .) -}}
-{{- if gt (len $cronJobName) 52 -}}
-{{- fail (printf "quader: the CronJob name %s has %d characters, at most 52 are allowed: the Jobs it creates are named after it and must stay within 63. Shorten fullnameOverride or the release name, or switch the backup off with backup.enabled: false" $cronJobName (len $cronJobName)) -}}
-{{- end -}}
+{{- /* The CronJob's name of at most 52 characters (its controller names a Job <CronJob>-<10 digits>, and the UI's manual run, Q-API-10, adds its own suffix to the same limit) is one row of quader.validateNames. */ -}}
 {{- $cronErr := include "quader.cronError" $b.schedule -}}
 {{- if $cronErr -}}
 {{- fail (printf "quader: backup.schedule %q is not accepted: %s; schedules are five fields (minute hour day-of-month month day-of-week, day of week 0-6 with Sunday = 0) or one of @yearly @annually @monthly @weekly @daily @midnight @hourly, and backup.timeZone sets the zone" $b.schedule $cronErr) -}}

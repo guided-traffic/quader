@@ -71,7 +71,9 @@ session (session ticket) sees no certificate in the resumed handshake; a full ha
 ### Metrics
 
 Registered once per process (`tlsfiles.NewMetrics`, in `internal/app` telemetry) and passed to every reloader. Labels:
-`kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>` for a further endpoint, `ops`, empty for clients),
+`kind` (`listener`, `client` for the pair presented on a link, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`,
+`client:<endpoint>` for a further endpoint, `ops`; on a link, at both ends, the unit or listener it reaches: `httpserver.LinkVulnScannerTrivy`
+`vuln-scanner-trivy`, `LinkMalwareScannerClamav` `malware-scanner-clamav`, `LinkScan` `scan`, [Q-HA-373](../spec/ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool); empty for other clients),
 `name` (the configured certificate or bundle path). All bounded by the configuration.
 
 | Family | Meaning |

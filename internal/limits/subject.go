@@ -83,7 +83,8 @@ const (
 	CallerCI             CallerKind = "ci"
 	CallerBreakGlass     CallerKind = "break_glass"
 	CallerBastion        CallerKind = "bastion"
-	// CallerSystem is a system subject on a request: system:image-scanner, a scan token on the scan listener (R-OCI-037).
+	// CallerSystem is a system subject on a request: system:vuln-scanner-trivy, a scan token on the scan listener (R-OCI-037), or
+	// system:malware-scanner-clamav, a blob token there (R-MAL-006).
 	CallerSystem CallerKind = "system"
 )
 
@@ -94,12 +95,13 @@ func KnownCallerKinds() []CallerKind {
 }
 
 // ScanCredential is the credential column of the requests of the image scanning's pull, charged to the subject system
-// (Q-LIM-66): the usage store shows what the scanner read per repository.
-const ScanCredential = "image-scanner"
+// (Q-LIM-66): the usage store shows what the scanner read per repository, under the name of the unit that read
+// (ha-and-helm.md Q-HA-373).
+const ScanCredential = "vuln-scanner-trivy" //nolint:gosec // G101: the name of the unit that read, not a credential
 
 // MalwareScanCredential is the credential column of the malware scanner's reads of a blob on the scan listener, charged to the
-// subject system under the repository its blob token names (Q-LIM-80).
-const MalwareScanCredential = "malware-scanner"
+// subject system under the repository its blob token names (Q-LIM-80), under the name of the unit that read (Q-HA-373).
+const MalwareScanCredential = "malware-scanner-clamav"
 
 // Caller is what the authentication stage decided about a request, as plain values (the edge converts its principal).
 type Caller struct {
@@ -121,7 +123,7 @@ type Caller struct {
 	Admin bool
 	// Client is the client address after the trusted-proxy rule (R-ARCH-006).
 	Client netip.Addr
-	// System is the name of a system subject (CallerSystem): image-scanner or malware-scanner, the credential column its reads
+	// System is the name of a system subject (CallerSystem): vuln-scanner-trivy or malware-scanner-clamav, the credential column its reads
 	// are recorded with (Q-LIM-66, Q-LIM-80). Empty is the image scanner's.
 	System string
 }

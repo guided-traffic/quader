@@ -91,8 +91,9 @@ The developer procedure, the metric families and the tests are in [tls.md](../de
 | `quader_tls_reloads_total{kind,listener,name}` | changed content that loaded and replaced the previous one |
 | `quader_tls_reload_errors_total{kind,listener,name}` | content that did not load, once per distinct content |
 
-`kind` is `listener`, `database`, `valkey`, `objectstore` or `outbound`. `listener` is `client`, `ops`, or `client:<endpoint>`
-for a further endpoint, and empty for a client ([tlsfiles/metrics.go](../../internal/tlsfiles/metrics.go)). A certificate
+`kind` is `listener`, `client` (the pair a pod presents on a link between Quader's pods), `database`, `valkey`, `objectstore` or
+`outbound`. `listener` is `client`, `ops`, or `client:<endpoint>` for a further endpoint; on a link, at both of its ends, the unit or
+listener it reaches, `vuln-scanner-trivy`, `malware-scanner-clamav` or `scan` ([Q-HA-373](../spec/ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)); and empty for another client ([tlsfiles/metrics.go](../../internal/tlsfiles/metrics.go)). A certificate
 that expires is seen only through the gauge: see [H-66](#h-66--a-loaded-certificate-is-served-past-its-expiry).
 
 ## Client connections

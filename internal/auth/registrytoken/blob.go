@@ -13,15 +13,16 @@ import (
 
 // Blob tokens (malware-scanning.md R-MAL-006, Q-MAL-26): the scan token of the kind blob, the credential of the malware scanner's read
 // of one blob on the scan listener. A worker signs one in process for each call of the malware scanner, with the key of every registry
-// token; it names the system subject malware-scanner, the scan's ID, the endpoint scan, one blob's digest and the one repository that
+// token; it names the system subject malware-scanner-clamav, the scan's ID, the endpoint scan, one blob's digest and the one repository that
 // holds it which the job chose (malware_scan.holder_repo_id), and no grant entry and no image. No quader token stands behind it, so
 // its verification costs no query. It is good on the scan listener only, on the blob route only, for that digest, while that
 // repository holds an item over it (the route checks the last), for malware.read_timeout. It is held in a [ScanToken], which renders
 // nothing of it.
 
 // BlobSubject is the system subject of a blob token (R-AUTHZ-002): the claim s, and the name of the principal of kind system the stage
-// of the scan listener yields on the malware scanning's routes.
-const BlobSubject = "malware-scanner"
+// of the scan listener yields on the malware scanning's routes. It is the name of the unit that reads, malware-scanner-clamav
+// (ha-and-helm.md Q-HA-373).
+const BlobSubject = "malware-scanner-clamav"
 
 // The malware scanning's routes of the scan listener (R-MAL-006, R-ARCH-037), beside the registry's below /v2/. BlobPathPrefix followed
 // by the digest, sha256:<64 hex>, is the blob route, which a blob token and nothing else reaches; DatabasePath, and below it
@@ -97,7 +98,7 @@ func (s *Signer) IssueBlob(repo qname.Repo, digest string, now time.Time) (ScanT
 // IsBlob reports whether the claims are a blob token's.
 func (c Claims) IsBlob() bool { return c.System == BlobSubject }
 
-// checkBlob holds the rule both sides apply to a blob token (Q-MAL-26): the system subject malware-scanner, no principal, no quader
+// checkBlob holds the rule both sides apply to a blob token (Q-MAL-26): the system subject malware-scanner-clamav, no principal, no quader
 // token, not anonymous, the endpoint scan, no grant entry and no catalog, a blob digest, a scan ID and one valid repository.
 func (c Claims) checkBlob() error {
 	switch {

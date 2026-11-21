@@ -7,7 +7,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 )
 
-// Q-LIM-66: a scan token's request is system work: the subject system with the credential image-scanner, recorded under the
+// Q-LIM-66: a scan token's request is system work: the subject system with the credential vuln-scanner-trivy, recorded under the
 // repository, and no request figure, ceiling, block or parallel lease refuses it, whatever the figures say.
 func TestQ_LIM_66_TheImageScanningsPullIsRecordedUnderSystemAndLimitedByNothing(t *testing.T) {
 	s, ok := SubjectOf(Caller{Kind: CallerSystem})
@@ -49,14 +49,14 @@ func TestQ_LIM_66_TheImageScanningsPullIsRecordedUnderSystemAndLimitedByNothing(
 	}
 }
 
-// Q-LIM-80: the malware scanner's read with a blob token is system work with the credential malware-scanner, and limited by nothing;
+// Q-LIM-80: the malware scanner's read with a blob token is system work with the credential malware-scanner-clamav, and limited by nothing;
 // a system subject of another name keeps the image scanner's credential.
 func TestQ_LIM_80_TheMalwareScannersReadIsRecordedUnderSystemWithItsOwnCredential(t *testing.T) {
 	s, ok := SubjectOf(Caller{Kind: CallerSystem, System: MalwareScanCredential})
 	if !ok || s.Kind != KindSystem || s.Credential != MalwareScanCredential || s.String() != "system" {
 		t.Fatalf("subject %+v", s)
 	}
-	if s, _ := SubjectOf(Caller{Kind: CallerSystem, System: "image-scanner"}); s.Credential != ScanCredential {
+	if s, _ := SubjectOf(Caller{Kind: CallerSystem, System: "vuln-scanner-trivy"}); s.Credential != ScanCredential {
 		t.Fatalf("the image scanner: %+v", s)
 	}
 	r := newRig(t, ModeEnforce, BuiltinProfiles()[ProfileAnonymous])

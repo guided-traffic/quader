@@ -132,7 +132,7 @@ func recordPrincipal(r *http.Request, p httpserver.Principal) {
 	}
 	ri.SetToken(p.Credential.TokenID, method)
 	if p.Credential.ScanID != "" {
-		// The scan listener's line of a scan token: the principal system:image-scanner and the scan's ID, which the worker's and
+		// The scan listener's line of a scan token: the principal system:vuln-scanner-trivy and the scan's ID, which the worker's and
 		// the scanner's lines of the call carry too (R-OCI-037).
 		ri.SetField("scan_id", p.Credential.ScanID)
 	}

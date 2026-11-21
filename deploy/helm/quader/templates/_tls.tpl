@@ -9,7 +9,8 @@ The kinds of pod that hold a pair (Q-HA-346), one entry each: "kind" (its name, 
 link), "scanClient" (the scan listener admits it: a kind of scanner, server.scan_clients) and "on" (the release renders it). A kind
 that runs one third-party tool is named <purpose>-scanner-<tool> (Q-HA-372): vuln-scanner-trivy, malware-scanner-clamav. A further
 kind of pod is one entry here, one key of tls.existingSecrets in values.yaml and values.schema.json, and its Deployment's mount of
-quader.tlsSecret; the Certificates, the checks, the Secrets' validation and the scan listener's names follow from this list. Argument:
+quader.tlsSecret; the Certificates, the checks, the Secrets' validation, the scan listener's names and the bound on the length of
+<fullname> (quader.validateNames) follow from this list. Argument:
 the root context. Returns a YAML list.
 */}}
 {{- define "quader.tlsKindTable" -}}

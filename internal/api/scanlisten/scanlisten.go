@@ -73,7 +73,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 }
 
 // malwareScanner reports whether the request's principal is the one the malware scanning's routes admit: the system subject
-// malware-scanner, which the stage yields for a blob token on the blob route and for the malware scanner's certificate on the database
+// malware-scanner-clamav, which the stage yields for a blob token on the blob route and for the malware scanner's certificate on the database
 // routes. A route reached otherwise is a defect of the wiring, answered as nothing found.
 func malwareScanner(p httpserver.Principal) bool {
 	return p.Kind == httpserver.KindSystem && p.Name == registrytoken.BlobSubject

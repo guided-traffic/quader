@@ -135,14 +135,14 @@ func TestR_ARCH_038_ThePairOfALinkMustAllowClientAuthentication(t *testing.T) {
 		}
 	}
 	certFile, keyFile := serverOnly.Files(t, dir, "server-only")
-	link, err := NewLinkTLS(LinkScanner, linkServer(certFile, keyFile, caFile), "localhost", nil)
+	link, err := NewLinkTLS(LinkVulnScannerTrivy, linkServer(certFile, keyFile, caFile), "localhost", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := link.Fit(); err == nil {
 		t.Fatal("the link reports an unfit pair as fit")
 	}
-	srv, err := NewLinkListenerTLS(LinkScanner, linkServer(certFile, keyFile, caFile), nil)
+	srv, err := NewLinkListenerTLS(LinkVulnScannerTrivy, linkServer(certFile, keyFile, caFile), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,11 +153,11 @@ func TestR_ARCH_038_ThePairOfALinkMustAllowClientAuthentication(t *testing.T) {
 	t.Run("the client side of a link presents its pair and trusts only the internal CA", func(t *testing.T) {
 		goodCert, goodKey := ca.Issue(t, tlstest.Options{}).Files(t, dir, "good")
 		s := linkServer(goodCert, goodKey, caFile)
-		client, err := NewLinkTLS(LinkScanner, s, "localhost", nil)
+		client, err := NewLinkTLS(LinkVulnScannerTrivy, s, "localhost", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		listener, err := NewLinkListenerTLS(LinkScanner, s, nil)
+		listener, err := NewLinkListenerTLS(LinkVulnScannerTrivy, s, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -166,7 +166,7 @@ func TestR_ARCH_038_ThePairOfALinkMustAllowClientAuthentication(t *testing.T) {
 		}
 		foreign := tlstest.NewCA(t, "foreign")
 		fc, fk := foreign.Issue(t, tlstest.Options{}).Files(t, dir, "foreign")
-		stranger, err := NewLinkListenerTLS(LinkScanner, linkServer(fc, fk, foreign.WriteCA(t, dir, "foreign.crt")), nil)
+		stranger, err := NewLinkListenerTLS(LinkVulnScannerTrivy, linkServer(fc, fk, foreign.WriteCA(t, dir, "foreign.crt")), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -214,8 +214,8 @@ func TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName
 		return c.Config()
 	}
 	for _, link := range []struct{ name, client, server string }{
-		{LinkScanner, "worker", "vuln-scanner-trivy"}, // the worker's call of the scanner
-		{LinkScan, "vuln-scanner-trivy", "packages"},  // the scanner's pull from the scan listener of packages
+		{LinkVulnScannerTrivy, "worker", "vuln-scanner-trivy"}, // the worker's call of the scanner
+		{LinkScan, "vuln-scanner-trivy", "packages"},           // the scanner's pull from the scan listener of packages
 	} {
 		t.Run(link.name+": the right kinds pass", func(t *testing.T) {
 			if err := handshake(t, listen(link.name, link.server, link.client), dial(link.name, link.client, link.server)); err != nil {
@@ -252,11 +252,11 @@ func TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName
 		})
 	}
 	t.Run("an empty client name lets the CA alone admit, as the role all does", func(t *testing.T) {
-		l, err := NewLinkListenerTLS(LinkScanner, pairs["vuln-scanner-trivy"], nil)
+		l, err := NewLinkListenerTLS(LinkVulnScannerTrivy, pairs["vuln-scanner-trivy"], nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := handshake(t, l, dial(LinkScanner, "packages", "vuln-scanner-trivy")); err != nil {
+		if err := handshake(t, l, dial(LinkVulnScannerTrivy, "packages", "vuln-scanner-trivy")); err != nil {
 			t.Fatalf("a certificate of the CA without the name: %v", err)
 		}
 	})

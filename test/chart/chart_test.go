@@ -348,6 +348,27 @@ func TestChart(t *testing.T) {
 		}
 	})
 
+	// Q-HA-374: the longest name built from <fullname> alone is the Service of the kind malware-scanner-clamav, so <fullname> has at most
+	// 63 - 1 - 22 = 40 characters, for every release whichever kinds it renders, and <fullname> is never cut.
+	t.Run("R-HA-029 Q-HA-374 a fullname too long for the names the chart builds fails the render, naming the name and what fits", func(t *testing.T) {
+		at := strings.Repeat("a", 40)
+		_, docs := render(t, required(), "fullnameOverride="+at)
+		if find(docs, "Service", at+"-malware-scanner-clamav") == nil {
+			t.Errorf("no Service %s-malware-scanner-clamav", at)
+		}
+		over := strings.Repeat("a", 41)
+		renderFails(t, required(), []string{"fullnameOverride=" + over}, over+"-malware-scanner-clamav has 64 characters",
+			"at most 63", "set fullnameOverride to at most 40 characters")
+		renderFails(t, required(), []string{"fullnameOverride=" + over, "config.malware.enabled=false", "config.vulnerabilities.enabled=false"},
+			over+"-malware-scanner-clamav")
+		renderRelease(t, strings.Repeat("r", 33), required())
+		_, stderr, err := helm(t, templateArgs(strings.Repeat("r", 34), required(), nil)...)
+		if err == nil || !strings.Contains(stderr, strings.Repeat("r", 34)+"-quader-malware-scanner-clamav has 64 characters") ||
+			!strings.Contains(stderr, "a release name of at most 33 characters, or one of at most 40 that contains quader") {
+			t.Errorf("a release name of 34 characters: %v\n%s", err, stderr)
+		}
+	})
+
 	t.Run("R-HA-028 every object carries the standard labels", func(t *testing.T) {
 		eachSet(t, func(t *testing.T, _ string, _ string, docs []doc) {
 			for _, d := range docs {

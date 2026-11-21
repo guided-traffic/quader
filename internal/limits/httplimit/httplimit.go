@@ -58,7 +58,7 @@ func CallerOf(r *http.Request, p httpserver.Principal, admin bool) limits.Caller
 		c.Kind = limits.CallerAnonymous
 	}
 	if c.Kind == limits.CallerSystem {
-		c.System = p.Name // image-scanner or malware-scanner: the credential its reads are recorded with (Q-LIM-80)
+		c.System = p.Name // vuln-scanner-trivy or malware-scanner-clamav: the credential its reads are recorded with (Q-LIM-80)
 	}
 	if p.CI != nil {
 		c.CIIssuerID, c.CIProjectID = p.CI.IssuerID, p.CI.ProjectID

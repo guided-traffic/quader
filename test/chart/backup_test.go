@@ -1154,10 +1154,11 @@ func TestR_BAK_012_ChartObjects(t *testing.T) {
 			t.Errorf("manual_run.namespace = %q", str(cfg, "backup", "manual_run", "namespace"))
 		}
 	})
-	t.Run("the CronJob name stays within the 52 characters Kubernetes allows a CronJob, so the Jobs it creates get a valid name", func(t *testing.T) {
-		render(t, required(), backupSets("fullnameOverride="+strings.Repeat("a", 45))...)
-		renderFails(t, required(), backupSets("fullnameOverride="+strings.Repeat("a", 46)), "fullnameOverride", "52")
-		render(t, required(), "fullnameOverride="+strings.Repeat("a", 46))
+	t.Run("the CronJob name stays within the 52 characters Kubernetes allows a CronJob for every <fullname> the chart accepts (Q-HA-374)", func(t *testing.T) {
+		_, docs := render(t, required(), backupSets("fullnameOverride="+strings.Repeat("a", 40))...)
+		if find(docs, "CronJob", strings.Repeat("a", 40)+"-backup") == nil {
+			t.Error("no CronJob of 47 characters")
+		}
 	})
 	t.Run("the memory limits of both Jobs are at least 512 MiB", func(t *testing.T) {
 		_, docs := render(t, required(), backupSets(restoreSets()...)...)

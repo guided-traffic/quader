@@ -12,9 +12,9 @@ import (
 //
 // A further system subject is a constant, a rule function and one case in systemRuleOf.
 
-// SystemImageScanner is the subject of a scan token: the scanner's pull of one image on the scan listener of packages
-// (formats/oci.md R-OCI-037, architecture.md R-ARCH-037).
-const SystemImageScanner = "image-scanner"
+// SystemVulnScannerTrivy is the subject of a scan token: the scanner's pull of one image on the scan listener of packages
+// (formats/oci.md R-OCI-037, architecture.md R-ARCH-037), named after the unit that reads (ha-and-helm.md Q-HA-373).
+const SystemVulnScannerTrivy = "vuln-scanner-trivy"
 
 // systemRule decides one action of a system subject on a repository the index knows.
 type systemRule func(sub Subject, r *repoInfo, a Action) bool
@@ -22,13 +22,13 @@ type systemRule func(sub Subject, r *repoInfo, a Action) bool
 // systemRuleOf is the fixed rule of a system subject by its name.
 func systemRuleOf(name string) (systemRule, bool) {
 	switch name {
-	case SystemImageScanner:
+	case SystemVulnScannerTrivy:
 		return imageScannerReads, true
 	}
 	return nil, false
 }
 
-// imageScannerReads is the rule of system:image-scanner (R-AUTHZ-015, Q-OCI-228): read of the one repository its scan token
+// imageScannerReads is the rule of system:vuln-scanner-trivy (R-AUTHZ-015, Q-OCI-228): read of the one repository its scan token
 // names, while that repository is of the format oci, is local or remote and is not disabled; never populate, a write or a
 // capability. A repository being deleted is not in the index's repositories the request may name. The level of the repository and
 // the block of an image do not apply: the scan reads for the installation's own records (Q-VULN-166).

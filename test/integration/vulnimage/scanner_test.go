@@ -18,7 +18,7 @@ import (
 )
 
 // The flows of the role scanner against the stack (R-VULN-041, R-VULN-042): the worker's call to a scanner replica, what the call is put
-// off for, the handshake both links require, and the scanner's pull as the subject system:image-scanner through the scan listener.
+// off for, the handshake both links require, and the scanner's pull as the subject system:vuln-scanner-trivy through the scan listener.
 
 // R-VULN-041: with one scanner of one slot whose analysis waits, the job's second call finds the scanner busy and the image is put off
 // with scanner_busy, its attempts untouched; it is scanned once the slot is free.
@@ -170,7 +170,7 @@ func TestR_VULN_042_ABlockedPrivateImageIsAnalysedAgainWithoutADownload(t *testi
 			t.Logf("usage: %s", f.st.Text(`SELECT COALESCE(string_agg(concat_ws(' ', granularity, subject_kind, subject_ref, credential_ref, repository_id, requests, cached_bytes), '; '), 'none') FROM usage_bucket`))
 		}
 	})
-	system := `SELECT COALESCE(sum(requests), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'system' AND credential_ref = 'image-scanner'`
+	system := `SELECT COALESCE(sum(requests), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'system' AND credential_ref = 'vuln-scanner-trivy'`
 	testenv.WaitFor(t, "the pull in the usage store under system", 30*time.Second, func() bool { return f.st.Number(system) >= 3 })
 	if n := f.st.Number(`SELECT COALESCE(sum(cached_bytes), 0) FROM usage_bucket WHERE subject_kind = 'system'`); n < int64(len(img.manifest)+len(img.config)+len(img.layer)) {
 		t.Errorf("the usage store holds %d bytes under system, want at least the image's", n)
@@ -345,7 +345,7 @@ func TestR_HA_067_TheRoleAllStaysReadyWithoutTheAnalyser(t *testing.T) {
 	})
 	testenv.WaitFor(t, "the replica ready, the scanner reported", 30*time.Second, func() bool {
 		snap := all.App.Health().Snapshot()
-		return len(snap.Failing) == 0 && slices.Contains(snap.Degraded, "scanner")
+		return len(snap.Failing) == 0 && slices.Contains(snap.Degraded, "vulnScannerTrivy")
 	})
 }
 

@@ -270,8 +270,10 @@ export class SystemStatus {
         return $localize`:@@system.check.objectStore:Object store: blob requests on this replica fail with a retryable 503; everything else keeps working.`;
       case 'valkey':
         return $localize`:@@system.check.valkey:Valkey: no request fails, but remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to per-replica shares, and changes arrive through the change-log poll.`;
-      case 'malware_scanner':
-        return $localize`:@@system.check.malwareScanner:Malware scan: this worker has no malware scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.`;
+      case 'vulnScannerTrivy':
+        return $localize`:@@system.check.vulnScannerTrivy:Image scanning: the Trivy scanner of this replica cannot analyse images (its analyser is missing or does not run, its certificate did not load, or its working directory is not writable), so new images get no vulnerability results until it works again.`;
+      case 'malwareScannerClamav':
+        return $localize`:@@system.check.malwareScannerClamav:Malware scan: this worker has no ClamAV scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.`;
       default:
         return name;
     }

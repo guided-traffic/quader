@@ -29,8 +29,9 @@ const (
 	// authorization treats it differently (R-AUTHZ-010).
 	KindBreakGlass Kind = "break_glass"
 	// KindSystem is work of the product itself (R-AUTHZ-002): never a row of the principal table, a grant, a role, a
-	// membership or an owner record. The one system subject a request carries is image-scanner, the subject of a scan
-	// token on the scan listener (R-OCI-037); the decision point decides it by a fixed rule (internal/authz system.go).
+	// membership or an owner record. The system subjects a request carries are vuln-scanner-trivy, the subject of a scan
+	// token on the scan listener (R-OCI-037), which the decision point decides by a fixed rule (internal/authz system.go), and
+	// malware-scanner-clamav, the subject of a blob token, which its route decides (R-MAL-006).
 	KindSystem Kind = "system"
 )
 

@@ -26,6 +26,17 @@ import (
 // metrics of the role scanner (Q-ARCH-527).
 const AreaScanner Area = "scanner"
 
+// The names of the two scanner units where an operator or an auditor reads them (ha-and-helm.md Q-HA-372, Q-HA-373): the log component
+// of the unit's process and the listener label of its listener and of the worker's link to it are the unit's name; its readiness
+// check, in the scanner's process and in the process that calls it, is that name in camel case (operations-and-observability.md
+// Q-OPS-221).
+const (
+	unitVulnScannerTrivy      = httpserver.LinkVulnScannerTrivy
+	unitMalwareScannerClamav  = httpserver.LinkMalwareScannerClamav
+	checkVulnScannerTrivy     = "vulnScannerTrivy"
+	checkMalwareScannerClamav = "malwareScannerClamav"
+)
+
 // scannerArea is the scanner of the replica and the TLS of its listener and of its link to the scan listener: the image scanner (svc),
 // or the malware scanner (malware) of a process of the kind clamav (wire_malware_scanner.go).
 type scannerArea struct {
@@ -39,6 +50,14 @@ type scannerArea struct {
 	analyser error
 }
 
+// unit is the name of the scanner unit the area is: the name of its listener and of its component.
+func (s scannerArea) unit() string {
+	if s.malware != nil {
+		return unitMalwareScannerClamav
+	}
+	return unitVulnScannerTrivy
+}
+
 // wireScanner builds the scanner. The blob area is optional (Q-ARCH-300): the role all hands it, and the scanner then takes its room
 // from the one spool of the process; the role scanner has none and opens the spool alone, without the object store.
 func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) {
@@ -50,7 +69,7 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 	}
 	cfg := a.cfg
 	images := cfg.Vulnerabilities.Images
-	log := a.log.With("component", "scanner")
+	log := a.log.With("component", unitVulnScannerTrivy)
 	var spool *blob.Spool
 	if b.store != nil {
 		spool = b.store.Spool()
@@ -77,8 +96,8 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 		}
 	}
 	var err error
-	if out.listenerTLS, err = httpserver.NewLinkListenerTLS(httpserver.LinkScanner, cfg.Server, nonEmpty(images.Scanner.ClientName),
-		a.tlsOptions(httpserver.LinkScanner)...); err != nil {
+	if out.listenerTLS, err = httpserver.NewLinkListenerTLS(httpserver.LinkVulnScannerTrivy, cfg.Server, nonEmpty(images.Scanner.ClientName),
+		a.tlsOptions(httpserver.LinkVulnScannerTrivy)...); err != nil {
 		return scannerArea{}, err
 	}
 	serverName := images.Registry.ServerName
@@ -117,12 +136,12 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 		return scannerArea{}, err
 	}
 	if a.id.Role == config.RoleScanner {
-		a.health.AddReadiness("scanner", a.scannerReady(out, true), false)
+		a.health.AddReadiness(checkVulnScannerTrivy, a.scannerReady(out, true), false)
 	} else {
 		// The role all: the scanner is one part of a process that serves every route. A missing analyser or a pair without client
 		// authentication is reported in /readyz?verbose=1 and answered per call, but it does not take the API and the registry
 		// down with it (Q-ARCH-551).
-		a.health.AddReported("scanner", a.scannerReady(out, false))
+		a.health.AddReported(checkVulnScannerTrivy, a.scannerReady(out, false))
 	}
 	return out, nil
 }
@@ -189,7 +208,7 @@ type scannerComponent struct {
 	link *linkComponent
 }
 
-func (c *scannerComponent) Name() string { return "scanner" }
+func (c *scannerComponent) Name() string { return c.area.unit() }
 
 func (c *scannerComponent) Start(ctx context.Context) error {
 	if c.area.link != nil {
@@ -251,7 +270,7 @@ func (a *App) startScanner() error {
 	} else {
 		router = scannerRouter(s.svc)
 	}
-	srv, err := a.newServer(httpserver.LinkScanner, a.scannerListenAddr(), router, s.listenerTLS)
+	srv, err := a.newServer(s.unit(), a.scannerListenAddr(), router, s.listenerTLS)
 	if err != nil {
 		return err
 	}

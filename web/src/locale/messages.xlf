@@ -29103,12 +29103,20 @@
         <source>Valkey: no request fails, but remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to per-replica shares, and changes arrive through the change-log poll.</source>
       </segment>
     </unit>
-    <unit id="system.check.malwareScanner">
+    <unit id="system.check.vulnScannerTrivy">
       <notes>
         <note category="location">src/app/features/system/system-status.ts:274</note>
       </notes>
       <segment>
-        <source>Malware scan: this worker has no malware scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.</source>
+        <source>Image scanning: the Trivy scanner of this replica cannot analyse images (its analyser is missing or does not run, its certificate did not load, or its working directory is not writable), so new images get no vulnerability results until it works again.</source>
+      </segment>
+    </unit>
+    <unit id="system.check.malwareScannerClamav">
+      <notes>
+        <note category="location">src/app/features/system/system-status.ts:276</note>
+      </notes>
+      <segment>
+        <source>Malware scan: this worker has no ClamAV scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.</source>
       </segment>
     </unit>
     <unit id="route.system.jobs.title">

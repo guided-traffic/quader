@@ -39,7 +39,7 @@ const (
 	// request whose Bastion token the recognition stage checked. It holds no grant and is no subject of a
 	// decision; the request log and the rate limits name it.
 	KindBastion PrincipalKind = "bastion"
-	// KindSystem is work of the product itself (R-AUTHZ-002): the subject image-scanner of a scan token on the scan
+	// KindSystem is work of the product itself (R-AUTHZ-002): the subject vuln-scanner-trivy of a scan token on the scan
 	// listener (R-OCI-037). It has no ID; the decision point decides it by a fixed rule.
 	KindSystem PrincipalKind = "system"
 )
@@ -127,7 +127,7 @@ type Credential struct {
 }
 
 // ScanBlob is the reach of a blob token as the edge carries it: the repository that holds the
-// blob, which the decision point's rule of system:malware-scanner reads and the usage store
+// blob, which the decision point's rule of system:malware-scanner-clamav reads and the usage store
 // records the read under (Q-LIM-80), and the blob's digest, sha256:<64 hex>.
 type ScanBlob struct {
 	Repo   qname.Repo

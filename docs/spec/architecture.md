@@ -576,7 +576,8 @@ nothing worth taking.
   the object store, the Valkey client, the change log, the registry) and has no step 10: without a Valkey client there is no first answer
   to wait for, so `valkey.startup_answer_timeout` does not apply to it and its `startup` check never reports `waiting_for_valkey`
   ([ha-and-helm.md](ha-and-helm.md) Q-HA-330, Q-HA-333). Its `startup` check passes once its listener is bound and its area is built; its
-  readiness is [ha-and-helm.md](ha-and-helm.md) R-HA-065's.
+  readiness is [ha-and-helm.md](ha-and-helm.md) R-HA-065's, the check `vulnScannerTrivy`. Its log field `component` is the unit's name,
+  `vuln-scanner-trivy` or `malware-scanner-clamav` ([ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373).
 - **Reads.** Its configuration load reads and validates only the keys it uses: `process`, `server` (`listen`, `ops_listen`, `tls`, `ops_tls`,
   `internal_tls`, the timeouts, `shutdown_timeout`), `health`, `log`, `metrics`, `runtime`, `storage.spool` and `vulnerabilities.images`. It
   resolves no secret file: a `database`, `valkey`, `storage.s3`, `secrets`, `auth` or `proxy` key that names a file it does not have is not
@@ -592,7 +593,7 @@ nothing worth taking.
   `POST /scan/v1/malware`, the reader of the scan listener's blob route, the unpacking of `ar` and zstd, the client of `clamd` on the Unix
   socket of its pod, and the loader of its database from the scan listener's database routes (`scanner.Database`, the database work's;
   until it is built a malware scanner has none); it reads `malware` instead of `vulnerabilities.images`, and its readiness, the check
-  `scanner`, waits for its first database ("no database loaded yet") and for `clamd` (R-MAL-007). The role `all` builds no malware scanner. It holds what an image scanner holds, a call's blob
+  `malwareScannerClamav` ([operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) Q-OPS-221), waits for its first database ("no database loaded yet") and for `clamd` (R-MAL-007). The role `all` builds no malware scanner. It holds what an image scanner holds, a call's blob
   token instead of a scan token, and the loaded database. The chart renders it as a Deployment of its own with a container `clamd`
   beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-068).
 - **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's
@@ -4313,7 +4314,9 @@ vulnerabilities:
   loopback calls do. A name holds no wildcard, port or path: it is compared exactly.
 - **Reloading.** The pair and the CA are checked every `server.tls.reload_interval` by the reloader of R-ARCH-035, compared by content; a
   new pair or CA serves and is presented from the next handshake on, and a broken one keeps the last good one, counted in
-  `quader_tls_reload_errors_total` with `listener="scan"` or `listener="scanner"` and `kind="client"` for the presented pair. The worker opens
+  `quader_tls_reload_errors_total` with `kind="client"` for the presented pair and the label `listener` of the unit or listener the link
+  reaches, the same at both of its ends: `vuln-scanner-trivy` or `malware-scanner-clamav` on the worker's call and the scanner's listener,
+  `scan` on the scanner's pull and the scan listener ([ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373). The worker opens
   a connection per call, so a rotation reaches every call within the interval. The names are configuration and change with a restart.
 - **Without TLS** (`server.tls.certificates` empty, the chart's `tls.enabled: false`), the links are plain HTTP, no client certificate is
   asked and no name is checked ([ha-and-helm.md](ha-and-helm.md) Q-HA-322); `internal_tls.ca_file` set without a pair is refused at start.
@@ -11333,7 +11336,9 @@ reaches the stack for a reason of its own.
 
 ### Q-ARCH-551 · In the role `all` the scanner's check is reported, not gating
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The check is named
+`vulnScannerTrivy` since [operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it)
+Q-OPS-221 (2026-11-21); the text below keeps the name of its day.
 
 Context: R-HA-065 makes a scanner pod not ready while its analyser does not answer its version or its pair does not allow client
 authentication. The role `all` builds the same scanner (Q-ARCH-531), and its process also serves every route: the UI development profile

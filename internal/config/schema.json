@@ -2827,7 +2827,7 @@
             },
             "url": {
               "default": "",
-              "description": "The malware scanner's listener, an origin: https://\u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Empty: the worker's job makes no call and its check malware_scanner reports why (Q-MAL-60); the blobs wait pending.",
+              "description": "The malware scanner's listener, an origin: https://\u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Empty: the worker's job makes no call and its check malwareScannerClamav reports why (Q-MAL-60); the blobs wait pending.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCANNER_URL"
             }

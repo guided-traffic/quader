@@ -166,6 +166,8 @@ their `degraded` state.
 | `tls` | Every TLS material of the listeners that this process serves has loaded at least once (the pairs and the client CA of each listener; [architecture.md](architecture.md) R-ARCH-035). A rotation that does not load keeps the previous material and does not change the check | gating until the replica is first ready, then never again | A replica whose listeners cannot serve a handshake does not enter the Service; a later broken rotation is counted in `quader_tls_reload_errors_total` and does not make the replica unready |
 | `configBootstrap` | Startup configuration documents were applied (R-OPS-031); passes trivially when none are configured | gating | An invalid document stalls a rollout instead of breaking the service |
 | `draining` | No termination signal was received | gating | Removes a `web` replica from the Service and stops a `worker` from claiming before either stops |
+| `vulnScannerTrivy` | The image scanner, the unit `vuln-scanner-trivy`: its listener's pair and the internal CA have loaded, the pair allows client authentication, the analyser answers its version, the spool directory is writable, and it is not draining; reasons `certificate`, `analyser`, `spool`, `draining` ([ha-and-helm.md](ha-and-helm.md) R-HA-065) | gating in the role `scanner`; reported in the role `all`, which builds the same scanner ([architecture.md](architecture.md) Q-ARCH-551) | A scanner pod that cannot analyse takes no call; a development process without the analyser keeps serving everything else |
+| `malwareScannerClamav` | In the malware scanner, the unit `malware-scanner-clamav`: its TLS material has loaded, a signature database is loaded and `clamd` answers `PING`, and it is not draining; reasons `certificate`, `database`, `clamd`, `draining` ([ha-and-helm.md](ha-and-helm.md) R-HA-068). In a `worker` or `all` while the malware scanning is on: the worker has a malware scanner to call, reason `no_scanner` ([malware-scanning.md](malware-scanning.md) Q-MAL-60) | gating in the malware scanner; reported in `worker` and `all` | A malware scanner without its database takes no call; a worker without an address runs its job idle and says so |
 
 **Database outage grace** (Q-OPS-31). The `database` and `schema` checks read PostgreSQL, and a switchover takes
 10 to 15 s while queries retry for `database.retry.max_elapsed` (R-ARCH-019). Once the replica has been ready, a failure
@@ -198,7 +200,10 @@ because every running replica reports the error as `degraded`.
 
 **Gating and reported checks** (Q-OPS-2, [ha-and-helm.md](ha-and-helm.md) Q-HA-13). Once the
 replica has been ready, two checks are reported instead of gating: `objectStore` (unless
-`health.require_object_store: true`) and `valkey` (always). While one of them fails:
+`health.require_object_store: true`) and `valkey` (always). The checks of the scanner units are reported from the start where the process
+only calls the unit or embeds it: `vulnScannerTrivy` in the role `all`, `malwareScannerClamav` in `worker` and `all` (Q-OPS-221). A check
+of a scanner unit carries the unit's name in camel case, the same in the unit's own process and in the one that calls it. While one of
+the reported checks fails:
 
 - `/readyz` answers `200` with the check under `degraded`, for example `"degraded":["valkey"]`;
 - the replica registry (R-OPS-003) and `quader_health_check_passing{name}` show the failure, and so
@@ -882,7 +887,7 @@ Rules for every metric family, including families that format pages and other sp
 
   | Label | Values |
   |---|---|
-  | `listener` | `client`, `ops` |
+  | `listener` | `client`, `ops`; on the TLS families also `client:<endpoint>` and the links' `vuln-scanner-trivy`, `malware-scanner-clamav` and `scan` |
   | `endpoint` | Configured endpoint names and `default`, at most 17 ([endpoints.md](endpoints.md) R-EP-001, R-EP-009); bounded by configuration; only on client-listener series |
   | `certificate` | 0-based position of a pair in an endpoint's certificate set ([endpoints.md](endpoints.md) R-EP-004); bounded by configuration |
   | `handler` | Registered handler names (`npm.packument`, `nuget.push`, `files.get`, `api.repositories.list`, `unmatched`, …) |
@@ -1044,7 +1049,7 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_task_last_success_timestamp_seconds` | gauge | `task` | Last successful run of a scheduled task (R-OPS-019) |
 | `quader_lease_held` | gauge | `name` | 1 on the `worker` replica that holds a singleton lease (INV-12) |
 | `quader_lease_lost_total` | counter | `task` | Leases lost while held ([ha-and-helm.md](ha-and-helm.md) R-HA-006) |
-| `quader_health_check_passing` | gauge | `name` (check name) | 1 while the check passes, gating or reported (R-OPS-001); `valkey` and `objectStore` at 0 mean degraded, not unready |
+| `quader_health_check_passing` | gauge | `name` (check name) | 1 while the check passes, gating or reported (R-OPS-001); `valkey` and `objectStore` at 0 mean degraded, not unready, and so do `vulnScannerTrivy` and `malwareScannerClamav` where they are reported |
 | `quader_cluster_poll_last_success_timestamp_seconds` | gauge | — | End of the last successful change-log poll; the `invalidation` check compares its age with `cluster.epoch_max_staleness` ([architecture.md](architecture.md) R-ARCH-018) |
 | `quader_cluster_changes_applied_total` | counter | `area`, `source` (`poll`, `message`) | Changes applied from the change log, and early evictions from Valkey messages; a `message` count near the `poll` count shows the fast path working |
 | `quader_cluster_signals_published_total`, `quader_cluster_signals_dropped_total` | counter | `area` | Signals sent to Valkey after the coalescer, and signals dropped while Valkey is unavailable (R-ARCH-018) |
@@ -1085,7 +1090,7 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_tracing_spans_dropped_total` | counter | — | Spans lost to a full export queue |
 | `quader_outbound_requests_total` | counter | `kind` (purpose), `code` | Requests sent to other systems, by purpose and result code (Q-OPS-26) |
 | `quader_outbound_egress_denied_total` | counter | `kind` (purpose) | Connections refused by the egress address policy ([security/egress.md](../security/egress.md)) |
-| `quader_tls_certificate_expiry_timestamp_seconds` | gauge | `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, or empty for a client), `name` (the configured file) | notAfter of the served leaf of a pair, or the earliest of a CA bundle ([security/transport-encryption.md](../security/transport-encryption.md)) |
+| `quader_tls_certificate_expiry_timestamp_seconds` | gauge | `kind` (`listener`, `client` for the pair a process presents on a link between Quader's pods, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`; on a link, at both of its ends, the unit or listener it reaches: `vuln-scanner-trivy`, `malware-scanner-clamav` or `scan`, [architecture.md](architecture.md) R-ARCH-038, [ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373; empty for another outgoing connection), `name` (the configured file) | notAfter of the served leaf of a pair, or the earliest of a CA bundle ([security/transport-encryption.md](../security/transport-encryption.md)) |
 | `quader_tls_reloads_total` | counter | `kind`, `listener`, `name` | Changed TLS material that loaded and replaced the previous one; the first load is not counted |
 | `quader_tls_reload_errors_total` | counter | `kind`, `listener`, `name` | TLS material that did not load; counted once per distinct content, exported at 0 from the start |
 | `quader_endpoint_listener_up` | gauge | `endpoint` | 1 while this replica's listener of the endpoint accepts connections ([endpoints.md](endpoints.md) R-EP-009) |
@@ -6341,6 +6346,50 @@ screen is to show every pod of the release, which would then read the Kubernetes
 
 **Applied in the spec:** R-OPS-003; [architecture.md](architecture.md) R-ARCH-001, R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-065;
 [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024; H-1042.
+
+### Q-OPS-221 · A scanner unit's readiness check is its name in camel case, the same in the process that calls it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
+owner's decision of 2026-11-21 ([ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373): each check of a scanner unit names its tool.
+
+Context: the image scanner and the malware scanner both registered their check as `scanner`; the role `all` reported its own image scanner
+as `scanner`, and a worker without a malware scanner reported `malware_scanner`. The other checks of R-OPS-001 are one word or camel case
+(`objectStore`, `configBootstrap`); `malware_scanner` was the one with an underscore. An operator reads the names in `/readyz?verbose=1`,
+in `quader_health_check_passing{name}` and, for a reported check that fails, on the System page, which shows a sentence in its place.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The unit's name in camel case, one per unit on both sides: `vulnScannerTrivy`, `malwareScannerClamav` (chosen) | The check names the unit whose state it reports, in the unit's own process and in the process that would call it | The form of the other checks; the token of the unit's block of chart values; one name to look for whichever side reports | The unit's own check and a worker's report about it share a name although they test different things |
+| (b) The unit's name as it stands, `vuln-scanner-trivy` | One spelling everywhere | No second form | The one check name with hyphens |
+| (c) A name per side: the unit's `vulnScannerTrivy`, the caller's `vulnScannerTrivyLink` | Each check says what it tests | Precise | Two names per unit, and a query for one unit needs both |
+
+**Choice:** (a). The reason of a failing check tells the sides apart: the unit's own are `certificate`, `analyser`, `spool`, `database`,
+`clamd` and `draining`, the caller's `no_scanner`. The System page has a sentence for each, which names the tool: the image scanner's says
+that the Trivy scanner of the replica cannot analyse images and names the analyser, the certificate and the working directory as what can
+fail, which the check did not have before; the malware scanner's says that the worker has no ClamAV scanner to call. **Applied in the
+spec:** R-OPS-001, R-OPS-008; [ha-and-helm.md](ha-and-helm.md) R-HA-065, R-HA-068. Code: [wire_scanner.go](../../internal/app/wire_scanner.go),
+[wire_malware_scanner.go](../../internal/app/wire_malware_scanner.go), [wire_malware_job.go](../../internal/app/wire_malware_job.go);
+[system-status.ts](../../web/src/app/features/system/system-status.ts).
+
+### Q-OPS-222 · The loader of the signature database logs as its unit
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
+owner's decision of 2026-11-21 ([ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373): the log field `component` of a scanner's process names its unit.
+
+Context: beside its calls, the malware scanner's process runs the loader that fetches the signature database from the scan listener into
+`clamd`'s directory and makes `clamd` load it ([malware-scanning.md](malware-scanning.md) Q-MAL-27). Its lines carried the component
+`malware-database-loader`; the worker's task that stores the database logs as `malware-database`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The unit's name, `malware-scanner-clamav` (chosen) | The loader is a part of the unit and logs as the unit | One filter shows everything the unit says, and the tool is in it; the loader's messages name the signature database themselves | A filter for the loader alone goes by its messages |
+| (b) `malware-database-loader` kept | A part named by what it does | A filter for the loader | The one component of the unit's pod that names neither the unit nor the tool, beside the worker's `malware-database` about the same database |
+| (c) `malware-scanner-clamav-database-loader` | Unit and part in one | Both | A form no other component has, for one part |
+
+**Choice:** (a). **Rationale:** the loader runs only in the process of `malware-scanner-clamav`, starts and stops with it, and its state is
+that unit's readiness reason `database`: it is a part of the unit, not a unit of its own. Among the process's components, which only a failed
+start or stop names, it is `malware-scanner-clamav-database-loader`. **Applied in the spec:** [ha-and-helm.md](ha-and-helm.md) Q-HA-373 (R-OPS-012
+lists no component of the scanners). Code: [wire_malware_scanner.go](../../internal/app/wire_malware_scanner.go).
 
 ## What this does not cover
 

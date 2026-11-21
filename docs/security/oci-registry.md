@@ -207,7 +207,7 @@ service; the scanner, which holds no key, receives it with the call and pulls th
 
 | Property | Rule | Why |
 |---|---|---|
-| Subject | the system subject `image-scanner`; no principal, no Quader token, not anonymous | no account or stored secret stands behind it, so there is nothing to steal but the token itself |
+| Subject | the system subject `vuln-scanner-trivy`, named after the unit that reads ([Q-HA-373](../spec/ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)); no principal, no Quader token, not anonymous | no account or stored secret stands behind it, so there is nothing to steal but the token itself |
 | Grant | one repository, one image name, `pull`, and the manifest's digest | a stolen token reads one image: that manifest by its digest and the blobs of its name; no tag, no tags list, no referrers, no catalog, no write |
 | Endpoint | `scan`, the scan listener of `packages`, which accepts nothing else | the token is refused on every listener a client reaches, and no client credential works on the scan listener |
 | Lifetime | `vulnerabilities.images.pull_timeout`, 10 minutes by default, verified against that setting | the pull and the token end together |

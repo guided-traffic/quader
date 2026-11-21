@@ -190,13 +190,14 @@ Principal kinds and their reference syntax in this page's API:
 - **System subjects** (kind `system`): work of the product itself, never a principal row, a grant, a role, a membership or an owner
   record (a reference to one answers 422 `principal_not_allowed`), never internal or external. Beside the actors `system:catalog`,
   `system:configuration` and `system:background-download` of other requirements, two name the image scanning's work and three the malware
-  scanning's, each once, here:
+  scanning's, each once, here. The subject of a scanner's reads is the name of the unit that reads, which carries its tool ([ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373);
+  the subjects of the worker's own tasks keep their purpose's name:
 
   | Name | What it is | Its fixed rule | Recorded as |
   |---|---|---|---|
-  | `system:image-scanner` | the subject of a scan token: the scanner's pull of one image on the scan listener of `packages` ([formats/oci.md](formats/oci.md) R-OCI-037, [architecture.md](architecture.md) R-ARCH-037) | `read` of the one repository its token names, while that repository exists, is of the format `oci`, is local or remote and is not disabled; never `populate`, a write or a capability (R-AUTHZ-015) | the principal of the scan listener's request log, with the scan ID; it writes no event, because it never fills or writes |
+  | `system:vuln-scanner-trivy` | the subject of a scan token: the scanner's pull of one image on the scan listener of `packages` ([formats/oci.md](formats/oci.md) R-OCI-037, [architecture.md](architecture.md) R-ARCH-037) | `read` of the one repository its token names, while that repository exists, is of the format `oci`, is local or remote and is not disabled; never `populate`, a write or a capability (R-AUTHZ-015) | the principal of the scan listener's request log, with the scan ID; it writes no event, because it never fills or writes |
   | `system:image-database` | the image scanning's task that makes the database's repository hold the database's layer ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044) | none per request: system work in process through the remote engine, as a mirror pass fills, within the repository's include and exclude patterns | the actor of the populate event of each fill, `reason: image-database` (R-AUTHZ-008) |
-  | `system:malware-scanner` | the subject of a blob token: the malware scanner's read of one blob on the scan listener of `packages` ([malware-scanning.md](malware-scanning.md) R-MAL-006, [Q-AUTHZ-340](#q-authz-340--the-malware-scanner-reads-one-blob-of-one-repository-that-holds-it)) | `read` of the one blob its token names, through the one repository its token names, while that repository holds an item over it, is local or remote and is not disabled, whatever its level and whatever blocks the blob; never `populate`, a write or a capability; decided by the route, not by the decision point's grants | the principal of the scan listener's request log, with the scan ID; no audit event, no download |
+  | `system:malware-scanner-clamav` | the subject of a blob token: the malware scanner's read of one blob on the scan listener of `packages` ([malware-scanning.md](malware-scanning.md) R-MAL-006, [Q-AUTHZ-340](#q-authz-340--the-malware-scanner-reads-one-blob-of-one-repository-that-holds-it)) | `read` of the one blob its token names, through the one repository its token names, while that repository holds an item over it, is local or remote and is not disabled, whatever its level and whatever blocks the blob; never `populate`, a write or a capability; decided by the route, not by the decision point's grants | the principal of the scan listener's request log, with the scan ID; no audit event, no download |
   | `system:malware-database` (specified, not built) | the malware scanning's task that stores each database version in `upstream/scanner-clamav` ([malware-scanning.md](malware-scanning.md) R-MAL-010) | none per request: system work in process through the item store | the actor of the items' audit events and of `malware.database.imported` |
   | `system:malware-scan` (specified, not built) | the malware scanning's job that writes verdicts ([malware-scanning.md](malware-scanning.md) R-MAL-004) | none per request | the actor of `malware.found` and `malware.cleared` |
 
@@ -1098,7 +1099,7 @@ the remote request path (R-REPO-025, step 9) is this setting.
 - **The image scanning's database populates as the system.** The task `vuln-sync-trivy-db` makes the database's repository hold the
   layer without a caller ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044, [repositories-and-proxy.md](repositories-and-proxy.md)
   R-REPO-070): the decision to scan images is the populate decision, and each fill writes the populate event with
-  `system:image-database` as actor and `reason: image-database` (R-AUTHZ-002). The scanner's pull, `system:image-scanner`, never
+  `system:image-database` as actor and `reason: image-database` (R-AUTHZ-002). The scanner's pull, `system:vuln-scanner-trivy`, never
   populates: `MayPopulate` refuses every system subject, so a remote answers it from what it holds and a layer it lacks is
   `populate_not_permitted` (R-AUTHZ-015).
 - Remote repositories never accept uploads, whatever the grants
@@ -1624,7 +1625,7 @@ func OwnershipCheckTx(tx Tx, sub Subject, idx *Index, c Coordinate, w Write) Dec
 }
 
 func Allowed(sub Subject, idx *Index, a Action, c Coordinate) bool {
-    if sub.Kind == System {                                         // R-AUTHZ-002: system:image-scanner, the one system
+    if sub.Kind == System {                                         // R-AUTHZ-002: system:vuln-scanner-trivy, the one system
         return a == Read && sub.Grant.Names(c.Repo) &&              // subject a request carries; read of the repository its
             !c.Repo.Disabled && c.Repo.Class != Virtual &&          // scan token names, nothing else (formats/oci.md
             c.Repo.Format == "oci"                                  // R-OCI-037, Q-OCI-228); no level, scope or grant counts
@@ -7476,7 +7477,9 @@ records no revisit condition.
 ### Q-AUTHZ-340 · The malware scanner reads one blob of one repository that holds it
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
-owner's (2026-11-20, [malware-scanning.md](malware-scanning.md) Q-MAL-7): a route that names no format, with a token for one digest.
+owner's (2026-11-20, [malware-scanning.md](malware-scanning.md) Q-MAL-7): a route that names no format, with a token for one digest. The
+subjects are `system:vuln-scanner-trivy` and `system:malware-scanner-clamav` since [ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373 (2026-11-21); the text below keeps the names of its
+day.
 
 Context: `system:image-scanner`'s rule is decided in the decision point by the repository and the image name its grant names
 (R-AUTHZ-015); a blob token names a digest and the repository it is read through, and its route is no route of a format.

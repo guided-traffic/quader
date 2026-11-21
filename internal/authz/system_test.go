@@ -10,7 +10,7 @@ import (
 
 // scanSub is the subject of a scan token for one repository, as edge.SubjectOf builds it on the scan listener.
 func scanSub(repo string) Subject {
-	return Subject{Kind: principal.KindSystem, Name: SystemImageScanner, AuthMethod: "bearer", Endpoint: config.ScanEndpoint, SystemRepo: qr(repo)}
+	return Subject{Kind: principal.KindSystem, Name: SystemVulnScannerTrivy, AuthMethod: "bearer", Endpoint: config.ScanEndpoint, SystemRepo: qr(repo)}
 }
 
 // systemFixture: a private local and a private remote OCI repository, a disabled one, a virtual one, an npm repository, and a

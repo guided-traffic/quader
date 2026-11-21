@@ -25,10 +25,13 @@ import (
 // read. Every file reloads without a restart, compared by content (R-ARCH-035), and a connection is opened per call, so a rotation
 // reaches the next call. Without TLS (server.tls.certificates empty) the links are plain HTTP and no name is checked (Q-HA-322).
 
-// Link names of the two links, the value of the listener label of their material.
+// Link names, the value of the listener label of a link's material at both of its ends: the unit or the listener the link reaches
+// (ha-and-helm.md Q-HA-373). The worker's call of a scanner names the scanner unit, which carries its tool's name (Q-HA-372); the
+// scanner's pull names the scan listener of packages.
 const (
-	LinkScanner = "scanner"
-	LinkScan    = "scan"
+	LinkVulnScannerTrivy     = "vuln-scanner-trivy"
+	LinkMalwareScannerClamav = "malware-scanner-clamav"
+	LinkScan                 = "scan"
 )
 
 // ErrLinkNeedsCA is the refusal of a link with TLS and without the internal trust anchor.

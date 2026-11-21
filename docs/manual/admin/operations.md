@@ -26,6 +26,11 @@ The chart's probes use these paths: startup and liveness `/healthz`, readiness `
 | `objectStore` | until the first readiness; for the whole life of the process with `health.require_object_store: true` |
 | `valkey` | never, except a configuration error at start: Valkey refuses the password or the ACL user (`auth_failed`), the certificate or the primary name (`config_error`); reason codes such as `connecting`, `no_sentinel`, `timeout`, `auth_failed`, `circuit_open` |
 | `draining` | from the start of a shutdown |
+| `vulnScannerTrivy` | a pod of `<fullname>-vuln-scanner-trivy` while its certificate has not loaded or does not allow client authentication (`certificate`), Trivy does not answer its version (`analyser`), its working directory is not writable (`spool`), or it drains (`draining`); never a process of the role `all`, which reports it as degraded |
+| `malwareScannerClamav` | a pod of `<fullname>-malware-scanner-clamav` while its certificate has not loaded (`certificate`), no signature database is loaded yet (`database`), `clamd` does not answer (`clamd`), or it drains (`draining`); never a worker, which reports it as degraded with `no_scanner` while `malware.scanner.url` is empty |
+
+A check of a scanner pod carries the name of its Deployment in camel case, and so does the check a worker or the role `all` reports about
+that scanner; the System page shows a sentence for each when it is degraded.
 
 ## Metrics
 

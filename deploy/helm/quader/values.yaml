@@ -10,7 +10,7 @@ global:
   imagePullSecrets: []                  # example: [{name: registry-pull}]
 
 nameOverride: ""
-fullnameOverride: ""
+fullnameOverride: ""                    # empty = the release name, or <release>-quader; never cut: the render fails when a name built from it would be too long (at most 40 characters with the chart's kinds)
 commonLabels: {}
 commonAnnotations: {}
 

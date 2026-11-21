@@ -10018,13 +10018,22 @@
         <target>Valkey: Keine Anfrage scheitert, aber Remote-Abrufe werden nur pro Replikat zusammengefasst, der Negativ-Cache gilt pro Replikat, Ratenbegrenzungen fallen auf Anteile pro Replikat zurück, und Änderungen kommen über die Abfrage des Änderungsprotokolls an.</target>
       </segment>
     </unit>
-    <unit id="system.check.malwareScanner">
+    <unit id="system.check.vulnScannerTrivy">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:273</note>
+        <note category="location">src/app/features/system/system-status.ts:274</note>
       </notes>
       <segment>
-        <source>Malware scan: this worker has no malware scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.</source>
-        <target>Malware-Prüfung: Dieser Worker hat keinen Malware-Scanner, den er aufrufen kann (malware.scanner.url ist leer), daher bleiben neue Artefakte ungeprüft.</target>
+        <source>Image scanning: the Trivy scanner of this replica cannot analyse images (its analyser is missing or does not run, its certificate did not load, or its working directory is not writable), so new images get no vulnerability results until it works again.</source>
+        <target>Image-Analyse: Der Trivy-Scanner dieses Replikats kann keine Images analysieren (sein Analyseprogramm fehlt oder läuft nicht, sein Zertifikat wurde nicht geladen oder sein Arbeitsverzeichnis ist nicht beschreibbar), daher erhalten neue Images keine Schwachstellenergebnisse, bis er wieder arbeitet.</target>
+      </segment>
+    </unit>
+    <unit id="system.check.malwareScannerClamav">
+      <notes>
+        <note category="location">src/app/features/system/system-status.ts:276</note>
+      </notes>
+      <segment>
+        <source>Malware scan: this worker has no ClamAV scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.</source>
+        <target>Malware-Prüfung: Dieser Worker hat keinen ClamAV-Scanner, den er aufrufen kann (malware.scanner.url ist leer), daher bleiben neue Artefakte ungeprüft.</target>
       </segment>
     </unit>
     <unit id="bastion-create.created">

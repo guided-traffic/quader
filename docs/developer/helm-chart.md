@@ -131,7 +131,7 @@ deploy/helm/quader/
 
 | File | Responsibility |
 |---|---|
-| `_helpers.tpl` | `quader.fullname` (release name, or `<release>-quader`, cut at 50 characters; the longest derived Service name, `<fullname>-malware-scanner-clamav`, stays a DNS label only up to 40, which nothing checks), `quader.labels` / `quader.selectorLabels`, `quader.image` (digest wins over tag), `quader.bytes` and `quader.seconds` (parse sizes and durations; they fail on anything else, so a typo never becomes a wrong budget), `quader.spoolBudget`, `quader.config` |
+| `_helpers.tpl` | `quader.fullname` (release name, or `<release>-quader`, never cut; `quader.validateNames` in `_validate.tpl` refuses one too long for the names built from it, [Q-HA-374](../spec/ha-and-helm.md#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)), `quader.labels` / `quader.selectorLabels`, `quader.image` (digest wins over tag), `quader.bytes` and `quader.seconds` (parse sizes and durations; they fail on anything else, so a typo never becomes a wrong budget), `quader.spoolBudget`, `quader.config` |
 | `_secrets.tpl` | `quader.secretMounts` builds one list per scope (`runtime` for the Deployments, `migrate` for the Job); `quader.secretVolumes` and `quader.secretVolumeMounts` render it |
 | `_units.tpl` | `quader.units`, the one list of Deployments; `quader.unitEndpoints` (which endpoint ports a pod opens, R-EP-002); `quader.poolValues`; `quader.connectionCounts` |
 | `_validate.tpl`, `_validate_roles.tpl` | every `fail` of R-HA-029, each message naming the offending value |
@@ -141,7 +141,8 @@ deploy/helm/quader/
 ## What the chart renders
 
 `<fullname>` is the release name, or `<release>-quader` when the release name does not contain
-`quader`; `fullnameOverride` wins.
+`quader`; `fullnameOverride` wins. It is never cut: the render fails when it is longer than the tightest name built from it allows,
+40 characters with today's kinds ([Q-HA-374](../spec/ha-and-helm.md#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)).
 
 | Kind | Name | Notes |
 |---|---|---|
@@ -528,7 +529,8 @@ tests in `chart_test.go` assert both, row by row.
 | a chart-managed key of the links set under `config`: `vulnerabilities.images.scanner.url`, `.server_name`, `.client_name`, `vulnerabilities.images.registry.url`, `.server_name`, `server.internal_tls`, `server.scan_listen`, `server.scan_clients` (R-HA-066) | implemented, naming the key |
 | a name in `metrics.prometheusRule.disabledAlerts` that is no alert of the chart | implemented, listing the names |
 | `tls.enabled` with neither `tls.certManager.issuerRef.name` nor `tls.existingSecrets` (names both and the opt-out), with both, with a rendered kind without its Secret, or with one Secret for two kinds (R-HA-063, Q-HA-347); `ingress.enabled` with TLS, verification and Traefik but no `serversTransports.api` and `.packages`; `tls.clientCA` with haproxy and no `clientCertSecret`; the same rules for the merged `ingress.backendTLS` of each further endpoint with `ingress.enabled` (`endpoints.<name>.ingress.backendTLS.serversTransports.<kind>` of the kinds its surface holds, `.clientCertSecret` with the endpoint's `tls.clientCaSecret`); `tls.clientCA`, `tls.backendTLSPolicy` without `tls.enabled`; `tls.backendTLSPolicy.enabled` without `caConfigMapName` | implemented |
-| `backup.enabled` (or `restore.enabled`) without `config.backup.target.bucket`; a CronJob name over 52 characters | implemented, naming the value (and `fullnameOverride`) |
+| `backup.enabled` (or `restore.enabled`) without `config.backup.target.bucket` | implemented, naming the value |
+| a `<fullname>` too long for a name built from it alone (`quader.validateNames`): the Service and certificate name `<fullname>-<kind>` of every kind of `quader.tlsKindTable`, rendered or not, `<fullname>-ops`, `<fullname>-packages-scan` and the Jobs `-migrate`, `-restore`, `-post-restore-<8 hex>` (63 each), the CronJob `<fullname>-backup` (52); the bound is computed, today 40 from `<fullname>-malware-scanner-clamav` ([Q-HA-374](../spec/ha-and-helm.md#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)) | implemented, naming the name, its length, and the longest release name and `fullnameOverride` that fit |
 | `backup.schedule` outside the dialect of Quader's cron parser (six or seven fields, `?`, `L`, `W`, `#`, day of week `7`, `@every`, `@reboot`, `TZ=`, `CRON_TZ=`, an unknown macro) | implemented, the reason named; a value out of range and an expression that never fires are Kubernetes's at apply time |
 | the target on the blob store's bucket and endpoint (the endpoints compared as the binary does, no scheme meaning https) without `allow_same_bucket`, or with one prefix containing the other; for any configured target, the backup on or off, because every replica's configuration check refuses it too | implemented, naming both locations |
 | `config.backup.target.credentials.source: static` without `secrets.backupTarget.existingSecret` while `backup.enabled` or `restore.enabled` renders a Job that mounts it | implemented, naming both |
@@ -596,8 +598,8 @@ the hook annotations), suspends the CronJob and refuses a replica or an autoscal
 because nothing could satisfy both (Q-HA-148). The operator's sequence is in R-HA-060; the cluster side of it (a drain during the copy, the
 restored installation) is the end-to-end suite's.
 
-**Names.** The CronJob controller names a Job `<CronJob>-<10 digits>`, so the CronJob name is limited to 52 characters and the chart fails
-when `<fullname>-backup` exceeds it. `kubectl create job --from=cronjob/<fullname>-backup <name>` copies the arguments, so a manual run
+**Names.** The CronJob controller names a Job `<CronJob>-<10 digits>`, so the CronJob name is limited to 52 characters; it is one row of
+`quader.validateNames`, and every `<fullname>` that check accepts leaves `<fullname>-backup` at 47 at most. `kubectl create job --from=cronjob/<fullname>-backup <name>` copies the arguments, so a manual run
 records `trigger: schedule`; `config.backup.manual_run.*` (chart-managed, rendered with the CronJob) names it for the UI.
 
 **Dev profile.** [values-dev.yaml](../../deploy/dev/values-dev.yaml) sets the target to the bucket `quader-backups` of the profile's SeaweedFS
