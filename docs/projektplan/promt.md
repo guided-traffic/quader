@@ -1693,10 +1693,21 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   units have their tool's names (run record); first the detection in the unit, then the analyser out of the images of
   `api`, `packages`, `worker` and the malware scanner. **Not measured, to be measured by its planner:** how long the
   detection of every stored image takes through the scanner's slots after a new database, and what the database
-  costs each scanner pod in disk. **To bring to him when it is planned, one question:** where the scanner unit's
-  analyser comes from once it is out of the common image (an image of its own built with the release, or the
-  analyser's own image copied in at the pod's start); it decides what a release publishes and what an installation
-  without internet mirrors.
+  costs each scanner pod in disk. **Where the scanner unit's analyser comes from once it is out of the common image, decided by him the same
+  morning: "Option b"**, the analyser's own image as an init container that copies the binary into a volume of the
+  scanner pod, and not a second image built with every release. The pattern is the ClamAV image's: one pin by digest
+  in `tools/versions.env`, the same value in the chart, a chart test that holds them equal, one Renovate group; the
+  four digests of the release archive that are kept by hand today go. The pod shows tool and version as an image of
+  its own, and a release stays one image. **Read and measured for the question:** the release image is 239 MB, of
+  which the analyser is 163 MB; the analyser's image of the pinned version exists for amd64 and arm64, is
+  Alpine-based with `cp`, 186 MB, runs as root unless told otherwise, and its binary is byte for byte the one in the
+  release image (SHA-256 compared on arm64); the binary's path is a configuration key already
+  (`vulnerabilities.images.binary`). **Named to him as the price:** a node pulls a third party's image when a scanner
+  pod starts, as it does for ClamAV. **For the package's builder:** the init container runs as non-root on a
+  read-only root file system with nothing but the volume; the development profile starts the scanner units only in
+  the legs whose tests need them, so that every other leg loads the small image alone (read in the profile: today
+  every end-to-end leg starts the scanner pods). **Not verified:** the copy as non-root in a pod; the time of pull
+  and copy at a pod's start; a rate limit of the registry on the owner's nodes.
 
 **Decided by the owner on 2026-11-20, in work or waiting to be built**
 
