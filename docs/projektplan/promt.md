@@ -592,6 +592,10 @@ records the recorder that tells such a stall apart).
   archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
 - `TestR_BAS_006` (unit, `internal/bastion/mainclient`) failed once in a full unit run beside an integration build
   and passed alone (2026-11-21); cause not looked at.
+- **The area `coordination` fails beside any other run on the stack** (2026-11-21, twice): its tests count the
+  granted advisory locks of a key in `pg_locks` without naming the database, so a lease held in another run's
+  database counts (`TestLeases`: two holders at once; `TestScheduler`: never exactly one). With the lock that
+  does not hold (next entry) that happens whenever two builders work. A builder fixes both since 03:35.
 - **The lock of the shared integration stack did not keep two runs apart** (2026-11-21, 02:03): the development
   agent's run of every area took the lock at 01:49 while a builder's three areas ran under the same lock file from
   01:47 to 02:01, each started with `lockf`. Likely cause, not verified: `lockf` without `-k` removes the lock file
@@ -1052,7 +1056,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (03:04), one builder (package B of the scanner, sent back once); every package of the malware scan is built and its branch waits for the development agent's gates; collected on the branch `fixes/nightly` and held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165):
+- **In work** (03:30), three builders (package B of the scanner, sent back once; the fix of the download's second statement on the malware scan's branch; the stack's lock and the coordination tests' queries); collected on the branch `fixes/nightly` with its gates green and held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165):
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1227,10 +1231,20 @@ runs are in `git log`; this section holds the current state.
     worker; the values' TLS keys are the change it waits for anyway. **Seen beside it:** the suite builds its test
     upstream's and its clients' images under shared tags on the machine's Docker, which parallel builders can
     overwrite.
-  **The run of every integration area on the landing branch** (the development agent's, since 01:49, once the three
-  packages were on it): every area once under the stack's lock, on the tip with the screens, the gate, the scanning
-  side and the first stage of the database and the chart. On that tip build is green; the unit run and the UI tests
-  follow when the second stage is in.
+  **The run of every integration area on the landing branch** (the development agent's, 01:49 to 03:23, on the tip
+  with the screens, the gate, the scanning side and the first stage of the database and the chart): 65 areas
+  passing, two failing. **`querybudget`, a defect of the feature that no package's own areas had shown:** the
+  download of a Debian index at its plain path costs two statements on the branch, `GetLiveItem` and an inserted
+  job, where R-ARCH-027 gives a download one and `main` has one; `Packages.gz` is a generated item that is not
+  scanned at all (Q-MAL-22). The builder of package 3 finds who inserts it and fixes it on the branch (since 03:10),
+  with the whole area run with the scanning on. **`coordination`, not the feature's:** `TestLeases` saw two holders
+  of a lease at once while another builder ran the same area on the same stack; rerun at 03:24 it failed another
+  case (`TestScheduler`, no single holder of the scheduler's lease within 10 s) while two other builders' test
+  processes were on the stack, each "under the lock". Both read `pg_locks` for an advisory lock by its key without
+  the database, the view shows the whole server, and every run has a database of its own there, so a holder of
+  another run is counted (read in the test, section 8). A builder fixes the lock and those queries (since 03:30);
+  the area is run again on the branch when it runs alone. The landing branch stands on the finished tip of package
+  3 since 03:24 (the first stage's two commits squashed, the tree checked identical).
   **How the malware scan lands from here** (the development agent's, 2026-11-20): its first stage is on `main`; what
   follows (the gate, the screens, the scanning side, the database and the chart) is collected on a branch
   `feat/malware` and lands together, as the project `upstream` did. Why: with the scanning on by default and no
