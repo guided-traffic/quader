@@ -84,5 +84,9 @@ evtl mal mehrere Tools nebeneinander laufen lassen kann."
 - A kind of pod that exists to run one third-party tool, and everything named after it (Deployment, Service, certificate, Secret,
   the block of the chart's values), is named `<purpose>-scanner-<tool>`: `vuln-scanner-trivy`, `malware-scanner-clamav`. A second
   tool for the same purpose gets a name of its own beside it and replaces nothing.
+- The same name stands wherever an operator, an auditor or a user reads the unit (owner, the same day, about names that had been
+  left: "Das ist alles wichtig und muss umgesetzt werden"): the value of a metric's label, the log field `component`, a readiness
+  check (`vulnScannerTrivy`, `malwareScannerClamav`), the actor of an audit event or a usage record, and the screens that list the
+  unit's replicas.
 - What is the same whichever tool does the work (the job, the queue, the gate, a verdict, a setting) is named by its purpose
   alone.
