@@ -17,9 +17,9 @@ import (
 )
 
 // The database's repository (R-VULN-044, R-VULN-045, Q-VULN-171 to Q-VULN-175): the task vuln-sync-trivy-db resolves the tag of the
-// database's image through the repository the setting names, makes it hold the layer, and records the digest as the database in use; a
-// worker reads the layer from that repository. The archive is one of bytes (dbArchive) and the analyser is the fake one of the flow; no
-// test reaches a public registry.
+// database's image through the repository the setting names, makes it hold the layer, and records the digest as the database in use; the
+// loader of the scanner pod reads the layer through the scan listener (R-VULN-049), and a worker only looks up that the repository holds
+// it. The archive is one of bytes (dbArchive) and the analyser is the fake one of the flow; no test reaches a public registry.
 
 const (
 	dbImage      = "aquasec/trivy-db"
@@ -109,8 +109,9 @@ func (f *flow) databaseItem() databaseItem {
 }
 
 // R-VULN-044 acceptance (local): with a local OCI repository named in the setting and the artifact pushed through the registry protocol,
-// the task makes the source complete with the layer's digest, a worker unpacks it from the repository, and an image reaches evaluated;
-// a second run records nothing new; with the tag deleted, the run fails database_missing and the sources API shows it (R-VULN-045).
+// the task makes the source complete with the layer's digest, the loader of the scanner pod loads it from the repository through the scan
+// listener (R-VULN-049), and an image reaches evaluated; a second run records nothing new; with the tag deleted, the run fails
+// database_missing and the sources API shows it (R-VULN-045).
 func TestR_VULN_044_ALocalRepositoryHoldsTheDatabaseAndAWorkerReadsItFromThere(t *testing.T) {
 	const dbRepo = "scanner-db"
 	f := newFlowWith(t, options{
@@ -129,6 +130,12 @@ func TestR_VULN_044_ALocalRepositoryHoldsTheDatabaseAndAWorkerReadsItFromThere(t
 	if got := f.source("encode(archive_sha256, 'hex')"); "sha256:"+got != layer {
 		t.Fatalf("archive_sha256 %s", got)
 	}
+	// Q-VULN-208: the run records the build time of the layer's metadata.json, which the scan listener's listing names.
+	if got := f.source("watermark"); !strings.HasPrefix(got, "2026-11-08 12:51:20") {
+		t.Fatalf("the database's build time %q", got)
+	}
+	f.waitLoaded(layer)
+	f.runScan()
 	r := f.waitEvaluation("app", "1.0", "evaluated")
 	if len(r.Repositories[0].Findings) != 1 {
 		t.Fatalf("findings: %+v", r.Repositories[0].Findings)

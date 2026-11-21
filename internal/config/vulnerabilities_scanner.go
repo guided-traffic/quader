@@ -18,18 +18,18 @@ func (i *VulnerabilityImages) finalizeScanDir(spoolDir string, sources map[strin
 	sources["vulnerabilities.images.scan_dir"] = Source{Kind: "derived", Detail: "storage.spool.dir"}
 }
 
-// VulnerabilityScannerLink is the worker's side of the call to the scanner (R-VULN-041). The chart sets both addresses; outside
-// it the role all leaves them empty and calls its own scanner listener over loopback (Q-ARCH-531).
+// VulnerabilityScannerLink is the worker's side of the calls to the scanner (R-VULN-041, R-VULN-048). The chart sets both addresses;
+// the role all builds no image scanner and calls one only when its address is set (Q-ARCH-563).
 type VulnerabilityScannerLink struct {
-	URL        string `yaml:"url" default:"" doc:"The scanner's listener, an origin: https://<fullname>-vuln-scanner-trivy.<namespace>.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531)."`
+	URL        string `yaml:"url" default:"" doc:"The scanner's listener, an origin: https://<fullname>-vuln-scanner-trivy.<namespace>.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on. The role all builds no image scanner (Q-ARCH-563): with it empty there, the image scanning's job ends at once with the result no image scanner is configured and touches no row; set, the role all calls the scanner at that address."`
 	ServerName string `yaml:"server_name" default:"" doc:"The name the worker requires in the scanner's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names, no wildcard standing for it (Q-ARCH-552); empty is the host of url. The chart sets <fullname>-vuln-scanner-trivy.<namespace>.svc, the scanner's name (R-HA-063)."`
 	ClientName string `yaml:"client_name" default:"" doc:"The name the scanner's listener requires in a client certificate, listed exactly among its DNS names (Q-ARCH-552): the worker's. Required in a scanner while server.tls serves TLS; empty in the role all, where the CA alone admits (Q-ARCH-553). The chart sets <fullname>-worker.<namespace>.svc."`
-	Slots      int    `yaml:"slots" default:"1" validate:"min=1,max=16" doc:"Analyses one scanner process runs at a time; a call while every slot holds one is answered 503 scanner_busy. The chart checks the scanner's spool against it (Q-HA-318); more than one slot lets the analyses of one pod reach each other (H-1037), so scale by replicas."`
+	Slots      int    `yaml:"slots" default:"1" validate:"min=1,max=16" doc:"Calls one scanner process runs at a time, analyses and detections together (Q-VULN-204); a call while every slot holds one is answered 503 scanner_busy. The chart checks the scanner's spool against it (Q-HA-318); more than one slot lets the calls of one pod reach each other (H-1037), so scale by replicas."`
 }
 
 // VulnerabilityPullLink is the scanner's side of the pull from the scan listener of packages (R-VULN-042).
 type VulnerabilityPullLink struct {
-	URL        string `yaml:"url" default:"" doc:"The scan listener of packages, an origin: https://<fullname>-packages-scan.<namespace>.svc:8082 in the chart, which sets it. Required in a scanner; empty in the role all, where it means the process's own scan listener. The scanner reads no other address: a call cannot point it elsewhere."`
+	URL        string `yaml:"url" default:"" doc:"The scan listener of packages, an origin: https://<fullname>-packages-scan.<namespace>.svc:8082 in the chart, which sets it. Required in a scanner and in the loader of its database (the kind trivy-db, R-VULN-049); the role all builds neither (Q-ARCH-563). The scanner reads no other address: a call cannot point it elsewhere."`
 	ServerName string `yaml:"server_name" default:"" doc:"The name the scanner requires in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets <fullname>-packages.<namespace>.svc, the name of packages (R-HA-063). The names the scan listener admits are server.scan_clients."`
 	ClientName string `yaml:"client_name" default:"" doc:"The name by which the scan listener knows the image scanner (the kind trivy): a scanner's report of itself is recorded as a replica of vuln-scanner-trivy only from a client certificate that lists it exactly among its DNS names (R-OPS-048, Q-OPS-223). It must be one of server.scan_clients when that list is set, and differ from malware.scan_listener.client_name. Empty: the scan listener records no image scanner (the role all, where no scanner pod runs). The chart sets <fullname>-vuln-scanner-trivy.<namespace>.svc."`
 }
@@ -81,7 +81,7 @@ func exactName(name string) bool {
 
 // Validate checks the addresses of the links and, for the role scanner, that it names the scan listener it pulls from
 // (R-VULN-025, R-VULN-042). An address is an http or https origin; http is for an installation without TLS (Q-HA-322). The role all
-// may leave both empty: its own listeners (Q-ARCH-531).
+// may leave both empty: it builds no image scanner (Q-ARCH-563).
 func (i *VulnerabilityImages) Validate(r *Report) {
 	checkLinkURL(r, "scanner.url", i.Scanner.URL)
 	checkLinkURL(r, "registry.url", i.Registry.URL)
@@ -91,7 +91,7 @@ func (i *VulnerabilityImages) Validate(r *Report) {
 }
 
 // validateScannerLink requires the scanner's address in a worker while the image scanning is on (R-VULN-025, R-VULN-041): the
-// worker calls it for every analysis. Vulnerabilities.Validate calls it, because it needs both switches.
+// worker calls it for every analysis and every detection. Vulnerabilities.Validate calls it, because it needs both switches.
 func (v *Vulnerabilities) validateScannerLink(r *Report) {
 	if r.Role() == RoleWorker && v.Enabled && v.Images.Enabled && v.Images.Scanner.URL == "" {
 		r.Add("images.scanner.url", "is required in a worker while the image scanning is on: it names the scanner's listener the worker calls (R-VULN-041); the chart sets it")

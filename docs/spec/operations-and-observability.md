@@ -693,8 +693,7 @@ API: `GET /api/v1/system/scanners` → `200`. Requires `settings:read`, the perm
 here, from the answering replica's configuration (every role reads the same file, [ha-and-helm.md](ha-and-helm.md) R-HA-002): `reporting`
 while the installation calls scanner pods of the kind (`vulnerabilities.images.scanner.url`, `malware.scanner.url`) and the scan listener
 can tell their kind (TLS and the kind's name), so an empty list is a fault; `unverified` while it calls them but cannot tell their kind and
-records none; `inProcess` for the image scanning of the role `all`, which analyses in its own process and runs no pod; `none` while no
-scanner of the kind is configured. `database.builtAt` is the build time of the version in use when the row names it, `null` for another
+records none; `none` while no scanner of the kind is configured (the role `all` builds none, Q-ARCH-563). `database.builtAt` is the build time of the version in use when the row names it, `null` for another
 version. The screens are [api-and-ui.md](api-and-ui.md) R-UI-038 (the System page), [malware-scanning.md](malware-scanning.md) R-MAL-023
 and [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 (Q-UI-897).
 
@@ -707,14 +706,18 @@ and [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 (Q-UI-897)
   database is loaded the row is `ready` with that version and its build time. Stopped cleanly, its row is gone at once (integration,
   `test/integration/malware`).
 - A report with the image scanner's certificate is recorded as `trivy` whatever its body says; a member `kind`, markup in a name, a
-  database from `trivy`, the worker's certificate, a token and a request without TLS are refused (unit tests of `internal/scanreport`,
-  `internal/api/scanlisten`, `internal/auth`).
+  database of `trivy` that is not the 64 hexadecimal digits of a digest, the worker's certificate, a token and a request without TLS are
+  refused (unit tests of `internal/scanreport`, `internal/api/scanlisten`, `internal/auth`).
 - With 64 live rows of a kind, the report of a 65th UID is refused and a stale row does not count; a row that went stale while draining is
   not listed and the prune deletes it at once, a lost one after 24 h (integration, `test/integration/coordination`).
 
 **With the detection in the scanner** (owner, 2026-11-21, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-048, R-VULN-049;
-specified, not built; [Q-OPS-225](#q-ops-225--an-image-scanner-reports-the-database-it-detects-with)): a scanner of the kind `trivy` reports
-the newest database its pod holds, `database.version` the 64 hexadecimal digits of its layer's digest and `database.builtAt` the build time of
+built on 2026-11-21, `Service.Database` in [scanner/detect.go](../../internal/vuln/scanner/detect.go), the check in
+[report.go](../../internal/scanreport/report.go), the list's rule in `ListScannerReplicas`;
+[Q-OPS-225](#q-ops-225--an-image-scanner-reports-the-database-it-detects-with)): a scanner of the kind `trivy` reports
+the newest database its pod holds (the one its loader wrote last, which is the database in use once the pod has loaded it, also when it was
+built before the one it follows: [vulnerability-scanning.md](vulnerability-scanning.md#q-vuln-213--a-pods-newest-database-is-the-one-its-loader-wrote-last-not-the-one-built-last)
+Q-VULN-213), `database.version` the 64 hexadecimal digits of its layer's digest and `database.builtAt` the build time of
 its `metadata.json`, or no database before its first load; the route accepts a database from `trivy`, and the third criterion above loses
 "a database from `trivy`". The answer's `database.builtAt` follows the rule above: the build time while the row names the database in use (the
 source state's digest), `null` for another. The screens show it on the trivy rows as they show ClamAV's database (R-UI-038,

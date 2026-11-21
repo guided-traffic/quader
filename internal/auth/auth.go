@@ -158,6 +158,11 @@ type EndpointRules struct {
 	// certificate to ask and passes as the malware scanner (H-1108). Nil admits every client the listener's handshake admitted, as the
 	// malware scanner.
 	MalwareDatabase func(*http.Request) string
+	// TrivyDatabase reports whether the client certificate of a request on the scan listener's image-scanning database routes is the
+	// image scanner's (vulnerabilities.images.registry.client_name, R-VULN-049, Q-VULN-206): the loader of a scanner pod presents the
+	// pod's pair. A request without TLS has no certificate to ask and passes (a listener without TLS, Q-VULN-210). Nil admits every client
+	// the listener's handshake admitted.
+	TrivyDatabase func(*http.Request) bool
 	// ScannerKind is the kind of scanner the client certificate of a request on the scan listener names (trivy, clamav), "" for none:
 	// the route of the scanner replicas admits a request of a kind and nothing else (R-OPS-048, Q-OPS-223). Without TLS there is no
 	// certificate and no kind. Nil admits nothing there.

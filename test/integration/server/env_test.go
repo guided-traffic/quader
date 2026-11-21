@@ -191,7 +191,7 @@ type replica struct {
 // environ is the environment of a replica of the role r.role: the installation's settings, the replica's listeners and name, and
 // what the chart gives a pod of that role. A worker names the scanner it calls while the image scanning is on (R-VULN-041); nothing
 // answers on this port, and no test of this area runs an image scan, so the worker starts and is ready, and a scan would be put off
-// with scanner_unavailable. The role all leaves it empty: its worker calls its own scanner over loopback (Q-ARCH-531).
+// with scanner_unavailable. The role all leaves it empty: it builds no image scanner, and its job ends at once (Q-ARCH-563).
 func (in *install) environ(r *replica) []string {
 	env := append(append([]string{"PATH=" + os.Getenv("PATH")}, in.env...),
 		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME="+r.name)

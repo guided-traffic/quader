@@ -113,12 +113,19 @@ DELETE FROM scanner_replica WHERE instance_uid = sqlc.arg(instance_uid)::text::u
 -- name: ListScannerReplicas :many
 -- The rows as GET /api/v1/system/scanners lists them, with the rule of the registry's list (Q-OPS-210): a row that went stale while
 -- draining has signed off and is not listed, every other stale row is lost. db_built_at is the build time the updater reported of the set
--- its directory holds (the kind freshclam), else the build time of the signature database in use when the row names that version.
+-- its directory holds (the kind freshclam); for an image scanner the build time it reported of the database its pod holds, while that is
+-- the database in use (the source trivy's digest, Q-OPS-225); for a malware scanner the build time of the signature database in use when
+-- the row names that version.
 SELECT s.instance_uid, s.kind, s.name, s.node, s.version, s.revision, s.state, s.reason, s.state_since, s.tool_version, s.db_version,
        s.slots_in_use, s.slots_total, s.started_at, s.heartbeat_at,
        (s.heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8))::bool AS lost,
-       COALESCE(s.db_built_at,
-                (SELECT d.built_at FROM malware_database d WHERE d.version IS NOT NULL AND d.version = s.db_version))::timestamptz AS db_built_at
+       (CASE WHEN s.kind = 'trivy' THEN
+                  (CASE WHEN s.db_version = (SELECT substr(v.etag, 8) FROM vuln_source_state v
+                                              WHERE v.source = 'trivy' AND v.ecosystem = 'OCI' AND v.state = 'complete'
+                                                AND v.etag LIKE 'sha256:%') THEN s.db_built_at END)
+             ELSE COALESCE(s.db_built_at,
+                           (SELECT d.built_at FROM malware_database d WHERE d.version IS NOT NULL AND d.version = s.db_version))
+        END)::timestamptz AS db_built_at
   FROM scanner_replica s
  WHERE NOT (s.state = 'draining' AND s.heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8))
  ORDER BY s.kind, s.name, s.instance_uid;

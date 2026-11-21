@@ -1738,6 +1738,46 @@
           },
           "additionalProperties": false
         },
+        "database": {
+          "type": "object",
+          "description": "The container database, the loader of Trivy's database (R-HA-070, R-VULN-049)",
+          "properties": {
+            "sizeLimit": {
+              "type": [
+                "string",
+                "integer"
+              ],
+              "description": "Kubernetes quantity: the volume trivy-db and the loader's budget, at least 4Gi"
+            },
+            "resources": {
+              "type": "object",
+              "properties": {
+                "requests": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ],
+                    "description": "Kubernetes quantity"
+                  }
+                },
+                "limits": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ],
+                    "description": "Kubernetes quantity"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
         "resources": {
           "type": "object",
           "properties": {

@@ -467,10 +467,12 @@ database, the object store or Valkey. What it serves and holds is [architecture.
 - **Chart checks** (R-HA-029): the scanner's spool budget (`vulnScannerTrivy.spool.sizeLimit` minus `spool.headroom`) at least
   `slots × (max_image_size + 64 MiB)`, the failure naming the three values (Q-HA-318); `vulnScannerTrivy.replicaCount` at least 1, and at least 2 with
   `highAvailability.enforce`; with `tls.existingSecrets`, a Secret for the scanner that no other kind names (R-HA-063).
-- **With the detection in the scanner and the analyser from its own image** (owner, 2026-11-21; specified, not built): the pod gains an
-  init container `trivy`, a container `database`, and two volumes, `trivy-bin` and `trivy-db`, both read-only in the container `quader`; its
-  analyser is `/opt/trivy/trivy` instead of the release image's `/usr/local/bin/trivy`. Everything else of this requirement stands; what
-  changes is [R-HA-070](#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod).
+- **With the detection in the scanner and the analyser from its own image** (owner, 2026-11-21): the pod gains an init container `trivy`,
+  a container `database`, and two volumes, `trivy-bin` and `trivy-db`, both read-only in the container `quader`; its analyser is
+  `/opt/trivy/trivy` instead of the release image's `/usr/local/bin/trivy`. Everything else of this requirement stands; what changes is
+  [R-HA-070](#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod). Built on 2026-11-21: the container
+  `database` and the volume `trivy-db` (and `database-tmp`, the loader's `/tmp`); the init container `trivy`, the volume `trivy-bin` and the
+  analyser's path are R-HA-070's next step, so the pod's volumes are the four above and those two.
 
 Acceptance criteria:
 
@@ -557,10 +559,12 @@ Priority: **P1** · Covers: quader-only
   seam in the scanner replica and the worker replica, as they do today, so the stack needs no analyser binary and no database download
   (R-VULN-046).
 - **CI**: no new leg. The unit, chart and integration legs run what R-VULN-046 lists; the leg `e2e (vuln)` adds one case.
-- **With the detection in the scanner and the analyser from its own image** (owner, 2026-11-21; specified, not built): the role `all`
-  builds no image scanner, and its worker part calls `vulnerabilities.images.scanner.url` when one is set; without one the image scanning's
-  job ends at once and touches no row ([architecture.md](architecture.md) Q-ARCH-563), so the UI development profile shows images
-  `pending_scan` and the API `replicas: "none"`; the renders keep seeding the scanners' rows by SQL. The local profile on kind runs the
+- **With the detection in the scanner and the analyser from its own image** (owner, 2026-11-21): the role `all` builds no image scanner,
+  and its worker part calls `vulnerabilities.images.scanner.url` when one is set; without one the image scanning's job ends at once and
+  touches no row ([architecture.md](architecture.md) Q-ARCH-563), so the UI development profile shows images `pending_scan` and the API
+  `replicas: "none"`; the renders keep seeding the scanners' rows by SQL. Built on 2026-11-21 (`TestQ_ARCH_563_TheRoleAllBuildsNoImageScanner`
+  in `vulnimage`); the integration stack's loader replica too (`flow.startLoader`). The profiles' part below (the image scanning off in
+  `values-dev.yaml`, the analyser's image loaded in `vuln`) is R-HA-070's next step. The local profile on kind runs the
   image scanning only in the profile `vuln` (and the profiles layered on it) and in the platform matrix, and loads the analyser's image into
   the kind cluster there as it loads ClamAV's ([Q-HA-382](#q-ha-382--the-image-scanning-is-on-in-the-charts-defaults-and-off-in-every-test-profile-but-vuln-and-the-platform-matrix)).
   The integration stack starts the loader of the kind `trivy-db` in process beside the scanner replica, with a directory of the test as its
@@ -744,7 +748,13 @@ Priority: **P1** · Covers: HA-015
 The owner's decisions of 2026-11-21 ([ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)):
 "Option B, nach der umbenennung. Trivy dann aus den anderen Images entfernen.", and, for where the scanner's analyser comes from, "Option
 b": the analyser's own image as an init container that copies the binary into a volume of the scanner pod, not a second image built with
-every release, in the pattern of the ClamAV image. Specified, not built; it changes the pod of R-HA-065 and the release image of R-HA-033.
+every release, in the pattern of the ClamAV image. It changes the pod of R-HA-065 and the release image of R-HA-033. **Built on
+2026-11-21:** the container `database`, the volume `trivy-db`, its check and the values `vulnScannerTrivy.database.sizeLimit` and
+`.resources` ([vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml), `quader.validateVulnScannerTrivy` in
+[_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl)); the loader's budget reaches it as
+`QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR_BUDGET` ([Q-VULN-209](vulnerability-scanning.md#q-vuln-209--the-loaders-room-is-a-key-of-the-configuration-that-the-chart-sets-to-the-volumes-size)).
+**Not built yet** (the next step, after this one is released): the init container `trivy`, the volume `trivy-bin`, the pin `TRIVY_IMAGE`
+and everything of it below; until then the analyser stays in the release image at `/usr/local/bin/trivy`.
 
 - **When.** Everything below renders with `<fullname>-vuln-scanner-trivy`, while the image scanning is on, and nothing of it otherwise.
 - **The init container `trivy`** ([Q-HA-378](#q-ha-378--the-analysers-binary-is-copied-by-an-init-container-of-its-own-image-into-a-volume-the-scanner-mounts-read-only)):
@@ -807,7 +817,8 @@ Acceptance criteria:
 - Chart test (`test/chart`, about 2 s): with default values the scanner pod has the init container `trivy` with `trivy.image`, the copy's
   command, the security context and the one volume `trivy-bin`; the container `quader` mounts `trivy-bin` and `trivy-db` read-only; the
   container `database` runs the kind `trivy-db` with `:8083`, mounts `trivy-db` read-write, the scanner's Secret and a `/tmp` of its own, and
-  has a liveness probe and no readiness probe; `trivy.image` equals `TRIVY_IMAGE` of `tools/versions.env`; `vulnScannerTrivy.database.sizeLimit:
+  has a liveness probe and no readiness probe (built for the container `database` and `trivy-db`:
+  `TestR_HA_070_TheLoaderWritesTheDatabaseThatTheScannerReadsReadOnly` in [vuln_scanner_trivy_test.go](../../test/chart/vuln_scanner_trivy_test.go)); `trivy.image` equals `TRIVY_IMAGE` of `tools/versions.env`; `vulnScannerTrivy.database.sizeLimit:
   3Gi` fails and names the key; with `config.vulnerabilities.images.enabled: false` nothing of it renders; no other Deployment has an init
   container, `trivy-bin` or `trivy-db`; `global.imagePullSecrets` is on the pod.
 - Check (`make versions-check`, seconds): `TRIVY_IMAGE` carries a digest; no `TRIVY_SHA256_*` line and no `trivy` stage in the
@@ -4390,6 +4401,15 @@ vulnScannerTrivy:
       ephemeral-storage: 1Gi
     limits:
       memory: 2Gi                       # one analyser per slot (config.vulnerabilities.images.memory_limit is its soft limit); an image that needs more ends this pod's analysis, never a worker
+  database:                             # the container database, the loader of Trivy's database (R-HA-070, R-VULN-049)
+    sizeLimit: 5Gi                      # the volume trivy-db and the loader's budget: the newest database and the one before it (1.7 GiB each on 2026-11-21); at least 4Gi, validated; follows spool.type
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+        ephemeral-storage: 2Gi          # one database on the node's disk
+      limits:
+        memory: 256Mi
   autoscaling:
     enabled: false
     minReplicas: 2

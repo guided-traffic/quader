@@ -114,7 +114,7 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 	if o.Role == "worker" {
 		// A worker calls the scanner while the image scanning is on (R-VULN-041) and must name it; nothing answers on this port, so
 		// a call is put off with scanner_unavailable. The suite of the image scanning starts a scanner replica and names it in Env.
-		// The role all leaves it empty: its worker calls its own scanner over loopback (Q-ARCH-531).
+		// The role all leaves it empty: it builds no image scanner, and its job ends at once (Q-ARCH-563).
 		environ = append(environ, "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=http://127.0.0.1:1")
 	}
 	environ = append(environ, o.Env...)

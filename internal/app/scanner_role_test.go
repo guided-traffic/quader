@@ -22,7 +22,7 @@ func (stubAnalyser) Analyse(context.Context, string, string, string, imagescan.L
 	return errors.New("not called")
 }
 
-func (stubAnalyser) Detect(context.Context, string, string, string, imagescan.DatabaseAccess, imagescan.Limits) error {
+func (stubAnalyser) Detect(context.Context, string, string, string, string, imagescan.Limits) error {
 	return errors.New("not called")
 }
 

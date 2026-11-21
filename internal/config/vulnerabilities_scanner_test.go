@@ -29,7 +29,7 @@ func TestR_VULN_025_TheLinksOfTheImageScanningAreValidatedForTheRoleThatUsesThem
 			}
 		}
 	})
-	t.Run("Q-ARCH-531 the role all may leave both addresses empty: its own listeners", func(t *testing.T) {
+	t.Run("Q-ARCH-563 the role all may leave both addresses empty: it builds no image scanner", func(t *testing.T) {
 		if err := loadRole(t, "all"); err != nil {
 			t.Fatal(err)
 		}

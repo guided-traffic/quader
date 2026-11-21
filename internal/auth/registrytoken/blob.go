@@ -38,6 +38,17 @@ const (
 	DatabasePath   = "/scan/v1/malware-database"
 )
 
+// TrivyDatabasePath is the image scanning's database route of the scan listener (vulnerability-scanning.md R-VULN-049, Q-VULN-206):
+// the listing of the database in use, and below it /sha256:<64 hex> the layer of that digest. It takes no token and admits the image
+// scanner's certificate (vulnerabilities.images.registry.client_name), which the loader of the scanner pod presents. The path names
+// the tool, because the database is Trivy's own format.
+const TrivyDatabasePath = "/scan/v1/trivy-database"
+
+// IsTrivyDatabasePath reports whether a path is one of the image scanning's database routes: TrivyDatabasePath or a path below it.
+func IsTrivyDatabasePath(p string) bool {
+	return p == TrivyDatabasePath || strings.HasPrefix(p, TrivyDatabasePath+"/")
+}
+
 // BlobPath is the path of the blob route for a digest.
 func BlobPath(digest string) string { return BlobPathPrefix + digest }
 

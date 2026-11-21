@@ -59,7 +59,35 @@ func TestR_OPS_048_AReportIsCheckedForItsSizeAndShape(t *testing.T) {
 		}
 	}
 	if err := valid().Validate(config.ScannerKindTrivy); err == nil {
-		t.Error("a database from a scanner of the kind trivy: admitted")
+		t.Error("a signature database's version from a scanner of the kind trivy: admitted")
+	}
+}
+
+// R-OPS-048, Q-OPS-225: an image scanner reports the newest database its pod holds as the 64 hexadecimal digits of its layer's digest,
+// with the build time of its metadata.json; anything else of the kind trivy, and a build time without a database, is refused.
+func TestQ_OPS_225_AnImageScannerReportsTheDatabaseItDetectsWith(t *testing.T) {
+	built := time.Date(2026, 11, 21, 7, 2, 51, 0, time.UTC)
+	trivy := valid()
+	trivy.Reason, trivy.Database, trivy.DatabaseBuiltAt = "", strings.Repeat("ab", 32), &built
+	if err := trivy.Validate(config.ScannerKindTrivy); err != nil {
+		t.Fatalf("a valid report of an image scanner with its database: %v", err)
+	}
+	for name, change := range map[string]func(*Report){
+		"a digest with its prefix":   func(r *Report) { r.Database = "sha256:" + strings.Repeat("ab", 32) },
+		"63 digits":                  func(r *Report) { r.Database = strings.Repeat("a", 63) },
+		"upper-case digits":          func(r *Report) { r.Database = strings.Repeat("AB", 32) },
+		"a build time and no digest": func(r *Report) { r.Database = "" },
+	} {
+		r := trivy
+		change(&r)
+		if err := r.Validate(config.ScannerKindTrivy); err == nil {
+			t.Errorf("%s: admitted", name)
+		}
+	}
+	clamav := valid()
+	clamav.DatabaseBuiltAt = &built
+	if err := clamav.Validate(config.ScannerKindClamav); err == nil {
+		t.Error("a build time from the kind clamav: admitted")
 	}
 }
 

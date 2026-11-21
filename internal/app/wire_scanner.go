@@ -15,16 +15,17 @@ import (
 	mscanner "github.com/guided-traffic/quader/internal/malware/scanner"
 	"github.com/guided-traffic/quader/internal/malware/updater"
 	"github.com/guided-traffic/quader/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/vuln/dbloader"
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 	"github.com/guided-traffic/quader/internal/vuln/scanner"
 )
 
-// The role scanner (R-ARCH-036, R-HA-065, ADR-212): one area of its own, built without any infrastructure area, and the scanner's
-// listener of step 9. The role all builds the same area and opens the listener on loopback, so that its worker calls its own scanner
-// through the same client, token and checks as in the chart (Q-ARCH-531).
+// The role scanner (R-ARCH-036, R-HA-065, ADR-212, ADR-229): one area of its own, built without any infrastructure area, and the
+// scanner's listener of step 9. The role all builds no scanner of any kind (Q-ARCH-563, Q-ARCH-560): a development process does not
+// pretend to scan, and its worker part calls a scanner only when vulnerabilities.images.scanner.url names one.
 
 // AreaScanner is the analyser, the registry client of the pull, the checks of R-VULN-036, the slots and the spool, the reaper and the
-// metrics of the role scanner (Q-ARCH-527).
+// metrics of the role scanner (Q-ARCH-527); of the kind trivy-db the loader of the database alone (Q-ARCH-564).
 const AreaScanner Area = "scanner"
 
 // The names of the two scanner units where an operator or an auditor reads them (ha-and-helm.md Q-HA-372, Q-HA-373): the log component
@@ -41,10 +42,12 @@ const (
 )
 
 // scannerArea is the scanner of the replica and the TLS of its listener and of its link to the scan listener: the image scanner (svc),
-// the malware scanner (malware) of a process of the kind clamav (wire_malware_scanner.go), or the updater (updater) of a process of
-// the kind freshclam (wire_malware_updater.go).
+// the loader of its database (loader) of a process of the kind trivy-db (wire_vuln_loader.go), the malware scanner (malware) of a
+// process of the kind clamav (wire_malware_scanner.go), or the updater (updater) of a process of the kind freshclam
+// (wire_malware_updater.go).
 type scannerArea struct {
 	svc     *scanner.Service
+	loader  *dbloader.Loader
 	malware *mscanner.Service
 	updater *updater.Service
 	// listenerTLS serves the pair and requires a client certificate of the internal CA; nil without TLS.
@@ -66,33 +69,31 @@ func (s scannerArea) unit() string {
 	return unitVulnScannerTrivy
 }
 
-// built reports whether the area holds a scanner or the updater.
-func (s scannerArea) built() bool { return s.svc != nil || s.malware != nil || s.updater != nil }
+// built reports whether the area holds a scanner, the loader or the updater.
+func (s scannerArea) built() bool {
+	return s.svc != nil || s.loader != nil || s.malware != nil || s.updater != nil
+}
 
-// wireScanner builds the scanner. The blob area is optional (Q-ARCH-300): the role all hands it, and the scanner then takes its room
-// from the one spool of the process; the role scanner has none and opens the spool alone, without the object store.
-func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) {
-	if a.id.Role == config.RoleAll && !a.imageScanningOn() {
-		return scannerArea{}, nil // the role all scans no image: no scanner and no listener
-	}
-	if a.isMalwareScanner() {
+// wireScanner builds the scanner of the role scanner: the image scanner of the kind trivy, the loader of its database of the kind
+// trivy-db, the malware scanner of the kind clamav or the updater of the kind freshclam. The role all builds none (Q-ARCH-563). The
+// blob area is optional (Q-ARCH-300): the role scanner has none and opens the spool alone, without the object store.
+func (a *App) wireScanner(ctx context.Context, _ blobArea) (scannerArea, error) {
+	switch {
+	case a.id.Role == config.RoleAll:
+		return scannerArea{}, nil // the role all scans no image and no blob: no scanner and no listener
+	case a.isMalwareScanner():
 		return a.wireMalwareScanner(ctx)
-	}
-	if a.isMalwareUpdater() {
+	case a.isMalwareUpdater():
 		return a.wireMalwareUpdater(ctx)
+	case a.isTrivyLoader():
+		return a.wireTrivyLoader(ctx)
 	}
 	cfg := a.cfg
 	images := cfg.Vulnerabilities.Images
 	log := a.log.With("component", unitVulnScannerTrivy)
-	var spool *blob.Spool
-	if b.store != nil {
-		spool = b.store.Spool()
-	} else {
-		s, err := blob.NewSpool(cfg.Storage.Spool, blob.WithSpoolLogger(log))
-		if err != nil {
-			return scannerArea{}, err
-		}
-		spool = s
+	spool, err := blob.NewSpool(cfg.Storage.Spool, blob.WithSpoolLogger(log))
+	if err != nil {
+		return scannerArea{}, err
 	}
 	out := scannerArea{}
 	var analyser imagescan.Analyser
@@ -109,7 +110,6 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 			analyser = trivy
 		}
 	}
-	var err error
 	if out.listenerTLS, err = httpserver.NewLinkListenerTLS(httpserver.LinkVulnScannerTrivy, cfg.Server, nonEmpty(images.Scanner.ClientName),
 		a.tlsOptions(httpserver.LinkVulnScannerTrivy)...); err != nil {
 		return scannerArea{}, err
@@ -129,12 +129,8 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 	if out.link != nil {
 		reg.TLS = out.link.Config
 	}
-	if reg.URL == "" {
-		// The role all: its own scan listener, whose address step 9 sets once it is bound (scanListenerBound).
-		reg.URL = "http://127.0.0.1:0"
-	}
 	svc, err := scanner.New(scanner.Options{
-		Analyser: analyser, Registry: reg, Space: spoolSpace{spool}, ScanDir: images.ScanDir, Slots: images.Scanner.Slots,
+		Analyser: analyser, Registry: reg, Space: spoolSpace{spool}, ScanDir: images.ScanDir, DatabaseDir: images.Database.Dir, Slots: images.Scanner.Slots,
 		PullTimeout: images.PullTimeout, Reaper: scanner.NewReaper(log), Metrics: m, Log: log,
 		Content: imagescan.ContentLimits{MaxLayers: images.MaxLayers, MaxImageBytes: int64(images.MaxImageSize), MaxUncompressedBytes: int64(images.MaxUncompressedSize), MaxEntries: images.MaxEntries},
 		Run:     imagescan.Limits{Timeout: images.Timeout, MemoryBytes: int64(images.MemoryLimit), OutputBytes: imageOutputBytes, StderrBytes: 16 << 10},
@@ -149,29 +145,17 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 	if err := a.startComponent(ctx, &scannerComponent{area: out}); err != nil {
 		return scannerArea{}, err
 	}
-	if a.id.Role == config.RoleScanner {
-		a.health.AddReadiness(checkVulnScannerTrivy, a.scannerReady(out, true), false)
-	} else {
-		// The role all: the scanner is one part of a process that serves every route. A missing analyser or a pair without client
-		// authentication is reported in /readyz?verbose=1 and answered per call, but it does not take the API and the registry
-		// down with it (Q-ARCH-551).
-		a.health.AddReported(checkVulnScannerTrivy, a.scannerReady(out, false))
-	}
+	a.health.AddReadiness(checkVulnScannerTrivy, a.scannerReady(out), false)
 	return out, nil
 }
 
 // scannerReady is the readiness of the scanner (R-HA-065): the pair and the internal CA have loaded, the pair allows client
 // authentication, the analyser answered its version, the spool directory is writable, and the process is not draining. It does not
-// depend on packages or Valkey: a scan listener that cannot be reached is the call's answer, not the pod's state. gate marks the
-// failures of the configuration as such (the role scanner); the role all reports them only (Q-ARCH-551).
-func (a *App) scannerReady(s scannerArea, gate bool) health.CheckFunc {
+// depend on packages or Valkey: a scan listener that cannot be reached is the call's answer, not the pod's state. Nor on the database:
+// analyses need none (Q-VULN-168), and a detection before the pod's first load is answered database_loading (R-VULN-049).
+func (a *App) scannerReady(s scannerArea) health.CheckFunc {
 	dir := a.cfg.Vulnerabilities.Images.ScanDir
-	configured := func(err error, reason string) error {
-		if gate {
-			return health.ConfigError(err, reason)
-		}
-		return health.WithReason(err, reason)
-	}
+	configured := health.ConfigError
 	return func(context.Context) error {
 		if s.svc.Draining() {
 			return health.WithReason(errUnavailable, "draining")
@@ -210,8 +194,8 @@ func (b brokenAnalyser) Analyse(context.Context, string, string, string, imagesc
 	return &imagescan.ScanError{Code: imagescan.CodeAnalyserFailed, Detail: "the scanner's analyser does not run: " + b.err.Error()}
 }
 
-func (b brokenAnalyser) Detect(context.Context, string, string, string, imagescan.DatabaseAccess, imagescan.Limits) error {
-	return b.err
+func (b brokenAnalyser) Detect(context.Context, string, string, string, string, imagescan.Limits) error {
+	return &imagescan.ScanError{Code: imagescan.CodeAnalyserFailed, Detail: "the scanner's analyser does not run: " + b.err.Error()}
 }
 
 // scannerComponent drains the scanner at SIGTERM and ends the analyses still running at the shutdown timeout (R-HA-065): both are
@@ -238,6 +222,8 @@ func (c *scannerComponent) Drain(context.Context) {
 		c.area.malware.Drain()
 	case c.area.updater != nil:
 		c.area.updater.Drain()
+	case c.area.loader != nil:
+		// The loader serves no call: a load in flight ends with its component (trivyLoaderLoop).
 	default:
 		c.area.svc.Drain()
 	}
@@ -245,13 +231,13 @@ func (c *scannerComponent) Drain(context.Context) {
 
 func (c *scannerComponent) Quiesce(context.Context) { c.stopScans() }
 
-// stopScans ends the scans still running: the analyses, or the malware scanner's calls; the updater runs none (a listing or a file in
-// flight ends with its server).
+// stopScans ends the scans still running: the analyses and the detections, or the malware scanner's calls; the updater and the loader
+// run none (a listing or a file in flight ends with its server, a load with its component).
 func (c *scannerComponent) stopScans() {
 	switch {
 	case c.area.malware != nil:
 		c.area.malware.Stop()
-	case c.area.updater != nil:
+	case c.area.updater != nil, c.area.loader != nil:
 	default:
 		c.area.svc.Stop()
 	}
@@ -265,17 +251,9 @@ func (c *scannerComponent) Stop(ctx context.Context) error {
 	return nil
 }
 
-// scannerListenAddr is the address of the scanner's listener: server.listen in the role scanner, a loopback port in the role all,
-// whose client listener holds server.listen (Q-ARCH-531).
-func (a *App) scannerListenAddr() string {
-	if a.id.Role == config.RoleAll {
-		return "127.0.0.1:0"
-	}
-	return a.cfg.Server.Listen
-}
-
-// startScanner binds the scanner's listener and serves POST /scan/v1/analyses, or a malware scanner's POST /scan/v1/malware, and nothing
-// else (R-ARCH-036).
+// startScanner binds the scanner's listener on server.listen and serves POST /scan/v1/analyses and POST /scan/v1/detections, or a
+// malware scanner's POST /scan/v1/malware, or the updater's listing, and nothing else (R-ARCH-036). The loader of the kind trivy-db opens
+// no listener but the operations listener (Q-HA-379).
 func (a *App) startScanner() error {
 	s, ok := lookup[scannerArea](a.parts)
 	switch {
@@ -283,6 +261,8 @@ func (a *App) startScanner() error {
 		return nil
 	case !ok || !s.built():
 		return errors.New("the scanner's listener: the scanner area is not wired")
+	case s.loader != nil:
+		return nil
 	}
 	var router http.Handler
 	switch {
@@ -293,7 +273,7 @@ func (a *App) startScanner() error {
 	default:
 		router = scannerRouter(s.svc)
 	}
-	srv, err := a.newServer(s.unit(), a.scannerListenAddr(), router, s.listenerTLS)
+	srv, err := a.newServer(s.unit(), a.cfg.Server.Listen, router, s.listenerTLS)
 	if err != nil {
 		return err
 	}
@@ -312,11 +292,13 @@ func (a *App) startScanner() error {
 	return nil
 }
 
-// scannerRouter is the router of the scanner's listener: the one route of the call. Its router is its own; no route family of an
-// endpoint, no management API and no package protocol is served there (R-ARCH-036).
+// scannerRouter is the router of the scanner's listener: the routes of the two calls, the analysis and the detection (R-VULN-041,
+// R-VULN-048). Its router is its own; no route family of an endpoint, no management API and no package protocol is served there
+// (R-ARCH-036).
 func scannerRouter(svc *scanner.Service) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle(imagescan.AnalysesPath, svc.Handler())
+	mux.Handle(imagescan.DetectionsPath, svc.DetectHandler())
 	return mux
 }
 
@@ -341,16 +323,6 @@ func hostOf(raw string) string {
 		return h
 	}
 	return rest
-}
-
-// loopbackOrigin is the origin of a listener bound on loopback: the role all's worker calls its own scanner there, and its scanner
-// pulls from its own scan listener there (Q-ARCH-531).
-func loopbackOrigin(addr net.Addr, tls bool) string {
-	scheme := "http"
-	if tls {
-		scheme = "https"
-	}
-	return scheme + "://" + addr.String()
 }
 
 // nonEmpty is the one name a listener of a link admits as a list, or none when it is empty (the role all, Q-ARCH-553).

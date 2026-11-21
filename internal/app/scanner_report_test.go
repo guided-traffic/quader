@@ -103,18 +103,18 @@ func TestR_OPS_048_AScannerReportsItselfToItsScanListenerAndSignsOff(t *testing.
 }
 
 // Q-OPS-223: the kinds the management API names, from the configuration: the scan listener records a kind's reports only with TLS and
-// the kind's name; without an address the role all analyses images in its own process, and a malware scanning without one calls none.
+// the kind's name; without an address no scanner of the kind is configured, the role all's image scanning included (Q-ARCH-563).
 func TestQ_OPS_221_TheKindsSayWhetherTheirReplicasReport(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Vulnerabilities.Enabled, cfg.Vulnerabilities.Images.Enabled, cfg.Malware.Enabled = true, true, true
-	modes := func(role string) string {
+	modes := func(string) string {
 		var out []string
-		for _, k := range scannerKinds(cfg, role) {
+		for _, k := range scannerKinds(cfg) {
 			out = append(out, string(k.Kind)+"="+string(k.Replicas)+"/"+k.Deployment+"/"+k.Tool)
 		}
 		return strings.Join(out, " ")
 	}
-	if got := modes(config.RoleAll); got != "trivy=inProcess/vuln-scanner-trivy/Trivy clamav=none/malware-scanner-clamav/ClamAV" {
+	if got := modes(config.RoleAll); got != "trivy=none/vuln-scanner-trivy/Trivy clamav=none/malware-scanner-clamav/ClamAV" {
 		t.Errorf("the role all: %s", got)
 	}
 	cfg.Vulnerabilities.Images.Scanner.URL, cfg.Malware.Scanner.URL = "https://quader-vuln-scanner-trivy.ns.svc:8080", "https://quader-malware-scanner-clamav.ns.svc:8080"
@@ -131,7 +131,7 @@ func TestQ_OPS_221_TheKindsSayWhetherTheirReplicasReport(t *testing.T) {
 		t.Errorf("as the chart sets it: %s", got)
 	}
 	cfg.Vulnerabilities.Images.Enabled, cfg.Malware.Enabled = false, false
-	if got := scannerKinds(cfg, config.RoleAPI); len(got) != 0 {
+	if got := scannerKinds(cfg); len(got) != 0 {
 		t.Errorf("the scannings off: %+v", got)
 	}
 

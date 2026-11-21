@@ -190,7 +190,7 @@ type App struct {
 	checkBucket    late[platform.Bucket]
 	// registryMetrics are the counters of the registry token service, shared by every endpoint (wire_registry.go).
 	registryMetrics *registrytoken.Metrics
-	// scannerSrv is the scanner's listener of the roles scanner and all (wire_scanner.go); nil elsewhere.
+	// scannerSrv is the scanner's listener of the role scanner (wire_scanner.go); nil elsewhere and in the loader of the kind trivy-db.
 	scannerSrv *httpserver.Server
 	// probeState holds the counters of the background downloads a probe starts (wire_background_download.go).
 	probeState
@@ -420,7 +420,7 @@ func (a *App) bootstrap(ctx context.Context) error {
 			return err
 		}
 	}
-	// The scanner's listener (R-ARCH-036), and in the role all the links to the process's own listeners (Q-ARCH-531).
+	// The scanner's listener (R-ARCH-036).
 	if a.sub.Scanner {
 		if err := a.startScanner(); err != nil {
 			return err
@@ -430,7 +430,6 @@ func (a *App) bootstrap(ctx context.Context) error {
 			return err
 		}
 	}
-	a.linkLoopback()
 
 	// Step 10: the start-up check passes, once Valkey has answered or the bound
 	// has passed (R-HA-008, Q-HA-13).
@@ -636,6 +635,8 @@ func (a *App) startClient() error {
 		if isScanListener(rt) {
 			// The malware scanning's routes of the scan listener, beside the registry's (wire_malware_scanlisten.go).
 			a.registerMalwareScanRoutes(router)
+			// The image scanning's database routes, which the loader of every scanner pod reads (wire_vuln_scanlisten.go, R-VULN-049).
+			a.registerTrivyDatabaseRoutes(router)
 			// The scanner replicas' reports of themselves (wire_scanner_report.go, R-OPS-048).
 			a.registerScannerReportRoutes(router)
 		}

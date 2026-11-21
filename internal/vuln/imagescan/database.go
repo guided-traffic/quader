@@ -12,11 +12,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
-	"sync"
 	"time"
-
-	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The bounds of the database archive: only its two files are taken, each within a size limit (R-VULN-035).
@@ -104,201 +100,167 @@ var ErrLayerMissing = errors.New("the database's repository does not hold the la
 // errLayerDigest is a layer whose bytes are not the digest in use: nothing of it is kept.
 var errLayerDigest = errors.New("the layer of the database is not the digest in use")
 
-// DBLayers opens the layer of the database in use from the repository it lies in: the item `<image>/_blobs/<digest>` of the repository
-// vulnerabilities.images.database.repository names, read through the item store, which is no download (R-VULN-044). A layer the
-// repository does not hold is [ErrLayerMissing].
-type DBLayers interface {
-	Open(ctx context.Context, digest string) (io.ReadCloser, error)
+// Database names the database in use for a run of the scan job (R-VULN-044, R-VULN-048): the digest of its layer, "sha256:<64 hex>",
+// after checking that the database's repository holds the item <image>/_blobs/<digest>. The worker reads no byte of it: the loader of
+// every scanner pod reads it through the scan listener (R-VULN-049). It returns [ErrNoDatabase] while none has been imported, and
+// [ErrLayerMissing] when the repository no longer holds the layer; the run then analyses only and keeps the rows pending.
+type Database interface {
+	InUse(ctx context.Context) (string, error)
 }
 
-// DBReader reads which database is in use.
-type DBReader interface {
-	DB(ctx context.Context) (store.ImageDB, bool, error)
+// ErrNoDatabase says that no vulnerability database has been imported yet.
+var ErrNoDatabase = errors.New("no vulnerability database has been imported")
+
+// DatabaseListing is the answer of the scan listener's listing of the image scanning's database, GET /scan/v1/trivy-database
+// (R-VULN-049): the database in use, the size of its layer as the repository holds it and the build time of its metadata.json; an empty
+// digest before the first, and no size while the repository does not hold the layer, no build time for a database recorded without one.
+type DatabaseListing struct {
+	Digest  string     `json:"digest"`
+	Size    int64      `json:"size,omitempty"`
+	BuiltAt *time.Time `json:"builtAt,omitempty"`
 }
 
-// LocalDatabase is the client mode of the [Database] seam (Q-VULN-137): the layer of the database in use is read from its repository once,
-// hashed while it is unpacked into a directory of the worker's local cache by digest, and each detection reads that directory. A replica
-// has no state that matters: an empty cache is filled from the repository on the first detection after a start.
-type LocalDatabase struct {
-	// Dir is the root of the local cache.
-	Dir    string
-	Layers DBLayers
-	Rows   DBReader
-	// Space is the spool the unpacked database is counted against (Q-VULN-145): its files are held before they are written, for as long
-	// as the directory exists, and a directory found on the volume at start is adopted.
-	Space Space
+// DatabaseDir is the directory below a database's own directory that holds its two files: the analyser's --cache-dir is the database's
+// directory, and the analyser reads <cache-dir>/db/trivy.db and metadata.json.
+const DatabaseDir = "db"
 
-	mu    sync.Mutex
-	uses  map[string]int
-	holds map[string]dbHold
-}
-
-// dbHold is the room one unpacked database holds in the spool.
-type dbHold struct {
-	bytes   int64
-	release func()
-}
-
-var _ Database = (*LocalDatabase)(nil)
-
-// Acquire implements [Database].
-func (d *LocalDatabase) Acquire(ctx context.Context) (DatabaseAccess, error) {
-	if d.Space == nil {
-		return DatabaseAccess{}, errors.New("the local database has no spool to count its files against")
-	}
-	db, found, err := d.Rows.DB(ctx)
+// DatabaseIn reads the metadata of the database whose directory is dir (<images.database.dir>/<64 hex>): found is false while the
+// directory holds no complete database. A loader renames the directory into place only when it is complete (R-VULN-049), so a
+// metadata.json there is the mark of a complete copy.
+func DatabaseIn(dir string) (DBMetadata, bool) {
+	f, err := os.Open(filepath.Join(dir, DatabaseDir, dbMetaName)) //nolint:gosec // a path below the database directory, named by its digest
 	if err != nil {
-		return DatabaseAccess{}, err
+		return DBMetadata{}, false
 	}
-	if !found {
-		return DatabaseAccess{}, ErrNoDatabase
+	defer func() { _ = f.Close() }()
+	var meta DBMetadata
+	if err := json.NewDecoder(io.LimitReader(f, maxMetaBytes)).Decode(&meta); err != nil || meta.Version != dbSchemaVersion {
+		return DBMetadata{}, false
 	}
-	if !ValidDigest(db.Digest) {
-		// The digest names the cache's directory: one that is not sha256 and 64 hexadecimal digits decides no path.
-		return DatabaseAccess{}, fmt.Errorf("the database in use names %q, which is no sha256 digest", db.Digest)
-	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	if d.uses == nil {
-		d.uses, d.holds = map[string]int{}, map[string]dbHold{}
-	}
-	// The databases nothing uses go first, so that their room is free for the new one: a spool sized for one database must not need two.
-	d.dropOldLocked(db.Digest)
-	dir := filepath.Join(d.Dir, hexOf(db.Digest))
-	if err := d.ensure(ctx, db, dir); err != nil {
-		return DatabaseAccess{}, err
-	}
-	d.uses[db.Digest]++
-	digest := db.Digest
-	return DatabaseAccess{
-		Args:   []string{"--cache-dir", dir},
-		Digest: digest,
-		Held:   d.holds[digest].bytes,
-		Release: func() {
-			d.mu.Lock()
-			defer d.mu.Unlock()
-			d.uses[digest]--
-		},
-	}, nil
+	return meta, true
 }
 
-// ensure unpacks the archive into dir unless it is there, through a sibling directory that is renamed into place, so that a directory under
-// the final name is complete and a worker lost halfway leaves only a sibling to clean.
-func (d *LocalDatabase) ensure(ctx context.Context, db store.ImageDB, dir string) error {
-	if _, err := os.Stat(filepath.Join(dir, "db", dbMetaName)); err == nil {
-		if _, held := d.holds[db.Digest]; !held {
-			// A database a restarted container found in its volume: it is on the disk whatever the budget says.
-			n := dirBytes(dir)
-			d.holds[db.Digest] = dbHold{bytes: n, release: d.Space.Adopt(n)}
-		}
-		return nil
-	}
-	if err := os.MkdirAll(d.Dir, 0o700); err != nil {
-		return err
-	}
-	tmp, err := os.MkdirTemp(d.Dir, "unpack-")
+// LoadedAt is when the loader wrote the database whose directory is dir: the modification time of its metadata.json, which UnpackDatabase
+// writes and a rename keeps. The newest database of a pod is the one loaded last, which is the one the listing named last, not the one
+// built last: a database in use may be older than one the pod held before, when the repository's tag moves back (Q-VULN-213).
+func LoadedAt(dir string) (time.Time, bool) {
+	fi, err := os.Stat(filepath.Join(dir, DatabaseDir, dbMetaName))
 	if err != nil {
-		return err
+		return time.Time{}, false
 	}
-	defer func() { _ = os.RemoveAll(tmp) }()
-	if err := os.MkdirAll(filepath.Join(tmp, "db"), 0o700); err != nil {
-		return err
+	return fi.ModTime(), true
+}
+
+// Unpacked is a database UnpackDatabase wrote: the room its files hold, the function that gives the room back, and its metadata.
+type Unpacked struct {
+	Bytes    int64
+	Release  func()
+	Metadata DBMetadata
+}
+
+// UnpackDatabase reads a layer of the analyser's database from r and writes its two files below dir/db, hashing the stream while it
+// unpacks it (R-VULN-035, R-VULN-049): only the regular files trivy.db and metadata.json at the archive's root are taken, each within its
+// bound, and an entry with a directory in its name or of another type is ignored, so the archive decides no path. The room of a file is
+// taken with hold from its size in the archive's header before its first byte is written, and the copy is bounded by that size. The bytes
+// must be digest and metadata.json of the schema this release reads with a build time; otherwise nothing of the room stays held, and the
+// caller removes dir. dir is a directory of the caller's that it renames into place once this returns without an error.
+func UnpackDatabase(ctx context.Context, r io.Reader, digest, dir string, hold func(n int64) (func(), error)) (Unpacked, error) {
+	if !ValidDigest(digest) {
+		return Unpacked{}, fmt.Errorf("the database names %q, which is no sha256 digest", digest)
 	}
-	rc, err := d.Layers.Open(ctx, db.Digest)
-	if err != nil {
-		return fmt.Errorf("the database's layer from its repository: %w", err)
+	if err := os.MkdirAll(filepath.Join(dir, DatabaseDir), 0o700); err != nil {
+		return Unpacked{}, err
 	}
-	defer func() { _ = rc.Close() }()
-	// The stream is hashed while it is unpacked, and the directory is discarded when the hash is not the digest in use: the layer is
-	// an item of a repository that an administrator may fill, and the digest the task recorded is what was checked (R-VULN-044).
 	sum := sha256.New()
-	body := io.TeeReader(contextReader{ctx, rc}, sum)
+	body := io.TeeReader(contextReader{ctx, r}, sum)
 	seen := map[string]bool{}
-	var held dbHold
+	out := Unpacked{}
 	keep := false
 	defer func() {
-		if !keep && held.release != nil {
-			held.release()
+		if !keep && out.Release != nil {
+			out.Release()
 		}
 	}()
-	err = walkArchive(body, func(name string, size int64, r io.Reader) (bool, error) {
+	err := walkArchive(body, func(name string, size int64, r io.Reader) (bool, error) {
+		if seen[name] {
+			return false, fmt.Errorf("the database archive holds %s twice", name)
+		}
 		seen[name] = true
-		// The room for a file is taken from its size in the archive's header before the first byte is written, and the copy below is
-		// bounded by that size, so the unpacked database never holds more than it was admitted for.
-		if size > maxDBFileBytes {
-			return false, fmt.Errorf("a file of the database exceeds %d bytes", maxDBFileBytes)
+		if size > maxDBFileBytes || (name == dbMetaName && size > maxMetaBytes) {
+			return false, fmt.Errorf("the file %s of the database is %d bytes, more than its bound", name, size)
 		}
-		release, err := d.Space.Hold(size)
+		release, err := hold(size)
 		if err != nil {
-			return false, fmt.Errorf("room for %s (%d bytes) in the spool: %w", name, size, err)
+			return false, fmt.Errorf("room for %s (%d bytes): %w", name, size, err)
 		}
-		prev := held.release
-		held.bytes += size
-		held.release = func() {
+		prev := out.Release
+		out.Bytes += size
+		out.Release = func() {
 			release()
 			if prev != nil {
 				prev()
 			}
 		}
-		return false, writeDBFile(filepath.Join(tmp, "db", name), r)
+		return false, writeDBFile(filepath.Join(dir, DatabaseDir, name), r, size)
 	})
 	if err != nil {
-		return err
+		return Unpacked{}, err
 	}
 	if !seen[dbFileName] || !seen[dbMetaName] {
-		return errors.New("the database archive does not hold trivy.db and metadata.json")
+		return Unpacked{}, errors.New("the database archive does not hold trivy.db and metadata.json")
 	}
 	if _, err := io.Copy(io.Discard, body); err != nil { // the rest of the gzip stream, so that the hash covers every byte
-		return fmt.Errorf("the database's layer from its repository: %w", err)
+		return Unpacked{}, fmt.Errorf("the database's layer: %w", err)
 	}
-	if got := "sha256:" + hex.EncodeToString(sum.Sum(nil)); got != db.Digest {
-		return fmt.Errorf("%w: the bytes read are %s, the database in use is %s", errLayerDigest, got, db.Digest)
+	if got := "sha256:" + hex.EncodeToString(sum.Sum(nil)); got != digest {
+		return Unpacked{}, fmt.Errorf("%w: the bytes read are %s, the database is %s", errLayerDigest, got, digest)
 	}
-	_ = os.RemoveAll(dir)
-	if err := os.Rename(tmp, dir); err != nil {
-		return err
+	meta, ok := DatabaseIn(dir)
+	if !ok {
+		return Unpacked{}, fmt.Errorf("the database's metadata.json is not of schema version %d", dbSchemaVersion)
 	}
+	if meta.UpdatedAt.IsZero() {
+		return Unpacked{}, errors.New("the database's metadata.json names no build time")
+	}
+	out.Metadata = meta
 	keep = true
-	d.holds[db.Digest] = held
-	return nil
+	return out, nil
 }
 
-func writeDBFile(path string, r io.Reader) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // a path below the local cache directory, named by this package
+// ErrLayerDigest reports whether err is a layer whose bytes are not the digest it was read under.
+func ErrLayerDigest(err error) bool { return errors.Is(err, errLayerDigest) }
+
+// syncEvery is how many bytes of a database file are written before they are flushed to the disk. The kernel charges the dirty pages
+// of a write to the writer's memory cgroup and, on a node whose file system does not write them back per cgroup, starts the write-back
+// only at the machine's thresholds: the loader's container of 256 MiB was killed with 233 MB of dirty pages and none under write-back
+// while it unpacked a database of 1.8 GB (measured on the kind cluster on 2026-11-21, Q-VULN-212). A flush every 32 MiB bounds them.
+const syncEvery = 32 << 20
+
+func writeDBFile(path string, r io.Reader, size int64) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // a path below the caller's directory, named by this package
 	if err != nil {
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	n, err := io.Copy(f, io.LimitReader(r, maxDBFileBytes+1))
-	if err != nil {
-		return err
-	}
-	if n > maxDBFileBytes {
-		return fmt.Errorf("a file of the database exceeds %d bytes", maxDBFileBytes)
-	}
-	return nil
-}
-
-// dropOldLocked removes the directories of other databases that no detection uses, and what an interrupted unpack left.
-func (d *LocalDatabase) dropOldLocked(current string) {
-	entries, err := os.ReadDir(d.Dir)
-	if err != nil {
-		return
-	}
-	for _, e := range entries {
-		name := e.Name()
-		if name == hexOf(current) || !e.IsDir() {
-			continue
+	src := io.LimitReader(r, size+1)
+	var n int64
+	for {
+		c, err := io.CopyN(f, src, syncEvery)
+		n += c
+		if c > 0 {
+			if serr := f.Sync(); serr != nil {
+				return serr
+			}
 		}
-		if !strings.HasPrefix(name, "unpack-") && d.uses["sha256:"+name] > 0 {
-			continue
+		if errors.Is(err, io.EOF) {
+			break
 		}
-		if err := os.RemoveAll(filepath.Join(d.Dir, name)); err != nil {
-			continue // the files are still on the disk, so their room stays held
-		}
-		if h, ok := d.holds["sha256:"+name]; ok {
-			h.release()
-			delete(d.holds, "sha256:"+name)
+		if err != nil {
+			return err
 		}
 	}
+	if n != size {
+		return fmt.Errorf("a file of the database is not the size its header names (%d of %d bytes)", n, size)
+	}
+	return f.Close()
 }

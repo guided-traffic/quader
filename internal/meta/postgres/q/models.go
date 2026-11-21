@@ -1772,6 +1772,7 @@ type VulnImageSbom struct {
 	Analyser  string
 	Sbom      []byte
 	CreatedAt pgtype.Timestamptz
+	Packages  int32
 }
 
 type VulnImageScan struct {

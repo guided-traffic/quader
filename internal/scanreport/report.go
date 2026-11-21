@@ -1,8 +1,9 @@
 // Package scanreport is a scanner replica's report of itself (operations-and-observability.md R-OPS-048, Q-OPS-223, ADR-224). A scanner
 // holds no credential of PostgreSQL (ADR-212), so it cannot write the replica registry: every system.heartbeat_interval it sends its
-// state, the version of the tool it runs, its slots and, for ClamAV, the signature database it scans with to the scan listener of
-// packages, which it reaches already with the certificate of its kind (R-HA-066), and packages writes the row. At its clean shutdown it
-// signs off. The kind is the one the certificate names; the scan listener never reads it from the report.
+// state, the version of the tool it runs, its slots and the database it works with (for ClamAV the signature database clamd scans with,
+// for Trivy the newest database its pod holds, Q-OPS-225) to the scan listener of packages, which it reaches already with the
+// certificate of its kind (R-HA-066), and packages writes the row. At its clean shutdown it signs off. The kind is the one the
+// certificate names; the scan listener never reads it from the report.
 //
 //	PUT     /scan/v1/replicas/<instance uid>   the report, application/json, at most MaxBodyBytes
 //	DELETE  /scan/v1/replicas/<instance uid>   the sign-off
@@ -61,10 +62,12 @@ type Report struct {
 	Reason string `json:"reason,omitempty"`
 	// ToolVersion is the version of the tool the scanner runs (Trivy's, clamd's), empty while it does not know it.
 	ToolVersion string `json:"toolVersion,omitempty"`
-	// Database is the signature database clamd scans with (the kind clamav), or the set the updater's directory holds (the kind
-	// freshclam); empty before the first load and while the directory holds no complete set.
+	// Database is the signature database clamd scans with (the kind clamav), the set the updater's directory holds (the kind freshclam),
+	// or the 64 hexadecimal digits of the digest of the newest database the image scanner's pod holds (the kind trivy, Q-OPS-225); empty
+	// before the first load and while the directory holds no complete set.
 	Database string `json:"database,omitempty"`
-	// DatabaseBuiltAt is the build time of the daily of the updater's directory (the kind freshclam only, R-OPS-048, Q-OPS-224).
+	// DatabaseBuiltAt is the build time of the daily of the updater's directory (the kind freshclam, R-OPS-048, Q-OPS-224), or of the
+	// image scanner's database's metadata.json (the kind trivy, Q-OPS-225).
 	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt,omitempty"`
 	// Slots are a scanner's; the updater runs no calls and reports none (zero).
 	Slots Slots `json:"slots"`
@@ -84,6 +87,8 @@ var (
 	version = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.+_~-]*$`)
 	// reason is the code of a readiness check's reason, or the name of the check (vulnScannerTrivy) where it gave none.
 	reason = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]{0,31}$`)
+	// trivyDatabase is an image scanner's database: the 64 lower-case hexadecimal digits of its layer's digest.
+	trivyDatabase = regexp.MustCompile(`^[0-9a-f]{64}$`)
 )
 
 // ErrInvalid is the error of a report that is not of the shape Validate admits.
@@ -121,20 +126,21 @@ func Decode(body io.Reader) (Report, error) {
 }
 
 // Validate checks a report of a scanner of kind (config.ScannerKindTrivy, ScannerKindClamav or ScannerKindFreshclam) against the shape
-// the table holds (migrations 00090 and 00095): bounded strings of a fixed character set, a known state, slots within the configuration's
-// bounds and none from the updater, a signature database only from the kinds that have one, and its build time only from the updater.
+// the table holds (migrations 00090, 00095 and the detection's): bounded strings of a fixed character set, a known state, slots within the
+// configuration's bounds and none from the updater, an image scanner's database as the 64 hexadecimal digits of its digest, and a build
+// time only from the updater and the image scanner, with the database it belongs to.
 func (r Report) Validate(kind string) error {
 	if err := r.validateCommon(); err != nil {
 		return err
 	}
-	updater := kind == config.ScannerKindFreshclam
+	updater, trivy := kind == config.ScannerKindFreshclam, kind == config.ScannerKindTrivy
 	switch {
-	case r.Database != "" && kind != config.ScannerKindClamav && !updater:
-		return invalid("only a scanner of the kind clamav or freshclam names a signature database")
-	case r.Database != "" && (!bounded(r.Database, 128) || !version.MatchString(r.Database)):
+	case r.Database != "" && trivy && !trivyDatabase.MatchString(r.Database):
+		return invalid("an image scanner's database must be the 64 lower-case hexadecimal digits of its layer's digest")
+	case r.Database != "" && !trivy && (!bounded(r.Database, 128) || !version.MatchString(r.Database)):
 		return invalid("database must be at most 128 letters, digits or . + _ ~ -")
-	case r.DatabaseBuiltAt != nil && (!updater || r.Database == ""):
-		return invalid("only the updater names the build time of the set it holds")
+	case r.DatabaseBuiltAt != nil && ((!updater && !trivy) || r.Database == ""):
+		return invalid("only the updater and the image scanner name the build time of the database they hold, with that database")
 	case updater && (r.Slots.Total != 0 || r.Slots.InUse != 0):
 		return invalid("the updater runs no calls and reports no slots")
 	case !updater && (r.Slots.Total < 1 || r.Slots.Total > 64 || r.Slots.InUse < 0 || r.Slots.InUse > r.Slots.Total):

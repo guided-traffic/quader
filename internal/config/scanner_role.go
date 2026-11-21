@@ -1,15 +1,21 @@
 package config
 
-import "strings"
+import (
+	"path/filepath"
+	"strings"
+)
 
 // scannerSections are the parts of the tree the role scanner reads (R-ARCH-036, Q-ARCH-527): the process, its listeners and their
 // TLS, the probes, the log, the metrics, the runtime, its spool, and its kind's section: the image scanning for a scanner of the kind
 // trivy, the malware section for one of the kind clamav (Q-ARCH-560, Q-ARCH-561), the updater's link and the scan listener's for the
-// updater of the kind freshclam, which has no spool (R-MAL-032, Q-ARCH-562). Every other key keeps its value but is neither validated nor
+// updater of the kind freshclam, which has no spool (R-MAL-032, Q-ARCH-562), and the pull link and the database's section for the loader
+// of the kind trivy-db, which has no spool either (R-VULN-049, Q-ARCH-564). Every other key keeps its value but is neither validated nor
 // resolved in that role, so a file the chart does not mount into the scanner (the database's, Valkey's, the object store's, the key
 // ring's) is no error there; the role builds nothing that would read one (internal/app).
 func scannerSections(kind string) []string {
 	switch kind {
+	case ScannerKindTrivyDB:
+		return []string{"process", "server", "health", "log", "metrics", "runtime", "vulnerabilities.images.registry", "vulnerabilities.images.database"}
 	case ScannerKindClamav:
 		return []string{"process", "server", "health", "log", "metrics", "runtime", "storage.spool", "malware"}
 	case ScannerKindFreshclam:
@@ -50,4 +56,20 @@ func (c *Config) validateForScanner(r *Report) {
 	c.validateShutdownBudget(r)
 	c.validateLinkNames(r)
 	c.validateMalwareScanner(r)
+	c.validateTrivyLoader(r)
+}
+
+// validateTrivyLoader is the loader's part (R-VULN-049, Q-ARCH-564): the scan listener it reads the database from and the directory it
+// writes. The chart sets the first and mounts the second at its default.
+func (c *Config) validateTrivyLoader(r *Report) {
+	if r.Role() != RoleScanner || c.Process.ScannerKind != ScannerKindTrivyDB {
+		return
+	}
+	images := c.Vulnerabilities.Images
+	if images.Registry.URL == "" {
+		r.Add("vulnerabilities.images.registry.url", "is required in the loader of the image scanner's database: it names the scan listener of packages the loader reads the database from (R-VULN-049); the chart sets it")
+	}
+	if !filepath.IsAbs(images.Database.Dir) {
+		r.Add("vulnerabilities.images.database.dir", "%q must be an absolute path: the loader writes the database there and the scanner reads it (R-VULN-049)", images.Database.Dir)
+	}
 }

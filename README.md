@@ -200,9 +200,9 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 | Binary | `quader`, static (`CGO_ENABLED=0`); `make build` writes `bin/quader` | `Makefile`, `cmd/quader` |
 | Roles | `api`, `packages`, `worker`, `scanner`, `web`, `all` (`web` and `all` are for runs outside the chart) | `cmd/quader/serve.go`, `internal/config/process.go` |
 | Default client listener | `:8080` (`server.listen`) | `internal/config/server.go` |
-| Scanner's listener | `:8080` (`server.listen`) of the role `scanner`, route `POST /scan/v1/analyses`, mutual TLS; in `all` a loopback port | `internal/app/wire_scanner.go`, `internal/vuln/scanner` |
+| Scanner's listener | `:8080` (`server.listen`) of the role `scanner` of the kind `trivy`, routes `POST /scan/v1/analyses` and `POST /scan/v1/detections`, mutual TLS; none in `all`, which builds no scanner, and none in the loader of the kind `trivy-db` (its operations listener `:8083` only) | `internal/app/wire_scanner.go`, `internal/vuln/scanner` |
 | Names of a scanner unit | `vuln-scanner-trivy`, `malware-scanner-clamav`, the unit's name wherever an operator or an auditor reads it ([Q-HA-373](docs/spec/ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)): the log field `component` of its process, the label `listener` of its listener and of the worker's link to it, and the system subject of its reads (`system:<unit>`, the credential of its usage rows); its readiness check is the name in camel case, `vulnScannerTrivy`, `malwareScannerClamav`, in its own process and in the one that calls it | `internal/app/wire_scanner.go`, `internal/httpserver/link_tls.go` |
-| Scan listener | `server.scan_listen` (the chart: `:8082` on the main `packages` Deployment), the reserved endpoint `scan`, mutual TLS; scan tokens of images below `/v2/`, blob tokens on `/scan/v1/blobs/`, the malware scanner's and the updater's certificates on `/scan/v1/malware-database` | `internal/app/wire_scan_listener.go`, `internal/config/server_scanner.go` |
+| Scan listener | `server.scan_listen` (the chart: `:8082` on the main `packages` Deployment), the reserved endpoint `scan`, mutual TLS; scan tokens of images below `/v2/`, blob tokens on `/scan/v1/blobs/`, the malware scanner's and the updater's certificates on `/scan/v1/malware-database`, the image scanner's on `/scan/v1/trivy-database` (its loader's read of the database in use) | `internal/app/wire_scan_listener.go`, `internal/config/server_scanner.go` |
 | Ops listener | `:8081` (`server.ops_listen`) | `internal/config/server.go` |
 | Further endpoint listener | any free port, one per endpoint, name `^[a-z][a-z0-9-]{0,19}$` (`server.endpoints.<name>.listen`) | `internal/config/endpoints.go` |
 | Endpoint name in metrics, logs and spans | `default` for the default endpoint, the configured name otherwise; a name outside the configured set folds into `_other` | `internal/observability` |
@@ -424,7 +424,8 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Scratch of the backup, restore and post-restore pods | `TMPDIR=/tmp`, an `emptyDir` of `backup.tmpSizeLimit` (the commands use at most 64 MiB of it) | yes (`_backup.tpl`) |
 | Worker queues | `QUADER_JOBS_QUEUES='["vuln"]'` on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES='["index","vuln"]'` on the main worker beside pools (JSON lists) | yes (`_deployment.tpl`) |
 | Scan listener | `QUADER_SERVER_SCAN_LISTEN=:8082`, set by the chart on the main `packages` Deployment while the image scanning or the malware scanning is on | yes (`_vuln.tpl`) |
-| Kind of scanner | `QUADER_PROCESS_SCANNER_KIND=clamav`, set by the chart on `<fullname>-malware-scanner-clamav`, and `freshclam` on `<fullname>-malware-updater-freshclam`; `<fullname>-vuln-scanner-trivy` runs the default, `trivy` | yes (`malware-scanner-clamav.yaml`, `malware-updater-freshclam.yaml`) |
+| Kind of scanner | `QUADER_PROCESS_SCANNER_KIND=clamav`, set by the chart on `<fullname>-malware-scanner-clamav`, `freshclam` on `<fullname>-malware-updater-freshclam`, and `trivy-db` on the container `database` of `<fullname>-vuln-scanner-trivy`, whose container `quader` runs the default, `trivy` | yes (`malware-scanner-clamav.yaml`, `malware-updater-freshclam.yaml`, `vuln-scanner-trivy.yaml`) |
+| Loader of the image scanner's database | the container `database` of `<fullname>-vuln-scanner-trivy`: `QUADER_SERVER_OPS_LISTEN=:8083` (its operations listener, liveness only), `QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR_BUDGET` from `vulnScannerTrivy.database.sizeLimit`; the volume `trivy-db` at `/var/lib/quader/trivy-db`, each database below `<64 hex digits of its layer's digest>/db/` | yes (`vuln-scanner-trivy.yaml`, [R-HA-070](docs/spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)) |
 | Object-store settings from a Secret | `QUADER_STORAGE_S3_BUCKET`, `QUADER_STORAGE_S3_ENDPOINT`, `QUADER_STORAGE_S3_REGION`, each read from a key of `secrets.s3` when that key is set | yes (`deploy/helm/quader/templates/_endpoints.tpl`) |
 | Dev profile | `QUADER_DEV_HTTP_PORT` (edge port, default `8080`), `QUADER_PROFILE` (`default` or `scatter`) | yes (`deploy/dev/`) |
 | M1 settings | `QUADER_<SECTION>_<KEY>` for `auth`, `authz`, `api`, `repositories`, with nested keys joined by `_`: `QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE`, `QUADER_API_RATE_LIMITS_EXEMPT_ADMINS` (the rule of the configuration override above) | yes |
@@ -592,10 +593,11 @@ The families of the vulnerability scanning (M4b), defined once in [internal/vuln
 | `quader_vuln_downloads_blocked_total` | `format`, `reason` (`malicious`, `triage`, `missing_data`), `mode` (`enforce`, `report`: the would-be refusals of `vulnerabilities.enforcement: report`) |
 | `quader_vuln_audit_requests_total` | `format`, `mode` (`local`, `forward`, `disabled`), `outcome` (`ok`, `refused`, `unavailable`, `error`): the npm bulk audits of every mode ([handlers_audit.go](internal/formats/npm/handlers_audit.go)); the NuGet vulnerability documents are not counted |
 | `quader_vuln_claimed_name_matches` | `ecosystem`, `kind` (`vulnerability`, `malicious`); gauge: public advisories that name a claimed internal name |
-| `quader_vuln_image_scans_total`, `quader_vuln_image_scan_duration_seconds` | `result` (`scanned`, or the code that ended or put off the scan: `scanner_busy`, `scanner_unavailable`, `registry_unavailable`, `pull_refused`, `scanner_lost`, `layer_missing`, …) on the worker |
+| `quader_vuln_image_scans_total`, `quader_vuln_image_scan_duration_seconds` | `result` (`scanned`, or the code that ended or put off the scan: `scanner_busy`, `scanner_unavailable`, `registry_unavailable`, `pull_refused`, `scanner_lost`, `layer_missing`, `database_loading`, `scanner_versions_differ`, …) on the worker |
 | `quader_scanner_analyses_total` | `result` (`analysed`, `cancelled`, or the code the call answered); on the `vuln-scanner-trivy` pods ([internal/vuln/scanner/metrics.go](internal/vuln/scanner/metrics.go)) |
-| `quader_scanner_analysis_duration_seconds` | `step` (`pull`, `analyse`) |
-| `quader_scanner_slots_busy` | none; gauge: the slots that hold an analysis |
+| `quader_scanner_detections_total` | `result` (`detected`, or the code the detection answered, `analysis_outdated` and `database_loading` among them); on the `vuln-scanner-trivy` pods |
+| `quader_scanner_analysis_duration_seconds` | `step` (`pull`, `analyse`, `detect`) |
+| `quader_scanner_slots_busy` | none; gauge: the slots that hold an analysis or a detection |
 
 The families of the mirror mode (twelve, phase 6b, [R-REPO-057](docs/spec/repositories-and-proxy.md), defined in [internal/mirror/metrics.go](internal/mirror/metrics.go)); the label `repo` is the repository key, one value per mirrored repository, and no label carries a package name. The counters and `quader_mirror_concurrency` belong to the process that runs the pass and exist from the first pass attempt at 0; the gauges read from PostgreSQL and the interval gauge are exported by every process of every role (the area `mirror` is on all of them), through the database gauge source, once per `metrics.db_gauge_interval`, so that a mirror that nobody runs is still seen.
 
@@ -1990,15 +1992,15 @@ vulnerabilities:
     resolved_retention: 9600h           # default (400 days); 1h to 87600h: vuln-findings-retention deletes older resolved findings and their events
   export:
     max_rows: 100000                    # default; at least 1: a larger export answers 422 export_too_large before anything is streamed
-  images:                               # the scanning of container images (R-VULN-033 to R-VULN-043)
+  images:                               # the scanning of container images (R-VULN-033 to R-VULN-049); both steps run in vuln-scanner-trivy, the worker runs no tool
     enabled: true                       # default; false: no scanner, no scan listener, no image scans
-    binary: /usr/local/bin/trivy        # default: the pinned analyser of the image, in the scanner and the worker
-    scan_dir: ""                        # default: <storage.spool.dir>/imagescan; the analyses in the scanner, the detections in the worker
+    binary: /usr/local/bin/trivy        # default: the pinned analyser of the image; read by the scanner only, for the analysis and the detection
+    scan_dir: ""                        # default: <storage.spool.dir>/imagescan; the scanner's analyses and detections; the worker writes nothing of a scan
     concurrency: 2                      # default; 1 to 64: calls one job has in flight; should not exceed the scanners' capacity (replicas x scanner.slots)
     run_slice: 10m                      # default; 10s to 24h
     scan_delay: 30s                     # default; 0 to 1h
     max_attempts: 5                     # default; 1 to 100: attempts of an image before scan_failed; a put-off scan spends none
-    timeout: 15m                        # default; 10s to 24h: one step of the analyser
+    timeout: 15m                        # default; 10s to 24h: one step of the analyser in the scanner; the worker's call of a detection has timeout + 1m
     memory_limit: 512MiB                # default; at least 64MiB: the analyser's GOMEMLIMIT
     max_layers: 256                     # default
     max_image_size: 3GiB                # default: the compressed size; the scanner's spool holds slots x (this + 64 MiB)
@@ -2006,18 +2008,20 @@ vulnerabilities:
     max_entries: 5000000                # default
     pull_timeout: 10m                   # default; 1m to 1h: the scanner's pull, and the lifetime of a scan token
     scanner:
-      url: ""                           # default; example https://quader-vuln-scanner-trivy.quader.svc:8080; required in a worker; empty in all = its own scanner over loopback (the chart sets it)
+      url: ""                           # default; example https://quader-vuln-scanner-trivy.quader.svc:8080; required in a worker (the chart sets it); empty in all = no image scanner, the job ends at once and touches no row
       server_name: ""                   # default: the host of url; listed exactly in the scanner's certificate; the chart sets <fullname>-vuln-scanner-trivy.<namespace>.svc
       client_name: ""                   # default: empty = the CA alone admits (the role all); required in a scanner with TLS: the worker's name its listener admits; the chart sets <fullname>-worker.<namespace>.svc
-      slots: 1                          # default; 1 to 16: analyses one scanner runs at once (H-1037 above 1)
+      slots: 1                          # default; 1 to 16: calls one scanner runs at once, analyses and detections together (H-1037 above 1)
     registry:
-      url: ""                           # default; example https://quader-packages-scan.quader.svc:8082; required in the role scanner; empty in all = its own scan listener (the chart sets it)
+      url: ""                           # default; example https://quader-packages-scan.quader.svc:8082; required in the scanner and its loader (the chart sets it)
       server_name: ""                   # default: the host of url; listed exactly in the scan listener's certificate; the chart sets <fullname>-packages.<namespace>.svc
     database:                           # the analyser's database and the repository it lies in (R-VULN-044)
       repository: upstream/scanner-trivy   # default; <projectKey>/<repoKey> of a local or remote OCI repository; checked at every run of vuln-sync-trivy-db
       image: aquasec/trivy-db           # default; the image in that repository; only aquasec/trivy-db with upstream/scanner-trivy; the tag is the release's schema version, 2
       max_archive_size: 2GiB            # default; at least 1MiB: the layer's declared size, checked before it is fetched (archive_too_large)
-      timeout: 15m                      # default; 10s to 24h: one run's fetch and check of the layer
+      timeout: 15m                      # default; 10s to 24h: one run's fetch and check of the layer, and one load by a scanner pod's loader
+      dir: /var/lib/quader/trivy-db     # default: the scanner pod's copy, <dir>/<64 hex>, written by the loader (the kind trivy-db), read-only to the scanner (R-VULN-049)
+      dir_budget: 5GiB                  # default; at least 1MiB: the loader's room in dir; the chart sets vulnScannerTrivy.database.sizeLimit
 ```
 
 Security notes:
@@ -2040,6 +2044,9 @@ Security notes:
   account on **Upstream registries** decide it; with a local repository of your own, whoever may push to it does
   ([H-813](docs/security/image-scanning.md#h-813--the-integrity-of-the-database-is-that-of-its-repository)). Nothing falls back to the
   public registry.
+- `images.database.dir`: the loader writes there and the scanner mounts it read-only, so an analyser that an image took over cannot change
+  what judges the next image; the analyser's own detection of a taken-over scanner process is
+  [H-1181](docs/security/image-scanning.md#h-1181--a-scanner-pod-whose-own-process-is-taken-over-answers-every-detection-it-serves).
 
 </details>
 
@@ -2924,16 +2931,19 @@ worker:
     sizeLimit: 5Gi                      # default
   autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
   pools: []                             # default; example: [{name: vuln, queues: [vuln], replicaCount: 2}]; the main worker claims every queue no pool lists (queues: default, maintenance, index, delivery, mirror, vuln)
-vulnScannerTrivy:                       # <fullname>-vuln-scanner-trivy, the analysis of container images with Trivy, rendered while config.vulnerabilities.enabled and .images.enabled (both default true)
+vulnScannerTrivy:                       # <fullname>-vuln-scanner-trivy, the analysis and the detection of container images with Trivy and the loader of its database, rendered while config.vulnerabilities.enabled and .images.enabled (both default true)
   replicaCount: 2                       # default; at least 1, 2 with highAvailability.enforce; the capacity is replicas × config.vulnerabilities.images.scanner.slots
   terminationGracePeriodSeconds: 60     # default; an analysis still running at the shutdown timeout is ended and put off without an attempt
   spool:
     sizeLimit: 6Gi                      # default; its budget (minus spool.headroom) must hold slots × (max_image_size + 64 MiB), validated
   resources: {requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 1Gi}, limits: {memory: 2Gi}}   # default; no CPU limit
+  database:                             # the container database, the loader of Trivy's database (the kind trivy-db, R-HA-070)
+    sizeLimit: 5Gi                      # default; the volume trivy-db (follows spool.type) and the loader's budget: the newest database and the one before it; at least 4Gi, validated
+    resources: {requests: {cpu: 50m, memory: 64Mi, ephemeral-storage: 2Gi}, limits: {memory: 256Mi}}   # default; no CPU limit
   autoscaling: {enabled: false, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 80}   # default
   podDisruptionBudget: {enabled: true, maxUnavailable: 1}   # default
   topologySpread: {enabled: true, nodeTaintsPolicy: Honor}     # default; as api
-  extraEnv: []                          # default; the scanner's own: the shared extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts never reach it
+  extraEnv: []                          # default; the container quader's own: the shared extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts never reach the pod
 clamav:
   image: docker.io/clamav/clamav-debian:1.5.5_base@sha256:739c5ec70212e2d3e0c7719af2fba8776fb435f9932d7d3a3de2a95fcd6adde7   # default: CLAMAV_IMAGE of tools/versions.env; the clamd container of the malware scanner and the freshclam container of the updater
   pullPolicy: IfNotPresent              # default

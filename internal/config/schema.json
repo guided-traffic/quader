@@ -3196,9 +3196,10 @@
         },
         "scanner_kind": {
           "default": "trivy",
-          "description": "The tool a process of the role scanner wraps: trivy, the analysis of container images with Trivy (R-VULN-041); clamav, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007); or freshclam, the malware scanning's updater beside ClamAV's freshclam, which seeds, lists and serves freshclam's directory to the worker (R-MAL-032, Q-ARCH-562). The chart runs trivy on the Deployment \u003cfullname\u003e-vuln-scanner-trivy, sets clamav on \u003cfullname\u003e-malware-scanner-clamav and freshclam on \u003cfullname\u003e-malware-updater-freshclam. A scanner of the kind clamav reads the section malware instead of vulnerabilities.images, one of the kind freshclam malware.updater and malware.scan_listener. Read by the role scanner only.",
+          "description": "The tool a process of the role scanner wraps: trivy, the analysis of container images and the detection of their stored analyses with Trivy (R-VULN-041, R-VULN-048); trivy-db, the loader of Trivy's database, the second container of a pod of vuln-scanner-trivy, which reads the database in use through the scan listener into the directory the scanner mounts read-only (R-VULN-049, Q-ARCH-564); clamav, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007); or freshclam, the malware scanning's updater beside ClamAV's freshclam, which seeds, lists and serves freshclam's directory to the worker (R-MAL-032, Q-ARCH-562). The chart runs trivy and trivy-db in the Deployment \u003cfullname\u003e-vuln-scanner-trivy, sets clamav on \u003cfullname\u003e-malware-scanner-clamav and freshclam on \u003cfullname\u003e-malware-updater-freshclam. A scanner of the kind trivy-db reads vulnerabilities.images.registry and vulnerabilities.images.database, one of the kind clamav the section malware instead of vulnerabilities.images, one of the kind freshclam malware.updater and malware.scan_listener. Read by the role scanner only.",
           "enum": [
             "trivy",
+            "trivy-db",
             "clamav",
             "freshclam"
           ],
@@ -5093,7 +5094,7 @@
           "properties": {
             "binary": {
               "default": "/usr/local/bin/trivy",
-              "description": "The analyser, the one the release image carries at the version of tools/versions.env: the scanner runs the analysis with it, the worker the detection (Q-VULN-169).",
+              "description": "The analyser, the one the release image carries at the version of tools/versions.env: the scanner runs the analysis and the detection with it (R-VULN-048). Read by the scanner only; the worker runs no tool.",
               "type": "string",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_BINARY"
             },
@@ -5108,6 +5109,22 @@
             "database": {
               "additionalProperties": false,
               "properties": {
+                "dir": {
+                  "default": "/var/lib/quader/trivy-db",
+                  "description": "The directory of the scanner pod's copy of the database: the loader of the kind trivy-db writes each database into \u003cdir\u003e/\u003c64 hex digits of its layer's digest\u003e, renamed into place only when it is complete, and keeps the newest and the one before it; the scanner of the kind trivy mounts it read-only and detects with the database a call names (R-VULN-049). The chart mounts the volume trivy-db there. Read by the role scanner only; the worker reads none of it.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR"
+                },
+                "dir_budget": {
+                  "default": "5GiB",
+                  "description": "The room of the databases' files in dir: the loader holds the sizes of a database's two files from the archive's headers before it writes a byte, and a database that does not fit beside the newest replaces it (detections answer database_loading meanwhile). The chart sets it to the volume's size, vulnScannerTrivy.database.sizeLimit (Q-HA-380, Q-VULN-209). Read by the loader of the kind trivy-db only.",
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR_BUDGET",
+                  "x-quader-type": "bytes"
+                },
                 "image": {
                   "default": "aquasec/trivy-db",
                   "description": "The image of the database in that repository (R-OCI-002). Only aquasec/trivy-db is accepted while repository is upstream/scanner-trivy, whose include pattern admits that name only; another name is for a repository of an own project, for a registry that publishes the database under another name (ghcr.io: aquasecurity/trivy-db).",
@@ -5132,7 +5149,7 @@
                 },
                 "timeout": {
                   "default": "15m",
-                  "description": "Time limit of one run's fetch and check of the database's layer.",
+                  "description": "Time limit of one run's fetch and check of the database's layer, and of one load of it by the loader of a scanner pod (R-VULN-049).",
                   "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_DATABASE_TIMEOUT",
@@ -5164,7 +5181,7 @@
             },
             "max_image_size": {
               "default": "3GiB",
-              "description": "Largest image scanned, compressed, config and layers together. An analysis holds the image's size plus 64 MiB of the scanner's spool budget while it runs; the chart refuses a scanner spool budget (scanner.spool.sizeLimit minus spool.headroom) below scanner.slots times this limit plus 64 MiB. A larger image shows scan_failed.",
+              "description": "Largest image scanned, compressed, config and layers together. An analysis holds the image's size plus 64 MiB of the scanner's spool budget while it runs; the chart refuses a scanner spool budget (vulnScannerTrivy.spool.sizeLimit minus spool.headroom) below scanner.slots times this limit plus 64 MiB. A larger image shows scan_failed.",
               "type": [
                 "string",
                 "integer"
@@ -5224,7 +5241,7 @@
                 },
                 "url": {
                   "default": "",
-                  "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a scanner; empty in the role all, where it means the process's own scan listener. The scanner reads no other address: a call cannot point it elsewhere.",
+                  "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a scanner and in the loader of its database (the kind trivy-db, R-VULN-049); the role all builds neither (Q-ARCH-563). The scanner reads no other address: a call cannot point it elsewhere.",
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL"
                 }
@@ -5249,7 +5266,7 @@
             },
             "scan_dir": {
               "default": "",
-              "description": "Local directory of the working files below the spool of the process: the worker's unpacked database and detections, the scanner's analyses. Empty (the default) is \u003cstorage.spool.dir\u003e/imagescan, so the files lie on the volume whose budget counts them (Q-VULN-184). The spool's budget counts every file in it: in the worker the database once and 64 MiB per detection, in the scanner the compressed size of the image plus 64 MiB per analysis. Lost with the pod without harm.",
+              "description": "Local directory of the scanner's working files below its spool: the analyses and the detections. Empty (the default) is \u003cstorage.spool.dir\u003e/imagescan, so the files lie on the volume whose budget counts them (Q-VULN-184): the compressed size of the image plus 64 MiB per analysis, 64 MiB per detection. Lost with the pod without harm. Read by the scanner only; the worker writes nothing of a scan to its disk.",
               "type": "string",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCAN_DIR"
             },
@@ -5270,7 +5287,7 @@
                 },
                 "slots": {
                   "default": 1,
-                  "description": "Analyses one scanner process runs at a time; a call while every slot holds one is answered 503 scanner_busy. The chart checks the scanner's spool against it (Q-HA-318); more than one slot lets the analyses of one pod reach each other (H-1037), so scale by replicas.",
+                  "description": "Calls one scanner process runs at a time, analyses and detections together (Q-VULN-204); a call while every slot holds one is answered 503 scanner_busy. The chart checks the scanner's spool against it (Q-HA-318); more than one slot lets the calls of one pod reach each other (H-1037), so scale by replicas.",
                   "maximum": 16,
                   "minimum": 1,
                   "type": "integer",
@@ -5278,7 +5295,7 @@
                 },
                 "url": {
                   "default": "",
-                  "description": "The scanner's listener, an origin: https://\u003cfullname\u003e-vuln-scanner-trivy.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on; empty in the role all, where it means the process's own scanner listener over loopback (Q-ARCH-531).",
+                  "description": "The scanner's listener, an origin: https://\u003cfullname\u003e-vuln-scanner-trivy.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Required in a worker while the image scanning is on. The role all builds no image scanner (Q-ARCH-563): with it empty there, the image scanning's job ends at once with the result no image scanner is configured and touches no row; set, the role all calls the scanner at that address.",
                   "type": "string",
                   "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL"
                 }
@@ -5287,7 +5304,7 @@
             },
             "timeout": {
               "default": "15m",
-              "description": "Time limit of one step of the analyser: the scanner's analysis, the worker's detection.",
+              "description": "Time limit of one step of the analyser in the scanner: the analysis and the detection. The worker's call of a detection has the deadline timeout plus 1m (R-VULN-048).",
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
               "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_TIMEOUT",

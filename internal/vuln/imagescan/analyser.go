@@ -14,33 +14,7 @@ import (
 	"time"
 )
 
-// Database is the one seam between the analysis and the vulnerability database (Q-VULN-137). A scan has two steps: the analysis of the
-// layers, which needs no database and always runs in the worker job, and the detection, which compares what the analysis found against the
-// database. Everything that depends on where the database lives is behind this interface: the client mode of [LocalDatabase] keeps a copy
-// on the worker's disk, and a central server would be another implementation that answers with its flags. The analysis, the job, the
-// findings and the blocking do not change with it.
-type Database interface {
-	// Acquire makes the database ready for one detection and returns how the analyser reaches it. It returns [ErrNoDatabase] while none
-	// has been imported; the caller keeps the manifest pending and never records it as clean.
-	Acquire(ctx context.Context) (DatabaseAccess, error)
-}
-
-// DatabaseAccess is what one detection needs to know about the database.
-type DatabaseAccess struct {
-	// Args are the analyser's flags that say where the database is.
-	Args []string
-	// Digest identifies the database the detection ran against; a different one makes every manifest due again.
-	Digest string
-	// Held is how many bytes of the spool's budget the unpacked database holds; 0 for a database that is not on the worker's disk.
-	Held int64
-	// Release ends the use of the database; it is never nil.
-	Release func()
-}
-
-// ErrNoDatabase says that no vulnerability database has been imported yet.
-var ErrNoDatabase = errors.New("no vulnerability database has been imported")
-
-// Limits bound one run of the analyser. An image is untrusted input, so each of them is enforced by the worker and none is left to the
+// Limits bound one run of the analyser. An image is untrusted input, so each of them is enforced by the scanner and none is left to the
 // analyser's good behaviour (docs/security/image-scanning.md).
 type Limits struct {
 	// Timeout ends one step of the analyser.
@@ -53,14 +27,15 @@ type Limits struct {
 	StderrBytes int
 }
 
-// Analyser is the two steps of a scan.
+// Analyser is the two steps of a scan, both run by the scanner (R-VULN-041, R-VULN-048, ADR-229).
 type Analyser interface {
-	// Version names the analyser; an analysis of another version is done again.
+	// Version names the analyser; an analysis of another version is done again (Q-VULN-199).
 	Version() string
 	// Analyse reads the OCI layout at layout and writes the list of what the image contains to sbom. It needs no database.
 	Analyse(ctx context.Context, layout, sbom, scratch string, lim Limits) error
-	// Detect compares the list at sbom with the database and writes the report to out.
-	Detect(ctx context.Context, sbom, out, scratch string, db DatabaseAccess, lim Limits) error
+	// Detect compares the list at sbom with the database whose directory is database (the analyser's --cache-dir, read-only to it) and
+	// writes the report to out.
+	Detect(ctx context.Context, sbom, out, scratch, database string, lim Limits) error
 }
 
 // javaArchives are left out of the analysis: reading them needs a second database, of Java artifacts, which quader does not mirror (H-810).
@@ -130,10 +105,9 @@ func (t *Trivy) Analyse(ctx context.Context, layout, sbom, scratch string, lim L
 	return checkOutput(sbom, lim.OutputBytes)
 }
 
-// Detect implements [Analyser]. The list goes in, the database comes from the seam, and the layers are not touched.
-func (t *Trivy) Detect(ctx context.Context, sbom, out, scratch string, db DatabaseAccess, lim Limits) error {
-	args := []string{"sbom", sbom, "--format", "json", "--output", out, "--scanners", "vuln", "--timeout", timeoutArg(lim.Timeout)}
-	args = append(args, db.Args...)
+// Detect implements [Analyser]. The list goes in, the database is the directory its loader wrote, and no layer is touched.
+func (t *Trivy) Detect(ctx context.Context, sbom, out, scratch, database string, lim Limits) error {
+	args := []string{"sbom", sbom, "--format", "json", "--output", out, "--scanners", "vuln", "--cache-dir", database, "--timeout", timeoutArg(lim.Timeout)}
 	args = append(args, quietFlags()...)
 	if _, err := t.run(ctx, scratch, lim, args); err != nil {
 		return err
@@ -154,8 +128,8 @@ func checkOutput(path string, limit int64) error {
 	return nil
 }
 
-// run starts one process of the analyser. The environment is empty but for what it needs, so no credential of the worker reaches it; the
-// process group is killed with the context, and the memory limit and working directory are its own.
+// run starts one process of the analyser. The environment is empty but for what it needs, so nothing of the scanner reaches it; the
+// process group is killed with the context, and the memory limit, the working directory, HOME and TMPDIR are its own.
 func (t *Trivy) run(ctx context.Context, scratch string, lim Limits, args []string) ([]byte, error) {
 	if lim.Timeout > 0 {
 		var cancel context.CancelFunc

@@ -116,12 +116,13 @@ A `worker` claims the queues of `jobs.queues`, or all but `jobs.exclude_queues` 
 [coordination.md](coordination.md#queues-and-the-queues-a-process-claims)); the advisory sync runs on the queue `vuln`.
 
 **The role `scanner`** (R-ARCH-036, ADR-212) is the one role without data credentials: `SubsystemsFor("scanner")` has the area `scanner`
-(the step `wireScanner`, `onScanner|onAll`, with the blob area optional so that `all` hands its spool over), the ops listener and the
+(the step `wireScanner`, `onScanner|onAll`, which builds nothing in `all`), the ops listener and the
 scanner's listener on `server.listen`, and no main pool, Valkey, registry row or client listener. Its configuration load resolves no secret
 file and validates only the keys it reads (`config.ScannerReads`, Q-ARCH-527). It is the first seam between roles: the worker calls it
 over mutual TLS, and it pulls from the scan listener that `packages`, `web` and `all` open on `server.scan_listen` (the reserved endpoint
-`scan`, R-ARCH-037). In `all` both listeners are on loopback and `linkLoopback` points the process's own links at them after step 9
-(Q-ARCH-531). The request path and the files are in [vulnerabilities.md](vulnerabilities.md#the-role-scanner); the TLS of the links is
+`scan`, R-ARCH-037). The role `all` builds no scanner of any kind and opens the scan listener only when `server.scan_listen` names it
+(Q-ARCH-563). A pod of `vuln-scanner-trivy` runs a second process of the role, the loader of the kind `trivy-db`, which opens no listener
+but its operations listener (Q-ARCH-564). The request path and the files are in [vulnerabilities.md](vulnerabilities.md#the-role-scanner); the TLS of the links is
 [TLS between Quader's pods](#tls-between-quaders-pods) below.
 
 ## Request path (client listener)

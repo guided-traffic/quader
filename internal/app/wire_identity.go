@@ -267,6 +267,7 @@ func (a *App) credentialRules(rt *endpointRuntime) auth.EndpointRules {
 	if isScanListener(rt) {
 		rules.MalwareScanner = a.malwareScannerPeer()   // the blob route admits the malware scanner's name (Q-MAL-61)
 		rules.MalwareDatabase = a.malwareDatabasePeer() // the database routes the malware scanner's and the updater's (R-MAL-032)
+		rules.TrivyDatabase = a.trivyDatabasePeer()     // the image scanning's database routes the image scanner's (R-VULN-049)
 		rules.ScannerKind = a.scannerKindOf()           // the route of the scanner replicas admits a kind of scanner (R-OPS-048)
 	}
 	return rules

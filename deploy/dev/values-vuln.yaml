@@ -17,8 +17,12 @@ config:
         url: https://osvstub.quader.svc/sites/default/files/feeds/known_exploited_vulnerabilities.json
     # An image pushed by a test is scanned at the next job, not 30 s later: the delay waits for the layers of a remote image's pull,
     # and the case of the scanner (vuln_scanner_test.go) pushes to a local repository and asks within a minute (R-HA-066).
+    # The image scanning's database is the fixture database of 128 KiB that the case pushes to e2e/scanner-db as aquasec/trivy-db:2, an
+    # installation without the internet as R-VULN-044 describes it: no leg fetches the real database of 142.6 MB (Q-VULN-195, Q-VULN-205).
     images:
       scan_delay: 0s
+      database:
+        repository: e2e/scanner-db
     matching:
       public_upstreams:
         npm: [registry.npmjs.org, npmstub.quader.svc]

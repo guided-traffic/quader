@@ -49,13 +49,14 @@ func (c *scannerReporter) Stop(ctx context.Context) error {
 	return nil
 }
 
-// startScannerReport starts the reports of a replica of the role scanner. The role all runs no scanner pod and reports nothing.
+// startScannerReport starts the reports of a replica of the role scanner. The role all runs no scanner pod and reports nothing, and
+// neither does the loader of the image scanner's database: the scanner of its pod reports the database (Q-ARCH-564, Q-OPS-225).
 func (a *App) startScannerReport(ctx context.Context) error {
 	if a.id.Role != config.RoleScanner {
 		return nil
 	}
 	s, ok := lookup[scannerArea](a.parts)
-	if !ok || !s.built() {
+	if !ok || !s.built() || s.loader != nil {
 		return nil
 	}
 	url, unit := a.cfg.Vulnerabilities.Images.Registry.URL, s.unit()
@@ -87,8 +88,9 @@ func (a *App) startScannerReport(ctx context.Context) error {
 const clamdVersionTimeout = time.Second
 
 // scannerStatus is what a scanner reports of itself: the state of its readiness and the reason of the check that fails, the version of
-// its tool, the signature database clamd scans with, and its slots; the updater the set its directory holds with the daily's build time
-// and no slots (Q-OPS-224). clamd's version is asked until it answers once and kept: a pod's clamd does not change its version.
+// its tool, the signature database clamd scans with or the newest database the image scanner's pod holds with its build time
+// (Q-OPS-225), and its slots; the updater the set its directory holds with the daily's build time and no slots (Q-OPS-224). clamd's
+// version is asked until it answers once and kept: a pod's clamd does not change its version.
 func (a *App) scannerStatus(s scannerArea) func(context.Context) scanreport.Status {
 	var clamd atomic.Pointer[string]
 	return func(ctx context.Context) scanreport.Status {
@@ -116,6 +118,10 @@ func (a *App) scannerStatus(s scannerArea) func(context.Context) scanreport.Stat
 		st.InUse, st.Total = s.svc.Busy(), s.svc.Slots()
 		if s.analyser == nil {
 			st.ToolVersion = s.svc.AnalyserVersion()
+		}
+		if hex, built := s.svc.Database(); hex != "" {
+			st.Database = hex
+			st.DatabaseBuiltAt = built
 		}
 		return st
 	}
@@ -206,7 +212,7 @@ func (s scannerStore) Remove(ctx context.Context, kind, uid string) (bool, error
 type scannerSource struct{ a *App }
 
 func (s scannerSource) Scanners(ctx context.Context) (gen.ScannerList, error) {
-	out := gen.ScannerList{Kinds: scannerKinds(s.a.cfg, s.a.id.Role), Items: []gen.ScannerReplica{}}
+	out := gen.ScannerList{Kinds: scannerKinds(s.a.cfg), Items: []gen.ScannerReplica{}}
 	db := s.a.database()
 	if db == nil {
 		return out, nil
@@ -226,13 +232,12 @@ func (s scannerSource) Scanners(ctx context.Context) (gen.ScannerList, error) {
 
 // scannerKinds are the kinds of scanner whose scanning is on, the image scanning's first, each with whether its replicas report
 // themselves (Q-OPS-223): a kind is called at an address (the chart sets both), whose replicas the scan listener can tell only by a
-// certificate, which needs TLS and the kind's name. Without an address the image scanning of the role all runs in the process itself.
-func scannerKinds(cfg *config.Config, role string) []gen.ScannerKind {
+// certificate, which needs TLS and the kind's name. Without an address no scanner of the kind is configured: the role all builds none
+// (Q-ARCH-563).
+func scannerKinds(cfg *config.Config) []gen.ScannerKind {
 	tlsOn := cfg.Server.TLS.Enabled()
-	mode := func(url, name string, inProcess bool) gen.ScannerKindReplicas {
+	mode := func(url, name string) gen.ScannerKindReplicas {
 		switch {
-		case url == "" && inProcess:
-			return gen.ScannerKindReplicasInProcess
 		case url == "":
 			return gen.ScannerKindReplicasNone
 		case !tlsOn || name == "":
@@ -244,18 +249,18 @@ func scannerKinds(cfg *config.Config, role string) []gen.ScannerKind {
 	if v := cfg.Vulnerabilities; v.Enabled && v.Images.Enabled {
 		out = append(out, gen.ScannerKind{
 			Kind: gen.ScannerKindKindTrivy, Deployment: "vuln-scanner-trivy", Purpose: gen.Vuln, Tool: "Trivy",
-			Replicas: mode(v.Images.Scanner.URL, v.Images.Registry.ClientName, role == config.RoleAll),
+			Replicas: mode(v.Images.Scanner.URL, v.Images.Registry.ClientName),
 		})
 	}
 	if m := cfg.Malware; m.Enabled {
 		out = append(out, gen.ScannerKind{
 			Kind: gen.ScannerKindKindClamav, Deployment: "malware-scanner-clamav", Purpose: gen.Malware, Tool: "ClamAV",
-			Replicas: mode(m.Scanner.URL, m.ScanListener.ClientName, false),
+			Replicas: mode(m.Scanner.URL, m.ScanListener.ClientName),
 		})
 		if m.Database.Source == config.MalwareSourceUpdater {
 			out = append(out, gen.ScannerKind{
 				Kind: gen.ScannerKindKindFreshclam, Deployment: unitMalwareUpdaterFreshclam, Purpose: gen.Malware, Tool: "freshclam",
-				Replicas: mode(m.Updater.URL, m.ScanListener.UpdaterClientName, false),
+				Replicas: mode(m.Updater.URL, m.ScanListener.UpdaterClientName),
 			})
 		}
 	}

@@ -17,7 +17,8 @@ import (
 // signature database it scans with, and its slots.
 type Status struct {
 	State, Reason, ToolVersion, Database string
-	// DatabaseBuiltAt is the build time of the daily the updater's directory holds (the kind freshclam); zero for every other kind.
+	// DatabaseBuiltAt is the build time of the daily the updater's directory holds (the kind freshclam), or of the image scanner's
+	// database (the kind trivy, Q-OPS-225); zero for the kind clamav and before a database.
 	DatabaseBuiltAt time.Time
 	InUse, Total    int
 }

@@ -1,8 +1,10 @@
-// Package scanner is the role scanner (docs/spec/architecture.md R-ARCH-036, docs/spec/vulnerability-scanning.md R-VULN-041 and
-// R-VULN-042, ADR-212): it answers the worker's call for one manifest with the analysis of the image. It pulls the image through the
-// scan listener of packages with the call's scan token, checks and bounds every byte (imagescan.BuildLayout, R-VULN-036), runs the
-// pinned analyser in a process group of its own, and answers the CycloneDX document. It holds no secret of the database, the object
-// store or Valkey and no key of the key ring, and keeps nothing between two calls.
+// Package scanner is the role scanner of the kind trivy, the unit vuln-scanner-trivy (docs/spec/architecture.md R-ARCH-036,
+// docs/spec/vulnerability-scanning.md R-VULN-041, R-VULN-042 and R-VULN-048, ADR-212, ADR-229). It answers the worker's two calls: the
+// analysis of one manifest, for which it pulls the image through the scan listener of packages with the call's scan token, checks and
+// bounds every byte (imagescan.BuildLayout, R-VULN-036), runs the pinned analyser in a process group of its own and answers the
+// CycloneDX document; and the detection of a stored analysis (detect.go), for which it runs the analyser against the copy of the
+// database its pod holds read-only and answers the report. It holds no secret of the database, the object store or Valkey and no key of
+// the key ring, and keeps nothing of a call between two calls beside the database it detects with (R-VULN-049).
 package scanner
 
 import (
@@ -52,9 +54,12 @@ type Options struct {
 	Registry Registry
 	// Space is the scanner's spool: an analysis holds the compressed size of its image plus 64 MiB before it writes a file.
 	Space imagescan.Space
-	// ScanDir is the root of the analyses' working directories (vulnerabilities.images.scan_dir).
+	// ScanDir is the root of the working directories of the analyses and the detections (vulnerabilities.images.scan_dir).
 	ScanDir string
-	// Slots is the number of analyses at a time (vulnerabilities.images.scanner.slots).
+	// DatabaseDir is the directory the loader of the pod writes the database into, read-only to the scanner
+	// (vulnerabilities.images.database.dir, R-VULN-049); empty answers every detection database_loading.
+	DatabaseDir string
+	// Slots is the number of calls at a time, analyses and detections together (vulnerabilities.images.scanner.slots, Q-VULN-204).
 	Slots int
 	// PullTimeout bounds the pull of one image (vulnerabilities.images.pull_timeout), the lifetime of its scan token.
 	PullTimeout time.Duration
@@ -76,15 +81,10 @@ type Service struct {
 	mu       sync.Mutex
 	busy     atomic.Int64
 	draining atomic.Bool
-	// stop ends the analyses still running when the shutdown timeout comes (Stop).
+	// stop ends the calls still running when the shutdown timeout comes (Stop).
 	stop       context.Context
 	stopCancel context.CancelFunc
-	// registryURL replaces Registry.URL once set (SetRegistryURL).
-	registryURL atomic.Pointer[string]
 }
-
-// SetRegistryURL points the pull at a scan listener whose address is known only once it is bound: the role all's own (Q-ARCH-531).
-func (s *Service) SetRegistryURL(u string) { s.registryURL.Store(&u) }
 
 // New returns the scanner.
 func New(o Options) (*Service, error) {
@@ -126,7 +126,7 @@ func (s *Service) Clean() error {
 		return err
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.HasPrefix(e.Name(), AnalysisDirPrefix) {
+		if e.IsDir() && (strings.HasPrefix(e.Name(), AnalysisDirPrefix) || strings.HasPrefix(e.Name(), DetectionDirPrefix)) {
 			if err := os.RemoveAll(filepath.Join(s.o.ScanDir, e.Name())); err != nil {
 				return err
 			}
@@ -149,16 +149,17 @@ func (s *Service) Stop() {
 	s.stopCancel()
 }
 
-// Busy is the number of slots that hold an analysis.
+// Busy is the number of slots that hold an analysis or a detection.
 func (s *Service) Busy() int { return int(s.busy.Load()) }
 
-// Slots is the number of analyses the scanner runs at a time (vulnerabilities.images.scanner.slots).
+// Slots is the number of calls the scanner runs at a time (vulnerabilities.images.scanner.slots).
 func (s *Service) Slots() int { return cap(s.slots) }
 
 // AnalyserVersion is the version the analyser answered at the start: the version the scanner reports of itself (R-OPS-048).
 func (s *Service) AnalyserVersion() string { return s.o.Analyser.Version() }
 
-// Handler serves POST /scan/v1/analyses (R-VULN-041). The router of the scanner's listener mounts it and nothing else.
+// Handler serves POST /scan/v1/analyses (R-VULN-041). The router of the scanner's listener mounts it and the detection's
+// (DetectHandler) and nothing else.
 func (s *Service) Handler() http.Handler { return http.HandlerFunc(s.serve) }
 
 // callError is a call that did not end in an analysis, with its answer.
@@ -306,7 +307,7 @@ func (s *Service) analyse(rctx context.Context, c call) (string, func(), error) 
 		if budget := s.o.Space.Budget(); n > budget {
 			return &callError{
 				status: http.StatusUnprocessableEntity, code: imagescan.CodeSpoolTooSmall,
-				detail: fmt.Sprintf("the analysis needs %d bytes of the scanner's spool and its budget is %d; raise scanner.spool.sizeLimit or lower vulnerabilities.images.max_image_size", n, budget),
+				detail: fmt.Sprintf("the analysis needs %d bytes of the scanner's spool and its budget is %d; raise vulnScannerTrivy.spool.sizeLimit or lower vulnerabilities.images.max_image_size", n, budget),
 			}
 		}
 		release, err := s.o.Space.Hold(n)
@@ -319,11 +320,7 @@ func (s *Service) analyse(rctx context.Context, c call) (string, func(), error) 
 		held = release
 		return nil
 	}
-	reg := s.o.Registry
-	if u := s.registryURL.Load(); u != nil {
-		reg.URL = *u
-	}
-	pull := reg.puller(c.repo, c.name, c.token)
+	pull := s.o.Registry.puller(c.repo, c.name, c.token)
 	defer pull.close()
 	layout := filepath.Join(dir, "layout")
 	pctx, pcancel := context.WithTimeoutCause(ctx, s.o.PullTimeout, errPullTimeout)
@@ -391,6 +388,12 @@ func (s *Service) answer(w http.ResponseWriter, r *http.Request, ce *callError, 
 		return
 	}
 	s.o.Log.Info("a call ended without an analysis", attrs...)
+	s.writeProblem(w, ce)
+}
+
+// writeProblem writes the problem (R-ARCH-023) of a call that did not end in its answer, with its code and whether the same bytes can
+// never pass.
+func (s *Service) writeProblem(w http.ResponseWriter, ce *callError) {
 	if ce.status == http.StatusServiceUnavailable {
 		w.Header().Set("Retry-After", "1")
 	}

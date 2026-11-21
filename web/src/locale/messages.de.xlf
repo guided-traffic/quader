@@ -42492,15 +42492,6 @@
         <target>Replikate von <ph id="0" equiv="deployment" disp="d"/> (<ph id="1" equiv="count" disp="n"/>)</target>
       </segment>
     </unit>
-    <unit id="scanners.none.in-process">
-      <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:124,125</note>
-      </notes>
-      <segment>
-        <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: the development role <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">all</pc> analyses images in its own process.</source>
-        <target>Diese Installation betreibt keinen Pod <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc>: Die Entwicklungsrolle <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">all</pc> analysiert Images in ihrem eigenen Prozess.</target>
-      </segment>
-    </unit>
     <unit id="scanners.none.none">
       <notes>
         <note category="location">src/app/shared/scanner/scanner-replicas.ts:128,129</note>

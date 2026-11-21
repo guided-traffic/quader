@@ -93,10 +93,6 @@ export function scannerReasonText(reason: string): string | null {
               <span class="material-icons inline" aria-hidden="true">info</span>
               <span i18n="@@scanners.none.unverified">The replicas of <code translate="no">{{ g.deployment }}</code> are not listed: without TLS, or without the name of their certificate, the scan listener cannot tell their kind.</span>
             }
-            @case ('inProcess') {
-              <span class="material-icons inline" aria-hidden="true">info</span>
-              <span i18n="@@scanners.none.in-process">This installation runs no <code translate="no">{{ g.deployment }}</code> pod: the development role <code translate="no">all</code> analyses images in its own process.</span>
-            }
             @case ('none') {
               <span class="material-icons inline" aria-hidden="true">info</span>
               <span i18n="@@scanners.none.none">This installation runs no <code translate="no">{{ g.deployment }}</code> pod: no {{ g.tool }} scanner is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>

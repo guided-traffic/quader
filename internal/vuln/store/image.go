@@ -129,40 +129,56 @@ func (s *Images) Orphans(ctx context.Context, limit int) ([]string, error) {
 	return out, err
 }
 
-// SBOM returns the gzip of the analysis of a manifest by an analyser version; found is false when there is none.
-func (s *Images) SBOM(ctx context.Context, digest [32]byte, analyser string) (sbom []byte, found bool, err error) {
+// StoredAnalysis is the one analysis of a manifest digest (R-VULN-043, Q-VULN-199): the gzip of the document as the scanner answered it,
+// the analyser version that made it, and the image's packages its check counted.
+type StoredAnalysis struct {
+	SBOM     []byte
+	Analyser string
+	Packages int
+}
+
+// SBOM returns the analysis of a manifest digest; found is false when there is none.
+func (s *Images) SBOM(ctx context.Context, digest [32]byte) (a StoredAnalysis, found bool, err error) {
 	err = s.tx(ctx, func(qs *q.Queries) error {
-		rows, err := qs.VulnImageSBOMGet(ctx, q.VulnImageSBOMGetParams{Digest: digest[:], Analyser: analyser})
+		rows, err := qs.VulnImageSBOMGet(ctx, digest[:])
 		if err != nil || len(rows) == 0 {
 			return err
 		}
-		sbom, found = rows[0], true
+		a, found = StoredAnalysis{SBOM: rows[0].Sbom, Analyser: rows[0].Analyser, Packages: int(rows[0].Packages)}, true
 		return nil
 	})
-	return sbom, found, err
+	return a, found, err
 }
 
-// PutSBOM stores the gzip of an analysis.
-func (s *Images) PutSBOM(ctx context.Context, digest [32]byte, analyser string, sbom []byte) error {
+// PutSBOM stores the analysis of a digest, in place of the one before it.
+func (s *Images) PutSBOM(ctx context.Context, digest [32]byte, a StoredAnalysis) error {
 	return s.tx(ctx, func(qs *q.Queries) error {
-		return qs.VulnImageSBOMPut(ctx, q.VulnImageSBOMPutParams{Digest: digest[:], Analyser: analyser, Sbom: sbom})
+		return qs.VulnImageSBOMPut(ctx, q.VulnImageSBOMPutParams{Digest: digest[:], Analyser: a.Analyser, Sbom: a.SBOM, Packages: rows32(a.Packages)})
 	})
+}
+
+// DeleteSBOM removes the analysis of a digest: a detection the analyser refused (Q-VULN-202).
+func (s *Images) DeleteSBOM(ctx context.Context, digest [32]byte) error {
+	return s.tx(ctx, func(qs *q.Queries) error { return qs.VulnImageSBOMDelete(ctx, digest[:]) })
 }
 
 // PruneSBOMs removes the analyses nothing refers to any more.
-func (s *Images) PruneSBOMs(ctx context.Context, analyser string) (n int64, err error) {
+func (s *Images) PruneSBOMs(ctx context.Context) (n int64, err error) {
 	err = s.tx(ctx, func(qs *q.Queries) (err error) {
-		n, err = qs.VulnImageSBOMPrune(ctx, analyser)
+		n, err = qs.VulnImageSBOMPrune(ctx)
 		return err
 	})
 	return n, err
 }
 
 // ImageDB is the vulnerability database in use (R-VULN-044, Q-VULN-173): the digest of the layer the task recorded on the row of the
-// source trivy. The layer is an item of the database's repository, `<image>/_blobs/<digest>`; nothing else of it is kept here.
+// source trivy, and the build time of its metadata.json that the run recorded with it (Q-VULN-208). The layer is an item of the
+// database's repository, `<image>/_blobs/<digest>`; nothing else of it is kept here.
 type ImageDB struct {
 	// Digest is the layer's digest, "sha256:<hex>".
 	Digest string
+	// BuiltAt is the build time; zero for a row recorded before the run recorded it.
+	BuiltAt time.Time
 }
 
 // DB reads the database in use; found is false before a run recorded one.
@@ -172,7 +188,10 @@ func (s *Images) DB(ctx context.Context) (db ImageDB, found bool, err error) {
 		if err != nil || len(rows) == 0 {
 			return err
 		}
-		db, found = ImageDB{Digest: rows[0]}, true
+		db, found = ImageDB{Digest: rows[0].Digest}, true
+		if rows[0].BuiltUs > 0 {
+			db.BuiltAt = time.UnixMicro(rows[0].BuiltUs).UTC()
+		}
 		return nil
 	})
 	return db, found, err

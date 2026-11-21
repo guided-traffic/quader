@@ -127,12 +127,17 @@ func (g *registry) add(img image) string {
 	return d
 }
 
-// fakeAnalyser writes a CycloneDX document for the layout it is given, or waits until its call ends.
+// fakeAnalyser writes a CycloneDX document for the layout it is given, or a report for the analysis it is given, or waits until its
+// call ends.
 type fakeAnalyser struct {
 	block   chan struct{}
 	started chan struct{}
 	runs    atomic.Int64
 	fail    error
+	// detected records the arguments of the last detection: the analysis it read, its working directory, the database's directory and
+	// the environment the scanner would give the process (the working directory's HOME and TMPDIR).
+	mu       sync.Mutex
+	detected struct{ analysis, scratch, database string }
 }
 
 func (a *fakeAnalyser) Version() string { return "0.76.2" }
@@ -158,8 +163,29 @@ func (a *fakeAnalyser) Analyse(ctx context.Context, layout, sbom, _ string, _ im
 	return os.WriteFile(sbom, []byte(`{"bomFormat":"CycloneDX","specVersion":"1.6","components":[{"type":"library","name":"xz"}]}`), 0o600)
 }
 
-func (a *fakeAnalyser) Detect(context.Context, string, string, string, imagescan.DatabaseAccess, imagescan.Limits) error {
-	return errors.New("the scanner runs no detection")
+func (a *fakeAnalyser) Detect(ctx context.Context, sbom, out, scratch, database string, _ imagescan.Limits) error {
+	a.runs.Add(1)
+	doc, err := os.ReadFile(sbom) //nolint:gosec // the test's own directory
+	if err != nil {
+		return err
+	}
+	a.mu.Lock()
+	a.detected.analysis, a.detected.scratch, a.detected.database = string(doc), scratch, database
+	a.mu.Unlock()
+	if a.started != nil {
+		a.started <- struct{}{}
+	}
+	if a.block != nil {
+		select {
+		case <-a.block:
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		}
+	}
+	if a.fail != nil {
+		return a.fail
+	}
+	return os.WriteFile(out, []byte(`{"SchemaVersion":2,"Results":[]}`), 0o600)
 }
 
 type space struct {
@@ -190,15 +216,17 @@ type rig struct {
 	svc *Service
 	srv *httptest.Server
 	dir string
+	// db is the pod's database directory, which the loader writes and the scanner reads.
+	db string
 }
 
 func newRig(t *testing.T, slots int) *rig {
 	t.Helper()
-	r := &rig{t: t, reg: &registry{}, an: &fakeAnalyser{}, sp: &space{budget: 1 << 30}, dir: t.TempDir()}
+	r := &rig{t: t, reg: &registry{}, an: &fakeAnalyser{}, sp: &space{budget: 1 << 30}, dir: t.TempDir(), db: t.TempDir()}
 	listener := httptest.NewServer(r.reg)
 	t.Cleanup(listener.Close)
 	svc, err := New(Options{
-		Analyser: r.an, Registry: Registry{URL: listener.URL}, Space: r.sp, ScanDir: r.dir, Slots: slots, PullTimeout: 5 * time.Second,
+		Analyser: r.an, Registry: Registry{URL: listener.URL}, Space: r.sp, ScanDir: r.dir, DatabaseDir: r.db, Slots: slots, PullTimeout: 5 * time.Second,
 		Content: imagescan.ContentLimits{MaxLayers: 8, MaxImageBytes: 1 << 20, MaxUncompressedBytes: 1 << 20, MaxEntries: 100},
 		Run:     imagescan.Limits{Timeout: 10 * time.Second, OutputBytes: 1 << 20},
 	})
@@ -206,7 +234,10 @@ func newRig(t *testing.T, slots int) *rig {
 		t.Fatal(err)
 	}
 	r.svc = svc
-	r.srv = httptest.NewServer(svc.Handler())
+	mux := http.NewServeMux()
+	mux.Handle(imagescan.AnalysesPath, svc.Handler())
+	mux.Handle(imagescan.DetectionsPath, svc.DetectHandler())
+	r.srv = httptest.NewServer(mux)
 	t.Cleanup(r.srv.Close)
 	return r
 }

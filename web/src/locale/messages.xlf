@@ -3593,7 +3593,7 @@
     </unit>
     <unit id="audit.action.signature.anchor.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:301</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:305</note>
       </notes>
       <segment>
         <source>Trust anchor added</source>
@@ -3601,7 +3601,7 @@
     </unit>
     <unit id="audit.action.signature.anchor.removed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:303</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
       </notes>
       <segment>
         <source>Trust anchor removed</source>
@@ -3609,7 +3609,7 @@
     </unit>
     <unit id="audit.action.signature.anchor.updated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:305</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
       </notes>
       <segment>
         <source>Trust anchor changed</source>
@@ -3617,7 +3617,7 @@
     </unit>
     <unit id="audit.action.signature.invalid">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
       </notes>
       <segment>
         <source>Invalid signature found</source>
@@ -3625,7 +3625,7 @@
     </unit>
     <unit id="audit.action.signature.settings.changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
       </notes>
       <segment>
         <source>Project trust anchor setting changed</source>
@@ -3633,7 +3633,7 @@
     </unit>
     <unit id="audit.action.signature.signer.blocked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
       </notes>
       <segment>
         <source>Signer blocked</source>
@@ -3641,7 +3641,7 @@
     </unit>
     <unit id="audit.action.signature.signer.unblocked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
       </notes>
       <segment>
         <source>Signer unblocked</source>
@@ -3649,7 +3649,7 @@
     </unit>
     <unit id="audit.action.signature.trust_root.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:319</note>
       </notes>
       <segment>
         <source>Public Sigstore root update failed</source>
@@ -3657,7 +3657,7 @@
     </unit>
     <unit id="audit.action.signature.trust_root.updated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:321</note>
       </notes>
       <segment>
         <source>Public Sigstore root updated</source>
@@ -3665,7 +3665,7 @@
     </unit>
     <unit id="audit.action.system.backup.completed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:305</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:323</note>
       </notes>
       <segment>
         <source>Backup completed</source>
@@ -3673,7 +3673,7 @@
     </unit>
     <unit id="audit.action.system.backup.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:325</note>
       </notes>
       <segment>
         <source>Backup deleted</source>
@@ -3681,7 +3681,7 @@
     </unit>
     <unit id="audit.action.system.backup.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:327</note>
       </notes>
       <segment>
         <source>Backup failed</source>
@@ -3689,7 +3689,7 @@
     </unit>
     <unit id="audit.action.system.backup.target_adopted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:329</note>
       </notes>
       <segment>
         <source>Backup target taken over</source>
@@ -3697,7 +3697,7 @@
     </unit>
     <unit id="audit.action.system.banner_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:331</note>
       </notes>
       <segment>
         <source>Banner changed</source>
@@ -3705,7 +3705,7 @@
     </unit>
     <unit id="audit.action.system.deletions_paused">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:333</note>
       </notes>
       <segment>
         <source>Deletions paused</source>
@@ -3713,7 +3713,7 @@
     </unit>
     <unit id="audit.action.system.deletions_resumed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:335</note>
       </notes>
       <segment>
         <source>Deletions resumed</source>
@@ -3721,7 +3721,7 @@
     </unit>
     <unit id="audit.action.system.job.cancelled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:319</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:337</note>
       </notes>
       <segment>
         <source>Job cancelled</source>
@@ -3729,7 +3729,7 @@
     </unit>
     <unit id="audit.action.system.maintenance_mode_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:321</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:339</note>
       </notes>
       <segment>
         <source>Maintenance mode changed</source>
@@ -3737,7 +3737,7 @@
     </unit>
     <unit id="audit.action.system.restore.journal_replayed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:323</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:341</note>
       </notes>
       <segment>
         <source>Revocation journal replayed after a restore</source>
@@ -3745,7 +3745,7 @@
     </unit>
     <unit id="audit.action.system.restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:325</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:343</note>
       </notes>
       <segment>
         <source>Installation restored</source>
@@ -3753,7 +3753,7 @@
     </unit>
     <unit id="audit.action.system.storage.versions_restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:327</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:345</note>
       </notes>
       <segment>
         <source>Deleted storage objects restored</source>
@@ -3761,7 +3761,7 @@
     </unit>
     <unit id="audit.action.system.task_triggered">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:329</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:347</note>
       </notes>
       <segment>
         <source>Maintenance task started</source>
@@ -3769,7 +3769,7 @@
     </unit>
     <unit id="audit.action.token.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:331</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:349</note>
       </notes>
       <segment>
         <source>Token created</source>
@@ -3777,7 +3777,7 @@
     </unit>
     <unit id="audit.action.token.expiring">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:333</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:351</note>
       </notes>
       <segment>
         <source>Token about to expire</source>
@@ -3785,7 +3785,7 @@
     </unit>
     <unit id="audit.action.token.rejected">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:335</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:353</note>
       </notes>
       <segment>
         <source>Token rejected</source>
@@ -3793,7 +3793,7 @@
     </unit>
     <unit id="audit.action.token.revoked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:337</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:355</note>
       </notes>
       <segment>
         <source>Token revoked</source>
@@ -3801,7 +3801,7 @@
     </unit>
     <unit id="audit.action.token.rotated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:339</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:357</note>
       </notes>
       <segment>
         <source>Token rotated</source>
@@ -3809,7 +3809,7 @@
     </unit>
     <unit id="audit.action.user.avatar.removed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:341</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:359</note>
       </notes>
       <segment>
         <source>Avatar removed</source>
@@ -3817,7 +3817,7 @@
     </unit>
     <unit id="audit.action.user.avatar.set">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:343</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:361</note>
       </notes>
       <segment>
         <source>Avatar uploaded</source>
@@ -3825,7 +3825,7 @@
     </unit>
     <unit id="audit.action.user.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:345</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:363</note>
       </notes>
       <segment>
         <source>User created</source>
@@ -3833,7 +3833,7 @@
     </unit>
     <unit id="audit.action.user.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:347</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:365</note>
       </notes>
       <segment>
         <source>User deleted</source>
@@ -3841,7 +3841,7 @@
     </unit>
     <unit id="audit.action.user.external_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:349</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
       </notes>
       <segment>
         <source>User&apos;s external flag changed</source>
@@ -3849,7 +3849,7 @@
     </unit>
     <unit id="audit.action.user.disabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:351</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
       </notes>
       <segment>
         <source>User disabled</source>
@@ -3857,7 +3857,7 @@
     </unit>
     <unit id="audit.action.user.dormancy_warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:353</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
       </notes>
       <segment>
         <source>User close to dormancy</source>
@@ -3865,7 +3865,7 @@
     </unit>
     <unit id="audit.action.user.enabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:355</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
       </notes>
       <segment>
         <source>User enabled</source>
@@ -3873,7 +3873,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_missing">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:357</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
       </notes>
       <segment>
         <source>Group claim missing at sign-in</source>
@@ -3881,7 +3881,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_returned">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:359</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:377</note>
       </notes>
       <segment>
         <source>Group claim back at sign-in</source>
@@ -3889,7 +3889,7 @@
     </unit>
     <unit id="audit.action.user.groups.result_skipped">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:361</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:379</note>
       </notes>
       <segment>
         <source>Invalid group name skipped at sign-in</source>
@@ -3897,7 +3897,7 @@
     </unit>
     <unit id="audit.action.user.groups.synced">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:363</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:381</note>
       </notes>
       <segment>
         <source>Group memberships synchronised</source>
@@ -3905,7 +3905,7 @@
     </unit>
     <unit id="audit.action.user.rename_conflict">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:365</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:383</note>
       </notes>
       <segment>
         <source>User rename conflict</source>
@@ -3913,7 +3913,7 @@
     </unit>
     <unit id="audit.action.user.renamed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:385</note>
       </notes>
       <segment>
         <source>User renamed</source>
@@ -3921,7 +3921,7 @@
     </unit>
     <unit id="audit.action.user.updated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:387</note>
       </notes>
       <segment>
         <source>User changed</source>
@@ -3929,7 +3929,7 @@
     </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:389</note>
       </notes>
       <segment>
         <source>Advisory kind changed</source>
@@ -3937,7 +3937,7 @@
     </unit>
     <unit id="audit.action.vulnerability.claimed_name_match">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:391</note>
       </notes>
       <segment>
         <source>Advisory matches a claimed package name</source>
@@ -3945,7 +3945,7 @@
     </unit>
     <unit id="audit.action.vulnerability.download_blocked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:393</note>
       </notes>
       <segment>
         <source>Download blocked by a finding</source>
@@ -3953,7 +3953,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.reopened">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:377</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:395</note>
       </notes>
       <segment>
         <source>Finding reopened</source>
@@ -3961,7 +3961,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.status_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:379</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:397</note>
       </notes>
       <segment>
         <source>Finding status changed</source>
@@ -3969,7 +3969,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:381</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:399</note>
       </notes>
       <segment>
         <source>Advisory sync failed</source>
@@ -3977,7 +3977,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.imported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:383</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:401</note>
       </notes>
       <segment>
         <source>Advisory data imported</source>
@@ -3985,7 +3985,7 @@
     </unit>
     <unit id="audit.category.auth">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:415</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:433</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -3993,7 +3993,7 @@
     </unit>
     <unit id="audit.category.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:417</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:435</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -4001,7 +4001,7 @@
     </unit>
     <unit id="audit.category.identity">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:419</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:437</note>
       </notes>
       <segment>
         <source>Identities</source>
@@ -4009,7 +4009,7 @@
     </unit>
     <unit id="audit.category.authz">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:421</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:439</note>
       </notes>
       <segment>
         <source>Authorization</source>
@@ -4017,7 +4017,7 @@
     </unit>
     <unit id="audit.category.repository">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:423</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:441</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -4025,7 +4025,7 @@
     </unit>
     <unit id="audit.category.content">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:425</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:443</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -4033,7 +4033,7 @@
     </unit>
     <unit id="audit.category.system">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:427</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:445</note>
       </notes>
       <segment>
         <source>System</source>
@@ -4041,7 +4041,7 @@
     </unit>
     <unit id="audit.category.config">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:429</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:447</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -4049,7 +4049,7 @@
     </unit>
     <unit id="audit.category.webhook">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:431</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:449</note>
       </notes>
       <segment>
         <source>Webhooks</source>
@@ -4057,7 +4057,7 @@
     </unit>
     <unit id="audit.outcome.success">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:440</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:458</note>
       </notes>
       <segment>
         <source>Success</source>
@@ -4065,7 +4065,7 @@
     </unit>
     <unit id="audit.outcome.failure">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:442</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:460</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -4073,7 +4073,7 @@
     </unit>
     <unit id="audit.outcome.denied">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:444</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:462</note>
       </notes>
       <segment>
         <source>Denied</source>
@@ -4081,7 +4081,7 @@
     </unit>
     <unit id="audit.outcome.warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:446</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:464</note>
       </notes>
       <segment>
         <source>Warning</source>
@@ -8408,8 +8408,8 @@
         <note category="location">src/app/features/guides/guide-format.ts:155</note>
         <note category="location">src/app/features/repositories/content/repository-files.ts:188</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:191</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:341</note>
         <note category="location">src/app/features/repositories/repository-list.ts:343</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:345</note>
         <note category="location">src/app/features/system/backups/backups-page.html:154,156</note>
         <note category="location">src/app/features/system/job-table.ts:132</note>
         <note category="location">src/app/features/system/tasks-card.ts:121</note>
@@ -8430,7 +8430,7 @@
     <unit id="repo.copy-address-value">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:116</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:375</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:377</note>
       </notes>
       <segment>
         <source>Copy client address <ph id="0" equiv="address" disp="address"/></source>
@@ -8447,7 +8447,7 @@
     <unit id="copy.done">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:127</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:381</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:383</note>
         <note category="location">src/app/shared/copy-button.ts:36</note>
       </notes>
       <segment>
@@ -8457,7 +8457,7 @@
     <unit id="copy.failed">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:129</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:383</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:385</note>
         <note category="location">src/app/shared/copy-button.ts:39</note>
       </notes>
       <segment>
@@ -9993,7 +9993,7 @@
     <unit id="repo.col.repository">
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:152</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:321</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:323</note>
         <note category="location">src/app/features/search/search-results.ts:231</note>
         <note category="location">src/app/features/search/search-results.ts:245</note>
       </notes>
@@ -10007,7 +10007,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:39,41</note>
         <note category="location">src/app/features/repositories/repository-list.html:46</note>
         <note category="location">src/app/features/repositories/repository-list.ts:257</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:324</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:326</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -10021,7 +10021,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:65,66</note>
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:261</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:328</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:330</note>
         <note category="location">src/app/features/search/search-results.ts:236</note>
       </notes>
       <segment>
@@ -21769,7 +21769,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:52,53</note>
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:259</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:325</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:327</note>
         <note category="location">src/app/features/search/search-results.ts:233</note>
       </notes>
       <segment>
@@ -22063,7 +22063,7 @@
     <unit id="repo.col.activity">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:434,435</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:335</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:337</note>
       </notes>
       <segment>
         <source>Last activity</source>
@@ -22393,7 +22393,7 @@
     <unit id="repo.delete.title">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:875</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:443</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:445</note>
       </notes>
       <segment>
         <source>Delete repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -22402,7 +22402,7 @@
     <unit id="repo.delete.text">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:877</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:445</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:447</note>
       </notes>
       <segment>
         <source>The repository and everything in it are deleted for good. Deletion runs as a background job; the key stays taken until it has finished.</source>
@@ -22411,7 +22411,7 @@
     <unit id="repo.delete.confirm">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:879</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:447</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:449</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -22460,7 +22460,7 @@
     <unit id="repo.delete.failed">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:950</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:492</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:494</note>
       </notes>
       <segment>
         <source>Deleting repository <ph id="0" equiv="key" disp="this.ref()"/> failed. Its row is kept; try again.</source>
@@ -22469,7 +22469,7 @@
     <unit id="repo.delete.done">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:955</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:482</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:484</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> deleted.</source>
@@ -22478,7 +22478,7 @@
     <unit id="repo.delete.progress">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:960</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:386</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:388</note>
       </notes>
       <segment>
         <source>Repository deletion</source>
@@ -22755,7 +22755,7 @@
     </unit>
     <unit id="repo.help.class">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:329</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:331</note>
         <note category="location">src/app/features/search/search-results.ts:237</note>
       </notes>
       <segment>
@@ -22764,7 +22764,7 @@
     </unit>
     <unit id="repo.col.visibility">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:332</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:334</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -22772,7 +22772,7 @@
     </unit>
     <unit id="repo.help.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:336</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:338</note>
       </notes>
       <segment>
         <source>The last time a client read from or wrote to the repository. A dash means nothing has been recorded yet.</source>
@@ -22780,7 +22780,7 @@
     </unit>
     <unit id="repo.actions-of">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:403</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:405</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="key" disp="row.key"/></source>
@@ -22788,7 +22788,7 @@
     </unit>
     <unit id="repo.delete.detach">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:450</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:452</note>
       </notes>
       <segment>
         <source>Also remove it from the virtual repositories that include it</source>
@@ -37405,17 +37405,9 @@
         <source>The replicas of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> are not listed: without TLS, or without the name of their certificate, the scan listener cannot tell their kind.</source>
       </segment>
     </unit>
-    <unit id="scanners.none.in-process">
-      <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:98,99</note>
-      </notes>
-      <segment>
-        <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: the development role <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">all</pc> analyses images in its own process.</source>
-      </segment>
-    </unit>
     <unit id="scanners.none.none">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:102,103</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:98,99</note>
       </notes>
       <segment>
         <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> scanner is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
@@ -37423,7 +37415,7 @@
     </unit>
     <unit id="scanners.none.off">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:106,107</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:102,103</note>
       </notes>
       <segment>
         <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> is listed.</source>
@@ -37431,7 +37423,7 @@
     </unit>
     <unit id="scanners.updater.daily">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:138</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:134</note>
       </notes>
       <segment>
         <source>daily built</source>
@@ -37439,7 +37431,7 @@
     </unit>
     <unit id="scanners.slots-value">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:151,152</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:147,148</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.slots.inUse }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.slots.total }}"/></source>
@@ -37447,7 +37439,7 @@
     </unit>
     <unit id="scanners.state.lost">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:161,162</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:157,158</note>
       </notes>
       <segment>
         <source>Lost</source>
@@ -37455,7 +37447,7 @@
     </unit>
     <unit id="scanners.state.ready">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:165,166</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:161,162</note>
       </notes>
       <segment>
         <source>Ready</source>
@@ -37463,7 +37455,7 @@
     </unit>
     <unit id="scanners.state.starting">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:168,170</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:164,166</note>
       </notes>
       <segment>
         <source>Starting</source>
@@ -37471,7 +37463,7 @@
     </unit>
     <unit id="scanners.state.draining">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:171,173</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:167,169</note>
       </notes>
       <segment>
         <source>Draining</source>
@@ -37479,7 +37471,7 @@
     </unit>
     <unit id="scanners.state.unready">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:174,176</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:170,172</note>
       </notes>
       <segment>
         <source>Unready</source>
@@ -37487,7 +37479,7 @@
     </unit>
     <unit id="scanners.caption">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:248</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:244</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/></source>
@@ -37495,7 +37487,7 @@
     </unit>
     <unit id="scanners.fold">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:254</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:250</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/> (<ph id="1" equiv="count" disp="n"/>)</source>
@@ -37503,8 +37495,8 @@
     </unit>
     <unit id="scanners.col.name">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:263</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:278</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:259</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:274</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -37512,7 +37504,7 @@
     </unit>
     <unit id="scanners.col.node">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:264</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:260</note>
       </notes>
       <segment>
         <source>Node</source>
@@ -37520,7 +37512,7 @@
     </unit>
     <unit id="scanners.col.version">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:265</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:261</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -37528,8 +37520,8 @@
     </unit>
     <unit id="scanners.col.state">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:266</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:279</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:262</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:275</note>
       </notes>
       <segment>
         <source>State</source>
@@ -37537,7 +37529,7 @@
     </unit>
     <unit id="scanners.col.since">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:269</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:265</note>
       </notes>
       <segment>
         <source>State changed</source>
@@ -37545,7 +37537,7 @@
     </unit>
     <unit id="scanners.col.since-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:270</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:266</note>
       </notes>
       <segment>
         <source>When the replica entered the state it shows, or the reason beside it changed.</source>
@@ -37553,7 +37545,7 @@
     </unit>
     <unit id="scanners.col.heartbeat">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:272</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:268</note>
       </notes>
       <segment>
         <source>Heartbeat</source>
@@ -37561,8 +37553,8 @@
     </unit>
     <unit id="scanners.col.tool">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:273</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:280</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:269</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:276</note>
       </notes>
       <segment>
         <source>Tool</source>
@@ -37570,7 +37562,7 @@
     </unit>
     <unit id="scanners.col.updater-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:284</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:280</note>
       </notes>
       <segment>
         <source>Definitions it holds</source>
@@ -37578,7 +37570,7 @@
     </unit>
     <unit id="scanners.col.database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:285</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:281</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -37586,7 +37578,7 @@
     </unit>
     <unit id="scanners.col.slots">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:292</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:288</note>
       </notes>
       <segment>
         <source>Slots</source>
@@ -37594,7 +37586,7 @@
     </unit>
     <unit id="scanners.col.slots-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:294</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:290</note>
       </notes>
       <segment>
         <source>The scans the replica runs now, of the scans it runs at a time.</source>
@@ -37674,7 +37666,7 @@
     </unit>
     <unit id="table.help-label">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:293</note>
+        <note category="location">src/app/shared/ui/data-table.ts:302</note>
       </notes>
       <segment>
         <source>About the column <ph id="0" equiv="column" disp="c.label"/></source>

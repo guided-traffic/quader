@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"strings"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/jobs"
@@ -18,14 +15,18 @@ import (
 	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
-// The wiring of the scanning of container images (R-VULN-033 to R-VULN-037, docs/developer/vulnerabilities.md): the service behind the
-// kinds vuln-image-scan and vuln-sync-trivy-db, and the wake-up in the commit path. A replica that runs no jobs builds only the wake-up.
+// The wiring of the scanning of container images (R-VULN-033 to R-VULN-037, R-VULN-048, docs/developer/vulnerabilities.md): the service
+// behind the kinds vuln-image-scan and vuln-sync-trivy-db, and the wake-up in the commit path. A replica that runs no jobs builds only the
+// wake-up. The worker runs no tool (ADR-229): it calls the unit vuln-scanner-trivy for the analysis and the detection.
 
-// imageOutputBytes bounds a file the analyser leaves behind (an SBOM, a report).
+// imageOutputBytes bounds a file the analyser leaves behind in the scanner (an analysis, a report).
 const imageOutputBytes = 512 << 20
 
-// wireVulnImages builds the area's image scanning. A worker without the analyser binary keeps running and logs why: every other part of the
-// scanning works without it, and the images then show pending_scan rather than a false clean.
+// noImageScanner is the result of a run of the image scanning's job in a process that names no scanner: the role all, which builds
+// none (Q-ARCH-563). The run touches no row.
+const noImageScanner = "no image scanner is configured"
+
+// wireVulnImages builds the area's image scanning.
 func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics, out *vulnArea) error {
 	cfg := a.cfg.Vulnerabilities
 	if !cfg.Enabled || !cfg.Images.Enabled {
@@ -38,7 +39,7 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 			return err
 		}
 	}
-	if !a.sub.JobLoops || in.blobs == nil {
+	if !a.sub.JobLoops {
 		return nil
 	}
 	evaluation, ok := out.evaluation()
@@ -46,30 +47,16 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 		return nil
 	}
 	images := cfg.Images
-	log := a.log.With("component", "vuln-images")
-	var analyser imagescan.Analyser
-	override := a.o.Vuln
-	if override != nil && override.ImageAnalyser != nil {
-		analyser = override.ImageAnalyser
-	} else {
-		trivy, err := imagescan.NewTrivy(ctx, images.Binary)
-		if err != nil {
-			log.WarnContext(ctx, "the image scanning is not available on this worker: images stay pending", "error", err)
-			return nil
-		}
-		analyser = trivy
-	}
-	if err := os.MkdirAll(images.ScanDir, 0o700); err != nil {
-		log.WarnContext(ctx, "the image scanning has no working directory: images stay pending", "dir", images.ScanDir, "error", err)
+	if images.Scanner.URL == "" {
+		// The role all builds no image scanner (Q-ARCH-563): the job ends at once and touches no row.
+		out.noImageScanner = true
 		return nil
 	}
-	cleanScanDir(ctx, images.ScanDir, log)
+	log := a.log.With("component", "vuln-images")
 	rows := store.NewImages(in.db)
-	space := spoolSpace{in.blobs.Spool()}
-	// The layer in use is read from the database's repository (R-VULN-044): the item of the repository the setting names.
-	layers := databaseLayers{a: a, repo: images.Database.Repository, image: images.Database.Image}
-	var database imagescan.Database = &imagescan.LocalDatabase{Dir: filepath.Join(images.ScanDir, "db"), Layers: layers, Rows: rows, Space: space}
-	if override != nil && override.ImageDatabase != nil {
+	// The database in use is the source state's; the worker only checks that its repository holds the layer (R-VULN-044, R-VULN-048).
+	var database imagescan.Database = databaseInUse{a: a, rows: rows, repo: images.Database.Repository, image: images.Database.Image}
+	if override := a.o.Vuln; override != nil && override.ImageDatabase != nil {
 		database = override.ImageDatabase
 	}
 	// >>> the role scanner (R-VULN-041, ADR-212): the call of the scanner and the scan token of each call (wire_vuln_scanner_call.go)
@@ -80,18 +67,22 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 	out.scannerClient = call
 	// <<< the role scanner
 	var wakeDatabase func(ctx context.Context, tx meta.Tx) error
+	var enqueue func(ctx context.Context, tx meta.Tx, delay time.Duration) error
 	if in.queue != nil {
 		queue := in.queue
 		wakeDatabase = func(ctx context.Context, tx meta.Tx) error {
 			_, err := queue.Enqueue(ctx, tx, jobs.EnqueueSpec{Kind: vuln.KindSyncTrivyDB, DedupKey: vuln.TaskSyncTrivyDB})
 			return err
 		}
+		enqueue = func(ctx context.Context, tx meta.Tx, delay time.Duration) error {
+			_, err := queue.Enqueue(ctx, tx, jobs.EnqueueSpec{Kind: vuln.KindImageScan, DedupKey: vuln.DedupImageScan, Delay: delay})
+			return err
+		}
 	}
 	svc, err := imagescan.New(imagescan.Options{
-		DB: in.db, Images: rows, Evaluate: evaluation, Scanner: call, Tokens: tokens, Analyser: analyser, Database: database,
-		States: out.states, Enqueue: out.wakeImages, WakeDatabase: wakeDatabase, ScratchDir: images.ScanDir, Space: space,
+		DB: in.db, Images: rows, Evaluate: evaluation, Scanner: call, Tokens: tokens, Database: database,
+		States: out.states, Enqueue: enqueue, WakeDatabase: wakeDatabase,
 		Concurrency: images.Concurrency, RunSlice: images.RunSlice, MaxAttempts: images.MaxAttempts, Delay: images.ScanDelay, Metrics: m, Log: log,
-		Run: imagescan.Limits{Timeout: images.Timeout, MemoryBytes: int64(images.MemoryLimit), OutputBytes: imageOutputBytes, StderrBytes: 16 << 10},
 	})
 	if err != nil {
 		return fmt.Errorf("the image scanning: %w", err)
@@ -100,39 +91,8 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 	return nil
 }
 
-// cleanScanDir removes what a worker that stopped mid-scan left: a container that restarts keeps its volume, and the unpacked database in it
-// is the one thing worth keeping.
-func cleanScanDir(ctx context.Context, dir string, log *slog.Logger) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		log.WarnContext(ctx, "the working directory of the image scanning cannot be read", "dir", dir, "error", err)
-		return
-	}
-	remove := func(path string) {
-		if err := os.RemoveAll(path); err != nil {
-			log.WarnContext(ctx, "a leftover of the image scanning cannot be removed", "path", path, "error", err)
-		}
-	}
-	for _, e := range entries {
-		if e.IsDir() && strings.HasPrefix(e.Name(), "scan-") {
-			remove(filepath.Join(dir, e.Name()))
-		}
-	}
-	// An unpack of the database that a crash interrupted is on the volume without a hold: it goes now, not at the next scan, so that no
-	// bytes of the scanning are on the volume that the spool's budget does not count (Q-VULN-145).
-	cached, err := os.ReadDir(filepath.Join(dir, "db"))
-	if err != nil {
-		return
-	}
-	for _, e := range cached {
-		if e.IsDir() && strings.HasPrefix(e.Name(), "unpack-") {
-			remove(filepath.Join(dir, "db", e.Name()))
-		}
-	}
-}
-
-// spoolSpace is the worker's spool as the image scanning sees it: the room of the unpacked database and of every scan is taken from the
-// budget the uploads and the mirror passes draw on (Q-VULN-145).
+// spoolSpace is the scanner's spool as the image scanning sees it: the room of every analysis and detection is taken from its budget
+// (Q-VULN-145).
 type spoolSpace struct{ spool *blob.Spool }
 
 // Hold implements [imagescan.Space].
@@ -157,11 +117,14 @@ func (s spoolSpace) Budget() int64 { return s.spool.Budget() }
 // another loses nothing, and the queue is the advisory sync's, whose slot a long run gives back through its time slice.
 func (a *App) registerVulnImageJobs(r *jobs.Registry) {
 	scan := func(ctx context.Context, run *jobs.Run) error {
-		svc := part[vulnArea](a.parts).images
-		if svc == nil {
+		area := part[vulnArea](a.parts)
+		switch {
+		case area.noImageScanner:
+			return run.SetResult(map[string]string{"skipped": noImageScanner})
+		case area.images == nil:
 			return run.SetResult(map[string]string{"skipped": "the image scanning is not available on this replica"})
 		}
-		return svc.RunScan(ctx, run)
+		return area.images.RunScan(ctx, run)
 	}
 	// The database's task reads the repository the setting names (R-VULN-044); it is on with the image scanning and by nothing else.
 	db := func(ctx context.Context, run *jobs.Run) error {

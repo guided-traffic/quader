@@ -12,12 +12,13 @@ import (
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 )
 
-// The worker's side of the role scanner (R-VULN-041, R-OCI-037, ADR-212, ADR-213): the client of the call, over a connection per call
-// with the worker's own pair as the client certificate, the internal CA as the only roots and the scanner's name required in its
-// certificate (R-ARCH-038), and the signer of the scan token of each call,
-// derived from the key ring the worker holds. The role all calls its own scanner over loopback (linkLoopback, Q-ARCH-531).
+// The worker's side of the role scanner (R-VULN-041, R-VULN-048, R-OCI-037, ADR-212, ADR-213, ADR-229): the client of the two calls, over
+// a connection per call with the worker's own pair as the client certificate, the internal CA as the only roots and the scanner's name
+// required in its certificate (R-ARCH-038), and the signer of the scan token of each analysis, derived from the key ring the worker holds.
+// A detection takes no token.
 
-// scanCallSlack is added to the scanner's own bounds for the deadline of a call: pull_timeout + timeout + 1m (R-VULN-041).
+// scanCallSlack is added to the scanner's own bounds for the deadline of a call: pull_timeout + timeout + 1m for an analysis
+// (R-VULN-041), timeout + 1m for a detection (R-VULN-048).
 const scanCallSlack = time.Minute
 
 // scannerCall builds the call of the scanner and the signer of the scan tokens.
@@ -42,11 +43,9 @@ func (a *App) scannerCall(ctx context.Context, in infra, log *slog.Logger) (*ima
 	if err != nil {
 		return nil, nil, err
 	}
-	url := images.Scanner.URL
-	if url == "" {
-		url = "http://127.0.0.1:0" // the role all: its own scanner's listener, set once bound (linkLoopback)
+	o := imagescan.ClientOptions{
+		URL: images.Scanner.URL, Deadline: images.PullTimeout + images.Timeout + scanCallSlack, DetectDeadline: images.Timeout + scanCallSlack,
 	}
-	o := imagescan.ClientOptions{URL: url, Deadline: images.PullTimeout + images.Timeout + scanCallSlack}
 	if link != nil {
 		o.TLS = func() *tls.Config {
 			// A pair that does not allow client authentication is refused by the scanner; the reason is logged once per loaded pair.

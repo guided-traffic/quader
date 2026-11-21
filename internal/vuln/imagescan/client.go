@@ -78,15 +78,17 @@ func (c Call) LogValue() slog.Value {
 }
 
 // Analysis is the answer of a call: the analyser's document as the scanner answered it, decoded and bounded, and the analyser
-// version it ran with. The worker writes it anew before it keeps or reads it ([Rewrite]).
+// version it ran with. The worker checks it ([CheckAnalysis]) and keeps it as answered (R-VULN-043).
 type Analysis struct {
 	Document        []byte
 	AnalyserVersion string
 }
 
-// Scanner is the call as the scan job sees it: the client of the role scanner, or a stand-in of a test.
+// Scanner is the two calls as the scan job sees them: the client of the role scanner, or a stand-in of a test. Analyse pulls and
+// analyses an image (R-VULN-041); Detect compares a stored analysis with the database the scanner pod holds (R-VULN-048).
 type Scanner interface {
 	Analyse(ctx context.Context, c Call) (Analysis, error)
+	Detect(ctx context.Context, c DetectCall) (Detection, error)
 }
 
 // CallRequest is the body of a call (R-VULN-041), decoded strictly by the scanner.
@@ -112,8 +114,9 @@ type ClientOptions struct {
 	// TLS returns the configuration of one connection: the pair the worker presents and the internal CA (httpserver.LinkTLS).
 	// Nil: the link is plain HTTP (an installation without TLS, Q-HA-322).
 	TLS func() *tls.Config
-	// Deadline is the bound of one call: pull_timeout + timeout + 1m.
-	Deadline time.Duration
+	// Deadline is the bound of one analysis: pull_timeout + timeout + 1m. DetectDeadline is the bound of one detection: timeout + 1m
+	// (R-VULN-048); zero is Deadline.
+	Deadline, DetectDeadline time.Duration
 	// Sleep waits between the tries of a busy answer; nil sleeps.
 	Sleep func(ctx context.Context, d time.Duration) error
 }
@@ -139,6 +142,9 @@ func NewClient(o ClientOptions) (*Client, error) {
 	if o.Sleep == nil {
 		o.Sleep = sleepCtx
 	}
+	if o.DetectDeadline <= 0 {
+		o.DetectDeadline = o.Deadline
+	}
 	c := &Client{o: o}
 	// One connection per call (keep-alives off), the link's TLS built for each connection (R-ARCH-038), no redirect.
 	c.http = outbound.LinkClient(outbound.LinkOptions{TLS: o.TLS, OnDial: func() { c.conns.Add(1) }})
@@ -146,7 +152,7 @@ func NewClient(o ClientOptions) (*Client, error) {
 	return c, nil
 }
 
-// SetURL points the client at a scanner's listener whose address is known only once it is bound: the role all's own (Q-ARCH-531).
+// SetURL points the client at a scanner's listener.
 func (c *Client) SetURL(u string) {
 	u = strings.TrimSuffix(u, "/")
 	c.url.Store(&u)
@@ -226,9 +232,9 @@ func (c *Client) broken(ctx, cctx context.Context, wrote bool, err error) error 
 
 // readAnalysis reads the answer of an analysis within MaxAnalysisBytes after decoding (R-VULN-043).
 func readAnalysis(res *http.Response) (Analysis, error) {
-	version := strings.TrimSpace(res.Header.Get(AnalyserVersionHeader))
-	if version == "" || len(version) > 64 {
-		return Analysis{}, &ScanError{Code: CodeAnalyserFailed, Detail: "the scanner's answer names no analyser version"}
+	version := res.Header.Get(AnalyserVersionHeader)
+	if !ValidAnalyserVersion(version) {
+		return Analysis{}, &ScanError{Code: CodeAnalyserFailed, Detail: "the scanner's answer names no analyser version of at most 32 letters, digits and . + _ ~ -"}
 	}
 	var r io.Reader = res.Body
 	if strings.EqualFold(res.Header.Get("Content-Encoding"), "gzip") {

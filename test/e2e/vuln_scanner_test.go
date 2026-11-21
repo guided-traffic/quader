@@ -2,35 +2,48 @@
 
 package e2e
 
-// The one case of the role scanner in the set vuln (R-VULN-046): an image of a few hundred bytes, pushed through the registry API by the
-// test's own client, is analysed by the pinned analyser in a scanner pod. The stored analysis shows the whole way over the chart's links -
-// the worker's call to <fullname>-vuln-scanner-trivy and the scanner's pull from <fullname>-packages-scan, both mutual TLS with the
-// profile's certificate and admitted by the policies of R-HA-042. It asserts the analysis, not a detection, so it needs no database
-// (Q-VULN-168), and that every scanner pod of both kinds is listed under its kind by its report of itself (R-OPS-048).
+// The one case of the role scanner in the set vuln (R-VULN-046, Q-VULN-205): the fixture database of 128 KiB is pushed to the local
+// repository the profile names as aquasec/trivy-db:2 and the task vuln-sync-trivy-db records it; the loader of every scanner pod (the
+// container database, the kind trivy-db) reads it through the scan listener with the pod's certificate into the volume trivy-db. Then an
+// image of about a kilobyte (Alpine 3.12 with four packages, two of which the fixture database names), pushed through the registry API by
+// the test's own client, is analysed and detected by the pinned analyser in a scanner pod. The finding shows the whole way over the
+// chart's links - the worker's calls to <fullname>-vuln-scanner-trivy and the scanner's pull from <fullname>-packages-scan, both mutual
+// TLS with the profile's certificate and admitted by the policies of R-HA-042 - and the live pod's spec shows its containers and mounts
+// (R-HA-065, R-HA-070). Every scanner pod of both kinds is listed under its kind by its report of itself, an image scanner with the
+// database it holds (R-OPS-048, Q-OPS-225).
 
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 )
 
-func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(t *testing.T) {
+const (
+	scannerDBKey = "scanner-db"
+	scannerDB    = "aquasec/trivy-db"
+)
+
+func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedAndDetectedByAScannerPod(t *testing.T) {
 	v := vulnFx(t)
+	layer := v.scannerDatabase(t)
+
 	key := "oci-scan-" + v.run
 	v.adm.do(http.MethodPost, reposRoute, map[string]any{"key": key, "class": "local", "format": "oci"}).want(t, "create "+key, 201, 409)
-
-	cfg, layer := scannerImageBlobs(t, v.run)
+	cfg, imgLayer := scannerImageBlobs(t, v.run)
 	manifest, err := json.Marshal(map[string]any{
 		"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
 		"config": map[string]any{"mediaType": "application/vnd.oci.image.config.v1+json", "digest": scannerDigest(cfg), "size": len(cfg)},
-		"layers": []any{map[string]any{"mediaType": "application/vnd.oci.image.layer.v1.tar", "digest": scannerDigest(layer), "size": len(layer)}},
+		"layers": []any{map[string]any{"mediaType": "application/vnd.oci.image.layer.v1.tar", "digest": scannerDigest(imgLayer), "size": len(imgLayer)}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -41,7 +54,7 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 		r, err := v.adm.send(http.MethodPost, base+"/blobs/uploads/?digest="+scannerDigest(cfg), cfg, "Content-Type", "application/octet-stream")
 		return err == nil && r.Status == http.StatusCreated
 	})
-	v.adm.do(http.MethodPost, base+"/blobs/uploads/?digest="+scannerDigest(layer), layer, "Content-Type", "application/octet-stream").want(t, "the layer", 201)
+	v.adm.do(http.MethodPost, base+"/blobs/uploads/?digest="+scannerDigest(imgLayer), imgLayer, "Content-Type", "application/octet-stream").want(t, "the layer", 201)
 	v.adm.do(http.MethodPut, base+"/manifests/1.0", manifest, "Content-Type", "application/vnd.oci.image.manifest.v1+json").want(t, "the manifest", 201)
 
 	started := time.Now()
@@ -50,16 +63,29 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 	t.Cleanup(func() {
 		if t.Failed() {
 			// The row says why: not due yet (not_before), put off with a code of the installation, or failed with the image's.
-			t.Logf("scan row: %s", sql(t, `SELECT concat_ws(' ', state, attempts, error_code, error_detail, not_before, now()) FROM quader.vuln_image_scan WHERE digest = decode('`+hexDigest+`', 'hex')`))
+			t.Logf("scan row: %s", sql(t, `SELECT concat_ws(' ', state, attempts, error_code, error_detail, not_before, now(), db_digest) FROM quader.vuln_image_scan WHERE digest = decode('`+hexDigest+`', 'hex')`))
 		}
 	})
-	took := waitFor(t, "the scanner's analysis stored", time.Minute, 2*time.Second, func() bool {
+	took := waitFor(t, "the scanner's analysis stored", time.Minute, time.Second, func() bool {
 		return sql(t, `SELECT count(*) FROM quader.vuln_image_sbom WHERE digest = decode('`+hexDigest+`', 'hex')`) == "1"
 	})
 	t.Logf("the analysis was stored %s after the task run (%s after the push)", took, time.Since(started))
+	// R-VULN-048: the detection through the scanner pod against the fixture database: the image's two advisories, under the database in use.
+	took = waitFor(t, "the image detected under the fixture database", 2*time.Minute, time.Second, func() bool {
+		return sql(t, `SELECT concat_ws(' ', state, db_digest) FROM quader.vuln_image_scan WHERE digest = decode('`+hexDigest+`', 'hex')`) == "scanned "+layer
+	})
+	t.Logf("the detection was recorded %s after the analysis (%s after the task run)", took, time.Since(started))
+	findings := sql(t, `SELECT string_agg(advisory_id, ',' ORDER BY advisory_id) FROM quader.vuln_finding WHERE ecosystem = 'OCI' AND version = 'sha256:`+hexDigest+`'`)
+	if findings != "CVE-2020-28928,CVE-2021-28831" {
+		t.Fatalf("the image's findings are %q, want the two advisories of the fixture database", findings)
+	}
+	if got := sql(t, `SELECT packages FROM quader.vuln_image_scan WHERE digest = decode('`+hexDigest+`', 'hex')`); got != "4" {
+		t.Errorf("the image's packages: %s, want the four of its package database", got)
+	}
 
-	// R-HA-065: a scanner pod holds the TLS pair and the internal CA, and nothing else of the installation. The image has no shell
-	// and no ls (distroless), so the running pod's own spec says what the kubelet put below /var/run/secrets (Q-HA-342).
+	// R-HA-065, R-HA-070: a scanner pod holds the TLS pair and the internal CA, and nothing else of the installation; its container quader
+	// mounts the database read-only and its container database writes it. The image has no shell and no ls (distroless), so the running
+	// pod's own spec says what the kubelet put where (Q-HA-342).
 	pods := livePods(t, "app.kubernetes.io/component=vuln-scanner-trivy")
 	if len(pods) < 2 {
 		t.Fatalf("%d scanner pods are running, the profile runs two", len(pods))
@@ -80,9 +106,11 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 				Projected *json.RawMessage `json:"projected"`
 			} `json:"volumes"`
 			Containers []struct {
+				Name         string `json:"name"`
 				VolumeMounts []struct {
 					Name      string `json:"name"`
 					MountPath string `json:"mountPath"`
+					ReadOnly  bool   `json:"readOnly"`
 				} `json:"volumeMounts"`
 			} `json:"containers"`
 		} `json:"spec"`
@@ -108,11 +136,17 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 			}
 		}
 	}
-	var files []string
+	var containers []string
+	databaseMount := map[string]string{}
 	for _, c := range p.Spec.Containers {
+		containers = append(containers, c.Name)
+		var files []string
 		for _, m := range c.VolumeMounts {
+			if m.Name == "trivy-db" {
+				databaseMount[c.Name] = map[bool]string{true: "ro", false: "rw"}[m.ReadOnly] + " " + m.MountPath
+			}
 			if strings.HasPrefix(m.MountPath, "/var/run/secrets/kubernetes.io") {
-				t.Errorf("the scanner mounts %s", m.MountPath)
+				t.Errorf("the container %s mounts %s", c.Name, m.MountPath)
 			}
 			if !strings.HasPrefix(m.MountPath, "/var/run/secrets/quader/") {
 				continue
@@ -121,15 +155,20 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 				files = append(files, strings.TrimPrefix(m.MountPath, "/var/run/secrets/quader/")+"/"+f)
 			}
 		}
+		sort.Strings(files)
+		if want := []string{"tls/ca.crt", "tls/tls.crt", "tls/tls.key"}; strings.Join(files, ",") != strings.Join(want, ",") {
+			t.Errorf("below /var/run/secrets/quader/ the container %s holds %v, want %v", c.Name, files, want)
+		}
 	}
-	sort.Strings(files)
-	if want := []string{"tls/ca.crt", "tls/tls.crt", "tls/tls.key"}; strings.Join(files, ",") != strings.Join(want, ",") {
-		t.Errorf("below /var/run/secrets/quader/ the scanner pod holds %v, want %v", files, want)
+	if strings.Join(containers, ",") != "quader,database" || databaseMount["quader"] != "ro /var/lib/quader/trivy-db" ||
+		databaseMount["database"] != "rw /var/lib/quader/trivy-db" {
+		t.Errorf("the scanner pod's containers %v mount trivy-db as %v, want quader read-only and database read-write", containers, databaseMount)
 	}
 
-	// R-OPS-048, Q-OPS-223: every scanner pod of both kinds reports itself to the scan listener with the certificate of its kind, and the
-	// API lists it by its pod name under that kind; an image scanner that analysed the image is ready and names its Trivy's version.
-	// The malware scanners are listed whatever their state: they wait for a database until the malware case deployed one.
+	// R-OPS-048, Q-OPS-223, Q-OPS-225: every scanner pod of both kinds reports itself to the scan listener with the certificate of its kind,
+	// and the API lists it by its pod name under that kind; an image scanner that detected the image is ready, names its Trivy's version
+	// and the database its pod holds, with its build time. The malware scanners are listed whatever their state: they wait for a database
+	// until the malware case deployed one.
 	want := map[string]string{}
 	for _, p := range pods {
 		want[p.Name] = "trivy"
@@ -137,35 +176,140 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 	for _, p := range livePods(t, "app.kubernetes.io/component=malware-scanner-clamav") {
 		want[p.Name] = "clamav"
 	}
-	waitFor(t, "every scanner pod listed under its kind", time.Minute, 2*time.Second, func() bool {
+	took = waitFor(t, "every scanner pod listed under its kind", time.Minute, 2*time.Second, func() bool {
 		var list struct {
 			Items []struct {
 				Kind, Name, State string
 				ToolVersion       *string
+				Database          *struct {
+					Version string
+					BuiltAt *string
+				}
 			}
 		}
 		v.adm.do(http.MethodGet, "/api/v1/system/scanners", nil).want(t, "the scanner replicas", 200).JSON(t, &list)
 		listed := 0
 		for _, r := range list.Items {
-			if kind, ok := want[r.Name]; ok && r.Kind == kind && (kind != "trivy" || (r.State == "ready" && r.ToolVersion != nil)) {
+			kind, ok := want[r.Name]
+			trivyOK := r.State == "ready" && r.ToolVersion != nil && r.Database != nil && "sha256:"+r.Database.Version == layer && r.Database.BuiltAt != nil
+			if ok && r.Kind == kind && (kind != "trivy" || trivyOK) {
 				listed++
 			}
 		}
 		return listed == len(want)
 	})
+	t.Logf("every scanner pod reported the database in use %s after the detection", took)
 }
 
-// scannerImageBlobs are the config and the one layer of the case's image: a file that names the run, so every run pushes a new digest.
+// scannerDatabase pushes the fixture database (internal/vuln/imagescan/testdata/analyser/db, 128 KiB) as aquasec/trivy-db:2 into the
+// local repository the profile names, e2e/scanner-db, as `oras push` does, runs the task vuln-sync-trivy-db and waits for every scanner
+// pod's loader to have read it (Q-VULN-205). It returns the layer's digest, the database in use.
+func (e *vulnEnv) scannerDatabase(t *testing.T) string {
+	t.Helper()
+	e.adm.do(http.MethodPost, reposRoute, map[string]any{
+		"key": scannerDBKey, "class": "local", "format": "oci",
+		"vulnerabilities": map[string]any{"enabled": false},
+	}).want(t, "create "+scannerDBKey, 201, 409)
+	layer := fixtureDatabaseLayer(t)
+	dbConfig := []byte("{}")
+	base := "/v2/" + repoRef(scannerDBKey) + "/" + scannerDB
+	waitFor(t, "the database's repository on the replica that takes the upload", time.Minute, time.Second, func() bool {
+		r, err := e.adm.send(http.MethodPost, base+"/blobs/uploads/?digest="+scannerDigest(dbConfig), dbConfig, "Content-Type", "application/octet-stream")
+		return err == nil && (r.Status == http.StatusCreated || r.Status == http.StatusOK)
+	})
+	e.adm.do(http.MethodPost, base+"/blobs/uploads/?digest="+scannerDigest(layer), layer, "Content-Type", "application/octet-stream").want(t, "the database's layer", 201, 200)
+	m, err := json.Marshal(map[string]any{
+		"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
+		"config": map[string]any{"mediaType": "application/vnd.aquasec.trivy.config.v1+json", "digest": scannerDigest(dbConfig), "size": len(dbConfig)},
+		"layers": []any{map[string]any{"mediaType": "application/vnd.aquasec.trivy.db.layer.v1.tar+gzip", "digest": scannerDigest(layer), "size": len(layer)}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.adm.do(http.MethodPut, base+"/manifests/2", m, "Content-Type", "application/vnd.oci.image.manifest.v1+json").want(t, "the database's manifest", 201)
+	digest := scannerDigest(layer)
+	started := time.Now()
+	e.adm.do(http.MethodPost, "/api/v1/system/tasks/vuln-sync-trivy-db/run", nil).want(t, "run the database's task", 202, 409)
+	waitFor(t, "the fixture database in use", 2*time.Minute, time.Second, func() bool {
+		return sql(t, `SELECT coalesce(etag, '') FROM quader.vuln_source_state WHERE source = 'trivy' AND ecosystem = 'OCI' AND state = 'complete'`) == digest
+	})
+	recorded := time.Since(started)
+	// The loaders log each load; every pod's loader reads it within a poll (5 s before its first database) and the load (Q-VULN-201).
+	took := waitFor(t, "every scanner pod's loader to hold the database", 2*time.Minute, 2*time.Second, func() bool {
+		pods := livePods(t, "app.kubernetes.io/component=vuln-scanner-trivy")
+		for _, p := range pods {
+			out, err := kubectl("-n", cfg.namespace, "logs", p.Name, "-c", "database")
+			if err != nil || !strings.Contains(out, "the image scanner's database is loaded") || !strings.Contains(out, digest) {
+				return false
+			}
+		}
+		return len(pods) > 0
+	})
+	t.Logf("the task recorded the fixture database %s after its run; every loader held it %s later", recorded, took)
+	return digest
+}
+
+// fixtureDatabaseLayer is the layer of the fixture database: a gzip tar of its trivy.db and metadata.json at the root, as the publisher's.
+func fixtureDatabaseLayer(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	for _, name := range []string{"trivy.db", "metadata.json"} {
+		b, err := os.ReadFile(filepath.Join(cfg.repo, "internal", "vuln", "imagescan", "testdata", "analyser", "db", name)) //nolint:gosec // the repository's fixture
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(b)), Typeflag: tar.TypeReg, ModTime: time.Unix(0, 0)}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write(b); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+// scannerImage is the fixture image of the case: Alpine 3.12 with four packages in its package database, two of which the fixture database
+// names (CVE-2020-28928 in musl, CVE-2021-28831 in busybox), and a file that names the run, so every run pushes a new digest.
+func scannerImage(run string) map[string]string {
+	apk := func(name, version, license string) string {
+		return "P:" + name + "\nV:" + version + "\nA:x86_64\nL:" + license + "\no:" + name + "\nT:" + name + " of the end-to-end fixture\n\n"
+	}
+	return map[string]string{
+		"etc/alpine-release": "3.12.0\n",
+		"etc/os-release":     "NAME=\"Alpine Linux\"\nID=alpine\nVERSION_ID=3.12.0\nPRETTY_NAME=\"Alpine Linux v3.12\"\nHOME_URL=\"https://alpinelinux.org/\"\n",
+		"lib/apk/db/installed": apk("musl", "1.1.24-r9", "MIT") + apk("busybox", "1.31.1-r19", "GPL-2.0-only") + apk("zlib", "1.2.11-r3", "Zlib") +
+			apk("alpine-baselayout", "3.2.0-r7", "GPL-2.0-only"),
+		"etc/scanner-e2e": "the image of the scanner's e2e case, run " + run + "\n",
+	}
+}
+
+// scannerImageBlobs are the config and the one layer of the case's image.
 func scannerImageBlobs(t *testing.T, run string) (config, layer []byte) {
 	t.Helper()
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
-	body := []byte("the image of the scanner's e2e case, run " + run + "\n")
-	if err := tw.WriteHeader(&tar.Header{Name: "etc/scanner-e2e", Mode: 0o644, Size: int64(len(body))}); err != nil {
-		t.Fatal(err)
+	files := scannerImage(run)
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
 	}
-	if _, err := tw.Write(body); err != nil {
-		t.Fatal(err)
+	sort.Strings(names)
+	for _, name := range names {
+		body := []byte(files[name])
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(body)), Typeflag: tar.TypeReg}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write(body); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := tw.Close(); err != nil {
 		t.Fatal(err)

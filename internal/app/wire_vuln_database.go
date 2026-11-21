@@ -7,6 +7,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/api/scanlisten"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formathost"
@@ -23,9 +24,11 @@ import (
 )
 
 // The image scanning's database lies in a repository of the installation (vulnerability-scanning.md R-VULN-044, ADR-214): the task
-// vuln-sync-trivy-db reads it through the repository layer of the worker (imageDatabase, vsync.ImageDatabase), and a worker's
-// detection reads the layer in use from it (databaseLayers, imagescan.DBLayers). A remote is read through the worker's format host and
-// remote engine as system work (Q-VULN-172), a local repository through the item store; nothing is read from anywhere else.
+// vuln-sync-trivy-db reads it through the repository layer of the worker (imageDatabase, vsync.ImageDatabase); a worker's run looks up
+// whether the repository holds the layer in use (databaseInUse, imagescan.Database); and the scan listener of packages serves the layer
+// to the loader of every scanner pod (trivyDatabaseSource, scanlisten.TrivyDatabaseSource, R-VULN-049). A remote is read through the
+// worker's format host and remote engine as system work (Q-VULN-172), a local repository through the item store; nothing is read from
+// anywhere else.
 
 // imageDatabase implements [vsync.ImageDatabase] over the repository model, the mirror host of the process and the item store, each
 // read when a run asks: the item store and the mirror host are built after the area that owns the sync.
@@ -270,31 +273,116 @@ func upstreamFailed(ctx context.Context, err error) error {
 	return &vsync.DatabaseRefusal{Kind: vsync.ErrDatabaseUpstream, Detail: detail, Err: err}
 }
 
-// databaseLayers implements [imagescan.DBLayers]: a worker reads the layer in use from the repository the setting names, the item
-// `<image>/_blobs/<digest>`, through the item store, which is no download (R-VULN-044, R-STOR-015).
-type databaseLayers struct {
+// databaseInUse implements [imagescan.Database]: the database in use is the source trivy's digest, and a worker's run checks that the
+// repository the setting names holds the item `<image>/_blobs/<digest>`; it reads no byte of it (R-VULN-044, R-VULN-048).
+type databaseInUse struct {
 	a           *App
+	rows        *store.Images
 	repo, image string
 }
 
-var _ imagescan.DBLayers = databaseLayers{}
+var _ imagescan.Database = databaseInUse{}
 
-// Open implements [imagescan.DBLayers]. A repository that no longer resolves, or does not hold the layer, is ErrLayerMissing: the scan
+// InUse implements [imagescan.Database]. A repository that no longer resolves, or does not hold the layer, is ErrLayerMissing: the scan
 // wakes the task, which records why (R-VULN-044).
-func (l databaseLayers) Open(ctx context.Context, digest string) (io.ReadCloser, error) {
-	repo, store, err := l.a.databaseRepository(ctx, l.repo)
+func (d databaseInUse) InUse(ctx context.Context) (string, error) {
+	db, found, err := d.rows.DB(ctx)
+	switch {
+	case err != nil:
+		return "", err
+	case !found:
+		return "", imagescan.ErrNoDatabase
+	case !imagescan.ValidDigest(db.Digest):
+		// The digest names an item and every scanner pod's directory: one that is not sha256 and 64 hexadecimal digits decides no path.
+		return "", fmt.Errorf("the database in use names %q, which is no sha256 digest", db.Digest)
+	}
+	_, found, err = d.a.databaseLayer(ctx, d.repo, d.image, db.Digest)
 	switch {
 	case errors.Is(err, vsync.ErrDatabaseRepositoryInvalid), errors.Is(err, vsync.ErrDatabaseRepositoryOff):
-		return nil, fmt.Errorf("%w: %w", imagescan.ErrLayerMissing, err)
+		return "", fmt.Errorf("%w: %w", imagescan.ErrLayerMissing, err)
 	case err != nil:
-		return nil, err
+		return "", err
+	case !found:
+		return "", fmt.Errorf("%w: %s holds no %s", imagescan.ErrLayerMissing, d.repo, oci.BlobPath(d.image, db.Digest))
 	}
-	rc, found, err := openStored(ctx, store, repo, oci.BlobPath(l.image, digest))
+	return db.Digest, nil
+}
+
+// databaseLayer looks up the layer digest in the database's repository: the live, usable item `<image>/_blobs/<digest>`.
+func (a *App) databaseLayer(ctx context.Context, key, image, digest string) (items.Item, bool, error) {
+	repo, st, err := a.databaseRepository(ctx, key)
 	if err != nil {
-		return nil, err
+		return items.Item{}, false, err
+	}
+	it, found, err := st.Live(ctx, items.RepoOf(repo), oci.BlobPath(image, digest))
+	if err != nil || !found || it.Kind != items.KindFile || items.ContentError(it) != nil {
+		return items.Item{}, false, err
+	}
+	return it, true, nil
+}
+
+// trivyDatabaseSource is what the scan listener's database routes serve (R-VULN-049): the database in use from the source state, and its
+// layer from the item store of the repository the setting names, read through the store, which is no download and moves nothing.
+type trivyDatabaseSource struct {
+	a           *App
+	rows        *store.Images
+	repo, image string
+}
+
+var _ scanlisten.TrivyDatabaseSource = trivyDatabaseSource{}
+
+// InUse implements [scanlisten.TrivyDatabaseSource].
+func (s trivyDatabaseSource) InUse(ctx context.Context) (imagescan.DatabaseListing, error) {
+	db, found, err := s.rows.DB(ctx)
+	if err != nil || !found || !imagescan.ValidDigest(db.Digest) {
+		return imagescan.DatabaseListing{}, err
+	}
+	out := imagescan.DatabaseListing{Digest: db.Digest}
+	if !db.BuiltAt.IsZero() {
+		built := db.BuiltAt
+		out.BuiltAt = &built
+	}
+	it, held, err := s.a.databaseLayer(ctx, s.repo, s.image, db.Digest)
+	switch {
+	case errors.Is(err, vsync.ErrDatabaseRepositoryInvalid), errors.Is(err, vsync.ErrDatabaseRepositoryOff):
+	case err != nil:
+		return imagescan.DatabaseListing{}, err
+	case held:
+		out.Size = it.Size
+	}
+	return out, nil
+}
+
+// Open implements [scanlisten.TrivyDatabaseSource]: the layer of digest while it is the database in use and the repository holds it;
+// scanlisten.ErrNoTrivyDatabase otherwise.
+func (s trivyDatabaseSource) Open(ctx context.Context, digest string) (io.ReadCloser, int64, error) {
+	db, found, err := s.rows.DB(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !found || db.Digest != digest {
+		return nil, 0, scanlisten.ErrNoTrivyDatabase
+	}
+	repo, st, err := s.a.databaseRepository(ctx, s.repo)
+	switch {
+	case errors.Is(err, vsync.ErrDatabaseRepositoryInvalid), errors.Is(err, vsync.ErrDatabaseRepositoryOff):
+		return nil, 0, scanlisten.ErrNoTrivyDatabase
+	case err != nil:
+		return nil, 0, err
+	}
+	it, held, err := s.a.databaseLayer(ctx, s.repo, s.image, digest)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !held {
+		return nil, 0, scanlisten.ErrNoTrivyDatabase
+	}
+	rc, found, err := openStored(ctx, st, repo, oci.BlobPath(s.image, digest))
+	if err != nil {
+		return nil, 0, err
 	}
 	if !found {
-		return nil, fmt.Errorf("%w: %s holds no %s", imagescan.ErrLayerMissing, l.repo, oci.BlobPath(l.image, digest))
+		return nil, 0, scanlisten.ErrNoTrivyDatabase
 	}
-	return rc, nil
+	return rc, it.Size, nil
 }

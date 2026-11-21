@@ -1,11 +1,12 @@
 //go:build integration
 
-// Package vulnimage is the integration tier's flow of the scanning of container images (R-VULN-033 to R-VULN-037, R-VULN-041, R-VULN-042):
-// a push through the registry protocol, the job on a worker, its call over mutual TLS to a replica of the role scanner, the scanner's pull
-// through the scan listener of a web replica, the findings through the package API, and the block of a pull in the registry's own error
-// shape. Everything runs against the integration stack, with the stack's pair and CA on every listener and link, except the analyser and its
-// database, which are replaced at the seam in the scanner and the worker so that the tier needs neither the binary nor the published
-// database; the real binary has a test of its own (internal/vuln/imagescan).
+// Package vulnimage is the integration tier's flow of the scanning of container images (R-VULN-033 to R-VULN-037, R-VULN-041, R-VULN-042,
+// R-VULN-048, R-VULN-049): a push through the registry protocol, the job on a worker, its two calls over mutual TLS to a replica of the role
+// scanner (the analysis, with the scanner's pull through the scan listener of a web replica, and the detection of the stored analysis), the
+// findings through the package API, and the block of a pull in the registry's own error shape. Everything runs against the integration
+// stack, with the stack's pair and CA on every listener and link, except the analyser, which is replaced at the seam in the scanner so that
+// the tier needs no binary. The database is a directory of the test that the flow writes as the loader would, or, with realDatabase, an
+// archive of bytes in a repository of the stack that a replica of the kind trivy-db loads through the scan listener.
 package vulnimage
 
 import (
@@ -44,8 +45,8 @@ const (
 		`"vuln-image-scan":{"enabled":false,"schedule":"*/5 * * * *"}}`
 )
 
-// fakeAnalyser is the analyser behind the seam, in the scanner replica (the analysis) and the worker replica (the detection): it counts
-// how often the layers are read and answers one advisory for the package xz.
+// fakeAnalyser is the analyser behind the seam in the scanner replica, for both steps: it counts how often the layers are read and how
+// often a stored analysis is detected, and answers one advisory for the package xz.
 type fakeAnalyser struct {
 	// started counts the analyses that began; analyses those that read the layout and wrote their list.
 	started, analyses, detections atomic.Int64
@@ -54,6 +55,8 @@ type fakeAnalyser struct {
 	fail   atomic.Pointer[imagescan.ScanError]
 	// hold, while set, keeps every analysis waiting until it is closed or the analysis's context ends.
 	hold atomic.Pointer[chan struct{}]
+	// database is the directory of the last detection's database.
+	database atomic.Pointer[string]
 }
 
 func (a *fakeAnalyser) Version() string { return "0.0.0-test" }
@@ -74,7 +77,7 @@ func (a *fakeAnalyser) Analyse(ctx context.Context, layout, sbom, _ string, _ im
 	if _, err := os.Stat(layout + "/index.json"); err != nil {
 		return errors.New("the analyser got no OCI layout")
 	}
-	return os.WriteFile(sbom, []byte(`{"bomFormat":"CycloneDX","components":[{"type":"library","name":"xz"},{"type":"operating-system","name":"alpine"}]}`), 0o600)
+	return os.WriteFile(sbom, []byte(`{"bomFormat":"CycloneDX","specVersion":"1.6","components":[{"type":"library","name":"xz"},{"type":"operating-system","name":"alpine"}]}`), 0o600)
 }
 
 // holdAnalyses makes every analysis wait until the returned function is called; the test's cleanup calls it too.
@@ -93,24 +96,31 @@ func (a *fakeAnalyser) holdAnalyses(t *testing.T) func() {
 	return release
 }
 
-func (a *fakeAnalyser) Detect(_ context.Context, _, out, _ string, db imagescan.DatabaseAccess, _ imagescan.Limits) error {
+func (a *fakeAnalyser) Detect(_ context.Context, sbom, out, _, database string, _ imagescan.Limits) error {
 	a.detections.Add(1)
-	if db.Digest == "" {
-		return errors.New("the detection got no database")
+	if _, ok := imagescan.DatabaseIn(database); !ok {
+		return errors.New("the detection got no complete database at " + database)
 	}
+	if doc, err := os.ReadFile(sbom); err != nil || !strings.Contains(string(doc), `"bomFormat":"CycloneDX"`) { //nolint:gosec // the scanner's working directory
+		return errors.New("the detection got no stored analysis")
+	}
+	a.database.Store(&database)
 	return os.WriteFile(out, []byte(*a.report.Load()), 0o600)
 }
 
-// fakeDatabase is the database behind the seam; its digest changes when the test publishes a new one.
+// fakeDatabase is the worker's look-up of the database in use (R-VULN-044); its digest changes when the test publishes a new one.
 type fakeDatabase struct{ digest atomic.Pointer[string] }
 
-func (d *fakeDatabase) Acquire(context.Context) (imagescan.DatabaseAccess, error) {
+func (d *fakeDatabase) InUse(context.Context) (string, error) {
 	v := d.digest.Load()
 	if v == nil {
-		return imagescan.DatabaseAccess{}, imagescan.ErrNoDatabase
+		return "", imagescan.ErrNoDatabase
 	}
-	return imagescan.DatabaseAccess{Digest: *v, Release: func() {}}, nil
+	return *v, nil
 }
+
+// dbDigest is the digest of the n-th database the flow publishes.
+func dbDigest(n int) string { return "sha256:" + strings.Repeat("0", 63) + strconv.Itoa(n%10) }
 
 func reportWith(fixed string) string {
 	b, _ := json.Marshal(map[string]any{
@@ -173,25 +183,28 @@ type flow struct {
 	st      *testenv.Stack
 	api     *testenv.Replica
 	scanner *testenv.Replica
-	adm     string
-	an      *fakeAnalyser
-	worker  *testenv.Replica
-	db      *fakeDatabase
-	o       options
-	ov      *app.VulnOverride
+	// loader is the replica of the kind trivy-db beside the scanner (realDatabase only), and dbDir their shared database directory.
+	loader *testenv.Replica
+	dbDir  string
+	adm    string
+	an     *fakeAnalyser
+	worker *testenv.Replica
+	db     *fakeDatabase
+	o      options
+	ov     *app.VulnOverride
 }
 
 func v2(name string) string { return "/v2/" + testenv.DefaultProject + "/" + repoKey + "/" + name }
 
 // options are what a test changes of the installation.
 type options struct {
-	// realDatabase leaves the database seam to the client mode, reading the layer the task recorded from the database's repository
-	// (R-VULN-044).
+	// realDatabase leaves the worker's look-up of the database to the source state and the repository (R-VULN-044), and starts the loader
+	// of the kind trivy-db beside the scanner, which reads the layer through the scan listener (R-VULN-049).
 	realDatabase bool
 	// noDatabase keeps the database seam but publishes no database: Acquire answers ErrNoDatabase.
 	noDatabase bool
-	// workerEnv is added to the environment of the worker.
-	workerEnv []string
+	// workerEnv is added to the environment of the worker, scannerEnv to the scanner's.
+	workerEnv, scannerEnv []string
 	// stackEnv is added to the environment of every replica, webEnv to the web replica's.
 	stackEnv, webEnv []string
 	// dial is the web replica's dial override: the names of an upstream stub; workerDial is the worker's, whose database task reads a
@@ -224,26 +237,52 @@ func newFlowWith(t *testing.T, o options) *flow {
 		o.seed(st)
 	}
 	f.setReport(reportWith("5.6.1-r2"))
-	ov := &app.VulnOverride{ImageAnalyser: f.an}
+	f.dbDir = t.TempDir()
+	ov := &app.VulnOverride{}
 	if !o.realDatabase {
 		if !o.noDatabase {
-			f.setDB("sha256:db1")
+			f.setDB(dbDigest(1))
 		}
 		ov.ImageDatabase = f.db
 	}
 	f.ov = ov
 	// The web replica opens the scan listener beside its client listener (R-ARCH-037); the scanner pulls from it, with a spool and a
-	// working directory of its own, as its pod has (R-HA-065).
+	// working directory of its own, as its pod has (R-HA-065), and detects with the database directory its loader writes (R-VULN-049).
 	f.api = st.Start(t, testenv.ReplicaOptions{Name: "web", Role: "web", DialOverride: o.dial, Env: append([]string{"QUADER_SERVER_SCAN_LISTEN=127.0.0.1:0"}, o.webEnv...)})
 	own := t.TempDir()
-	f.scanner = st.Start(t, testenv.ReplicaOptions{Name: "vuln-scanner-trivy", Role: "scanner", Pair: "vuln-scanner-trivy", Vuln: &app.VulnOverride{ImageAnalyser: f.an}, Env: []string{
-		"QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=" + st.Origin(f.api.Addr("scan")),
+	f.scanner = st.Start(t, testenv.ReplicaOptions{Name: "vuln-scanner-trivy", Role: "scanner", Pair: "vuln-scanner-trivy", Vuln: &app.VulnOverride{ImageAnalyser: f.an}, Env: append([]string{
+		"QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=" + st.Origin(f.api.Addr("scan")), "QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR=" + f.dbDir,
 		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + filepath.Join(own, "scan"), "QUADER_STORAGE_SPOOL_DIR=" + filepath.Join(own, "spool"),
-	}})
+	}, o.scannerEnv...)})
+	if o.realDatabase {
+		f.startLoader()
+	}
 	if !o.laterWorker {
 		f.startWorker()
 	}
 	return f
+}
+
+// startLoader starts the loader of the kind trivy-db beside the scanner, with the scanner's pair and database directory, as the second
+// container of its pod (R-HA-070); it asks the listing every 200 ms instead of every 5 s or 30 s.
+func (f *flow) startLoader() {
+	f.t.Helper()
+	f.loader = f.st.Start(f.t, testenv.ReplicaOptions{
+		Name: "vuln-scanner-trivy-db", Role: "scanner", Pair: "vuln-scanner-trivy",
+		Vuln: &app.VulnOverride{LoaderPoll: 200 * time.Millisecond}, Env: []string{
+			"QUADER_PROCESS_SCANNER_KIND=trivy-db", "QUADER_VULNERABILITIES_IMAGES_REGISTRY_URL=" + f.st.Origin(f.api.Addr("scan")),
+			"QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR=" + f.dbDir,
+		},
+	})
+}
+
+// waitLoaded waits until the scanner's database directory holds the database digest completely.
+func (f *flow) waitLoaded(digest string) {
+	f.t.Helper()
+	testenv.WaitFor(f.t, "the loader to hold "+digest, 30*time.Second, func() bool {
+		_, ok := imagescan.DatabaseIn(filepath.Join(f.dbDir, strings.TrimPrefix(digest, "sha256:")))
+		return ok
+	})
 }
 
 // startWorker starts the worker, which calls the stack's scanner.
@@ -253,11 +292,22 @@ func (f *flow) startWorker() {
 	f.worker = f.st.Start(f.t, testenv.ReplicaOptions{Name: "worker", Role: "worker", Vuln: f.ov, Env: env, DialOverride: f.o.workerDial})
 }
 
+// setDB publishes the database d: the worker's look-up names it, the state row says it as the database's sync writes it, and the
+// scanner's database directory holds it as the loader renames it into place (R-VULN-049).
 func (f *flow) setDB(d string) {
+	f.t.Helper()
+	dir := filepath.Join(f.dbDir, strings.TrimPrefix(d, "sha256:"), imagescan.DatabaseDir)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		f.t.Fatal(err)
+	}
+	for name, body := range map[string]string{"metadata.json": `{"Version":2,"UpdatedAt":"2026-11-21T07:02:51Z"}`, "trivy.db": "database bytes"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			f.t.Fatal(err)
+		}
+	}
 	f.db.digest.Store(&d)
-	// The state row the report and the resolution rule read, written as the database's sync writes it.
-	f.st.Exec(`INSERT INTO vuln_source_state (source, ecosystem, state, synced_at, full_synced_at) VALUES ('trivy', 'OCI', 'complete', now(), now())
-		ON CONFLICT (source, ecosystem) DO UPDATE SET state = 'complete', synced_at = now()`)
+	f.st.Exec(`INSERT INTO vuln_source_state (source, ecosystem, state, etag, synced_at, full_synced_at) VALUES ('trivy', 'OCI', 'complete', $1, now(), now())
+		ON CONFLICT (source, ecosystem) DO UPDATE SET state = 'complete', etag = $1, synced_at = now()`, d)
 }
 
 func (f *flow) setReport(r string) { f.an.report.Store(&r) }
@@ -431,7 +481,7 @@ func TestR_VULN_035_ANewDatabaseIsReadWithoutTheLayersAndAFixedReportResolves(t 
 
 	// A new database that no longer lists the advisory: the detection runs again, the layers are not read, and the finding resolves.
 	f.setReport(`{"SchemaVersion":2,"Results":[]}`)
-	f.setDB("sha256:db2")
+	f.setDB(dbDigest(2))
 	before := f.an.detections.Load()
 	f.runScan()
 	testenv.WaitFor(t, "the finding resolved", 60*time.Second, func() bool {
@@ -563,61 +613,4 @@ func etagOf(t *testing.T, f *flow, id string) string {
 		t.Fatalf("finding %s: %d %s", id, a.Status, a.Body)
 	}
 	return a.Header.Get("ETag")
-}
-
-// spoolEnv sets the byte budget of the spool of a worker, which accepts no uploads and so needs no room for one.
-func spoolEnv(bytes int64) []string {
-	return []string{"QUADER_STORAGE_SPOOL_MAX_BYTES=" + strconv.FormatInt(bytes, 10)}
-}
-
-// Q-VULN-145: the working space of a detection is admitted through the worker's spool budget, before the scanner is called. A budget that
-// cannot hold the detection's margin refuses it with a reason on the row, spends no attempt, never reads the layers and never reports the
-// image as clean.
-func TestQ_VULN_145_AScanThatCannotFitTheSpoolIsPutOffWithAReasonAndNeverReadAsClean(t *testing.T) {
-	f := newFlowWith(t, options{workerEnv: spoolEnv(32 << 20)})
-	f.push("app", "1.0", newImage(t))
-	f.runScan()
-	testenv.WaitFor(t, "the scan to be put off", 60*time.Second, func() bool {
-		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE error_code = 'spool_too_small'`) == 1
-	})
-	if n := f.st.Number(`SELECT attempts FROM vuln_image_scan`); n != 0 {
-		t.Fatalf("the refusal spent %d attempts", n)
-	}
-	if got := f.st.Text(`SELECT state FROM vuln_image_scan`); got != "pending" {
-		t.Fatalf("state %q", got)
-	}
-	if detail := f.st.Text(`SELECT error_detail FROM vuln_image_scan`); !strings.Contains(detail, "spool") || !strings.Contains(detail, "worker.spool.sizeLimit") {
-		t.Fatalf("the reason does not say what to change: %q", detail)
-	}
-	if f.an.analyses.Load() != 0 || f.an.detections.Load() != 0 {
-		t.Fatal("the layers were read although the scan was refused")
-	}
-	if ev := f.versionReport("app", "1.0").Repositories[0].Evaluation; ev != "pending_scan" {
-		t.Fatalf("a refused scan reads as %q", ev)
-	}
-}
-
-// Q-VULN-145: a worker budget that holds the margin of one detection scans image after image, so the room of a finished detection is
-// given back; a leak would leave the second scan waiting for room that never returns.
-func TestQ_VULN_145_TheRoomOfAFinishedScanIsGivenBack(t *testing.T) {
-	f := newFlowWith(t, options{workerEnv: spoolEnv(72 << 20)})
-	for i, name := range []string{"one", "two", "three"} {
-		img := newImage(t)
-		img.layer = append(img.layer, make([]byte, 1024*(i+1))...) // another digest per image
-		m, err := json.Marshal(map[string]any{
-			"schemaVersion": 2, "mediaType": manifestType,
-			"config": map[string]any{"mediaType": "application/vnd.oci.image.config.v1+json", "digest": digestOf(img.config), "size": len(img.config)},
-			"layers": []any{map[string]any{"mediaType": "application/vnd.oci.image.layer.v1.tar", "digest": digestOf(img.layer), "size": len(img.layer)}},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		img.manifest = m
-		f.push(name, "1.0", img)
-		f.runScan()
-		f.waitEvaluation(name, "1.0", "evaluated")
-	}
-	if n := f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE error_code IS NOT NULL`); n != 0 {
-		t.Fatalf("%d scans were put off or failed", n)
-	}
 }

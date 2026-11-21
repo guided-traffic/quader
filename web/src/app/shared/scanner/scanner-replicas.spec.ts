@@ -82,9 +82,9 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
       expect(text(root.querySelector('[data-testid="scanners-none-clamav"]')!)).toContain(words);
     }
     const all = sampleScanners({ items: [] });
-    all.kinds = all.kinds.map((k) => (k.kind === 'trivy' ? { ...k, replicas: 'inProcess' } : k));
+    all.kinds = all.kinds.map((k) => (k.kind === 'trivy' ? { ...k, replicas: 'none' } : k));
     const { root } = await render({ list: all, kind: 'trivy', view: 'system' });
-    expect(text(root.querySelector('[data-testid="scanners-none-trivy"]')!)).toContain('the development role all analyses images in its own process');
+    expect(text(root.querySelector('[data-testid="scanners-none-trivy"]')!)).toContain('vulnerabilities.images.scanner.url is empty');
     await expectAccessible(root);
   });
 

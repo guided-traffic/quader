@@ -354,7 +354,7 @@ describe('System status screen', () => {
       system.replicasResult = [sampleReplica({ name: 'quader-all-0', roles: ['all'] })];
       system.scannersResult = sampleScanners({
         kinds: [
-          { kind: 'trivy', deployment: 'vuln-scanner-trivy', purpose: 'vuln', tool: 'Trivy', replicas: 'inProcess' },
+          { kind: 'trivy', deployment: 'vuln-scanner-trivy', purpose: 'vuln', tool: 'Trivy', replicas: 'none' },
           { kind: 'clamav', deployment: 'malware-scanner-clamav', purpose: 'malware', tool: 'ClamAV', replicas: 'none' },
         ],
         items: [],
@@ -362,7 +362,7 @@ describe('System status screen', () => {
     });
     const group = root.querySelector<HTMLElement>('[data-testid="scanner-replicas"]')!;
     expect(group.querySelector('table')).toBeNull();
-    expect(text(group.querySelector('[data-testid="scanners-none-trivy"]') as HTMLElement)).toContain('the development role all analyses images in its own process');
+    expect(text(group.querySelector('[data-testid="scanners-none-trivy"]') as HTMLElement)).toContain('vulnerabilities.images.scanner.url is empty');
     expect(text(group.querySelector('[data-testid="scanners-none-clamav"]') as HTMLElement)).toContain('malware.scanner.url is empty');
     expect(text(root.querySelector('p.summary')!)).not.toContain('No ready replica of');
   });

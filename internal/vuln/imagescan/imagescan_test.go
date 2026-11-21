@@ -305,7 +305,7 @@ func TestRealTrivyScansTheFixture(t *testing.T) {
 	if err := tr.Analyse(ctx, layout, sbom, dir, lim); err != nil {
 		t.Fatal(err)
 	}
-	if err := tr.Detect(ctx, sbom, out, dir, DatabaseAccess{Args: []string{"--cache-dir", cache}, Digest: "real", Release: func() {}}, lim); err != nil {
+	if err := tr.Detect(ctx, sbom, out, dir, cache, lim); err != nil {
 		t.Fatal(err)
 	}
 	f, err := os.Open(out)
@@ -326,5 +326,13 @@ func TestRealTrivyScansTheFixture(t *testing.T) {
 			t.Fatalf("%d advisories, want %d", len(det.Advisories), n)
 		}
 	}
-	t.Logf("trivy %s: %s %s, %d advisories, %d packages", tr.Version(), det.OSFamily, det.OSName, len(det.Advisories), packagesOf(sbom))
+	doc, err := os.ReadFile(sbom) //nolint:gosec // the test's own directory
+	if err != nil {
+		t.Fatal(err)
+	}
+	packages, err := CheckAnalysis(doc)
+	if err != nil {
+		t.Fatalf("the analyser's own analysis fails the worker's check: %v", err)
+	}
+	t.Logf("trivy %s: %s %s, %d advisories, %d packages", tr.Version(), det.OSFamily, det.OSName, len(det.Advisories), packages)
 }

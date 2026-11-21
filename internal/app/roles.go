@@ -105,7 +105,7 @@ type Subsystems struct {
 	// store, and nothing else.
 	Shell bool
 	// Scanner serves the scanner's listener (R-ARCH-036): server.listen in the role
-	// scanner, a loopback port in the role all (Q-ARCH-531).
+	// scanner; the role all builds no scanner and opens none (Q-ARCH-563).
 	Scanner bool
 }
 

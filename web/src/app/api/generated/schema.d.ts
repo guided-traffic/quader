@@ -7207,11 +7207,11 @@ export interface components {
             /**
              * @description Whether the kind's replicas report themselves here (Q-OPS-223): `reporting`, the installation calls scanner pods of the kind
              *     and the scan listener records their reports, so an empty list is a fault; `unverified`, it calls them but the scan listener
-             *     cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `inProcess`, the development role
-             *     `all` runs the scanner in its own process and no pod reports; `none`, no scanner of the kind is configured.
+             *     cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `none`, no scanner of the kind is
+             *     configured (the development role `all` builds none, Q-ARCH-563).
              * @enum {string}
              */
-            replicas: "reporting" | "unverified" | "inProcess" | "none";
+            replicas: "reporting" | "unverified" | "none";
         };
         ScannerReplica: {
             /**
@@ -7229,7 +7229,7 @@ export interface components {
             version: string;
             revision: string;
             state: components["schemas"]["ReplicaState"];
-            /** @description The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `seed` (the updater before its seed ended), `starting`. */
+            /** @description The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `seed` (the updater before its seed ended), `starting`. An image scanner's readiness does not wait for its database (R-VULN-049): a pod that has not loaded the database in use shows in `database`. */
             reason: string | null;
             /**
              * Format: date-time
@@ -7256,15 +7256,18 @@ export interface components {
                 /** @description Calls it runs at a time; 0 for the updater (`freshclam`), which runs no calls. */
                 total: number;
             };
-            /** @description The signature database clamd scans with (`clamav`), or the set the updater's directory holds (`freshclam`); `null` before its first load, while the updater holds no complete set, and for `trivy`. */
+            /** @description The database the replica works with (Q-OPS-225): the signature database clamd scans with (`clamav`), the set the updater's directory holds (`freshclam`), or the newest database the image scanner's pod holds (`trivy`, R-VULN-049); `null` before its first load and while the updater holds no complete set. */
             database: components["schemas"]["ScannerDatabase"] | null;
         };
         ScannerDatabase: {
-            /** @example main-62.daily-27841.bytecode-339 */
+            /**
+             * @description The version of a signature database (`clamav`, `freshclam`), or the 64 hexadecimal digits of the digest of an image scanner's database layer (`trivy`).
+             * @example main-62.daily-27841.bytecode-339
+             */
             version: string;
             /**
              * Format: date-time
-             * @description The build time of the version while it is the version in use; for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
+             * @description The build time of the version while it is the version in use (for `trivy` the build time of the database's metadata.json while its digest is the database in use, the source `trivy`'s); for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
              */
             builtAt: string | null;
         };

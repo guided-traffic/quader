@@ -1,7 +1,7 @@
-// Command trivydbfixture writes the fixture database of the fidelity test of the rewritten analysis (vulnerability-scanning.md R-VULN-043,
-// Q-VULN-176): a database of the analyser's schema version 2 with two advisories for Alpine 3.12, a few kilobytes, which
-// TestQ_VULN_164_TheRewrittenAnalysisDetectsWhatTheAnalysersOwnDoes in internal/vuln/imagescan copies into the analyser's cache directory.
-// It is run once and its output committed beside the test:
+// Command trivydbfixture writes the fixture database of the image scanning's end-to-end case (vulnerability-scanning.md R-VULN-046,
+// Q-VULN-205): a database of the analyser's schema version 2 with two advisories for Alpine 3.12, a few kilobytes, which
+// test/e2e/vuln_scanner_test.go pushes as aquasec/trivy-db:2 into the profile's database repository. It is run once and its output
+// committed under internal/vuln/imagescan/testdata:
 //
 //	go run ./internal/tools/trivydbfixture -out internal/vuln/imagescan/testdata/analyser/db
 //

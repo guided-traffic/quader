@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/guided-traffic/quader/internal/app"
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/vuln/scanner"
 )
 
 // serveBastion runs one replica of the role bastion (R-BAS-001). The role has a configuration tree of its own,
@@ -51,6 +53,14 @@ func serveCmd(args []string, s streams) error {
 	loaded, err := c.loadConfig(s, config.CommandServe, flags, names)
 	if err != nil {
 		return err
+	}
+	if loaded.Config.Process.Role == config.RoleScanner {
+		// A scanner's process is not dumpable from its start, before it reads a pair or opens a listener (Q-VULN-203): the analysers it
+		// starts run as its user and can neither attach to it nor open its memory. Here and not in the app, so that a scanner replica
+		// that a test starts in its own process leaves that process as it is.
+		if err := scanner.NotDumpable(); err != nil {
+			return fmt.Errorf("the scanner cannot make its process not dumpable: %w", err)
+		}
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()

@@ -23,6 +23,8 @@ const (
 	scanRouteBlob
 	// scanRouteDatabase is the database routes of the malware scanning: the malware scanner's certificate (Q-MAL-27).
 	scanRouteDatabase
+	// scanRouteTrivyDatabase is the database routes of the image scanning: the image scanner's certificate (R-VULN-049, Q-VULN-206).
+	scanRouteTrivyDatabase
 	// scanRouteReplica is the route of the scanner replicas: the certificate of a kind of scanner (R-OPS-048).
 	scanRouteReplica
 )
@@ -35,6 +37,8 @@ func scanRouteOf(p, raw string) scanRoute {
 		return scanRouteNone
 	case registrytoken.IsDatabasePath(raw):
 		return scanRouteDatabase
+	case registrytoken.IsTrivyDatabasePath(raw):
+		return scanRouteTrivyDatabase
 	case strings.HasPrefix(raw, scanreport.PathPrefix):
 		return scanRouteReplica
 	}
@@ -56,6 +60,9 @@ func (s *Stage) byScanToken(r *http.Request, ep EndpointRules) (Result, error) {
 	secret, method, _, present := credentialHeader(r, &routeAnswer{})
 	if route == scanRouteDatabase {
 		return s.byMalwareScannerCertificate(r, ep, method, present)
+	}
+	if route == scanRouteTrivyDatabase {
+		return s.byImageScannerCertificate(r, ep, method, present)
 	}
 	if route == scanRouteReplica {
 		return s.byScannerCertificate(r, ep, method, present)
@@ -138,6 +145,28 @@ func (s *Stage) byMalwareScannerCertificate(r *http.Request, ep EndpointRules, m
 	s.o.Metrics.Attempt(string(MethodClientCertificate), "success", "")
 	return Result{
 		Principal:  principal.Principal{Kind: principal.KindSystem, Name: subject, Status: principal.StatusActive},
+		Credential: Credential{Method: MethodClientCertificate},
+	}, nil
+}
+
+// byImageScannerCertificate is the credential of the image scanning's database routes (R-VULN-049, Q-VULN-206): the client certificate
+// the listener's handshake verified, whose name must be the image scanner's (vulnerabilities.images.registry.client_name), and no
+// token. The loader of a scanner pod reads the database before any call reaches its pod, so it holds no token; the database is public
+// data. The principal is the system subject vuln-scanner-trivy with the certificate as its credential, never a registry grant. A
+// request that presents any credential is refused; a plain request reaches the routes only on a listener without TLS (Q-VULN-210).
+func (s *Stage) byImageScannerCertificate(r *http.Request, ep EndpointRules, method Method, present bool) (Result, error) {
+	if present {
+		ep.refused(r, Refusal{Reason: RefusedTokenType})
+		return s.fail(method, "type_not_accepted", errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The vulnerability database is read with the image scanner's certificate and no token."))
+	}
+	if ep.TrivyDatabase != nil && !ep.TrivyDatabase(r) {
+		ep.refused(r, Refusal{Reason: RefusedAnonymous})
+		return s.fail(MethodClientCertificate, "certificate_not_admitted",
+			errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "The vulnerability database is read by the image scanner only."))
+	}
+	s.o.Metrics.Attempt(string(MethodClientCertificate), "success", "")
+	return Result{
+		Principal:  principal.Principal{Kind: principal.KindSystem, Name: registrytoken.ScanSubject, Status: principal.StatusActive},
 		Credential: Credential{Method: MethodClientCertificate},
 	}, nil
 }

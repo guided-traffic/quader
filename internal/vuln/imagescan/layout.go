@@ -47,6 +47,9 @@ type ScanError struct {
 	// Defer, when set, says that the scan did not start or did not finish for a reason of the installation (no room, no scanner, a
 	// refused pull, R-VULN-034): it is due again after this long and no attempt is spent.
 	Defer time.Duration
+	// RefusedAnalysis says that the analyser refused the stored analysis in a detection (R-VULN-048): the worker deletes it, so that the
+	// next attempt analyses the image again (Q-VULN-202).
+	RefusedAnalysis bool
 }
 
 func (e *ScanError) Error() string { return e.Code + ": " + e.Detail }

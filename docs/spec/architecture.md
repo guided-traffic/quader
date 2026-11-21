@@ -607,10 +607,11 @@ nothing worth taking.
   The chart renders it as a Deployment of its own with a container `freshclam` beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-069). Built
   (2026-11-21): [wire_malware_updater.go](../../internal/app/wire_malware_updater.go), [internal/malware/updater](../../internal/malware/updater/updater.go).
 - **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's
-  `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. In the role `all` both are empty and mean the
-  process's own listeners over loopback (Q-ARCH-531).
+  `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. The role `all` builds no scanner; with the
+  first empty its image scanning's job ends at once (Q-ARCH-563).
 - **With the detection in the scanner** (owner, 2026-11-21, [ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image);
-  specified, not built). A scanner of the kind `trivy` serves `POST /scan/v1/detections` beside `POST /scan/v1/analyses`
+  built on 2026-11-21 but for the analyser's path, which stays the release image's until R-HA-070's init container is built). A scanner of
+  the kind `trivy` serves `POST /scan/v1/detections` beside `POST /scan/v1/analyses`
   ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-048), runs its analyser from `/opt/trivy/trivy`, which an init container
   copied from the analyser's own image ([ha-and-helm.md](ha-and-helm.md) R-HA-070), and holds, read-only, the database it detects with
   (R-VULN-049); it sets itself not dumpable at its start (Q-VULN-203). A fourth kind, `trivy-db`, is that database's loader, a second
@@ -618,6 +619,10 @@ nothing worth taking.
   builds the area with the loader alone, opens no listener but the operations listener, reads `vulnerabilities.images.registry` and
   `vulnerabilities.images.database`, holds the pod's pair, the CA and the database's directory, and reports nothing itself. The role `all`
   builds no image scanner any more ([Q-ARCH-563](#q-arch-563--the-role-all-builds-no-image-scanner)), so Q-ARCH-531 and Q-ARCH-551 go.
+  The process of every kind of the role is made not dumpable at the entry of `quader serve` (Q-VULN-211). Built:
+  [wire_vuln_loader.go](../../internal/app/wire_vuln_loader.go), [internal/vuln/dbloader](../../internal/vuln/dbloader/loader.go),
+  [scanner/detect.go](../../internal/vuln/scanner/detect.go), [wire_scanner.go](../../internal/app/wire_scanner.go) (no scanner in `all`),
+  [cmd/quader/serve.go](../../cmd/quader/serve.go).
 
 Acceptance criteria:
 
@@ -657,11 +662,12 @@ scanner's pull, and no client can use a scan token.
   scan token of an image is refused on these routes, a blob token below `/v2/`. The paths below `/scan/` belong to the family `packages`,
   the listener's surface, and no other endpoint registers them ([internal/auth/scan.go](../../internal/auth/scan.go),
   [internal/api/scanlisten](../../internal/api/scanlisten/scanlisten.go)).
-- **The image scanning's database routes** (specified, not built; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049,
-  Q-VULN-206). `GET /scan/v1/trivy-database` (the database in use: its digest, size and build time) and
+- **The image scanning's database routes** (built on 2026-11-21; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049,
+  Q-VULN-206, [scanlisten/trivydb.go](../../internal/api/scanlisten/trivydb.go)). `GET /scan/v1/trivy-database` (the database in use: its digest, size and build time) and
   `GET /scan/v1/trivy-database/sha256:<hex>` (its layer, while it is the one in use, read from the database's repository through the item
   store) take no token and admit a client whose certificate lists `vulnerabilities.images.registry.client_name`, as the principal
-  `system:vuln-scanner-trivy`; a token, another kind's certificate and a request without TLS are `401`. They count no download and write
+  `system:vuln-scanner-trivy`; a token, another kind's certificate and no certificate are `401`, and a plain request passes only on a listener
+  without TLS, as on the malware scanner's routes (Q-VULN-210). They count no download and write
   nothing to the usage store. The path names the tool, because the database is Trivy's own format and a second tool for images would
   bring a database of its own.
 - **The route of the scanner replicas** ([operations-and-observability.md](operations-and-observability.md) R-OPS-048, Q-OPS-223).

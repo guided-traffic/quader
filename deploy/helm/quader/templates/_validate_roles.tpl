@@ -17,8 +17,6 @@ root context.
 {{- $vuln := dig "vulnerabilities" (dict) $cfg -}}
 {{- $osv := dig "sources" "osv" (dict) $vuln -}}
 {{- $osvOn := and (dig "enabled" true $vuln) (ne (dig "mode" "online" $osv) "off") -}}
-{{- $images := dig "images" (dict) $vuln -}}
-{{- $imagesOn := and (dig "enabled" true $vuln) (dig "enabled" true $images) -}}
 {{- $ratio := dig "runtime" "memory_limit_ratio" 0.85 $cfg | float64 -}}
 {{- $reserved := add (include "quader.bytes" (dig "cache" "rendition_bytes" "256MiB" $cfg) | int64) (include "quader.bytes" (dig "proxy" "metadata_cache_bytes" "128MiB" $cfg) | int64) (include "quader.bytes" (dig "proxy" "merged_metadata_cache_bytes" "256MiB" $cfg) | int64) (include "quader.bytes" (dig "proxy" "query_cache_bytes" "8MiB" $cfg) | int64) -}}
 {{- $perRequest := include "quader.requestBytes" . | int64 -}}
@@ -92,15 +90,7 @@ root context.
 {{- else -}}
 {{- $claimsVuln = not (has "vuln" ($u.excludeQueues | default list)) -}}
 {{- end -}}
-{{- /* The working space of the image scanning's detection is admitted through the same budget (Q-VULN-145, Q-HA-318): the unpacked database (1.6 GiB on 2026-11-10, allowed 2 GiB: a source that is off leaves the stored one in place) and a margin for the detections and the other users of the spool. The images themselves are analysed in the spool of vuln-scanner-trivy (templates/_vuln.tpl). */ -}}
-{{- if and $claimsVuln $imagesOn -}}
-{{- $database := 2147483648 -}}
-{{- $margin := 536870912 -}}
-{{- $need := add $database $margin -}}
-{{- if gt $need $budget -}}
-{{- fail (printf "quader: the spool budget of %d bytes of Deployment %s, which claims the queue vuln (spool size minus spool.headroom), cannot hold the image scanning's detection: 2GiB for the unpacked vulnerability database plus 512MiB for the detections and the other work of the spool is %d bytes; raise worker.spool.sizeLimit or spool.sizeLimit, or set config.vulnerabilities.images.enabled: false (Q-HA-318)" $budget $dep $need) -}}
-{{- end -}}
-{{- end -}}
+{{- /* The image scanning writes nothing to a worker's spool (ADR-229): the analysis and the detection run in vuln-scanner-trivy, whose spool and database volume carry their checks (templates/_vuln.tpl, Q-HA-318, Q-HA-380). */ -}}
 {{- if and $claimsVuln $osvOn -}}
 {{- $archive := include "quader.bytes" (dig "max_archive_size" "1GiB" $osv) | int64 -}}
 {{- if gt $archive $budget -}}

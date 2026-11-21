@@ -1,16 +1,21 @@
 {{- /*
-The image scanning's scanner, the kind vuln-scanner-trivy of the role scanner (R-HA-065, R-HA-066, ADR-212, Q-HA-372):
-<fullname>-vuln-scanner-trivy runs "quader serve --role scanner" and analyses container images with Trivy for the worker. It holds no
-secret of PostgreSQL, the object store or Valkey and no key of the key ring: its volumes are the spool, /tmp, the configuration file and
-its own Secret (R-HA-063: the pair it serves and presents, and the internal CA in the same volume), and nothing else; none of the shared
-extras (extraEnv, extraEnvFrom, extraVolumes, extraVolumeMounts) reaches it (Q-HA-321). It uses no service account of the chart: that
-one may carry a cloud identity of the object store, and the scanner calls no API (automountServiceAccountToken false, no RBAC).
+The image scanning's scanner, the kind vuln-scanner-trivy of the role scanner (R-HA-065, R-HA-066, R-HA-070, ADR-212, ADR-229, Q-HA-372):
+<fullname>-vuln-scanner-trivy runs "quader serve --role scanner" and analyses container images and detects their stored analyses with
+Trivy for the worker. Its second container, database, runs the same image as the loader of Trivy's database (the kind trivy-db,
+R-VULN-049, Q-HA-379): it reads the database in use from the scan listener with the pod's pair into the volume trivy-db, which the
+container quader mounts read-only, so no analysis and no detection can change what judges the next image (Q-VULN-196). The pod holds no
+secret of PostgreSQL, the object store or Valkey and no key of the key ring: its volumes are the spool, a /tmp per container, the
+configuration file, its own Secret (R-HA-063: the pair it serves and presents, and the internal CA in the same volume) and trivy-db, and
+nothing else; none of the shared extras (extraEnv, extraEnvFrom, extraVolumes, extraVolumeMounts) reaches it (Q-HA-321). It uses no
+service account of the chart: that one may carry a cloud identity of the object store, and the scanner calls no API
+(automountServiceAccountToken false, no RBAC).
 
 Beside the Deployment: its PodDisruptionBudget and autoscaler, the two ClusterIP Services of the links (<fullname>-vuln-scanner-trivy on
 8080, <fullname>-packages-scan on 8082 of the main packages pods, Q-HA-319, rendered while either scanning is on), and its NetworkPolicy
 of ingress rules only (ADR-154): the scanner admits 8080 from the worker Deployment that claims the queue vuln (Q-HA-320) and 8081 from
-the ops peers. The rule of the main packages pods that admits 8082 from the scanner's pods is one rule more of their own policy
-(templates/networkpolicy.yaml, quader.scanListenRule). Nothing is rendered while the image scanning is off.
+the ops peers; the loader's operations port 8083 gets no rule, only the kubelet's probe reaches it. The rule of the main packages pods
+that admits 8082 from the scanner's pods, the loader's reads included, is one rule more of their own policy (templates/networkpolicy.yaml,
+quader.scanListenRule). Nothing is rendered while the image scanning is off.
 */ -}}
 {{- if include "quader.imageScanOn" . }}
 {{- $ := . }}
@@ -145,6 +150,81 @@ spec:
               mountPath: /var/lib/quader/spool
             - name: tmp
               mountPath: /tmp
+            {{- /* The database, read-only: the analysers this container starts can read it and change nothing of it (Q-VULN-196). */}}
+            - name: trivy-db
+              mountPath: /var/lib/quader/trivy-db
+              readOnly: true
+            {{- if $.Values.tls.enabled }}
+            - name: secret-tls
+              mountPath: /var/run/secrets/quader/tls
+              readOnly: true
+            {{- end }}
+        {{- /* The loader of the database, the kind trivy-db (R-VULN-049, Q-ARCH-564, Q-HA-379): no listener but its operations listener on
+        :8083 (the scanner holds :8081 of the pod's network), a liveness probe and no readiness probe; the pod's readiness stays the scanner's. */}}
+        - name: database
+          image: {{ include "quader.image" $ | quote }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args:
+            - serve
+            - --role
+            - scanner
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          ports:
+            - name: db-ops
+              containerPort: 8083
+              protocol: TCP
+          env:
+            {{- include "quader.podEnv" $ | nindent 12 }}
+            - name: QUADER_PROCESS_SCANNER_KIND
+              value: trivy-db
+            - name: QUADER_SERVER_OPS_LISTEN
+              value: ":8083"
+            - name: QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR_BUDGET
+              value: {{ include "quader.bytes" $r.database.sizeLimit | quote }}
+            - name: QUADER_RUNTIME_MEMORY_LIMIT_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: database
+                  resource: limits.memory
+                  divisor: "1"
+            - name: QUADER_RUNTIME_TERMINATION_GRACE_PERIOD
+              value: {{ printf "%ds" (int64 $r.terminationGracePeriodSeconds) | quote }}
+            {{- if not (dig "limits" "cpu" "" $r.database.resources) }}
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  containerName: database
+                  resource: requests.cpu
+                  divisor: "1"
+            {{- end }}
+            - name: TMPDIR
+              value: /tmp
+          {{- with $.Values.probes.liveness }}
+          {{- if .enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .path }}
+              port: db-ops
+              {{- if $.Values.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
+            periodSeconds: {{ .periodSeconds }}
+            timeoutSeconds: {{ .timeoutSeconds }}
+            failureThreshold: {{ .failureThreshold }}
+          {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml $r.database.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/quader/quader.yaml
+              subPath: quader.yaml
+              readOnly: true
+            - name: trivy-db
+              mountPath: /var/lib/quader/trivy-db
+            - name: database-tmp
+              mountPath: /tmp
             {{- if $.Values.tls.enabled }}
             - name: secret-tls
               mountPath: /var/run/secrets/quader/tls
@@ -181,8 +261,33 @@ spec:
         - name: tmp
           emptyDir:
             sizeLimit: {{ $.Values.tmp.sizeLimit }}
+        - name: database-tmp
+          emptyDir:
+            sizeLimit: {{ $.Values.tmp.sizeLimit }}
+        {{- /* The database, written by the container database and read-only in quader (R-HA-070, Q-HA-380): it follows spool.type as the spool does,
+        vulnScannerTrivy.database.sizeLimit, room for the newest database and the one before it. */}}
+        - name: trivy-db
+          {{- if eq $.Values.spool.type "ephemeral" }}
+          ephemeral:
+            volumeClaimTemplate:
+              metadata:
+                labels:
+                  {{- include "quader.labels" (dict "root" $ "component" "vuln-scanner-trivy") | nindent 18 }}
+              spec:
+                accessModes:
+                  {{- toYaml $.Values.spool.ephemeral.accessModes | nindent 18 }}
+                {{- with $.Values.spool.ephemeral.storageClassName }}
+                storageClassName: {{ . }}
+                {{- end }}
+                resources:
+                  requests:
+                    storage: {{ $r.database.sizeLimit }}
+          {{- else }}
+          emptyDir:
+            sizeLimit: {{ $r.database.sizeLimit }}
+          {{- end }}
         {{- if $.Values.tls.enabled }}
-        {{- /* The scanner's own Secret only (R-HA-063): its pair and, in the same volume so the kubelet swaps them together, the CA it verifies packages against. */}}
+        {{- /* The scanner's own Secret only (R-HA-063): its pair and, in the same volume so the kubelet swaps them together, the CA it verifies packages against. The loader reads the scan listener with the same pair. */}}
         - name: secret-tls
           secret:
             secretName: {{ $tlsSecret }}

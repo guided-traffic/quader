@@ -24,7 +24,9 @@ ON CONFLICT DO NOTHING;
 -- name: VulnImageDue :many
 -- The next manifests to work on: never scanned or to retry and due, or scanned against another database than the current one. The rows
 -- of a repository that is disabled or being deleted are not due (R-VULN-042): the scanner's pull could not address it. The qualified
--- name of the repository is what the scan token and the call to the scanner name (R-VULN-041).
+-- name of the repository is what the scan token and the call to the scanner name (R-VULN-041). The rows without a detection (pending, or
+-- failed and due) come before the re-detections of scanned rows under a new database, each class by not_before (Q-VULN-200): a pushed
+-- image waits for the slots, not for the cycle, and a scanned image keeps its findings while it waits.
 SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts,
        p.key::text AS project_key, r.key::text AS repo_key
   FROM vuln_image_scan s
@@ -34,7 +36,7 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
    AND ((s.state = 'pending' AND s.not_before <= now())
      OR (s.state = 'failed' AND s.not_before <= now() AND s.attempts < sqlc.arg(max_attempts)::int)
      OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM sqlc.arg(db_digest)::text))
- ORDER BY s.not_before, s.repo_id, s.name, s.digest
+ ORDER BY (s.state = 'scanned'), s.not_before, s.repo_id, s.name, s.digest
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: VulnImageDueCount :one
@@ -45,9 +47,9 @@ SELECT count(*)::bigint
    AND (s.state IN ('pending', 'failed') OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM sqlc.arg(db_digest)::text));
 
 -- name: VulnImageUnanalysed :many
--- The due manifests that have no analysis by the analyser version yet (Q-VULN-168): without a database the job has the scanner analyse
--- them and leaves the rows pending, so the first database detects without reading a layer. A row whose analysis is stored is not taken
--- again, so the run ends.
+-- The due manifests that have no analysis yet (Q-VULN-168): without a database the job has the scanner analyse them and leaves the rows
+-- pending, so the first database detects without reading a layer. A row whose analysis is stored is not taken again, whatever version
+-- made it (Q-VULN-199: the detection's scanner says whether it is current), so the run ends.
 SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s.attempts::int AS attempts,
        p.key::text AS project_key, r.key::text AS repo_key
   FROM vuln_image_scan s
@@ -55,7 +57,7 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
   JOIN project p ON p.id = r.project_id
  WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
    AND s.state IN ('pending', 'failed') AND s.not_before <= now() AND s.attempts < sqlc.arg(max_attempts)::int
-   AND NOT EXISTS (SELECT 1 FROM vuln_image_sbom b WHERE b.digest = s.digest AND b.analyser = sqlc.arg(analyser)::text)
+   AND NOT EXISTS (SELECT 1 FROM vuln_image_sbom b WHERE b.digest = s.digest)
  ORDER BY s.not_before, s.repo_id, s.name, s.digest
  LIMIT sqlc.arg(max_rows)::int;
 
@@ -100,22 +102,30 @@ SELECT f.id::text AS id
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: VulnImageSBOMGet :many
-SELECT sbom FROM vuln_image_sbom WHERE digest = sqlc.arg(digest) AND analyser = sqlc.arg(analyser)::text;
+-- The analysis of a manifest digest (R-VULN-043, Q-VULN-199): one per digest, the gzip as the scanner answered it, the analyser version
+-- that made it and the image's packages.
+SELECT sbom, analyser::text AS analyser, packages::int AS packages FROM vuln_image_sbom WHERE digest = sqlc.arg(digest);
 
 -- name: VulnImageSBOMPut :exec
-INSERT INTO vuln_image_sbom (digest, analyser, sbom) VALUES (sqlc.arg(digest), sqlc.arg(analyser)::text, sqlc.arg(sbom))
-ON CONFLICT (digest, analyser) DO NOTHING;
+-- A new analysis of the digest replaces the one before it, whatever version made that one (Q-VULN-199).
+INSERT INTO vuln_image_sbom (digest, analyser, sbom, packages)
+VALUES (sqlc.arg(digest), sqlc.arg(analyser)::text, sqlc.arg(sbom), sqlc.arg(packages)::int)
+ON CONFLICT (digest) DO UPDATE SET analyser = EXCLUDED.analyser, sbom = EXCLUDED.sbom, packages = EXCLUDED.packages, created_at = now();
+
+-- name: VulnImageSBOMDelete :exec
+-- A detection the analyser refused points at the analysis (Q-VULN-202): it goes, and the next attempt analyses the image again.
+DELETE FROM vuln_image_sbom WHERE digest = sqlc.arg(digest);
 
 -- name: VulnImageSBOMPrune :execrows
--- The analyses no manifest refers to any more, and those of an analyser this release does not run.
+-- The analyses no manifest refers to any more. Nothing is pruned by version: a scanner of another version asks for a new analysis.
 DELETE FROM vuln_image_sbom b
- WHERE b.analyser <> sqlc.arg(analyser)::text
-    OR NOT EXISTS (SELECT 1 FROM vuln_image_scan s WHERE s.digest = b.digest);
+ WHERE NOT EXISTS (SELECT 1 FROM vuln_image_scan s WHERE s.digest = b.digest);
 
 -- name: VulnImageDBGet :many
 -- The database in use (R-VULN-044, Q-VULN-173): the row of the source trivy, ecosystem OCI, once a run recorded a layer. etag is the
--- layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository.
-SELECT s.etag::text AS digest
+-- layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository. The
+-- watermark is the build time of its metadata.json, which the run records with it (Q-VULN-208); a row recorded before has none.
+SELECT s.etag::text AS digest, COALESCE((EXTRACT(EPOCH FROM s.watermark) * 1000000)::bigint, 0)::bigint AS built_us
   FROM vuln_source_state s
  WHERE s.source = 'trivy' AND s.ecosystem = 'OCI' AND s.state = 'complete' AND s.etag LIKE 'sha256:%';
 

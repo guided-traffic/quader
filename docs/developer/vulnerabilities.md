@@ -651,24 +651,48 @@ Release and of the nightly workflow; [e2e.md](e2e.md#the-vulnerability-tests) de
 gap H-494. Nothing in `internal` changed for it; what it found about the product (a UI contrast defect, fixed, and the case of the findings filter `package` for NuGet IDs) is in [e2e.md](e2e.md#findings-of-the-vulnerability-tests).
 
 
-## Container images (R-VULN-033 to R-VULN-037, R-VULN-041 to R-VULN-043)
+## Container images (R-VULN-033 to R-VULN-037, R-VULN-041 to R-VULN-043, R-VULN-048, R-VULN-049)
 
-A scan is two steps: the analysis of the layers once per digest and analyser, in a replica of the role `scanner` (kept in `vuln_image_sbom`;
-[the role scanner](#the-role-scanner) below), and a detection per database in the worker, in [internal/vuln/imagescan](../../internal/vuln/imagescan). The seam `imagescan.Database` (Q-VULN-137) is the one place that knows where the database lives: `LocalDatabase` reads the layer in use from the database's repository and unpacks it into `scan_dir`; a change to a central server would replace it and the chart, and nothing else. The job `vuln-image-scan` (queue `vuln`, `coalesce`) reads its work from `vuln_image_scan`; a push only wakes it (`imagescan.Hooks`), and `vuln-sync-trivy-db` makes the database's repository hold the database ([the database's repository](#the-databases-repository-r-vuln-044-r-vuln-045) below). The result enters the lifecycle of findings through `evaluate.Service.ApplyImage`, so an image's finding differs from a package's only in its version (the manifest digest) and its `components`. A pull is gated by `enforce.GateImage` through the Host port `RefuseImage` (Q-VULN-138). **The working space is the spool's budget** (Q-VULN-145 to Q-VULN-148): `LocalDatabase` holds the unpacked database once, by the sizes in the archive's headers, and frees the databases nothing uses before it unpacks a new one; `Service.detect` registers a `lease` of 64 MiB (`scanMargin`) before the scratch directory and before it calls the scanner, and a detection that does not fit waits (`Options.SpaceWait`) and is put off through `store.Images.Deferred` without spending an attempt; the image itself is held in the scanner's spool. `internal/app/wire_vuln_images.go` adapts `blob.Spool.Hold` and `Adopt` to the port. To add a new kind of file to the scan directory, hold its room first: nothing below `scan_dir` may be written without a hold.
+A scan is two steps, and both run in a replica of the role `scanner`, the unit `vuln-scanner-trivy` ([the role scanner](#the-role-scanner)
+below; ADR-212, ADR-229): the analysis of the layers once per digest (kept in `vuln_image_sbom`, one row per digest with the analyser version
+that made it, Q-VULN-199; the migration of this change removed the analyses stored before, so every image is analysed afresh at its next
+detection, Q-VULN-214), and a detection per database of that stored analysis, against the copy of the database the scanner's pod holds
+read-only ([the detection in the scanner](#the-detection-in-the-scanner-and-the-loader-r-vuln-048-r-vuln-049) below). The worker runs no
+tool: [internal/vuln/imagescan](../../internal/vuln/imagescan) calls the scanner for both steps, checks the analysis in Go and keeps it as
+answered (`CheckAnalysis`, Q-VULN-198), and reads the report in Go under limits (`ParseReport`). The seam `imagescan.Database` names the
+database in use for a run and checks that its repository holds the layer (`databaseInUse` in
+[wire_vuln_database.go](../../internal/app/wire_vuln_database.go)); the worker reads no byte of it. The job `vuln-image-scan` (queue `vuln`,
+`coalesce`) reads its work from `vuln_image_scan`; a push only wakes it (`imagescan.Hooks`), and `vuln-sync-trivy-db` makes the database's
+repository hold the database ([the database's repository](#the-databases-repository-r-vuln-044-r-vuln-045) below). The rows without a
+detection come before the re-detections of a new database (`VulnImageDue`, Q-VULN-200). The result enters the lifecycle of findings
+through `evaluate.Service.ApplyImage`, so an image's finding differs from a package's only in its version (the manifest digest) and its
+`components`. A pull is gated by `enforce.GateImage` through the Host port `RefuseImage` (Q-VULN-138). **The working space is the scanner's
+spool** (Q-VULN-145): an analysis holds the image plus 64 MiB, a detection 64 MiB, before its first file; the worker writes nothing of a scan
+to its disk, and the chart checks no worker spool for the image scanning (Q-HA-318, revisited).
 
-Tests: `internal/vuln/imagescan` (bounds and report parsing, the call's client and its mapping of answers, the rewrite, and a run of the real binary when `QUADER_TEST_TRIVY_BIN`, `QUADER_TEST_TRIVY_CACHE` and `QUADER_TEST_IMAGE_LAYOUT` name them), the fidelity test `TestQ_VULN_164_TheRewrittenAnalysisDetectsWhatTheAnalysersOwnDoes` with the pinned binary (`make test-analyser`, below), `internal/vuln/scanner` (the scanner's handler, slots, drain, pull and reaper), [test/integration/vulnimage](../../test/integration/vulnimage) (push to findings through a scanner replica, a busy and a stopped scanner, the handshake of both links, a blocked private image analysed again without a download, a remote's uncached layer, a disabled repository, a new database, the block of a pull, and in `database_test.go` the database's repository: a local one, a remote of a stub registry and `upstream/scanner-trivy`).
+Tests: `internal/vuln/imagescan` (bounds and report parsing, the check of an analysis, both calls' clients and their tables of answers, the
+job's decisions over stand-in rows: `database_loading`, a second `analysis_outdated`, a refused analysis; the unpack of a database; a run of
+the real binary when `QUADER_TEST_TRIVY_BIN`, `QUADER_TEST_TRIVY_CACHE` and `QUADER_TEST_IMAGE_LAYOUT` name them), `internal/vuln/scanner`
+(the handlers of both calls, slots, drain, pull, reaper, the process not dumpable on Linux), `internal/vuln/dbloader` (the loader),
+[test/integration/vulnimage](../../test/integration/vulnimage) (push to findings through a scanner replica, a busy and a stopped scanner,
+the handshake of both links, a blocked private image analysed again without a download, a remote's uncached layer, a disabled repository,
+a new database, the block of a pull, the order of work after a new database, the loader's database and a run that waits for it in
+`detection_test.go`, the role `all` without a scanner, and in `database_test.go` the database's repository: a local one, a remote of a stub
+registry and `upstream/scanner-trivy`), and the case of the set `vuln` in [vuln_scanner_test.go](../../test/e2e/vuln_scanner_test.go)
+against the fixture database.
 
 | File | Responsibility |
 |---|---|
-| [analyser.go](../../internal/vuln/imagescan/analyser.go) | The two steps, `Trivy` (client mode) and the seam `Database` |
-| [client.go](../../internal/vuln/imagescan/client.go) | The worker's call to the scanner (R-VULN-041): one connection per call, the busy retries, the table of answers to codes, attempts and waits |
-| [sbom.go](../../internal/vuln/imagescan/sbom.go) | `Rewrite`: the scanner's answer decoded under the limits of R-VULN-043 and written anew (Q-VULN-164, Q-VULN-183) |
-| [database.go](../../internal/vuln/imagescan/database.go) | The client-mode database: archive checks, the local cache, `ReadDBMetadata`; the layer read through the port `DBLayers` and hashed while it is unpacked; `DatabaseTag`, `LayerMediaType`, `ErrLayerMissing` |
+| [analyser.go](../../internal/vuln/imagescan/analyser.go) | The two steps, `Trivy` (client mode): a process per step with an empty environment, `HOME` and `TMPDIR` in its working directory, a process group of its own |
+| [analysis.go](../../internal/vuln/imagescan/analysis.go) | `CheckAnalysis`: the scanner's analysis checked under the bounds of R-VULN-043 (size, one document, depth 32, `bomFormat`, `specVersion`, 1,000,000 components walked token by token) and its packages counted; `ValidAnalyserVersion` |
+| [client.go](../../internal/vuln/imagescan/client.go) | The worker's call of an analysis (R-VULN-041): one connection per call, the busy retries, the table of answers to codes, attempts and waits |
+| [detect.go](../../internal/vuln/imagescan/detect.go) | The worker's call of a detection (R-VULN-048): the stored gzip as the body, the three values of the query, the headers checked before the body, the report read by `ParseReport` within 256 MiB, the table of answers (`analysis_outdated`, `database_loading`, a refused analysis) |
+| [database.go](../../internal/vuln/imagescan/database.go) | The seam `Database`; the archive checks, `ReadDBMetadata` (the task's), `UnpackDatabase` (the loader's: hashed while it is unpacked, the room held from the headers), `DatabaseIn`, `DatabaseListing`; `DatabaseTag`, `LayerMediaType`, `ErrLayerMissing` |
 | [layout.go](../../internal/vuln/imagescan/layout.go) | `BuildLayout`: the OCI layout of an image from a `BlobReader`, with every bound of R-VULN-036; the scanner calls it on what it pulled |
 | [report.go](../../internal/vuln/imagescan/report.go) | The analyser's JSON report, read under limits and turned into advisories |
-| [service.go](../../internal/vuln/imagescan/service.go) | The job and one scan: the stored analysis or a call to the scanner, then the detection; an analysis without a database (Q-VULN-168) |
-| [space.go](../../internal/vuln/imagescan/space.go) | The port `Space` (the worker's spool), the admission of a detection (`admit`: wait, `spool_busy`, `spool_too_small`) and the lease it holds (Q-VULN-145) |
-| [fidelity_test.go](../../internal/vuln/imagescan/fidelity_test.go), [testdata/analyser/db](../../internal/vuln/imagescan/testdata/analyser/db) | The fidelity test and its fixture database of two advisories for Alpine 3.12, written once by `go run ./internal/tools/trivydbfixture` (the only user of `go.etcd.io/bbolt`) |
+| [service.go](../../internal/vuln/imagescan/service.go) | The job and one scan: the stored analysis or a call of an analysis, then the call of a detection; the re-analysis on `analysis_outdated`; the run that ends on `database_loading` and runs again after 30 s; an analysis without a database (Q-VULN-168); the port `Rows` |
+| [space.go](../../internal/vuln/imagescan/space.go) | The port `Space` (the scanner's spool), `ErrNoSpace`, `spool_too_small` |
+| [testdata/analyser/db](../../internal/vuln/imagescan/testdata/analyser/db) | The fixture database of two advisories for Alpine 3.12 (128 KiB), written once by `go run ./internal/tools/trivydbfixture` (the only user of `go.etcd.io/bbolt`); the end-to-end case pushes it (Q-VULN-205) |
 
 ### The database's repository (R-VULN-044, R-VULN-045)
 
@@ -676,7 +700,8 @@ The analyser's database is an OCI artifact (`aquasec/trivy-db:2`, one layer of `
 lies in a repository of the installation, `vulnerabilities.images.database.repository` (default `upstream/scanner-trivy`, the system
 repository of [wellknown](../../internal/wellknown/wellknown.go)). The task `vuln-sync-trivy-db` resolves the tag through it, makes it hold
 the layer, checks the archive's `metadata.json` and records the layer's digest on the row of the source `trivy` (`etag`, `archive_sha256`):
-that row is the database in use (Q-VULN-173). A worker reads the layer from the same repository. Nothing falls back to the publisher: a run
+that row is the database in use (Q-VULN-173), with the build time of its `metadata.json` in the row's `watermark` (Q-VULN-208). The scan
+listener serves the layer to the loader of every scanner pod; a worker only looks up that the repository holds it. Nothing falls back to the publisher: a run
 that cannot use the repository fails with `database_repository_invalid`, `database_repository_off`, `database_missing`, `upstream_failed`,
 `archive_too_large` or `archive_limit` on the source's row, and the database in use stays (Q-VULN-174).
 
@@ -689,14 +714,16 @@ vuln-sync-trivy-db (worker)
         ├─ Manifest(image, "2") → databaseLayer (the media type, a sha256 digest only)
         ├─ Holds / Store(layer) → readLayerMetadata → recordTrivy (row, data_epoch, vuln_data, wake vuln-image-scan)
 vuln-image-scan (worker)
-  LocalDatabase.Acquire ── store.Images.DB (the row) ── DBLayers.Open = app.databaseLayers (items.Store)
+  Database.InUse = app.databaseInUse ── store.Images.DB (the row) ── items.Store.Live (the layer's item, no byte read)
         └─ no item: ErrLayerMissing → the run analyses only and wakes vuln-sync-trivy-db (Options.WakeDatabase)
+scan listener (packages)
+  GET /scan/v1/trivy-database[/<digest>] ── scanlisten.RegisterTrivyDatabase ── app.trivyDatabaseSource (the row, items.Store)
 ```
 
 | File | Responsibility |
 |---|---|
 | [trivydb.go](../../internal/vuln/sync/trivydb.go) | The task: the port `ImageDatabase` and `DatabaseRepository`, the codes of Q-VULN-174, the layer of the manifest, the record of the database in use |
-| [wire_vuln_database.go](../../internal/app/wire_vuln_database.go) | The port over the repository model, the worker's mirror host and the item store; the worker's reader of the layer (`databaseLayers`) |
+| [wire_vuln_database.go](../../internal/app/wire_vuln_database.go) | The port over the repository model, the worker's mirror host and the item store; the worker's look-up of the layer (`databaseInUse`); the source of the scan listener's database routes (`trivyDatabaseSource`) |
 | [image_database.go](../../internal/formathost/image_database.go) | `MirrorHost.ImageDatabaseUpstream`: a background run whose fills record `system:image-database`; `AdmitsName` |
 | [mirror_host.go](../../internal/formathost/mirror_host.go) | `filler`: who a background fill is recorded for (a pass, a probe's download, the database task) |
 | [vulnerabilities_database.go](../../internal/config/vulnerabilities_database.go) | `vulnerabilities.images.database`: the repository, the image, the size bound, the timeout; `ReadsThroughScannerTrivy` for the admin page's "in use" |
@@ -723,9 +750,9 @@ files by moving `items.created_at` back instead of waiting. No profile of the su
 
 ### The role scanner
 
-The analysis runs in a replica of the role `scanner` of the same binary, a Deployment of its own that holds no secret of the database, the
+Both steps run in a replica of the role `scanner` of the same binary, a Deployment of its own that holds no secret of the database, the
 object store, Valkey or the key ring ([R-ARCH-036](../spec/architecture.md#r-arch-036--the-role-scanner-what-it-serves-builds-reads-and-holds),
-[R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), ADR-212). The request path of one analysis:
+[R-HA-065](../spec/ha-and-helm.md#r-ha-065--the-scanner-deployment), ADR-212, ADR-229). The request path of one analysis:
 
 ```text
 worker: vuln-image-scan job ── Service.analyse ── IssueScan: a scan token for one manifest (registrytoken/scan.go)
@@ -736,35 +763,109 @@ scanner: scanner.Service.Handler ── a slot, the room (image + 64 MiB), the p
    ▼  vulnerabilities.images.registry.url, :8082                       the scanner's pair as client certificate
 packages: the scan listener (endpoint scan) ── auth.byScanToken ── registry enforcement point, digest pin ── authz decideSystem
    ── formathost: no block gate, no download count, no probe; usage under the subject system (credential vuln-scanner-trivy)
+worker: CheckAnalysis ── store.Images.PutSBOM (gzip as answered, the version, the packages)
 ```
 
 | Part | File | What it does |
 |---|---|---|
-| The role and its area | [wire_scanner.go](../../internal/app/wire_scanner.go), [roles.go](../../internal/app/roles.go), [steps.go](../../internal/app/steps.go) | The role builds the area `scanner` alone and the operations listener; `all` builds it too and listens on loopback (Q-ARCH-531). The unit's names (`unitVulnScannerTrivy`, `checkVulnScannerTrivy`): the log component, the listener's and the component's name `vuln-scanner-trivy`, the check `vulnScannerTrivy` (Q-HA-373, Q-OPS-221) |
-| The scanner | [internal/vuln/scanner](../../internal/vuln/scanner/scanner.go) | The handler (body of 16 KiB, decoded strictly), the slots, the drain, the answers with `terminal`, the reaper of Q-ARCH-530 ([reaper.go](../../internal/vuln/scanner/reaper.go)), the metrics `quader_scanner_*` |
+| The role and its area | [wire_scanner.go](../../internal/app/wire_scanner.go), [roles.go](../../internal/app/roles.go), [steps.go](../../internal/app/steps.go) | The role builds the area `scanner` alone and the operations listener; the role `all` builds no scanner of any kind and opens no scan listener of its own (Q-ARCH-563). The unit's names (`unitVulnScannerTrivy`, `checkVulnScannerTrivy`): the log component, the listener's and the component's name `vuln-scanner-trivy`, the check `vulnScannerTrivy` (Q-HA-373, Q-OPS-221) |
+| The process | [cmd/quader/serve.go](../../cmd/quader/serve.go), [dumpable_linux.go](../../internal/vuln/scanner/dumpable_linux.go) | `quader serve --role scanner` makes the process not dumpable before anything else (`prctl(PR_SET_DUMPABLE, 0)`, Q-VULN-203, Q-VULN-211): the analysers it starts can neither attach to it nor open its memory. In the process entry and not the app, so that a scanner replica a test starts in its own process leaves the test's process as it is |
+| The scanner | [internal/vuln/scanner](../../internal/vuln/scanner/scanner.go), [detect.go](../../internal/vuln/scanner/detect.go) | The handlers of both calls (an analysis's body of 16 KiB decoded strictly; a detection's query of three values and its gzip body of at most 64 MiB, 256 MiB decoded), the slots both share (Q-VULN-204), the drain, the answers with `terminal`, the reaper of Q-ARCH-530 ([reaper.go](../../internal/vuln/scanner/reaper.go)), the metrics `quader_scanner_*`, `Database()` for the report |
 | The pull | [pull.go](../../internal/vuln/scanner/pull.go) | The manifest and the blobs by digest from the scan listener, the checks of R-VULN-036 on what it brings; `404` or `403` with `Quader-Error-Code: populate_not_permitted` is `layer_missing` (Q-VULN-180), every other `401`/`403` the refused token |
-| The worker's call | [wire_vuln_scanner_call.go](../../internal/app/wire_vuln_scanner_call.go), [client.go](../../internal/vuln/imagescan/client.go) | The scan signer (`ForScans(pull_timeout)`), the link's TLS, the client |
-| The scan listener | [wire_scan_listener.go](../../internal/app/wire_scan_listener.go), [wire_endpoints.go](../../internal/app/wire_endpoints.go) | `server.scan_listen` on `packages` (never a pool), `web` and `all`; the endpoint `scan` with its own chain |
-| The scan token | [registrytoken/scan.go](../../internal/auth/registrytoken/scan.go), [auth/scan.go](../../internal/auth/scan.go) | Claims `s`, `sid`, `d`; the endpoint `scan`; the lifetime `pull_timeout`; the stage that accepts nothing else (R-EP-010) |
+| The worker's calls | [wire_vuln_scanner_call.go](../../internal/app/wire_vuln_scanner_call.go), [client.go](../../internal/vuln/imagescan/client.go), [detect.go](../../internal/vuln/imagescan/detect.go) | The scan signer (`ForScans(pull_timeout)`), the link's TLS, the client with the deadlines `pull_timeout + timeout + 1m` (analysis) and `timeout + 1m` (detection) |
+| The scan listener | [wire_scan_listener.go](../../internal/app/wire_scan_listener.go), [wire_endpoints.go](../../internal/app/wire_endpoints.go), [wire_vuln_scanlisten.go](../../internal/app/wire_vuln_scanlisten.go) | `server.scan_listen` on `packages` (never a pool), `web` and, when set, `all`; the endpoint `scan` with its own chain; the image scanning's database routes |
+| The scan token | [registrytoken/scan.go](../../internal/auth/registrytoken/scan.go), [auth/scan.go](../../internal/auth/scan.go) | Claims `s`, `sid`, `d`; the endpoint `scan`; the lifetime `pull_timeout`; the stage that accepts nothing else below `/v2/` (R-EP-010) and the image scanner's certificate without a token on `/scan/v1/trivy-database` (`byImageScannerCertificate`, Q-VULN-206) |
 | The digest pin and the decision | [registry/scan_pin.go](../../internal/api/registry/scan_pin.go), [authz/system.go](../../internal/authz/system.go) | The manifest of the token's digest and the blobs of its name only; one fixed rule: `read` of the named repository while it is active and not disabled, never `populate` |
 | The exemptions | [formathost/system_read.go](../../internal/formathost/system_read.go), [limits/subject.go](../../internal/limits/subject.go) | No block gate, no download, no probe; the subject `system`, limited by nothing (Q-OCI-230, Q-LIM-66) |
 | The links' TLS | [httpserver/link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go) | A listener that requires a client certificate of the internal CA listing the one kind's name it admits; the client side that presents the first pair of `server.tls`, checks its `client auth` usage and requires the server's kind name (R-ARCH-038, Q-ARCH-552); the link names (`LinkVulnScannerTrivy`, `LinkMalwareScannerClamav`, `LinkScan`) are the label `listener` of the material at both ends (Q-HA-373) |
-| The report of itself | [wire_scanner_report.go](../../internal/app/wire_scanner_report.go), [internal/scanreport](../../internal/scanreport/report.go), [scanlisten/replicas.go](../../internal/api/scanlisten/replicas.go), [cluster/scanner_replicas.go](../../internal/cluster/scanner_replicas.go) | Every `system.heartbeat_interval` the scanner puts its state, reason, Trivy's version (`Service.AnalyserVersion`) and slots to `/scan/v1/replicas/{uid}` on the scan listener, `draining` at `SIGTERM`, `DELETE` at its end; `packages` takes the kind from the client certificate (`vulnerabilities.images.registry.client_name` is `trivy`), checks the shape and writes `scanner_replica`; `GET /api/v1/system/scanners` lists it (R-OPS-048, Q-OPS-223) |
-| The chart | [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml), [_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl) | The Deployment `<fullname>-vuln-scanner-trivy`, its two Services, its policy, the managed keys, the checks of Q-HA-318 ([helm-chart.md](helm-chart.md)) |
+| The report of itself | [wire_scanner_report.go](../../internal/app/wire_scanner_report.go), [internal/scanreport](../../internal/scanreport/report.go), [scanlisten/replicas.go](../../internal/api/scanlisten/replicas.go), [cluster/scanner_replicas.go](../../internal/cluster/scanner_replicas.go) | Every `system.heartbeat_interval` the scanner puts its state, reason, Trivy's version (`Service.AnalyserVersion`), its slots and the newest database its directory holds (`Service.Database`) to `/scan/v1/replicas/{uid}` on the scan listener, `draining` at `SIGTERM`, `DELETE` at its end; `packages` takes the kind from the client certificate (`vulnerabilities.images.registry.client_name` is `trivy`), checks the shape and writes `scanner_replica`; `GET /api/v1/system/scanners` lists it (R-OPS-048, Q-OPS-223, Q-OPS-225). The loader reports nothing |
+| The chart | [vuln-scanner-trivy.yaml](../../deploy/helm/quader/templates/vuln-scanner-trivy.yaml), [_vuln.tpl](../../deploy/helm/quader/templates/_vuln.tpl) | The Deployment `<fullname>-vuln-scanner-trivy` with its containers `quader` and `database` and the volume `trivy-db`, its two Services, its policy, the managed keys, the checks of Q-HA-318 and Q-HA-380 ([helm-chart.md](helm-chart.md)) |
 
-**Run it locally.** `make ui-dev-backend` runs the role `all`, whose worker calls its own scanner over loopback through the same client,
-token and checks; without the analyser binary the process stays ready and `/readyz?verbose=1` shows `vulnScannerTrivy` degraded (Q-ARCH-551, Q-OPS-221). The integration stack starts a scanner replica beside `web` and `worker` with `StackOptions{TLS: true}`
-([test/integration/vulnimage](../../test/integration/vulnimage)), with the analyser replaced at the seam (`app.VulnOverride.ImageAnalyser`).
-With TLS the harness issues each role a pair of its own from the stack's CA (`rolePairs` in [testenv/tls.go](../../test/integration/testenv/tls.go):
-the names `<kind>.quader.test`, `web` carrying `api`'s and `packages`', and `localhost`, `127.0.0.1`) and sets the four names of the links,
-so the suite runs the checks of the chart; `Stack.RolePair` hands a test the pair of a role to present itself (Q-ARCH-553).
+**Run it locally.** `make ui-dev-backend` runs the role `all`, which builds no image scanner: with `vulnerabilities.images.scanner.url`
+empty the job ends at once with the result "no image scanner is configured" and touches no row, the images show `pending_scan` and
+`GET /api/v1/system/scanners` answers `replicas: "none"` for `trivy` (Q-ARCH-563). The image scanning runs on the kind profile `vuln`
+([e2e.md](e2e.md)). The integration stack starts a scanner replica beside `web` and `worker` with `StackOptions{TLS: true}`
+([test/integration/vulnimage](../../test/integration/vulnimage)), with the analyser replaced at the seam for both steps
+(`app.VulnOverride.ImageAnalyser`), and, where a test needs the loader, a replica of the kind `trivy-db` beside it with the same pair and
+database directory (`flow.startLoader`, `app.VulnOverride.LoaderPoll` for a poll of 200 ms). Elsewhere the flow writes the database
+directory as the loader would (`flow.setDB`) and the worker's look-up is replaced (`app.VulnOverride.ImageDatabase`). With TLS the harness
+issues each role a pair of its own from the stack's CA (`rolePairs` in [testenv/tls.go](../../test/integration/testenv/tls.go): the names
+`<kind>.quader.test`, `web` carrying `api`'s and `packages`', and `localhost`, `127.0.0.1`) and sets the four names of the links, so the suite
+runs the checks of the chart; `Stack.RolePair` hands a test the pair of a role to present itself (Q-ARCH-553).
 
-**The fidelity test.** `make test-analyser` fetches the pinned analyser (`make trivy`) and runs
-`TestQ_VULN_164_TheRewrittenAnalysisDetectsWhatTheAnalysersOwnDoes`: an Alpine 3.12 image of a few kilobytes is analysed, the analysis is
-written anew by `Rewrite`, and the two detections against the fixture database must be equal, field by field. A member the detection reads
-and the rewrite drops fails it (it found `licenses`, Q-VULN-183). CI runs it as a step of the job `container-scan`; it takes about 2 s with a
-warm build cache and about 18 s with a cold one (measured on 2026-11-20 on an Apple M1 Ultra of 20 cores; the runner of the job was not measured). A raise of the analyser's pin that
-fails it needs the member added to `sbom.go` and to R-VULN-043, or the fixture database regenerated if the schema version moved.
+### The detection in the scanner and the loader (R-VULN-048, R-VULN-049)
+
+The owner's decision of 2026-11-21 (ADR-229): the unit does both steps, and each pod keeps the database read-only.
+
+```text
+worker: Service.detect ── store.Images.SBOM (gzip, version, packages) ── Database.InUse (the source's digest, the layer's item looked up)
+   │  POST /scan/v1/detections?database=sha256:<hex>&analyser=<version>&digest=sha256:<hex>
+   │  Content-Type: application/vnd.cyclonedx+json, Content-Encoding: gzip, the stored bytes; no token
+   ▼  vulnerabilities.images.scanner.url, :8080, one connection per call, deadline timeout + 1m
+scanner (container quader): 409 analysis_outdated (another analyser version, with its own in Quader-Analyser-Version)
+   │                         503 database_loading (no complete <database.dir>/<hex>), 503 scanner_busy / scanner_draining
+   │  a slot, 64 MiB of the spool, the body decoded into detection-*/analysis.json,
+   │  trivy sbom … --cache-dir <database.dir>/<hex> (read-only mount), HOME and TMPDIR in the working directory
+   ▼  200 application/json, gzip, Quader-Analyser-Version, Quader-Database
+worker: the headers checked against the call before the body; ParseReport (256 MiB, schema 2, the bounds of an advisory) ── ApplyImage
+
+loader (container database, kind trivy-db): every 5 s before its first database, every 30 s after
+   GET /scan/v1/trivy-database                     → {"digest": "sha256:<hex>", "size": 142567123, "builtAt": "…"} or {"digest": ""}
+   GET /scan/v1/trivy-database/sha256:<hex>        → the layer, Content-Length and Repr-Digest; another digest or a missing item 404
+   UnpackDatabase into <dir>/unpack-*, the room of each file held from its header against dir_budget, each file flushed to the disk every
+   32 MiB (Q-VULN-212), the hash checked, metadata.json checked, renamed to <dir>/<hex>; the older databases go before a new one; one
+   that does not fit beside the newest replaces it
+```
+
+| What happened | Code on the row | Attempt | Due again |
+|---|---|---|---|
+| `200`, the report passes the checks | none: the detection is applied | — | — |
+| the first `409 analysis_outdated` of a cycle | none: the image is analysed again, the analysis replaces the stored one, the detection runs once more | — | — |
+| the second `409` of a cycle | `scanner_versions_differ` | none | 1 minute |
+| `503 database_loading` after three tries within 3 s | none: the run ends with the result `waiting` and runs again after 30 s (Q-VULN-201) | none | the run, 30 s |
+| `503 scanner_busy`, `scanner_draining`; no connection; a refused handshake | `scanner_busy`, `scanner_unavailable` | none | 1 minute |
+| `422 analyser_failed` | `analyser_failed`, and the stored analysis is deleted (Q-VULN-202) | spent | the back-off |
+| `422 timeout`, `report_too_large`; a broken connection (`scanner_lost`); the deadline | the code | spent | the back-off |
+| `422 spool_too_small` | `spool_too_small` | none | 1 hour |
+| an answer whose `Quader-Database` or `Quader-Analyser-Version` differs, no JSON, or a report that does not parse | `analyser_failed` | spent | the back-off |
+
+**The API package 2 builds on** (the screens of the database per scanner pod; the contract, not the screens, is this change's):
+
+- `GET /api/v1/system/scanners` (`settings:read`): every row of the kind `trivy` carries `database: {version, builtAt}` once its pod's loader
+  completed a database, `null` before. `version` is the 64 lower-case hexadecimal digits of the layer's digest of the **newest** database the
+  pod's directory holds (the one its loader wrote last, by the modification time of its `metadata.json`, so after a tag that moved back
+  the older database in use, Q-VULN-213); `builtAt` is the build time in its `metadata.json` while `version` is the database in use (the
+  source `trivy`'s digest, `vuln_source_state.etag` without its `sha256:`), and `null` for another database. So "Database of <builtAt>" is a
+  pod on the database in use, "an older database" a pod whose `builtAt` is `null` with a `version`, "no database yet" a pod whose `database`
+  is `null` (R-OPS-048, Q-OPS-225). The kinds list answers `replicas: reporting | unverified | none`; `inProcess` is gone (Q-ARCH-563).
+- The database in use itself is the item of the source `trivy` in `GET /api/v1/vulnerabilities/sources` as before (R-VULN-045); its digest is
+  `vuln_source_state.etag`. The scan listener's listing (`imagescan.DatabaseListing`: `digest`, `size`, `builtAt`) is internal to the
+  pods and not part of the management API.
+- A pod that has not loaded the database in use answers detections `database_loading`; the worker's run waits 30 s and counts
+  `quader_vuln_image_scans_total{result="database_loading"}`; the scanner counts `quader_scanner_detections_total{result="database_loading"}`.
+
+| Part | File | What it does |
+|---|---|---|
+| The loader | [internal/vuln/dbloader](../../internal/vuln/dbloader/loader.go) | The loop, the listing, the layer, the budget, the two databases (newest is loaded last, `imagescan.LoadedAt`, Q-VULN-213), the replacement when only one fits, the leftovers at start. A round that fails logs one warning ("the image scanner's database could not be loaded; the loader asks again") and is tried at the next poll. That is every 5 s while the pod holds no database, as the malware scanner's loader asks before its first version ([malware/database/loader.go](../../internal/malware/database/loader.go)), and every 30 s once it holds one (R-VULN-049). This is the intended rate: a pod whose scan listener cannot be reached during a rollout logs twelve lines a minute until its first load, two a minute after |
+| Its wiring | [wire_vuln_loader.go](../../internal/app/wire_vuln_loader.go) | The kind `trivy-db`: the area with the loader alone, the pod's pair and CA on the link to the scan listener, its readiness (the pair) and no report |
+| The routes | [scanlisten/trivydb.go](../../internal/api/scanlisten/trivydb.go), [wire_vuln_scanlisten.go](../../internal/app/wire_vuln_scanlisten.go) | `GET /scan/v1/trivy-database[/<digest>]`: the principal `system:vuln-scanner-trivy` of the image scanner's certificate (`trivyDatabasePeer`); the layer of the digest in use only, hashed while it is sent; no usage record |
+| The configuration | [process.go](../../internal/config/process.go), [scanner_role.go](../../internal/config/scanner_role.go), [vulnerabilities_database.go](../../internal/config/vulnerabilities_database.go) | `process.scanner_kind: trivy-db` reads `process`, `server`, `health`, `log`, `metrics`, `runtime`, `vulnerabilities.images.registry` and `.database`; `database.dir` and `database.dir_budget` |
+| The schema | [00099_vuln_image_detection.sql](../../internal/meta/postgres/migrations/00099_vuln_image_detection.sql), [vuln_image.sql](../../internal/meta/postgres/queries/vuln_image.sql), [cluster.sql](../../internal/meta/postgres/queries/cluster.sql) | The analyses stored before removed (Q-VULN-214); one analysis per digest with its version and packages; the order of `VulnImageDue`; a trivy row's database and build time |
+
+**Measured on the kind cluster** (2026-11-21, the set `vuln` on a cluster of this machine, the fixture database of 128 KiB; a measurement, not a
+test): the set passed (98 tests and subtests, `go test` 229.5 to 244.9 s, the last run on a new cluster with the code as committed) on an
+Apple M1 Ultra of 20 cores under a load of 12 to 80 from other builders' clusters, so every figure is an upper bound. The scanner's case
+took 4.8 to 11.6 s. Every loader held the fixture database 1.0 to 2.3 s after the task recorded it (a poll of 5 s before the first
+database), the analysis was stored 0.16 to 1.4 s after the task run, the detection 0.15 to 0.17 s after the analysis, and the rest is the
+wait for the pods' next report (one heartbeat at most). With the real database of that day (built 13:02 UTC, 1,809,780,879 bytes unpacked) each pod's loader loaded it 5.4 and
+5.6 s after its start. Before Q-VULN-212 the container `database` was killed by the kernel five times during that load, with 233,705,472
+bytes of dirty file pages and 22 MB of its own memory; with a flush every 32 MiB it loads without a restart. Its cgroup then sits at its
+limit of 256 MiB, of which 25.9 MB are the process's own and the rest clean page cache that the kernel takes back, and 4 KiB stay dirty
+after the load. Both processes of a pod are not dumpable. A probe container of the same user (65532), started in each container's
+process namespace, could not read `/proc/1/environ` or `/proc/1/maps` of `quader`, whose files there are owned by root with mode 0400.
+It could read those of a `sleep` it started itself. `/metrics` of both containers answered 200 with the `process_*` series (57 to 61 MB
+resident while idle). Not measured: a detection against the real database in a pod (the planner measured 0.06 to 0.32 s per detection in
+containers, R-VULN-046), the worker's transaction that applies one, anything on amd64 or on the runners.
 
 ## Tests that pass now
 

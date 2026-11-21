@@ -3339,7 +3339,6 @@ func (e ScannerKindPurpose) Valid() bool {
 
 // Defines values for ScannerKindReplicas.
 const (
-	ScannerKindReplicasInProcess  ScannerKindReplicas = "inProcess"
 	ScannerKindReplicasNone       ScannerKindReplicas = "none"
 	ScannerKindReplicasReporting  ScannerKindReplicas = "reporting"
 	ScannerKindReplicasUnverified ScannerKindReplicas = "unverified"
@@ -3348,8 +3347,6 @@ const (
 // Valid indicates whether the value is a known member of the ScannerKindReplicas enum.
 func (e ScannerKindReplicas) Valid() bool {
 	switch e {
-	case ScannerKindReplicasInProcess:
-		return true
 	case ScannerKindReplicasNone:
 		return true
 	case ScannerKindReplicasReporting:
@@ -11929,9 +11926,11 @@ type RotateRequest struct {
 
 // ScannerDatabase defines model for ScannerDatabase.
 type ScannerDatabase struct {
-	// BuiltAt The build time of the version while it is the version in use; for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
+	// BuiltAt The build time of the version while it is the version in use (for `trivy` the build time of the database's metadata.json while its digest is the database in use, the source `trivy`'s); for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
 	BuiltAt *time.Time `json:"builtAt"`
-	Version string     `json:"version"`
+
+	// Version The version of a signature database (`clamav`, `freshclam`), or the 64 hexadecimal digits of the digest of an image scanner's database layer (`trivy`).
+	Version string `json:"version"`
 }
 
 // ScannerKind defines model for ScannerKind.
@@ -11945,8 +11944,8 @@ type ScannerKind struct {
 
 	// Replicas Whether the kind's replicas report themselves here (Q-OPS-223): `reporting`, the installation calls scanner pods of the kind
 	// and the scan listener records their reports, so an empty list is a fault; `unverified`, it calls them but the scan listener
-	// cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `inProcess`, the development role
-	// `all` runs the scanner in its own process and no pod reports; `none`, no scanner of the kind is configured.
+	// cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `none`, no scanner of the kind is
+	// configured (the development role `all` builds none, Q-ARCH-563).
 	Replicas ScannerKindReplicas `json:"replicas"`
 
 	// Tool The name of the tool the kind runs.
@@ -11961,8 +11960,8 @@ type ScannerKindPurpose string
 
 // ScannerKindReplicas Whether the kind's replicas report themselves here (Q-OPS-223): `reporting`, the installation calls scanner pods of the kind
 // and the scan listener records their reports, so an empty list is a fault; `unverified`, it calls them but the scan listener
-// cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `inProcess`, the development role
-// `all` runs the scanner in its own process and no pod reports; `none`, no scanner of the kind is configured.
+// cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `none`, no scanner of the kind is
+// configured (the development role `all` builds none, Q-ARCH-563).
 type ScannerKindReplicas string
 
 // ScannerList defines model for ScannerList.
@@ -11976,7 +11975,7 @@ type ScannerList struct {
 
 // ScannerReplica defines model for ScannerReplica.
 type ScannerReplica struct {
-	// Database The signature database clamd scans with (`clamav`), or the set the updater's directory holds (`freshclam`); `null` before its first load, while the updater holds no complete set, and for `trivy`.
+	// Database The database the replica works with (Q-OPS-225): the signature database clamd scans with (`clamav`), the set the updater's directory holds (`freshclam`), or the newest database the image scanner's pod holds (`trivy`, R-VULN-049); `null` before its first load and while the updater holds no complete set.
 	Database *ScannerDatabase `json:"database"`
 
 	// HeartbeatAt The last report, by the database's clock.
@@ -11997,7 +11996,7 @@ type ScannerReplica struct {
 	// Node The Kubernetes node name the scanner reports; `null` outside Kubernetes.
 	Node *string `json:"node"`
 
-	// Reason The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `seed` (the updater before its seed ended), `starting`.
+	// Reason The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `seed` (the updater before its seed ended), `starting`. An image scanner's readiness does not wait for its database (R-VULN-049): a pod that has not loaded the database in use shows in `database`.
 	Reason   *string `json:"reason"`
 	Revision string  `json:"revision"`
 	Slots    struct {

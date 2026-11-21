@@ -4,13 +4,13 @@ Status: R-VULN-033 to R-VULN-037 are built, and the analysis runs in the role `s
 ([R-VULN-041 to R-VULN-043, R-VULN-046](../spec/vulnerability-scanning.md#r-vuln-041--the-call-from-the-worker-to-the-scanner),
 [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret); [developer page](../developer/vulnerabilities.md#the-role-scanner)).
 The database in a repository of Quader ([R-VULN-044, R-VULN-045](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository),
-[ADR-214](../decisions.md#adr-214--the-analysers-database-lies-in-a-repository-of-quader)) is built. The detection in the scanner and the
-analyser from its own image ([R-VULN-048, R-VULN-049](../spec/vulnerability-scanning.md#r-vuln-048--the-detection-in-the-scanner-a-call-that-carries-the-stored-analysis),
-[R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod),
-[ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)) are specified and not built;
-the [section that says so](#the-detection-in-the-scanner-and-the-analyser-from-its-own-image-specified-not-built) describes them, and
-everything above it describes what runs today. The perspective of this page is what an attacker who can push an image, or influence the
-database, can do to the pods that analyse and detect it.
+[ADR-214](../decisions.md#adr-214--the-analysers-database-lies-in-a-repository-of-quader)) is built. The detection in the scanner
+([R-VULN-048, R-VULN-049](../spec/vulnerability-scanning.md#r-vuln-048--the-detection-in-the-scanner-a-call-that-carries-the-stored-analysis),
+[ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)) is built: both steps run
+in the scanner, the worker runs no tool, and each scanner pod holds the database read-only. The analyser from its own image
+([R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)) is not built yet: the
+analyser is still the release image's, in every pod of Quader, and run by the scanner only. The perspective of this page is what an
+attacker who can push an image, or influence the database, can do to the pods that analyse and detect it.
 
 ## The boundary
 
@@ -19,13 +19,14 @@ images of anyone the upstream serves. So the design treats the analyser as code 
 and runs it in a pod that holds nothing worth taking.
 
 ```
- worker job ──HTTPS, mutual TLS──▶ scanner pod ──HTTPS, mutual TLS, scan token──▶ packages: scan listener
- holds the job, the database,      no secret of PostgreSQL, the object store,       one manifest by digest and
- the detection                     Valkey; no key ring; checks every byte;          the blobs of its name; read,
-      ▲                            the analyser in a process group of its own       never fill; no block gate
-      │
-      └──── the package list (CycloneDX, at most 256 MiB) ────┘
- worker: decodes it under limits, writes it anew, stores it, runs the detection on what it wrote ──▶ PostgreSQL
+ worker job ──HTTPS, mutual TLS──▶ scanner pod
+ runs no tool; keeps the analysis   container quader: the scanner, both steps; the database read-only; not dumpable;
+ as answered after a bounded        no secret of PostgreSQL, the object store, Valkey; no key ring; checks every byte;
+ check; reads the report in Go      the analyser in a process group of its own
+      ▲                             container database (kind trivy-db): writes the database, reads the scan listener
+      │                                  │ HTTPS, mutual TLS: the scan token's pull, and the database's layer by the pod's certificate
+      │                                  ▼ packages: scan listener (one manifest by digest and its blobs; read, never fill; no block gate)
+      └── the package list (analysis) and the report (detection), each at most 256 MiB, untrusted ──▶ PostgreSQL
 ```
 
 What the scanner enforces before the analyser sees a byte is the table of
@@ -58,10 +59,13 @@ What it cannot: read another repository or push or delete anything (the token's 
 PostgreSQL, Valkey or the object store with a credential (there is none in the pod); call the worker (nothing listens for it, and the
 worker's pods admit no ingress on a client port); outlive its analysis (the scanner kills the process group with the call and, when no
 other analysis runs, every other process of its container, Q-ARCH-530); write the stored analysis of another image (the worker writes the
-store); or feed the worker's analyser bytes of its own choosing (the worker writes the document anew,
-[H-1038](#h-1038--the-detection-still-runs-the-analyser-in-the-worker)). Whether the analyser can read the scanner process's memory, which
-holds the same pair and the tokens of the calls in flight, is the node kernel's ptrace rule for processes of one user; that rule was not
-verified on any cluster.
+store); change the database or what judges the next image (the database is a read-only mount, written by the container `database`); or
+read or change the scanner process's memory, which holds the same pair and the tokens of the calls in flight: the scanner makes itself not
+dumpable at its start, so the kernel requires `CAP_SYS_PTRACE`, which the pod drops, whatever the node's ptrace scope
+([Q-VULN-203](../spec/vulnerability-scanning.md#q-vuln-203--the-scanners-process-is-not-dumpable-so-its-analysers-can-neither-read-nor-change-it);
+shown by a unit test on Linux and looked at in a pod of the kind cluster, [developer page](../developer/vulnerabilities.md#the-detection-in-the-scanner-and-the-loader-r-vuln-048-r-vuln-049)).
+No analyser runs in a pod with secrets: the worker runs none. The analyser's binary is the release image's, on the container's read-only
+root file system, until R-HA-070's copy from the analyser's own image puts it on a read-only mount.
 
 ## Who may call the scanner, and how the pull is authorised
 
@@ -82,7 +86,7 @@ by nothing (Q-LIM-66).
 
 Nothing about an image, as long as the analyser behaves as configured. It runs with the flags that switch off its update check, its
 telemetry and every database update (`--skip-version-check`, `--disable-telemetry`, `--skip-db-update`, `--skip-java-db-update`,
-`--offline-scan`), in the scanner and in the worker. The only outbound request of the feature is the database's: the database
+`--offline-scan`), in the scanner for both steps. The only outbound request of the feature is the database's: the database
 repository's, made by the remote engine of the worker to the repository's upstream under its settings (its address, its account, the egress
 rules of [egress.md](egress.md), the outbound proxy), as a background request within the repository's share, and none with a local
 repository ([R-VULN-044](../spec/vulnerability-scanning.md#r-vuln-044--the-databases-repository)). It asks for the tag of the database's
@@ -98,8 +102,9 @@ it ([H-813](#h-813--the-integrity-of-the-database-is-that-of-its-repository)). A
 GHSA-mcj4-mphf-j9ff (a crafted database writing outside the cache) has nothing to act on. The layer's name decides no path either: the task
 takes a digest only as `sha256:` and 64 lower-case hexadecimal digits, and the worker refuses any other digest it reads from the source's row
 before it names its cache's directory ([Q-VULN-193](../spec/vulnerability-scanning.md#q-vuln-193--the-layers-digest-is-taken-only-as-sha256-and-64-hexadecimal-digits-in-the-task-and-in-the-worker)).
-The worker hashes the layer while it unpacks it and keeps nothing whose hash is not the digest in use. A database that does not pass its
-checks is refused and the last good one stays. The task's fills are recorded as `authz.write.allowed` with the actor `system:image-database`
+The loader of every scanner pod reads the layer through the scan listener with the pod's certificate, hashes it while it unpacks it and
+keeps nothing whose hash is not the digest the listing named; the routes serve the layer of the digest in use only, and every holder of the
+scanner's pair can read it, which is public data. A database that does not pass its checks is refused and the last good one stays. The task's fills are recorded as `authz.write.allowed` with the actor `system:image-database`
 and the reason `image-database` ([authorization.md](../spec/authorization.md) R-AUTHZ-008), so the audit log says when the repository took a
 new layer and from where.
 
@@ -120,35 +125,26 @@ one that does not fit is answered `scanner_busy`, one that cannot fit an empty s
 an attempt. The chart refuses a scanner spool budget below `slots × (max_image_size + 64 MiB)`
 ([Q-HA-318](../spec/ha-and-helm.md#q-ha-318--the-working-space-moves-with-the-analysis-the-chart-checks-the-scanners-spool-and-the-workers-returns-to-5-gi)).
 
-The worker's spool holds the unpacked database once, by the sizes in its archive's headers before a byte is written, and 64 MiB per
-detection; a detection that does not fit waits two minutes and is then put off (`spool_busy`), and the chart refuses a worker spool budget
-below 2 GiB + 512 MiB for the pool that claims `vuln`
-([Q-VULN-145](../spec/vulnerability-scanning.md#q-vuln-145--the-working-space-of-the-scanning-is-admitted-through-the-spools-own-budget)).
+A detection holds 64 MiB of the same budget, and is put off the same way. The worker's spool holds nothing of the image scanning. The
+database lies in a volume of its own, `trivy-db`, which the loader counts against its budget by the sizes in the archive's headers before a
+byte is written; the chart refuses a volume below 4 GiB, room for the newest database and the one before it
+([Q-HA-380](../spec/ha-and-helm.md#q-ha-380--the-database-volume-follows-spooltype-5-gi-by-default-and-the-chart-refuses-less-than-4-gi)).
 
 What this does not do is bound what the analyser itself writes ([H-871](#h-871--the-analysers-own-files-are-bounded-by-a-margin-not-enforced)).
 
-## The detection in the scanner and the analyser from its own image (specified, not built)
+## The detection in the scanner and the analyser from its own image
 
 The owner's decision of 2026-11-21 moves the detection into the scanner unit and the analyser out of every other image
-([ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)). Once built, the picture
-above changes so:
-
-```
- worker job ──HTTPS, mutual TLS──▶ scanner pod
- runs no tool; keeps the analysis   container quader: the scanner; /opt/trivy and the database read-only; not dumpable
- as answered after a bounded        container database (kind trivy-db): writes the database, reads the scan listener with the pod's pair
- check; reads the report in Go      init container trivy: the analyser's own image, copies the binary, then ends
-      ▲                                  │ HTTPS, mutual TLS: the scan token's pull, and the database's layer by the pod's certificate
-      │                                  ▼
-      └── the package list (analysis) and the report (detection), each at most 256 MiB, untrusted
-```
+([ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)). The detection, the
+loader and the process that is not dumpable are built (the picture above); the init container `trivy` that copies the analyser from its own
+image into a read-only volume is not, and until it is the release image of every pod carries the analyser, which only the scanner runs.
 
 - **No analyser in a pod with secrets.** The worker sends the stored analysis to `POST /scan/v1/detections` and decodes the report in Go
   under the limits of an advisory (schema version 2, 50,000 advisories of 256 components, texts cleaned and cut), after it has checked that
   the answer names the database and the analyser version of the call
   ([R-VULN-048](../spec/vulnerability-scanning.md#r-vuln-048--the-detection-in-the-scanner-a-call-that-carries-the-stored-analysis)). The
-  release image of Quader carries no analyser at all ([R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)).
-  [H-1038](#h-1038--the-detection-still-runs-the-analyser-in-the-worker) then closes.
+  release image of Quader will carry no analyser at all once [R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)'s
+  init container is built. H-1038 (the detection ran the analyser in the worker) is closed.
 - **What judges the next image cannot be changed by this one.** The database lies in a volume that the container `database` writes and the
   container `quader`, which starts the analysers, mounts read-only; so does the analyser's binary, which the init container copied as the
   pod's user (measured: the copy belongs to user 65532, the user of every analyser, so only the read-only mount protects it)
@@ -157,9 +153,9 @@ above changes so:
   The scanner sets itself not dumpable, so an analyser of its user can neither attach to it nor open its memory, whatever the node's ptrace
   rule ([Q-VULN-203](../spec/vulnerability-scanning.md#q-vuln-203--the-scanners-process-is-not-dumpable-so-its-analysers-can-neither-read-nor-change-it));
   with one slot the reaper of Q-ARCH-530 ends what an analyser left before the next call, and each call has a fresh working directory, `HOME`
-  and `TMPDIR`. A taken-over analyser can therefore falsify the answer of its own call, as today, and nothing after it; with `slots` above 1
-  the calls of the same moment as well ([H-1037](#h-1037--analyses-that-share-a-scanner-share-its-user)). A taken-over scanner process is
-  [H-1181](#h-1181--a-scanner-pod-whose-own-process-is-taken-over-answers-every-detection-it-serves).
+  and `TMPDIR`. A taken-over analyser can therefore falsify the answer of its own call, and nothing after it; with
+  `slots` above 1 the calls of the same moment as well ([H-1037](#h-1037--analyses-that-share-a-scanner-share-its-user)). A taken-over
+  scanner process is [H-1181](#h-1181--a-scanner-pod-whose-own-process-is-taken-over-answers-every-detection-it-serves).
 - **The kept analysis is the analyser's own.** The worker checks its size, shape and depth and keeps it as answered; it no longer writes it
   anew, because no process of the worker parses it beyond Go's decoder
   ([Q-VULN-198](../spec/vulnerability-scanning.md#q-vuln-198--the-worker-keeps-the-analysis-as-the-scanner-answered-it-after-a-bounded-check-and-the-rewrite-goes)).
@@ -227,7 +223,7 @@ the reader of a repository or of a package sees them.
 
 One `vuln-image-scan` job runs across the installation, with `concurrency` calls to the scanners at once (2 by default). A backlog of many
 images after a new analyser version is worked off at the pace of that one job and of the scanners' capacity; a new database costs no
-analysis, only detections in the worker.
+analysis, only detections in the scanners' slots, which analyses share (R-VULN-048 says how long a cycle takes).
 
 ### H-871 · The analyser's own files are bounded by a margin, not enforced
 
@@ -241,16 +237,17 @@ ordinary image was not measured.
 
 ### H-872 · The database allowance of the chart is a constant
 
-The chart checks the worker's spool budget against 2 GiB for the unpacked database; the database was 1.6 GiB on 2026-11-10 and changes with
-every update. At run time the exact size is held, so a database that outgrows the budget is refused when it is unpacked, not when the chart is
-installed: `vuln-image-scan` then ends with a `skipped` result naming the reason, every image stays `pending_scan`, and the signals are that
-result, the log and the counter `quader_vuln_image_scans_total{result="spool_busy"}`, which `QuaderVulnerabilityImageScansFailing` covers
-after an hour. What makes it real: an installation that sized `worker.spool.sizeLimit` exactly to the check and a database that grows past
-2 GiB.
+The chart checks the scanner pod's database volume (`vulnScannerTrivy.database.sizeLimit`) against 2 × 2 GiB for the newest database and the
+one before it (Q-HA-380); the database was 1.7 GiB on 2026-11-21 and changes with every update. At run time the loader holds the exact
+sizes, so a database that does not fit beside the newest replaces it (detections answer `database_loading` until it is complete), and one
+larger than the whole volume is refused when it is unpacked, not when the chart is installed: every detection then answers
+`database_loading`, the images keep their last detections, and the signals are the loader's log, the counter
+`quader_vuln_image_scans_total{result="database_loading"}` and `QuaderVulnerabilityImageScannerUnavailable`. What makes it real: a volume
+sized exactly to the check and a database that grows past 2 GiB, or past the whole volume.
 
 ### H-873 · A refused scan waits an hour after the limit is raised
 
-A scan refused with `spool_too_small` is due again after an hour. An operator who raises `vulnScannerTrivy.spool.sizeLimit` or the worker's, or lowers
+A scan refused with `spool_too_small` is due again after an hour. An operator who raises `vulnScannerTrivy.spool.sizeLimit`, or lowers
 `max_image_size`, sees the images scanned within that hour, not at once; a rescan of the repository (R-VULN-011) brings them forward. What
 makes it real: the first install of a scanner or a pool with a spool that is too small.
 
@@ -311,16 +308,6 @@ a process alive across calls that the reaper of Q-ARCH-530 does not get to. An i
 both spend an attempt. What makes it real: more than one slot and a hostile image among the images analysed; raising the replicas instead of
 the slots avoids it.
 
-### H-1038 · The detection still runs the analyser in the worker
-
-Component: the detection in the worker ([R-VULN-043](../spec/vulnerability-scanning.md#r-vuln-043--what-the-worker-keeps-of-an-analysis),
-Q-VULN-164, Q-VULN-169). Subject: the worker pod and every credential it holds. Live by design. The worker runs `trivy sbom` on a document it
-wrote itself from the members it decoded under limits, so the bytes the analyser parses there are Quader's; their values (package names,
-versions, `purl`s, licences, properties) are still the image's, up to 4 KiB each. A flaw of the analyser in matching such values against its database
-would run in the pod with secrets. What makes it real: a flaw in the analyser's detection path that a value of an image's package database can
-reach; the detection's parsing is far smaller than the analysis's, which is why the owner's split puts the analysis in the scanner. It
-closes when the detection in the scanner is built (ADR-229, [R-VULN-048](../spec/vulnerability-scanning.md#r-vuln-048--the-detection-in-the-scanner-a-call-that-carries-the-stored-analysis)).
-
 ### H-1039 · A remote image whose layers no client brought is not scanned
 
 Component: the scanner's pull from a remote repository ([R-VULN-042](../spec/vulnerability-scanning.md#r-vuln-042--the-scanners-pull-through-the-registry),
@@ -364,13 +351,13 @@ holds: that is its operator's to keep, and the general cache cleanup of R-REPO-0
 
 Component: the scanner's process in a pod of `vuln-scanner-trivy`, with the detection of
 [R-VULN-048](../spec/vulnerability-scanning.md#r-vuln-048--the-detection-in-the-scanner-a-call-that-carries-the-stored-analysis).
-Subject: the findings of every image whose detection reaches that pod, and the blocks set in triage on them. Dormant: the detection in the
-scanner is specified, not built; live once it is. The worker takes a report that names the call's database and analyser version and passes
+Subject: the findings of every image whose detection reaches that pod, and the blocks set in triage on them. Live since the detection in
+the scanner is built (2026-11-21). The worker takes a report that names the call's database and analyser version and passes
 its bounds; it cannot tell a true report from one that leaves findings out. A scanner process that answers false reports therefore makes
 those findings resolve at the next re-detection, and a block set in triage on such a finding lifts (R-VULN-012) until a true detection
 finds the match again and restores it, for every image the Service sends to that pod until the pod restarts. Today the same process could falsify only new analyses; with the detection there, every
-re-detection after every new database passes through it. What stands between an analyser and the process: the read-only database and binary,
-the reaper with one slot, and the process not dumpable (Q-VULN-203). What makes it real: a flaw in the scanner's own code that a hostile
+re-detection after every new database passes through it. What stands between an analyser and the process: the read-only database, the binary
+(on the read-only root file system, a read-only mount once R-HA-070's copy is built), the reaper with one slot, and the process not dumpable (Q-VULN-203). What makes it real: a flaw in the scanner's own code that a hostile
 image or registry answer reaches (its pull, the checks and the walk of R-VULN-036 are part of the boundary, Q-VULN-167), or a kernel flaw
 that lets a process of the same user past the non-dumpable flag; with `slots` above 1, a taken-over analyser reaches the detections of the
 same moment without either (H-1037). Nothing compares the detections of two pods.

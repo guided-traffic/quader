@@ -235,6 +235,15 @@ vulnScannerTrivy:
       ephemeral-storage: 1Gi
     limits:
       memory: 2Gi                       # one analyser per slot (config.vulnerabilities.images.memory_limit is its soft limit); an image that needs more ends this pod's analysis, never a worker
+  database:                             # the container database, the loader of Trivy's database (R-HA-070, R-VULN-049)
+    sizeLimit: 5Gi                      # the volume trivy-db and the loader's budget: the newest database and the one before it (1.7 GiB each on 2026-11-21); at least 4Gi, validated; follows spool.type
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+        ephemeral-storage: 2Gi          # one database on the node's disk
+      limits:
+        memory: 256Mi
   autoscaling:
     enabled: false
     minReplicas: 2

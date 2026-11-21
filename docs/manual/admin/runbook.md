@@ -136,27 +136,22 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 **What you see.** `QuaderSpoolNearlyFull` (more than 90 % used for 10 minutes). Uploads answer `503 unavailable` with a sentence about the spool, and clients retry. `quader_spool_used_bytes` and `quader_spool_free_bytes` per replica. A pod that is `Evicted`: `kubectl describe pod` names the emptyDir that passed its limit. A mirror pass waits 5 seconds and repeats the item; an advisory sync that needs the space fails; an image scan waits and is then put off (below).
 
-**What it means.** Every pod has one spool volume (`spool.sizeLimit` 20 GiB by default; `worker.spool.sizeLimit` 5 GiB; `vulnScannerTrivy.spool.sizeLimit` 6 GiB). The usable budget is the size minus `spool.headroom` (2 GiB), and is held per replica. The worker's budget is shared by the cache fills of jobs, the artifacts of a mirror pass, one advisory archive while a sync runs, and the detections of the image scanning.
+**What it means.** Every pod has one spool volume (`spool.sizeLimit` 20 GiB by default; `worker.spool.sizeLimit` 5 GiB; `vulnScannerTrivy.spool.sizeLimit` 6 GiB). The usable budget is the size minus `spool.headroom` (2 GiB), and is held per replica. The worker's budget is shared by the cache fills of jobs, the artifacts of a mirror pass and one advisory archive while a sync runs; the image scanning writes nothing to it.
 
-The image scanning works in two spools. The scanner's holds the analyses: per analysis the size of its image plus 64 MiB; an analysis that does not fit is answered busy, and one that cannot fit even an empty spool `spool_too_small`. The worker's (`vulnerabilities.images.scan_dir`, below the spool) holds the unpacked advisory database once (about 1.6 GiB on 2026-11-10) and 64 MiB per detection. A detection that does not fit waits two minutes and is then put off with the code `spool_busy` (the image shows `pending_scan`, the scan is tried again after a minute); one that cannot fit next to the database even in an empty spool is refused with `spool_too_small` (tried again after an hour), and its reason names the sizes. The chart refuses a scanner budget below `slots` × (`max_image_size` + 64 MiB) and a worker budget below 2 GiB + 512 MiB for the pool that claims the queue `vuln`. A database that no longer fits ends `vuln-image-scan` with a `skipped` result that says so.
+The image scanning works in the scanner pods. Their spool holds the analyses and the detections: per analysis the size of its image plus 64 MiB, per detection 64 MiB; a call that does not fit is answered busy, and one that cannot fit even an empty spool `spool_too_small` (tried again after an hour; its reason names the sizes). The advisory database lies in a volume of its own in each scanner pod, `trivy-db` (`vulnScannerTrivy.database.sizeLimit`, 5 GiB), which holds the newest database and the one before it (about 1.7 GiB each on 2026-11-21); a database that does not fit beside the newest replaces it, and one larger than the whole volume is not loaded: detections then answer `database_loading` and the container `database` logs why. The chart refuses a scanner budget below `slots` × (`max_image_size` + 64 MiB) and a database volume below 4 GiB.
 
 **What to do.**
 
 1. Find the replica on `quader_spool_used_bytes`. Look for uploads that do not end (the request log, `quader_http_requests_in_flight`).
 2. Raise the size of the role: `api.spool.sizeLimit`, `packages.spool.sizeLimit`, `worker.spool.sizeLimit`, or `spool.sizeLimit` for all of them, by `helm upgrade`. The chart refuses a size whose budget is below `storage.upload.max_size` and, for a pod that claims the queue `vuln`, below the advisory archive limit.
-3. If images are put off for lack of room, raise `vulnScannerTrivy.spool.sizeLimit` (the analyses) or the size of the worker pool that claims the queue `vuln` (the database and the detections), or lower `vulnerabilities.images.max_image_size` (a larger image then shows `scan_failed`); the chart refuses a size that cannot hold the scanning:
+3. If images are put off for lack of room, raise `vulnScannerTrivy.spool.sizeLimit` (the analyses and the detections), or lower `vulnerabilities.images.max_image_size` (a larger image then shows `scan_failed`); if the database no longer fits its volume, raise `vulnScannerTrivy.database.sizeLimit`. The chart refuses a size that cannot hold the scanning:
 
    ```yaml
    vulnScannerTrivy:
      spool:
        sizeLimit: 8Gi                 # example: at least slots × (max_image_size + 64 MiB) plus spool.headroom
-   worker:
-     pools:
-       - name: vuln                   # example
-         queues: [vuln]               # example
-         replicaCount: 2              # example
-         spool:
-           sizeLimit: 5Gi             # example: at least 2 GiB + 512 MiB plus spool.headroom
+     database:
+       sizeLimit: 6Gi                 # example: at least 4Gi, the newest database and the one before it
    ```
 
 4. A node under disk pressure evicts pods whatever the limit says: that is the platform's.
@@ -165,9 +160,9 @@ The image scanning works in two spools. The scanner's holds the analyses: per an
 
 ## An image scanner that does not answer
 
-**What you see.** `QuaderVulnerabilityImageScannerUnavailable`; images stay `pending_scan`; `quader_vuln_image_scans_total` counts `scanner_unavailable`, `registry_unavailable` or `pull_refused` and no `scanned`; the scanner pods are not ready, or `quader_scanner_analyses_total` stands still.
+**What you see.** `QuaderVulnerabilityImageScannerUnavailable`; images stay `pending_scan`, or keep their findings of an older database; `quader_vuln_image_scans_total` counts `scanner_unavailable`, `registry_unavailable`, `pull_refused`, `database_loading` or `scanner_versions_differ` and no `scanned`; the scanner pods are not ready, or `quader_scanner_analyses_total` and `quader_scanner_detections_total` stand still.
 
-**What it means.** The worker calls a scanner pod (`<fullname>-vuln-scanner-trivy`, port 8080) for every image, and the scanner pulls the image from the scan listener of the main `packages` pods (`<fullname>-packages-scan`, port 8082). Both links are mutual TLS: the worker and the scanner present their own kind's certificate, and each side checks the other's name against the `ca.crt` of its own Secret. A scan put off for one of these codes spends no attempt and is tried again after one minute (`pull_refused`: five).
+**What it means.** The worker calls a scanner pod (`<fullname>-vuln-scanner-trivy`, port 8080) for every image, to analyse it and to detect its stored analysis against the advisory database, and the scanner pulls the image from the scan listener of the main `packages` pods (`<fullname>-packages-scan`, port 8082). The pod's second container, `database`, reads the database in use from the same scan listener with the pod's certificate into the volume `trivy-db`; until it holds the database in use, detections on that pod answer `database_loading` and the worker's run waits 30 seconds. Both links are mutual TLS: the worker and the scanner present their own kind's certificate, and each side checks the other's name against the `ca.crt` of its own Secret. A scan put off for one of these codes spends no attempt and is tried again after one minute (`pull_refused`: five).
 
 | Code | Usual cause |
 |---|---|
@@ -175,10 +170,12 @@ The image scanning works in two spools. The scanner's holds the analyses: per an
 | `registry_unavailable` | The scanner cannot reach port 8082 of the `packages` pods: a NetworkPolicy of the cluster that drops it, the `packages` pods not ready, or the scanner's certificate refused there because it does not list `<fullname>-vuln-scanner-trivy.<namespace>.svc` |
 | `pull_refused` | The scan listener refused the scan token: the worker and `packages` read different key rings, or their clocks differ by more than a minute |
 | `scanner_busy` | Every slot is taken; not an error, but a backlog: raise `vulnScannerTrivy.replicaCount` |
+| `database_loading` | No scanner pod holds the database in use yet: right after a new database (seconds to a minute), or for good when the container `database` cannot read it: `kubectl logs <pod> -c database` names why (the scan listener not reachable, its certificate refused, the volume too small) |
+| `scanner_versions_differ` | Scanner pods of two Trivy versions answer, during a rollout of a new analyser; the images are analysed again by the new version once the rollout ends |
 
 **What to do.**
 
-1. `kubectl get pods -l app.kubernetes.io/component=vuln-scanner-trivy` and `/readyz?verbose=1` on a scanner pod's port 8081: the check `vulnScannerTrivy` names the reason: `certificate` (the pair or the internal CA did not load, or the pair does not allow client authentication), `analyser` (the binary does not answer its version), `spool` (the working directory is not writable) or `draining`.
+1. `kubectl get pods -l app.kubernetes.io/component=vuln-scanner-trivy` and `/readyz?verbose=1` on a scanner pod's port 8081: the check `vulnScannerTrivy` names the reason: `certificate` (the pair or the internal CA did not load, or the pair does not allow client authentication), `analyser` (the binary does not answer its version), `spool` (the working directory is not writable) or `draining`. **System** lists each scanner pod with the database it holds; a pod that names "an older database" for long has a loader that cannot read the new one: `kubectl logs <pod> -c database`.
 2. For a certificate refused on a link, check its usages: `openssl x509 -in tls.crt -noout -ext extendedKeyUsage` must list `TLS Web Client Authentication` beside `TLS Web Server Authentication`, or name no usage at all. With cert-manager add `client auth` to `usages` ([TLS and certificates](tls-and-certificates.md#the-links-of-the-image-scanning)).
 3. For `pull_refused`, compare the key ring Secret of the worker and `packages` Deployments and the nodes' clocks.
 

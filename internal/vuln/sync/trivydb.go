@@ -319,6 +319,9 @@ func (s *Service) recordTrivy(ctx context.Context, res Result, digest string, md
 		next := cur
 		next.State, next.SyncedAt, next.FullSyncedAt = store.StateComplete, now, now
 		next.ETag, next.ArchiveSHA256, next.Records = digest, sum, 1
+		// The build time of the layer's metadata.json, which the scan listener's listing names to the loaders (Q-VULN-208); the source
+		// trivy has no incremental run, so its watermark has no other use.
+		next.Watermark = md.UpdatedAt
 		// The same digest stored again (a layer the repository had lost, or the first run after the upgrade of Q-VULN-191) is the same
 		// database: the detections made against it stay current, so the data epoch stays and nothing is detected again.
 		same := cur.ETag == digest && cur.Complete()

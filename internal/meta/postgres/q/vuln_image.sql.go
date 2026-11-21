@@ -41,26 +41,32 @@ func (q *Queries) VulnImageComponentsOf(ctx context.Context, ids []string) ([]Vu
 }
 
 const vulnImageDBGet = `-- name: VulnImageDBGet :many
-SELECT s.etag::text AS digest
+SELECT s.etag::text AS digest, COALESCE((EXTRACT(EPOCH FROM s.watermark) * 1000000)::bigint, 0)::bigint AS built_us
   FROM vuln_source_state s
  WHERE s.source = 'trivy' AND s.ecosystem = 'OCI' AND s.state = 'complete' AND s.etag LIKE 'sha256:%'
 `
 
+type VulnImageDBGetRow struct {
+	Digest  string
+	BuiltUs int64
+}
+
 // The database in use (R-VULN-044, Q-VULN-173): the row of the source trivy, ecosystem OCI, once a run recorded a layer. etag is the
-// layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository.
-func (q *Queries) VulnImageDBGet(ctx context.Context) ([]string, error) {
+// layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository. The
+// watermark is the build time of its metadata.json, which the run records with it (Q-VULN-208); a row recorded before has none.
+func (q *Queries) VulnImageDBGet(ctx context.Context) ([]VulnImageDBGetRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageDBGet)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []string{}
+	items := []VulnImageDBGetRow{}
 	for rows.Next() {
-		var digest string
-		if err := rows.Scan(&digest); err != nil {
+		var i VulnImageDBGetRow
+		if err := rows.Scan(&i.Digest, &i.BuiltUs); err != nil {
 			return nil, err
 		}
-		items = append(items, digest)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -213,7 +219,7 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
    AND ((s.state = 'pending' AND s.not_before <= now())
      OR (s.state = 'failed' AND s.not_before <= now() AND s.attempts < $1::int)
      OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $2::text))
- ORDER BY s.not_before, s.repo_id, s.name, s.digest
+ ORDER BY (s.state = 'scanned'), s.not_before, s.repo_id, s.name, s.digest
  LIMIT $3::int
 `
 
@@ -234,7 +240,9 @@ type VulnImageDueRow struct {
 
 // The next manifests to work on: never scanned or to retry and due, or scanned against another database than the current one. The rows
 // of a repository that is disabled or being deleted are not due (R-VULN-042): the scanner's pull could not address it. The qualified
-// name of the repository is what the scan token and the call to the scanner name (R-VULN-041).
+// name of the repository is what the scan token and the call to the scanner name (R-VULN-041). The rows without a detection (pending, or
+// failed and due) come before the re-detections of scanned rows under a new database, each class by not_before (Q-VULN-200): a pushed
+// image waits for the slots, not for the cycle, and a scanned image keeps its findings while it waits.
 func (q *Queries) VulnImageDue(ctx context.Context, arg VulnImageDueParams) ([]VulnImageDueRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageDue, arg.MaxAttempts, arg.DbDigest, arg.MaxRows)
 	if err != nil {
@@ -742,28 +750,41 @@ func (q *Queries) VulnImageRearm(ctx context.Context, repoID int64) (int64, erro
 	return result.RowsAffected(), nil
 }
 
-const vulnImageSBOMGet = `-- name: VulnImageSBOMGet :many
-SELECT sbom FROM vuln_image_sbom WHERE digest = $1 AND analyser = $2::text
+const vulnImageSBOMDelete = `-- name: VulnImageSBOMDelete :exec
+DELETE FROM vuln_image_sbom WHERE digest = $1
 `
 
-type VulnImageSBOMGetParams struct {
-	Digest   []byte
-	Analyser string
+// A detection the analyser refused points at the analysis (Q-VULN-202): it goes, and the next attempt analyses the image again.
+func (q *Queries) VulnImageSBOMDelete(ctx context.Context, digest []byte) error {
+	_, err := q.db.Exec(ctx, vulnImageSBOMDelete, digest)
+	return err
 }
 
-func (q *Queries) VulnImageSBOMGet(ctx context.Context, arg VulnImageSBOMGetParams) ([][]byte, error) {
-	rows, err := q.db.Query(ctx, vulnImageSBOMGet, arg.Digest, arg.Analyser)
+const vulnImageSBOMGet = `-- name: VulnImageSBOMGet :many
+SELECT sbom, analyser::text AS analyser, packages::int AS packages FROM vuln_image_sbom WHERE digest = $1
+`
+
+type VulnImageSBOMGetRow struct {
+	Sbom     []byte
+	Analyser string
+	Packages int32
+}
+
+// The analysis of a manifest digest (R-VULN-043, Q-VULN-199): one per digest, the gzip as the scanner answered it, the analyser version
+// that made it and the image's packages.
+func (q *Queries) VulnImageSBOMGet(ctx context.Context, digest []byte) ([]VulnImageSBOMGetRow, error) {
+	rows, err := q.db.Query(ctx, vulnImageSBOMGet, digest)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := [][]byte{}
+	items := []VulnImageSBOMGetRow{}
 	for rows.Next() {
-		var sbom []byte
-		if err := rows.Scan(&sbom); err != nil {
+		var i VulnImageSBOMGetRow
+		if err := rows.Scan(&i.Sbom, &i.Analyser, &i.Packages); err != nil {
 			return nil, err
 		}
-		items = append(items, sbom)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -773,13 +794,12 @@ func (q *Queries) VulnImageSBOMGet(ctx context.Context, arg VulnImageSBOMGetPara
 
 const vulnImageSBOMPrune = `-- name: VulnImageSBOMPrune :execrows
 DELETE FROM vuln_image_sbom b
- WHERE b.analyser <> $1::text
-    OR NOT EXISTS (SELECT 1 FROM vuln_image_scan s WHERE s.digest = b.digest)
+ WHERE NOT EXISTS (SELECT 1 FROM vuln_image_scan s WHERE s.digest = b.digest)
 `
 
-// The analyses no manifest refers to any more, and those of an analyser this release does not run.
-func (q *Queries) VulnImageSBOMPrune(ctx context.Context, analyser string) (int64, error) {
-	result, err := q.db.Exec(ctx, vulnImageSBOMPrune, analyser)
+// The analyses no manifest refers to any more. Nothing is pruned by version: a scanner of another version asks for a new analysis.
+func (q *Queries) VulnImageSBOMPrune(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, vulnImageSBOMPrune)
 	if err != nil {
 		return 0, err
 	}
@@ -787,18 +807,26 @@ func (q *Queries) VulnImageSBOMPrune(ctx context.Context, analyser string) (int6
 }
 
 const vulnImageSBOMPut = `-- name: VulnImageSBOMPut :exec
-INSERT INTO vuln_image_sbom (digest, analyser, sbom) VALUES ($1, $2::text, $3)
-ON CONFLICT (digest, analyser) DO NOTHING
+INSERT INTO vuln_image_sbom (digest, analyser, sbom, packages)
+VALUES ($1, $2::text, $3, $4::int)
+ON CONFLICT (digest) DO UPDATE SET analyser = EXCLUDED.analyser, sbom = EXCLUDED.sbom, packages = EXCLUDED.packages, created_at = now()
 `
 
 type VulnImageSBOMPutParams struct {
 	Digest   []byte
 	Analyser string
 	Sbom     []byte
+	Packages int32
 }
 
+// A new analysis of the digest replaces the one before it, whatever version made that one (Q-VULN-199).
 func (q *Queries) VulnImageSBOMPut(ctx context.Context, arg VulnImageSBOMPutParams) error {
-	_, err := q.db.Exec(ctx, vulnImageSBOMPut, arg.Digest, arg.Analyser, arg.Sbom)
+	_, err := q.db.Exec(ctx, vulnImageSBOMPut,
+		arg.Digest,
+		arg.Analyser,
+		arg.Sbom,
+		arg.Packages,
+	)
 	return err
 }
 
@@ -869,14 +897,13 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
   JOIN project p ON p.id = r.project_id
  WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
    AND s.state IN ('pending', 'failed') AND s.not_before <= now() AND s.attempts < $1::int
-   AND NOT EXISTS (SELECT 1 FROM vuln_image_sbom b WHERE b.digest = s.digest AND b.analyser = $2::text)
+   AND NOT EXISTS (SELECT 1 FROM vuln_image_sbom b WHERE b.digest = s.digest)
  ORDER BY s.not_before, s.repo_id, s.name, s.digest
- LIMIT $3::int
+ LIMIT $2::int
 `
 
 type VulnImageUnanalysedParams struct {
 	MaxAttempts int32
-	Analyser    string
 	MaxRows     int32
 }
 
@@ -889,11 +916,11 @@ type VulnImageUnanalysedRow struct {
 	RepoKey    string
 }
 
-// The due manifests that have no analysis by the analyser version yet (Q-VULN-168): without a database the job has the scanner analyse
-// them and leaves the rows pending, so the first database detects without reading a layer. A row whose analysis is stored is not taken
-// again, so the run ends.
+// The due manifests that have no analysis yet (Q-VULN-168): without a database the job has the scanner analyse them and leaves the rows
+// pending, so the first database detects without reading a layer. A row whose analysis is stored is not taken again, whatever version
+// made it (Q-VULN-199: the detection's scanner says whether it is current), so the run ends.
 func (q *Queries) VulnImageUnanalysed(ctx context.Context, arg VulnImageUnanalysedParams) ([]VulnImageUnanalysedRow, error) {
-	rows, err := q.db.Query(ctx, vulnImageUnanalysed, arg.MaxAttempts, arg.Analyser, arg.MaxRows)
+	rows, err := q.db.Query(ctx, vulnImageUnanalysed, arg.MaxAttempts, arg.MaxRows)
 	if err != nil {
 		return nil, err
 	}

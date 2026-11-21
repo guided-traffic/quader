@@ -147,6 +147,11 @@ quader.validateRoles. Argument: the root context.
 {{- if lt $budget $need -}}
 {{- fail (printf "quader: the spool budget of vuln-scanner-trivy, %s (%v) minus spool.headroom (%v), is %d bytes and cannot hold config.vulnerabilities.images.scanner.slots (%d) times config.vulnerabilities.images.max_image_size (%v) plus 64 MiB, %d bytes; raise %s or lower max_image_size (Q-HA-318)" $sizeKey $sizeValue $v.spool.headroom $budget $slots (dig "max_image_size" "3GiB" $images) $need $sizeKey) -}}
 {{- end -}}
+{{- /* The database volume holds the newest database and the one before it, each allowed 2 GiB (H-872's constant, 1.7 GiB on 2026-11-21): a larger database still loads by replacing the newest (R-VULN-049), but a volume below two copies has no room for the one before it (Q-HA-380). */ -}}
+{{- $dbSize := include "quader.bytes" $v.vulnScannerTrivy.database.sizeLimit | int64 -}}
+{{- if lt $dbSize 4294967296 -}}
+{{- fail (printf "quader: vulnScannerTrivy.database.sizeLimit (%v) is below 4Gi: the volume trivy-db holds the newest database of the image scanning and the one before it, 2 GiB allowed for each (Q-HA-380)" $v.vulnScannerTrivy.database.sizeLimit) -}}
+{{- end -}}
 {{- $a := $v.vulnScannerTrivy.autoscaling -}}
 {{- $min := ternary (int $a.minReplicas) (int $v.vulnScannerTrivy.replicaCount) $a.enabled -}}
 {{- $minKey := ternary "vulnScannerTrivy.autoscaling.minReplicas" "vulnScannerTrivy.replicaCount" $a.enabled -}}

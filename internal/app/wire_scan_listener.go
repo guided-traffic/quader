@@ -11,7 +11,8 @@ import (
 // server.scan_listen, whose endpoint is the reserved scan. It is built like a client endpoint - its own router of the family packages,
 // its own chain with the endpoint bound - and differs in what the endpoint says: no host check, no rate-limit class, an in-flight bound of
 // 64, no cache fill, a stage that accepts a scan token and nothing else, and a listener that requires a client certificate of the
-// internal CA (R-ARCH-038). The image scanning's pull is its one client.
+// internal CA (R-ARCH-038). The kinds of the role scanner are its clients: the image scanner's pull and its loader's read of the
+// database, the malware scanner's reads, the updater's seed, and every scanner's report of itself.
 
 // imageScanningOn reports whether the configuration scans images: the scanning and its image half are on.
 func (a *App) imageScanningOn() bool {
@@ -20,8 +21,8 @@ func (a *App) imageScanningOn() bool {
 }
 
 // scanListenAddr is the address of the scan listener this process opens, "" for none: server.scan_listen on the main Deployment of
-// packages (never a pool) and on web; in all, server.scan_listen or a loopback port while the image scanning is on, so that its own
-// scanner pulls from it (Q-ARCH-531).
+// packages (never a pool), on web and on all. The role all builds no scanner of its own (Q-ARCH-563), so it opens the listener only
+// when the setting names an address.
 func (a *App) scanListenAddr() string {
 	addr := a.cfg.Server.ScanListen
 	switch a.id.Role {
@@ -31,9 +32,6 @@ func (a *App) scanListenAddr() string {
 		}
 		return addr
 	case config.RoleAll:
-		if addr == "" && a.imageScanningOn() {
-			return "127.0.0.1:0"
-		}
 		return addr
 	}
 	return ""
@@ -66,27 +64,3 @@ func isScanListener(rt *endpointRuntime) bool { return rt.cfg.Name == config.Sca
 func (a *App) scanListenerTLS() (*httpserver.ListenerTLS, error) {
 	return httpserver.NewLinkListenerTLS(httpserver.LinkScan, a.cfg.Server, a.cfg.Server.ScanClients, a.tlsOptions(httpserver.LinkScan)...)
 }
-
-// linkLoopback points the role all's links at its own listeners once step 9 has bound them (Q-ARCH-531): the worker calls its own
-// scanner and the scanner pulls from its own scan listener, over the same client, token and checks as in the chart. Another role
-// has its peers' addresses in its configuration.
-func (a *App) linkLoopback() {
-	if a.id.Role != config.RoleAll {
-		return
-	}
-	tls := a.cfg.Server.TLS.Enabled()
-	if s, ok := lookup[scannerArea](a.parts); ok && s.svc != nil && a.cfg.Vulnerabilities.Images.Registry.URL == "" {
-		if addr := a.EndpointAddr(config.ScanEndpoint); addr != "" {
-			s.svc.SetRegistryURL(loopbackOrigin(stringAddr(addr), tls))
-		}
-	}
-	if c := part[vulnArea](a.parts).scannerClient; c != nil && a.cfg.Vulnerabilities.Images.Scanner.URL == "" && a.scannerSrv != nil {
-		c.SetURL(loopbackOrigin(a.scannerSrv.Addr(), tls))
-	}
-}
-
-// stringAddr is a net.Addr of an address already rendered.
-type stringAddr string
-
-func (s stringAddr) Network() string { return "tcp" }
-func (s stringAddr) String() string  { return string(s) }

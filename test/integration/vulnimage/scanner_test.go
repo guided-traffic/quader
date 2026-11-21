@@ -8,11 +8,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/auth/scope"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/ocistub"
 )
@@ -162,7 +162,7 @@ func TestR_VULN_042_ABlockedPrivateImageIsAnalysedAgainWithoutADownload(t *testi
 	}
 
 	f.st.Exec(`DELETE FROM vuln_image_sbom`)
-	f.setDB("sha256:db2")
+	f.setDB(dbDigest(2))
 	f.runScan()
 	testenv.WaitFor(t, "the image analysed again", 60*time.Second, func() bool { return f.an.analyses.Load() == 2 })
 	t.Cleanup(func() {
@@ -318,7 +318,7 @@ func TestR_VULN_041_AnImageIsAnalysedBeforeAnyDatabaseExists(t *testing.T) {
 	if ev := f.versionReport("app", "1.0").Repositories[0].Evaluation; ev != "pending_data" && ev != "pending_scan" {
 		t.Fatalf("an image analysed without a database reads as %q", ev)
 	}
-	f.setDB("sha256:db1")
+	f.setDB(dbDigest(1))
 	f.runScan()
 	f.waitEvaluation("app", "1.0", "evaluated")
 	if n := f.an.analyses.Load(); n != 1 {
@@ -326,28 +326,40 @@ func TestR_VULN_041_AnImageIsAnalysedBeforeAnyDatabaseExists(t *testing.T) {
 	}
 }
 
-// R-HA-067, Q-ARCH-551: a replica of the role all builds its own scanner. Without the analyser binary it stays ready, and reports the
-// scanner as degraded: the scanner is one part of a process that serves every route (the UI development profile runs this role).
-func TestR_HA_067_TheRoleAllStaysReadyWithoutTheAnalyser(t *testing.T) {
+// R-HA-067, Q-ARCH-563: a replica of the role all builds no image scanner: it opens no scanner's listener and no scan listener, and with
+// no scanner named its image scanning's job ends at once with the result "no image scanner is configured" and touches no row (the UI
+// development profile runs this role). About 2 s.
+func TestQ_ARCH_563_TheRoleAllBuildsNoImageScanner(t *testing.T) {
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnall", TLS: true, Env: []string{
 		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
-		"QUADER_MAINTENANCE_TASKS=" + taskOff,
-		"QUADER_VULNERABILITIES_IMAGES_BINARY=" + filepath.Join(t.TempDir(), "no-analyser"),
-		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + t.TempDir(),
+		"QUADER_MAINTENANCE_TASKS=" + taskOff, "QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=0s", "QUADER_JOBS_POLL_INTERVAL=200ms",
 	}})
+	rita := st.User("rita")
+	st.Bind("admin", rita)
+	adm := st.Token(rita, scope.Scope{Inherit: true, Admin: true})
+	st.Repository(repoKey, "local", "oci", `{"vulnerabilities":{"onMissingData":"allow"}}`)
 	all := st.Start(t, testenv.ReplicaOptions{Name: "all", Role: "all"})
-	if all.ScannerAddr() == "" || all.Addr("scan") == "" {
-		t.Fatalf("the role all opened no scanner's listener (%q) or scan listener (%q)", all.ScannerAddr(), all.Addr("scan"))
+	if all.ScannerAddr() != "" || all.Addr("scan") != "" {
+		t.Fatalf("the role all opened a scanner's listener (%q) or a scan listener (%q)", all.ScannerAddr(), all.Addr("scan"))
 	}
-	t.Cleanup(func() {
-		if t.Failed() {
-			t.Logf("health: %+v", all.App.Health().Snapshot())
+	img := newImage(t)
+	for _, b := range [][]byte{img.config, img.layer} {
+		if a := st.Do(all, "POST", v2("app")+"/blobs/uploads/?digest="+digestOf(b), adm, b, "Content-Type", "application/octet-stream"); a.Status != http.StatusCreated {
+			t.Fatalf("blob upload: %d %s", a.Status, a.Body)
 		}
+	}
+	if a := st.Do(all, "PUT", v2("app")+"/manifests/1.0", adm, img.manifest, "Content-Type", manifestType); a.Status != http.StatusCreated {
+		t.Fatalf("manifest push: %d %s", a.Status, a.Body)
+	}
+	if a := st.Do(all, "POST", "/api/v1/system/tasks/vuln-image-scan/run", adm, nil); a.Status != http.StatusAccepted && a.Status != http.StatusConflict {
+		t.Fatalf("start the scan: %d %s", a.Status, a.Body)
+	}
+	testenv.WaitFor(t, "the image scanning's job to end", 30*time.Second, func() bool {
+		return st.Number(`SELECT count(*) FROM job WHERE kind = 'vuln-image-scan' AND state = 'succeeded' AND result->>'skipped' = 'no image scanner is configured'`) >= 1
 	})
-	testenv.WaitFor(t, "the replica ready, the scanner reported", 30*time.Second, func() bool {
-		snap := all.App.Health().Snapshot()
-		return len(snap.Failing) == 0 && slices.Contains(snap.Degraded, "vulnScannerTrivy")
-	})
+	if n := st.Number(`SELECT count(*) FROM vuln_image_scan`) + st.Number(`SELECT count(*) FROM vuln_image_sbom`); n != 0 {
+		t.Fatalf("the job without a scanner touched %d rows", n)
+	}
 }
 
 // variant is the test image with another layer, so another digest; n tells the variants apart.

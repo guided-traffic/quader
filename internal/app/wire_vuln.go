@@ -54,8 +54,11 @@ type vulnArea struct {
 	localAudits bool
 	// metrics are the collectors of R-VULN-024.
 	metrics *vmetrics.Metrics
-	// images is the scanning of container images; nil on a replica that runs no jobs, or where the analyser is not installed.
+	// images is the scanning of container images; nil on a replica that runs no jobs, or that names no scanner.
 	images *imagescan.Service
+	// noImageScanner is a replica that runs the jobs of the image scanning and names no scanner (vulnerabilities.images.scanner.url
+	// empty): the role all, which builds none (Q-ARCH-563).
+	noImageScanner bool
 	// scannerClient is the worker's call of the role scanner (wire_vuln_scanner_call.go); nil where images is.
 	scannerClient *imagescan.Client
 	// wakeImages enqueues the scan of images in a commit's transaction; nil where no job queue is wired.
@@ -71,10 +74,13 @@ type vulnArea struct {
 type VulnOverride struct {
 	States    vuln.States
 	Evaluator vuln.Evaluator
-	// ImageAnalyser and ImageDatabase replace the analyser binary and the database seam of the image scanning: a test then runs the whole
-	// scan without the binary or a real database (R-VULN-034).
+	// ImageAnalyser replaces the analyser binary of a scanner of the kind trivy, for both steps: a test then runs the whole scan without
+	// the binary (R-VULN-034, R-VULN-048). ImageDatabase replaces the worker's look-up of the database in use (R-VULN-044).
 	ImageAnalyser imagescan.Analyser
 	ImageDatabase imagescan.Database
+	// LoaderPoll replaces both waits of the loader of the kind trivy-db (5 s before its first database, 30 s after, R-VULN-049), so that
+	// a test's loader follows a new database at once.
+	LoaderPoll time.Duration
 }
 
 // wireVuln builds the area in dependency order: the metrics, the data state (and on a role that runs jobs the sync service), the

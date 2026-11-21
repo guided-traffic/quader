@@ -7,12 +7,12 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 )
 
-// Unanalysed returns the due manifests whose analysis by the analyser version is not stored yet (Q-VULN-168): the work of a run
-// without a database, which has the scanner analyse them and leaves their rows pending.
-func (s *Images) Unanalysed(ctx context.Context, analyser string, maxAttempts, limit int) ([]ImageDue, error) {
+// Unanalysed returns the due manifests that have no stored analysis yet (Q-VULN-168): the work of a run without a database, which has
+// the scanner analyse them and leaves their rows pending.
+func (s *Images) Unanalysed(ctx context.Context, maxAttempts, limit int) ([]ImageDue, error) {
 	var out []ImageDue
 	err := s.tx(ctx, func(qs *q.Queries) error {
-		rows, err := qs.VulnImageUnanalysed(ctx, q.VulnImageUnanalysedParams{Analyser: analyser, MaxAttempts: rows32(maxAttempts), MaxRows: rows32(limit)})
+		rows, err := qs.VulnImageUnanalysed(ctx, q.VulnImageUnanalysedParams{MaxAttempts: rows32(maxAttempts), MaxRows: rows32(limit)})
 		if err != nil {
 			return err
 		}
