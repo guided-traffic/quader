@@ -829,7 +829,24 @@ reading r8 of [Q-SIG-16](signatures.md#q-sig-16--the-eight-readings-of-the-reque
   worker's reloader reads it (R-SIG-046), and the identity is announced and then switched (R-SIG-048). The pod's checksum follows the
   Secret's name and the paths, not its content, so a renewal rolls nothing.
 - **The values** (R-HA-031, whose copy of the values file gains them with the change that builds them): `signing.identity.existingSecret`,
-  `signing.identity.certManager.issuerRef`, `commonName`, `subject`, `uris`, `duration`, `renewBefore`.
+  `signing.identity.certManager.issuerRef`, `commonName`, `subject`, `uris`, `duration`, `renewBefore`. As they will stand in the values file:
+
+  ```yaml
+  # At most one source. The Secret reaches the worker pods only; without either, an administrator uploads the identity in the admin area.
+  signing:
+    identity:
+      existingSecret: ""                  # example: quader-signing (tls.crt: leaf and intermediates, tls.key: ECDSA P-256, ca.crt: the root; code signing, a URI as alternative name)
+      certManager:                        # the Certificate <fullname>-signing the chart renders while issuerRef.name is set
+        issuerRef:
+          kind: ClusterIssuer             # ClusterIssuer | Issuer (an Issuer of the release namespace)
+          name: ""                        # empty = no Certificate; example: company-code-signing
+          group: cert-manager.io
+        commonName: Quader signing        # default
+        subject: {}                       # example: {organizations: [Example GmbH], countries: [DE]}
+        uris: []                          # besides config.server.base_url, which is always the first; example: [https://quader.example.com/signing]
+        duration: 2160h                   # default: 90 days
+        renewBefore: 720h                 # default: 30 days; the key is ECDSA P-256 with rotationPolicy Always, not a value
+  ```
 
 Acceptance criteria:
 
@@ -4394,7 +4411,7 @@ vulnScannerTrivy:
   podLabels: {}
   extraEnv: []
 
-# ── ClamAV: the clamd container of malware-scanner-clamav and the freshclam container of malware-updater-freshclam ────
+# ── ClamAV: the clamd container of malware-scanner-clamav and the freshclam container of the worker ────
 clamav:
   image: docker.io/clamav/clamav-debian:1.5.5_base@sha256:739c5ec70212e2d3e0c7719af2fba8776fb435f9932d7d3a3de2a95fcd6adde7  # the CLAMAV_IMAGE of tools/versions.env, which a chart test holds it to: ClamAV's own multi-arch image without a database
   pullPolicy: IfNotPresent
@@ -4467,39 +4484,19 @@ malwareScannerClamav:
   podLabels: {}
   extraEnv: []                          # the quader container's own; the shared extraEnv does not reach it
 
-# ── malware-updater-freshclam Deployment: freshclam and quader serve --role scanner of the kind freshclam (R-HA-069, Q-HA-375) ────
-# <fullname>-malware-updater-freshclam, rendered while config.malware.enabled is true and config.malware.database.source is updater. The one
-# pod that reaches ClamAV's network: freshclam fetches whole signed containers, the quader container seeds its directory from the set in use
-# and lists it for the worker, which takes each new set. No credential, no Secret but its TLS pair; an egress policy of the cluster admits it
-# by a label of podLabels.
-malwareUpdaterFreshclam:
-  replicaCount: 1                       # at least 1; exempt from highAvailability.enforce: one fetcher per network (Q-HA-376)
-  privateMirror: ""                     # an internal mirror of whole containers instead of ClamAV's network, rendered as PrivateMirror (R-MAL-012); example: https://clamav-mirror.example.com
-  proxy: ""                             # an HTTP proxy for freshclam, rendered as HTTPProxyServer and HTTPProxyPort; example: http://proxy.example.com:3128
-  terminationGracePeriodSeconds: 30
-  resources:                            # the quader container
+# ── freshclam container of every worker Deployment that claims the queue malware (R-HA-069) ────
+# Rendered while config.malware.enabled and config.malware.database.freshclam are true. It fetches ClamAV's database from ClamAV's
+# network into a directory it shares with the worker container, which stores each version in upstream/scanner-clamav. It holds no
+# credential and mounts no Secret; it needs DNS and HTTPS to database.clamav.net, which an egress policy of the cluster must admit.
+freshclam:
+  resources:
     requests:
       cpu: 50m
-      memory: 64Mi
-      ephemeral-storage: 64Mi
+      memory: 128Mi
     limits:
-      memory: 256Mi
-  freshclam:
-    resources:
-      requests:
-        cpu: 50m
-        memory: 128Mi
-      limits:
-        memory: 512Mi                   # TestDatabases no: freshclam does not load the database it fetched
+      memory: 512Mi                     # TestDatabases no: freshclam does not load the database it fetched
   database:
-    sizeLimit: 1Gi                      # freshclam-db: the containers (about 110 MiB) and freshclam's temporary copies
-  affinity: {}
-  nodeSelector: {}
-  tolerations: []
-  priorityClassName: ""
-  podAnnotations: {}
-  podLabels: {}                         # the label an egress policy of the cluster admits for the way to ClamAV's network
-  extraEnv: []                          # the quader container's own; the shared extraEnv does not reach it
+    sizeLimit: 1Gi                      # freshclam-db: the database (about 110 MiB) and freshclam's temporary copies
 
 # ── Quader configuration (rendered to /etc/quader/quader.yaml) ─────────────────
 # Chart-managed keys (secret file paths, storage.spool.dir, server.content_base_url) must not be set here (R-HA-029).
@@ -4677,7 +4674,7 @@ config:
   ci: {}                                # empty; gitlab-ci-oidc.md
 
 # ── TLS on Quader's own listeners ────────────────────
-# Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam) has a pair and a name of its own:
+# Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav) has a pair and a name of its own:
 # <fullname>-<kind>.<namespace>.svc, and <fullname>-ops.<namespace>.svc for the scrape (R-HA-063). With tls.certManager the chart
 # renders a cert-manager Certificate per kind into the Secret <fullname>-tls-<kind>; tls.existingSecrets names an existing Secret per
 # kind instead. A pod mounts its kind's Secret only, as a directory volume without subPath, so a rotated Secret reaches its pods
@@ -4691,7 +4688,6 @@ tls:
     worker: ""                          # example: quader-tls-worker (<fullname>-worker.<namespace>.svc and the ops name, server auth and client auth)
     vuln-scanner-trivy: ""              # example: quader-tls-vuln-scanner-trivy (<fullname>-vuln-scanner-trivy.<namespace>.svc and the ops name, server auth and client auth); needed while the image scanning is on
     malware-scanner-clamav: ""          # example: quader-tls-malware-scanner-clamav (<fullname>-malware-scanner-clamav.<namespace>.svc and the ops name, server auth and client auth); needed while the malware scanning is on
-    malware-updater-freshclam: ""       # example: quader-tls-malware-updater-freshclam (<fullname>-malware-updater-freshclam.<namespace>.svc and the ops name, server and client auth)
   certManager:                          # the Certificate per kind the chart renders while existingSecrets is empty: <fullname>-tls-<kind>
     issuerRef:
       kind: ClusterIssuer               # ClusterIssuer | Issuer (an Issuer of the release namespace)
@@ -4713,22 +4709,6 @@ tls:
   backendTLSPolicy:                     # Gateway API: how the Gateway verifies quader (needs the BackendTLSPolicy CRD)
     enabled: false
     caConfigMapName: ""                 # required when enabled; example: quader-tls-ca (a ConfigMap with ca.crt: Gateway API takes no Secret here); each policy verifies its Service's kind name
-
-# ── Quader's signing identity (R-HA-071, signatures.md R-SIG-045; specified, not built) ──────────
-# At most one source. The Secret reaches the worker pods only; without either, an administrator uploads the identity in the admin area.
-signing:
-  identity:
-    existingSecret: ""                  # example: quader-signing (tls.crt: leaf and intermediates, tls.key: ECDSA P-256, ca.crt: the root; code signing, a URI as alternative name)
-    certManager:                        # the Certificate <fullname>-signing the chart renders while issuerRef.name is set
-      issuerRef:
-        kind: ClusterIssuer             # ClusterIssuer | Issuer (an Issuer of the release namespace)
-        name: ""                        # empty = no Certificate; example: company-code-signing
-        group: cert-manager.io
-      commonName: Quader signing        # default
-      subject: {}                       # example: {organizations: [Example GmbH], countries: [DE]}
-      uris: []                          # besides config.server.base_url, which is always the first; example: [https://quader.example.com/signing]
-      duration: 2160h                   # default: 90 days
-      renewBefore: 720h                 # default: 30 days; the key is ECDSA P-256 with rotationPolicy Always, not a value
 
 # ── Existing Secrets (the chart never creates one) ──────────────────────────
 secrets:
