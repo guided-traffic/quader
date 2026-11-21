@@ -559,6 +559,10 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- The German text of **Well-known registries** spells the plural "Registries" where the glossary says "Registrys" (found on
+  2026-11-21 by the builder of the presets, left).
+- The hint under **Upstream URL** still says "Choose a well-known registry or enter the address of another" when the form
+  offers the installation's registries too (found on 2026-11-21 by the builder of the presets, left).
 - The NuGet README route is still the P1 stub (R-NUGET-024): it answers 501 behind the wiki gate.
 - The vulnerability pages (the report, a finding, an advisory, the advisory sources) keep a hand-made header with quiet links instead
   of the shared page header (UI-A-22 of the T-21 audit).
@@ -1274,7 +1278,11 @@ runs are in `git log`; this section holds the current state.
   provider stopped; the development agent found it by the backend's exit, started both again from the main
   checkout (at 09:47, answering ready) and told the builder, which has since stopped its processes by their IDs. **For
   every builder's brief from now on:** a builder stops its own processes by process ID or by a pattern that
-  holds its worktree's path, never by a pattern that can match the main checkout. **The pipeline of the 09:05
+  holds its worktree's path, never by a pattern that can match the main checkout. **Two more, learnt at the
+  landings of 12:55:** the migrations must be numbered without a gap (three tests hold it), so builders that
+  work in parallel get numbers that are set anew in the order of landing; and the linter holds one lock per
+  machine, so a second run answers "parallel golangci-lint is running" and is run with the option that
+  admits parallel runners. **The pipeline of the 09:05
   landing (run 44883240572) ended green on every job at 09:55.**
 - **The planner of the image analyser's move into the scanner unit and out of the common image (11:21 to 12:06)
   is done:** its specification is on `main` since 12:07 ("With the owner" holds what it says and what was
@@ -1285,19 +1293,76 @@ runs are in `git log`; this section holds the current state.
   its amendment is on `main` since 11:40 (rebased, links and check exit 0, the count test at 1,107
   requirements; "With the owner" holds what it says), its worktree and branch are removed; its one package is
   built after the ClamAV change's packages 1 to 4.
-- **Planner in work since 12:09: the second stage of the signatures, Quader signs** (the owner's decisions 10 to
-  13 of the working paper, "With the owner"): the signing identity through the chart or the admin area, npm's
-  registry signatures of local packages, the attestations of what Quader received and checked, the screens,
-  the operations and the security page, with a build plan of at most four packages. Started before the first
-  stage is built, because the first stage's specification holds what the second needs and a planner touches
-  no code; its open points are decided by the development agent and documented for the owner's walkthrough.
-- **In work since 11:41: the presets of the installation's own registries** (decided by the owner on 2026-11-20,
-  "With the owner"; taken up in the slot the chart's builder left, because it is decided, small and apart
-  from the ClamAV change and the signatures): one builder writes its specification and builds it in one commit
-  (an administrator's list per format with name, address and further hosts, no credential; buttons in the form
-  of a new remote repository of every format, beside the well-known registries; migration 00093), with the
-  renders for the development agent's look. It lands before the ClamAV change's UI package starts, which
-  touches the same admin page.
+- **The planner of the signatures' second stage, Quader signs (12:09 to 12:59), is done:** its specification is
+  on `main` since 13:10 ("With the owner" holds what it says, its four questions to the owner and what is
+  built meanwhile; rebased, its decision numbers set behind those of the first stage's package 1, the decision
+  blocks of both merged, links and check exit 0, the count test at 1,131 requirements); its worktree and branch
+  are removed. Its four packages are built after the first stage, in the order it names.
+- **Planner in work since 13:25: the third stage of the signatures, the gate per repository** (the owner's
+  decision 9, "With the owner"): the detail setting of a repository, what counts as verified state by state,
+  where the gate acts per format, what a client gets, the preview of what would be refused before switching
+  on, with the malware gate as the pattern and a build plan of at most three packages.
+- **In work since 12:56, two builders on `main` with package 1: the signatures' packages 2 and 3.** Package 2:
+  the read, the integrity check of each scheme, time, the trust step, the job `signature-verify`, the four kinds
+  of anchor in their scopes with the chart's declared ones, the switch for project Owners, the block of a
+  signer, the API, events, metrics and configuration. Package 3: the formats' wire behaviour (OCI's attachments
+  in no list and following their image, the background fetch of a remote's signatures, virtual repositories,
+  npm's keys and attestations endpoints with Q-SIG-34 as option (a), NuGet, Debian, Ansible's upload of
+  signatures, generic, the Bastion). Each names the files it touched outside its area, so that the landing
+  orders the two commits; package 4 (the screens) follows package 2's operations.
+- **The pipeline of the 12:55 push went red on the job `chart` at 13:02, which holds the release back; corrected
+  and pushed at 13:10.** Cause: a specification commit of the morning (the ClamAV change's) had written values
+  that are specified and not built into the copy of the values file under R-HA-031, which a chart test holds
+  equal to the chart's values. That commit ran no pipeline (documentation only), and the development agent's
+  gates for a specification commit were links, check and the count test, so `main` carried it unseen from
+  its commit at 10:53 until the next code push ran the job. The second stage's specification, merged locally at 13:00, had
+  done the same for the signing identity. Both corrected in one commit without the skip marker, so that the
+  pipeline runs and the two features are released: the copy holds the chart's values again; the updater's
+  values return with the chart's commit on the landing branch (the reversed hunks are kept as a patch in the
+  scratch directory and applied forward at the assembly if the rebase drops them), the signing identity's
+  stand in R-HA-071 until its chart is built. The whole chart suite ran locally before the push, exit 0 (123 s).
+  **For every specification commit from now on:** when it touches the chart's page of the specification, the
+  chart's tests run before it lands; and a planner's brief says that the copy of the values file changes only
+  with the change that builds the values.
+- **Landed on 2026-11-21 at 12:55 in one push, two features.** **The presets of the installation's own
+  registries** (R-REPO-076, R-API-084, R-UI-195; the builder worked from 11:41 to 12:34 and wrote the
+  specification in the same commit): an administrator keeps the company's own registries per format in a section
+  **Registries of this installation** of the upstream registries' page (name, address, further hosts with the
+  token service, no credential; added, edited and removed in a dialog, the whole list saved under `If-Match`),
+  and the form of a new remote repository of every format with a remote class offers them as a second row of
+  buttons after the well-known registries; a button sets the address and its hosts and never a credential, and
+  nothing follows a preset afterwards. **And package 1 of the signatures' first stage** (R-SIG-002 to R-SIG-004,
+  R-SIG-010, R-SIG-022 and the detecting part of each format; the builder worked from 10:58 to 12:54): the
+  format contract at version 8 with the declaration of what a format knows as a signature and its detector,
+  check 18 of the kit, the store of signature objects, signatures and attachments, the origin of an upload,
+  six detectors and a bounded walker of OpenPGP packets, and no version row for an image's attachment tags.
+  **On the two commits as rebased, each exit 0:** build, the full unit run (with the migrations gapless at
+  00091 and 00092), generate-check, the lint, the complexity check, links and check, and for the presets the
+  UI tests (153 files) and the UI lint; the presets' renders looked at (the admin page with presets of two
+  formats, the dialog, the forms of a new remote OCI and npm repository; light and dark, wide and narrow); no
+  change of the chart; the owner's UI backend started with both from the main checkout before the push and
+  answers ready (both schema steps applied). **Sent back once:** the signatures' commit put one function of
+  the kit one over the complexity threshold; its builder moved two cases into a helper (two minutes). Both
+  worktrees and branches are removed. **Their release was cut at 13:26** by the run of the correcting push (the entry above this one); the image, the chart and the owner's installation are being followed. **Decided by the presets' builder, for the owner's
+  walkthrough:** a preset holds format, name, address and further hosts and any other member is refused
+  (Q-REPO-417); nothing follows a preset and the server fills in no hosts (Q-REPO-418); who may write and read
+  the list, and that whoever may create a remote in a project reads that format's presets (Q-REPO-419); the
+  list is one document replaced whole (Q-API-383); it is kept in a section of the upstream registries' page
+  without reordering (Q-UI-906); the presets are a group of their own in the creation form only (Q-UI-907);
+  at most ten per format, a name or address once per format, a well-known registry's address refused.
+  **Decided by the signatures' builder:** candidates name paths that the core resolves only in the event's
+  repository, and a detector's error never fails a commit (Q-SIG-47); an OCI signature's object is its manifest
+  (Q-SIG-48); an object above the size bound is recorded as malformed (Q-SIG-49); npm's registry signature has
+  its signed message as subject (Q-SIG-50); where a remote's npm attestations document is stored (Q-SIG-51);
+  files Quader derives record no origin (Q-SIG-52). **Their tests cost:** the presets about 1 s of unit tests,
+  3 s of integration, 2 s of UI tests and about 30 s of the layout job (five states and an empty state); the
+  signatures about 1 s of unit tests and a new integration area of two tests of 1.7 s each; nothing in an
+  end-to-end leg. **Not verified:** a real registry behind a preset; the German screens in a browser; real
+  clients and real signatures of nuget.org (the NuGet samples are hand-built structures with nothing signed);
+  the replacement of an attachment's parts for Debian beyond the generic case. **For the ClamAV change's
+  assembly:** its migration takes the next free number, its decision Q-REPO-417 becomes Q-REPO-420, and the
+  format `clamav` gets its declaration of signatures and its row in the specification's table, without which
+  the contract's version 8 does not build it.
 - **In work** (10:57; of these three the chart's and the format's builder have reported, below): three builders, each from a specification that is on `main` (section "With the owner" holds
   what each builds): the format `clamav` with its repository and API (package 1 of the ClamAV change), the chart
   with the updater's Deployment (package 3 of it, without a cluster, because the binary does not know the updater's
@@ -1369,6 +1434,37 @@ runs are in `git log`; this section holds the current state.
   test); and package 4, the screens (the switch and the section in the admin area, the packages per database
   with the version in use first, the client setup with and without a token), with renders for the development
   agent's look. The two commits are put onto the landing branch when they report, and the change lands as one.
+  **The builder of the screens (package 4) reported at 13:18 and, after three corrections, at 13:24** with one
+  commit on the landing branch that waits for package 2. What an administrator sees: a column **Clients** in
+  the table of the system repositories with the switch **ClamAV definition updates** in the row of `clamav`
+  (a question before switching on names the address and the level, one before switching off names the 404);
+  on the registry's page a first section with the switch, the endpoint's address, the level with the fold
+  **Visibility**, the warning where the level had to be lowered, and the one line for `freshclam.conf`, plain
+  at the level public and with a token below it. What a reader sees: one row per database with the version in
+  use, its build time, its age and the number of versions, the set in use and the one before it above the
+  table; a database's versions with their state (in use, previous, superseded, files removed); a version's
+  files, members and every header field with the verification; the client setup with the snippet and guide.
+  While the switch is on, the repository is offered like any repository its reader can read and keeps the
+  badge **System**; while it is off, the rules of a system repository hold. **The renders looked at by the
+  development agent** (the registry's page, the list of databases, a version's details; light and dark, wide
+  and narrow). **Sent back with three corrections:** the list marked `main` and `bytecode` as outdated,
+  because the specification put ClamAV's warning of seven days on every database, and ClamAV rebuilds those
+  two rarely; decided by the development agent for the owner's walkthrough (Q-UI-912): the warning and the
+  badge **Outdated** hold for `daily` alone, which the builder read in ClamAV's source before writing it down
+  (the load of a container checks the build time only of a file named `daily.`, at more than 604,800 seconds;
+  release 1.5.5 was read, no other); the age beside its label read "Built today" and reads "under a day"
+  now; its decision numbers were set behind those the presets took (Q-UI-908 to Q-UI-911, Q-API-384).
+  **Decided by the builder:** while the switch is on the repository is offered like any readable one
+  (Q-UI-908); the admin page builds the client's line from the address the API gives (Q-UI-909); a database's
+  versions take their state from the version list (Q-UI-910, with the one addition to the API, Q-API-384); the
+  install panel leads to the client setup instead of a command per version (Q-UI-911). **Its gates, each exit
+  0:** build, the full unit run, generate-check, links and check, the complexity check, the UI tests (1,856),
+  the UI lint, the layout checks; the lint was red on a test file of package 3 (formatting), which package 2's
+  builder corrects in its commit. **Its tests cost** about 0.6 s of UI tests and an estimated 60 to 90 s of
+  the layout job (not measured in the pipeline). **Not built, because the API does not report it yet:** the
+  section **Updater** with the updater's replicas; and, as briefed, what the client certificates add. **Not
+  verified:** the German texts in a browser; the switch against a real updater; the lowered level against a
+  server that allows no public level.
 - **Landed on 2026-11-21 at 10:47: a system repository is set apart wherever it is shown** (R-UI-193, Q-UI-898 to
   Q-UI-902): the badge **System** in the admin list and in the search, no address, download or command that would
   answer 404 (the admin list, the file page with one sentence in the address's place, a folder's rows, an opened
@@ -1942,7 +2038,7 @@ runs are in `git log`; this section holds the current state.
   27. Built on 2026-11-20 (Q-UI-860 to 862); in the dark scheme a very thin Critical band at 390 px is one faint row of
   pixels, which the designer had named.
 - **Decided, not built now:** W-12, an invitation by e-mail, later; the logos of npm and Ansible Galaxy, he asks their
-  owners later; presets of the installation's own registries, after the project `upstream` (in work since
+  owners later; presets of the installation's own registries, after the project `upstream` (built and landed on
   2026-11-21, run record).
 - **Housekeeping:** nine worktrees are locked by another session of 2026-11-18 that still runs and were left alone.
 - **To check first:** the pipelines from 17:00; F-165 in the next full nightly; then section 12.
@@ -2042,13 +2138,63 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   declaration, check 18 of the kit, the store, the origin, each format's detector; (2) verification and trust,
   the anchors, the API, events and metrics; (3) the formats' wire behaviour (OCI's attachment tags out of the
   lists and following their image, mirror, the background fetch, npm's keys and attestations endpoints, Ansible's
-  upload of signatures); (4) the UI. **Package 1 is in work since 10:57** (run record); 2 and 3 follow it in
-  parallel, 4 after 2's operations. **One question of the planner for the owner (Q-SIG-34), told to him at 11:20 with its default, unanswered when he left:**
+  upload of signatures); (4) the UI. **Package 1 is landed (2026-11-21, 12:55, run record); 2 and 3 are in work
+  since 12:56** in parallel, 4 follows 2's operations. **One question of the planner for the owner (Q-SIG-34), told to him at 11:20 with its default, unanswered when he left:**
   what a virtual npm repository's keys endpoint serves before Quader signs local packages: (a) the union of its
   members' keys, with `npm audit signatures` reporting every local package as unsigned until the second stage
   (the planner's recommendation, H-1176); (b) no keys; (c) signing of local npm packages pulled into the first
-  stage. Built as (a) meanwhile; it concerns package 3. The second and the third stage are specified when their
-  turn comes.
+  stage. Built as (a) meanwhile; it concerns package 3.
+  **The second stage, Quader signs, is specified on `main` since 2026-11-21, 13:10** (R-SIG-044 to R-SIG-060,
+  Q-SIG-53 to Q-SIG-74, R-HA-071, Q-HA-385, ADR-230, H-1183 to H-1193; nothing of it is built). **One signing
+  identity per installation:** an ECDSA P-256 key with a code-signing certificate of the company's CA. By the
+  chart it is an existing Secret or a certificate the chart asks cert-manager for, mounted into the worker pods
+  alone and read again without a restart, never in the database; by the admin area Quader makes the key, seals
+  it with the key ring and hands out a certificate request, and the administrator uploads what the CA issued
+  (an import of an existing key and certificate behind more options). While the chart names an identity it
+  wins, and uploads are refused. A new key is announced for ten minutes while the old one signs, then it takes
+  over; old npm signatures stay valid through the old key's expiry, attestations are made again. Only the
+  worker signs, by a job of its own right after a commit, and a pass signs what was stored before an identity
+  existed. **npm:** every version of a local repository gets a registry signature that `npm audit signatures`
+  checks against the repository's keys endpoint; remote and virtual versions keep their upstream's (H-1176
+  closes for an installation with an identity). **Attestations of receipt for every format** (an in-toto
+  statement with a predicate of Quader's own: the time of receipt, the origin with a pipeline's claims, the
+  integrity states, the malware and the vulnerability state with their dates; in a Sigstore bundle with the
+  leaf certificate, without a log or a timestamp), made after the checks' first verdicts or after an hour, made
+  again when the malware state or the identity changes, removed with the item, served by the API with a trusted
+  root and the chain that anyone may fetch; for an image also as a referrer. Debian stays as it is; Ansible
+  Galaxy, NuGet and generic get the attestation and no registry signature; system repositories get nothing.
+  The format contract gains what a format's attestation is about (version 9). The screens: a section **Signing
+  identity** on the signatures' settings page, Quader's own signature and attestation in the details of a
+  version or a file and never as the badge, a tab of the client setup that shows the one command to verify.
+  **Found by the planner in the client's source and decisive for the design:** as soon as a bundle stands
+  among an image's referrers, the current cosign stops reading the older signature tags, so an attestation of
+  Quader on every image would make a publisher's older signature unverifiable.
+  **Four questions of the planner to the owner, each built with its recommendation meanwhile:** (1) where an
+  image's attestation stands (Q-SIG-66): (a) always as a referrer, which hides older publisher signatures from
+  cosign; (b) as a referrer only where it hides nothing (the repository's referrers come from a real referrers
+  API and no older signature tag exists for the digest; removed if one arrives), otherwise through the API;
+  (c) through the API only; (d) a referrer of a media type of Quader's own, which cosign ignores. Built: (b).
+  (2) What proves the time of an attestation (Q-SIG-63): (a) nothing for now; (b) a timestamp authority of the
+  company; (c) entries in the log of the company's own signing service. Built: (a); (b) or (c) once his
+  signing service runs, which would also let an admission controller that insists on a time proof verify them.
+  (3) Whether his company's CA issues ECDSA P-256 code-signing certificates (Q-SIG-53): npm's client accepts
+  registry keys of that type only; if it cannot, the ways are RSA with npm left unsigned, or a second key for
+  npm. Built: P-256, and he is asked. (4) Ansible Galaxy (Q-SIG-68): (a) no registry signature; (b) Quader
+  signs with an OpenPGP key per repository as a signing service. Built: (a), until one of his clients checks
+  with a keyring. **Build plan, four packages, after the first stage:** (1) the identity with its states, the
+  chart, its API, events, metrics and alerts; (2) npm's signatures and the local keys endpoint; (3) the
+  attestations with the contract's method for every format, the referrer under the conditions above, the route
+  and the client setup's tab; (4) the screens. **Its tests cost** under 3 s of unit tests, milliseconds per
+  format in the kit, about 30 s in a new integration area, about 1 s of the chart's job, one case of about 6 s
+  in the npm leg and one of about 4 s in the OCI leg (which needs the cosign binary in the OCI clients' image,
+  its size not measured); no new leg. **Verified by the planner in the tools' source or documentation:** how
+  npm's client checks registry signatures and which errors end its run; cosign's offline verification with a
+  trusted root and how it picks referrers; what the signing library accepts; cert-manager's usage `code
+  signing`. **Not verified:** whether `npm audit signatures` works without reaching the internet; whether a
+  flag gives cosign its older behaviour back; whether the signing library takes a trusted root without logs as
+  Quader builds it (read, not run); an admission controller's check with a certificate chain; every figure of
+  CPU, storage and duration, which are estimates.
+  The third stage, the gate per repository, is specified when the first stage's verdicts exist.
 
 **Questions he has not answered**
 
@@ -2362,7 +2508,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   a new remote repository offers them as buttons in every project. A preset holds no credential: each project enters its own.
   Built as a small task of its own after the project `upstream`, whose admin page touches the same place; with `upstream` a
   project's own remotes are mostly private registries, which is what changed the development agent's earlier
-  recommendation of (a).
+  recommendation of (a). **Built and landed on 2026-11-21 at 12:55** (run record; R-REPO-076, R-API-084, R-UI-195):
+  the section **Registries of this installation** on the upstream registries' page and the second row of buttons
+  in the form of a new remote repository of every format. The builder's decisions are named in the run record
+  for his walkthrough.
 **Decisions the development agent or a builder took, for his walkthrough** (each decision block says so)
 
 - T-20: Q-UI-274 gives the address field the editable control's fill instead of the read-only grey; not compared with GitLab's
