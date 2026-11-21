@@ -136,6 +136,20 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   zu checken dass auch wirklich noch gearbeitet wird. Teilweise hören deine Watches auf zu funktionieren, wenn der Cache Cold
   wird. Ich möchte auf keinen Fall morgen aufwachen und du hast vergessen nach dem subagent weiter zu machen." Each check looks
   itself (the builders' worktrees, the pipeline, the nightly) and does not rely on a watcher; it ends when nothing is open.
+- **Alone from 2026-11-21, 11:15, until he is back: features only** (owner): "ich muss dann jetzt gleich los und du musst
+  alleine weiter machen. Gibt es noch etwas dass ich schnell beantworten muss? Bitte setze einfach nur noch die Features
+  um, keine Begleichtung vom Nachtlauf. Nur fertig bauen und alles immer dokumentiert halten." The development agent builds
+  what is decided, in the order of the run record and of "With the owner", keeps this plan current in the same step as
+  every start, landing and finding, and follows every release to his installation (rule above). It neither dispatches nor
+  attends the nightly; a red job of a run of its own pushes stays its to fix. The timer of the rule above runs every 30
+  minutes since 11:22. **What was open with him and how it is built meanwhile, told to him before he left (he was told
+  that none of it needs his answer):** what "betrieben" covers of the three ways to a signature: the tests now, real
+  signing services on his cluster only when the first stage runs there; a virtual npm repository's keys endpoint serves
+  the union of its members' keys (Q-SIG-34, option a); client certificates reach Quader behind his ingress through an
+  endpoint of its own with the company's CA, and a valid certificate counts as a reader of the level internal (to be
+  specified); the second and the third stage of the signatures are specified and built after the first without asking,
+  open points decided by the development agent and documented; the three orphaned Secrets on his cluster stay until he
+  deletes them or says so.
 - **The walk's items are built by subagents at high effort or above, at most four at a time, each in its own worktree, with
   no review agent after them** (the owner's frame for the walk of 2026-11-18, with rule 10); the development agent looks at
   every screen itself before it lands. **Which model a subagent runs on is the owner's to say** (2026-11-20: not the largest
@@ -1279,8 +1293,9 @@ runs are in `git log`; this section holds the current state.
   as rebased, each exit 0: build, the full unit run, generate-check, links and check, the UI tests (1,837), the UI
   lint; the renders looked at (admin list with its menu, the file page, the search field; light and dark, wide and
   narrow); no change of the chart; the owner's UI backend started with it from the main checkout before the push.
-  Its worktree and branch are removed. **Its release was cut at 11:00;** the image, the chart and the owner's installation are
-  followed by the development agent, as after every release. **Found by its builder and left (section 8):** a disabled
+  Its worktree and branch are removed. **Its release was cut at 11:01, image and chart were published at 11:07, and the owner's
+  installation runs it since 11:09** (read on the cluster: five Deployments with two ready pods each on the new
+  image, no restart, no pod outside Running, the ingress answers). **Found by its builder and left (section 8):** a disabled
   repository's file page offers **Download**, which answers 404; the version page's header shows the format's key
   instead of its name; the decisions' index stops at Q-UI-844; one stylesheet is 227 bytes over its warning
   budget. **Not verified:** the German screens in a browser; the pipeline's layout job for the four new render
@@ -1943,7 +1958,7 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   the anchors, the API, events and metrics; (3) the formats' wire behaviour (OCI's attachment tags out of the
   lists and following their image, mirror, the background fetch, npm's keys and attestations endpoints, Ansible's
   upload of signatures); (4) the UI. **Package 1 is in work since 10:57** (run record); 2 and 3 follow it in
-  parallel, 4 after 2's operations. **One question of the planner for the owner (Q-SIG-34), not put to him yet:**
+  parallel, 4 after 2's operations. **One question of the planner for the owner (Q-SIG-34), told to him at 11:20 with its default, unanswered when he left:**
   what a virtual npm repository's keys endpoint serves before Quader signs local packages: (a) the union of its
   members' keys, with `npm audit signatures` reporting every local package as unsigned until the second stage
   (the planner's recommendation, H-1176); (b) no keys; (c) signing of local npm packages pulled into the first
@@ -2033,8 +2048,18 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   updater process and the import; (3) the chart; (4) the UI. **In work since 10:57:** packages 1 and 3 (run
   record); 1, 2 and 3 land as one. **The owner's installation at that landing:** the way to the internet as a
   label of the new pod (`malwareUpdaterFreshclam.podLabels`), which the development agent commits there; the
-  first set is fetched whole once. **His decision on the endpoint's level (Q-REPO-415) is open**; built as
-  recommended meanwhile. **The unit's name follows the
+  first set is fetched whole once. **The endpoint's level is decided by him (2026-11-21, 11:15): "Visibility des Endpunkts: b +
+  zusätzlich Client-Zertifikate."** Public by default, the levels below it with the token in the client's URL, and
+  client certificates as well. The first two are what packages 1 to 4 build; **the client certificates are a
+  package of their own after them:** a planner amends the specification (in work since 11:25; how a certificate
+  reaches Quader behind an ingress that ends TLS, which CA admits, what a certificate holder may read). **His
+  clarification the same minute:** "Weil ich Freshclam lese und nicht genau weiß wie du das meinst, Ziel ist ja,
+  dass wir für ein Unternehmen der Zentral Endpunkt für ClamAV werden, ein zusätzlicher freshclam vor dem jeweiligen
+  clamav sollte dabei nicht notwendig sein. Ich hoffe das ist klar." Answered: the updater is ClamAV's own, part of
+  an ordinary installation, and gets one line of configuration that points at Quader; an installation without it
+  fetches the files by plain HTTP under fixed addresses; nothing stands between Quader and a ClamAV. (That the
+  updater comes with every installation is the development agent's knowledge, not read in the research.) **For the
+  builders:** the client setup names both ways, the updater's one line and the plain download. **The unit's name follows the
   naming rule** (the tool in the name); it is fixed with the specification. **His installation:** the new kind of
   pod needs the way to the internet in his values, which the worker carries today for the updater; the
   development agent brings that with the landing (standing rules).
