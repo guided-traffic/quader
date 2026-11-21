@@ -141,6 +141,19 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   every screen itself before it lands. **Which model a subagent runs on is the owner's to say** (2026-11-20: not the largest
   one; a subagent that has just started on another is stopped and started again, one that is nearly done may finish). Rule 1
   keeps the model's name out of the repository; it stands in the development agent's notes.
+- **After every release the newest version runs on the owner's cluster, and that is the development agent's task**
+  (owner, 2026-11-21: "Aktuell kann die Version von Quader auf meinem K8S nicht von Flux geupdatet werden … Es ist noch
+  eine Testinstallation ohne Inhalt, eine Löschung der Inhalte und DB ist also im Moment noch nicht tragisch. Es ist deine
+  Aufgabe nach jedem Release dafür zu sorgen, dass die neuste Version auf meinem cluster landet."; before it, on
+  2026-11-08: "halte die Version aktuell und immer am laufen"). His installation follows every release by itself, through
+  the chart version `*` in his deployment repository. The development agent reads its state after `Release Docker & Helm`
+  of every release (step 6, item 5) and says which version runs. A change of the chart that his values do not satisfy
+  is the development agent's to bring there: his values are rendered against the new chart before the landing, and the
+  change of the installation's directory in his deployment repository is committed and pushed by the development agent
+  with the release, not handed to him as a patch. That last part is the development agent's reading of his sentence;
+  that repository's own rules say in general that an agent asks him before a commit. The cluster itself is changed
+  through that repository only. A reset of the installation's content or database, where an upgrade needs one, is not
+  tragic at this stage (his words) and is named to him first.
 - **The repository of the runners' image takes no commit without the owner's word** (`container-images`, its own `CLAUDE.md`;
   he released one commit and push for the image on 2026-11-19): ask again each time.
 
@@ -149,7 +162,7 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
    [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries), cut into work packages with an agent and a branch each, and
-   every open finding of section 8 with an agent each. Open there now (2026-11-20, 21:14): no registry task; a malware scan of every artifact with ClamAV, decided by the owner that day in fourteen answers, specified, its tables and API landed, and in work in three of four packages ([With the owner](#with-the-owner)); the role `scanner`, landed that day with a certificate for each kind of pod, and after it the analyser's database in a repository, in work (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
+   every open finding of section 8 with an agent each. Open there now (2026-11-21, 06:30): no registry task; the malware scan of every artifact with ClamAV, decided by the owner on 2026-11-20 in fourteen answers, is landed in all four packages ([With the owner](#with-the-owner)); the role `scanner` with a certificate for each kind of pod and the analyser's database in a repository are landed (section 11); the built-in project `upstream` is landed; the list [With the owner](#with-the-owner) and section 12; then the next unit of item 3. The open items of BETA.md phase 7 are
    findings of the same kind. Outside the alpha: open [BETA.md](BETA.md), table
    **Where we are**; the current phase is the first row whose status is not 🟢, and a row at 🟡 is resumed (step 2, item 4).
 3. If every row of BETA.md is 🟢, open [FULL.md](FULL.md) and take the first unit that is not 🟢,
@@ -298,6 +311,9 @@ and `Release Docker & Helm` publishes the image `guidedtraffic/quader` and the c
    `guidedtraffic/quader:X.Y.Z` on Docker Hub, and the chart index
    `https://guided-traffic.github.io/quader/index.yaml`. The release notes are generated from the commit
    subjects (item 1); the IDs stay in the commit bodies.
+5. Read the owner's installation (standing rule of 2026-11-21): the chart version its release reports, every
+   Deployment ready on the new image, the certificates ready, an answer through its ingress. An upgrade that was
+   refused or failed is the development agent's to resolve at once, in his deployment repository or in Quader.
 
 ## 7 · Report to the owner
 
@@ -619,6 +635,16 @@ records the recorder that tells such a stall apart).
   `QUADER_PERF_GATE`, `QUADER_IT_NO_DOCKER` and `QUADER_DEB_PROOF_DIR`. Dormant: nothing in the repository exports
   one around those tests today, and CI sets none. The tests should start their processes with the variables they
   name; not fixed.
+- **The task `malware-sync-db` fails every 30 minutes where the scanning is on and nothing fetches a database**
+  (seen on 2026-11-21 at the start of the UI development backend: "job failed … database_missing: no [main daily]
+  container: the set needs main and daily", at the level of an error). A start without a scanner keeps the scan
+  job idle and says so in a check that does not gate (Q-MAL-60); the database's task has no such state, so the
+  UI stack and any start outside the chart that keeps the defaults (the scanning on, the task every 30 minutes)
+  log an error at every tick and record a failed run. An installation of the chart has `freshclam` beside its
+  worker and is not touched. Not looked at: what **Settings › Malware scanning** shows for it on the UI stack.
+  Not fixed: either the task is idle while its directory was never filled and no scanner is
+  named, or the UI profile switches the scanning's database task off as it does for the image database
+  (Q-VULN-195).
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -683,9 +709,9 @@ owner's choice of variant A on 2026-11-20) is built; what he has to look at is i
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details. Past
 runs are in `git log`; this section holds the current state.
 
-**State on 2026-11-20**, 21:14, after the landing of the role `scanner` with a certificate for each kind of pod and of the malware scan's tables and API.
+**State on 2026-11-21**, 06:30, after the landing of the malware scan of every artifact; the role `scanner`, the analyser's database in a repository and the fixes of the nightly landed in the night before it.
 
-- **Landed and released on 2026-11-20** (the last release cut is the one of `781f09d59`, on 2026-11-21 at 04:11, with the image scanning's database in a repository and the two fixes the nightly brought): the measurement of what a format
+- **Landed and released on 2026-11-20** (the last release cut is the one of `a4289d7e6`, on 2026-11-21 at 06:29, with the malware scan of every artifact): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
   **Recently opened**); the wiki's visibility behind a fold; W-27 (**Set up client** in variant A) with the fix of the two
   jobs it turned red; the limits' package (the built-in profiles from a measurement, a refused request not counted, waiting
@@ -1101,9 +1127,20 @@ runs are in `git log`; this section holds the current state.
   the four instances were without a server for 7.6, 8.1, 8.9 and 10.5 s against the bound of 20 s; two of them
   turned one or two clients away later, which the test names and does not count (Q-HA-370). One green run each:
   it shows the fixes do what they were built for, not that the latency of `drain-load-e` (F-160) or a hung
-  connect (F-165) cannot return. **The owner's installation** shows the upgrade to the new chart refused by the chart's schema, as
-  foreseen, and keeps serving the release before the scanner role; it waits for the change of its values that was
-  given to the owner.
+  connect (F-165) cannot return. **The owner's installation** showed the upgrade to the new chart refused by the chart's schema, as
+  foreseen, and kept serving the release before the scanner role, waiting for the change of its values that was
+  given to the owner as a patch on 2026-11-20 at 20:19. **That was the development agent's to bring there, not his**
+  (the owner on 2026-11-21, standing rules): ten hours on an old version were the development agent's miss. The
+  change was committed and pushed in his deployment repository at 06:22 (the issuer in place of `tls.secretName`, no
+  `caSecret`, his hand-written `Certificate` removed), rendered before against the released chart (28 objects, four
+  certificates) and against the chart of `main` with the malware scan (35 objects, five certificates, five
+  Deployments). **At 06:25 the upgrade had succeeded:** the release reports the newest chart, the four certificates
+  of the chart are ready, two pods each of `api`, `packages`, `worker` and `scanner` are ready on the new image, the
+  migration hook completed, and the ingress answers (the sign-in redirect on `/`, 401 on the API without a session).
+  The old Secret has no owner reference and stayed, so the old pods kept their certificate while they were
+  replaced. Not measured: requests during the rollout. Read on the cluster for what comes with the malware scan:
+  three nodes of 16 cores and about 61 GiB each, at a quarter to a half of their memory, no quota or limit range in the
+  namespace, amd64; the worker carries the label for the way to the internet that `freshclam` needs.
 - **The malware scan on its landing branch, 04:17:** `feat/malware` is `main` with the stack's lock fix and the eleven
   commits of the feature on top (rebased by package 3's builder onto what landed, each conflict settled in the commit
   it arose in; one break without a textual conflict found by the area `malware` and fixed: a test set a configuration
@@ -1123,9 +1160,26 @@ runs are in `git log`; this section holds the current state.
   stack, **and ended green at 06:10: all 67 packages that hold tests passed in one run, none run again**, the areas
   `coordination`, `backup`, `bastion`, `bastionreg`, `querybudget`, `malware` and `files` among them, each of which
   had failed in an earlier run of that night for a reason outside the feature. The feature lands on that.
+- **The malware scan of every artifact, landed on 2026-11-21 at 06:15 and released at 06:29** in eleven commits
+  (the branch rebased onto the plan's commit of 06:11, its tree the tested one but for the plan; links and check
+  once more): the screens; the gate; the scan listener's two routes; the interface between scanner and loader; the
+  job and the scanner; the database's task, `upstream/scanner-clamav` and the chart; the put-back of a refused
+  database; the page of `scanner-clamav`; the loader; the alerts and the sizing; the statement budget's test.
+  **Before the push the owner's UI backend was started with it from the main checkout:** ready, the schema at 89
+  with nothing to apply (the feature's one migration landed with its first stage), `upstream/scanner-clamav`
+  created, the checks `malware_scanner` and `scanner` failing without gating, as Q-MAL-60 and Q-ARCH-551 say for a
+  start without scanners. **Seen at that start, a finding (section 8):** the task `malware-sync-db` fails there
+  with an error line, because the scanning is on by default and that stack has no `freshclam`.
+  **Its pipeline (run 44869974792):** the jobs that gate the release were green and the release was cut at 06:29; at
+  that time the three integration shards, `UI layout checks` and the legs `npm`, `oci`, `ci`, `push`, `access-long`
+  and `vuln` (the first run of the malware case and of the ClamAV image on a runner) were still running.
+  **Not verified at the landing:** the owner's installation with it (its upgrade is refused by the chart's schema
+  until the change of its values is committed, see above); whether his cluster's policy lets `freshclam` reach
+  ClamAV's servers; the loader's refusal path in a cluster; H-1141; arm64 against amd64 for `clamd`'s memory (the
+  sizing was measured on this machine).
 - **The stack's lock and the coordination tests (one commit of the type `test` on the branch `fix/it-lock`, mended
-  at 04:44, see the malware scan's entry above for what it broke; it lands by itself after the malware scan, when
-  its builder has run the four areas through it):**
+  at 04:44, see the malware scan's entry above for what it broke; its four areas are green, and it lands by itself
+  after the malware scan's pipeline):**
   `test/integration/locked.sh` runs a command under the stack's lock from the main checkout or a worktree, loads the
   stack's environment, never removes the lock file, waits without a timeout and holds the lock as long as the test
   binaries live; the developer page names the commands. **What `lockf` had really done, shown on scratch files, and it
@@ -1142,9 +1196,15 @@ runs are in `git log`; this section holds the current state.
   integration suite (`reservedEnv` in `internal/config/load.go`), and the Bastion runs the same check. Shown
   without the stack: a binary built from the branch ends under the first script with "unknown environment
   variable", and under the mended one `admin config validate` passes and the Bastion gets past its check of the
-  environment. **Not run yet:** the areas `bastionreg`, `backup`, `bastion` and `coordination` through the script;
-  the stack was held by the landing branch's run until then.
-- **In work** (06:10), one builder (the lock script's four areas on the stack); the development agent lands the malware scan from its branch:
+  environment. **Run through the mended script on the stack at 06:10, one call, exit 0:** `bastionreg` (27.5 s), `backup`
+  (316.6 s), `bastion` (120.5 s) and `coordination` (238.8 s), the first three being the ones the first script
+  broke. A call of the script inside the script passed too (`coordination`, 238.5 s): the inner call found the lock
+  it already held and did not wait for itself. Rebased onto the malware scan's landing without a conflict; on that
+  commit build, vet with the integration and the end-to-end build tags, `shellcheck` and links are green. **It
+  lands as a commit of its own when the malware scan's pipeline has ended**, because a push before that would
+  cancel the legs still running. Still not verified: the `flock` path on Linux; two runs competing for the lock on
+  the real stack with the mended script (shown on scratch files, and by the first author).
+- **In work** (06:30): the lock script's commit on its branch (its four areas on the stack, then its landing). No builder of the malware scan is at work; their records, kept until the walkthrough:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1614,10 +1674,11 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   (the malware scanner's Deployment) and R-HA-069 (the `freshclam` container), amendments where another page owns the
   mechanism, a security page ([malware-scanning.md](../security/malware-scanning.md), H-1101 to H-1113) and ADR-220 to
   ADR-222; the specification counts 1,047 requirements. Gates on the commit: the coverage tool's tests, links (0 broken)
-  and check, the full unit run and the chart tests by the planner, the white-label scan. **Built in four work packages:**
+  and check, the full unit run and the chart tests by the planner, the white-label scan. **Built in four work packages, all landed
+  on 2026-11-21 at 06:15 (run record):**
   (1) the gate and the verdicts (migration 00088, the store, the join into the download statement, the gate in the two
   serve points, remote fills, virtual repositories, the OCI walk, the repository's setting, the API, the audit events,
-  the Bastion feed, backups), which needs nothing but `main` and lands first, **in work since 19:20**; (2) the scanning
+  the Bastion feed, backups), which needs nothing but `main` (its first stage landed alone on 2026-11-20); (2) the scanning
   side (the job `malware-scan`, discovery and rescans, the call, the blob token, the scan listener's routes, the scanner
   kind `malware` with its unpacking and a `clamd` client, metrics), which needs the scanner role on `main` and package
   1's store; (3) the database and the chart (the task `malware-sync-db`, `freshclam`, `upstream/scanner-clamav`, the
