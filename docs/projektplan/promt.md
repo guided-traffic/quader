@@ -1276,11 +1276,13 @@ runs are in `git log`; this section holds the current state.
   every builder's brief from now on:** a builder stops its own processes by process ID or by a pattern that
   holds its worktree's path, never by a pattern that can match the main checkout. **The pipeline of the 09:05
   landing (run 44883240572) ended green on every job at 09:55.**
-- **Planners in work** (beside the builders below): the client certificates of the ClamAV endpoint (an
-  amendment of the specification, since 11:20), and **the image analyser's move into the scanner unit and out of
+- **Planner in work** (beside the builders below): **the image analyser's move into the scanner unit and out of
   the common image** (decided on 2026-11-21, "With the owner"; its specification with the measurements named
   there, since 11:21); its packages are built after the ClamAV change is on `main`, because both change the chart
-  and the scanner role.
+  and the scanner role. **The planner of the ClamAV endpoint's client certificates (11:20 to 11:39) is done:**
+  its amendment is on `main` since 11:40 (rebased, links and check exit 0, the count test at 1,107
+  requirements; "With the owner" holds what it says), its worktree and branch are removed; its one package is
+  built after the ClamAV change's packages 1 to 4.
 - **In work** (10:57): three builders, each from a specification that is on `main` (section "With the owner" holds
   what each builds): the format `clamav` with its repository and API (package 1 of the ClamAV change), the chart
   with the updater's Deployment (package 3 of it, without a cluster, because the binary does not know the updater's
@@ -2079,11 +2081,32 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   updater process and the import; (3) the chart; (4) the UI. **In work since 10:57:** packages 1 and 3 (run
   record); 1, 2 and 3 land as one. **The owner's installation at that landing:** the way to the internet as a
   label of the new pod (`malwareUpdaterFreshclam.podLabels`), which the development agent commits there; the
-  first set is fetched whole once. **The endpoint's level is decided by him (2026-11-21, 11:15): "Visibility des Endpunkts: b +
+  first set is fetched whole once. **The endpoint's level is decided by him (2026-11-21, 11:17): "Visibility des Endpunkts: b +
   zusätzlich Client-Zertifikate."** Public by default, the levels below it with the token in the client's URL, and
   client certificates as well. The first two are what packages 1 to 4 build; **the client certificates are a
-  package of their own after them:** a planner amends the specification (in work since 11:25; how a certificate
-  reaches Quader behind an ingress that ends TLS, which CA admits, what a certificate holder may read). **His
+  package of their own after them,** specified on `main` since 11:40 (R-CLAMAV-010, Q-CLAMAV-8 to Q-CLAMAV-14,
+  Q-EP-96, Q-UI-905, H-1177 to H-1180; Q-REPO-415 carries his words): a further endpoint whose TLS ends at
+  Quader, reached through a TLS passthrough of the ingress or a Service of its own, with the company's CAs from
+  a Secret that is read again without a restart; Quader never takes a certificate from a header. A request
+  without a token there is a certificate subject with no principal: one fixed rule lets it read only
+  repositories that admit certificates (`upstream/clamav` while its switch is on) at the levels internal and
+  public, never at private, never a write, and it is bound to no service account. A missing, expired or
+  foreign certificate fails the handshake, which `freshclam` counts as a failed attempt and never as a reason to
+  stay away; the certificate's subject is recorded where a user stands, its serial where a token stands. The
+  chart renders the passthrough per ingress controller (an annotation for HAProxy Ingress and ingress-nginx,
+  refused for traefik). The client setup offers four ways: public, the token, the certificate (the two
+  environment variables and the CA bundle), and the plain download of the three files for an installation
+  without an updater. On the admin page the certificates are read-only lines in the fold **Visibility**. **The
+  planner's decisions are the development agent's defaults told to him before he left, narrowed in one point:**
+  a certificate holder counts as a reader of the definitions only, not as an internal subject anywhere else.
+  **Built as one package** (the binary and the chart share the key names) **after packages 1 to 4 are on
+  `main`;** its tests cost under a second of unit tests, about two seconds of the chart's job and about one
+  second of the integration area `malware`, and nothing in an end-to-end leg. **Open by its text (H-1177 to
+  H-1180):** every certificate of the admitted CAs is admitted; no revocation check; behind a passthrough the
+  client's address is the controller's; a refused handshake leaves a line of the process log only. **Not
+  verified:** that the integration harness takes a client CA on a further endpoint; the reload script and the
+  unit name of a ClamAV installation in the client setup; a real `freshclam` with a certificate, which stays
+  the one recorded measurement of R-CLAMAV-009. **His
   clarification the same minute:** "Weil ich Freshclam lese und nicht genau weiß wie du das meinst, Ziel ist ja,
   dass wir für ein Unternehmen der Zentral Endpunkt für ClamAV werden, ein zusätzlicher freshclam vor dem jeweiligen
   clamav sollte dabei nicht notwendig sein. Ich hoffe das ist klar." Answered: the updater is ClamAV's own, part of
