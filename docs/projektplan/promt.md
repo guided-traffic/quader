@@ -150,10 +150,19 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   of every release (step 6, item 5) and says which version runs. A change of the chart that his values do not satisfy
   is the development agent's to bring there: his values are rendered against the new chart before the landing, and the
   change of the installation's directory in his deployment repository is committed and pushed by the development agent
-  with the release, not handed to him as a patch. That last part is the development agent's reading of his sentence;
-  that repository's own rules say in general that an agent asks him before a commit. The cluster itself is changed
-  through that repository only. A reset of the installation's content or database, where an upgrade needs one, is not
+  with the release, not handed to him as a patch (confirmed by him the same morning for that directory: "Ja, du darfst
+  in apps/quader commiten."; for the rest of that repository its own rule stands, that an agent asks him before a
+  commit). The cluster itself is changed through that repository only. A reset of the installation's content or database, where an upgrade needs one, is not
   tragic at this stage (his words) and is named to him first.
+- **A unit that runs a tool carries the tool's name** (owner, 2026-11-21, after he saw the two scanner Deployments on
+  his cluster: "Die Deployments quader-scanner und quader-malware-scanner sind mir nicht differenziert genug.
+  quader-scanner ist trivy? Dann quader-vuln-scanner-trivy. quader-malware-scanner hätte ich auch lieber
+  quader-malware-scanner-calmav genannt. Also immer so benennen, dass man sieht um welches Tool es sich handelt und das
+  man später evtl mal mehrere Tools nebeneinander laufen lassen kann."; the tool is ClamAV, the name `clamav`). A kind
+  of pod that exists to run one third-party tool, and everything named after it, is named
+  `<purpose>-scanner-<tool>`: `vuln-scanner-trivy`, `malware-scanner-clamav`. The boundary is the development agent's
+  and was told to him: what is the same whichever tool does the work (a job, a queue, the gate, a verdict, a setting,
+  the role `scanner`, the worker's one link per purpose) keeps the name of its purpose.
 - **The repository of the runners' image takes no commit without the owner's word** (`container-images`, its own `CLAUDE.md`;
   he released one commit and push for the image on 2026-11-19): ask again each time.
 
@@ -1219,7 +1228,17 @@ runs are in `git log`; this section holds the current state.
   lands as a commit of its own when the malware scan's pipeline has ended**, because a push before that would
   cancel the legs still running. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (06:30): the lock script's commit on its branch (its four areas on the stack, then its landing). No builder of the malware scan is at work; their records, kept until the walkthrough:
+- **In work** (06:50): one builder, **the two scanner units take their tool's name** (since 06:48, the owner's
+  decision of that morning, standing rules): the kinds `scanner` and `malware-scanner` become `vuln-scanner-trivy` and
+  `malware-scanner-clamav` in the chart (every object, certificate and Secret named after a kind, the keys of
+  `tls.existingSecrets`), the value blocks `scanner` and `malwareScanner` become `vulnScannerTrivy` and
+  `malwareScannerClamav`, `process.scanner_kind` names the tool, every profile and start outside the chart follows, the
+  specification and the documentation in the same commit, and the rule goes into the repository's `CLAUDE.md`. No
+  screen changes; the builder reports what the System page and the malware settings show for a scanner replica. The
+  owner's values name none of the renamed keys (read); they are rendered against the new chart before it lands, and the
+  installation's upgrade replaces both Deployments and leaves the two old certificate Secrets behind. **Waiting to
+  land:** the lock script's commit, rebased and green, after the malware scan's pipeline. No builder of the malware
+  scan is at work; their records, kept until the walkthrough:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
