@@ -90,4 +90,13 @@ type Store interface {
 	// RecordManifestDeleted writes the audit event oci.manifest.deleted with the journal entry a restore's replay withholds the
 	// manifest by (R-OCI-033).
 	RecordManifestDeleted(ctx context.Context, tx formats.Tx, in rows.ManifestDeleted) error
+	// TagTargets reads the manifests the tags at the canonical paths point at: a local tag item's content, a remote's stored tag
+	// document. A path that holds no tag is absent. The removal of a manifest takes its attachment tags and what they point at
+	// (signatures.md R-SIG-025).
+	TagTargets(ctx context.Context, tx formats.Tx, repoID int64, paths []string) (map[string][32]byte, error)
+
+	// EnqueueSignatureFetch queues the background fetch of a remote's signatures for a top-level manifest (signatures.md R-SIG-026):
+	// target is SignatureFetchTarget's, subject the manifest's digest. A target fetched before is fetched again only with refresh,
+	// after signatures.remote.refresh_after. tx nil runs a transaction of the port's own.
+	EnqueueSignatureFetch(ctx context.Context, tx formats.Tx, repoID int64, target string, subject [32]byte, refresh bool) error
 }

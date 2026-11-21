@@ -543,10 +543,12 @@ Priority: **P1** · Covers: PKG-ANSIBLE-005
   sets `--keyring` verifies the upstream's signature itself against keys it trusts, and a client without a keyring skips the check,
   exactly as against the upstream ([H-839](#h-839--a-remotes-signatures-are-verified-and-shown-and-refuse-nothing)). A **virtual** version
   document carries the signatures of the member whose document it serves. **Superseded in part by [signatures.md](../signatures.md)
-  R-SIG-031 (specified, not built):** Quader verifies and shows a remote's signatures once the archive is stored, and a local version
-  takes detached signatures through the management API, served in `signatures[]`. A repository's signature gate (stage 3, R-SIG-061 to
-  R-SIG-068, specified, not built) serves a collection archive only on a publisher's signature an accepted anchor knows; an entry of a
-  signing service is a registry's and does not pass alone, and a role archive, which carries no signature, is refused.
+  R-SIG-031:** a local version takes detached signatures through the management API (`POST
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures`, built), served in
+  `signatures[]` with the key's fingerprint; Quader's verification and display of a remote's signatures is stage 1's package 2. A
+  repository's signature gate (stage 3, R-SIG-061 to R-SIG-068, specified, not built) serves a collection archive only on a publisher's
+  signature an accepted anchor knows; an entry of a signing service is a registry's and does not pass alone, and a role archive, which
+  carries no signature, is refused.
 - **Vulnerabilities.** The vulnerability pipeline (vulnerability-scanning.md) matches stored versions to OSV advisories by ecosystem
   and name. OSV has no Ansible ecosystem (verified 2026-11-10), so the format has no `VulnerabilityAdapter` and no `ImageScanned`
   interface, the evaluation state of its repositories is `not_covered`, and no download is blocked by it
@@ -1031,6 +1033,8 @@ Priority: **P1** · Covers: quader-only
 Audit events (operations-and-observability.md R-OPS-*): `package.published` and `artifact.deployed` as for every format (actor: the
 token's principal; the method label `galaxy_token` where it applies); `ansible.import_task.failed` (the refused archive and its code, a
 security-relevant event for repeated failures of one principal); `ansible.version.deleted` and `ansible.tombstone.cleared` (R-ANS-012);
+`ansible.signature.added` and `ansible.signature.removed` (a detached signature posted for or removed from a local version, with the key's
+fingerprint and never the signature; [signatures.md](../signatures.md) R-SIG-031, Q-SIG-107);
 `ansible.hub.exchange_failed` (no token in the event); the generic proxy events for a remote (`proxy.upstream_digest_changed`, the
 integrity failure).
 

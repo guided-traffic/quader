@@ -61,6 +61,9 @@ type Store struct {
 	Revisions func(name string) int64
 	revs      map[int64]int64
 
+	// Fetches are the targets of the background fetch of signatures the format queued (R-SIG-026), "+" before a refresh.
+	Fetches []string
+
 	// Published, Retries, Mismatches and TagChanges log what was written, in order.
 	Published   []rows.PublishInput
 	Retries     []rows.RetryInput
@@ -346,4 +349,18 @@ func copyTags(in map[string]string) map[string]string {
 		out[k] = v
 	}
 	return out
+}
+
+// EnqueueSignatureFetch records the target the format queued; the keys, which belong to no item, with a subject are an error.
+func (s *Store) EnqueueSignatureFetch(_ context.Context, _ formats.Tx, _ int64, target string, subject [32]byte, refresh bool) error {
+	if target == "keys" && subject != ([32]byte{}) {
+		return fmt.Errorf("npmtest: the keys target carries subject %x", subject)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if refresh {
+		target = "+" + target
+	}
+	s.Fetches = append(s.Fetches, target)
+	return nil
 }

@@ -3,8 +3,10 @@ package oci
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/oci/rows"
@@ -135,11 +137,22 @@ func (t *twin) RemoveManifest(_ context.Context, _ formats.Tx, _ int64, name str
 }
 
 func (t *twin) TagsPointingAt(_ context.Context, _ formats.Tx, _ int64, name string, d [32]byte) ([]string, error) {
+	var live map[string][32]byte
+	if t.host != nil {
+		live = t.host.LiveItems(name + "/" + dirTags + "/")
+	}
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	seen := map[string]bool{}
 	var out []string
 	for tag, got := range t.l().tags[name] {
 		if got == d {
+			out, seen[tag] = append(out, tag), true
+		}
+	}
+	// The tags a push stored through the in-memory host, as the PostgreSQL port reads the items table.
+	for p, got := range live {
+		if tag := strings.TrimPrefix(p, name+"/"+dirTags+"/"); got == d && !seen[tag] {
 			out = append(out, tag)
 		}
 	}
@@ -206,4 +219,44 @@ func digestN(n byte) [32]byte {
 	d[0] = n
 	d[31] = 1
 	return d
+}
+
+// TagTargets reads a tag's manifest from the seeded tags, else from the item the in-memory host stores at the path.
+func (t *twin) TagTargets(_ context.Context, _ formats.Tx, _ int64, paths []string) (map[string][32]byte, error) {
+	out := map[string][32]byte{}
+	for _, p := range paths {
+		name, kind, tag, ok := splitLayout(p)
+		if !ok || kind != dirTags {
+			continue
+		}
+		t.mu.Lock()
+		d, seeded := t.l().tags[name][tag]
+		t.mu.Unlock()
+		if seeded {
+			out[p] = d
+			continue
+		}
+		if t.host != nil {
+			if ev, ok := t.host.SignatureEventOf(p, formats.OriginUpload); ok && len(ev.Digests.SHA256) == 32 {
+				copy(d[:], ev.Digests.SHA256)
+				out[p] = d
+			}
+		}
+	}
+	return out, nil
+}
+
+// EnqueueSignatureFetch records the targets the format queued; a subject that is not the digest the target names is an error.
+func (t *twin) EnqueueSignatureFetch(_ context.Context, _ formats.Tx, _ int64, target string, subject [32]byte, refresh bool) error {
+	if !strings.HasSuffix(target, "@"+digestText(subject)) {
+		return fmt.Errorf("twin: subject %x is not the digest of target %q", subject, target)
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.calls["EnqueueSignatureFetch"]++
+	if refresh {
+		t.calls["EnqueueSignatureFetch:refresh"]++
+	}
+	t.fetches = append(t.fetches, target)
+	return nil
 }

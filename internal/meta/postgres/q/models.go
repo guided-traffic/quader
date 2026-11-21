@@ -106,6 +106,16 @@ type AnsibleVersionDoc struct {
 	BuiltAt    pgtype.Timestamptz
 }
 
+type AnsibleVersionSignature struct {
+	RepoID      int64
+	Name        string
+	Version     string
+	Fingerprint string
+	Signature   string
+	PostedBy    string
+	PostedAt    pgtype.Timestamptz
+}
+
 type ApiIdempotencyKey struct {
 	PrincipalID     pgtype.UUID
 	IdemKey         string
@@ -1352,6 +1362,17 @@ type SignatureAttachment struct {
 	Source      string
 	Name        pgtype.Text
 	CreatedAt   pgtype.Timestamptz
+}
+
+type SignatureFetch struct {
+	RepoID        int64
+	Target        string
+	Format        string
+	SubjectSha256 []byte
+	QueuedAt      pgtype.Timestamptz
+	FetchedAt     pgtype.Timestamptz
+	Attempts      int32
+	FailedAt      pgtype.Timestamptz
 }
 
 type SignatureObject struct {

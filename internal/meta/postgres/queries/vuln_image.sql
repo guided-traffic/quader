@@ -4,7 +4,9 @@
 -- name: VulnImageDiscover :execrows
 -- The image manifests of active local and remote repositories of the format that have no scan row yet: a push, a fill, an image stored
 -- before the scanning was switched on and a restored installation all arrive here. An index is not scanned, its children are; an artifact
--- that is no container image (a chart, a signature) is left out by its media types.
+-- that is no container image (a chart, a signature) is left out by its media types. A signature or an attestation by R-SIG-023 is left
+-- out as well (signatures.md R-SIG-024): a referrer by its subject, and cosign's older layout and BuildKit's attestation manifests, which
+-- carry an image configuration, by the signature their manifest is the object of in the repository.
 INSERT INTO vuln_image_scan (repo_id, name, digest, not_before)
 SELECT m.repo_id, m.name, m.digest, now() + make_interval(secs => sqlc.arg(delay_seconds)::float8)
   FROM oci_manifests m
@@ -12,7 +14,10 @@ SELECT m.repo_id, m.name, m.digest, now() + make_interval(secs => sqlc.arg(delay
  WHERE r.format = 'oci' AND r.class IN ('local', 'remote') AND r.lifecycle = 'active'
    AND m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
    AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+   AND m.subject IS NULL
    AND NOT EXISTS (SELECT 1 FROM vuln_image_scan s WHERE s.repo_id = m.repo_id AND s.name = m.name AND s.digest = m.digest)
+   AND NOT EXISTS (SELECT 1 FROM signatures g JOIN signature_attachments a ON a.signature_id = g.id
+                    WHERE g.object_sha256 = m.digest AND a.repo_id = m.repo_id)
  LIMIT sqlc.arg(max_rows)::int
 ON CONFLICT DO NOTHING;
 

@@ -554,9 +554,21 @@ func TestR_NPM_027_TrustEvidenceAndSignaturesPassThroughUnchanged(t *testing.T) 
 			trusted++
 		}
 		o := via.Versions[v]
-		if string(o.NPMUser) != string(e.NPMUser) || string(o.Dist.Signatures) != string(e.Dist.Signatures) ||
-			string(o.Dist.Attestations) != string(e.Dist.Attestations) || o.Dist.Integrity != e.Dist.Integrity {
+		if string(o.NPMUser) != string(e.NPMUser) || string(o.Dist.Signatures) != string(e.Dist.Signatures) || o.Dist.Integrity != e.Dist.Integrity {
 			t.Errorf("%s: the virtual repository changed the trust evidence", v)
+		}
+		// dist.attestations: the provenance passes unchanged, and the URL names each serving repository's attestations endpoint
+		// (signatures.md R-SIG-028, Q-SIG-35).
+		if len(e.Dist.Attestations) > 0 {
+			ua, va := attestationsOf(t, e.Dist.Attestations), attestationsOf(t, o.Dist.Attestations)
+			if string(ua.Provenance) != string(va.Provenance) {
+				t.Errorf("%s: the virtual repository changed the provenance: %s and %s", v, ua.Provenance, va.Provenance)
+			}
+			for repo, a := range map[string]attestationsRef{rRemote: ua, rAll: va} {
+				if !strings.HasSuffix(a.URL, "/api/npm/it/"+repo+"/-/npm/v1/attestations/sigstore@"+v) {
+					t.Errorf("%s: the attestations URL of %s is %q", v, repo, a.URL)
+				}
+			}
 		}
 	}
 	if trusted == 0 {
@@ -583,4 +595,19 @@ func TestR_NPM_025_ABearerTokenAndTheUpstreamsCredentialRule(t *testing.T) {
 	if strings.Contains(string(a.Body), "secret") || strings.Contains(string(a.Body), r.run.Addr) {
 		t.Errorf("the refusal discloses upstream details: %s", a.Body)
 	}
+}
+
+// attestationsRef is dist.attestations of a version entry.
+type attestationsRef struct {
+	URL        string          `json:"url"`
+	Provenance json.RawMessage `json:"provenance"`
+}
+
+func attestationsOf(t *testing.T, raw json.RawMessage) attestationsRef {
+	t.Helper()
+	var a attestationsRef
+	if err := json.Unmarshal(raw, &a); err != nil {
+		t.Fatalf("dist.attestations %s: %v", raw, err)
+	}
+	return a
 }

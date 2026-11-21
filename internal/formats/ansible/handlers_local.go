@@ -281,11 +281,8 @@ func (f *Format) handleVersion(ctx context.Context, rq *formats.Request, w http.
 	if !found {
 		return errNoVersion(name, ver)
 	}
-	return reply(w, rq, galaxydoc.RenderVersion(galaxydoc.Version{
-		Namespace: ns, Name: n, Version: row.Version, RequiresAnsible: row.RequiresAnsible, SHA256: row.SHA256, Size: row.Size,
-		Dependencies: row.Dependencies, Info: row.CollectionInfo, CreatedAt: row.PublishedAt, UpdatedAt: row.PublishedAt,
-		CollectionID: rows.CollectionUUID(row.RepoID, name),
-	}, addrOf(rq)))
+	// The signatures clients posted for the version stand in signatures[] (signatures.md R-SIG-031).
+	return reply(w, rq, galaxydoc.RenderVersion(versionOfRow(row), addrOf(rq)))
 }
 
 // handleArtifact is GET v3/artifacts/collections/{file} (R-ANS-005): the stored archive with the streaming, range and conditional rules

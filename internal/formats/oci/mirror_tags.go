@@ -118,6 +118,9 @@ func selectTags(all []string, ms MirrorSettings) []chosenTag {
 		if !ValidTag(tag) || slices.ContainsFunc(ms.ExcludeTags, func(p string) bool { return matchTag(p, tag) }) {
 			continue
 		}
+		if IsAttachmentTag(tag) {
+			continue // an attachment tag is no version: the plan of the image it attaches to fetches it (signatures.md R-SIG-025)
+		}
 		exact, matched := false, false
 		for _, p := range ms.Tags {
 			if isWildcardPattern(p) {

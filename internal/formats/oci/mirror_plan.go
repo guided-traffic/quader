@@ -71,6 +71,13 @@ func (a remoteAdapter) tagItems(ctx context.Context, u discover.Upstream, name s
 	if err != nil {
 		return nil, nil //nolint:nilerr // a manifest the registry does not accept is not mirrored (MANIFEST_INVALID)
 	}
+	// The kept tag's manifest asks for its signatures as the background fetch does, and what it finds is stored now (signatures.md
+	// R-SIG-025: "Referrers are not mirrored" is superseded).
+	if !fm.attachment && !IsAttachmentTag(ct.Tag) {
+		if err := fetchImageSignatures(ctx, u, name, fm.m.Digest); err != nil {
+			return nil, err
+		}
+	}
 	b := &itemBuilder{name: name, version: ct.Tag, prerelease: tagorder.Prerelease(ct.Tag), pinned: ct.Pinned, seen: map[string]bool{}}
 	m := fm.m
 	if m.Type == manifest.TypeImage {

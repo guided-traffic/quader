@@ -75,6 +75,8 @@ type HostOptions struct {
 	// Markup is the renderer a format's documentation uses (ADR-196); nil answers [StandInMarkup], a deterministic stand-in that
 	// escapes and wraps, where the production Host answers formats.NoMarkup until the renderer is wired.
 	Markup formats.Markup
+	// Verdicts answers Host.Signatures; nil answers formats.NoSignatureVerdicts.
+	Verdicts formats.SignatureVerdicts
 	// WikiDenied makes the Host answer as for a caller who reads the artifacts and not the wiki (R-AUTHZ-034): WikiReadable is
 	// false and Authorize refuses a target whose part is the wiki as a missing resource. Check 15 sets it.
 	WikiDenied bool
@@ -451,6 +453,14 @@ func (h *Host) Vulnerabilities() formats.VulnerabilityData {
 		return h.opts.Vulnerabilities
 	}
 	return formats.NoVulnerabilityData()
+}
+
+// Signatures implements formats.Host.
+func (h *Host) Signatures() formats.SignatureVerdicts {
+	if h.opts.Verdicts != nil {
+		return h.opts.Verdicts
+	}
+	return formats.NoSignatureVerdicts
 }
 
 // Markup implements formats.Host.

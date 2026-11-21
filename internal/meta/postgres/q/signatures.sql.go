@@ -226,6 +226,26 @@ func (q *Queries) SignatureDefer(ctx context.Context, arg SignatureDeferParams) 
 	return result.RowsAffected(), nil
 }
 
+const signatureDetach = `-- name: SignatureDetach :execrows
+DELETE FROM signature_attachments
+ WHERE repo_id = $1::bigint AND location = ANY($2::text[])
+`
+
+type SignatureDetachParams struct {
+	RepoID    int64
+	Locations []string
+}
+
+// Removes the attachments at locations of a repository: a signature a client posted and removed again (R-SIG-031). The job removes a
+// signature that loses its last attachment (R-SIG-011).
+func (q *Queries) SignatureDetach(ctx context.Context, arg SignatureDetachParams) (int64, error) {
+	result, err := q.db.Exec(ctx, signatureDetach, arg.RepoID, arg.Locations)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const signatureIDs = `-- name: SignatureIDs :many
 SELECT k.ord::bigint AS ord, s.id::bigint AS id
   FROM (SELECT unnest($1::bytea[]) AS object_sha256, unnest($2::smallint[]) AS part,

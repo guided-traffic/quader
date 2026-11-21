@@ -161,6 +161,13 @@ func (f *Format) Classify(p formats.Path) formats.PathInfo {
 		if isAudit(p.Path) || isIdentity(p.Path) { // forwarded and never cached (R-NPM-038, R-NPM-019)
 			return formats.PathInfo{Kind: formats.PathVolatile}
 		}
+		// The keys and a version's attestations are documents a remote stores (R-SIG-028); the attestations belong to their version.
+		if n, version, keys, ok := signaturePath(p.Path); ok {
+			if keys {
+				return formats.PathInfo{Kind: formats.PathMetadata}
+			}
+			return formats.PathInfo{Kind: formats.PathMetadata, Package: n.String(), Version: version}
+		}
 		return formats.PathInfo{Kind: formats.PathComputed}
 	}
 	text, rest := segs[0], segs[1:]

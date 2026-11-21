@@ -6276,6 +6276,21 @@ type AnsibleSettings struct {
 	FetchDocumentation *bool `json:"fetchDocumentation,omitempty"`
 }
 
+// AnsibleSignature defines model for AnsibleSignature.
+type AnsibleSignature struct {
+	// Fingerprint The fingerprint of the key the signature names, lower-case hexadecimal.
+	Fingerprint string `json:"fingerprint"`
+
+	// Signature The armored signature as it was posted.
+	Signature string `json:"signature"`
+}
+
+// AnsibleSignatureInput defines model for AnsibleSignatureInput.
+type AnsibleSignatureInput struct {
+	// Signature The ASCII-armored detached OpenPGP signature of the version's `MANIFEST.json`.
+	Signature string `json:"signature"`
+}
+
 // AnsibleTombstone A deleted version whose number is not accepted again (R-ANS-012).
 type AnsibleTombstone struct {
 	DeletedAt time.Time `json:"deletedAt"`
@@ -15637,6 +15652,9 @@ type UpdateRepositoryApplicationMergePatchPlusJSONRequestBody UpdateRepositoryAp
 // ReplaceRepositoryJSONRequestBody defines body for ReplaceRepository for application/json ContentType.
 type ReplaceRepositoryJSONRequestBody = Repository
 
+// AddAnsibleVersionSignatureJSONRequestBody defines body for AddAnsibleVersionSignature for application/json ContentType.
+type AddAnsibleVersionSignatureJSONRequestBody = AnsibleSignatureInput
+
 // InvalidateRepositoryCacheJSONRequestBody defines body for InvalidateRepositoryCache for application/json ContentType.
 type InvalidateRepositoryCacheJSONRequestBody = CacheInvalidateRequest
 
@@ -16940,6 +16958,12 @@ type ServerInterface interface {
 	// ReplaceRepository Replace a repository configuration
 	// (PUT /api/v1/projects/{projectKey}/repositories/{repoKey})
 	ReplaceRepository(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ReplaceRepositoryParams)
+	// AddAnsibleVersionSignature Add a detached signature to a version of a local Ansible Galaxy repository
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures)
+	AddAnsibleVersionSignature(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, collection string, version string)
+	// RemoveAnsibleVersionSignature Remove a signature of a version of a local Ansible Galaxy repository
+	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint})
+	RemoveAnsibleVersionSignature(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, collection string, version string, fingerprint string)
 	// ListAnsibleImportTasks List the import tasks of an Ansible Galaxy repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports)
 	ListAnsibleImportTasks(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ListAnsibleImportTasksParams)
@@ -24414,6 +24438,121 @@ func (siw *ServerInterfaceWrapper) ReplaceRepository(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReplaceRepository(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddAnsibleVersionSignature operation middleware
+func (siw *ServerInterfaceWrapper) AddAnsibleVersionSignature(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "collection" -------------
+	var collection string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "collection", r.PathValue("collection"), &collection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "collection", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version" -------------
+	var version string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version", r.PathValue("version"), &version, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddAnsibleVersionSignature(w, r, projectKey, repoKey, collection, version)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveAnsibleVersionSignature operation middleware
+func (siw *ServerInterfaceWrapper) RemoveAnsibleVersionSignature(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "collection" -------------
+	var collection string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "collection", r.PathValue("collection"), &collection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "collection", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version" -------------
+	var version string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version", r.PathValue("version"), &version, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "fingerprint" -------------
+	var fingerprint string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fingerprint", r.PathValue("fingerprint"), &fingerprint, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fingerprint", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveAnsibleVersionSignature(w, r, projectKey, repoKey, collection, version, fingerprint)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33498,6 +33637,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports", wrapper.ListAnsibleImportTasks)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones", wrapper.ListAnsibleTombstones)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version}", wrapper.ClearAnsibleTombstone)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures", wrapper.AddAnsibleVersionSignature)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint}", wrapper.RemoveAnsibleVersionSignature)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/search/suggestions", wrapper.GetSearchSuggestions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/profiles", wrapper.ListLimitProfiles)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/limits/profiles", wrapper.CreateLimitProfile)

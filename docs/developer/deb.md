@@ -210,6 +210,14 @@ What the index builder stands on (T-17 WP4a):
 A reindex of unchanged rows publishes a new generation too (Q-DEB-61). The restore's fix-up ([backup/fixup/deb.go](../../internal/backup/fixup/deb.go))
 enqueues a full build of every local and virtual repository with `jobs.EnqueueTx`, which needs no queue (R-DEB-032).
 
+## Coverage of a package by a signed release (signatures.md R-SIG-030)
+
+apt checks the signature of the index, not of a package. The format implements the optional `formats.SignatureCoverage`
+([covering.go](../../internal/formats/deb/covering.go)): for a remote, the stored releases whose parsed index lists the file at its path
+with its SHA-256 (`RemoteStore.Covering`, [covering.go](../../internal/formatdata/deb/covering.go), the statement `DebRemoteCovering` over
+`deb_remote_entries` by `(repo_id, path)`), each with its document's path and digest (the subject of its signatures), its suite, its `Date`
+and the fingerprint that verified it. A local or virtual repository covers nothing here. The API of R-SIG-034 asks it.
+
 ## Signing keys
 
 Every local and virtual Debian repository has a primary signing key from the transaction that creates it, can add a co-signing next key, promote it, and has its

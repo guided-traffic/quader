@@ -3,6 +3,9 @@ package formats
 import (
 	"context"
 	"io"
+	"time"
+
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // SignatureAdapter is what a format says about the signatures of its ecosystem (signatures.md R-SIG-002, R-SIG-022): a static
@@ -175,6 +178,58 @@ func SignatureSourceValid(source string) bool {
 		return true
 	}
 	return false
+}
+
+// SignatureFetcher is the optional interface of a format's remote adapter whose signatures do not come with what a client fetches
+// anyway (signatures.md R-SIG-026, Q-SIG-33): OCI's referrers and attachment tags, npm's attestations and keys. The job
+// signature-fetch (internal/signatures/fetch) hands it the upstream of one remote repository for one run (the background requests of a
+// mirror's pass, without the pass) and a target the format named when its data port queued the fetch; the format asks the upstream for what its protocol defines as the
+// target's signatures and stores what it finds through the upstream's Document and Artifact, so that the commit hook detects it as it
+// detects a client's fill (R-SIG-011). A mirror's plan calls the same code with the pass's upstream (R-SIG-025). A target that names
+// nothing the format knows is no error: there is nothing to fetch.
+type SignatureFetcher interface {
+	FetchSignatures(ctx context.Context, u discover.Upstream, target string) error
+}
+
+// SignatureVerdicts is what a format asks of the verdicts of signatures it serves (signatures.md R-SIG-028, Q-SIG-35): an npm local
+// repository serves a version's provenance bundle to npm only when it verified against the public Sigstore, because npm checks
+// provenance against that root alone. The trust step (internal/signatures, package 2 of stage 1) implements it; a host without it
+// answers [NoSignatureVerdicts], so a format never meets nil and serves nothing it cannot vouch for.
+type SignatureVerdicts interface {
+	// PublicProvenance reports, for stored files of a repository (provenance bundles by their canonical paths), the predicate type of
+	// each whose signature is valid and trusted by a shipped public anchor in the installation's scope; a path absent from the answer
+	// is not served.
+	PublicProvenance(ctx context.Context, repo RepoRef, paths []string) (map[string]string, error)
+}
+
+// NoSignatureVerdicts is the [SignatureVerdicts] of a host without the trust step: nothing is vouched for.
+var NoSignatureVerdicts SignatureVerdicts = noVerdicts{}
+
+type noVerdicts struct{}
+
+func (noVerdicts) PublicProvenance(context.Context, RepoRef, []string) (map[string]string, error) {
+	return map[string]string{}, nil
+}
+
+// SignatureCoverage is the optional interface of a format whose ecosystem signs an index that names a package and not the package
+// itself (Debian, signatures.md R-SIG-030): it answers which signed documents of a repository name a stored file by its SHA-256, so that
+// the details of the file list each covering document with its signatures. A format without it covers nothing.
+type SignatureCoverage interface {
+	// Covering answers for the stored file at a canonical path of the repository with its SHA-256; data is the format's data port.
+	Covering(ctx context.Context, data any, repo RepoRef, path string, sha256 [32]byte) ([]CoveringDocument, error)
+}
+
+// CoveringDocument is a signed document that names a stored file (R-SIG-030): a Debian release whose index lists the package.
+type CoveringDocument struct {
+	// Path is the canonical path of the signed document ("dists/bookworm/InRelease"); SHA256 its digest, the subject of its signatures.
+	Path   string
+	SHA256 [32]byte
+	// Name is what the document is named by in the format's words: a release's suite ("bookworm").
+	Name string
+	// Date is the document's own date (a release's Date), zero when it states none.
+	Date time.Time
+	// Verifier is the fingerprint of the key that verified the document when it was stored (deb.upstreamKeys), "" for none.
+	Verifier string
 }
 
 // NoSignatures is the adapter of a format whose ecosystem has no signatures: its declaration says why, and it detects nothing. A future

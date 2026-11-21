@@ -60,6 +60,44 @@ The roles of the declaration are held to the format's row of R-SIG-002 by `TestR
 ([internal/formats/all](../../internal/formats/all/signatures_test.go)), which reads the specification's table: a new format adds its
 row there and its cases here, a constant cost of milliseconds.
 
+## Package 3 (built)
+
+The formats' wire behaviour, R-SIG-023 to R-SIG-033; the decisions are Q-SIG-97 to Q-SIG-108 of the specification.
+
+| What | Where |
+|---|---|
+| OCI: an attachment follows its image (delete, eviction), the background fetch and the mirror's, the version's `attestations`, the image scanning's selection | [oci.md](oci.md#signatures-on-the-wire-signaturesmd-r-sig-023-to-r-sig-027) |
+| npm: the keys and the attestations endpoints of every class, `dist.attestations.url`, the background fetch of attestations and keys | [npm.md](npm.md#signatures-signaturesmd-r-sig-028) |
+| Ansible Galaxy: the signatures a client posts for a local version (`addAnsibleVersionSignature`, `removeAnsibleVersionSignature`) | [ansible.md](ansible.md#signatures-a-client-posts-signaturesmd-r-sig-031) |
+| Debian: the releases that cover a package (`formats.SignatureCoverage`) | [deb.md](deb.md#coverage-of-a-package-by-a-signed-release-signaturesmd-r-sig-030) |
+| NuGet: no `RepositorySignatures` resource | [nuget.md](nuget.md#signatures-signaturesmd-r-sig-029) |
+| The background fetch: the queue, the job `signature-fetch` (queue `index`, coalescing per target), the state `signature_fetches`, the budget per remote on the worker | [internal/signatures/fetch](../../internal/signatures/fetch/fetch.go), [wire_signature_fetch.go](../../internal/app/wire_signature_fetch.go), migration 00096 ([database.md](database.md#the-formats-wire-behaviour-of-the-signatures-00096)) |
+| The `HEAD` of a pass's and a run's upstream | [mirror.md](mirror.md#signatures-in-a-pass-signaturesmd-r-sig-025) |
+| The contract: `formats.SignatureFetcher` (`RemoteCaps.Signatures`), `formats.SignatureCoverage`, `Host.Signatures()` with `formats.SignatureVerdicts`, the kit's `SignatureCase.RemoveSubject` | [formats.md](formats.md#signatures-on-the-wire), [signatures.go](../../internal/formats/signatures.go) |
+| The keyless facts of an OpenPGP signature packet (issuer fingerprint, hash prefix) | [untrusted/openpgp.go](../../internal/formats/untrusted/openpgp.go) `OpenPGPSignatureFacts`, `MatchesHashPrefix` |
+| The store's `Detach`: an attachment a client posted and removed | [store.go](../../internal/signatures/store/store.go) |
+
+### Where packages 2 and 3 meet
+
+- **`Host.Signatures()`** answers `formats.NoSignatureVerdicts` until package 2 sets `formathost.Options.Verdicts` to its trust step: a
+  local npm provenance bundle is served to npm only when `PublicProvenance` vouches for it (valid, trusted by a shipped public anchor in the
+  installation's scope).
+- **The fetch's knobs** are read with their defaults (`signatures.remote.refresh_after` 24 h, `requests_per_hour` 600, four manifests per
+  subject, `max_object_size` 256 KiB): `fetch.Options.RefreshAfter` and `fetch.HandlerOptions.RequestsPerHour` take the configuration of
+  R-SIG-040 when package 2 adds it. The job reads the repository member `signatures.fetch` from the repository document (default true);
+  its schema and its API member are R-SIG-040's, and until package 2 adds them the document refuses the member, so every remote fetches
+  (Q-SIG-108).
+- **The fetch state for stage 3's gate** (Q-SIG-106): `signature_fetches` keeps per target `queued_at` (due or running), `fetched_at` (asked
+  to the end, found or not), `attempts` and `failed_at` (`SignatureFetchFailed`, written by the handler; the last attempt marks it failed),
+  and the item's digest in `subject_sha256`. The gate's builder adds the raise of a waiting job's priority and the signal after a run.
+- **The audit events of a posted Ansible signature** (`ansible.signature.added`, `ansible.signature.removed`) are the format's
+  (`internal/audit/events_ansible.go`, Q-SIG-107); R-SIG-039's events stay package 2's.
+- **The counter** `quader_signatures_remote_requests_total` of R-SIG-039: `fetch.HandlerOptions.Observe` is told every request of a run
+  with the format and `ok` or `error`; package 2 registers the metric and wires the observer.
+- **Who wakes the job `signature-verify`:** what the fetch stores passes through the commit hook and `proxy.DocumentHook`, so
+  `store.Options.Wake` wakes it as for a client's fill; the posted Ansible signature records through `store.Record` with priority 0.
+- **Debian's coverage** is asked by the API of R-SIG-034 through `formats.CapabilitiesFor(id).SignatureCoverage`.
+
 ## The interface for packages 2 and 3
 
 ### The candidate (`formats.SignatureCandidate`, [signatures.go](../../internal/formats/signatures.go))
@@ -112,9 +150,7 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 - **Package 2** (verification and trust): `internal/signatures/{scheme,trust,anchors,shipped,job}`, the libraries of R-SIG-014, the
   tables of the anchors, blocks, settings, trust roots and trust rows (a migration of its own), the configuration of R-SIG-040, the job
   and its wake through `store.Options.Wake`, discovery of items without attachments, the API, events and metrics.
-- **Package 3** (the formats' wire behaviour): OCI's attachment tags following their image (R-SIG-025), the mirror and the background
-  fetch (R-SIG-026), npm's keys and attestations endpoints (storing the attestations document at the path of Q-SIG-51), Ansible's
-  management operation (recording through `store.Record` with `source` `upload`), Debian's coverage lookup.
+- **Package 3** (the formats' wire behaviour): built, above.
 - **Package 4**: the screens.
 
 ## What this page does not cover

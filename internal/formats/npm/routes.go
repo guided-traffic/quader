@@ -92,6 +92,13 @@ func (f *Format) buildRoutes() []formats.Route {
 		route("audit.legacy", http.MethodPost, "/-/npm/v1/security/audits[/quick]", formats.Volatile, read,
 			matchAuditLegacy, []string{"-/npm/v1/security/audits", "-/npm/v1/security/audits/quick"}, f.handleAuditLegacy),
 
+		// The keys of the registry and the attestations of a version (signatures.md R-SIG-028): documents of every class, the same for
+		// every caller who may read them, so a Bastion keeps them as shared (R-SIG-033).
+		route("keys.get", http.MethodGet, "/-/npm/v1/keys", formats.Metadata, read, matchKeys, []string{KeysPath}, f.handleKeys),
+		route("attestations.get", http.MethodGet, "/-/npm/v1/attestations/{name}@{version}", formats.Metadata, read, matchAttestations,
+			[]string{"-/npm/v1/attestations/lodash@1.0.0", "-/npm/v1/attestations/@acme%2fui@1.2.0", "-/npm/v1/attestations/@acme/ui@1.2.0"},
+			f.handleAttestations),
+
 		// What npm defines and quader does not implement (R-NPM-043): 404 for a GET, PUT
 		// and DELETE, 501 for a POST, so that npm's fetch layer, which retries a GET
 		// and a PUT on a 5xx but never a POST, fails at once. The four routes share one
@@ -104,13 +111,13 @@ func (f *Format) buildRoutes() []formats.Route {
 }
 
 // deferredExamples are paths of the endpoints of R-NPM-043: login, user, token and
-// search endpoints, the key, attestation and OIDC endpoints, the
+// search endpoints, the OIDC endpoints, the
 // organization, team and package-access endpoints, the external-dependency path,
 // staged publishing and the listing of all packages.
 func deferredExamples() []string {
 	return []string{
 		"-/v1/login", "-/v1/search", "-/user/org.couchdb.user:alice", "-/user/token/abc",
-		"-/npm/v1/security/advisories", "-/npm/v1/keys", "-/npm/v1/attestations/lodash@1.0.0",
+		"-/npm/v1/security/advisories",
 		"-/npm/v1/oidc/token/exchange/package/lodash", "-/npm/v1/tokens", "-/npm/v1/user",
 		"-/org/acme/user", "-/team/acme/dev", "-/all", "-/external/npm-remote/lodash", "-/stage/package/lodash",
 		"-/package/lodash/access", "-/package/@acme%2fui/visibility", "-/package/@acme/ui/collaborators",

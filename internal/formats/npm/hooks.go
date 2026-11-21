@@ -78,7 +78,7 @@ func (f *Format) OnCommit(ctx context.Context, tx formats.Tx, c formats.CommitEv
 		return f.commitSigstore(ctx, c, p)
 	}
 	if c.Origin == formats.OriginFill {
-		return f.commitFill(ctx, c)
+		return f.commitFill(ctx, tx, c)
 	}
 	return manifest.BadPublish("A file reaches an npm repository through npm publish; a raw upload is not supported.")
 }
@@ -88,13 +88,22 @@ func (f *Format) OnCommit(ctx context.Context, tx formats.Tx, c formats.CommitEv
 // the item (R-VULN-001, R-VULN-011, R-VULN-015, Q-VULN-35). A remote version row is told from a published one by the class of
 // its repository; it carries no npm rows (the remote's documents come from the npm_remote tables). Any other file of a fill (a
 // metadata document, a provenance bundle) gets no version. A tarball whose path names no canonical package and version gets none.
-func (f *Format) commitFill(ctx context.Context, c formats.CommitEvent) error {
+func (f *Format) commitFill(ctx context.Context, tx formats.Tx, c formats.CommitEvent) error {
 	if c.Repo.Class != formats.Remote || !strings.HasSuffix(c.Path.Path, tarballSuffix) {
 		return nil
 	}
 	info := f.Classify(c.Path)
 	if info.Kind != formats.Content || info.Package == "" || info.Version == "" {
 		return nil
+	}
+	// The version's attestations are fetched in the background when its entry names dist.attestations (signatures.md R-SIG-026); the
+	// job reads the stored document, so a version without them costs no upstream request.
+	if st, err := storeOf(c.Data); err == nil {
+		var subject [32]byte
+		copy(subject[:], c.Digests.SHA256)
+		if err := st.EnqueueSignatureFetch(ctx, tx, c.Repo.ID, info.Package+"@"+info.Version, subject, false); err != nil {
+			return err
+		}
 	}
 	pkg, _, err := c.Packages.EnsureLocked(ctx, c.Repo, info.Package, info.Package)
 	if err != nil {

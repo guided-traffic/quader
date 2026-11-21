@@ -37,6 +37,7 @@ import (
 	"github.com/guided-traffic/quader/internal/packages"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/secrets"
+	sigfetch "github.com/guided-traffic/quader/internal/signatures/fetch"
 	sigstore "github.com/guided-traffic/quader/internal/signatures/store"
 )
 
@@ -84,6 +85,7 @@ func (a *App) wireFormatPorts(ctx context.Context, in infra) (formatPortsArea, e
 		if err := a.startAnsibleReindex(in, ports); err != nil {
 			return formatPortsArea{}, err
 		}
+		a.startSignatureFetch(in)
 	}
 	return formatPortsArea{bindings: b, views: formathost.NewViewAdapters(formats.List(), b)}, nil
 }
@@ -158,6 +160,7 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	debdata.RegisterJobs(r, a.debHandlers())
 	ansibledata.RegisterJobs(r, ansibledata.Handlers{Reindex: a.ansibleReindexHandler(), DocsFill: a.ansibleDocsFillHandler(), ImportTaskKeep: a.cfg.Ansible.ImportTaskKeep})
 	a.registerBackgroundDownloadJobs(r)
+	sigfetch.RegisterKind(r, a.signatureFetchHandler())
 }
 
 // formatsArea is what the hooks and the seam are made of. The seam reads the Host
@@ -197,10 +200,16 @@ var _ ansibleformat.Store = (*ansibledata.Store)(nil)
 var _ clamavformat.Store = (*clamavdata.Store)(nil)
 
 func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nugetdata.Jobs, ring *secrets.KeyRing, debCfg config.Deb) (map[formats.ID]any, error) {
-	st, err := npm.New(npm.Options{
+	// The background fetch of a remote's signatures (signatures.md R-SIG-026), queued by the OCI and the npm data ports.
+	fetches := signatureFetchQueue(db, queue)
+	npmOpts := npm.Options{
 		DB: db, Recorder: rec, Source: httpserver.SourceFrom,
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
-	})
+	}
+	if fetches != nil {
+		npmOpts.Signatures = fetches
+	}
+	st, err := npm.New(npmOpts)
 	if err != nil {
 		return nil, fmt.Errorf("formats: npm data port: %w", err)
 	}
@@ -211,10 +220,14 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	if err != nil {
 		return nil, fmt.Errorf("formats: nuget data port: %w", err)
 	}
-	oci, err := ocidata.New(ocidata.Options{
+	ociOpts := ocidata.Options{
 		DB: db, Recorder: rec, Source: httpserver.SourceFrom,
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
-	})
+	}
+	if fetches != nil {
+		ociOpts.Signatures = fetches
+	}
+	oci, err := ocidata.New(ociOpts)
 	if err != nil {
 		return nil, fmt.Errorf("formats: oci data port: %w", err)
 	}
@@ -234,6 +247,8 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	ansibleOpts := ansibledata.Options{
 		DB: db, Recorder: rec, Source: httpserver.SourceFrom, Blobs: ansibleBlobs(blobs),
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
+		// A signature a client posts for a version is recorded in the signature store (signatures.md R-SIG-031).
+		Signatures: sigstore.New(sigstore.Options{Runner: db}),
 	}
 	// The reindex queue: the restore's refusing queue has no Running and enqueues no job.
 	if jq, ok := queue.(ansibledata.Jobs); ok {

@@ -184,8 +184,10 @@ type App struct {
 	ansibleReindex late[jobs.Handler]
 	// ansibleDocsFill is the handler of the job ansible-docs-fill (wire_ansible.go).
 	ansibleDocsFill late[jobs.Handler]
-	shipper         late[journal.Shipper]
-	checkBucket     late[platform.Bucket]
+	// signatureFetch is the handler of the job signature-fetch (wire_signature_fetch.go).
+	signatureFetch late[jobs.Handler]
+	shipper        late[journal.Shipper]
+	checkBucket    late[platform.Bucket]
 	// registryMetrics are the counters of the registry token service, shared by every endpoint (wire_registry.go).
 	registryMetrics *registrytoken.Metrics
 	// scannerSrv is the scanner's listener of the roles scanner and all (wire_scanner.go); nil elsewhere.

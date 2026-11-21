@@ -237,7 +237,7 @@ func isAudit(escaped string) bool {
 // method; the four routes of the family answer 404 or 501 by method.
 func matchDeferred(escaped string) (formats.Params, bool) {
 	segs := segments(escaped)
-	if len(segs) < 2 || !isLiteral(segs[0], "-") || isAudit(escaped) {
+	if len(segs) < 2 || !isLiteral(segs[0], "-") || isAudit(escaped) || isSignatureEndpoint(escaped) {
 		return nil, false
 	}
 	if second, ok := decode(segs[1]); ok && slices.Contains(deferredFamilies(), second) {

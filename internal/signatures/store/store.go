@@ -213,6 +213,19 @@ func (s *Store) ids(ctx context.Context, qs *q.Queries, cands []signatures.Candi
 	return out, nil
 }
 
+// Detach removes the attachments at locations of a repository in tx, and reports how many: a signature a client posted through the
+// management API and removed again (R-SIG-031). The job removes a signature that has no attachment left (R-SIG-011).
+func (s *Store) Detach(ctx context.Context, tx meta.Tx, repoID int64, locations []string) (int64, error) {
+	if len(locations) == 0 {
+		return 0, nil
+	}
+	qs, err := queries(tx)
+	if err != nil {
+		return 0, err
+	}
+	return qs.SignatureDetach(ctx, q.SignatureDetachParams{RepoID: repoID, Locations: locations})
+}
+
 // SubjectArrived makes the signatures that wait for the subject due (R-SIG-011) and reports how many.
 func (s *Store) SubjectArrived(ctx context.Context, tx meta.Tx, subject [32]byte) (int64, error) {
 	qs, err := queries(tx)

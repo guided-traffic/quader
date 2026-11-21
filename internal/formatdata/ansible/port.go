@@ -27,7 +27,8 @@ import (
 type Options struct {
 	// DB reads outside a transaction.
 	DB meta.Runner
-	// Recorder records the events of the writes in their transactions (ansible.version.deleted, ansible.tombstone.cleared).
+	// Recorder records the events of the writes in their transactions (ansible.version.deleted, ansible.tombstone.cleared,
+	// ansible.signature.added, ansible.signature.removed).
 	Recorder audit.Recorder
 	// Source gives the source of an audit event for the request in ctx; nil gives none.
 	Source func(ctx context.Context) audit.Source
@@ -37,8 +38,11 @@ type Options struct {
 	// Jobs enqueues the reindex (reindex.go); nil enqueues nothing and the reindex answers an internal error (a process that serves no
 	// request, the restore's, has none).
 	Jobs Jobs
-	// Blobs reads the stored archives for the README of a version (view_store.go); nil gives the screens no README text.
+	// Blobs reads the stored archives for the README of a version (view_store.go) and for the MANIFEST.json a posted signature signs
+	// (signatures_store.go); nil gives the screens no README text and refuses a posted signature.
 	Blobs BlobReader
+	// Signatures records a posted signature in the signature store (signatures.md R-SIG-031); nil records none.
+	Signatures SignatureRecorder
 }
 
 // BlobReader opens a stored blob whole; the composition root implements it over the blob store. The read is verified against the

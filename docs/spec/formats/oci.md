@@ -1426,8 +1426,9 @@ named (Q-OCI-16).
 - **Moving tags.** Every pass is full and re-plans every name, so a tag moved upstream is found by the `HEAD` of step 1 and its
   new manifest and blobs are stored; the old manifest stays (the mirror deletes nothing, R-REPO-051).
 - **Referrers** are not mirrored; they stay pull-through (R-OCI-024). **Superseded by [signatures.md](../signatures.md) R-SIG-025 and
-  R-SIG-026 (specified, not built):** a pass asks for the signatures of each kept top-level manifest as the background fetch does and
-  stores what it finds.
+  R-SIG-026 (built):** a pass asks for the signatures of each kept top-level manifest as the background fetch does (the referrers, the
+  `.sig` and `.att` tags by `HEAD`, the referrers tag where the API answers 404) and stores what it finds; an attachment tag of the
+  upstream's list is no version of the plan ([signatures.md](../signatures.md) Q-SIG-99).
 - **Hosts.** The catalog and the tags lists are on the upstream origin; the format adds no host of its own (`MirrorHosts` is
   empty). The token handshake of R-OCI-021 applies to every request of a pass.
 - **Rate limits.** Docker Hub's answers are rate-limit answers of R-REPO-054 (R-OCI-025). The plan's manifest `GET` requests are

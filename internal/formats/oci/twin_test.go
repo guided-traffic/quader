@@ -35,6 +35,8 @@ type twin struct {
 	calls map[string]int
 	// hideInTx names item paths the existence check inside a commit transaction does not find: a removal that wins the race.
 	hideInTx map[string]bool
+	// fetches are the targets of the background fetch of signatures the format queued (R-SIG-026).
+	fetches []string
 }
 
 type mkey struct {

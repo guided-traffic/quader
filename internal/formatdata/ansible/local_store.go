@@ -222,7 +222,8 @@ func (s localStore) Version(ctx context.Context, repoID int64, name, version str
 			return err
 		}
 		out, found = versionRow(list[0]), true
-		return nil
+		out.Signatures, err = signaturesOf(ctx, qs, repoID, name, version)
+		return err
 	})
 	return out, found, err
 }

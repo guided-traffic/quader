@@ -153,13 +153,133 @@ func (f *Format) onCacheRemoved(ctx context.Context, tx formats.Tx, st Store, e 
 	if err != nil {
 		return err
 	}
+	var paths []string
 	for _, d := range sortedDigests(g.manifests) {
+		if e.Reason != "trash" {
+			// Evicting a manifest evicts its attachments (signatures.md R-SIG-025): the stored referrers and the manifests of its
+			// attachment tags, read before its row goes. The tag documents themselves are cache entries, not items.
+			hang, err := cachedAttachments(ctx, tx, st, e.Repo.ID, name, d, g.manifests)
+			if err != nil {
+				return err
+			}
+			paths = append(paths, hang...)
+		}
 		if err := st.RemoveManifest(ctx, tx, e.Repo.ID, name, d); err != nil {
+			return err
+		}
+	}
+	if paths = slices.Compact(paths); len(paths) > 0 && e.Cascade != nil {
+		if err := e.Cascade(ctx, paths...); err != nil {
 			return err
 		}
 	}
 	_, _, err = e.Packages.BumpRevision(ctx, pkg)
 	return err
+}
+
+// attachmentTagPaths are the canonical paths of the attachment tags of a digest under an image name (Q-SIG-32): the referrers tag and
+// cosign's .sig, .att and .sbom.
+func attachmentTagPaths(name string, d [32]byte) []string {
+	base := attachmentTagPrefix + hex.EncodeToString(d[:])
+	return []string{TagPath(name, base), TagPath(name, base+attachmentSuffixSig), TagPath(name, base+attachmentSuffixAtt), TagPath(name, base+attachmentSuffixSBOM)}
+}
+
+// cachedAttachments are the alias items of a remote's referrers of d and of the manifests its attachment tag documents hold, which
+// the same removal does not take already.
+func cachedAttachments(ctx context.Context, tx formats.Tx, st Store, repoID int64, name string, d [32]byte, removed map[[32]byte]bool) ([]string, error) {
+	var out []string
+	referrers, err := st.SubjectManifests(ctx, tx, repoID, name, d)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range referrers {
+		if !removed[r] {
+			out = append(out, ManifestPath(name, digestText(r)))
+		}
+	}
+	targets, err := st.TagTargets(ctx, tx, repoID, attachmentTagPaths(name, d))
+	if err != nil {
+		return nil, err
+	}
+	for _, t := range sortedTargets(targets) {
+		if t != d && !removed[t] {
+			out = append(out, ManifestPath(name, digestText(t)))
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// sortedTargets are the digests of a TagTargets answer in path order.
+func sortedTargets(m map[string][32]byte) [][32]byte {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([][32]byte, len(keys))
+	for i, k := range keys {
+		out[i] = m[k]
+	}
+	return out
+}
+
+// attachmentsOf are what a local manifest's removal takes besides its referrers (R-SIG-025): its attachment tags, and each manifest
+// such a tag points at unless another tag of the name or a manifest the removal keeps references it. They are read in the removal's
+// transaction, before the manifest's row goes.
+func attachmentsOf(ctx context.Context, tx formats.Tx, e formats.ItemsEvent, st Store, name string, d [32]byte, removed map[[32]byte]bool) ([]string, error) {
+	tagPaths := attachmentTagPaths(name, d)
+	targets, err := st.TagTargets(ctx, tx, e.Repo.ID, tagPaths)
+	if err != nil {
+		return nil, err
+	}
+	attachment := map[string]bool{}
+	for _, p := range tagPaths {
+		_, _, tail, _ := splitLayout(p)
+		attachment[tail] = true
+	}
+	var out []string
+	for _, p := range tagPaths {
+		t, ok := targets[p]
+		if !ok {
+			continue
+		}
+		out = append(out, p)
+		if t == d || removed[t] {
+			continue
+		}
+		keep, err := heldElsewhere(ctx, tx, e, st, name, t, removed, attachment)
+		if err != nil {
+			return nil, err
+		}
+		if !keep {
+			out = append(out, ManifestPath(name, digestText(t)))
+		}
+	}
+	return out, nil
+}
+
+// heldElsewhere reports whether a manifest stays: a manifest of the name that the removal keeps references it, or a tag other than the
+// attachment tags being removed points at it.
+func heldElsewhere(ctx context.Context, tx formats.Tx, e formats.ItemsEvent, st Store, name string, t [32]byte, removed map[[32]byte]bool, attachment map[string]bool) (bool, error) {
+	refs, err := st.ReferencedBy(ctx, tx, e.Repo.ID, name, t)
+	if err != nil {
+		return false, err
+	}
+	held, _, err := outside(ctx, e, name, refs, removed)
+	if err != nil || len(held) > 0 {
+		return len(held) > 0, err
+	}
+	tags, err := st.TagsPointingAt(ctx, tx, e.Repo.ID, name, t)
+	if err != nil {
+		return false, err
+	}
+	for _, tag := range tags {
+		if !attachment[tag] {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (f *Format) onLocalRemoved(ctx context.Context, tx formats.Tx, st Store, e formats.ItemsEvent, name string, g *removedName) error {
@@ -256,6 +376,11 @@ func (f *Format) manifestRemoved(ctx context.Context, tx formats.Tx, st Store, e
 	if err != nil {
 		return err
 	}
+	// The attachment tags of the digest and the manifests they point at follow it (signatures.md R-SIG-025).
+	attached, err := attachmentsOf(ctx, tx, e, st, name, d, g.manifests)
+	if err != nil {
+		return err
+	}
 	if err := st.RemoveManifest(ctx, tx, e.Repo.ID, name, d); err != nil {
 		return err
 	}
@@ -263,6 +388,7 @@ func (f *Format) manifestRemoved(ctx context.Context, tx formats.Tx, st Store, e
 	for _, t := range tagsOf {
 		paths = append(paths, TagPath(name, t))
 	}
+	paths = append(paths, attached...)
 	// A referrer that an index of the name lists stays: the index must go first, and the subject's deletion does not fail for it.
 	for _, r := range referrers {
 		if g.manifests[r] {

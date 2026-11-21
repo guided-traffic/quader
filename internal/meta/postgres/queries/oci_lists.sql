@@ -136,3 +136,17 @@ SELECT COALESCE(NOT EXISTS (SELECT 1 FROM oci_references r
                    WHERE s.repo_id = sqlc.arg(repo_id)::bigint AND s.binding = sqlc.arg(name)::text
                      AND s.digest = sqlc.arg(digest)::bytea AND s.state IN ('open', 'completing', 'assembled')), false)::boolean
   AS unreferenced;
+
+-- name: OCITagTargets :many
+-- The manifests the tags at the paths point at: a local tag item's blob, or a remote's stored tag document (whose bytes are the
+-- manifest). The removal of a manifest takes its attachment tags and the manifests they point at (signatures.md R-SIG-025).
+SELECT i.path::text AS path, i.blob_sha256::bytea AS digest
+  FROM items i
+ WHERE i.repo_id = sqlc.arg(repo_id)::bigint AND i.path = ANY(sqlc.arg(paths)::text[]) AND i.kind = 'file' AND i.trashed_at IS NULL
+UNION ALL
+SELECT e.path::text, e.blob_sha256::bytea
+  FROM remote_cache_entries e
+ WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.path = ANY(sqlc.arg(paths)::text[]) AND e.kind = 'metadata'
+   AND e.blob_sha256 IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM items x WHERE x.repo_id = e.repo_id AND x.path = e.path AND x.kind = 'file' AND x.trashed_at IS NULL)
+ ORDER BY 1;

@@ -49,7 +49,6 @@ func TestR_NPM_001_TheRegistryURL(t *testing.T) {
 			status       int
 		}{
 			{"GET", "-/v1/search?text=x", 404},
-			{"GET", "-/npm/v1/keys", 404},
 			{"GET", "-/package/lodash/access", 404},
 			{"PUT", "-/user/org.couchdb.user:alice", 404},
 			{"DELETE", "-/user/token/abc", 404},

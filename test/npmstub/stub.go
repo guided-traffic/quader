@@ -79,6 +79,9 @@ type Server struct {
 	thr      throttleState
 	// fl counts the requests open at once (inflight.go); it has a lock of its own, so a request is counted while it waits.
 	fl inflightState
+	// keys and attestations are what the endpoints of npm's signatures answer (signatures.go).
+	keys         []byte
+	attestations map[string][]byte
 	// reqlog is the log of the registry host's requests with their times (requestlog.go), under reqmu.
 	reqmu      sync.Mutex
 	reqlog     []RequestRecord

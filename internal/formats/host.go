@@ -85,6 +85,9 @@ type Host interface {
 	// Markup renders Markdown and sanitizes HTML under the policy of the README renderer (R-UI-008), for the text of a format's
 	// documentation (ADR-196, R-ANS-039). A host that has not wired the renderer answers [NoMarkup], so a format never meets nil.
 	Markup() Markup
+	// Signatures are the verdicts of signatures a format asks before it serves one to a client (signatures.md R-SIG-028). A host that
+	// has not wired the trust step answers [NoSignatureVerdicts], so a format never meets nil.
+	Signatures() SignatureVerdicts
 }
 
 // Ingestor is the upload pipeline of R-ARCH-014.

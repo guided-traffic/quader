@@ -7,6 +7,7 @@ import (
 	"encoding/asn1"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -168,4 +169,16 @@ func TestR_SIG_029_TheSignatureInsideThePackage(t *testing.T) {
 			t.Fatalf("nuspec: %+v", got)
 		}
 	})
+}
+
+// TestR_SIG_029_TheServiceIndexListsNoRepositorySignaturesResource: Quader signs no NuGet package, so no service index announces the
+// certificates a source signs with, whatever the class (Q-SIG-36). Unit, microseconds.
+func TestR_SIG_029_TheServiceIndexListsNoRepositorySignaturesResource(t *testing.T) {
+	for _, publish := range []bool{true, false} {
+		for _, vulnerabilities := range []bool{true, false} {
+			if idx := serviceIndexOf("https://quader.example.com/api/nuget/web/nuget-remote/v3/", publish, vulnerabilities); strings.Contains(string(idx), "RepositorySignatures") {
+				t.Errorf("publish %t: the service index lists RepositorySignatures: %s", publish, idx)
+			}
+		}
+	}
 }

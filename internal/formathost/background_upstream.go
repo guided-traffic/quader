@@ -80,6 +80,17 @@ func (b *backgroundUpstream) Get(ctx context.Context, target *url.URL, accept st
 	return res, err
 }
 
+var _ discover.Header = (*backgroundUpstream)(nil)
+
+// Head implements [discover.Header] through the window.
+func (b *backgroundUpstream) Head(ctx context.Context, target *url.URL, accept string) (res *discover.Response, err error) {
+	err = b.win.Do(ctx, func(c context.Context) (e error) {
+		res, e = b.passUpstream.Head(c, target, accept)
+		return e
+	})
+	return res, err
+}
+
 // Document implements [discover.Upstream] through the window.
 func (b *backgroundUpstream) Document(ctx context.Context, path, variant string) (doc []byte, found bool, err error) {
 	err = b.win.Do(ctx, func(c context.Context) (e error) {

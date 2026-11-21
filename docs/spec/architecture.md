@@ -1774,6 +1774,7 @@ type RemoteCaps struct {
 	Exchange   CredentialExchanger  // the exchange of the stored credential at a single-sign-on realm; nil for none
 	Revalidate Revalidator   // the format's own revalidation request; nil for the engine's conditional GET
 	Names      NameServer    // the shadowing check from the rows of the remote's indexes, for a format without a package document; nil otherwise
+	Signatures SignatureFetcher // the background fetch of a remote's signatures (signatures.md R-SIG-026); nil for a format whose signatures come with what a client fetches anyway
 }
 
 func RemoteCapabilities(id ID) RemoteCaps
@@ -1840,6 +1841,7 @@ type Capabilities struct {
 	ViewSizer     ViewSizer            // nil for a format whose versions are the sum of their files (ADR-177)
 	VersionPath   VersionPather        // nil for a format whose versions have no file of their own (Q-AUTHZ-255, ADR-174)
 	SourceSpeller SourceSpeller        // nil for a format whose items have one spelling (Q-OCI-129)
+	SignatureCoverage SignatureCoverage // nil for a format whose signatures cover the artifact itself (signatures.md R-SIG-030)
 }
 
 // SourceSpeller is the optional interface of a Format whose items have more than one canonical spelling in a repository (OCI on a Docker Hub
@@ -2195,6 +2197,39 @@ func NoSignatures(reason string) SignatureAdapter
 func SignatureRoleValid(role string) bool
 func SignatureSchemeValid(scheme string) bool
 func SignatureSourceValid(source string) bool
+
+// The formats' wire behaviour of signatures (signatures.md R-SIG-023 to R-SIG-033), package 3 of stage 1.
+
+// SignatureFetcher is the optional interface of a remote adapter whose signatures do not come with what a client fetches anyway (OCI's
+// referrers and attachment tags, npm's attestations and keys, R-SIG-026). The job signature-fetch hands it the upstream of one remote
+// for one run and a target the format's data port queued; it stores what it finds through the upstream's Document and Artifact, so the
+// commit hook detects it. A mirror's plan calls the same code with the pass's upstream (R-SIG-025).
+type SignatureFetcher interface {
+	FetchSignatures(ctx context.Context, u discover.Upstream, target string) error
+}
+
+// SignatureVerdicts is what a format asks of the verdicts of signatures before it serves one (Q-SIG-35): npm serves a local provenance
+// bundle only when it verified against the public Sigstore. The trust step implements it; Host.Signatures answers NoSignatureVerdicts
+// until it is wired, which vouches for nothing.
+type SignatureVerdicts interface {
+	PublicProvenance(ctx context.Context, repo RepoRef, paths []string) (map[string]string, error) // path -> predicate type
+}
+
+var NoSignatureVerdicts SignatureVerdicts
+
+// SignatureCoverage is the optional interface of a format whose ecosystem signs an index that names a package (Debian, R-SIG-030):
+// the signed documents of a repository that name a stored file by its path and SHA-256.
+type SignatureCoverage interface {
+	Covering(ctx context.Context, data any, repo RepoRef, path string, sha256 [32]byte) ([]CoveringDocument, error)
+}
+
+type CoveringDocument struct {
+	Path     string    // the signed document's canonical path: "dists/bookworm/InRelease"
+	SHA256   [32]byte  // its digest, the subject of its signatures
+	Name     string    // a release's suite
+	Date     time.Time // the document's own date; zero when it states none
+	Verifier string    // the fingerprint of the key that verified it when it was stored; "" for none
+}
 ```
 
 Supporting types of the blocks, named here so that the contract has no type the spec does not know
@@ -2396,6 +2431,7 @@ type Host interface {
 	RestoredAt(ctx context.Context) (time.Time, error) // system_state restored_at; zero until a restore ran
 	Vulnerabilities() VulnerabilityData // the scanning's data for the audit routes (R-VULN-017, R-VULN-018); NoVulnerabilityData until wired
 	Markup() Markup              // render Markdown and sanitize HTML under the README policy (ADR-196, R-ANS-039); NoMarkup until wired
+	Signatures() SignatureVerdicts // the verdicts a format asks before it serves a signature (signatures.md R-SIG-028); NoSignatureVerdicts until wired
 	Uploads() UploadSessions     // the multi-request upload sessions of R-STOR-011 (Q-OCI-12); every call answers not_implemented until they are built
 }
 

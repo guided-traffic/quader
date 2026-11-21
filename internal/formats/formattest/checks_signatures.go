@@ -34,6 +34,10 @@ type SignatureCase struct {
 	// (Subject, SubjectPath, SubjectName) and object (Path, Blob, Locator, SHA256 when set, Raw when set); SchemeHint is compared
 	// when set.
 	Want []formats.SignatureCandidate
+	// RemoveSubject, for a format whose signature follows its subject (OCI's referrers and attachment tags, signatures.md R-SIG-025),
+	// removes the subject of a committed sample the way a client does; the kit then holds that nothing is stored at Path any more.
+	// nil for a signature that stays when its subject goes (a generic file's sibling, a document's entry).
+	RemoveSubject func(h *Host) error
 }
 
 // ContentOf serves bytes as the content of a [formats.SignatureEvent], for the kit and a format's own tests of its detector.
@@ -74,6 +78,23 @@ func (h *Host) StoredVersions() []StoredVersion {
 			sv.LeadPath = it.ref.Path
 		}
 		out = append(out, sv)
+	}
+	return out
+}
+
+// LiveItems returns the live files below a path prefix with the SHA-256 of their content: what a format's data port twin reads where
+// the PostgreSQL port reads the items table (OCI's tags that point at a manifest).
+func (h *Host) LiveItems(prefix string) map[string][32]byte {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	out := map[string][32]byte{}
+	for p, rec := range h.items {
+		if rec.removed || !strings.HasPrefix(p, prefix) {
+			continue
+		}
+		var d [32]byte
+		copy(d[:], rec.digests.SHA256)
+		out[p] = d
 	}
 	return out
 }
@@ -173,6 +194,7 @@ func (r *run) signatureCase(sa formats.SignatureAdapter, c SignatureCase) {
 		r.failf("signature case %q: Detect fails: %v", c.Kind, err)
 		return
 	}
+	r.signatureFollows(h, c)
 	if len(c.Want) == 0 {
 		r.failf("signature case %q wants no candidate", c.Kind)
 	}
@@ -196,6 +218,21 @@ func (r *run) signatureCase(sa formats.SignatureAdapter, c SignatureCase) {
 		case len(g.Object.Raw) > formats.MaxSignatureRaw:
 			r.failf("signature case %q: a candidate keeps %d bytes, more than %d", c.Kind, len(g.Object.Raw), formats.MaxSignatureRaw)
 		}
+	}
+}
+
+// signatureFollows removes the subject of a committed sample whose case says the signature follows it, and holds that its carrier went
+// with it (R-SIG-025).
+func (r *run) signatureFollows(h *Host, c SignatureCase) {
+	if c.RemoveSubject == nil || c.Commit == nil {
+		return
+	}
+	if err := c.RemoveSubject(h); err != nil {
+		r.failf("signature case %q: removing the subject fails: %v", c.Kind, err)
+		return
+	}
+	if _, ok := h.SignatureEventOf(c.Path, formats.OriginUpload); ok {
+		r.failf("signature case %q: the subject was removed and the signature at %q stayed (R-SIG-025: a signature follows its subject)", c.Kind, c.Path)
 	}
 }
 

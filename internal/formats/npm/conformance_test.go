@@ -106,7 +106,8 @@ func conformance(t *testing.T) formattest.Fixture {
 			twin = npmtest.New()
 			return formattest.HostOptions{
 				Data: twin, Resolver: noShadow{},
-				Subject: authz.Subject{Kind: "user", ID: "11111111-1111-1111-1111-111111111111", Name: "alice"},
+				Subject:  authz.Subject{Kind: "user", ID: "11111111-1111-1111-1111-111111111111", Name: "alice"},
+				Verdicts: vouchAll{},
 			}
 		},
 		Rejects: []string{
@@ -148,6 +149,18 @@ func conformance(t *testing.T) formattest.Fixture {
 			{Name: "ping", Path: "-/ping", Status: 200},
 			{Name: "whoami", Path: "-/whoami", Status: 200},
 			{Name: "an endpoint npm defines and quader does not implement", Path: "-/v1/search", Status: 404},
+			{Name: "the keys of a local repository (R-SIG-028)", Path: KeysPath, Status: 200},
+			{
+				Name: "the attestations of a local version whose bundle the trust step vouches for (R-SIG-028)", Path: "-/npm/v1/attestations/lodash@4.17.21",
+				Status: 200, Seed: func(h *formattest.Host) error {
+					bind(h)
+					return serveOK(h, http.MethodPut, "lodash", publishWithBundle(t, "lodash", "4.17.21", bundleSample), http.StatusCreated)
+				},
+			},
+			{
+				Name: "the attestations of a local version without a bundle (R-SIG-028)", Path: "-/npm/v1/attestations/lodash@4.17.21", Status: 404,
+				Seed: publish("lodash", "4.17.21"),
+			},
 			{Name: "the audit of a local repository", Method: http.MethodPost, Path: "-/npm/v1/security/advisories/bulk", Body: []byte(`{"lodash":["4.17.21"]}`), Status: 501},
 			{Name: "npm 6's quick audit", Method: http.MethodPost, Path: "-/npm/v1/security/audits/quick", Body: []byte(`{}`), Status: 501},
 		},
@@ -398,4 +411,15 @@ func FuzzR_ARCH_028_Match(f *testing.F) { formattest.FuzzMatch(f, New()) }
 // with a client error.
 func FuzzR_ARCH_028_Inspect(f *testing.F) {
 	formattest.FuzzInspect(f, New(), "lodash/-/lodash-1.0.0.tgz", tgzFor(f, "lodash", "1.0.0"))
+}
+
+// vouchAll is the trust step of the kit's host: every provenance bundle verified against the public Sigstore (R-SIG-028).
+type vouchAll struct{}
+
+func (vouchAll) PublicProvenance(_ context.Context, _ formats.RepoRef, paths []string) (map[string]string, error) {
+	out := map[string]string{}
+	for _, p := range paths {
+		out[p] = "https://slsa.dev/provenance/v1"
+	}
+	return out, nil
 }

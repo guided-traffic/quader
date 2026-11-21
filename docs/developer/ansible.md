@@ -91,6 +91,18 @@ internal/config/ansible.go     # the ansible: section
 
 The trailing slash is optional on every path and no route redirects: a redirect would drop the `Authorization` header of some clients.
 
+## Signatures a client posts (signatures.md R-SIG-031)
+
+A local version takes detached OpenPGP signatures of its `MANIFEST.json` through the management API
+(`addAnsibleVersionSignature`, `removeAnsibleVersionSignature`, [ansible_signatures.go](../../internal/api/v1/ansible_signatures.go)). The
+port ([signatures_store.go](../../internal/formatdata/ansible/signatures_store.go)) reads the signature without a key
+([untrusted/openpgp.go](../../internal/formats/untrusted/openpgp.go) `OpenPGPSignatureFacts`: one packet, the issuer fingerprint, the hash
+prefix against `MANIFEST.json`, which `collection.Archive.Manifest` keeps), stores it in `ansible_version_signatures` (migration 00096),
+raises the package's revision, records it in the signature store with the source `upload` at the archive's item and writes the audit event
+`ansible.signature.added` in the same transaction (`ansible.signature.removed` for a removal; Q-SIG-107). The version document
+renders `signatures[]` from the rows ([virtual.go](../../internal/formats/ansible/virtual.go) `versionOfRow`, `postedSignatures`). Tests:
+integration `ansiblelocal` [signatures_test.go](../../test/integration/ansiblelocal/signatures_test.go).
+
 ## Paths and names
 
 A protocol path is what a client requests; a canonical path is where the item lives (`collections/<ns>/<name>/<ns>-<name>-<version>.tar.gz`,

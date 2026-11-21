@@ -24,6 +24,8 @@ const DiscoveryDocumentMaxBytes = 32 << 20
 type Get struct {
 	Remote Remote
 	URL    *url.URL
+	// Method is GET ("" too) or HEAD; a HEAD's answer has no body.
+	Method string
 	// Accept is the Accept header, "" for none.
 	Accept string
 	// Max bounds the body; 0 is [DiscoveryDocumentMaxBytes].
@@ -62,6 +64,9 @@ func (e *Engine) Get(ctx context.Context, g Get) (*GetResult, error) {
 	rem := g.Remote
 	if g.URL == nil || (g.URL.Scheme != "http" && g.URL.Scheme != "https") {
 		return nil, errs.E(errs.Internal, errs.CodeInternal, "proxy: a discovery request needs an http or https URL")
+	}
+	if g.Method != "" && g.Method != http.MethodGet && g.Method != http.MethodHead {
+		return nil, errs.E(errs.Internal, errs.CodeInternal, "proxy: a discovery request is a GET or a HEAD")
 	}
 	if rem.Repo.Disabled {
 		return nil, errs.E(errs.NotFound, errs.CodeRepositoryDisabled, "The repository is disabled.")
@@ -110,7 +115,11 @@ func (e *Engine) get(ctx context.Context, g Get, cl *upstream.Client, viaMirror 
 		rctx = outbound.WithoutCredentials(rctx)
 	}
 	rctx = outbound.WithCall(rctx, outbound.Call{Repo: rem.Repo.Name.String(), FlightRole: roleMirror, JobID: g.JobID, SlotWait: outbound.NewSlotWait(slotWait)})
-	req, err := http.NewRequestWithContext(rctx, http.MethodGet, g.URL.String(), nil)
+	method := http.MethodGet
+	if g.Method == http.MethodHead {
+		method = http.MethodHead
+	}
+	req, err := http.NewRequestWithContext(rctx, method, g.URL.String(), nil)
 	if err != nil {
 		return nil, errs.E(errs.Internal, errs.CodeInternal, "", errs.WithCause(err))
 	}

@@ -355,6 +355,51 @@ func (q *Queries) OCITagPage(ctx context.Context, arg OCITagPageParams) ([]strin
 	return items, nil
 }
 
+const oCITagTargets = `-- name: OCITagTargets :many
+SELECT i.path::text AS path, i.blob_sha256::bytea AS digest
+  FROM items i
+ WHERE i.repo_id = $1::bigint AND i.path = ANY($2::text[]) AND i.kind = 'file' AND i.trashed_at IS NULL
+UNION ALL
+SELECT e.path::text, e.blob_sha256::bytea
+  FROM remote_cache_entries e
+ WHERE e.repo_id = $1::bigint AND e.path = ANY($2::text[]) AND e.kind = 'metadata'
+   AND e.blob_sha256 IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM items x WHERE x.repo_id = e.repo_id AND x.path = e.path AND x.kind = 'file' AND x.trashed_at IS NULL)
+ ORDER BY 1
+`
+
+type OCITagTargetsParams struct {
+	RepoID int64
+	Paths  []string
+}
+
+type OCITagTargetsRow struct {
+	Path   string
+	Digest []byte
+}
+
+// The manifests the tags at the paths point at: a local tag item's blob, or a remote's stored tag document (whose bytes are the
+// manifest). The removal of a manifest takes its attachment tags and the manifests they point at (signatures.md R-SIG-025).
+func (q *Queries) OCITagTargets(ctx context.Context, arg OCITagTargetsParams) ([]OCITagTargetsRow, error) {
+	rows, err := q.db.Query(ctx, oCITagTargets, arg.RepoID, arg.Paths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OCITagTargetsRow{}
+	for rows.Next() {
+		var i OCITagTargetsRow
+		if err := rows.Scan(&i.Path, &i.Digest); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const oCITagsPointingAt = `-- name: OCITagsPointingAt :many
 SELECT path
 FROM items

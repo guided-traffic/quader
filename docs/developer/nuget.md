@@ -391,6 +391,12 @@ search of a local and of a virtual repository: [search_scope_test.go](../../test
 
 **Adding a field or a tier.** Parse it in [query.go](../../internal/formats/nuget/search/query.go), add the branch to the `CASE` of the three statements (`NuGetSearchCount`, `NuGetSearchPage` and `NuGetSearchScan` carry the same predicate and must stay equal), extend the field table of R-NUGET-010, and add the case to `TestR_NUGET_010_ParseSplitsTheQueryIntoTerms` and `TestR_NUGET_010_FieldTermsLimitTheMatch`. A field the format must decide on readable versions (as `version:`) stays out of the scan's flag and is applied in `searchRows`.
 
+## Signatures (signatures.md R-SIG-029)
+
+The signature of a package is the entry `.signature.p7s` inside it, detected at every commit ([signatures.go](../../internal/formats/nuget/signatures.go)) and
+served with the package byte for byte. The service index lists no `RepositorySignatures` resource: Quader signs no package (Q-SIG-36,
+`TestR_SIG_029_TheServiceIndexListsNoRepositorySignaturesResource`).
+
 ## The remote class
 
 A remote repository of NuGet proxies and caches a NuGet v3 feed and forwards searches to it (R-NUGET-014 to R-NUGET-016, R-NUGET-031; Q-NUGET-51 to Q-NUGET-55, Q-NUGET-78 to Q-NUGET-81). The engine owns the request path, freshness, collapsing,

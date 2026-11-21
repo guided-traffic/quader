@@ -130,6 +130,8 @@ type Archive struct {
 	ReadmeName string
 	// Warnings are the findings that did not refuse the archive (a meta/runtime.yml that was ignored).
 	Warnings []string
+	// Manifest is MANIFEST.json as the archive holds it: what a detached signature of the collection signs (signatures.md R-SIG-031).
+	Manifest []byte
 }
 
 // FileName is the name `ansible-galaxy collection build` gives the archive of this collection version.
@@ -227,6 +229,7 @@ func ReadArchive(ctx context.Context, r io.Reader, lim untrusted.Limits, opts ..
 	if err != nil {
 		return nil, err
 	}
+	a.Manifest = manifest
 	if err := checkFiles(files, members, lim); err != nil {
 		return nil, err
 	}

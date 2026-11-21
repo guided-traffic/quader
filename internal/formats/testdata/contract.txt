@@ -29,6 +29,7 @@ formats.Capabilities: field ItemsRestorer ItemsRestorer
 formats.Capabilities: field Remote RemoteCaps
 formats.Capabilities: field RemovalLocker RemovalLocker
 formats.Capabilities: field ServeFacts ServeFactsKeyer
+formats.Capabilities: field SignatureCoverage SignatureCoverage
 formats.Capabilities: field SourceSpeller SourceSpeller
 formats.Capabilities: field VersionPath VersionPather
 formats.Capabilities: field ViewSizer ViewSizer
@@ -69,6 +70,11 @@ formats.Companion: field MediaType string
 formats.Companion: field Path Path
 formats.Companion: field Payload any
 formats.Companion: field Spooled Spooled
+formats.CoveringDocument: field Date time.Time
+formats.CoveringDocument: field Name string
+formats.CoveringDocument: field Path string
+formats.CoveringDocument: field SHA256 [32]byte
+formats.CoveringDocument: field Verifier string
 formats.CredentialExchanger: method ExchangeRequest(context.Context, RemoteContext, string) (*http.Request, string, bool, error)
 formats.CredentialExchanger: method ReadExchange(context.Context, RemoteContext, int, []byte) (string, time.Duration, error)
 formats.Currency: type uint8
@@ -177,6 +183,7 @@ formats.Host: method Remote() RemoteFetcher
 formats.Host: method Renditions() RenditionCache
 formats.Host: method Resolver() Resolver
 formats.Host: method RestoredAt(context.Context) (time.Time, error)
+formats.Host: method Signatures() SignatureVerdicts
 formats.Host: method Uploads() UploadSessions
 formats.Host: method Vulnerabilities() VulnerabilityData
 formats.Host: method WikiReadable(context.Context, *Request, Target) bool
@@ -348,6 +355,7 @@ formats.RemoteCaps: field Gate FactsGate
 formats.RemoteCaps: field Mirror MirrorLister
 formats.RemoteCaps: field Names NameServer
 formats.RemoteCaps: field Revalidate Revalidator
+formats.RemoteCaps: field Signatures SignatureFetcher
 formats.RemoteCaps: field Stood StoodChallengeReader
 formats.RemoteContext: field Discovery any
 formats.RemoteContext: field Repo *repository.Repository
@@ -493,6 +501,7 @@ formats.SignatureCandidate: field SubjectPath string
 formats.SignatureContent: method Bytes(int64) ([]byte, error)
 formats.SignatureContent: method ReaderAt() (io.ReaderAt, error)
 formats.SignatureContent: method Size() int64
+formats.SignatureCoverage: method Covering(context.Context, any, RepoRef, string, [32]byte) ([]CoveringDocument, error)
 formats.SignatureDeclaration: field Kinds []SignatureKind
 formats.SignatureDeclaration: field None string
 formats.SignatureEvent: field Content SignatureContent
@@ -504,6 +513,7 @@ formats.SignatureEvent: field Origin Origin
 formats.SignatureEvent: field Path Path
 formats.SignatureEvent: field Repo RepoRef
 formats.SignatureEvent: field Variant string
+formats.SignatureFetcher: method FetchSignatures(context.Context, discover.Upstream, string) error
 formats.SignatureKind: field Client string
 formats.SignatureKind: field Covers string
 formats.SignatureKind: field Location string
@@ -517,6 +527,7 @@ formats.SignatureLocator: field Path string
 formats.SignatureLocator: field Raw []byte
 formats.SignatureLocator: field SHA256 [32]byte
 formats.SignatureLocator: field Size int64
+formats.SignatureVerdicts: method PublicProvenance(context.Context, RepoRef, []string) (map[string]string, error)
 formats.SourceRef: field Path string
 formats.SourceRef: field Repo qname.Repo
 formats.SourceSpeller: method SourceSpellings(string, Path) []Path
@@ -685,6 +696,7 @@ formats.MaxProbeFiles: value = 1000
 formats.MaxSignatureRaw: value = 256 << 10
 formats.Merge: value = (repeated, place 1 of its group)
 formats.Metadata: value = (repeated, place 1 of its group)
+formats.NoSignatureVerdicts: value SignatureVerdicts = noVerdicts{}
 formats.OriginFill: value = (repeated, place 1 of its group)
 formats.OriginUpload: value Origin = iota + 1 (place 0 of its group)
 formats.PathComputed: value = (repeated, place 2 of its group)
@@ -917,6 +929,7 @@ match.Result: field FixAvailable bool
 match.Result: field Unevaluable int
 discover.Bounded: method VersionBounds() (int, bool)
 discover.Cursor: alias json.RawMessage
+discover.Header: method Head(context.Context, *url.URL, string) (*Response, error)
 discover.Item: field Path string
 discover.Item: field Pinned bool
 discover.Item: field Prerelease bool

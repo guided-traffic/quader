@@ -1,7 +1,8 @@
 # Signatures on artifacts
 
-Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins are built, the read, the checks
-and the trust step are not ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
+Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins are built, and so is the formats'
+wire behaviour (an OCI attachment follows its image, the background fetch of a remote's signatures, npm's keys and attestations endpoints,
+the signatures a client posts for a local Ansible Galaxy version); the read, the checks and the trust step are not ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
 [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) to
 [ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version)) and stage 2,
 Quader signs (R-SIG-044 to R-SIG-060,
@@ -49,7 +50,7 @@ scheme or NuGet reads is streamed from the blob store and hashed, never written 
 
 | Party | What it can make Quader show | What stops it |
 |---|---|---|
-| A holder of `deploy` on a repository | an attachment of any signature to content of that repository: a valid one by any signer (shown as its trust allows), an invalid one, an unreadable one | an invalid one never lowers a better badge ([Q-SIG-25](../spec/signatures.md#q-sig-25--an-artifacts-state-is-the-best-of-its-signatures-and-an-invalid-one-alone-shows-invalid)); at most 32 read per subject; it alarms ([H-1172](#h-1172--a-writer-can-attach-signatures-that-raise-alarms-and-fill-the-dashboard)) |
+| A holder of `deploy` on a repository | an attachment of any signature to content of that repository: a valid one by any signer (shown as its trust allows), an invalid one, an unreadable one; for a local Ansible Galaxy version through the management API, a signature whose hash prefix matches `MANIFEST.json` (one of other content is refused at once) | an invalid one never lowers a better badge ([Q-SIG-25](../spec/signatures.md#q-sig-25--an-artifacts-state-is-the-best-of-its-signatures-and-an-invalid-one-alone-shows-invalid)); at most 32 read per subject; it alarms ([H-1172](#h-1172--a-writer-can-attach-signatures-that-raise-alarms-and-fill-the-dashboard)) |
 | An upstream of a remote | the signatures its documents and referrers carry, for the remote's readers | the integrity check against the content Quader stored; trust only through anchors the installation chose |
 | A project's Owner, while the administrator's switch is on | **Verified · internal** for signatures its anchors know, for every reader of the project's repositories and of what its virtual repositories serve | anchors only add; the administrator lists and removes them; off again, they stop applying ([H-1167](#h-1167--a-project-owners-anchor-is-shown-to-every-reader-of-the-projects-repositories)) |
 | An administrator (`security-settings:write`) | trust for the whole installation: anchors, switching shipped ones off, blocks, the switch | audit events; removals and blocks carry the journal flag, so a restore does not bring back withdrawn trust |
@@ -241,11 +242,17 @@ writer who wants to bury a real finding among false ones.
 
 ### H-1173 · The background fetch asks an upstream for what no client asked
 
-Component: the remote's fetch (R-SIG-026). Subject: the installation's standing with an upstream's rate limits, and the upstream that learns
-which images the installation stores. Live for every remote with `signatures.fetch: true` (the default). The requests are system work,
-charged to no caller and no ceiling ([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-015), bounded by four signature manifests per
-image and `signatures.remote.requests_per_hour` per remote and replica; against Docker Hub a `GET` of a signature manifest counts as a pull.
-What makes it real: a Docker Hub remote without an account on an address shared with other clients.
+Component: the remote's fetch (R-SIG-026, built: the job `signature-fetch` and the mirror's plan). Subject: the installation's standing with
+an upstream's rate limits, and the upstream that learns which images the installation stores. Live for every remote: the member
+`signatures.fetch` that switches it off is R-SIG-040's and not built
+([Q-SIG-108](../spec/signatures.md#q-sig-108--the-fetch-switch-waits-for-the-member-of-r-sig-040-and-the-manual-promises-none)). The requests
+are system work, charged to no caller and no ceiling
+([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-015), bounded by four signature manifests per image and eight layers per manifest,
+and the job's by `signatures.remote.requests_per_hour` per remote on the worker that runs it (600 by default); a mirror's pass asks for the
+signatures of every kept tag in every pass, bounded by the pass's window and slots and not by that hourly budget (Q-SIG-99). An image whose
+tags carry no signature costs one referrers request and two `HEAD`s; against Docker Hub a `GET` of a signature manifest counts as a pull, a
+`HEAD` does not, and whether the referrers request counts is not stated. What makes it real: a Docker Hub remote without an account on an
+address shared with other clients, and a mirror of many tags of Docker Hub.
 
 ### H-1174 · "Signed · signer not trusted" can stand for a signature whose match was not checked
 
@@ -360,3 +367,14 @@ configuration switches detection and checks off, and with them every gate, as `m
 repositories' settings stay stored and apply again when the checks are switched on. No repository writer is asked; the repository's section
 says that the setting does not apply. What makes it real: an operator who switches the checks off to spare the worker while teams rely on
 their gates.
+
+### H-1201 · An npm version's fetch state outlives its tarball
+
+Component: the row of `signature_fetches` of an npm version (R-SIG-026, R-SIG-067,
+[Q-SIG-106](../spec/signatures.md#q-sig-106--one-table-of-fetch-state-for-both-stages-keyed-by-target-with-the-subject-beside-it)). Subject: a
+remote npm repository whose cache lost a tarball (an eviction, a delete of the cached item) and fills it again. Live from stage 1 for the
+badge; for the gate once stage 3 is built. The OCI row goes with its manifest's row; the npm row stays, because the npm hook of the removal
+writes through the package writer and has no transaction of the data port. A tarball stored again is not fetched again (its row reads
+fetched, and npm queues no refresh of a version), so attestations the cache lost with it come back only when a client asks the attestations
+endpoint, and the gate would read "fetched" from the earlier run. What makes it real: an eviction of a version's attestations document
+together with its tarball, and a later fill of the tarball alone.

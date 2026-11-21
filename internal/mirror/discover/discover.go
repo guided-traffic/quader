@@ -169,6 +169,21 @@ type Upstream interface {
 	Artifact(ctx context.Context, path string, max int64) (body []byte, found bool, err error)
 }
 
+// Header is implemented by the [Upstream] of the engine: a HEAD of u, with the rules of [Upstream.Get], whose answer has no body. A
+// registry counts the GET of a manifest against its pull limit and not a HEAD (signatures.md R-SIG-026), so a format that only needs to
+// know whether a resource is there asks with it. A format asks with [Head]; an Upstream that does not implement it answers with a GET.
+type Header interface {
+	Head(ctx context.Context, u *url.URL, accept string) (*Response, error)
+}
+
+// Head sends a HEAD of u through up when it implements [Header], else a GET bounded to the smallest body.
+func Head(ctx context.Context, up Upstream, u *url.URL, accept string) (*Response, error) {
+	if h, ok := up.(Header); ok {
+		return h.Head(ctx, u, accept)
+	}
+	return up.Get(ctx, u, accept, 1<<16)
+}
+
 // Bounded is implemented by the [Upstream] of the engine and tells a plan which versions the engine keeps of it (R-REPO-051): the
 // newest MaxVersions of the versions that are not prereleases when IncludePrereleases is false, 0 for all, and a pinned version
 // always besides them. A plan whose versions cost a request each (an image's tags: the manifest of every tag is read to name its

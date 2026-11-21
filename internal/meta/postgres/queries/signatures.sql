@@ -195,3 +195,9 @@ DELETE FROM signature_objects o
  WHERE o.sha256 IN (SELECT x.sha256 FROM signature_objects x
                      WHERE NOT EXISTS (SELECT 1 FROM signatures s WHERE s.object_sha256 = x.sha256)
                      ORDER BY x.sha256 LIMIT sqlc.arg(row_limit)::int);
+
+-- name: SignatureDetach :execrows
+-- Removes the attachments at locations of a repository: a signature a client posted and removed again (R-SIG-031). The job removes a
+-- signature that loses its last attachment (R-SIG-011).
+DELETE FROM signature_attachments
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND location = ANY(sqlc.arg(locations)::text[]);

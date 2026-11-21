@@ -5,6 +5,8 @@
 export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'ansible.hub.exchange_failed',
   'ansible.import_task.failed',
+  'ansible.signature.added',
+  'ansible.signature.removed',
   'ansible.tombstone.cleared',
   'ansible.version.deleted',
   'artifact.cached',

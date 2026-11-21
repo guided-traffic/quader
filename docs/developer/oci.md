@@ -63,7 +63,7 @@ names what is missing.
 | [handlers_delete.go](../../internal/formats/oci/handlers_delete.go), [hooks_remove.go](../../internal/formats/oci/hooks_remove.go) | `DELETE` of a tag, a manifest and a blob (authorization, existence, ownership, then the item store), and `OnItemsRemoved`: the refusals, the cascade and the deletion event of every road of removal |
 | [servecheck.go](../../internal/formats/oci/servecheck.go) | The serve-facts kind `oci_local`: the item lookup returns the manifest row and the withheld mark in one statement, `ServeCheck` refuses a withheld manifest |
 | [setup.go](../../internal/formats/oci/setup.go), [guide.go](../../internal/formats/oci/guide.go), [guide/](../../internal/formats/oci/guide) | The clients `docker` and `podman`, their setup snippets (login, the Kubernetes image pull secret, pull, push, Buildx) and the guide (R-OCI-030) |
-| [../formatdata/oci](../../internal/formatdata/oci/store.go), further files | `store_lists.go`: tags, referrers, holds, catalog names, the reads of the removal hook and the deletion event; `store_removal.go`: `RemoveManifest` and `ReferencedBy`; `store_sweep.go`: the sweep's statements and the marks; `sweep.go`: the job `oci-sweep`; `journal_replay.go`: the replay handler; `reinstate.go`: the administrator's command |
+| [../formatdata/oci](../../internal/formatdata/oci/store.go), further files | `store_lists.go`: tags, referrers, holds, catalog names, the reads of the removal hook and the deletion event; `store_removal.go`: `RemoveManifest` (with the manifest's row of `signature_fetches`, Q-SIG-106) and `ReferencedBy`; `store_signatures.go`: `TagTargets` and `EnqueueSignatureFetch`; `store_sweep.go`: the sweep's statements and the marks; `sweep.go`: the job `oci-sweep`; `journal_replay.go`: the replay handler; `reinstate.go`: the administrator's command |
 | [oci_lists.sql](../../internal/meta/postgres/queries/oci_lists.sql) | The statements of the lists, the cascade, the sweep and the replay (sqlc) |
 | [admin_oci.go](../../cmd/quader/admin_oci.go) | `quader admin oci reinstate <projectKey>/<repoKey> <name>@<digest>` |
 
@@ -761,6 +761,27 @@ expiry. Whether a client asks the realm for the scope of the repository it is ab
 cover the repository is answered 401 `insufficient_scope`. The stub is not a conformance reference: the conformance suite of R-OCI-035 runs against
 Quader, not against the stub.
 
+## Signatures on the wire (signatures.md R-SIG-023 to R-SIG-027)
+
+What OCI does with the signatures package 1's detector names ([signatures.go](../../internal/formats/oci/signatures.go)); the store and
+the job are [signatures.md](signatures.md)'s.
+
+| What | Where |
+|---|---|
+| An attachment tag (`sha256-<hex>`, `.sig`, `.att`, `.sbom`) is no version and no version of a mirror's plan | [hooks.go](../../internal/formats/oci/hooks.go) `commitTagItem`, [mirror_tags.go](../../internal/formats/oci/mirror_tags.go) `selectTags` |
+| The removal of a local manifest takes its attachment tags and the manifests they point at unless another tag or a kept manifest names them (R-SIG-025); `Store.TagTargets` reads a tag's manifest from the items or a remote's tag document | [hooks_remove.go](../../internal/formats/oci/hooks_remove.go) `attachmentsOf`, `heldElsewhere`; [store_signatures.go](../../internal/formatdata/oci/store_signatures.go) |
+| The removal of a remote's manifest item takes the alias items of its referrers and of its attachment tags' manifests (Q-SIG-101) | [hooks_remove.go](../../internal/formats/oci/hooks_remove.go) `cachedAttachments` |
+| The background fetch of a remote image's signatures: referrers, `HEAD` of `.sig` and `.att`, the referrers tag only without the API, at most four manifests and their layers (R-SIG-026, Q-SIG-98) | [signatures_fetch.go](../../internal/formats/oci/signatures_fetch.go) `fetchImageSignatures`, `FetchSignatures` |
+| A fill of a tag's manifest, and of a manifest by digest that no stored index lists, queues the fetch through the data port; a client's revalidated tag queues a refresh (Q-SIG-100) | [remote.go](../../internal/formats/oci/remote.go) `OnFill`, `remoteCommit`; [remote_handlers.go](../../internal/formats/oci/remote_handlers.go) `refreshSignatures` |
+| The mirror's plan runs the same fetch for every kept tag (Q-SIG-99) | [mirror_plan.go](../../internal/formats/oci/mirror_plan.go) `tagItems` |
+| BuildKit's attestation entries stand under `attestations` of the version's data, not under `platforms` (R-SIG-024) | [view.go](../../internal/formats/oci/view.go) `tagMetadata` |
+| The image scanning leaves out a referrer and a manifest that is a signature's object in its repository (Q-SIG-104) | [vuln_image.sql](../../internal/meta/postgres/queries/vuln_image.sql) `VulnImageDiscover` |
+
+The kit's OCI signature cases set `RemoveSubject`: the DELETE of the image takes each of them. Tests: unit
+[signatures_fetch_test.go](../../internal/formats/oci/signatures_fetch_test.go), [signatures_follow_test.go](../../internal/formats/oci/signatures_follow_test.go);
+integration `ocilocal` [signatures_test.go](../../test/integration/ocilocal/signatures_test.go) and `ociremote`
+[signatures_test.go](../../test/integration/ociremote/signatures_test.go) (a worker replica runs the job).
+
 ## What is built and what is not
 
 Built: the contract additions and their production host; the three migrations, the key grammar of every format and the configuration
@@ -780,5 +801,6 @@ of R-OCI-034; the presigned redirect of blob downloads (H-601); retention of unt
 
 ## What this page does not cover
 
-Referrers (signatures, SBOMs) are not mirrored; they stay pull-through (R-OCI-024). The children of an index inside an index are not read. The end-to-end rows with real clients on several replicas are described
+A mirror's pass asks for the signatures of each kept tag (above, R-SIG-025); the platforms' own signatures stay pull-through (Q-SIG-33). The
+trash's case of an attachment that follows its image waits for the trash can (R-STOR-022). The children of an index inside an index are not read. The end-to-end rows with real clients on several replicas are described
 in [e2e.md](e2e.md) once they exist.

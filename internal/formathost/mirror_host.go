@@ -399,6 +399,21 @@ func (u *passUpstream) Get(ctx context.Context, target *url.URL, accept string, 
 	return &discover.Response{Status: res.Status, Header: res.Header, Body: res.Body}, nil
 }
 
+var _ discover.Header = (*passUpstream)(nil)
+
+// Head implements [discover.Header]: a HEAD through [proxy.Engine.Get], with the rules of Get (signatures.md R-SIG-026).
+func (u *passUpstream) Head(ctx context.Context, target *url.URL, accept string) (*discover.Response, error) {
+	res, err := u.m.e.Get(ctx, proxy.Get{
+		Remote: u.rem, URL: target, Method: http.MethodHead, Accept: accept, MirrorHosts: u.hosts, Ceiling: u.pass.Ceiling, JobID: u.pass.JobID,
+		Auth:     handshakeOf(formats.RemoteCapabilities(formats.ID(u.repo.Format)), &u.repo, u.settings, nil),
+		Exchange: exchangerOf(formats.RemoteCapabilities(formats.ID(u.repo.Format)), &u.repo, u.settings),
+	})
+	if err != nil {
+		return nil, mapBackground(err)
+	}
+	return &discover.Response{Status: res.Status, Header: res.Header}, nil
+}
+
 // Document implements [discover.Upstream]: the metadata document through the remote engine, as a background request
 // (R-REPO-025 steps 4 to 10). A document the upstream does not have (a negative entry, 404 or 410), one that is gone and a
 // package the repository counts as gone are found=false.

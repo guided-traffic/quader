@@ -60,6 +60,9 @@ func Entry(raw json.RawMessage, prefix, pkg, version string, fields []string) (j
 	}
 	tarball, _ := json.Marshal(prefix + basename(pkg) + "-" + version + ".tgz")
 	dist["tarball"] = tarball
+	if att, ok := dist["attestations"]; ok {
+		dist["attestations"] = attestationsAt(att, prefix, pkg, version)
+	}
 	m["dist"] = objectOf(dist)
 	if fields != nil {
 		picked := make(map[string]json.RawMessage, len(fields)+1)
@@ -72,6 +75,31 @@ func Entry(raw json.RawMessage, prefix, pkg, version string, fields []string) (j
 		m = picked
 	}
 	return objectOf(m), nil
+}
+
+// attestationsAt rewrites dist.attestations.url onto the serving registry (signatures.md R-SIG-028, Q-SIG-35): npm keeps the path of
+// the URL and resolves it against the registry it installs from, so the path must reach the serving repository's attestations
+// endpoint. Every other member (provenance.predicateType) passes unchanged; a member that is no object passes as it is.
+func attestationsAt(raw json.RawMessage, prefix, pkg, version string) json.RawMessage {
+	var att map[string]json.RawMessage
+	if json.Unmarshal(raw, &att) != nil || att == nil {
+		return raw
+	}
+	if _, ok := att["url"]; !ok {
+		return raw
+	}
+	u, _ := json.Marshal(registryOf(prefix, pkg) + "-/npm/v1/attestations/" + pkg + "@" + version)
+	att["url"] = u
+	return objectOf(att)
+}
+
+// registryOf is the registry URL (with its trailing slash) a tarball prefix of TarballPrefix lies under.
+func registryOf(prefix, pkg string) string {
+	segs := strings.Split(pkg, "/")
+	for i, s := range segs {
+		segs[i] = url.PathEscape(s)
+	}
+	return strings.TrimSuffix(prefix, strings.Join(segs, "/")+"/-/")
 }
 
 // raw is the entry of a version as a rendering reads it: without the README members when the caller may not read the wiki.

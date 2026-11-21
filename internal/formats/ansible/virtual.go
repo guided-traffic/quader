@@ -178,8 +178,28 @@ func versionOfRow(r rows.VersionRow) galaxydoc.Version {
 	return galaxydoc.Version{
 		Namespace: ns, Name: n, Version: r.Version, RequiresAnsible: r.RequiresAnsible, SHA256: r.SHA256, Size: r.Size,
 		Dependencies: r.Dependencies, Info: r.CollectionInfo, CreatedAt: r.PublishedAt, UpdatedAt: r.PublishedAt,
-		CollectionID: rows.CollectionUUID(r.RepoID, r.Name),
+		CollectionID: rows.CollectionUUID(r.RepoID, r.Name), Signatures: postedSignatures(r.Signatures),
 	}
+}
+
+// postedSignature is an entry of signatures[] of a local version (signatures.md R-SIG-031): the posted signature, the fingerprint of
+// its key, and no signing service.
+type postedSignature struct {
+	Signature      string  `json:"signature"`
+	Fingerprint    string  `json:"pubkey_fingerprint"`
+	SigningService *string `json:"signing_service"`
+}
+
+// postedSignatures renders the signatures clients posted for a local version as signatures[] holds them.
+func postedSignatures(in []rows.PostedSignature) []json.RawMessage {
+	out := make([]json.RawMessage, 0, len(in))
+	for _, p := range in {
+		b, err := json.Marshal(postedSignature{Signature: p.Signature, Fingerprint: p.Fingerprint})
+		if err == nil {
+			out = append(out, b)
+		}
+	}
+	return out
 }
 
 // Merge applies the per-version source rule (R-ANS-022): the entry of a version comes from the lowest (tier, position) member that

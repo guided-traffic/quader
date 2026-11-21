@@ -91,6 +91,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveDocument(w, r, rt.name)
 	case KindTarball:
 		s.serveTarball(w, r, rt)
+	case KindKeys, KindAttestations:
+		s.serveSignatures(w, rt)
 	default:
 		writeError(w, http.StatusNotFound, "not found")
 	}

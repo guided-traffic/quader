@@ -50,6 +50,8 @@ func TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind(t *testing.T) {
 			"npm.disttag.delete":    formats.Admin,
 			"npm.disttag.put":       formats.Admin,
 			"npm.disttags.get":      formats.Metadata,
+			"npm.keys.get":          formats.Metadata, // a document of the signatures (R-SIG-028)
+			"npm.attestations.get":  formats.Metadata, // a document of the signatures (R-SIG-028)
 			"npm.document.get":      formats.Metadata,
 			"npm.ping":              formats.Volatile,
 			"npm.publish":           formats.Upload,

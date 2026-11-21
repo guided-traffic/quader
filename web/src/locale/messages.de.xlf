@@ -30298,9 +30298,27 @@
         <target>Nur lesen. Bitten Sie <ph id="0" equiv="owners" disp="owners"/>, Eigentümer von <ph id="1" equiv="project" disp="key"/>, um die Änderung.</target>
       </segment>
     </unit>
-    <unit id="audit.action.ansible.tombstone.cleared">
+    <unit id="audit.action.ansible.signature.added">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:11</note>
+      </notes>
+      <segment>
+        <source>Ansible collection signature added</source>
+        <target>Signatur einer Ansible-Collection hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.ansible.signature.removed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:13</note>
+      </notes>
+      <segment>
+        <source>Ansible collection signature removed</source>
+        <target>Signatur einer Ansible-Collection entfernt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.ansible.tombstone.cleared">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:15</note>
       </notes>
       <segment>
         <source>Ansible tombstone cleared</source>

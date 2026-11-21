@@ -22,6 +22,9 @@ func parseRoute(escapedPath string) route {
 	case auditPath:
 		return route{kind: KindAudit}
 	}
+	if rt, ok := signatureRoute(escapedPath); ok {
+		return rt
+	}
 	trimmed := strings.TrimPrefix(escapedPath, "/")
 	segments := strings.Split(trimmed, "/")
 	for i, s := range segments {

@@ -219,7 +219,8 @@ func TestR_VULN_042_ARemoteImageWithoutItsLayersEndsLayerMissing(t *testing.T) {
 		"integrity":    map[string]any{"checksumPolicy": "verify-if-available", "blockUnexpectedContentTypes": true, "allowedContentTypes": []any{}},
 		"availability": map[string]any{"mode": "online", "failureThreshold": 3, "circuitOpenSeconds": 30},
 		"limits":       map[string]any{"maxArtifactBytes": nil, "maxMetadataBytes": nil, "maxConcurrentFetches": 16},
-	}})
+		// The background fetch of the image's signatures (signatures.md R-SIG-026) is off: the test counts what the scan asks.
+	}, "signatures": map[string]any{"fetch": false}})
 	if err != nil {
 		t.Fatal(err)
 	}

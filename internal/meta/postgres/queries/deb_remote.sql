@@ -193,3 +193,12 @@ DELETE FROM deb_remote_files WHERE repo_id = sqlc.arg(repo_id)::bigint;
 
 -- name: DebRemotePurgeReleases :exec
 DELETE FROM deb_remote_releases WHERE repo_id = sqlc.arg(repo_id)::bigint;
+
+-- name: DebRemoteCovering :many
+-- The stored release documents whose parsed indexes list a file at the path with the digest (signatures.md R-SIG-030): the releases
+-- that cover the package, with their signer as the fill's verification recorded it.
+SELECT DISTINCT r.dir, r.document, r.sha256, r.release_date, COALESCE(r.verified_by, '')::text AS verified_by
+  FROM deb_remote_entries e
+  JOIN deb_remote_releases r ON r.repo_id = e.repo_id AND r.dir = e.dir AND r.document <> 'absent'
+ WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.path = sqlc.arg(path)::text AND e.sha256 = sqlc.arg(sha256)::bytea
+ ORDER BY r.dir, r.document;

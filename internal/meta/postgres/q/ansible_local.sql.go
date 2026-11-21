@@ -118,6 +118,25 @@ func (q *Queries) AnsibleCollectionSummary(ctx context.Context, arg AnsibleColle
 	return i, err
 }
 
+const ansibleCountVersionSignatures = `-- name: AnsibleCountVersionSignatures :one
+SELECT count(*)::bigint
+  FROM ansible_version_signatures
+ WHERE repo_id = $1::bigint AND name = $2::text AND version = $3::text
+`
+
+type AnsibleCountVersionSignaturesParams struct {
+	RepoID  int64
+	Name    string
+	Version string
+}
+
+func (q *Queries) AnsibleCountVersionSignatures(ctx context.Context, arg AnsibleCountVersionSignaturesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, ansibleCountVersionSignatures, arg.RepoID, arg.Name, arg.Version)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const ansibleCountVersions = `-- name: AnsibleCountVersions :one
 SELECT count(*)::bigint FROM ansible_collection_versions WHERE repo_id = $1::bigint AND name = $2::text
 `
@@ -189,6 +208,32 @@ func (q *Queries) AnsibleDeleteVersion(ctx context.Context, arg AnsibleDeleteVer
 		return nil, err
 	}
 	return items, nil
+}
+
+const ansibleDeleteVersionSignature = `-- name: AnsibleDeleteVersionSignature :execrows
+DELETE FROM ansible_version_signatures
+ WHERE repo_id = $1::bigint AND name = $2::text AND version = $3::text
+   AND fingerprint = $4::text
+`
+
+type AnsibleDeleteVersionSignatureParams struct {
+	RepoID      int64
+	Name        string
+	Version     string
+	Fingerprint string
+}
+
+func (q *Queries) AnsibleDeleteVersionSignature(ctx context.Context, arg AnsibleDeleteVersionSignatureParams) (int64, error) {
+	result, err := q.db.Exec(ctx, ansibleDeleteVersionSignature,
+		arg.RepoID,
+		arg.Name,
+		arg.Version,
+		arg.Fingerprint,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const ansibleGetTask = `-- name: AnsibleGetTask :many
@@ -438,6 +483,39 @@ func (q *Queries) AnsibleInsertVersionFromItem(ctx context.Context, arg AnsibleI
 	return err
 }
 
+const ansibleInsertVersionSignature = `-- name: AnsibleInsertVersionSignature :execrows
+INSERT INTO ansible_version_signatures (repo_id, name, version, fingerprint, signature, posted_by)
+VALUES ($1::bigint, $2::text, $3::text, $4::text,
+        $5::text, $6::text)
+ON CONFLICT (repo_id, name, version, fingerprint) DO UPDATE
+   SET signature = EXCLUDED.signature, posted_by = EXCLUDED.posted_by, posted_at = now()
+`
+
+type AnsibleInsertVersionSignatureParams struct {
+	RepoID      int64
+	Name        string
+	Version     string
+	Fingerprint string
+	Signature   string
+	PostedBy    string
+}
+
+// A posted signature; one of the same key that is there already is replaced.
+func (q *Queries) AnsibleInsertVersionSignature(ctx context.Context, arg AnsibleInsertVersionSignatureParams) (int64, error) {
+	result, err := q.db.Exec(ctx, ansibleInsertVersionSignature,
+		arg.RepoID,
+		arg.Name,
+		arg.Version,
+		arg.Fingerprint,
+		arg.Signature,
+		arg.PostedBy,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const ansibleListTasks = `-- name: AnsibleListTasks :many
 SELECT t.id::text AS id, t.repo_id, t.name, t.version, t.state, COALESCE(t.error_code, '')::text AS error_code,
        COALESCE(t.error_description, '')::text AS error_description, t.messages, t.created_by, t.created_at, t.finished_at
@@ -618,6 +696,53 @@ func (q *Queries) AnsibleListVersions(ctx context.Context, arg AnsibleListVersio
 	return items, nil
 }
 
+const ansibleLockVersion = `-- name: AnsibleLockVersion :many
+SELECT v.item_id, v.sha256, v.size, i.path::text AS path
+  FROM ansible_collection_versions v
+  JOIN items i ON i.id = v.item_id
+ WHERE v.repo_id = $1::bigint AND v.name = $2::text AND v.version = $3::text
+   FOR SHARE OF v
+`
+
+type AnsibleLockVersionParams struct {
+	RepoID  int64
+	Name    string
+	Version string
+}
+
+type AnsibleLockVersionRow struct {
+	ItemID int64
+	Sha256 []byte
+	Size   int64
+	Path   string
+}
+
+// The row of a version, held against a removal until the transaction ends: a posted signature belongs to a version that is there.
+func (q *Queries) AnsibleLockVersion(ctx context.Context, arg AnsibleLockVersionParams) ([]AnsibleLockVersionRow, error) {
+	rows, err := q.db.Query(ctx, ansibleLockVersion, arg.RepoID, arg.Name, arg.Version)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnsibleLockVersionRow{}
+	for rows.Next() {
+		var i AnsibleLockVersionRow
+		if err := rows.Scan(
+			&i.ItemID,
+			&i.Sha256,
+			&i.Size,
+			&i.Path,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const ansibleReplayRepository = `-- name: AnsibleReplayRepository :many
 SELECT r.id, (p.key || '/' || r.key)::text AS ref
   FROM repositories r
@@ -743,6 +868,45 @@ func (q *Queries) AnsibleUpsertVersion(ctx context.Context, arg AnsibleUpsertVer
 		arg.PublishedAt,
 	)
 	return err
+}
+
+const ansibleVersionSignatures = `-- name: AnsibleVersionSignatures :many
+SELECT fingerprint, signature
+  FROM ansible_version_signatures
+ WHERE repo_id = $1::bigint AND name = $2::text AND version = $3::text
+ ORDER BY posted_at, fingerprint
+`
+
+type AnsibleVersionSignaturesParams struct {
+	RepoID  int64
+	Name    string
+	Version string
+}
+
+type AnsibleVersionSignaturesRow struct {
+	Fingerprint string
+	Signature   string
+}
+
+// The signatures posted for a version of a local repository, oldest first (R-SIG-031): what signatures[] of its document serves.
+func (q *Queries) AnsibleVersionSignatures(ctx context.Context, arg AnsibleVersionSignaturesParams) ([]AnsibleVersionSignaturesRow, error) {
+	rows, err := q.db.Query(ctx, ansibleVersionSignatures, arg.RepoID, arg.Name, arg.Version)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnsibleVersionSignaturesRow{}
+	for rows.Next() {
+		var i AnsibleVersionSignaturesRow
+		if err := rows.Scan(&i.Fingerprint, &i.Signature); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const ansibleViewFind = `-- name: AnsibleViewFind :many

@@ -28,6 +28,15 @@ type fakeUpstream struct {
 	getErr    error // answered by Get instead of a response
 	gets      []string
 	asked     []string
+	// sig answers the requests of the signature fetch (referrers and HEADs of attachment tags, R-SIG-025); nil answers 404. They are
+	// recorded in sigGets, not in gets.
+	sig     func(u *url.URL) *discover.Response
+	sigGets []string
+}
+
+// signatureRequest reports whether a request is one of the signature fetch: the referrers API or a manifest by tag.
+func signatureRequest(u *url.URL) bool {
+	return strings.Contains(u.Path, "/referrers/") || strings.Contains(u.Path, "/manifests/")
 }
 
 func newFake(t *testing.T, base, settings string) *fakeUpstream {
@@ -43,6 +52,13 @@ func (f *fakeUpstream) Base() *url.URL            { b := *f.base; return &b }
 func (f *fakeUpstream) Settings() json.RawMessage { return f.settings }
 
 func (f *fakeUpstream) Get(_ context.Context, u *url.URL, _ string, _ int64) (*discover.Response, error) {
+	if signatureRequest(u) {
+		f.sigGets = append(f.sigGets, "GET "+u.RequestURI())
+		if f.sig == nil {
+			return &discover.Response{Status: http.StatusNotFound}, nil
+		}
+		return f.sig(u), nil
+	}
 	f.gets = append(f.gets, u.RequestURI())
 	if f.getErr != nil {
 		return nil, f.getErr
@@ -51,6 +67,15 @@ func (f *fakeUpstream) Get(_ context.Context, u *url.URL, _ string, _ int64) (*d
 		return &discover.Response{Status: http.StatusNotFound}, nil
 	}
 	return f.get(u), nil
+}
+
+// Head implements discover.Header for the signature fetch.
+func (f *fakeUpstream) Head(_ context.Context, u *url.URL, _ string) (*discover.Response, error) {
+	f.sigGets = append(f.sigGets, "HEAD "+u.RequestURI())
+	if f.sig == nil {
+		return &discover.Response{Status: http.StatusNotFound}, nil
+	}
+	return f.sig(u), nil
 }
 
 func (f *fakeUpstream) Document(_ context.Context, path, _ string) ([]byte, bool, error) {

@@ -62,6 +62,7 @@ The client uploads each layer, then the manifest; Quader stores the manifest exa
 - **Tags.** Pushing a tag that does not exist, or one that already points at the same image, needs deploy. Pointing an existing tag at another image needs overwrite as well; without it the push answers `403 DENIED`. The image the tag pointed at before stays in the repository and can still be pulled by its digest.
 - **One tag per request.** Several tags in one manifest push (`?tag=`) are not supported; clients push one tag per request.
 - **Other OCI content.** Artifacts of any type are pushed with the tools that produce them. A manifest with a `subject` becomes a referrer of that subject, listed by `GET /v2/<project>/<repository>/<name>/referrers/<digest>`.
+- **Signatures.** `cosign`, `notation` and the other signing tools push their signatures as they do to any registry: as referrers, and in cosign's older form as the tags `sha256-<digest>.sig`, `.att` and `.sbom`. Clients pull them back as they pushed them, and the tags list shows those tags. They are no versions of the image: the image's page counts and lists only its own tags, and its signatures, attestations and SBOMs belong to the image. Deleting the image deletes them with it.
 
 ## Multi-platform images
 
@@ -127,10 +128,18 @@ The Docker CLI has no command for it; use a tool that speaks the registry API (`
 | Request | Effect |
 |---|---|
 | `DELETE /v2/<project>/<repository>/<name>/manifests/<tag>` | Removes the tag; the manifest stays and can still be pulled by its digest |
-| `DELETE …/manifests/sha256:<hex>` | Removes the manifest, every tag of the image name that points at it, its referrers and, for an index, the platform manifests that no other manifest and no tag names |
+| `DELETE …/manifests/sha256:<hex>` | Removes the manifest, every tag of the image name that points at it, its referrers, its signature tags (`sha256-<hex>`, `.sig`, `.att`, `.sbom`) with the manifests only they name and, for an index, the platform manifests that no other manifest and no tag names |
 | `DELETE …/blobs/sha256:<hex>` | Removes a layer or configuration that no manifest of the image name references |
 
 All three answer `202`. A manifest that an index of the image name lists, and a layer a manifest still references, are refused with `409 DENIED`: delete the index or the manifest first. A layer that no manifest references any more is removed by an hourly job once it is older than the grace period (24 hours unless an administrator set another), and an image that was untagged by a moved tag stays until somebody deletes it. A remote repository is a cache, so its images are not deleted through the registry API (`405 UNSUPPORTED`). After a restore of Quader from a backup, an image that was deleted after the backup answers `404` until an administrator reinstates it.
+
+## Signatures of images from a remote repository
+
+When an image comes through a remote repository, Quader asks the upstream for its signatures itself, in the background, so that it knows
+them even if no client asked: the referrers, and cosign's `.sig` and `.att` tags, which it asks for with `HEAD` requests that Docker Hub does
+not count as pulls. At most four signature manifests are fetched per image. An image whose tag you pull again is asked again at most once a
+day, so a signature published later arrives. A mirror asks for the signatures of every tag it keeps. The fetch makes at most 600 requests
+an hour per remote repository.
 
 ## When something goes wrong
 

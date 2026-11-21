@@ -1,9 +1,12 @@
 package oci
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -75,10 +78,12 @@ func signatureCases() []formattest.SignatureCase {
 			return pushManifest(h, "app/manifests/"+ref, body)
 		}
 	}
+	// A signature follows its image (R-SIG-025): the DELETE of the image's manifest takes its referrers and its attachment tags.
+	removeImage := func(h *formattest.Host) error { return deleteManifest(h, "app/manifests/"+seedDigest) }
 	referrer := func(kind, artifact, layerType, scheme, role string, layer []byte, annotations map[string]string) formattest.SignatureCase {
 		m := signatureManifest(artifact, emptyConfig, seedSubject(), annotations, descOf(layerType, layer))
 		return formattest.SignatureCase{
-			Kind: kind, Path: ManifestPath("app", sha(m)), Commit: push(sha(m), m, layer),
+			Kind: kind, Path: ManifestPath("app", sha(m)), Commit: push(sha(m), m, layer), RemoveSubject: removeImage,
 			Want: []formats.SignatureCandidate{{
 				Object: formats.SignatureLocator{Blob: blobOf(m)}, Subject: subject, Role: role, SchemeHint: scheme,
 				Source: formats.SignatureSourceReferrer, Location: ManifestPath("app", sha(m)),
@@ -99,7 +104,7 @@ func signatureCases() []formattest.SignatureCase {
 		referrer("attestation or SBOM", "application/spdx+json", "application/spdx+json", formats.SignatureSchemeUnknown,
 			formats.SignatureRoleAttestation, sigSPDX, nil),
 		{
-			Kind: "cosign signature", Path: TagPath("app", sigTag), Commit: push(sigTag, sigManifest, sigPayload1, sigPayload2),
+			Kind: "cosign signature", Path: TagPath("app", sigTag), Commit: push(sigTag, sigManifest, sigPayload1, sigPayload2), RemoveSubject: removeImage,
 			Want: []formats.SignatureCandidate{
 				{
 					Object: formats.SignatureLocator{Blob: blobOf(sigManifest)}, Subject: subject, Role: formats.SignatureRolePublisher,
@@ -112,7 +117,7 @@ func signatureCases() []formattest.SignatureCase {
 			},
 		},
 		{
-			Kind: "provenance attestation", Path: TagPath("app", attTag), Commit: push(attTag, attManifest, sigDSSE),
+			Kind: "provenance attestation", Path: TagPath("app", attTag), Commit: push(attTag, attManifest, sigDSSE), RemoveSubject: removeImage,
 			Want: []formats.SignatureCandidate{{
 				Object: formats.SignatureLocator{Blob: blobOf(attManifest)}, Subject: subject, Role: formats.SignatureRoleProvenance,
 				SchemeHint: formats.SignatureSchemeCosignLegacy, Source: formats.SignatureSourceCosignTag, Location: TagPath("app", attTag),
@@ -239,4 +244,16 @@ func TestR_SIG_023_DetectNamesEveryKindOfOCI(t *testing.T) {
 			}
 		}
 	})
+}
+
+// deleteManifest is a client's DELETE of a manifest; the registry answers 202.
+func deleteManifest(h *formattest.Host, path string) error {
+	resp, err := h.Serve(context.Background(), http.MethodDelete, path, nil, false)
+	if err != nil {
+		return err
+	}
+	if resp.Code != http.StatusAccepted {
+		return fmt.Errorf("DELETE %s: %d %s", path, resp.Code, resp.Body)
+	}
+	return nil
 }

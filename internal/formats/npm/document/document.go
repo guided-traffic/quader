@@ -23,7 +23,7 @@ import (
 // RenderVersion is npmRenderVersion (R-NPM-013): a constant of the format that a
 // release increments whenever it changes the bytes rendered from the same inputs, so
 // replicas of two releases never share a validator during a rolling upgrade.
-const RenderVersion = 1
+const RenderVersion = 2
 
 // Variant is the form of a rendering.
 type Variant string

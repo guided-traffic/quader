@@ -55,6 +55,15 @@ func (a virtualAdapter) ArtifactPrefix(pkg string) string {
 // member without a live version holds no document; its revision is that of its package
 // row, 0 when it has none, so that a later publish changes it.
 func (a virtualAdapter) LocalDocument(ctx context.Context, rq *formats.Request, member formats.RepoRef, p formats.Path, _ string) ([]byte, formats.RevSeq, bool, error) {
+	if sn, version, keys, ok := signaturePath(p.Path); ok {
+		// A version's attestations from a local member: the bundle the trust step vouches for (R-SIG-028, Q-SIG-35); a local member
+		// has no keys before stage 2.
+		if keys {
+			return nil, 0, false, nil
+		}
+		doc, found, err := localAttestations(ctx, rq.Host, member, sn, version)
+		return doc, 0, found, err
+	}
 	n, err := name.Parse(p.Path)
 	if err != nil {
 		return nil, 0, false, err

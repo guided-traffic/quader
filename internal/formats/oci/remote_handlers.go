@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -194,7 +195,30 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 	}
 	recordTagFetch(ctx, rq, name, doc.Digest)
 	f.probeTag(ctx, rq, name, ref, doc.Digest, body)
+	refreshSignatures(ctx, rq, name, ref, doc)
 	return nil
+}
+
+// refreshSignatures asks again for the signatures of the manifest a tag names when a client's revalidation found the tag unchanged
+// (signatures.md R-SIG-026): the fetch runs in the background when its last run is older than signatures.remote.refresh_after, so a
+// signature added upstream after the image was cached arrives within a day of use. It never fails the answer.
+func refreshSignatures(ctx context.Context, rq *formats.Request, name, tag string, doc *formats.RemoteDocument) {
+	if IsAttachmentTag(tag) || !revalidatedUnchanged(doc.Status) {
+		return
+	}
+	if err := queueSignatureFetch(ctx, nil, rq.Host.FormatData(ID), rq.RepoRef().ID, name, doc.Digest, true); err != nil {
+		log := rq.Log
+		if log == nil {
+			log = slog.Default()
+		}
+		log.Warn("signatures: the refresh of an image's signatures could not be queued", "repo", rq.Repo.Name.String(), "name", name, "err", err)
+	}
+}
+
+// revalidatedUnchanged reports whether the engine asked the upstream for a stored tag document and kept it: forwarded as stale,
+// nothing stored (R-REPO-047).
+func revalidatedUnchanged(s formats.CacheStatus) bool {
+	return !s.Hit && !s.Stored && !s.Negative && strings.Contains(s.Header, "fwd=stale")
 }
 
 // recordTagFetch counts the GET of a tag that writeStoredDocument answered with the manifest as a download of the tag (R-API-079,

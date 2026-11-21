@@ -285,6 +285,22 @@ Tests: `remote/remote_test.go` and `merge/merge_test.go` (with `FuzzRewrite`, `F
 document equal the local renderings), conformance checks 4 and 5, and in [test/integration/npm](../../test/integration/npm/) `remote_test.go`, `remote_marks_test.go`, `virtual_test.go`, `exposure_virtual_test.go`
 against [test/npmstub](../../test/npmstub/) in the test process (`remote_env_test.go` builds the repositories).
 
+## Signatures (signatures.md R-SIG-028)
+
+| What | Where |
+|---|---|
+| The routes `npm.keys.get` (`-/npm/v1/keys`) and `npm.attestations.get` (`-/npm/v1/attestations/<name>@<version>`), `Metadata` of every class; no longer deferred endpoints | [routes.go](../../internal/formats/npm/routes.go), [handlers_signatures.go](../../internal/formats/npm/handlers_signatures.go) |
+| Keys: a remote's upstream document through the engine (404 is no keys), a local repository none, a virtual one the union by `keyid` of its remote members | `handleKeys`, `remoteKeys`, `unionKeys` |
+| Attestations: a remote's upstream document through the engine (the canonical path is the endpoint's, Q-SIG-51), a local version's bundle when `Host.Signatures().PublicProvenance` vouches for it, a virtual repository's first member in resolution order | `handleAttestations`, `localAttestations`, [virtual.go](../../internal/formats/npm/virtual.go) `LocalDocument` |
+| The remote adapter stores both documents, checked and recorded in no row | [remote.go](../../internal/formats/npm/remote.go) `UpstreamRequest`, `PrepareFill`, `OnFill`, `Rewrite` |
+| `dist.attestations.url` onto the serving registry; `document.RenderVersion` 2 | [remote/rewrite.go](../../internal/formats/npm/remote/rewrite.go) `attestationsAt` |
+| The background fetch: a fill of a package document queues `keys` (a refresh, once a day); a remote tarball's fill queues `<name>@<version>`, whose job asks for the attestations only when the stored entry names them | [remote.go](../../internal/formats/npm/remote.go) `OnFill`, [hooks.go](../../internal/formats/npm/hooks.go) `commitFill`, `FetchSignatures` |
+
+A local document names no `dist.attestations` in stage 1 (Q-SIG-103). Tests: unit
+[handlers_signatures_test.go](../../internal/formats/npm/handlers_signatures_test.go), the kit's content cases of both routes; integration
+`npm` [signatures_test.go](../../test/integration/npm/signatures_test.go) with the stub's keys and attestations
+([test/npmstub/signatures.go](../../test/npmstub/signatures.go)).
+
 ## Security audit
 
 `POST -/npm/v1/security/advisories/bulk` (R-NPM-038; decisions Q-NPM-61 to Q-NPM-65). [handlers_audit.go](../../internal/formats/npm/handlers_audit.go)

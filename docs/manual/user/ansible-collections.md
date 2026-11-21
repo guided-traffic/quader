@@ -100,6 +100,24 @@ The collection's `galaxy.yml` names the namespace, name and version, so the comm
 
 The web interface shows the import tasks of a local repository on its **Import tasks** tab, and the version with the Ansible versions it needs, its dependencies, licenses and tags on the page of the version.
 
+## Sign a collection
+
+`ansible-galaxy` checks the signatures of a version with `--keyring` against `MANIFEST.json`, but has no command to upload one. Sign the
+`MANIFEST.json` of the archive you published and post the signature to the version, for example from your CI job:
+
+```shell
+tar -xzf acme-tools-1.0.0.tar.gz MANIFEST.json
+gpg --detach-sign --armor --output MANIFEST.json.asc MANIFEST.json
+jq -n --rawfile s MANIFEST.json.asc '{signature: $s}' | curl -fsS -X POST -H "Authorization: Bearer ${QUADER_TOKEN}" \
+  -H 'Content-Type: application/json' --data @- \
+  https://quader.example.com/api/v1/projects/web/repositories/ansible-local/ansible/collections/acme.tools/versions/1.0.0/signatures
+```
+
+You need the permission **Deploy** on the repository. Quader checks that the signature is one OpenPGP signature that names its key's
+fingerprint and that it was made over this version's `MANIFEST.json` (otherwise `422 signature_invalid`), and serves it in `signatures[]` of
+the version, where `ansible-galaxy collection install --keyring` and `collection verify` find it. A version takes up to 16 signatures; a new
+signature of the same key replaces the old one; `DELETE …/signatures/<fingerprint>` removes one.
+
 ## Read the documentation of a collection
 
 The page of a collection version has the tabs **Documentation** and **Contents** when Quader holds documentation for it:

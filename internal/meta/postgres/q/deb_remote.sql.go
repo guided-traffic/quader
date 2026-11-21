@@ -8,6 +8,8 @@ package q
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const debRemoteClearVerifiedBy = `-- name: DebRemoteClearVerifiedBy :many
@@ -38,6 +40,56 @@ func (q *Queries) DebRemoteClearVerifiedBy(ctx context.Context, arg DebRemoteCle
 	for rows.Next() {
 		var i DebRemoteClearVerifiedByRow
 		if err := rows.Scan(&i.Dir, &i.Document); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const debRemoteCovering = `-- name: DebRemoteCovering :many
+SELECT DISTINCT r.dir, r.document, r.sha256, r.release_date, COALESCE(r.verified_by, '')::text AS verified_by
+  FROM deb_remote_entries e
+  JOIN deb_remote_releases r ON r.repo_id = e.repo_id AND r.dir = e.dir AND r.document <> 'absent'
+ WHERE e.repo_id = $1::bigint AND e.path = $2::text AND e.sha256 = $3::bytea
+ ORDER BY r.dir, r.document
+`
+
+type DebRemoteCoveringParams struct {
+	RepoID int64
+	Path   string
+	Sha256 []byte
+}
+
+type DebRemoteCoveringRow struct {
+	Dir         string
+	Document    string
+	Sha256      []byte
+	ReleaseDate pgtype.Timestamptz
+	VerifiedBy  string
+}
+
+// The stored release documents whose parsed indexes list a file at the path with the digest (signatures.md R-SIG-030): the releases
+// that cover the package, with their signer as the fill's verification recorded it.
+func (q *Queries) DebRemoteCovering(ctx context.Context, arg DebRemoteCoveringParams) ([]DebRemoteCoveringRow, error) {
+	rows, err := q.db.Query(ctx, debRemoteCovering, arg.RepoID, arg.Path, arg.Sha256)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DebRemoteCoveringRow{}
+	for rows.Next() {
+		var i DebRemoteCoveringRow
+		if err := rows.Scan(
+			&i.Dir,
+			&i.Document,
+			&i.Sha256,
+			&i.ReleaseDate,
+			&i.VerifiedBy,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

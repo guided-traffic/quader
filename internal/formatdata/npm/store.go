@@ -47,6 +47,23 @@ type Options struct {
 	// nothing else; the actor of the request completes the event. nil keeps what the
 	// format passed.
 	Actor func(ctx context.Context) audit.Actor
+	// Signatures queues the background fetch of a remote's signatures (signatures.md R-SIG-026); nil queues nothing.
+	Signatures SignatureFetchQueue
+}
+
+// SignatureFetchQueue is the queue of the background fetch of a remote's signatures; *fetch.Queue of internal/signatures/fetch
+// implements it.
+type SignatureFetchQueue interface {
+	Enqueue(ctx context.Context, tx meta.Tx, repoID int64, format, target string, subject [32]byte, refresh bool) error
+}
+
+// EnqueueSignatureFetch queues the background fetch of a remote's signatures (R-SIG-026) through the queue the composition root
+// wired; a replica without it queues nothing.
+func (s *Store) EnqueueSignatureFetch(ctx context.Context, tx meta.Tx, repoID int64, target string, subject [32]byte, refresh bool) error {
+	if s.o.Signatures == nil {
+		return nil
+	}
+	return s.o.Signatures.Enqueue(ctx, tx, repoID, "npm", target, subject, refresh)
 }
 
 // Store implements the data port of the npm format.

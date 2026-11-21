@@ -2,6 +2,7 @@ package oci
 
 import (
 	"context"
+	"encoding/hex"
 
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -10,14 +11,17 @@ import (
 // The removal side of the manifest rows (R-OCI-018): the row goes with the manifest's item, and the deletion of a manifest or a blob asks
 // which manifests still name its digest.
 
-// RemoveManifest removes a manifest row and, with it, the references it names.
+// RemoveManifest removes a manifest row and, with it, the references it names, and the state of the background fetch of its
+// signatures (signatures.md R-SIG-026, Q-SIG-106; its target is "<name>@sha256:<hex>", the format's SignatureFetchTarget).
 func (*Store) RemoveManifest(ctx context.Context, tx meta.Tx, repoID int64, name string, digest [32]byte) error {
 	qs, err := txQueries(tx)
 	if err != nil {
 		return err
 	}
-	_, err = qs.OCIDeleteManifest(ctx, q.OCIDeleteManifestParams{RepoID: repoID, Name: name, Digest: digest[:]})
-	return err
+	if _, err := qs.OCIDeleteManifest(ctx, q.OCIDeleteManifestParams{RepoID: repoID, Name: name, Digest: digest[:]}); err != nil {
+		return err
+	}
+	return qs.SignatureFetchForget(ctx, q.SignatureFetchForgetParams{RepoID: repoID, Target: name + "@sha256:" + hex.EncodeToString(digest[:])})
 }
 
 // ReferencedBy lists the manifests of the name that name target, reading in the transaction when there is one.

@@ -194,15 +194,25 @@ func tagMetadata(tv rows.TagView) map[string]any {
 	}
 	children := tv.Children // in platform order, as the statement read them
 	platforms := make([]map[string]any, 0, len(children))
+	var attestations []map[string]any
 	for _, c := range children {
 		p := map[string]any{"platform": c.Platform, "digest": "sha256:" + hex.EncodeToString(c.Digest[:]), "stored": c.Stored}
 		if c.Stored {
 			// A platform the repository does not hold has no media type or size it could state (Q-OCI-221).
 			p["mediaType"], p["size"] = c.MediaType, c.ContentSize
 		}
+		if c.Platform == rows.AttestationPlatform {
+			// BuildKit's attestation entries are no platform: they stand at the image with its attestations (signatures.md R-SIG-024).
+			delete(p, "platform")
+			attestations = append(attestations, p)
+			continue
+		}
 		platforms = append(platforms, p)
 	}
 	md["platforms"] = platforms
+	if len(attestations) > 0 {
+		md["attestations"] = attestations
+	}
 	return md
 }
 

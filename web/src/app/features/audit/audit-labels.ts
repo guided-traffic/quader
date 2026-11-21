@@ -7,6 +7,10 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.ansible.hub.exchange_failed:Ansible Hub token exchange failed`;
     case 'ansible.import_task.failed':
       return $localize`:@@audit.action.ansible.import_task.failed:Ansible collection import failed`;
+    case 'ansible.signature.added':
+      return $localize`:@@audit.action.ansible.signature.added:Ansible collection signature added`;
+    case 'ansible.signature.removed':
+      return $localize`:@@audit.action.ansible.signature.removed:Ansible collection signature removed`;
     case 'ansible.tombstone.cleared':
       return $localize`:@@audit.action.ansible.tombstone.cleared:Ansible tombstone cleared`;
     case 'ansible.version.deleted':

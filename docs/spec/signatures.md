@@ -2,8 +2,12 @@
 
 Status: stage 1 is in work. Built (package 1 of 4): the format contract's declaration and detector of every format, kit check 18, the
 store of signature objects, signatures, attachments and origins with the commit hook and the fill hook that record them, and OCI's
-attachment tags without a version row ([developer/signatures.md](../developer/signatures.md)). Not built: the read, the integrity check,
-the trust step and its anchors, the job, the API, the screens, the formats' wire behaviour. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
+attachment tags without a version row ([developer/signatures.md](../developer/signatures.md)). Built (package 3 of 4), the formats' wire
+behaviour of R-SIG-023 to R-SIG-033: an OCI attachment follows its image on delete and eviction and stays out of the image scanning and
+of a mirror's versions; the background fetch of a remote's signatures (job `signature-fetch`) and the mirror's; npm's keys and
+attestations endpoints of every class; the signatures a client posts for a local Ansible Galaxy version; Debian's coverage port; the kit's
+case that a signature follows its subject. Not built: the read, the integrity check, the trust step and its anchors, the job
+`signature-verify`, the API of R-SIG-034 but Ansible's operation, the screens. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
 each original signature with its verdict, decides trust against trust anchors of the installation and, where the administrator allows it,
 of a project, shows the result at the artifact, alarms on an invalid signature, and serves signatures to every client the way its
 protocol expects. It blocks nothing. Stage 2, Quader signs, is specified in the section
@@ -954,7 +958,10 @@ UI they appear in no tag or version list and in no count, but at the image.
 
 - **At the image:** the version page of a tag shows the section **Signatures** with the badge of R-SIG-009 and every attachment of the
   manifest the tag points at (and, for an index, of each platform's manifest under its platform), and a section **Attestations and SBOMs**.
-  BuildKit's attestation entries leave the version's list of platforms (today `unknown/unknown` rows) and stand there.
+  BuildKit's attestation entries leave the version's list of platforms (today `unknown/unknown` rows) and stand there. Built of this: the
+  version's data lists them under `attestations` and no longer under `platforms` ([view.go](../../internal/formats/oci/view.go)); the image
+  scanning's selection leaves out a referrer and a manifest that is the object of a signature attached in its repository
+  ([Q-SIG-104](#q-sig-104--the-image-scanning-leaves-out-what-is-a-signature-in-its-repository)). The screens are package 4's.
 
 Acceptance criteria:
 
@@ -969,26 +976,33 @@ Priority: **P1** · Covers: BEYOND-016
 The owner's reading ([Q-SIG-16](#q-sig-16--the-eight-readings-of-the-request) r6): the signature follows its image on delete, cleanup,
 copy and mirror.
 
-- **Delete** (R-OCI-018): removing a manifest removes, besides its referrers (as today), the attachment tags of its digest of the same name
-  (`sha256-<hex>`, `.sig`, `.att`, `.sbom`) and the manifests those tags point at unless another tag or manifest of the name references
-  them, in the hook's transaction and with the same refusals; deleting only a tag of the image leaves the image and its attachments.
+- **Delete** (R-OCI-018, built: [hooks_remove.go](../../internal/formats/oci/hooks_remove.go) `attachmentsOf`): removing a manifest removes,
+  besides its referrers (as today), the attachment tags of its digest of the same name (`sha256-<hex>`, `.sig`, `.att`, `.sbom`) and the
+  manifests those tags point at unless another tag or manifest of the name references them, in the hook's transaction and with the same
+  refusals; deleting only a tag of the image leaves the image and its attachments.
 - **Trash:** an image that goes to the trash takes its attachment tags with it (the cascade's reason, Q-OCI-24); a restore from the trash
-  brings them back.
+  brings them back. Not built: the trash can does not exist yet (R-STOR-022), and the hook keeps every row and cascades nothing on the
+  reason `trash`, as it does for an image's own tags.
 - **The sweep** of unreferenced blobs and **untagged manifests:** a referrer stays while its subject stays (unchanged); attachment tags are
   tags and keep their manifests.
 - **Eviction of a remote's cache** ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-045): evicting a manifest evicts its
-  attachments.
+  attachments. Built: the removal of a remote's manifest item takes the items of its stored referrers and of the manifests its attachment
+  tag documents hold; the tag documents are cache entries and expire by their period
+  ([Q-SIG-101](#q-sig-101--evicting-a-remotes-manifest-takes-the-items-of-its-attachments)).
 - **Retention and copy** (R-STOR-039 and R-STOR-019, not built): the unit of an image is the image with its attachments; a retention run
   never removes an attachment of an image it keeps and removes the attachments with the image; a copy or a promotion of an image takes its
   attachments. The page that builds them adds the cases of this rule.
-- **Mirror** ([formats/oci.md](formats/oci.md) R-OCI-026): the plan of each kept top-level manifest asks for its signatures as the
-  background fetch does (R-SIG-026) and stores what it finds; "Referrers are not mirrored" is superseded.
+- **Mirror** ([formats/oci.md](formats/oci.md) R-OCI-026, built: [mirror_plan.go](../../internal/formats/oci/mirror_plan.go)): the plan of each
+  kept top-level manifest asks for its signatures as the background fetch does (R-SIG-026) and stores what it finds; "Referrers are not
+  mirrored" is superseded. An attachment tag of the upstream's list is no version of the plan
+  ([Q-SIG-99](#q-sig-99--a-mirror-asks-for-the-signatures-of-every-kept-tag-in-every-pass)).
 
 Acceptance criteria:
 
-- Integration (area `signatures`, `TestR_SIG_025_…`, about 3 s): deleting `app@<digest>` removes its referrer, its referrers tag, its
-  `.sig` tag and their manifests; a `.sig` manifest that a second tag also names stays; a trashed image restored from the trash has its
-  attachments again. Unit (`internal/formats/oci`, milliseconds): the mirror plan of a tag names its signature requests.
+- Integration (area `ocilocal`, `TestR_SIG_025_…`, about 4 s): deleting `app@<digest>` removes its referrer, its `.sig` tag and their
+  manifests and their attachments; a `.sig` manifest that a second tag also names stays. The trash's case waits for the trash can.
+  Unit (`internal/formats/oci`, milliseconds): the mirror plan of a tag names its signature requests; the kit holds that every OCI
+  signature case follows its image (`SignatureCase.RemoveSubject`).
 
 ### R-SIG-026 · Remote repositories: Quader fetches the signatures itself
 Priority: **P1** · Covers: BEYOND-015
@@ -1009,6 +1023,10 @@ signatures along.
 - **Refresh:** a top-level manifest's signatures are asked for again when a client's revalidation of its tag finds the tag unchanged and the
   last fetch is older than `signatures.remote.refresh_after` (default 24 h), so a signature added upstream after the image was cached
   arrives within a day of use.
+- **Built** ([signatures_fetch.go](../../internal/formats/oci/signatures_fetch.go), [npm](../../internal/formats/npm/handlers_signatures.go),
+  [internal/signatures/fetch](../../internal/signatures/fetch/fetch.go)): the format's data port queues the job `signature-fetch` in the
+  transaction that stored the manifest or the tarball; the worker runs it with the upstream of the repository for one run
+  ([Q-SIG-97](#q-sig-97--the-background-fetch-is-a-job-of-the-worker-with-a-state-row-per-target)).
 - **Through the engine** as background requests (`proxy.PriorityBackground`): the token handshake, the circuit, the fetch slots, the egress
   rules apply; the fetched manifests and documents are stored like any (R-OCI-022), and the commit hook detects them (R-SIG-011). It is
   system work: recorded per repository under `system` and charged to no caller's budget and no ceiling
@@ -1018,6 +1036,9 @@ signatures along.
   are stored and detected without a request more.
 - **A repository's detail setting** `signatures.fetch` (remote repositories, default `true`) switches the background fetch off for an
   upstream whose limits are tight; it is in the closed section **Signatures** of the repository's settings, never in the creation form.
+  The job reads it from the repository document; the member `signatures` of the document, which accepts it, is R-SIG-040's and built with
+  it, so until then the repository API refuses the member and every remote fetches
+  ([Q-SIG-108](#q-sig-108--the-fetch-switch-waits-for-the-member-of-r-sig-040-and-the-manual-promises-none)).
 - **What it costs against Docker Hub** (read 2026-11-21 on [Docker's page on pulls](https://docs.docker.com/docker-hub/usage/pulls/)):
   "Using GET emulates a real pull and counts towards the limit. Using HEAD won't"; the limits are 100 pulls per six hours per IPv4 address or
   IPv6 /64 without an account and 200 with a personal account. The `HEAD` requests count nothing; a `GET` of a signature manifest counts
@@ -1027,11 +1048,12 @@ signatures along.
 
 Acceptance criteria:
 
-- Integration (area `signatures`, `TestR_SIG_026_…`, about 4 s, the OCI stub of R-OCI-035 with a referrers API and one without): a pull of
-  a signed image through `docker-hub` stores the image's Notation referrer and its `.sig` signature without a client asking, and the badge
-  reads its state after the job; against the stub without the API the referrers tag is asked by `HEAD` and the `.sig` found; the stub
-  records `HEAD` requests for absent tags and no `GET` for them; with `signatures.fetch: false` nothing is asked. An npm tarball fetched
-  through `npm-remote` makes one request of the attestations and stores them.
+- Integration (area `ociremote`, `TestR_SIG_026_…`, about 9 s with a worker replica, the OCI stub of R-OCI-035 with a referrers API and
+  one without): a pull of a signed image through a remote stores the image's referrers and its `.sig` signature without a client asking;
+  against the stub without the API the referrers tag is asked by `HEAD` and the `.sig` found; the stub records `HEAD` requests for absent
+  tags and no `GET` for them; with `signatures.fetch: false` nothing is asked. The badge's state after the job is package 2's. Unit
+  (`internal/formats/oci`, `internal/formats/npm`, `internal/signatures/fetch`, milliseconds): the requests of a fetch, the bound of four
+  manifests, the queueing of a fill, an npm version's attestations only when its entry names them, the budget per hour.
 
 ### R-SIG-027 · OCI virtual repositories
 Priority: **P1** · Covers: BEYOND-015
@@ -1043,7 +1065,9 @@ Priority: **P1** · Covers: BEYOND-015
 - The background fetch runs at the remote member that stored the manifest.
 
 Acceptance criteria: integration (area `ocivirtual`, about 2 s): through `docker-all`, an image of `docker-hub` whose signature `docker-local`
-holds as a referrer of the same digest lists both members' attachments in its signatures answer.
+holds as a referrer of the same digest lists both members' attachments in its signatures answer. Built of this: nothing new on the wire
+(the union of R-OCI-027 holds, and a remote member's fill queues its own fetch); the signatures answer is package 2's API, and the case is
+written with it.
 
 ### R-SIG-028 · npm: registry signatures, the keys endpoint, provenance and the attestations endpoint
 Priority: **P1** · Covers: BEYOND-021, PKG-NPM-024
@@ -1091,6 +1115,11 @@ carry the tarball's SHA-512.
 - **Shown:** the registry signature as **Origin confirmed by registry** with the key's ID and owner (`registry.npmjs.org` under the
   shipped `npmjs` anchor); the provenance as the badge's evidence with its builder, source repository, ref and workflow from the
   certificate.
+- **Built** ([handlers_signatures.go](../../internal/formats/npm/handlers_signatures.go)): the two routes (`npm.keys.get`,
+  `npm.attestations.get`, `Metadata`, every class) with the answers above; the remote stores both documents through the engine and the
+  fill of a package document queues the fetch of the keys once a day; the rewrite of `dist.attestations.url`
+  ([rewrite.go](../../internal/formats/npm/remote/rewrite.go)). A local version's document carries no `dist.attestations` in stage 1
+  ([Q-SIG-103](#q-sig-103--an-npm-local-document-carries-no-distattestations-in-stage-1)).
 - **Through a virtual repository with a remote member, a local package reads as missing a registry signature** to `npm audit signatures`
   until stage 2 signs local packages, and in an installation without a signing identity after it
   ([H-1176](#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature)).
@@ -1099,12 +1128,13 @@ Acceptance criteria:
 
 - Unit (`internal/formats/npm`, milliseconds): `Detect` over a stored document with `dist.signatures` and over a publish with a bundle; the
   keys answers of the three classes; the rewritten `dist.attestations.url`.
-- Integration (area `signatures`, `TestR_SIG_028_…`, about 4 s, the npm stub signing with a test key that the test adds as a public-key
-  anchor): through `npm-remote` the document's `dist.signatures` equals the stub's bytes, the keys endpoint answers the stub's keys, the
-  attestations endpoint the stub's; through `npm-all` the keys are the union; a local publish with a bundle of the test's public-root
-  stand-in serves `dist.attestations` and the bundle, one of the company's Sigstore serves neither and shows `internal` in the UI.
+- Integration (area `npm`, `TestR_SIG_028_…`, about 3 s, the npm stub serving keys and a version's attestations): through `npm-remote` the
+  keys endpoint answers the stub's keys and the attestations endpoint the stub's, each stored once for two requests; through `npm-all`
+  the keys are the union and a local member adds none. Not built: a stub that signs its documents and a local bundle's case under the
+  public root, which need the trust step of package 2.
 - End to end (the existing set `e2e (npm)`, one case, about 5 s, bytes): `npm audit signatures` passes for a package of the npm test upstream
-  installed through `npm-remote`, with the test upstream's key served at `-/npm/v1/keys`.
+  installed through `npm-remote`, with the test upstream's key served at `-/npm/v1/keys`. Not built: the npm test upstream signs no
+  document yet; the case is added with it.
 
 ### R-SIG-029 · NuGet: the signature inside the package
 Priority: **P1** · Covers: quader-only
@@ -1116,7 +1146,8 @@ Priority: **P1** · Covers: quader-only
 - **Trust:** nuget.org's countersignature under the shipped `nuget-org` anchor at the time its timestamp proves under
   `nuget-org-timestamping` (R-SIG-017); an author's signature under a public code-signing CA is **Signed · signer not trusted** until an
   administrator adds the CA (d4); one of the company CA under its anchor.
-- **No `RepositorySignatures` resource** ([Q-SIG-36](#q-sig-36--nuget-lists-no-repository-signatures-resource)): the resource announces the
+- **No `RepositorySignatures` resource** (verified: the service index lists none, `TestR_SIG_029_…` of `internal/formats/nuget`;
+  [Q-SIG-36](#q-sig-36--nuget-lists-no-repository-signatures-resource)): the resource announces the
   certificates a source signs with itself ([NuGet's API reference](https://learn.microsoft.com/en-us/nuget/api/repository-signatures-resource));
   Quader signs no NuGet package (d10), and a pass-through of nuget.org's resource would bind packages of a virtual repository to one member's
   certificates. A client checks author and nuget.org signatures through its own trust and `trustedSigners`, as against Quader today.
@@ -1140,7 +1171,9 @@ Priority: **P1** · Covers: quader-only
   ([Q-SIG-31](#q-sig-31--debians-upstream-keys-stay-the-remotes-condition-and-are-no-anchor)): a writer of the repository's settings does not
   decide what reads as trusted elsewhere.
 - **Coverage:** a package is covered by a release when the release names an index file that names the package's SHA-256; the format answers
-  it through its data port (`Covering`, the rows of R-DEB-023). The details of a `.deb` say "apt checks the signature of the index, not of the
+  it through its data port (`Covering`, the rows of R-DEB-023). Built: the optional `formats.SignatureCoverage` of the format answers it for
+  a remote from the parsed rows by the file's path and SHA-256 ([covering.go](../../internal/formats/deb/covering.go),
+  [Q-SIG-105](#q-sig-105--debians-coverage-is-an-optional-interface-of-the-format-over-the-remotes-parsed-rows)). The details of a `.deb` say "apt checks the signature of the index, not of the
   package", and list each covering release with its suite, its `Date`, its signer and its trust (Debian's archive keys under the shipped
   anchors read **Verified · public**). No badge (R-SIG-009).
 - **`verified_by`** of `deb_remote_releases` (today in no answer) is the release's signer in the signatures answer (R-SIG-034).
@@ -1163,20 +1196,31 @@ Priority: **P1** · Covers: quader-only
 - **Checked** when the archive is stored: the signature over `MANIFEST.json`, then `MANIFEST.json`'s SHA-256 of `FILES.json` and
   `FILES.json`'s SHA-256 of every file against the archive's entries, as `ansible-galaxy collection verify` does; a mismatch anywhere is
   `invalid` (`digest_mismatch`). Before the archive is stored the signature waits `subject_missing`.
-- **A local version** accepts detached signatures through the management API (R-SIG-034): `POST
-  /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{namespace}/{name}/versions/{version}/signatures` with
-  `{"signature": "<armored OpenPGP signature of MANIFEST.json>"}`, at most 16 per version, decided as a publish of the version (`deploy` on
-  its path and its ownership); it is checked before it is stored (an invalid one answers 422 `signature_invalid`; one whose key no anchor
-  has is stored as `no_key`), served in `signatures[]` as `{"signature", "pubkey_fingerprint", "signing_service": null}`, and removed with
-  `DELETE …/signatures/{fingerprint}` (`delete`). `ansible-galaxy` has no command to upload a signature; a CI job uses its token on this
-  operation. Q-ANS-14 is superseded in part.
+- **A local version** accepts detached signatures through the management API (R-SIG-034, built:
+  [ansible_signatures.go](../../internal/api/v1/ansible_signatures.go), [signatures_store.go](../../internal/formatdata/ansible/signatures_store.go)):
+  `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures` with
+  `{"signature": "<armored OpenPGP signature of MANIFEST.json>"}` (`collection` is `<namespace>.<name>`, as the tombstones' operation names
+  it), at most 16 per version (409 `signature_limit_reached`), decided as a `deploy` on the collection; it is checked before it is stored as
+  far as no key is needed: one signature packet within the bounds, an issuer fingerprint, and the prefix of the hash it signs against the
+  version's `MANIFEST.json` (an invalid one answers 422 `signature_invalid`); the check with an anchor's key is the job's, and one whose key no
+  anchor has reads `no_key` ([Q-SIG-102](#q-sig-102--a-posted-ansible-signature-is-checked-without-a-key-and-recorded-for-the-job)). It is served
+  in `signatures[]` as `{"signature", "pubkey_fingerprint", "signing_service": null}`, a second signature of the same key replaces the first,
+  and it is removed with `DELETE …/signatures/{fingerprint}` (`delete`). Each writes an audit event in its transaction:
+  `ansible.signature.added` (`name`, `version`, `fingerprint`, `replaced`) and `ansible.signature.removed` (`name`, `version`,
+  `fingerprint`), never the signature itself ([Q-SIG-107](#q-sig-107--posting-and-removing-an-ansible-signature-are-audit-events-of-the-format)).
+  `ansible-galaxy` has no command to upload a signature; a CI job uses its token on this operation. Q-ANS-14 is superseded in part.
 - A virtual version document carries the signatures of the member whose document it serves (R-ANS-013, unchanged).
 
 Acceptance criteria:
 
 - Integration (area `signatures`, `TestR_SIG_031_…`, about 3 s, the Galaxy stub serving a collection signed with key A): through `galaxy` the
   version's signature reads `internal` with A as an anchor after the archive is stored, and `invalid` for an archive whose `FILES.json`
-  names another digest; a signature posted to `ansible-local` is served in the version document and listed in the signatures answer.
+  names another digest (package 2's check).
+- Integration (area `ansiblelocal`, `TestR_SIG_031_ASignaturePostedForALocalVersionIsServed`, about 2 s, a release key made by the test): a
+  signature posted to `ansible-local` is served in the version document with its fingerprint and recorded with the source `upload`; one of
+  other content answers 422; a reader may not post; the removal empties `signatures[]`; the post and the removal each wrote their audit
+  event with the fingerprint. Unit (`internal/formats/untrusted`, milliseconds):
+  the facts of a real signature read without a key and its hash prefix against other content.
 
 ### R-SIG-032 · Generic repositories: a file beside the file
 Priority: **P1** · Covers: quader-only
@@ -1207,8 +1251,11 @@ Priority: **P1** · Covers: quader-only
   document, a generic sibling file. The new npm routes are `Metadata` routes and the same for every caller, so it caches them as `shared`.
 - It verifies nothing and shows nothing: it has no UI. A block or an anchor change does not reach it, because it serves bytes, not verdicts.
 
+Built of this: the two npm routes are `Metadata` routes of every class, so the main installation marks their answers `shared` for a full
+reader (R-BAS-013); the kit's check 12 holds that they are the same for every such caller.
+
 Acceptance criteria: integration (area `bastion`, about 2 s): `-/npm/v1/keys` and an attestation document of `npm-remote` are served by the
-Bastion and cached once for two callers.
+Bastion and cached once for two callers. Not built: the case needs the npm stub's signature documents in the Bastion's area.
 
 ## API and screens
 
@@ -1345,8 +1392,12 @@ Priority: **P1** · Covers: quader-only
 | `signature.signer.unblocked` | T | — | a block was lifted | `id`, `kind`, `value` |
 | `signature.trust_root.updated` | T | — | the task stored a newer public root | `tufVersion`, `targets` |
 | `signature.trust_root.failed` | A | — | the task failed, at most once a day | `code`, `detail` |
+| `ansible.signature.added` | T | — | a signature was posted for a local Ansible version (R-SIG-031, built) | `name`, `version`, `fingerprint`, `replaced` |
+| `ansible.signature.removed` | T | — | the signature of a key was removed from a local Ansible version (R-SIG-031, built) | `name`, `version`, `fingerprint` |
 
-The actor of the job's and the task's events is `system:signatures`; of the Helm anchors `system:configuration`.
+The actor of the job's and the task's events is `system:signatures`; of the Helm anchors `system:configuration`; of the two Ansible events
+the caller of the operation. The two Ansible events are the format's (`internal/audit/events_ansible.go`) and built with stage 1's package 3
+([Q-SIG-107](#q-sig-107--posting-and-removing-an-ansible-signature-are-audit-events-of-the-format)); the others are package 2's.
 
 **Metrics** ([operations-and-observability.md](operations-and-observability.md) R-OPS-008):
 
@@ -1446,7 +1497,7 @@ bytes to kilobytes. Every one of the owner's three ways is exercised by a real s
 |---|---|---|---|---|
 | Unit | every scheme's read and check; the trust step, the scopes, the time proofs, the badge rule; the anchors' checks; the bounds; the job's order; the configuration | under 5 s together (an estimate) | bytes, built by the tests | `internal/signatures/…`, `internal/config` |
 | Format contract kit | check 18 for every format | milliseconds per format | one signed sample per kind | `internal/formats/formattest` |
-| Integration | the flows of R-SIG-003 to R-SIG-041 against the stack, with the format stubs that exist, which gain signed samples | about 50 s for the new area `signatures` (about twenty tests of 1 to 4 s), about 2 s more in `ocivirtual` and `bastion` (estimates) | bytes to kilobytes | `test/integration/signatures` |
+| Integration | the flows of R-SIG-003 to R-SIG-041 against the stack, with the format stubs that exist, which gain signed samples | about 50 s for the new area `signatures` (about twenty tests of 1 to 4 s), about 2 s more in `ocivirtual` and `bastion` (estimates); the formats' wire behaviour of package 3 in each format's own area: `ocilocal` about 4 s, `ociremote` about 9 s, `ansiblelocal` about 2 s, `npm` about 3 s (measured on 2026-11-21) | bytes to kilobytes | `test/integration/signatures` and the format's area |
 | Chart | the three alerts | about 1 s | rendered YAML | `test/chart` |
 | End to end | one case in `e2e (npm)`: `npm audit signatures` through `npm-remote` | about 5 s, no new leg, no client image | a package of the test upstream | `test/e2e` |
 
@@ -2274,7 +2325,7 @@ while the repository accepts any anchor, a signature that any identity of the pu
 
 | Package | Builds | Waits for | Its tests |
 |---|---|---|---|
-| 1 · The gate | the member and its order (R-SIG-061); the decision (R-SIG-062); the contract's `Gate`, every format's classification, `oci_manifests.attachment`, kit check 18's and check 17's cases (R-SIG-063, R-SIG-068); the serve points and OCI's handlers (R-SIG-064); the view and the scope (R-SIG-065); the subtraction and its two columns (R-SIG-066); the fetch's state, the priority work, the wait and the held fill (R-SIG-067); one decision, one wait (R-SIG-069); the event of a refusal, the table of refusals, the metrics, the alert, the configuration (R-SIG-073, R-SIG-075, R-SIG-076) | stage 1's packages 1 (on `main`), 2 (verification and trust: the trust rows, the anchors and their snapshot, the job and its priorities) and 3 (the background fetch, which writes and works `signature_fetches`); not stage 2: the gate leaves out a signature with `identity_id` set once that column exists | unit under 2 s, the kit milliseconds per format, integration about 14 s (R-SIG-061, R-SIG-064 to R-SIG-067) |
+| 1 · The gate | the member and its order (R-SIG-061); the decision (R-SIG-062); the contract's `Gate`, every format's classification, `oci_manifests.attachment`, kit check 18's and check 17's cases (R-SIG-063, R-SIG-068); the serve points and OCI's handlers (R-SIG-064); the view and the scope (R-SIG-065); the subtraction and its two columns (R-SIG-066); the reading of stage 1's fetch state, the priority work, the wait and the held fill (R-SIG-067); one decision, one wait (R-SIG-069); the event of a refusal, the table of refusals, the metrics, the alert, the configuration (R-SIG-073, R-SIG-075, R-SIG-076) | stage 1's packages 1 (on `main`), 2 (verification and trust: the trust rows, the anchors and their snapshot, the job and its priorities) and 3 (the background fetch, which writes and works `signature_fetches`); not stage 2: the gate leaves out a signature with `identity_id` set once that column exists | unit under 2 s, the kit milliseconds per format, integration about 14 s (R-SIG-061, R-SIG-064 to R-SIG-067) |
 | 2 · Releases, previews and the API | `signature_releases` and its operations (R-SIG-070); the impact and its index (R-SIG-071); the preview (R-SIG-072); the refusals' operation and the members `refused` and `gate` (R-SIG-073); the events of a release and the Bastion's feed (R-SIG-075); backups and replicas (R-SIG-076) | package 1 | integration about 8 s (R-SIG-070 to R-SIG-073) |
 | 3 · The screens | R-SIG-074 | package 2, and stage 1's package 4 (the screens of the signatures) | web unit under a second; the renders of R-SIG-074 |
 
@@ -2561,32 +2612,43 @@ line and waits a bounded time.
 - **Pending** is a decision of R-SIG-062 where nothing passes and one of these holds: a counting signature of the view has the integrity state
   `pending`; a `valid` one has no trust row of the scope yet; a remote of the view has not completed its fetch of the subject's signatures
   (R-SIG-026) since it stored the item.
-- **The state of the fetch**, which the gate and the refresh of R-SIG-026 read. Stage 3 names the table; where a package of stage 1 keeps the
-  same state elsewhere, the package that builds this requirement moves it here:
+- **The state of the fetch** is stage 1's table `signature_fetches` (migration 00096, built with R-SIG-026,
+  [Q-SIG-106](#q-sig-106--one-table-of-fetch-state-for-both-stages-keyed-by-target-with-the-subject-beside-it)); the gate reads it and adds
+  no table of its own:
 
   ```sql
   CREATE TABLE signature_fetches (
-    repo_id        bigint  NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
-    subject_sha256 bytea   NOT NULL CHECK (octet_length(subject_sha256) = 32),
-    fetched_at     timestamptz NULL,               -- the last fetch that completed, whether it found something or nothing
-    due            boolean NOT NULL DEFAULT true,
-    asked          boolean NOT NULL DEFAULT false, -- a gated download waits for it
-    attempts       integer NOT NULL DEFAULT 0,
-    failed         boolean NOT NULL DEFAULT false, -- the fetch failed signatures.max_attempts times
-    not_before     timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (repo_id, subject_sha256)
+    repo_id        bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
+    target         text        COLLATE "C" NOT NULL,  -- OCI "<name>@sha256:<hex>", npm "<name>@<version>" or "keys"
+    format         text        NOT NULL,
+    subject_sha256 bytea       NULL,                  -- the item whose signatures the target fetches; NULL for npm's keys
+    queued_at      timestamptz NULL,                  -- set while a run is due or running
+    fetched_at     timestamptz NULL,                  -- the end of the last run that asked the upstream to the end, found or not
+    attempts       integer     NOT NULL DEFAULT 0,    -- the runs that failed since the last fetch
+    failed_at      timestamptz NULL,                  -- the job's last attempt failed
+    PRIMARY KEY (repo_id, target)
   );
-  CREATE INDEX signature_fetches_due ON signature_fetches (asked DESC, not_before) WHERE due;
+  CREATE INDEX signature_fetches_subject ON signature_fetches (repo_id, subject_sha256) WHERE subject_sha256 IS NOT NULL;
   ```
 
-  The commit hook writes a row for what R-SIG-026's table fetches (an OCI top-level manifest that a fill or a pass stored; an npm tarball
-  whose version names `dist.attestations`) while the remote's `signatures.fetch` is on; a mirror pass that fetched them writes the row
-  completed. A remote with `signatures.fetch: false` has no row, so its gate judges what clients brought: an image whose signatures no client
-  pulled reads `missing`, and the section of R-SIG-074 says so. A `failed` fetch reads `not_checked`; the refresh makes it due again.
-- **The priority work.** The gate makes the subject's pending signatures due at priority 0 with `not_before` now (R-SIG-011), sets the fetch
-  row `asked` and due now, and wakes the job `signature-verify` and the background fetch. An asked fetch is taken before every other one and
-  counts towards `signatures.remote.requests_per_hour`; while that bound is spent it waits like any. Many waiters of one subject share one
-  check and one fetch.
+  The format's data port writes a row for what R-SIG-026's table fetches (an OCI top-level manifest that a fill stored, also the fill of a
+  mirror pass, whose own fetch of the kept tag stores what it finds but does not write the row; an npm tarball whose version names
+  `dist.attestations`) in the transaction that stored it, and the job `signature-fetch` keeps it. The gate reads the rows of the
+  remote and the subject's digest (one subject can have rows under several image names): **fetched** when a row has `fetched_at`, also while
+  a refresh has queued it again; **due or running** when no row has `fetched_at` and one has `queued_at`; **failed** when no row has either
+  and one has `failed_at`, which reads `not_checked` until the next fill or refresh queues it again; **not fetched** when there is no row or
+  only a row with none of the three (the remote's `signatures.fetch` was switched off before the run), so its gate judges what clients
+  brought: an image whose signatures no client pulled reads `missing`, and the section of R-SIG-074 says so. "Fetched, nothing found" is a
+  row with `fetched_at` and no attachment of the subject's signatures. An OCI row goes with its manifest's row (the data port's
+  `RemoveManifest`), so a manifest stored again is fetched again; an npm row stays when the cache loses the tarball
+  ([H-1201](../security/artifact-signatures.md#h-1201--an-npm-versions-fetch-state-outlives-its-tarball)).
+  The retries and their pauses are the job queue's (5 attempts, its backoff), so the table carries no `not_before`.
+- **The priority work.** The gate makes the subject's pending signatures due at priority 0 with `not_before` now (R-SIG-011), raises the
+  priority of the subject's waiting `signature-fetch` job or queues one at priority 0 (its builder adds the statement that raises a waiting
+  coalesced job's priority: an enqueue of a key that waits returns the waiting job unchanged), and wakes the job `signature-verify` and the
+  background fetch; the builder also raises `signature_verdict` after a run's commit. An asked fetch counts towards
+  `signatures.remote.requests_per_hour`; while that bound is spent it waits like any. Many waiters of one subject share one check and one
+  fetch.
 - **The wait** ends at `signatures.gate.download_wait` (default 25 s) after the request arrived, the malware gate's bound and its reason
   (inside apt's 30 s, [malware-scanning.md](malware-scanning.md) Q-MAL-29), and is shared with a pending malware scan of the same request
   (R-SIG-069). The waiter learns of a decision from the signal area `signature_verdict` (the subject's digest, raised after the commit of a
@@ -2916,8 +2978,8 @@ signatures:
 - **Validation** at start, with the key named: `download_wait` from 0 s to 60 s; `max_waiting` from 1 to 65,536; `preview_limit` from 1,000
   to 10,000,000; `refusals_retention` from 1 h to 8,760 h. No chart value is needed: the keys take their defaults from the configuration, and
   the chart's rules render the alert.
-- **Backups** ([backup-and-restore.md](backup-and-restore.md) R-BAK-004): `signature_releases` is `data`; `signature_fetches` and
-  `signature_refusals` are `transient` (a fetch is asked again, a refusal is a recent fact); the repository member travels with the
+- **Backups** ([backup-and-restore.md](backup-and-restore.md) R-BAK-004): `signature_releases` is `data`; `signature_fetches` (registered by stage 1)
+  and `signature_refusals` are `transient` (a fetch is asked again, a refusal is a recent fact); the repository member travels with the
   document; the two columns of R-SIG-066 travel with their tables.
 - **Restores:** the journal re-applies a withdrawn release and a narrowing of the member (R-SIG-061); a release granted after the restore
   point is lost, which narrows.
@@ -2926,7 +2988,7 @@ signatures:
   `signature_verdict`, or by reading again once a second without Valkey. The jobs and the fetch run once in the installation, as in stage 1.
 - **What it costs:** no Deployment, image, module or chart value more; per gated download a join of the item's signatures and their trust
   rows into its statement and, for OCI and a covered item, one statement more; a row of `signature_refusals` per refused artifact and
-  repository for 30 days; a row of `signature_fetches` per fetched remote subject (some 100 bytes).
+  repository for 30 days; stage 1's row of `signature_fetches` per queued remote target (some 150 bytes) is not this stage's.
 
 Acceptance criteria:
 
@@ -4215,6 +4277,165 @@ signature over the subject's SHA-256 with an anchor of 2048 bits or more (R-SIG-
 second, weaker statement of a fact the import already decided. The development agent would revisit this if the store learns PKCS#7 for the
 `.cvd.sign` (Q-MAL-95's revisit condition) or a client of the format asks Quader for signatures.
 **Applied in the spec:** R-SIG-002; [formats/clamav.md](formats/clamav.md) R-CLAMAV-001.
+
+### Q-SIG-97 · The background fetch is a job of the worker with a state row per target
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: R-SIG-026
+says what is fetched and how much, not where it runs; "per remote and replica" bounds it; a refresh needs the time of the last fetch.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The format's data port queues the job `signature-fetch` (queue `index`, coalescing per target) in the transaction that stored the manifest or the tarball; a row of `signature_fetches` per target holds when it was queued and fetched, so a target is fetched once and again only as a refresh after `refresh_after`; the worker runs it with the upstream of one run (`Host.BackgroundUpstream`) and the format's `formats.SignatureFetcher`; a budget per remote on the worker bounds the requests per hour, and a spent budget queues the target again after the wait (chosen) | `internal/signatures/fetch`, migration 00096's `signature_fetches` (transient for backups), `RemoteCaps.Signatures` | Durable across restarts; the fill commits nothing that is lost; the engine's background rules hold; one kind for every format, found by the capability | A row per fetched target; a job per stored top-level manifest |
+| (b) A goroutine of the replica that filled | | No table, no job | Lost on a restart; runs on web replicas beside clients; no refresh state |
+| (c) The client's request waits for the fetch | | Simplest | A pull costs the upstream's latency again |
+
+**Choice:** (a). The metric `quader_signatures_remote_requests_total` of R-SIG-039 is the observer the handler takes
+(`HandlerOptions.Observe`); the package of the metrics registers it. The settings of R-SIG-040 (`signatures.remote.*`, the repository member
+`signatures.fetch`) are read with their defaults: the job reads `signatures.fetch` from the repository document; the configuration keys and
+the member's schema are the package of R-SIG-040's. **Applied in the spec:** R-SIG-026.
+
+### Q-SIG-98 · A HEAD goes through the background upstream, and "no referrers API" is a 404 or a 405
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `discover.Header` (`Head`) on the upstream of a pass and of a run, through `proxy.Get` with the method HEAD; a referrers request answered 404 or 405 is a registry without the API; at most eight layers per signature manifest, each up to `signatures.max_object_size`, and never an SBOM's (chosen) | | A HEAD costs no pull on Docker Hub; distribution answers 404, some registries 405 for a route they lack; cosign's older layout holds one signature per layer, eight bound a hostile manifest | A registry that answers 400 for the route is read as having no referrers and is not asked for its referrers tag |
+| (b) Fetch the tag documents by GET | | No new request kind | A pull counted for every image without a signature |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-026.
+
+### Q-SIG-99 · A mirror asks for the signatures of every kept tag in every pass
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The plan of each kept tag runs the fetch with the pass's upstream, every pass; an attachment tag of the upstream's list is no version of the plan; the fill of a newly stored manifest queues the job as well (chosen) | | A signature added upstream after the first pass arrives with the next pass; the pass's window and slots bound it | A pass asks one referrers request and two HEADs per kept tag; a newly stored tag's signatures are asked twice, by the plan and by the job |
+| (b) Only the job of the fill | | Fewer requests | An unchanged tag never asks again: a later signature never reaches a mirror nobody pulls from |
+
+**Choice:** (a); the development agent would revisit the doubled first request if a mirror's pass shows it in the upstream's rate limit.
+**Applied in the spec:** R-SIG-025.
+
+### Q-SIG-100 · A refresh is queued by a client's tag whose revalidation kept the document
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The handler of a tag's GET queues a refresh when the engine forwarded the request as stale and stored nothing (Cache-Status `fwd=stale` without `stored`); the row's time decides whether the job runs (chosen) | | The revalidation is once a metadata period per tag; the format needs no hook of the engine | A statement per revalidation of a tag |
+| (b) A hook of the engine on an unchanged revalidation | | Exact | A contract change of the engine for one format |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-026.
+
+### Q-SIG-101 · Evicting a remote's manifest takes the items of its attachments
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: a remote's
+attachment tags are cache entries (tag documents) with an alias item of their manifest; a referrer is an alias item of its own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The removal of a remote's manifest item (not into the trash) takes the alias items of its stored referrers and of the manifests its attachment tag documents hold; the tag documents stay until their period ends (chosen) | | The format removes what it can through the cascade it has; a tag document left is served as it was and replaced by the next fill | A tag document of an evicted image stays a period |
+| (b) Remove the tag documents too | | Complete | A format hook removes no cache entry |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-025.
+
+### Q-SIG-102 · A posted Ansible signature is checked without a key and recorded for the job
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: R-SIG-031
+says a posted signature is checked before it is stored; the key of an anchor and the OpenPGP verifier are the trust step's (package 2), and
+an OpenPGP signature cannot be matched with its content without a key.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The operation checks what needs no key: one armored signature packet within the bounds, an issuer fingerprint (the key it names, `pubkey_fingerprint`), and the left 16 bits of the hash it signs against the version's `MANIFEST.json`; it stores the signature in `ansible_version_signatures` and records it with the source `upload`, priority 0, for the job's check with an anchor's key; the path names the collection as `<namespace>.<name>` and the permission is `deploy` (`delete`) on the collection (chosen) | | A signature of other content is refused at once (one in 65,536 passes the prefix); no verifier outside `internal/signatures`; the version document renders from the format's own rows; the permission form of the API names one package value | A forged packet with the right prefix is stored and reads `invalid` after the job; the package claim of R-AUTHZ-018 is not asked again |
+| (b) Wait for the job's verdict in the request | | An invalid signature never stored | The request depends on the job and its anchors |
+| (c) No check before the job | | Simplest | A typo of the file signed is found only in the details |
+
+**Choice:** (a). A signature carries one key, so a block of several packets is refused and posted one by one. **Applied in the spec:**
+R-SIG-031; [api/openapi.yaml](../../api/openapi.yaml) `addAnsibleVersionSignature`, `removeAnsibleVersionSignature`.
+
+### Q-SIG-103 · An npm local document carries no dist.attestations in stage 1
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: R-SIG-028
+says a local version with a servable bundle carries `dist.attestations`; a local document is rendered once per revision and cached
+(R-NPM-013), and a verdict of the trust step changes no revision.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The attestations endpoint of a local repository answers the bundle the trust step vouches for (`Host.Signatures().PublicProvenance`), and the local document names no `dist.attestations` until stage 2, when Quader's own attestation joins it; a virtual repository answers the attestations of its first member in resolution order (chosen) | | No document whose cached rendition contradicts a later verdict; npm never asks an endpoint that would answer 404 | npm does not verify a local package's provenance through Quader in stage 1 |
+| (b) Render `dist.attestations` with the verdict and key the rendition by a verdict epoch | | Complete | A statement per document request on the hot path, and an epoch the trust step must raise |
+
+**Choice:** (a); revisit with stage 2's signing of local packages. **Applied in the spec:** R-SIG-028.
+
+### Q-SIG-104 · The image scanning leaves out what is a signature in its repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The selection leaves out a manifest with a subject and a manifest that is the object of a signature attached in its repository (cosign's older layout, BuildKit's attestation manifests) (chosen) | | The detector's recognition decides, as R-SIG-024 asks; one statement of the selection | A manifest selected before its attachment was recorded keeps its scan row |
+| (b) Media types alone | | No join | An older cosign signature carries an image configuration |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-024; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-033.
+
+### Q-SIG-105 · Debian's coverage is an optional interface of the format over the remote's parsed rows
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `formats.SignatureCoverage` (`Covering(ctx, data, repo, path, sha256)`), read by `CapabilitiesOf`; Debian answers for a remote from `deb_remote_entries` by the file's path and SHA-256 joined to the stored releases; a local or virtual repository covers nothing here, its details name its own key (chosen) | | The API of package 2 asks one capability for every format; the index of entries by path serves it | A package no parsed index lists has no covering release until the parse ran |
+| (b) A method of the data port the API reaches directly | | No contract change | The API would name the Debian format |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-030; [architecture.md](architecture.md) R-ARCH-008.
+
+### Q-SIG-106 · One table of fetch state for both stages, keyed by target, with the subject beside it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: stage 1's
+background fetch (R-SIG-026) keeps its state per target; stage 3's gate (R-SIG-067) had specified a table of the same name keyed by the
+subject, with `due`, `asked`, `failed` and `not_before`. Two tables of one fact drift; the gate is specified, not built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Stage 1's `signature_fetches` is the one table: keyed by repository and target (OCI `<name>@sha256:<hex>`, npm `<name>@<version>` and `keys`), with the item's digest in `subject_sha256` and an index on it for the gate; `queued_at` while due or running, `fetched_at` for the last run that asked to the end (found or not), `attempts` and `failed_at` for runs that failed, written by the job; the retry and its pause are the job queue's; a row goes with its OCI manifest's row; the gate's `asked` is a priority of the waiting job, which its builder raises (chosen) | Migration 00096; `SignatureFetchFailed`, `SignatureFetchForget`; R-SIG-067 reads it | The gate tells "due or running" (`queued_at`, no `fetched_at`) from "fetched, nothing found" (`fetched_at`, no attachment) and from "failed" (`failed_at`) without a column more; npm's keys, which belong to no item, have a row; the failure count and the failed mark the gate needs cost nothing later | One subject can have rows under several image names, so the gate reads them together; the gate's builder adds the statement that raises a waiting job's priority and the signal after a run |
+| (b) Stage 3's shape: keyed by subject, with `due`, `asked`, `not_before` | | The gate's own words | npm's keys have no subject; `not_before` and `due` repeat what the job queue keeps (its backoff, its waiting job); a fetch per image name needs the target, which this key loses |
+| (c) Two tables: the fetch's per target, the gate's per subject | | Each stage owns its table | Two writers of one fact, kept equal by hand |
+
+**Choice:** (a). **What the gate's builder adds:** the raise of a waiting `signature-fetch` job's priority (an enqueue of a key that waits
+returns the waiting job unchanged today), the signal `signature_verdict` after a run's commit, and nothing in this table. **The row's
+lifetime:** an OCI row goes with its manifest's row in the data port's `RemoveManifest`, one statement in the transaction of the removal,
+so a manifest stored again is fetched again; with its repository by the cascade and the purge of a retired well-known repository; an npm
+row stays when the cache loses its tarball, since the npm hook of that removal has no transaction of the data port
+([H-1201](../security/artifact-signatures.md#h-1201--an-npm-versions-fetch-state-outlives-its-tarball)). **Applied in the
+spec:** R-SIG-026, R-SIG-067, R-SIG-076.
+
+### Q-SIG-107 · Posting and removing an Ansible signature are audit events of the format
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: the
+operations of R-SIG-031 change what a version document serves and what the signature store holds; R-SIG-039's events are package 2's and
+name no format's write.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `ansible.signature.added` (`name`, `version`, `fingerprint`, `replaced`) and `ansible.signature.removed` (`name`, `version`, `fingerprint`), events of the Ansible format beside `ansible.version.deleted`, transactional, content category, webhooks on, not journaled, written in the transaction of the change; never the signature (chosen) | `internal/audit/events_ansible.go`, the data port's `AddSignature` and `RemoveSignature` | Who signed what, and who took a signature away, is in the audit log; the names follow the format's own events; a restore returns the rows with their snapshot, so nothing needs a replay | Two event types more in the catalog and the UI's labels |
+| (b) Generic `signature.attached` / `signature.detached` of R-SIG-039 | | One pair for every source | Package 2's events, for every detection, millions of rows on a busy remote |
+| (c) No event: `package.published` covers the version | | Nothing to add | A removed signature leaves no trace |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-031, R-SIG-039; [formats/ansible.md](formats/ansible.md) R-ANS-030.
+
+### Q-SIG-108 · The fetch switch waits for the member of R-SIG-040, and the manual promises none
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: the job
+reads `signatures.fetch` from the repository document (default `true`); the document refuses an unknown member (R-REPO-008), and the member
+`signatures` with its schema, its validation and its place in the settings is R-SIG-040's, package 2.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Stage 1's package 3 adds no member; until package 2 builds `signatures` every remote fetches, and the manual says nothing of a switch (chosen) | The user manual names the bound of 600 requests an hour instead | No half member that package 2 must reshape; the manual promises nothing an administrator cannot do | A remote with a tight upstream cannot be switched off before package 2 |
+| (b) Add `signatures: {fetch}` to the document now | | The switch works at once | A member whose schema, settings section and UI are another package's, written twice |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-026; [manual/user/container-images.md](../manual/user/container-images.md).
 
 ## What this does not cover
 

@@ -14,7 +14,9 @@ import "github.com/guided-traffic/quader/internal/backup/tables"
 // A table registered twice panics at start-up, so the registration lives here and nowhere else. This package is linked by the
 // composition root and by cmd/quader/registry.go, which `quader migrate` needs to check the migrated schema against the registry.
 func init() {
-	for _, t := range []string{"ansible_collection_versions", "ansible_tombstones", "ansible_import_tasks"} {
+	// ansible_version_signatures (00096_signature_wire, R-SIG-031) is data as well: the signatures a client posted for a version go
+	// with the version and are not made again.
+	for _, t := range []string{"ansible_collection_versions", "ansible_tombstones", "ansible_import_tasks", "ansible_version_signatures"} {
 		tables.Register(t, tables.Data, tables.Options{})
 	}
 }

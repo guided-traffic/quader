@@ -416,6 +416,8 @@ func (remoteAdapter) BeforeArtifact(_ context.Context, _ formats.Host, _ *format
 type fillManifest struct {
 	name string
 	m    *manifest.Manifest
+	// attachment says the manifest is a signature or an attestation by R-SIG-023: no image whose own signatures are fetched.
+	attachment bool
 }
 
 // fetchedMediaType is the media type a fetched manifest is read as. Neither PrepareFill nor InspectFill is told the Content-Type of
@@ -461,7 +463,7 @@ func (f *Format) readFetched(name string, data []byte) (*fillManifest, error) {
 		}
 		return nil, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, detail+".", errs.WithCause(err))
 	}
-	return &fillManifest{name: name, m: m}, nil
+	return &fillManifest{name: name, m: m, attachment: attachmentManifest(data)}, nil
 }
 
 func readAll(body io.ReaderAt, size int64) ([]byte, error) {
@@ -514,7 +516,25 @@ func (remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.FillE
 	if !ev.StoredAt.IsZero() && ev.StoredAt.After(ev.FetchedAt) {
 		return formats.FillByFetchTime, nil
 	}
-	return formats.FillByFetchTime, recordFilled(ctx, tx, ev.Packages, ev.Repo, ev.Data, fm)
+	if err := recordFilled(ctx, tx, ev.Packages, ev.Repo, ev.Data, fm); err != nil {
+		return formats.FillByFetchTime, err
+	}
+	// The manifest a tag names is a top-level manifest: its signatures are fetched in the background (signatures.md R-SIG-026). An
+	// attachment tag's manifest is a signature itself.
+	if t, err := parseTarget(ev.Path); err == nil && t.kind == dirTags && !IsAttachmentTag(t.tail) && !fm.attachment {
+		return formats.FillByFetchTime, queueSignatureFetch(ctx, tx, ev.Data, ev.Repo.ID, fm.name, fm.m.Sum, false)
+	}
+	return formats.FillByFetchTime, nil
+}
+
+// queueSignatureFetch queues the background fetch of a top-level manifest's signatures through the data port (R-SIG-026, Q-SIG-33).
+// tx nil runs a transaction of the port's own (a refresh from a request).
+func queueSignatureFetch(ctx context.Context, tx formats.Tx, data any, repoID int64, name string, sum [32]byte, refresh bool) error {
+	st, err := portOf(data)
+	if err != nil {
+		return err
+	}
+	return st.EnqueueSignatureFetch(ctx, tx, repoID, SignatureFetchTarget(name, digestText(sum)), sum, refresh)
 }
 
 // recordFilled writes the manifest row and the references of a manifest a remote fetched, and raises the revision of the image
@@ -602,5 +622,21 @@ func (f *Format) remoteCommit(ctx context.Context, tx formats.Tx, c formats.Comm
 	if !ok {
 		return nil
 	}
-	return recordFilled(ctx, tx, c.Packages, c.Repo, c.Data, fm)
+	if err := recordFilled(ctx, tx, c.Packages, c.Repo, c.Data, fm); err != nil {
+		return err
+	}
+	if fm.attachment {
+		return nil
+	}
+	// A manifest a client pulled by digest is top-level when no stored index of the name lists it: its signatures are fetched in the
+	// background (R-SIG-026, Q-SIG-33). A platform's manifest is fetched after its index, which lists it.
+	st, err := portOf(c.Data)
+	if err != nil {
+		return err
+	}
+	holders, err := st.ReferencedBy(ctx, tx, c.Repo.ID, fm.name, fm.m.Sum)
+	if err != nil || len(holders) > 0 {
+		return err
+	}
+	return st.EnqueueSignatureFetch(ctx, tx, c.Repo.ID, SignatureFetchTarget(fm.name, fm.m.Digest), fm.m.Sum, false)
 }

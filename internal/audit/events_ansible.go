@@ -9,6 +9,10 @@ package audit
 // ansible.import_task.failed is about a publish that stored nothing; repeated failures of one principal are a security-relevant sign
 // (an archive probing the reader), so it is an event of its own, written through the asynchronous buffer like the other events of a
 // refused request. ansible.hub.exchange_failed carries no token and no part of one (R-ANS-019).
+//
+// ansible.signature.added and ansible.signature.removed are the posting and the removal of a detached signature of a version through
+// the management API (signatures.md R-SIG-031, Q-SIG-107). They carry the key's fingerprint, never the signature; they are not
+// journaled, since a restore returns the signature rows with their snapshot.
 
 // Names of the Ansible events, for the producers.
 const (
@@ -16,12 +20,15 @@ const (
 	EventAnsibleTombstoneCleared  = "ansible.tombstone.cleared"
 	EventAnsibleImportTaskFailed  = "ansible.import_task.failed"
 	EventAnsibleHubExchangeFailed = "ansible.hub.exchange_failed"
+	EventAnsibleSignatureAdded    = "ansible.signature.added"
+	EventAnsibleSignatureRemoved  = "ansible.signature.removed"
 )
 
 const (
-	ansibleName    = `"name":{"type":"string","maxLength":129}`
-	ansibleVersion = `"version":{"type":"string","maxLength":128}`
-	ansibleSHA256  = `"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}`
+	ansibleName        = `"name":{"type":"string","maxLength":129}`
+	ansibleVersion     = `"version":{"type":"string","maxLength":128}`
+	ansibleSHA256      = `"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}`
+	ansibleFingerprint = `"fingerprint":{"type":"string","pattern":"^[0-9a-f]{40}$|^[0-9a-f]{64}$"}`
 )
 
 func init() {
@@ -50,5 +57,18 @@ func init() {
 		Name: EventAnsibleHubExchangeFailed, Category: CategoryRepository, Mode: Async,
 		Schema: `{"type":"object","properties":{"reason":{"type":"string","maxLength":128},"status":{"type":"integer"}},` +
 			`"required":["reason"],"additionalProperties":false}`,
+	})
+	// A client posted a detached signature for a version of a local repository; replaced is true when it took the place of the
+	// signature of the same key (R-SIG-031).
+	Register(EventType{
+		Name: EventAnsibleSignatureAdded, Category: CategoryContent, Mode: Transactional, Webhook: true,
+		Schema: `{"type":"object","properties":{` + ansibleName + `,` + ansibleVersion + `,` + ansibleFingerprint + `,"replaced":{"type":"boolean"}},` +
+			`"required":["name","version","fingerprint"],"additionalProperties":false}`,
+	})
+	// The signature of a key was removed from a version of a local repository (R-SIG-031).
+	Register(EventType{
+		Name: EventAnsibleSignatureRemoved, Category: CategoryContent, Mode: Transactional, Webhook: true,
+		Schema: `{"type":"object","properties":{` + ansibleName + `,` + ansibleVersion + `,` + ansibleFingerprint + `},` +
+			`"required":["name","version","fingerprint"],"additionalProperties":false}`,
 	})
 }

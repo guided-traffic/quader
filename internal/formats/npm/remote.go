@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/npm/name"
 	"github.com/guided-traffic/quader/internal/formats/npm/remote"
 	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
@@ -64,6 +65,9 @@ func (a remoteAdapter) target(p formats.Path) (n name.Name, document bool, err e
 // UpstreamRequest maps a path to the upstream request: the document of a package by its
 // name with %2f (R-NPM-024), a tarball by the path itself (R-REPO-043).
 func (a remoteAdapter) UpstreamRequest(ctx context.Context, rc formats.RemoteContext, p formats.Path, _ string) (*http.Request, error) {
+	if n, version, keys, ok := signaturePath(p.Path); ok {
+		return signatureUpstreamRequest(ctx, rc.Upstream, n, version, keys)
+	}
 	_, document, err := a.target(p)
 	if err != nil {
 		return nil, err
@@ -81,6 +85,9 @@ func (remoteAdapter) AcceptResponse(formats.Path, *http.Response) error { return
 // so the declaration changes nothing today; it keeps the answer with the format when
 // the list grows.
 func (a remoteAdapter) ExpectsType(p formats.Path, mediaType string) bool {
+	if _, _, _, ok := signaturePath(p.Path); ok {
+		return strings.EqualFold(mediaType, "application/json")
+	}
 	_, document, err := a.target(p)
 	if err != nil {
 		return false
@@ -100,6 +107,14 @@ func (a remoteAdapter) ExpectsType(p formats.Path, mediaType string) bool {
 // OnFill records and the URL-map rows of the tarball URLs that are not the default
 // (R-REPO-043).
 func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, p formats.Path, variant string, body io.ReaderAt, size int64) (formats.Prepared, error) {
+	if _, _, keys, ok := signaturePath(p.Path); ok {
+		// The keys and a version's attestations (R-SIG-028): checked before they are stored, recorded in no row of the format.
+		doc, err := untrusted.ReadAll(io.NewSectionReader(body, 0, size), MaxDocumentBytes)
+		if err != nil {
+			return formats.Prepared{}, err
+		}
+		return formats.Prepared{}, checkSignatureDocument(doc, keys)
+	}
 	n, document, err := a.target(p)
 	if err != nil || !document || variant != documentVariant {
 		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "npm fills package documents of variant full only.")
@@ -130,6 +145,9 @@ func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, 
 // describe one document, whichever fill commits last. Both are decided in the data port,
 // under the lock of the package's record and against what is stored at that moment.
 func (a remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.FillEvent) (formats.FillDecision, error) {
+	if _, _, _, sig := signaturePath(ev.Path.Path); sig {
+		return formats.FillByFetchTime, nil // the keys and the attestations own no row; the signature store records what they carry
+	}
 	doc, ok := ev.Prepared.Data.(*remote.Doc)
 	if !ok {
 		return formats.FillByFetchTime, errs.E(errs.Internal, errs.CodeInternal, "The fill carries no checked document.")
@@ -160,6 +178,11 @@ func (a remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.Fil
 	if res.Newer {
 		decision = formats.FillReplaceStored // the records are the newer document's: the entry follows them
 	}
+	// The registry signatures of the document are checked with the upstream's keys: the keys document is fetched in the background
+	// once per metadata period (R-SIG-026, Q-SIG-33), whether or not a client asks the keys endpoint.
+	if err := st.EnqueueSignatureFetch(ctx, tx, ev.Repo.ID, keysTarget, [32]byte{}, true); err != nil {
+		return formats.FillByFetchTime, err
+	}
 	return decision, ev.Packages.Notify(catalog.MetadataChangedArea, catalog.PackageChanged(ev.Repo.ID, doc.Name))
 }
 
@@ -167,6 +190,9 @@ func (a remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.Fil
 // belong to: every dist.tarball under its registry URL (R-NPM-025, R-REPO-043), every
 // other member unchanged (R-NPM-027).
 func (a remoteAdapter) Rewrite(_ context.Context, _ formats.RemoteContext, p formats.Path, doc []byte, links formats.LinkBuilder) ([]byte, error) {
+	if _, _, _, ok := signaturePath(p.Path); ok {
+		return doc, nil // the keys and the attestations carry no address of the upstream
+	}
 	n, _, err := a.target(p)
 	if err != nil {
 		return nil, err

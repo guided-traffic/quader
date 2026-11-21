@@ -15153,6 +15153,139 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+      - name: collection
+        in: path
+        required: true
+        description: The collection, `<namespace>.<name>`.
+        schema:
+          type: string
+          pattern: "^[a-z0-9_]{1,64}[.][a-z0-9_]{1,64}$"
+      - name: version
+        in: path
+        required: true
+        description: The version as written.
+        schema:
+          type: string
+          maxLength: 128
+    post:
+      operationId: addAnsibleVersionSignature
+      tags: [ansible]
+      summary: Add a detached signature to a version of a local Ansible Galaxy repository
+      description: |
+        Stores a detached OpenPGP signature of the version's `MANIFEST.json` (R-SIG-031, Q-SIG-37): `ansible-galaxy` has no command to
+        upload one, so a CI job posts it with its token. The signature is checked before it is stored, as far as no key is needed: it is
+        an OpenPGP signature within the bounds of untrusted content, it names the fingerprint of its key, and the hash it signs begins as
+        the hash of the version's `MANIFEST.json` does (an invalid one answers `422 signature_invalid`). The check with the key is the
+        job's: one whose key no trust anchor has reads "Signed · signer not trusted". It is served in `signatures[]` of the version
+        document as `{"signature", "pubkey_fingerprint", "signing_service": null}`; a second signature of the same key replaces the
+        first; a version takes at most 16 (`409 signature_limit_reached`). Other classes answer `405 not_applicable`. Needs `deploy` on
+        the collection.
+      x-quader-permission:
+        action: deploy
+        repository: path.repoKey
+        project: path.projectKey
+        package: path.collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnsibleSignatureInput"
+      responses:
+        "201":
+          description: The signature is stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnsibleSignature"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          description: The repository is not a local Ansible Galaxy repository (`not_applicable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+      - name: collection
+        in: path
+        required: true
+        description: The collection, `<namespace>.<name>`.
+        schema:
+          type: string
+          pattern: "^[a-z0-9_]{1,64}[.][a-z0-9_]{1,64}$"
+      - name: version
+        in: path
+        required: true
+        description: The version as written.
+        schema:
+          type: string
+          maxLength: 128
+      - name: fingerprint
+        in: path
+        required: true
+        description: The fingerprint of the signature's key, lower-case hexadecimal.
+        schema:
+          type: string
+          pattern: "^([0-9a-f]{40}|[0-9a-f]{64})$"
+    delete:
+      operationId: removeAnsibleVersionSignature
+      tags: [ansible]
+      summary: Remove a signature of a version of a local Ansible Galaxy repository
+      description: |
+        Removes the signature of a key from the version (R-SIG-031): it is no longer served in `signatures[]` and its attachment goes.
+        Other classes answer `405 not_applicable`. Needs `delete` on the collection.
+      x-quader-permission:
+        action: delete
+        repository: path.repoKey
+        project: path.projectKey
+        package: path.collection
+      responses:
+        "204":
+          description: The signature is removed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          description: The repository is not a local Ansible Galaxy repository (`not_applicable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   # <<< F0 ansible
   # >>> T-22 search
   /api/v1/search/suggestions:
@@ -25860,6 +25993,26 @@ components:
         nextCursor:
           type: [string, "null"]
           description: Opaque; `null` on the last page.
+    AnsibleSignatureInput:
+      type: object
+      additionalProperties: false
+      required: [signature]
+      properties:
+        signature:
+          type: string
+          minLength: 1
+          maxLength: 65536
+          description: The ASCII-armored detached OpenPGP signature of the version's `MANIFEST.json`.
+    AnsibleSignature:
+      type: object
+      required: [fingerprint, signature]
+      properties:
+        fingerprint:
+          type: string
+          description: The fingerprint of the key the signature names, lower-case hexadecimal.
+        signature:
+          type: string
+          description: The armored signature as it was posted.
     # <<< F0 ansible
     # >>> T-17 deb
     DebSettings:

@@ -281,6 +281,9 @@ type Capabilities struct {
 	// VersionPath gives the path of the file that holds a version's content (Q-AUTHZ-255); nil for a format whose
 	// versions have none.
 	VersionPath VersionPather
+	// SignatureCoverage answers which signed documents name a stored file (signatures.md R-SIG-030); nil for a format whose signatures
+	// cover the artifact itself.
+	SignatureCoverage SignatureCoverage
 }
 
 // VersionPather is the optional interface of a format whose versions each have one file that holds their content: npm's
@@ -322,6 +325,9 @@ func CapabilitiesOf(f Format) Capabilities {
 	if v, ok := f.(VersionPather); ok {
 		c.VersionPath = v
 	}
+	if sc, ok := f.(SignatureCoverage); ok {
+		c.SignatureCoverage = sc
+	}
 	if ra := f.Remote(); ra != nil {
 		c.Remote.Discovery, _ = ra.(Discoverer)
 		c.Remote.Fill, _ = ra.(FillInspector)
@@ -332,6 +338,7 @@ func CapabilitiesOf(f Format) Capabilities {
 		c.Remote.Exchange, _ = ra.(CredentialExchanger)
 		c.Remote.Revalidate, _ = ra.(Revalidator)
 		c.Remote.Names, _ = ra.(NameServer)
+		c.Remote.Signatures, _ = ra.(SignatureFetcher)
 	}
 	return c
 }

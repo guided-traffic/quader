@@ -114,7 +114,9 @@ func TestR_API_081_ARemoteListsATagOnceAClientFetchedItAndEveryCellIsTrue(t *tes
 			t.Errorf("a platform that is not held states a size: %v", pm)
 		}
 	}
-	if len(ps) != 4 || held != 2 {
-		t.Errorf("the details list %d platforms, %d held: want the two images and the two attestations, the images held", len(ps), held)
+	// BuildKit's attestation entries are no platforms: they stand apart as the image's attestations (signatures.md R-SIG-024).
+	as, _ := md["attestations"].([]any)
+	if len(ps) != 2 || held != 2 || len(as) != 2 {
+		t.Errorf("the details list %d platforms, %d held, %d attestations: want the two images, held, and the two attestations apart", len(ps), held, len(as))
 	}
 }

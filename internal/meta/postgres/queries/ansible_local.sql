@@ -185,3 +185,36 @@ SELECT pv.id AS version_id
   JOIN package_versions pv ON pv.package_id = pk.id AND pv.version = t.version AND pv.trashed_at IS NULL
  WHERE (p.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
  ORDER BY pv.id;
+
+-- name: AnsibleVersionSignatures :many
+-- The signatures posted for a version of a local repository, oldest first (R-SIG-031): what signatures[] of its document serves.
+SELECT fingerprint, signature
+  FROM ansible_version_signatures
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND version = sqlc.arg(version)::text
+ ORDER BY posted_at, fingerprint;
+
+-- name: AnsibleCountVersionSignatures :one
+SELECT count(*)::bigint
+  FROM ansible_version_signatures
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND version = sqlc.arg(version)::text;
+
+-- name: AnsibleLockVersion :many
+-- The row of a version, held against a removal until the transaction ends: a posted signature belongs to a version that is there.
+SELECT v.item_id, v.sha256, v.size, i.path::text AS path
+  FROM ansible_collection_versions v
+  JOIN items i ON i.id = v.item_id
+ WHERE v.repo_id = sqlc.arg(repo_id)::bigint AND v.name = sqlc.arg(name)::text AND v.version = sqlc.arg(version)::text
+   FOR SHARE OF v;
+
+-- name: AnsibleInsertVersionSignature :execrows
+-- A posted signature; one of the same key that is there already is replaced.
+INSERT INTO ansible_version_signatures (repo_id, name, version, fingerprint, signature, posted_by)
+VALUES (sqlc.arg(repo_id)::bigint, sqlc.arg(name)::text, sqlc.arg(version)::text, sqlc.arg(fingerprint)::text,
+        sqlc.arg(signature)::text, sqlc.arg(posted_by)::text)
+ON CONFLICT (repo_id, name, version, fingerprint) DO UPDATE
+   SET signature = EXCLUDED.signature, posted_by = EXCLUDED.posted_by, posted_at = now();
+
+-- name: AnsibleDeleteVersionSignature :execrows
+DELETE FROM ansible_version_signatures
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND version = sqlc.arg(version)::text
+   AND fingerprint = sqlc.arg(fingerprint)::text;

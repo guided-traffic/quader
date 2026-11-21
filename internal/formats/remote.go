@@ -337,6 +337,9 @@ type RemoteCaps struct {
 	// Names answers the shadowing check of a format without a package document from the rows of the remote's indexes (Q-DEB-37);
 	// nil for a format whose upstream has a document per package.
 	Names NameServer
+	// Signatures fetches a remote's signatures in the background (signatures.md R-SIG-026); nil for a format whose signatures come with
+	// what a client fetches anyway.
+	Signatures SignatureFetcher
 }
 
 // RemoteCapabilities returns the capabilities Register recorded for a format; the zero value for an ID that

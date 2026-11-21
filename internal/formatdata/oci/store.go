@@ -32,6 +32,14 @@ type Options struct {
 	// Actor gives the actor of the request in ctx. A hook that learns of a removal from the item store knows the principal's id
 	// and nothing else; the actor of the request completes the event. nil keeps what the hook passed.
 	Actor func(ctx context.Context) audit.Actor
+	// Signatures queues the background fetch of a remote's signatures (signatures.md R-SIG-026); nil queues nothing.
+	Signatures SignatureFetchQueue
+}
+
+// SignatureFetchQueue is the queue of the background fetch of a remote's signatures; *fetch.Queue of internal/signatures/fetch
+// implements it.
+type SignatureFetchQueue interface {
+	Enqueue(ctx context.Context, tx meta.Tx, repoID int64, format, target string, subject [32]byte, refresh bool) error
 }
 
 // Store implements the data port of the format.

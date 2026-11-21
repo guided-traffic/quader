@@ -510,6 +510,14 @@ Tests: [window_test.go](../../internal/mirror/window_test.go), [background_upstr
   replicas on the real Valkey, the circuit, the credentials of `Get`, the upstream log), `mirror_host_test.go` (the host over the real engine: the populate event, `Present`, the
   mapping of the errors, `Admits`).
 
+## Signatures in a pass (signatures.md R-SIG-025)
+
+OCI's plan asks for the signatures of each kept tag with the pass's upstream ([mirror_plan.go](../../internal/formats/oci/mirror_plan.go)),
+the code the background fetch runs. It needs a `HEAD`: the upstream of a pass and of a background run implement `discover.Header`
+([discover.go](../../internal/mirror/discover/discover.go), [mirror_host.go](../../internal/formathost/mirror_host.go) `Head`), sent through
+`proxy.Get` with the method `HEAD` ([get.go](../../internal/proxy/get.go)); a format asks with `discover.Head`, which falls back to a
+bounded `GET` for an upstream without it. An attachment tag of an image's list is no version of the plan.
+
 ## The e2e set
 
 The mirror tests are part of the sets of their formats and of the nightly HA sets ([developer/e2e.md](e2e.md#the-mirror-tests), R-REPO-059, E6b.6, Q-REPO-306). They run the engine in the process topology of the cut: three `packages` replicas that

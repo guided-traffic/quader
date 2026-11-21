@@ -73,6 +73,24 @@ type VersionRow struct {
 	CollectionInfo json.RawMessage
 	PublishedBy    string
 	PublishedAt    time.Time
+	// Signatures are the detached signatures of MANIFEST.json clients posted for the version, oldest first (signatures.md R-SIG-031).
+	Signatures []PostedSignature
+}
+
+// PostedSignature is a detached OpenPGP signature of a version's MANIFEST.json that a client posted (signatures.md R-SIG-031): the
+// fingerprint of the key it names, lower-case hexadecimal, and the armored signature as it was posted.
+type PostedSignature struct {
+	Fingerprint string
+	Signature   string
+}
+
+// SignatureInput is a posted signature as the management operation hands it to the port (R-SIG-031).
+type SignatureInput struct {
+	RepoID        int64
+	Name, Version string
+	// Signature is the armored signature as the client posted it.
+	Signature string
+	Audit     Audit
 }
 
 // Tombstone is a row of ansible_tombstones: a version that was deleted and whose number is not accepted again (R-ANS-012).

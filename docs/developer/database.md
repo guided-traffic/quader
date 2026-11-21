@@ -640,6 +640,22 @@ that lands beside it; the runner needs numbers without a gap, so the two land to
 [wellknown.md](wellknown.md)) removes its `signature_attachments`, which are content; the signatures and objects they leave are the
 store's orphans for the job of R-SIG-011, and `artifact_origins` goes with the items.
 
+## The formats' wire behaviour of the signatures (00096)
+
+[00096_signature_wire](../../internal/meta/postgres/migrations/00096_signature_wire.sql) is an expand step of stage 1's package 3
+([signatures.md](signatures.md), [spec](../spec/signatures.md) R-SIG-026, R-SIG-031, R-SIG-067, Q-SIG-106):
+
+- `signature_fetches`: the state of the background fetch of a remote's signatures, which stage 3's gate reads as well. One row per
+  repository and target (OCI `<name>@sha256:<hex>`, npm `<name>@<version>` and `keys`) with the item's digest in `subject_sha256` (indexed for
+  the gate), `queued_at` while a run is due or running, `fetched_at` for the last run that asked the upstream to the end, `attempts` and
+  `failed_at` for runs that failed. `transient` for backups; it cascades with the repository, goes with an OCI manifest's row (the OCI data
+  port's `RemoveManifest`) and is purged with a retired well-known repository.
+- `ansible_version_signatures`: the signatures a client posted for a local Ansible Galaxy version, cascading with the version row; `data`.
+- `upstream_repository_purge` is replaced again: the body of 00093 (with `signature_attachments`) and the delete of `signature_fetches`.
+
+The statements are in [signature_fetch.sql](../../internal/meta/postgres/queries/signature_fetch.sql) and
+[ansible_local.sql](../../internal/meta/postgres/queries/ansible_local.sql).
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

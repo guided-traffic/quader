@@ -11,4 +11,7 @@ func init() {
 	tables.Register("signatures", tables.Data, tables.Options{})
 	tables.Register("signature_attachments", tables.Data, tables.Options{})
 	tables.Register("artifact_origins", tables.Data, tables.Options{})
+	// The state of the background fetch of a remote's signatures (00096_signature_wire, R-SIG-026) is transient: after a restore the
+	// next fill or refresh of a target queues its fetch again, which costs an upstream request and no data.
+	tables.Register("signature_fetches", tables.Transient, tables.Options{})
 }

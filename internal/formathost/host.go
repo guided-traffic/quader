@@ -103,6 +103,9 @@ type Options struct {
 	// Markup is the renderer and sanitizer behind Host.Markup (ADR-196); the composition root builds it over internal/packages/readme.
 	// nil answers formats.NoMarkup, a replica that has not wired it.
 	Markup formats.Markup
+	// Verdicts answers what a format asks of the verdicts of signatures before it serves one (signatures.md R-SIG-028); the trust step
+	// of internal/signatures implements it. nil answers formats.NoSignatureVerdicts.
+	Verdicts formats.SignatureVerdicts
 	// Enforce applies the download policy of the vulnerability scanning to every stored item the host serves
 	// (R-VULN-015, R-VULN-016), and Repos is the snapshot reader that gives it the policy of the repository an item is
 	// read in. A host without either reads no block and refuses nothing (a replica that has not wired the scanning).

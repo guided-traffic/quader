@@ -46,4 +46,7 @@ type RemoteStore interface {
 	RecordSignatureInvalid(ctx context.Context, repoID int64, project, repoKey, dir, reason string) bool
 	// ClearVerifiedBy clears verified_by of the releases that the fingerprints verified (R-DEB-020, Q-DEB-42) and returns how many.
 	ClearVerifiedBy(ctx context.Context, tx formats.Tx, repoID int64, fingerprints []string) (int, error)
+	// Covering reads the stored release documents whose parsed indexes list the file at a path with its digest (signatures.md
+	// R-SIG-030): the releases that cover a package, in directory order. A package no parsed index lists has none.
+	Covering(ctx context.Context, repoID int64, path string, sha256 [32]byte) ([]rows.Release, error)
 }

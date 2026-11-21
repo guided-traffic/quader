@@ -10039,7 +10039,8 @@ needs no list because its last step removes the row. The development agent would
 
 **Applied in the spec:** R-REPO-067 step 5. Code: `RunUpstreamPurgeJob` ([upstream_store.go](../../internal/repository/upstream_store.go)),
 `upstream_repository_purge` ([00086_upstream.sql](../../internal/meta/postgres/migrations/00086_upstream.sql), replaced by
-[00093_upstream_purge_signatures.sql](../../internal/meta/postgres/migrations/00093_upstream_purge_signatures.sql)),
+[00093_upstream_purge_signatures.sql](../../internal/meta/postgres/migrations/00093_upstream_purge_signatures.sql) and
+[00096_signature_wire.sql](../../internal/meta/postgres/migrations/00096_signature_wire.sql)),
 `TestR_REPO_067_ThePurgeOfARetiredRepository`.
 
 ### Q-REPO-392 · `scanner-trivy` stores its cache period before the cleanup that applies it exists

@@ -370,7 +370,7 @@ The fixture ([kit.go](../../internal/formats/formattest/kit.go)) holds what only
 | `Names` | 10 | Spellings of one package name: they must normalize to one name and lead to one document path |
 | `NoDocument` | 10 | The reason a format has no package document (an APT archive: its upstream has none per package, Q-REPO-270): `PackageDocumentPath` must then report no path for every sample name, and the names are held to their normalization alone |
 | `OptionNames` | 8 | Literal client option names a template may spell although they contain `token`, `password` or `_auth` |
-| `Signatures` | 18 | A `SignatureCase` per kind the format declares at least: the kind's name, the stored path, a `Commit` that stores the signed sample through the host (or the `Body` of a remote's stored document) and the candidates `Detect` must name ([signatures.md](signatures.md#check-18)) |
+| `Signatures` | 18 | A `SignatureCase` per kind the format declares at least: the kind's name, the stored path, a `Commit` that stores the signed sample through the host (or the `Body` of a remote's stored document) and the candidates `Detect` must name ([signatures.md](signatures.md#check-18)); for a signature that follows its subject (OCI), `RemoveSubject` removes the subject the way a client does and the kit holds that the sample went with it (R-SIG-025) |
 | `Skip` | all | The checks that do not apply, each with the reason |
 
 ### The checks (1 to 13, 15, 17 and 18; check 14, the vulnerability corpus, runs in the vulnerability tests; check 16 is in [usage-and-limits.md](usage-and-limits.md))
@@ -494,6 +494,15 @@ its own finite limits, as R-ARCH-028 allows a streaming pass), which entry is th
 What is not covered: an archive in several parts is refused, not read; the zip reader takes sizes from the central directory and does not look at a local header's own sizes or data descriptor;
 an entry whose compressed stream is longer than the central directory says is read only up to the declared compressed size by the standard library and refused as damaged (this path is not covered by a
 test of its own).
+
+## Signatures on the wire
+
+The optional capabilities of the formats' wire behaviour of signatures ([signatures.md](signatures.md#package-3-built)), read by
+`CapabilitiesOf` like every other: `RemoteCaps.Signatures` (`formats.SignatureFetcher`, a remote adapter that fetches its signatures in the
+background: OCI, npm) and `Capabilities.SignatureCoverage` (`formats.SignatureCoverage`, a format whose signatures cover an index:
+Debian). `Host.Signatures()` answers what a format asks of the verdicts before it serves a signature (`formats.SignatureVerdicts`;
+`formats.NoSignatureVerdicts` until the trust step is wired). A format with a background fetch queues its targets through its data port
+from the storing transaction.
 
 ## Changing the contract
 
